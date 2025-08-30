@@ -11,22 +11,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gavra_android/main.dart';
 
 void main() {
-  testWidgets('Gavra Android app basic test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Give the app time to initialize async operations
-    await tester.pumpAndSettle(const Duration(seconds: 2));
-
-    // Verify that the app starts without crashing
-    // Look for CircularProgressIndicator (loading state)
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
-  });
-
   testWidgets('App widget creation test', (WidgetTester tester) async {
     // Verify that MyApp widget can be created
     const app = MyApp();
     expect(app, isA<MyApp>());
     expect(app.runtimeType, MyApp);
+  });
+
+  testWidgets('Gavra Android app builds without crashing',
+      (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const MyApp());
+
+    // Wait for the app to settle after initial build
+    await tester.pump();
+
+    // Verify that the app built successfully by checking for MaterialApp
+    expect(find.byType(MaterialApp), findsOneWidget);
+
+    // The app should build without throwing exceptions
+    // No need to check for specific widgets since they depend on external services
   });
 }

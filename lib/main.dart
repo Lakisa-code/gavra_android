@@ -219,38 +219,6 @@ class _MyAppState extends State<MyApp> {
     })();
   }
 
-  Future<void> _testSchemaStructure() async {
-    try {
-      _logger.i('🔍 Testiram strukturu tabela...');
-
-      // Test putovanja_istorija tabele - test postojećih kolona
-      try {
-        final result = await Supabase.instance.client
-            .from('putovanja_istorija')
-            .select(
-                'vozac, obrisan, status') // ✅ Testiraj samo postojeće kolone
-            .limit(1);
-        _logger.i('✅ putovanja_istorija tabela dostupna: $result');
-      } catch (e) {
-        _logger.w('❌ putovanja_istorija greška: $e');
-      }
-
-      // Test mesecni_putnici tabele - mesečni putnici NEMAJU vozac kolone
-      try {
-        final result = await Supabase.instance.client
-            .from('mesecni_putnici')
-            .select(
-                'id, putnik_ime, aktivan') // ✅ ISPRAVKA: proverava osnovne kolone umesto nepostojećih vozac kolona
-            .limit(1);
-        _logger.i('✅ mesecni_putnici tabela dostupna: $result');
-      } catch (e) {
-        _logger.w('⚠️ mesecni_putnici tabela ima probleme: $e');
-      }
-    } catch (e) {
-      _logger.e('❌ Greška pri testiranju schema: $e');
-    }
-  }
-
   @override
   void dispose() {
     // 🧹 CLEANUP SVIH TIMER-A - SPREČAVA MEMORY LEAK
@@ -292,8 +260,8 @@ class _MyAppState extends State<MyApp> {
 
       _logger.i('✅ App initialized successfully');
 
-      // Test schema strukture - jednokratno testiranje
-      await _testSchemaStructure();
+      // Schema test removed to prevent startup crashes
+      // await _testSchemaStructure();
 
       if (mounted) {
         setState(() {
