@@ -45,8 +45,8 @@ jobs:
         # Enable iOS platform if not already enabled
         flutter config --enable-ios
         
-        # Create iOS project files if they don't exist
-        flutter create --platforms=ios .
+        # Create iOS project files if they don't exist with proper organization
+        flutter create --platforms=ios --org com.gavra013 .
         
         # Fix iOS deployment target for Google Maps
         echo "🔧 Setting iOS deployment target to 15.0..."
