@@ -104,8 +104,27 @@ jobs:
         flutter build ios --release --no-codesign
         
     - name: 🔏 Archive and Sign
+      env:
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       run: |
         cd ios
+        
+        # Configure signing settings for Release
+        sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = "'$APPLE_TEAM_ID'";/g' Runner.xcodeproj/project.pbxproj
+        sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = com.example.gavraAndroid;/PRODUCT_BUNDLE_IDENTIFIER = com.gavra013.gavra-android;/g' Runner.xcodeproj/project.pbxproj
+        
+        # Set signing identity for Release
+        sed -i '' '/CODE_SIGN_IDENTITY = "";/s//CODE_SIGN_IDENTITY = "iPhone Distribution";/' Runner.xcodeproj/project.pbxproj
+        sed -i '' '/CODE_SIGN_IDENTITY\[sdk=iphoneos\*\] = "";/s//CODE_SIGN_IDENTITY[sdk=iphoneos*] = "iPhone Distribution";/' Runner.xcodeproj/project.pbxproj
+        
+        # Get provisioning profile UUID
+        PROFILE_UUID=$(grep -A1 -a "UUID" ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision | grep string | sed 's/.*<string>\(.*\)<\/string>.*/\1/')
+        echo "Profile UUID: $PROFILE_UUID"
+        
+        # Set provisioning profile
+        sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = \"\";/PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_UUID\";/g" Runner.xcodeproj/project.pbxproj
+        
+        # Archive
         xcodebuild -workspace Runner.xcworkspace \
           -scheme Runner \
           -archivePath $RUNNER_TEMP/gavra_android.xcarchive \
