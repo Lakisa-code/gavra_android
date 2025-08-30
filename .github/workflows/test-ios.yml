@@ -55,12 +55,17 @@ jobs:
           sed -i '' 's/platform :ios, .*/platform :ios, '\''15.0'\''/' ios/Podfile
         fi
         
+        # Set deployment target in Xcode project
+        if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [^;]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
+        fi
+        
         # Show current Podfile platform setting
         echo "📱 Current iOS platform setting:"
         grep "platform :ios" ios/Podfile || echo "No platform specified in Podfile"
         
-        # Try build with higher deployment target
-        flutter build ios --no-codesign --debug
+        # Try build with explicit deployment target
+        flutter build ios --no-codesign --debug --dart-define=IPHONEOS_DEPLOYMENT_TARGET=15.0
         echo "✅ iOS build compilation successful!"
         
     - name: 📊 Build summary
