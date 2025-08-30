@@ -41,6 +41,25 @@ jobs:
     - name: 🍎 Test iOS build compilation
       run: |
         echo "🚀 Starting iOS build test..."
+        
+        # Enable iOS platform if not already enabled
+        flutter config --enable-ios
+        
+        # Create iOS project files if they don't exist
+        flutter create --platforms=ios .
+        
+        # Fix iOS deployment target for Google Maps
+        echo "🔧 Setting iOS deployment target to 15.0..."
+        if [ -f ios/Podfile ]; then
+          sed -i '' 's/# platform :ios, .*/platform :ios, '\''15.0'\''/' ios/Podfile
+          sed -i '' 's/platform :ios, .*/platform :ios, '\''15.0'\''/' ios/Podfile
+        fi
+        
+        # Show current Podfile platform setting
+        echo "📱 Current iOS platform setting:"
+        grep "platform :ios" ios/Podfile || echo "No platform specified in Podfile"
+        
+        # Try build with higher deployment target
         flutter build ios --no-codesign --debug
         echo "✅ iOS build compilation successful!"
         
