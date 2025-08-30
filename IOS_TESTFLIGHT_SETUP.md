@@ -9,8 +9,14 @@
    - Idi u Apple Developer Console → Certificates, Identifiers & Profiles
    - Klikni na "Identifiers" → "+" 
    - Izaberi "App IDs" → "App"
-   - Bundle ID: `com.gavra013.gavra_android`
-   - Omogući potrebne capabilities (Push Notifications, Background Modes, etc.)
+   - Description: "Gavra Android App"
+   - Bundle ID: `com.gavra013.gavra_android` (Explicit)
+   - Omogući potrebne capabilities:
+     - ✅ Push Notifications (za notification servise)
+     - ✅ Background Modes (za background tasks)
+     - ✅ Associated Domains (ako imaš deep linking)
+     - ✅ App Groups (ako koristiš widgets)
+     - ✅ Maps (za Google Maps integration)
 
 ## Korak 2: Certificates & Provisioning Profiles
 
@@ -63,9 +69,19 @@ Dodaj ove secrets u GitHub repo (Settings → Secrets and variables → Actions)
 1. Idi na https://appstoreconnect.apple.com/
 2. My Apps → "+" → New App
 3. Popuni app informacije:
-   - Name: "Gavra Android"
-   - Bundle ID: `com.gavra013.gavra_android`
-   - SKU: `gavra-android-app`
+   - **Platform**: iOS
+   - **Name**: "Gavra Android" 
+   - **Primary Language**: Serbian (or English)
+   - **Bundle ID**: `com.gavra013.gavra_android` (iz dropdown-a)
+   - **SKU**: `gavra-android-2025` (unique identifier)
+   - **User Access**: Full Access
+4. App Information:
+   - **Subtitle**: "Transport app for Gavra bus line"
+   - **Privacy Policy URL**: (ako imaš)
+   - **Category**: Navigation ili Travel
+5. Pricing and Availability:
+   - **Price**: Free (ili postavai cenu)
+   - **Availability**: All countries ili specific regions
 
 ## Korak 6: Prvi Deployment
 ```bash

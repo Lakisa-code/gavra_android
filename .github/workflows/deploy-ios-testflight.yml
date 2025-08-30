@@ -42,7 +42,7 @@ jobs:
         # Enable iOS platform
         flutter config --enable-ios
         
-        # Create iOS project files with proper organization
+        # Create iOS project files with proper organization and bundle ID
         flutter create --platforms=ios --org com.gavra013 .
         
         # Set deployment target to 15.0
@@ -53,11 +53,19 @@ jobs:
         
         if [ -f ios/Runner.xcodeproj/project.pbxproj ]; then
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [^;]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*/PRODUCT_BUNDLE_IDENTIFIER = com.gavra013.gavra-android/g' ios/Runner.xcodeproj/project.pbxproj
+        fi
+        
+        # Update app display name
+        if [ -f ios/Runner/Info.plist ]; then
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Gavra Android" ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName 'Gavra Android'" ios/Runner/Info.plist
         fi
         
     - name: 🔐 Setup Code Signing
       env:
         IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+        IOS_PRIVATE_KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
         IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
         IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
       run: |
@@ -70,9 +78,18 @@ jobs:
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
         security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         
-        # Import certificate
-        echo $IOS_CERTIFICATE_BASE64 | base64 --decode > certificate.p12
-        security import certificate.p12 -k $KEYCHAIN_PATH -P $IOS_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+        # Create P12 from certificate and private key on-the-fly
+        echo $IOS_CERTIFICATE_BASE64 | base64 --decode > ios_distribution.cer
+        echo $IOS_PRIVATE_KEY_BASE64 | base64 --decode > ios_private.key
+        
+        # Convert to P12 format using openssl (available on macOS runners)
+        openssl pkcs12 -export -out ios_distribution.p12 \
+          -inkey ios_private.key \
+          -in ios_distribution.cer \
+          -password pass:$IOS_CERTIFICATE_PASSWORD
+        
+        # Import P12 certificate
+        security import ios_distribution.p12 -k $KEYCHAIN_PATH -P $IOS_CERTIFICATE_PASSWORD -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_PATH
         
         # Install provisioning profile
