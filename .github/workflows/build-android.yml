@@ -40,6 +40,13 @@ jobs:
     - name: Build APK
       run: flutter build apk --release
       
+    - name: Get version from pubspec.yaml
+      id: version
+      run: |
+        VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
+      
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
@@ -50,10 +57,10 @@ jobs:
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ github.run_number }}
-        name: Release v${{ github.run_number }}
+        tag_name: v${{ steps.version.outputs.version }}
+        name: Release v${{ steps.version.outputs.version }}
         body: |
-          🚀 Gavra Android v5.0.0 - Build #${{ github.run_number }}
+          🚀 Gavra Android v${{ steps.version.outputs.version }} - Build #${{ github.run_number }}
           
           ✅ Automatic build from GitHub Actions
           📱 Ready for installation on Android devices
