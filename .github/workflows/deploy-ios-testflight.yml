@@ -82,10 +82,13 @@ jobs:
         echo $IOS_CERTIFICATE_BASE64 | base64 --decode > ios_distribution.cer
         echo $IOS_PRIVATE_KEY_BASE64 | base64 --decode > ios_private.key
         
-        # Convert to P12 format using openssl (available on macOS runners)
+        # Convert DER certificate to PEM format first
+        openssl x509 -inform DER -in ios_distribution.cer -out ios_distribution.pem
+        
+        # Convert to P12 format using PEM certificate
         openssl pkcs12 -export -out ios_distribution.p12 \
           -inkey ios_private.key \
-          -in ios_distribution.cer \
+          -in ios_distribution.pem \
           -password pass:$IOS_CERTIFICATE_PASSWORD
         
         # Import P12 certificate
