@@ -1,0 +1,138 @@
+name: Deploy iOS to TestFlight
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.2'
+        channel: 'stable'
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Create iOS certificates and provisioning profile
+      env:
+        IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+        IOS_PRIVATE_KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
+        IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Create certificates directory
+        mkdir -p ~/certificates
+        cd ~/certificates
+        
+        # Decode certificate and private key
+        echo "$IOS_CERTIFICATE_BASE64" | base64 --decode > ios_distribution.cer
+        echo "$IOS_PRIVATE_KEY_BASE64" | base64 --decode > ios_private.key
+        echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > ios_provisioning.mobileprovision
+        
+        # Convert certificate to PEM format if needed (DER to PEM)
+        openssl x509 -inform DER -in ios_distribution.cer -out ios_distribution.pem 2>/dev/null || cp ios_distribution.cer ios_distribution.pem
+        
+        # Create P12 certificate using macOS OpenSSL (compatible format)
+        openssl pkcs12 -export -out ios_distribution.p12 -inkey ios_private.key -in ios_distribution.pem -password pass:""
+        
+        # Create keychain and import certificates
+        security create-keychain -p "temppass" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "temppass" build.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        
+        # Import P12 certificate to keychain
+        security import ios_distribution.p12 -P "" -A -t cert -f pkcs12 -k build.keychain
+        security list-keychain -d user -s build.keychain
+        
+        # Copy provisioning profile to the right location
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp ios_provisioning.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
+    - name: Update iOS project configuration
+      env:
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Update Runner.xcodeproj with Team ID
+        sed -i '' "s/DEVELOPMENT_TEAM = .*/DEVELOPMENT_TEAM = $APPLE_TEAM_ID;/" ios/Runner.xcodeproj/project.pbxproj
+        
+        # Verify Team ID was set
+        grep "DEVELOPMENT_TEAM = $APPLE_TEAM_ID" ios/Runner.xcodeproj/project.pbxproj
+
+    - name: Build iOS app
+      run: |
+        flutter build ios --release --no-codesign
+        
+        # Archive the app using xcodebuild with proper signing
+        cd ios
+        xcodebuild -workspace Runner.xcworkspace \
+                   -scheme Runner \
+                   -configuration Release \
+                   -destination generic/platform=iOS \
+                   -archivePath $PWD/build/Runner.xcarchive \
+                   archive
+
+    - name: Export IPA for App Store
+      run: |
+        cd ios
+        
+        # Create export options plist
+        cat > ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>compileBitcode</key>
+            <false/>
+        </dict>
+        </plist>
+        EOF
+        
+        # Export IPA
+        xcodebuild -exportArchive \
+                   -archivePath $PWD/build/Runner.xcarchive \
+                   -exportOptionsPlist ExportOptions.plist \
+                   -exportPath $PWD/build/
+
+    - name: Upload to TestFlight
+      env:
+        APP_STORE_CONNECT_USERNAME: ${{ secrets.APP_STORE_CONNECT_USERNAME }}
+        APP_STORE_CONNECT_PASSWORD: ${{ secrets.APP_STORE_CONNECT_PASSWORD }}
+      run: |
+        cd ios/build
+        
+        # Find the IPA file
+        IPA_FILE=$(find . -name "*.ipa" | head -1)
+        echo "Found IPA file: $IPA_FILE"
+        
+        # Upload to TestFlight using altool
+        xcrun altool --upload-app \
+                     --type ios \
+                     --file "$IPA_FILE" \
+                     --username "$APP_STORE_CONNECT_USERNAME" \
+                     --password "$APP_STORE_CONNECT_PASSWORD" \
+                     --verbose
+
+    - name: Upload IPA as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-ipa
+        path: ios/build/*.ipa
+        retention-days: 30
