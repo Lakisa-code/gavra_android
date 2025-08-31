@@ -151,23 +151,10 @@ jobs:
         PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< $(security cms -D -i ~/certificates/profile.mobileprovision))
         echo "Using Provisioning Profile UUID: $PROFILE_UUID"
         
-        # Debug: show current project settings
-        echo "Current project.pbxproj provisioning profile settings:"
-        grep -A5 -B5 "PROVISIONING_PROFILE_SPECIFIER" Runner.xcodeproj/project.pbxproj || echo "Not found"
+        # Simple and direct approach - just use xcodebuild parameters
+        # No need to modify project files, let xcodebuild handle it
         
-        # Set provisioning profile UUID specifically for Runner target - more robust approach
-        # Find and replace ALL occurrences in the Runner target sections
-        sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = \"\";/PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_UUID\";/g" Runner.xcodeproj/project.pbxproj
-        sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = ;/PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_UUID\";/g" Runner.xcodeproj/project.pbxproj
-        
-        # Also set it as backup method
-        echo "PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_UUID\";" >> Runner.xcodeproj/project.pbxproj.tmp
-        
-        # Debug: verify the change
-        echo "After update - provisioning profile settings:"
-        grep -A5 -B5 "PROVISIONING_PROFILE_SPECIFIER.*$PROFILE_UUID" Runner.xcodeproj/project.pbxproj || echo "UUID not found in project file"
-        
-        # Archive using xcodebuild with manual signing (no global provisioning profile)
+        # Archive using xcodebuild with proper manual signing parameters
         xcodebuild -workspace Runner.xcworkspace \
                    -scheme Runner \
                    -configuration Release \
@@ -177,7 +164,8 @@ jobs:
                    DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
                    CODE_SIGN_IDENTITY="iPhone Distribution" \
                    PRODUCT_BUNDLE_IDENTIFIER="com.gavra013.gavra-android" \
-                   "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_UUID" \
+                   PROVISIONING_PROFILE_SPECIFIER="$PROFILE_UUID" \
+                   ONLY_ACTIVE_ARCH=NO \
                    archive
         
         # Create export options for App Store
