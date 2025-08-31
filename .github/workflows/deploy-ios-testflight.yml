@@ -132,8 +132,30 @@ jobs:
       run: |
         echo "🚀 Building signed IPA..."
         
-        # Create export options
-        cat > ios/ExportOptions.plist << EOF
+        # First build Flutter without code signing
+        flutter build ios --release --no-codesign
+        
+        # Update Xcode project settings for manual signing
+        cd ios
+        
+        # Set manual code signing in project.pbxproj
+        sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/' Runner.xcodeproj/project.pbxproj
+        sed -i '' 's/DEVELOPMENT_TEAM = .*/DEVELOPMENT_TEAM = '$APPLE_TEAM_ID';/' Runner.xcodeproj/project.pbxproj
+        sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*/PROVISIONING_PROFILE_SPECIFIER = "";/' Runner.xcodeproj/project.pbxproj
+        
+        # Archive using xcodebuild with manual signing
+        xcodebuild -workspace Runner.xcworkspace \
+                   -scheme Runner \
+                   -configuration Release \
+                   -destination generic/platform=iOS \
+                   -archivePath build/Runner.xcarchive \
+                   CODE_SIGN_STYLE=Manual \
+                   DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+                   CODE_SIGN_IDENTITY="iPhone Distribution" \
+                   archive
+        
+        # Create export options for App Store
+        cat > ExportOptions.plist << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0">
@@ -146,12 +168,22 @@ jobs:
           <false/>
           <key>uploadSymbols</key>
           <true/>
+          <key>compileBitcode</key>
+          <false/>
         </dict>
         </plist>
         EOF
         
-        # Build IPA
-        flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+        # Export IPA
+        xcodebuild -exportArchive \
+                   -archivePath build/Runner.xcarchive \
+                   -exportOptionsPlist ExportOptions.plist \
+                   -exportPath build/
+        
+        # Move IPA to expected location
+        mkdir -p ../build/ios/ipa/
+        find build/ -name "*.ipa" -exec cp {} ../build/ios/ipa/ \;
+        
         echo "✅ IPA build completed!"
 
     - name: 📤 Upload to TestFlight
