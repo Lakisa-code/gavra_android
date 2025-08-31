@@ -64,23 +64,31 @@ jobs:
         
     - name: 🔐 Setup Code Signing
       env:
-        IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
-        IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+        IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+        IOS_PRIVATE_KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
         IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       run: |
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
         KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
         
-        # Create keychain
+        # Create keychain and set as default
         security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security default-keychain -s $KEYCHAIN_PATH
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
         security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         
-        # Import P12 certificate directly
-        echo $IOS_P12_BASE64 | base64 --decode > ios_distribution.p12
-        security import ios_distribution.p12 -k $KEYCHAIN_PATH -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_PATH
+        # Decode and import certificate directly without P12
+        echo $IOS_CERTIFICATE_BASE64 | base64 --decode > ios_distribution.cer
+        echo $IOS_PRIVATE_KEY_BASE64 | base64 --decode > ios_private.key
+        
+        # Import certificate and private key separately
+        security import ios_distribution.cer -k $KEYCHAIN_PATH -A
+        security import ios_private.key -k $KEYCHAIN_PATH -A
+        
+        # Set partition list for code signing
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         
         # Install provisioning profile
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
