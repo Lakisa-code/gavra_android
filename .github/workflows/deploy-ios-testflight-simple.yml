@@ -1,0 +1,133 @@
+name: 🍎 Deploy iOS to TestFlight (Simple)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: '5.0.0'
+
+jobs:
+  deploy-ios:
+    name: 🚀 Deploy iOS to TestFlight
+    runs-on: macos-latest
+    
+    steps:
+    - name: 📦 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.2'
+        channel: 'stable'
+        cache: true
+
+    - name: 📲 Install Flutter Dependencies
+      run: flutter pub get
+
+    - name: 🔐 Setup iOS Certificates
+      env:
+        IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+        IOS_PRIVATE_KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
+        IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Create certificates directory
+        mkdir -p ~/certificates
+        
+        # Decode and install certificate
+        echo "$IOS_CERTIFICATE_BASE64" | base64 --decode > ~/certificates/ios_distribution.cer
+        
+        # Decode private key
+        echo "$IOS_PRIVATE_KEY_BASE64" | base64 --decode > ~/certificates/ios_private.key
+        
+        # Convert certificate to PEM format
+        openssl x509 -inform DER -in ~/certificates/ios_distribution.cer -out ~/certificates/ios_distribution.pem
+        
+        # Create P12 file
+        openssl pkcs12 -export \
+          -inkey ~/certificates/ios_private.key \
+          -in ~/certificates/ios_distribution.pem \
+          -out ~/certificates/ios_distribution.p12 \
+          -passout pass:""
+        
+        # Import certificate to keychain
+        security create-keychain -p "" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "" build.keychain
+        security import ~/certificates/ios_distribution.p12 -k build.keychain -P "" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        
+        # Install provisioning profile
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
+        echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+
+    - name: 🔧 Configure iOS Project
+      env:
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Update iOS project settings
+        cd ios
+        
+        # Set the development team and bundle identifier
+        /usr/libexec/PlistBuddy -c "Set :objects:97C146E61CF9000F007C117D:attributes:TargetAttributes:97C146ED1CF9000F007C117D:DevelopmentTeam $APPLE_TEAM_ID" Runner.xcodeproj/project.pbxproj || true
+        
+        # Update Info.plist
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.gavra013.gavra-android" Runner/Info.plist
+        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.event.inputs.version }}" Runner/Info.plist
+        /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ github.event.inputs.version }}" Runner/Info.plist
+
+    - name: 📱 Build IPA
+      env:
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Create export options
+        cat > ios/ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>method</key>
+          <string>app-store</string>
+          <key>teamID</key>
+          <string>$APPLE_TEAM_ID</string>
+          <key>provisioningProfiles</key>
+          <dict>
+            <key>com.gavra013.gavra-android</key>
+            <string>Gavra Android App Store Profile</string>
+          </dict>
+          <key>uploadBitcode</key>
+          <false/>
+          <key>uploadSymbols</key>
+          <true/>
+        </dict>
+        </plist>
+        EOF
+        
+        # Build IPA
+        flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+
+    - name: 📤 Upload to TestFlight
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      run: |
+        # Find the IPA file
+        IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+        echo "Found IPA: $IPA_PATH"
+        
+        # Upload to TestFlight
+        xcrun altool --upload-app \
+          --type ios \
+          --file "$IPA_PATH" \
+          --username "$APPLE_ID" \
+          --password "$APPLE_PASSWORD" \
+          --verbose
+
+    - name: 📋 Summary
+      run: |
+        echo "✅ iOS build completed successfully!"
+        echo "📱 App uploaded to TestFlight"
+        echo "🔗 Check your App Store Connect for processing status"

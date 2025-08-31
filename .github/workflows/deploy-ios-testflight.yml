@@ -99,9 +99,34 @@ jobs:
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         echo $IOS_PROVISIONING_PROFILE_BASE64 | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
         
-    - name: 📱 Build iOS Release
+    - name: 📱 Build and Archive iOS
+      env:
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       run: |
-        flutter build ios --release --no-codesign
+        # Create ExportOptions.plist for App Store distribution
+        mkdir -p ios/
+        cat > ios/ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>method</key>
+          <string>app-store</string>
+          <key>teamID</key>
+          <string>$APPLE_TEAM_ID</string>
+          <key>provisioningProfiles</key>
+          <dict>
+            <key>com.gavra013.gavra-android</key>
+            <string>Gavra Android App Store Profile</string>
+          </dict>
+        </dict>
+        </plist>
+        EOF
+        
+        # Build IPA for App Store
+        flutter build ipa \
+          --release \
+          --export-options-plist=ios/ExportOptions.plist
         
     - name: 🔏 Archive and Sign
       env:
