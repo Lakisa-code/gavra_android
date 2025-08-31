@@ -79,7 +79,7 @@ class UpdateService {
                 _isMajorVersionDifference(currentVersion, latestVersion);
             if (!isMajorUpdate) {
               debugPrint(
-                  '🕰️ Release je prestari (${daysSincePublish} dana), preskačem update');
+                  '🕰️ Release je prestari ($daysSincePublish dana), preskačem update');
               return false;
             }
           }
@@ -211,7 +211,7 @@ class UpdateChecker {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.system_update, color: Colors.green, size: 28),
             SizedBox(width: 8),
@@ -224,12 +224,12 @@ class UpdateChecker {
           children: [
             if (versionInfo != null) ...[
               Text('Verzija: ${versionInfo['version']}',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text(versionInfo['name'] ?? 'Nova verzija'),
               SizedBox(height: 8),
               Text('Šta je novo:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               Text(versionInfo['body'] ?? 'Poboljšanja i ispravke'),
             ] else ...[
               Text('Dostupna je nova verzija Gavra Android aplikacije.'),
@@ -239,15 +239,15 @@ class UpdateChecker {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Kasnije'),
+            child: const Text('Kasnije'),
           ),
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(context);
               UpdateService.downloadApk();
             },
-            icon: Icon(Icons.download),
-            label: Text('Download'),
+            icon: const Icon(Icons.download),
+            label: const Text('Download'),
           ),
         ],
       ),
@@ -260,7 +260,7 @@ class UpdateChecker {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => const AlertDialog(
         content: Row(
           children: [
             CircularProgressIndicator(),
@@ -273,22 +273,25 @@ class UpdateChecker {
 
     try {
       bool hasUpdate = await UpdateService.checkForUpdate();
+      if (!context.mounted) return;
       Navigator.pop(context); // Zatvori loading
 
       if (hasUpdate) {
         final versionInfo = await UpdateService.getLatestVersionInfo();
+        if (!context.mounted) return;
         _showUpdateDialog(context, versionInfo);
       } else {
         // Nema update-a
+        if (!context.mounted) return;
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Nema update-a ✅'),
-            content: Text('Koristiš najnoviju verziju aplikacije.'),
+            title: const Text('Nema update-a ✅'),
+            content: const Text('Koristiš najnoviju verziju aplikacije.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
             ],
           ),
@@ -300,13 +303,13 @@ class UpdateChecker {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Greška ❌'),
-          content: Text(
+          title: const Text('Greška ❌'),
+          content: const Text(
               'Nemoguće proveriti update-e. Proverite internet konekciju.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
+              child: const Text('OK'),
             ),
           ],
         ),

@@ -1252,7 +1252,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   border: Border.all(
                                       color: Colors.white.withOpacity(0.4)),
                                 ),
-                                child: Center(
+                                child: const Center(
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
                                     child: Column(
@@ -1260,15 +1260,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.auto_awesome,
                                           size: 12,
                                           color: Colors.white,
                                         ),
                                         const SizedBox(height: 1),
-                                        Text(
+                                        const Text(
                                           'Auto',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 10,
                                             color: Colors.white,

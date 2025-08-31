@@ -217,15 +217,17 @@ class LocalNotificationService {
       }
 
       // Navigate to dagens screen with filter parameters
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => DanasScreen(
-            highlightPutnikIme: putnikIme,
-            filterGrad: putnikGrad,
-            filterVreme: putnikVreme,
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => DanasScreen(
+              highlightPutnikIme: putnikIme,
+              filterGrad: putnikGrad,
+              filterVreme: putnikVreme,
+            ),
           ),
-        ),
-      );
+        );
+      }
 
       // Show info about the passenger if available
       if (putnikIme != null && context.mounted) {
@@ -272,7 +274,7 @@ class LocalNotificationService {
     } catch (e) {
       // Error handling notification tap - fallback to simple navigation
       final context = navigatorKey.currentContext;
-      if (context != null) {
+      if (context != null && context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => const DanasScreen(),

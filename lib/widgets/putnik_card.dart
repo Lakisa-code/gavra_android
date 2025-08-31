@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/putnik.dart';
@@ -1476,19 +1475,14 @@ class _PutnikCardState extends State<PutnikCard> {
                                                   // Dugme za navigaciju - uvek prikaži, koordinate će se dobiti po potrebi
                                                   TextButton.icon(
                                                     onPressed: () async {
-                                                      // Cache context pre async operacija
-                                                      final cachedContext =
-                                                          context;
-
                                                       // 🔒 INSTANT GPS - koristi novi PermissionService
                                                       final hasPermission =
                                                           await PermissionService
                                                               .ensureGpsForNavigation();
                                                       if (!hasPermission) {
                                                         if (mounted) {
-                                                          // ignore: use_build_context_synchronously
                                                           ScaffoldMessenger.of(
-                                                                  cachedContext)
+                                                                  context)
                                                               .showSnackBar(
                                                             const SnackBar(
                                                               content: Text(
@@ -1509,9 +1503,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                       try {
                                                         // Pokaži loading sa dužim timeout-om
                                                         if (mounted) {
-                                                          // ignore: use_build_context_synchronously
                                                           ScaffoldMessenger.of(
-                                                                  cachedContext)
+                                                                  context)
                                                               .showSnackBar(
                                                             const SnackBar(
                                                               content: Row(
@@ -1550,17 +1543,15 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                 _putnik.adresa);
 
                                                         if (mounted) {
-                                                          // ignore: use_build_context_synchronously
                                                           ScaffoldMessenger.of(
-                                                                  cachedContext)
+                                                                  context)
                                                               .hideCurrentSnackBar();
 
                                                           if (koordinate !=
                                                               null) {
                                                             // Uspešno - pokaži pozitivnu poruku
-                                                            // ignore: use_build_context_synchronously
-                                                            ScaffoldMessenger.of(
-                                                                    cachedContext)
+                                                            ScaffoldMessenger
+                                                                    .of(context)
                                                                 .showSnackBar(
                                                               const SnackBar(
                                                                 content: Text(
@@ -1578,9 +1569,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                 koordinate);
                                                           } else {
                                                             // Neuspešno - pokaži detaljniju grešku
-                                                            // ignore: use_build_context_synchronously
-                                                            ScaffoldMessenger.of(
-                                                                    cachedContext)
+                                                            ScaffoldMessenger
+                                                                    .of(context)
                                                                 .showSnackBar(
                                                               SnackBar(
                                                                 content: Column(
@@ -1631,13 +1621,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         }
                                                       } catch (e) {
                                                         if (mounted) {
-                                                          // ignore: use_build_context_synchronously
                                                           ScaffoldMessenger.of(
-                                                                  cachedContext)
+                                                                  context)
                                                               .hideCurrentSnackBar();
-                                                          // ignore: use_build_context_synchronously
                                                           ScaffoldMessenger.of(
-                                                                  cachedContext)
+                                                                  context)
                                                               .showSnackBar(
                                                             SnackBar(
                                                               content: Text(
