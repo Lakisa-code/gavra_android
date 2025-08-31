@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter ephemeral files (auto-generated)
+**/flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+macos/flutter/ephemeral/
+
+# Gradle cache and build files
+android/.gradle/
+android/app/build/
+android/build/
