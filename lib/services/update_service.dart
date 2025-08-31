@@ -153,8 +153,12 @@ class UpdateService {
           latest.split('.').map((e) => int.parse(e)).toList();
 
       // Dopuni sa nulama ako je potrebno
-      while (currentParts.length < 3) currentParts.add(0);
-      while (latestParts.length < 3) latestParts.add(0);
+      while (currentParts.length < 3) {
+        currentParts.add(0);
+      }
+      while (latestParts.length < 3) {
+        latestParts.add(0);
+      }
 
       for (int i = 0; i < 3; i++) {
         if (latestParts[i] > currentParts[i]) return true;

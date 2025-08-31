@@ -415,9 +415,9 @@ class _DanasScreenState extends State<DanasScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     '🔔 Otvoreno iz notifikacije',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   Text(
