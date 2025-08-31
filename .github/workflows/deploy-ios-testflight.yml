@@ -139,8 +139,22 @@ jobs:
         # First build Flutter without code signing
         flutter build ios --release --no-codesign
         
+        # Check if ios directory exists and navigate to it
+        if [ ! -d "ios" ]; then
+          echo "❌ Error: ios directory not found"
+          ls -la
+          exit 1
+        fi
+        
         # Update Xcode project settings for automatic signing
         cd ios
+        
+        # Verify we're in the right place
+        if [ ! -f "Runner.xcodeproj/project.pbxproj" ]; then
+          echo "❌ Error: Runner.xcodeproj not found"
+          ls -la
+          exit 1
+        fi
         
         # Clean up any existing provisioning profile references completely
         sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/' Runner.xcodeproj/project.pbxproj
