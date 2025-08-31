@@ -179,7 +179,7 @@ jobs:
         
         # Return to ios directory for pod install
         cd ios
-        pod install --clean
+        pod install --clean-install
         
         # Archive using xcodebuild with AUTOMATIC signing (simpler)
         xcodebuild -workspace Runner.xcworkspace \
