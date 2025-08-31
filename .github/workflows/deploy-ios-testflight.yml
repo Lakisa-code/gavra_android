@@ -169,10 +169,21 @@ jobs:
         echo "✅ Cleaned all provisioning profile references"
         
         # Clean rebuild of Pods to ensure no cached provisioning profile settings
-        rm -rf Pods/
-        rm -f Podfile.lock
+        rm -rf ios/Pods/
+        rm -f ios/Podfile.lock
+        
+        # Check if ios directory exists before operations
+        if [ ! -d "ios" ]; then
+          echo "❌ Error: ios directory not found before pod install"
+          echo "Current directory contents:"
+          ls -la
+          exit 1
+        fi
+        
+        # Clean and rebuild
         flutter clean
         flutter pub get
+        
         cd ios
         pod install --clean
         
