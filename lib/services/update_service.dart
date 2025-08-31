@@ -43,7 +43,8 @@ class UpdateService {
         debugPrint('🚀 Najnovija verzija na GitHub: $latestVersion');
         debugPrint('� Raw tag_name: ${data['tag_name']}');
         debugPrint('�🔍 Trenutna verzija aplikacije: $currentVersion');
-        debugPrint('⚖️ String comparison: "$currentVersion" == "$latestVersion"');
+        debugPrint(
+            '⚖️ String comparison: "$currentVersion" == "$latestVersion"');
         debugPrint('📊 Are equal? ${currentVersion == latestVersion}');
 
         // DIREKTNA PROVERA: Ako su verzije iste, NEMA UPDATE-a!
@@ -191,7 +192,9 @@ class UpdateChecker {
 
       if (hasUpdate && context.mounted) {
         final versionInfo = await UpdateService.getLatestVersionInfo();
-        _showUpdateDialog(context, versionInfo);
+        if (context.mounted) {
+          _showUpdateDialog(context, versionInfo);
+        }
       }
     } catch (e) {
       debugPrint('❌ Greška u automatskoj proveri: $e');

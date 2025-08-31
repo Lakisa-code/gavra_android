@@ -436,30 +436,30 @@ class Putnik {
 
   // Helper metoda - konvertuje dan u datum sledeće nedelje za taj dan
   String _getDateForDay(String dan) {
-    print('🔍 _getDateForDay pozvan sa dan: "$dan"');
+    // print('🔍 _getDateForDay pozvan sa dan: "$dan"'); // Debug - remove in production
     final now = DateTime.now();
     final dayNames = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
     final dayNamesLower = ['pon', 'uto', 'sre', 'čet', 'pet', 'sub', 'ned'];
 
     // Probaj sa originalnim formatom
     int targetDayIndex = dayNames.indexOf(dan);
-    print('🔍 Prvi pokušaj (velikim): $targetDayIndex');
+    // print('🔍 Prvi pokušaj (velikim): $targetDayIndex'); // Debug - remove in production
 
     // Ako nije pronađen, probaj sa malim slovima
     if (targetDayIndex == -1) {
       targetDayIndex = dayNamesLower.indexOf(dan.toLowerCase());
-      print('🔍 Drugi pokušaj (malim): $targetDayIndex');
-      print('🔍 Tražim "${dan.toLowerCase()}" u $dayNamesLower');
+      // print('🔍 Drugi pokušaj (malim): $targetDayIndex'); // Debug - remove in production
+      // print('🔍 Tražim "${dan.toLowerCase()}" u $dayNamesLower'); // Debug - remove in production
     }
 
-    print('🔍 Konačni targetDayIndex za "$dan": $targetDayIndex');
+    // print('🔍 Konačni targetDayIndex za "$dan": $targetDayIndex'); // Debug - remove in production
     if (targetDayIndex == -1) {
       // Ako dan nije valjan, koristi današnji datum
-      print('⚠️ INVALID DAN: "$dan" - koristim današnji datum');
+      // print('⚠️ INVALID DAN: "$dan" - koristim današnji datum'); // Debug - remove in production
       return now.toIso8601String().split('T')[0];
     }
     final currentDayIndex = now.weekday - 1; // Monday = 0
-    print('🔍 currentDayIndex (today): $currentDayIndex');
+    // print('🔍 currentDayIndex (today): $currentDayIndex'); // Debug - remove in production
 
     // Izračunaj koliko dana treba dodati da dođemo do ciljnog dana
     int daysToAdd;
@@ -471,10 +471,10 @@ class Putnik {
       daysToAdd = (7 - currentDayIndex) + targetDayIndex;
     }
 
-    print('🔍 daysToAdd: $daysToAdd');
+    // print('🔍 daysToAdd: $daysToAdd'); // Debug - remove in production
     final targetDate = now.add(Duration(days: daysToAdd));
     final result = targetDate.toIso8601String().split('T')[0];
-    print('🔍 Final result: $result (${dayNames[targetDate.weekday - 1]})');
+    // print('🔍 Final result: $result (${dayNames[targetDate.weekday - 1]})'); // Debug - remove in production
     return result;
   } // NOVI: Mapiranje za putovanja_istorija tabelu
 

@@ -86,12 +86,10 @@ class _StatistikaScreenState extends State<StatistikaScreen>
 
     if (potvrda != true) return;
 
-    final cachedContext = context; // Cache context pre async operacija
-
     // Pokaži loading
-    // ignore: use_build_context_synchronously
+    if (!mounted) return;
     showDialog(
-      context: cachedContext,
+      context: context,
       barrierDismissible: false,
       builder: (context) => const AlertDialog(
         content: Row(
@@ -107,11 +105,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     try {
       final uspeh = await StatistikaService.resetujSveKilometraze();
 
-      if (mounted) Navigator.of(cachedContext).pop(); // Zatvori loading
+      if (mounted) Navigator.of(context).pop(); // Zatvori loading
 
       if (uspeh) {
         if (mounted) {
-          ScaffoldMessenger.of(cachedContext).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✅ Kilometraža je uspešno resetovana na 0'),
               backgroundColor: Colors.green,
@@ -120,7 +118,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(cachedContext).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('❌ Greška pri resetovanju kilometraže'),
               backgroundColor: Colors.red,
@@ -129,9 +127,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         }
       }
     } catch (e) {
-      if (mounted) Navigator.of(cachedContext).pop(); // Zatvori loading
+      if (mounted) Navigator.of(context).pop(); // Zatvori loading
       if (mounted) {
-        ScaffoldMessenger.of(cachedContext).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška: $e'),
             backgroundColor: Colors.red,

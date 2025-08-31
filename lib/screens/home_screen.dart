@@ -177,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     RealtimeNotificationService.listenForForegroundNotifications(context);
 
     // 🔄 Automatska provera update-a - AKTIVNA!
-    Timer(Duration(seconds: 5), () {
+    Timer(const Duration(seconds: 5), () {
       if (mounted) {
         UpdateChecker.checkAndShowUpdate(context);
       }
@@ -189,8 +189,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // First request notification permissions
         RealtimeNotificationService.requestNotificationPermissions()
             .then((hasPermissions) {
-          print(
-              '🔔 HomeScreen notification permissions result: $hasPermissions');
+          // print('🔔 HomeScreen notification permissions result: $hasPermissions'); // Debug - remove in production
 
           RealtimeNotificationService.initialize().then((_) {
             // Subscribe to Firebase topics for this driver
