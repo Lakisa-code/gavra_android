@@ -64,8 +64,7 @@ jobs:
         
     - name: 🔐 Setup Code Signing
       env:
-        IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
-        IOS_PRIVATE_KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
+        IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
         IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
         IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
       run: |
@@ -78,20 +77,8 @@ jobs:
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
         security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
         
-        # Create P12 from certificate and private key on-the-fly
-        echo $IOS_CERTIFICATE_BASE64 | base64 --decode > ios_distribution.cer
-        echo $IOS_PRIVATE_KEY_BASE64 | base64 --decode > ios_private.key
-        
-        # Convert DER certificate to PEM format first
-        openssl x509 -inform DER -in ios_distribution.cer -out ios_distribution.pem
-        
-        # Convert to P12 format using PEM certificate with correct password flag
-        openssl pkcs12 -export -out ios_distribution.p12 \
-          -inkey ios_private.key \
-          -in ios_distribution.pem \
-          -passout pass:$IOS_CERTIFICATE_PASSWORD
-        
-        # Import P12 certificate with correct password flag
+        # Import P12 certificate directly
+        echo $IOS_P12_BASE64 | base64 --decode > ios_distribution.p12
         security import ios_distribution.p12 -k $KEYCHAIN_PATH -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_PATH
         
