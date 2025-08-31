@@ -139,57 +139,15 @@ jobs:
         # First build Flutter without code signing
         flutter build ios --release --no-codesign
         
-        # Check if ios directory exists and navigate to it
-        if [ ! -d "ios" ]; then
-          echo "❌ Error: ios directory not found"
-          ls -la
-          exit 1
-        fi
-        
-        # Update Xcode project settings for automatic signing
+        # Simple approach - just use basic xcodebuild with minimal settings
         cd ios
         
-        # Verify we're in the right place
-        if [ ! -f "Runner.xcodeproj/project.pbxproj" ]; then
-          echo "❌ Error: Runner.xcodeproj not found"
-          ls -la
-          exit 1
-        fi
-        
-        # Clean up any existing provisioning profile references completely
-        sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/' Runner.xcodeproj/project.pbxproj
-        sed -i '' 's/DEVELOPMENT_TEAM = .*/DEVELOPMENT_TEAM = '$APPLE_TEAM_ID';/' Runner.xcodeproj/project.pbxproj
-        sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*/PROVISIONING_PROFILE_SPECIFIER = "";/' Runner.xcodeproj/project.pbxproj
-        
-        # Clean Pods project to ensure no provisioning profiles are set
-        if [ -f "Pods/Pods.xcodeproj/project.pbxproj" ]; then
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*/PROVISIONING_PROFILE_SPECIFIER = "";/' Pods/Pods.xcodeproj/project.pbxproj
-        fi
-        
-        echo "✅ Cleaned all provisioning profile references"
-        
-        # Clean rebuild of Pods to ensure no cached provisioning profile settings  
-        rm -rf Pods/
-        rm -f Podfile.lock
-        
-        # Go back to root for flutter commands
-        cd ..
-        flutter clean
-        flutter pub get
-        
-        # Return to ios directory for pod install
-        cd ios
-        pod install --clean-install
-        
-        # Archive using xcodebuild with AUTOMATIC signing (simpler)
+        # Archive using xcodebuild with minimal configuration
         xcodebuild -workspace Runner.xcworkspace \
                    -scheme Runner \
                    -configuration Release \
                    -destination generic/platform=iOS \
                    -archivePath build/Runner.xcarchive \
-                   CODE_SIGN_STYLE=Automatic \
-                   DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
-                   PRODUCT_BUNDLE_IDENTIFIER="com.gavra013.gavra-android" \
                    archive
         
         # Create export options for App Store
