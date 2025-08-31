@@ -1260,13 +1260,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.auto_awesome,
                                           size: 12,
                                           color: Colors.white,
                                         ),
-                                        const SizedBox(height: 1),
-                                        const Text(
+                                        SizedBox(height: 1),
+                                        Text(
                                           'Auto',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w700,

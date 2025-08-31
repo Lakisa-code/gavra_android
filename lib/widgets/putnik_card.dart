@@ -1480,7 +1480,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           await PermissionService
                                                               .ensureGpsForNavigation();
                                                       if (!hasPermission) {
-                                                        if (mounted) {
+                                                        if (mounted &&
+                                                            context.mounted) {
                                                           ScaffoldMessenger.of(
                                                                   context)
                                                               .showSnackBar(
@@ -1502,7 +1503,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                       // Proveri internetsku konekciju i dozvole
                                                       try {
                                                         // Pokaži loading sa dužim timeout-om
-                                                        if (mounted) {
+                                                        if (mounted &&
+                                                            context.mounted) {
                                                           ScaffoldMessenger.of(
                                                                   context)
                                                               .showSnackBar(
@@ -1542,7 +1544,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                 _putnik.grad,
                                                                 _putnik.adresa);
 
-                                                        if (mounted) {
+                                                        if (mounted &&
+                                                            context.mounted) {
                                                           ScaffoldMessenger.of(
                                                                   context)
                                                               .hideCurrentSnackBar();
@@ -1620,7 +1623,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           }
                                                         }
                                                       } catch (e) {
-                                                        if (mounted) {
+                                                        if (mounted &&
+                                                            context.mounted) {
                                                           ScaffoldMessenger.of(
                                                                   context)
                                                               .hideCurrentSnackBar();
