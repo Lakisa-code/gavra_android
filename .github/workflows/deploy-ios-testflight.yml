@@ -1,4 +1,4 @@
-name: 🍎 Deploy iOS to TestFlight (Optimized)
+name: 🍎 Deploy iOS to TestFlight
 
 on:
   push:
@@ -79,15 +79,7 @@ jobs:
         
         echo "📱 iOS project configured successfully!"
 
-    - name: 🔨 Build iOS (No Code Signing)
-      run: |
-        echo "🚀 Building iOS app..."
-        flutter build ios --no-codesign --release --dart-define=IPHONEOS_DEPLOYMENT_TARGET=15.0
-        echo "✅ iOS build compilation successful!"
-
-    # Only proceed with signing and upload if we have certificates
-    - name: 🔐 Setup iOS Certificates (Optional)
-      if: ${{ env.IOS_CERTIFICATE_BASE64 != '' }}
+    - name: 🔐 Setup iOS Certificates
       env:
         IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
         IOS_PRIVATE_KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
@@ -96,12 +88,6 @@ jobs:
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       run: |
         echo "🔐 Setting up certificates..."
-        
-        # Skip if no certificates
-        if [ -z "$IOS_CERTIFICATE_BASE64" ]; then
-          echo "⚠️ No certificates found - skipping code signing"
-          exit 0
-        fi
         
         # Create certificates directory
         mkdir -p ~/certificates
@@ -139,17 +125,11 @@ jobs:
         
         echo "✅ Certificates setup completed!"
 
-    - name: 📱 Build Signed IPA (Optional)
-      if: ${{ env.IOS_CERTIFICATE_BASE64 != '' }}
+    - name: 📱 Build Signed IPA
       env:
         APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         VERSION: ${{ github.event.inputs.version || '5.0.0' }}
       run: |
-        if [ -z "${{ secrets.IOS_CERTIFICATE_BASE64 }}" ]; then
-          echo "⚠️ No certificates - skipping IPA build"
-          exit 0
-        fi
-        
         echo "🚀 Building signed IPA..."
         
         # Create export options
@@ -174,17 +154,11 @@ jobs:
         flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
         echo "✅ IPA build completed!"
 
-    - name: 📤 Upload to TestFlight (Optional)
-      if: ${{ env.IOS_CERTIFICATE_BASE64 != '' }}
+    - name: 📤 Upload to TestFlight
       env:
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
       run: |
-        if [ -z "${{ secrets.IOS_CERTIFICATE_BASE64 }}" ] || [ -z "$APPLE_ID" ]; then
-          echo "⚠️ Missing certificates or Apple credentials - skipping TestFlight upload"
-          exit 0
-        fi
-        
         # Find IPA file
         IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
         if [ -z "$IPA_PATH" ]; then
@@ -206,17 +180,14 @@ jobs:
 
     - name: 📋 Build Summary
       run: |
-        echo "🎉 iOS BUILD RESULTS:"
+        echo "🎉 iOS TESTFLIGHT DEPLOYMENT RESULTS:"
         echo "✅ Flutter compilation successful"
         echo "✅ iOS project configured"
-        if [ -n "${{ secrets.IOS_CERTIFICATE_BASE64 }}" ]; then
-          echo "✅ Code signing attempted"
-          echo "✅ TestFlight upload attempted"
-          echo "🔗 Check App Store Connect for processing status"
-        else
-          echo "⚠️ No certificates - build only (no deployment)"
-          echo "💡 Add iOS certificates to GitHub secrets for full deployment"
-        fi
+        echo "✅ Certificates installed"
+        echo "✅ IPA signed and built"
+        echo "✅ TestFlight upload completed"
+        echo "🔗 Check App Store Connect for processing status"
+        echo "📱 TestFlight build should be available in 10-30 minutes"
         
     - name: 🔍 Debug Info (if enabled)
       if: ${{ github.event.inputs.debug_mode == 'true' }}
@@ -226,12 +197,10 @@ jobs:
         flutter --version
         echo "Xcode version:"
         xcodebuild -version
-        echo "iOS build directory:"
-        ls -la build/ios/ || echo "Build directory not found"
-        if [ -f "build/ios/ipa/*.ipa" ]; then
-          echo "IPA file size:"
-          ls -lh build/ios/ipa/*.ipa
-        fi
+        echo "IPA file info:"
+        find build/ios/ipa -name "*.ipa" -exec ls -lh {} \;
+        echo "Certificates info:"
+        security find-identity -v -p codesigning
 
     - name: 📦 Upload Build Artifacts
       uses: actions/upload-artifact@v4
