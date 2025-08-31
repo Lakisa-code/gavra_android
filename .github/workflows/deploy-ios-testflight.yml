@@ -85,14 +85,14 @@ jobs:
         # Convert DER certificate to PEM format first
         openssl x509 -inform DER -in ios_distribution.cer -out ios_distribution.pem
         
-        # Convert to P12 format using PEM certificate
+        # Convert to P12 format using PEM certificate with correct password flag
         openssl pkcs12 -export -out ios_distribution.p12 \
           -inkey ios_private.key \
           -in ios_distribution.pem \
-          -password pass:$IOS_CERTIFICATE_PASSWORD
+          -passout pass:$IOS_CERTIFICATE_PASSWORD
         
-        # Import P12 certificate
-        security import ios_distribution.p12 -k $KEYCHAIN_PATH -P $IOS_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+        # Import P12 certificate with correct password flag
+        security import ios_distribution.p12 -k $KEYCHAIN_PATH -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
         security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k $KEYCHAIN_PASSWORD $KEYCHAIN_PATH
         
         # Install provisioning profile
