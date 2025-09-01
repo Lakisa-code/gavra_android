@@ -33,14 +33,14 @@ jobs:
 
       - name: 🔧 Fix Android Build Configuration
         run: |
-          # Update compileSdk in android/app/build.gradle
-          sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk 35/' android/app/build.gradle || true
-          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdk 35/' android/app/build.gradle || true
+          # Update compileSdk in android/app/build.gradle.kts (Kotlin DSL)
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts || true
+          sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts || true
+          sed -i 's/compileSdkVersion = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts || true
 
-          # Add compileSdk to android block if missing
-          if ! grep -q "compileSdk" android/app/build.gradle; then
-            sed -i '/android {/a\    compileSdk 35' android/app/build.gradle
-          fi
+          # Show the build.gradle.kts content for debugging
+          echo "=== Android build.gradle.kts content ==="
+          cat android/app/build.gradle.kts || echo "File not found!"
 
           # Clean and get dependencies again
           flutter clean
