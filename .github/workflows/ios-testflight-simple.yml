@@ -38,11 +38,18 @@ jobs:
     - name: 🍎 Build iOS
       run: |
         cd ios
-        pod install --repo-update
-        # Clean any previous builds
+        # BRISANJE CACHE-A KOMPLETNO!
+        rm -rf Pods
+        rm -rf build  
+        rm -rf ~/Library/Developer/Xcode/DerivedData/*
+        
+        # POD INSTALL SA ČIŠĆENJEM
+        pod deintegrate || echo "No pods to deintegrate"
+        pod install --repo-update --clean-install
+        
+        # FLUTTER BUILD SA ČIŠĆENJEM
         flutter clean
         flutter pub get
-        # Build with verbose output
         flutter build ios --release --no-codesign --verbose
         
     - name: 🔐 Setup Signing
