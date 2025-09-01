@@ -1,34 +1,35 @@
-name: 🍎 iOS TestFlight Deploy (Simple)
+name: 🍎 iOS TestFlight Build (Simple)
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  ios-testflight:
-    name: 🚀 Deploy to TestFlight
+  ios:
+    name: Build iOS
     runs-on: macos-latest
 
     steps:
-    - name: 📱 Checkout
+    - name: 📦 Checkout
       uses: actions/checkout@v4
 
-    - name: 🛠️ Setup Flutter
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 🐦 Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.35.2'
+        flutter-version: '3.24.0'
         channel: 'stable'
-        cache: true
 
-    - name: 📦 Get dependencies
+    - name: 🔧 Install Dependencies
       run: flutter pub get
 
-    - name: 🔧 Fix Bundle ID
-      run: |
-        sed -i '' 's/com.example.gavraAndroidNew/com.gavra013.gavra-android/g' ios/Runner.xcodeproj/project.pbxproj
-
-    - name: 🍎 Build iOS
+    - name: 🍎 Build iOS (No Code Sign)
       run: |
         cd ios
         rm -rf Pods build ~/Library/Developer/Xcode/DerivedData/* || true
@@ -39,9 +40,7 @@ jobs:
         flutter pub get
         flutter build ios --release --no-codesign --verbose
 
-    - name: 🏗️ Build Archive with Automatic Signing
-      env:
-        TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    - name: 🏗️ Build Archive with Full Automatic Signing
       run: |
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
@@ -49,14 +48,13 @@ jobs:
           -configuration Release \
           -destination generic/platform=iOS \
           -archivePath Runner.xcarchive \
-          DEVELOPMENT_TEAM="$TEAM_ID" \
           CODE_SIGN_STYLE="Automatic" \
+          DEVELOPMENT_TEAM="6CY9Q44KMQ" \
           -allowProvisioningUpdates \
+          -allowProvisioningDeviceRegistration \
           archive
 
-    - name: 📦 Export IPA
-      env:
-        TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    - name: 📦 Export IPA with Automatic Signing
       run: |
         cd ios
         cat > ExportOptions.plist << EOF
@@ -66,10 +64,10 @@ jobs:
         <dict>
             <key>method</key>
             <string>app-store</string>
-            <key>teamID</key>
-            <string>$TEAM_ID</string>
             <key>signingStyle</key>
             <string>automatic</string>
+            <key>teamID</key>
+            <string>6CY9Q44KMQ</string>
         </dict>
         </plist>
         EOF
@@ -77,18 +75,18 @@ jobs:
         xcodebuild -exportArchive \
           -archivePath Runner.xcarchive \
           -exportPath export \
-          -exportOptionsPlist ExportOptions.plist
+          -exportOptionsPlist ExportOptions.plist \
+          -allowProvisioningUpdates
 
     - name: 🚀 Upload to TestFlight
-      env:
-        APPLE_ID: ${{ secrets.APPLE_ID }}
-        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
       run: |
         cd ios/export
-        xcrun altool --upload-app -f *.ipa \
-          -u "$APPLE_ID" \
-          -p "$APPLE_PASSWORD" \
-          --type ios
+        xcrun altool --upload-app \
+          --type ios \
+          --file *.ipa \
+          --username "gavra.gajic.vanja@gmail.com" \
+          --password "rjal-rlql-xytn-kshx" \
+          --verbose
 
     - name: ✅ Success
       run: echo "🎉 TestFlight upload successful!"

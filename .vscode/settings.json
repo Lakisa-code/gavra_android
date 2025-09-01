@@ -1,0 +1,63 @@
+{
+  "dart.analysisExcludedFolders": [
+    ".dart_tool",
+    "build",
+    ".idea"
+  ],
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+  "dart.enableSnippets": true,
+  "dart.enableSdkFormatter": true,
+  "dart.lineLength": 80,
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/.idea": true,
+    "**/.fleet": true,
+    "**/.vscode": false
+  },
+  "search.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/.idea": true
+  },
+  "problems.showCurrentInStatus": true,
+  "problems.decorations.enabled": true,
+  "dart.showLintNames": true,
+  "dart.showInspectorNotificationsForWidgetErrors": false,
+  "dart.flutterSdkPath": null,
+  "dart.checkForSdkUpdates": false,
+  "dart.allowAnalytics": false,
+  "dart.analysisServerFolding": true,
+  "dart.closingLabels": true,
+  "dart.enableCompletionCommitCharacters": false,
+  "dart.enableServerSnippets": true,
+  "dart.insertArgumentPlaceholders": true,
+  "dart.updateImportsOnRename": true,
+  "dart.warnWhenEditingFilesOutsideWorkspace": true,
+  "dart.warnWhenEditingFilesInPubCache": true,
+  "editor.rulers": [
+    80
+  ],
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
+    "source.fixAll": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "editor.wordWrap": "off",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  }
+}
