@@ -45,34 +45,59 @@ jobs:
       env:
         P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
         MOBILEPROVISION_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
-        P12_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+        P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
       run: |
-        # Debug: Check base64 format
-        echo "P12_BASE64 first 100 chars:"
-        echo "$P12_BASE64" | head -c 100
-        echo ""
-        
-        # Decode with cleanup and validation
+        # Try the other P12 secret first
+        echo "Trying IOS_P12_BASE64 secret..."
         echo "$P12_BASE64" | tr -d '\n\r\t ' | base64 -d > certificate.p12
         echo "$MOBILEPROVISION_BASE64" | tr -d '\n\r\t ' | base64 -d > profile.mobileprovision
         
         # Verify P12 file format
         echo "P12 file info:"
         file certificate.p12
-        openssl pkcs12 -info -in certificate.p12 -noout -passin pass:"$P12_PASSWORD" || echo "P12 validation failed"
+        ls -la certificate.p12
+        
+        # Test P12 with OpenSSL
+        openssl pkcs12 -info -in certificate.p12 -noout -passin pass:"$P12_PASSWORD" && echo "✅ P12 is valid!" || {
+          echo "❌ P12 validation failed, trying alternative secret..."
+          # Try the other secret
+          echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | tr -d '\n\r\t ' | base64 -d > certificate.p12
+          openssl pkcs12 -info -in certificate.p12 -noout -passin pass:"$P12_PASSWORD" && echo "✅ Alternative P12 is valid!" || echo "❌ Both P12 secrets failed"
+        }
         
         # Create and setup keychain
         security create-keychain -p "build123" build.keychain
-        security list-keychains -s build.keychain
+        security list-keychains -s build.keychain  
         security default-keychain -s build.keychain
         security unlock-keychain -p "build123" build.keychain
         
-        # Try import with different methods
+        # Import with detailed error handling
         echo "Attempting certificate import..."
-        security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -A || {
-          echo "First import failed, trying without -A flag..."
-          security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
-        }
+        if security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -A; then
+          echo "✅ Certificate imported successfully!"
+        else
+          echo "❌ Import failed - checking certificate format..."
+          hexdump -C certificate.p12 | head -5
+          
+          # Try creating P12 from separate cert and key if available
+          if [ -n "${{ secrets.IOS_CERTIFICATE_BASE64 }}" ] && [ -n "${{ secrets.IOS_PRIVATE_KEY_BASE64 }}" ]; then
+            echo "Trying to create P12 from separate cert and key..."
+            echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | base64 -d > cert.cer
+            echo "${{ secrets.IOS_PRIVATE_KEY_BASE64 }}" | base64 -d > private.key
+            
+            # Convert cert to PEM if needed
+            openssl x509 -inform DER -in cert.cer -out cert.pem 2>/dev/null || cp cert.cer cert.pem
+            
+            # Create new P12
+            openssl pkcs12 -export -inkey private.key -in cert.pem -out new_certificate.p12 -passout pass:"$P12_PASSWORD"
+            
+            # Try importing the new P12
+            security import new_certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -A
+          else
+            echo "❌ No alternative certificate sources available"
+            exit 1
+          fi
+        fi
         
         # Set keychain permissions
         security set-key-partition-list -S apple-tool:,apple: -s -k "build123" build.keychain
