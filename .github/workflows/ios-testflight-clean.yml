@@ -9,25 +9,25 @@ jobs:
   ios-testflight:
     name: 🚀 Deploy to TestFlight
     runs-on: macos-latest
-    
+
     steps:
     - name: 📱 Checkout
       uses: actions/checkout@v4
-      
+
     - name: 🛠️ Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.35.2'
         channel: 'stable'
         cache: true
-        
+
     - name: 📦 Get dependencies
       run: flutter pub get
-      
+
     - name: 🔧 Fix Bundle ID
       run: |
         sed -i '' 's/com.example.gavraAndroidNew/com.gavra013.gavra-android/g' ios/Runner.xcodeproj/project.pbxproj
-        
+
     - name: 🍎 Build iOS
       run: |
         cd ios
@@ -48,22 +48,22 @@ jobs:
         KEY_BASE64: ${{ secrets.IOS_PRIVATE_KEY_BASE64 }}
       run: |
         echo "Setting up iOS certificates and provisioning..."
-        
+
         # Try P12_BASE64 first
         if [ -n "$P12_BASE64" ]; then
           echo "$P12_BASE64" | base64 -d > certificate.p12
           echo "Using IOS_P12_BASE64"
         elif [ -n "$CERT_BASE64" ]; then
-          echo "$CERT_BASE64" | base64 -d > certificate.p12  
+          echo "$CERT_BASE64" | base64 -d > certificate.p12
           echo "Using IOS_CERTIFICATE_BASE64"
         else
           echo "❌ No P12 certificate found in secrets"
           exit 1
         fi
-        
+
         # Decode provisioning profile
         echo "$MOBILEPROVISION_BASE64" | base64 -d > profile.mobileprovision
-        
+
         # Test P12 validity
         openssl pkcs12 -info -in certificate.p12 -noout -passin pass:"$P12_PASSWORD" || {
           echo "❌ P12 validation failed"
@@ -77,24 +77,24 @@ jobs:
             exit 1
           fi
         }
-        
+
         # Setup keychain
         security create-keychain -p "build123" build.keychain
         security list-keychains -s build.keychain
         security default-keychain -s build.keychain
         security unlock-keychain -p "build123" build.keychain
-        
+
         # Import certificate
         security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -A
         security set-key-partition-list -S apple-tool:,apple: -s -k "build123" build.keychain
-        
+
         # Install provisioning profile
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-        
+
         # Verify
         security find-identity -v -p codesigning build.keychain
-        
+
     - name: 🏗️ Build Archive
       env:
         TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -106,9 +106,10 @@ jobs:
           -destination generic/platform=iOS \
           -archivePath Runner.xcarchive \
           DEVELOPMENT_TEAM="$TEAM_ID" \
-          CODE_SIGN_IDENTITY="iPhone Distribution" \
+          CODE_SIGN_STYLE="Automatic" \
+          -allowProvisioningUpdates \
           archive
-          
+
     - name: 📦 Export IPA
       env:
         TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -123,15 +124,17 @@ jobs:
             <string>app-store</string>
             <key>teamID</key>
             <string>$TEAM_ID</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
         </dict>
         </plist>
         EOF
-        
+
         xcodebuild -exportArchive \
           -archivePath Runner.xcarchive \
           -exportPath export \
           -exportOptionsPlist ExportOptions.plist
-        
+
     - name: 🚀 Upload to TestFlight
       env:
         APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -142,6 +145,6 @@ jobs:
           -u "$APPLE_ID" \
           -p "$APPLE_PASSWORD" \
           --type ios
-          
+
     - name: ✅ Success
       run: echo "🎉 TestFlight upload successful!"
