@@ -30,6 +30,11 @@ jobs:
     - name: 🧪 Test
       run: flutter test || echo "Tests skipped"
       
+    - name: 🔧 Fix Bundle ID
+      run: |
+        # Fix bundle ID in iOS project to match provisioning profile
+        sed -i '' 's/com.example.gavraAndroidNew/com.gavra013.gavra-android/g' ios/Runner.xcodeproj/project.pbxproj
+        
     - name: 🍎 Build iOS
       run: |
         cd ios
