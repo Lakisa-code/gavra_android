@@ -36,7 +36,7 @@ jobs:
           # Update pubspec.yaml to override geolocator_android version
           echo "" >> pubspec.yaml
           echo "dependency_overrides:" >> pubspec.yaml
-          echo "  geolocator_android: ^4.6.3" >> pubspec.yaml
+          echo "  geolocator_android: ^4.6.1" >> pubspec.yaml
 
           # Create gradle.properties with proper settings
           echo "android.compileSdkVersion=35" > android/gradle.properties
@@ -51,6 +51,10 @@ jobs:
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts || true
           sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts || true
           sed -i 's/compileSdkVersion = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts || true
+
+          # Replace flutter.minSdkVersion with 21 in build.gradle.kts
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21/' android/app/build.gradle.kts || true
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/' android/app/build.gradle.kts || true
 
           # Show the build.gradle.kts content for debugging
           echo "=== Android build.gradle.kts content ==="
