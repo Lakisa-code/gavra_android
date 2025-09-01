@@ -39,7 +39,11 @@ jobs:
       run: |
         cd ios
         pod install --repo-update
-        flutter build ios --release --no-codesign
+        # Clean any previous builds
+        flutter clean
+        flutter pub get
+        # Build with verbose output
+        flutter build ios --release --no-codesign --verbose
         
     - name: 🔐 Setup Signing
       env:
