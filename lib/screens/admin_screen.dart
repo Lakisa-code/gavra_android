@@ -1,16 +1,17 @@
-import '../widgets/dug_button.dart';
-import '../services/firebase_service.dart';
-import '../services/realtime_notification_service.dart';
-import '../services/local_notification_service.dart';
-import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
-import '../services/mesecni_putnik_service.dart'; // DODANO za kreiranje dnevnih putovanja
-import '../services/depozit_service.dart'; // 💸 DODANO za real-time depozit
 import 'package:flutter/material.dart';
-import '../models/putnik.dart';
 import 'package:gavra_android/services/putnik_service.dart';
+
+import '../models/putnik.dart';
+import '../services/depozit_service.dart'; // 💸 DODANO za real-time depozit
+import '../services/firebase_service.dart';
+import '../services/local_notification_service.dart';
+import '../services/mesecni_putnik_service.dart'; // DODANO za kreiranje dnevnih putovanja
+import '../services/realtime_notification_service.dart';
+import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/vozac_boja.dart';
-import 'dugovi_screen.dart';
+import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart';
+import 'dugovi_screen.dart';
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'statistika_screen.dart'; // DODANO za statistike
 
@@ -154,7 +155,7 @@ class _AdminScreenState extends State<AdminScreen> {
               end: Alignment.bottomRight,
               colors: [
                 Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                Theme.of(context).colorScheme.primary.withOpacity(0.8),
               ],
             ),
             borderRadius: const BorderRadius.only(
@@ -163,18 +164,12 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
