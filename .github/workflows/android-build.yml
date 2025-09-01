@@ -31,6 +31,21 @@ jobs:
       - name: 📥 Install Flutter Dependencies
         run: flutter pub get
 
+      - name: 🔧 Fix Android Build Configuration
+        run: |
+          # Update compileSdk in android/app/build.gradle
+          sed -i 's/compileSdk flutter.compileSdkVersion/compileSdk 35/' android/app/build.gradle || true
+          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdk 35/' android/app/build.gradle || true
+
+          # Add compileSdk to android block if missing
+          if ! grep -q "compileSdk" android/app/build.gradle; then
+            sed -i '/android {/a\    compileSdk 35' android/app/build.gradle
+          fi
+
+          # Clean and get dependencies again
+          flutter clean
+          flutter pub get
+
       - name: 🏗️ Build Android APK (Debug)
         run: flutter build apk --debug
 
