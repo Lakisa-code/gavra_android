@@ -1,11 +1,11 @@
-name: 🎯 iOS TestFlight Production Build
+name: 🎯 iOS TestFlight Automatic Build
 
 on:
   workflow_dispatch:
 
 jobs:
   ios:
-    name: 🍎 Build & Upload iOS
+    name: 🍎 Build & Upload iOS (Automatic)
     runs-on: macos-latest
 
     steps:
@@ -27,41 +27,6 @@ jobs:
     - name: 📥 Install Flutter Dependencies
       run: flutter pub get
 
-    - name: 🔧 Setup iOS Certificates & Provisioning
-      env:
-        P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
-        P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
-        MOBILEPROVISION_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
-      run: |
-        echo "🔐 Setting up iOS certificates and provisioning profile..."
-
-        # Create certificates directory
-        mkdir -p ~/certificates
-
-        # Decode P12 certificate
-        echo "$P12_BASE64" | base64 -d > ~/certificates/certificate.p12
-
-        # Decode provisioning profile
-        echo "$MOBILEPROVISION_BASE64" | base64 -d > ~/certificates/profile.mobileprovision
-
-        # Create and setup keychain
-        security create-keychain -p "build123" build.keychain
-        security list-keychains -s build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "build123" build.keychain
-
-        # Import certificate
-        security import ~/certificates/certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign -A
-        security set-key-partition-list -S apple-tool:,apple: -s -k "build123" build.keychain
-
-        # Install provisioning profile
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        cp ~/certificates/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-
-        # List installed certificates
-        echo "📋 Installed certificates:"
-        security find-identity -v -p codesigning build.keychain
-
     - name: 🍎 Clean & Build iOS
       run: |
         echo "🧹 Cleaning previous builds..."
@@ -78,24 +43,24 @@ jobs:
         flutter pub get
         flutter build ios --release --no-codesign --verbose
 
-    - name: 🏗️ Create iOS Archive
+    - name: 🏗️ Create iOS Archive with Automatic Signing
       run: |
-        echo "📦 Creating iOS archive with manual signing..."
+        echo "📦 Creating iOS archive with automatic signing..."
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
           -scheme Runner \
           -configuration Release \
           -destination generic/platform=iOS \
           -archivePath Runner.xcarchive \
-          CODE_SIGN_STYLE="Manual" \
+          CODE_SIGN_STYLE="Automatic" \
           DEVELOPMENT_TEAM="6CY9Q44KMQ" \
-          PROVISIONING_PROFILE_SPECIFIER="Gavra Android New Profile" \
-          CODE_SIGN_IDENTITY="iPhone Distribution" \
+          -allowProvisioningUpdates \
+          -allowProvisioningDeviceRegistration \
           archive
 
-    - name: 📦 Export IPA for App Store
+    - name: 📦 Export IPA with Automatic Signing
       run: |
-        echo "📤 Exporting IPA for App Store distribution..."
+        echo "📤 Exporting IPA for App Store distribution with automatic signing..."
         cd ios
         cat > ExportOptions.plist << EOF
         <?xml version="1.0" encoding="UTF-8"?>
@@ -107,14 +72,7 @@ jobs:
             <key>teamID</key>
             <string>6CY9Q44KMQ</string>
             <key>signingStyle</key>
-            <string>manual</string>
-            <key>provisioningProfiles</key>
-            <dict>
-                <key>com.gavra013.gavra-android</key>
-                <string>Gavra Android New Profile</string>
-            </dict>
-            <key>signingCertificate</key>
-            <string>iPhone Distribution</string>
+            <string>automatic</string>
             <key>uploadSymbols</key>
             <true/>
             <key>uploadBitcode</key>
@@ -126,7 +84,8 @@ jobs:
         xcodebuild -exportArchive \
           -archivePath Runner.xcarchive \
           -exportPath export \
-          -exportOptionsPlist ExportOptions.plist
+          -exportOptionsPlist ExportOptions.plist \
+          -allowProvisioningUpdates
 
     - name: 🔑 Setup App Store Connect API Key
       env:
@@ -166,8 +125,7 @@ jobs:
       if: always()
       run: |
         echo "🧹 Cleaning up sensitive files..."
-        rm -rf ~/certificates ~/private_keys || true
-        security delete-keychain build.keychain || true
+        rm -rf ~/private_keys || true
 
     - name: ✅ Success Notification
       run: |
