@@ -33,6 +33,11 @@ jobs:
 
       - name: 🔧 Fix Android Build Configuration
         run: |
+          # Update pubspec.yaml to override geolocator_android version
+          echo "" >> pubspec.yaml
+          echo "dependency_overrides:" >> pubspec.yaml
+          echo "  geolocator_android: ^4.6.3" >> pubspec.yaml
+
           # Create gradle.properties with proper settings
           echo "android.compileSdkVersion=35" > android/gradle.properties
           echo "android.targetSdkVersion=35" >> android/gradle.properties
@@ -53,6 +58,9 @@ jobs:
 
           echo "=== Gradle properties ==="
           cat android/gradle.properties || echo "File not found!"
+
+          echo "=== Updated pubspec.yaml ==="
+          tail -10 pubspec.yaml
 
           # Clean and get dependencies again
           flutter clean
