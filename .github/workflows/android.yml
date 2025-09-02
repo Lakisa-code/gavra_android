@@ -62,23 +62,26 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.extract_version.outputs.version }}-build.${{ github.run_number }}
-          name: Gavra Android v${{ steps.extract_version.outputs.version }} (Build ${{ github.run_number }})
+          tag_name: v${{ steps.extract_version.outputs.version }}
+          name: Gavra Android v${{ steps.extract_version.outputs.version }}
           body: |
-            🚀 **Gavra Android App - Novo Izdanje**
+            🚀 Gavra Android v${{ steps.extract_version.outputs.version }} - Build #${{ github.run_number }}
 
-            **Verzija:** ${{ steps.extract_version.outputs.version }}
-            **Build broj:** ${{ github.run_number }}
-            **Commit:** ${{ github.sha }}
+            ✅ Automatic build from GitHub Actions
+            📱 Ready for installation on Android devices
 
-            **📱 Download APK:**
-            Preuzmite APK fajl ispod za instalaciju na Android uređaj.
+            **Features:**
+            - Firebase notifications
+            - GPS tracking
+            - Supabase integration
+            - Audio notifications
+            - PDF printing
+            - Real-time updates
 
-            **🔧 Izmene:**
-            - Geolocator sa targetSdk 33 kompatibilnost
-            - Firebase Cloud Messaging integracija
-            - OneSignal push notifikacije
-            - Real-time GPS navigacija
+            **Installation:**
+            1. Download app-release.apk
+            2. Enable "Install from unknown sources"
+            3. Install APK on your Android device
 
           files: |
             build/app/outputs/flutter-apk/app-release.apk
