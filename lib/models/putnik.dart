@@ -487,9 +487,9 @@ class Putnik {
       'dan': dan, // ✅ DODATO NAZAD - dodajemo kolonu dan u tabelu
       'grad': grad, // ✅ DODATO NAZAD - dodajemo kolonu grad u tabelu
       'vreme_polaska': polazak,
-      'vreme_akcije': vremePokupljenja?.toIso8601String() ??
-          vremePlacanja?.toIso8601String() ??
-          DateTime.now().toIso8601String(),
+      // 'vreme_akcije': vremePokupljenja?.toIso8601String() ??
+      //     vremePlacanja?.toIso8601String() ??
+      //     DateTime.now().toIso8601String(), // ONEMOGUĆENO - kolona ne postoji u bazi
       'adresa_polaska': adresa ??
           (grad == 'Bela Crkva'
               ? 'Bela Crkva centar'

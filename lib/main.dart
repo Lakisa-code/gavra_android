@@ -1,25 +1,26 @@
-import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// import 'services/permission_service.dart'; // Moved to WelcomeScreen
+import 'dart:async';
+
 // Firebase imports - enabled for multi-channel notifications
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'firebase_options.dart';
-import 'supabase_client.dart';
-import 'screens/welcome_screen.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'firebase_options.dart';
 // 🤖 GitHub Actions Android workflow for unlimited free APK delivery
 import 'screens/loading_screen.dart';
-import 'services/realtime_notification_service.dart';
-import 'services/local_notification_service.dart';
-import 'services/theme_service.dart';
+import 'screens/welcome_screen.dart';
 import 'services/gps_service.dart';
-import 'services/timer_manager.dart';
+import 'services/local_notification_service.dart';
+import 'services/realtime_notification_service.dart';
 import 'services/sms_service.dart';
-// import 'services/permission_service.dart'; // Moved to WelcomeScreen
-import 'dart:async';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'services/theme_service.dart';
+import 'services/timer_manager.dart';
+import 'supabase_client.dart';
 
 final _logger = Logger();
 
@@ -65,7 +66,7 @@ void main() async {
     _logger.i('🔄 Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    );
+    ).timeout(const Duration(seconds: 10));
 
     // Registruj background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -73,6 +74,7 @@ void main() async {
     _logger.i('✅ Firebase initialized with background handler');
   } catch (e) {
     _logger.e('❌ Firebase initialization failed: $e');
+    // Continue without Firebase if it fails
   }
 
   try {
@@ -80,10 +82,11 @@ void main() async {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
-    );
+    ).timeout(const Duration(seconds: 10));
     _logger.i('✅ Supabase initialized');
   } catch (e) {
     _logger.e('❌ Supabase initialization failed: $e');
+    // Continue without Supabase if it fails
   }
 
   _logger.i('� Starting app with professional CI/CD automation...');
@@ -139,8 +142,9 @@ class _MyAppState extends State<MyApp> {
         try {
           // First request notification permissions
           _logger.i('🔔 Requesting notification permissions...');
-          final hasPermissions = await RealtimeNotificationService
-              .requestNotificationPermissions();
+          final hasPermissions =
+              await RealtimeNotificationService.requestNotificationPermissions()
+                  .timeout(const Duration(seconds: 15));
           _logger.i('🔔 Notification permissions result: $hasPermissions');
 
           await RealtimeNotificationService.initialize();
@@ -158,8 +162,9 @@ class _MyAppState extends State<MyApp> {
         // Ipak zatraži dozvole i pretplati se na osnovne topike za sve vozače
         try {
           _logger.i('🔔 Requesting notification permissions...');
-          final hasPermissions = await RealtimeNotificationService
-              .requestNotificationPermissions();
+          final hasPermissions =
+              await RealtimeNotificationService.requestNotificationPermissions()
+                  .timeout(const Duration(seconds: 15));
           _logger.i('🔔 Notification permissions result: $hasPermissions');
 
           await RealtimeNotificationService.subscribeToDriverTopics(null);

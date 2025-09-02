@@ -1,34 +1,32 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../main.dart' show globalThemeToggler; // Za theme toggle
 import '../models/putnik.dart';
-import '../services/putnik_service.dart';
-import '../services/mesecni_putnik_service.dart';
-import '../services/realtime_notification_service.dart';
 import '../services/firebase_service.dart';
+import '../services/haptic_service.dart';
+import '../services/local_notification_service.dart';
+import '../services/mesecni_putnik_service.dart';
+import '../services/printing_service.dart';
+import '../services/putnik_service.dart';
+import '../services/realtime_notification_service.dart';
+import '../services/update_service.dart'; // 🔄 Update sistem aktiviran!
+import '../utils/animation_utils.dart';
+import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
+import '../utils/page_transitions.dart';
+import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
-
+import '../widgets/autocomplete_adresa_field.dart';
+import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/putnik_card.dart';
-import '../utils/page_transitions.dart';
-
-import 'danas_screen.dart';
-import 'admin_screen.dart';
-import 'welcome_screen.dart';
-
-import '../services/local_notification_service.dart';
-import '../main.dart' show globalThemeToggler; // Za theme toggle
-import '../services/printing_service.dart';
-import '../widgets/autocomplete_ime_field.dart';
-import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/shimmer_widgets.dart';
-import '../services/haptic_service.dart';
-import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
-import '../utils/animation_utils.dart';
-import '../utils/text_utils.dart';
-import '../services/update_service.dart'; // 🔄 Update sistem aktiviran!
+import 'admin_screen.dart';
+import 'danas_screen.dart';
+import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -1363,23 +1361,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    if (_currentDriver == 'Bruda' ||
-                        _currentDriver == 'Bilevski' ||
-                        _currentDriver == 'Bojan' ||
-                        _currentDriver == 'Svetlana')
-                      Expanded(
-                        flex: 1,
-                        child: _HomeScreenButton(
-                          label: 'Dodaj',
-                          icon: Icons.person_add,
-                          onTap: _showAddPutnikDialog,
-                        ),
+                    // UVEK PRIKAŽI DUGME ZA DODAVANJE PUTNIKA - DEBUG
+                    Expanded(
+                      flex: 1,
+                      child: _HomeScreenButton(
+                        label: 'Dodaj',
+                        icon: Icons.person_add,
+                        onTap: _showAddPutnikDialog,
                       ),
-                    if (_currentDriver == 'Bruda' ||
-                        _currentDriver == 'Bilevski' ||
-                        _currentDriver == 'Bojan' ||
-                        _currentDriver == 'Svetlana')
-                      const SizedBox(width: 4),
+                    ),
+                    const SizedBox(width: 4),
                     if (_currentDriver == 'Bruda' ||
                         _currentDriver == 'Bilevski' ||
                         _currentDriver == 'Bojan' ||
