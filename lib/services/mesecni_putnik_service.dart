@@ -1,5 +1,6 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/mesecni_putnik.dart';
 
 class MesecniPutnikService {
@@ -599,7 +600,7 @@ class MesecniPutnikService {
                 'status_bela_crkva_vrsac': 'nije_se_pojavio',
                 'status_vrsac_bela_crkva': 'nije_se_pojavio',
                 'cena': 0.0,
-                'vreme_akcije': DateTime.now().toIso8601String(),
+                // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
                 'created_at': DateTime.now().toIso8601String(),
               });
               kreirano++;
@@ -634,7 +635,7 @@ class MesecniPutnikService {
                 'status_bela_crkva_vrsac': 'nije_se_pojavio',
                 'status_vrsac_bela_crkva': 'nije_se_pojavio',
                 'cena': 0.0,
-                'vreme_akcije': DateTime.now().toIso8601String(),
+                // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
                 'created_at': DateTime.now().toIso8601String(),
               });
               kreirano++;

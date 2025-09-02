@@ -1,10 +1,11 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:async/async.dart'; // Za StreamZip
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/putnik.dart';
-import 'realtime_notification_service.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
+import 'realtime_notification_service.dart';
 
 // 🔄 UNDO STACK - Stack za čuvanje poslednih akcija
 class UndoAction {
@@ -280,7 +281,7 @@ class PutnikService {
           } else {
             await supabase.from(tabela).update({
               'status': lastAction.oldData['status'],
-              'vreme_akcije': null, // ✅ ISPRAVKA - nova kolona
+              // 'vreme_akcije': null, // UKLONITI - kolona ne postoji
             }).eq('id', lastAction.putnikId);
           }
           return 'Poništeno pokupljanje';
@@ -308,8 +309,7 @@ class PutnikService {
           } else {
             await supabase.from(tabela).update({
               'status': lastAction.oldData['status'],
-              'vreme_akcije': lastAction.oldData[
-                  'vreme_akcije'], // Koristi postojeću vreme_akcije kolonu
+              // 'vreme_akcije': lastAction.oldData['vreme_akcije'], // UKLONITI - kolona ne postoji
               'vozac': lastAction
                   .oldData['vozac'], // ✅ Koristi vozac umesto otkazao_vozac
             }).eq('id', lastAction.putnikId);
@@ -729,7 +729,7 @@ class PutnikService {
     await supabase.from(tabela).update({
       'obrisan': true, // ✅ Sada POSTOJI u obe tabele
       'status': 'obrisan', // Dodatno označavanje u status
-      'vreme_akcije': DateTime.now().toIso8601String(),
+      // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
     }).eq('id', id);
 
     debugPrint('🗑️ [BRISANJE] Putnik označen kao obrisan u tabeli: $tabela');
@@ -788,7 +788,7 @@ class PutnikService {
 
       await supabase.from(tabela).update({
         'status': 'pokupljen',
-        'vreme_akcije': DateTime.now().toIso8601String(),
+        // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
       }).eq('id', id);
 
       debugPrint('🔍 DEBUG oznaciPokupljen - dnevni putnik ažuriran!');
@@ -853,12 +853,11 @@ class PutnikService {
       debugPrint('✅ [OZNACI PLACENO] Mesečni putnik uspešno plaćen');
     } else {
       // Za putovanja_istorija koristi cena kolonu
-      final now = DateTime.now();
       debugPrint(
           '🔧 [OZNACI PLACENO] Ažuriram dnevnog putnika sa cena: $iznos');
       await supabase.from(tabela).update({
         'cena': iznos,
-        'vreme_akcije': now.toIso8601String(),
+        // 'vreme_akcije': now.toIso8601String(), // UKLONITI - kolona ne postoji
         'status': 'placen', // ✅ DODAJ STATUS plaćanja
       }).eq('id', id);
       debugPrint('✅ [OZNACI PLACENO] Dnevni putnik uspešno plaćen');
@@ -903,7 +902,7 @@ class PutnikService {
         // Za putovanja_istorija koristi novu 'status' kolonu
         await supabase.from(tabela).update({
           'status': 'otkazano',
-          'vreme_akcije': DateTime.now().toIso8601String(),
+          // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
         }).eq('id', id);
         debugPrint('✅ [OTKAZI PUTNIKA] Dnevni putnik otkazan');
       }
@@ -1176,7 +1175,7 @@ class PutnikService {
       // Za putovanja_istorija koristi 'status' kolonu
       await supabase.from(tabela).update({
         'status': tipOdsustva.toLowerCase(), // 'bolovanje' ili 'godisnji'
-        'vreme_akcije': DateTime.now().toIso8601String(),
+        // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
       }).eq('id', id);
     }
   }
@@ -1245,7 +1244,7 @@ class PutnikService {
             .update({
               'status': null, // ✅ UKLONI status (početno stanje)
               'cena': 0, // ✅ VRATI cenu na 0
-              'vreme_akcije': DateTime.now().toIso8601String(),
+              // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
               'vozac': null, // ✅ UKLONI vozača
             })
             .eq('putnik_ime', imePutnika)
@@ -1335,35 +1334,29 @@ class PutnikService {
         final danas = DateTime.now().toIso8601String().split('T')[0];
         final dnevniPutnici = await supabase
             .from('putovanja_istorija')
-            .select('id, putnik_ime, vreme_polaska, vreme_akcije')
+            .select(
+                'id, putnik_ime, vreme_polaska') // UKLONITI vreme_akcije - kolona ne postoji
             .eq('datum', danas)
             .eq('grad', grad)
             .eq('status', 'pokupljen');
 
         for (final putnik in dnevniPutnici) {
           final ime = putnik['putnik_ime'] as String;
-          final vremeAkcije =
-              DateTime.tryParse(putnik['vreme_akcije'] as String);
+          // UKLONITI - vreme_akcije kolona ne postoji, koristi created_at ili updated_at
+          // final vremeAkcije = DateTime.tryParse(putnik['vreme_akcije'] as String);
+          // if (vremeAkcije == null) continue;
 
-          if (vremeAkcije == null) continue;
+          // Jednostavno resetuj sve pokupljene putnike kada se menja vreme
+          debugPrint(
+              '🔄 RESETUJEM DNEVNI $ime - pokupljen, resetujem zbog promene vremena');
 
-          final novoPolazakSati = int.tryParse(novoVreme.split(':')[0]) ?? 0;
-          final pokupljenSati = vremeAkcije.hour;
-          final razlika = (pokupljenSati - novoPolazakSati).abs();
+          await supabase.from('putovanja_istorija').update({
+            'status': 'nije_se_pojavio',
+            'cena': 0,
+            // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
+          }).eq('id', putnik['id']);
 
-          // Ako je pokupljen van tolerancije (±3 sata) od novog vremena polaska, resetuj ga
-          if (razlika > 3) {
-            debugPrint(
-                '🔄 RESETUJEM DNEVNI $ime - pokupljen u $pokupljenSati:XX, novo vreme polaska $novoVreme (razlika: ${razlika}h)');
-
-            await supabase.from('putovanja_istorija').update({
-              'status': 'nije_se_pojavio',
-              'cena': 0,
-              'vreme_akcije': DateTime.now().toIso8601String(),
-            }).eq('id', putnik['id']);
-
-            debugPrint('✅ RESETOVAN DNEVNI $ime - status pokupljanja očišćen');
-          }
+          debugPrint('✅ RESETOVAN DNEVNI $ime - status pokupljanja očišćen');
         }
 
         debugPrint('✅ RESET DNEVNIH PUTNIKA ZAVRŠEN');
