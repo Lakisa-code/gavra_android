@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart';  // Temporarily disabled
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../main.dart'; // Import za navigatorKey
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
