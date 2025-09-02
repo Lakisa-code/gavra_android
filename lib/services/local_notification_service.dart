@@ -1,10 +1,12 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:convert';
+
 import '../main.dart';
 import '../screens/danas_screen.dart';
 
@@ -16,16 +18,10 @@ class LocalNotificationService {
   static Future<void> initialize(BuildContext context) async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+
     const InitializationSettings initializationSettings =
         InitializationSettings(
       android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
     );
 
     await flutterLocalNotificationsPlugin.initialize(
@@ -124,16 +120,6 @@ class LocalNotificationService {
               summaryText: 'Gavra Transport',
               htmlFormatSummaryText: true,
             ),
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: false, // Mi ćemo custom zvuk
-            sound: null,
-            badgeNumber: 1,
-            threadIdentifier: 'gavra_realtime',
-            categoryIdentifier: 'gavra_category',
-            interruptionLevel: InterruptionLevel.critical, // Za lock screen
           ),
         ),
         payload: payload,
