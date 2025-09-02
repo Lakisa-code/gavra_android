@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/putnik.dart';
-// import 'package:geolocator/geolocator.dart';  // Temporarily disabled
 import '../models/turn_by_turn_instruction.dart';
 import '../services/smart_navigation_service.dart';
 

@@ -27,7 +27,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 33  // Fixed for geolocator compatibility
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -42,13 +42,13 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    
+
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-    
+
     // Add Firebase Cloud Messaging
     implementation("com.google.firebase:firebase-messaging")
-    
+
     // 🚀 OneSignal Dependency Resolution - Force compatible versions
     implementation("androidx.work:work-runtime:2.8.1") {
         because("OneSignal requires work-runtime")
@@ -59,7 +59,7 @@ dependencies {
     implementation("androidx.browser:browser:1.3.0") {
         because("OneSignal in-app-messages requires browser")
     }
-    
+
     // Force Firebase messaging version for OneSignal compatibility
     implementation("com.google.firebase:firebase-messaging:23.4.0") {
         because("OneSignal requires firebase-messaging [21.0.0, 23.4.99]")

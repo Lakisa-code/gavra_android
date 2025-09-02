@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
-// import 'package:geolocator/geolocator.dart';  // Temporarily disabled
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/putnik.dart';
