@@ -24,8 +24,9 @@ class MesecniPutnik {
   final bool obrisan; // Soft delete flag
 
   // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA
-  final double? depozit; // depozit/iznos koji je plaćen - ISPRAVNO MAPIRANJE
   final DateTime? vremePlacanja; // vreme kada je plaćen - NOVA KOLONA
+  final int? placeniMesec; // mesec za koji je plaćeno (1-12)
+  final int? placenaGodina; // godina za koju je plaćeno
 
   // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
   final String?
@@ -58,8 +59,9 @@ class MesecniPutnik {
     required this.updatedAt,
     this.obrisan = false,
     // 💰 NOVA POLJA ZA STATISTIKU - ISPRAVNO MAPIRANJE
-    this.depozit,
     this.vremePlacanja,
+    this.placeniMesec,
+    this.placenaGodina,
     // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
     this.vozac,
     this.pokupljen = false,
@@ -96,12 +98,13 @@ class MesecniPutnik {
       updatedAt: DateTime.parse(map['updated_at'] as String),
       obrisan: map['obrisan'] as bool? ?? false,
       // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA - ISPRAVNO MAPIRANJE
-      depozit: (map['depozit'] as num?)?.toDouble(),
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String)
           : null,
+      placeniMesec: map['placeni_mesec'] as int?,
+      placenaGodina: map['placena_godina'] as int?,
       // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
-      vozac: map['vozac'] as String?,
+      vozac: map['naplata_vozac'] as String?, // Vozač koji je naplatio plaćanje
       pokupljen: false, // ❌ FIKSNA VREDNOST - kolona možda ne postoji u bazi
       vremePokupljenja: null, // ❌ FIKSNA VREDNOST - kolona ne postoji u bazi
     );
@@ -135,7 +138,6 @@ class MesecniPutnik {
       'updated_at': updatedAt.toIso8601String(),
       'obrisan': obrisan,
       // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA - ISPRAVNO MAPIRANJE
-      'depozit': depozit,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
       'vozac': vozac,
@@ -177,7 +179,6 @@ class MesecniPutnik {
     DateTime? updatedAt,
     bool? obrisan,
     // 💰 NOVA POLJA ZA STATISTIKU - ISPRAVNO MAPIRANJE
-    double? depozit,
     DateTime? vremePlacanja,
     // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
     String? vozac,
@@ -209,7 +210,6 @@ class MesecniPutnik {
       updatedAt: updatedAt ?? this.updatedAt,
       obrisan: obrisan ?? this.obrisan,
       // 💰 NOVA POLJA ZA STATISTIKU - ISPRAVNO MAPIRANJE
-      depozit: depozit ?? this.depozit,
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
       vozac: vozac ?? this.vozac,

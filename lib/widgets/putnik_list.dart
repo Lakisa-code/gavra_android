@@ -56,34 +56,40 @@ class PutnikList extends StatelessWidget {
           }
           var filteredPutnici = snapshot.data!.where(prikaziPutnika).toList();
           filteredPutnici = deduplicatePutnici(filteredPutnici);
-          // Sortiranje po prioritetu:
-          // 1) Nepokupljeni (bele)
-          // 2) Pokupljeni neplaćeni (plave)
-          // 3) Pokupljeni plaćeni/sa mesečnom (zelene)
-          // 4) Otkazani (crvene)
+          // Sortiranje po novom prioritetu (VIZUELNI REDOSLED U LISTI):
+          // 1) BELE - Nepokupljeni (na vrhu)
+          // 2) PLAVE - Pokupljeni neplaćeni
+          // 3) ZELENE - Pokupljeni plaćeni/sa mesečnom
+          // 4) CRVENE - Otkazani
+          // 5) ŽUTE - Odsustvo (godišnji/bolovanje) (na dnu)
           int putnikSortKey(Putnik p) {
             final status = TextUtils.normalizeText(p.status ?? '');
 
-            // Prvo proveravamo status
+            // ŽUTE - Odsustvo ima najveći sort key (na dno)
+            if (p.jeOdsustvo) {
+              return 5; // žute na dno liste
+            }
+
+            // CRVENE - Otkazane
             if (status == 'otkazano' || status == 'otkazan') {
-              return 4; // crvene na dno liste
+              return 4; // crvene pre žutih
             }
 
             // MESEČNI PUTNICI
             if (p.mesecnaKarta == true) {
-              // Koristi vremePokupljenja za determininaciju stanja
-              return p.vremePokupljenja == null ? 0 : 3; // bela ili zelena
+              // BELE vs ZELENE
+              return p.vremePokupljenja == null ? 1 : 3; // bela ili zelena
             }
 
             // OBIČNI PUTNICI
-            if (p.vremePokupljenja == null) return 0; // bela
+            if (p.vremePokupljenja == null) return 1; // BELE - nepokupljeni
             if (p.vremePokupljenja != null &&
                 (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
-              return 1; // plava
+              return 2; // PLAVE - pokupljeni neplaćeni
             }
             if (p.vremePokupljenja != null &&
                 (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
-              return 2; // zelena
+              return 3; // ZELENE - pokupljeni plaćeni
             }
             return 99;
           }
@@ -135,42 +141,58 @@ class PutnikList extends StatelessWidget {
       }
       var filteredPutnici = putnici!.where(prikaziPutnika).toList();
       filteredPutnici = deduplicatePutnici(filteredPutnici);
-      // Nova logika sortiranja:
-      // 1) Nepokupljeni (bele kartice)
-      // 2) Pokupljeni neplaćeno (plave kartice)
-      // 3) Pokupljeni mesečne i pokupljeni plaćeno (zelene kartice)
-      // 4) Otkazani (crvene kartice)
-      final nepokupljeni = filteredPutnici
+      // NOVI VIZUELNI REDOSLED U LISTI:
+      // 1) BELE - Nepokupljeni (na vrhu)
+      // 2) PLAVE - Pokupljeni neplaćeni
+      // 3) ZELENE - Pokupljeni mesečne i pokupljeni plaćeno
+      // 4) CRVENE - Otkazani
+      // 5) ŽUTE - Odsustvo (godišnji/bolovanje) (na dnu)
+
+      final bele = filteredPutnici
           .where((p) =>
+              !p.jeOdsustvo && // nije na odsustvu
               (p.status?.toLowerCase() != 'otkazano' &&
                   p.status?.toLowerCase() != 'otkazan') &&
               (p.vremePokupljenja == null))
           .toList();
-      final pokupNeplaceno = filteredPutnici
+
+      final plave = filteredPutnici
           .where((p) =>
+              !p.jeOdsustvo && // nije na odsustvu
               (p.status?.toLowerCase() != 'otkazano' &&
                   p.status?.toLowerCase() != 'otkazan') &&
               (p.vremePokupljenja != null) &&
               (p.mesecnaKarta != true) &&
               ((p.iznosPlacanja == null || p.iznosPlacanja == 0)))
           .toList();
-      final pokupZeleni = filteredPutnici
+
+      final zelene = filteredPutnici
           .where((p) =>
+              !p.jeOdsustvo && // nije na odsustvu
               (p.status?.toLowerCase() != 'otkazano' &&
                   p.status?.toLowerCase() != 'otkazan') &&
               (p.vremePokupljenja != null) &&
               (p.mesecnaKarta == true ||
                   (p.iznosPlacanja != null && p.iznosPlacanja! > 0)))
           .toList();
-      final otkazani = filteredPutnici
-          .where((p) => (p.status?.toLowerCase() == 'otkazano' ||
-              p.status?.toLowerCase() == 'otkazan'))
+
+      final crvene = filteredPutnici
+          .where((p) =>
+              !p.jeOdsustvo && // nije na odsustvu
+              (p.status?.toLowerCase() == 'otkazano' ||
+                  p.status?.toLowerCase() == 'otkazan'))
           .toList();
+
+      final zute = filteredPutnici
+          .where((p) => p.jeOdsustvo) // na odsustvu (godišnji/bolovanje)
+          .toList();
+
       final prikaz = [
-        ...nepokupljeni,
-        ...pokupNeplaceno,
-        ...pokupZeleni,
-        ...otkazani
+        ...bele, // 1. BELE na vrhu
+        ...plave, // 2. PLAVE
+        ...zelene, // 3. ZELENE
+        ...crvene, // 4. CRVENE
+        ...zute // 5. ŽUTE na dnu
       ];
       if (prikaz.isEmpty) {
         return const Center(child: Text('Nema putnika za prikaz.'));
@@ -179,12 +201,21 @@ class PutnikList extends StatelessWidget {
         itemCount: prikaz.length,
         itemBuilder: (context, index) {
           final putnik = prikaz[index];
-          final redniBroj = index <
-                  (nepokupljeni.length +
-                      pokupNeplaceno.length +
-                      pokupZeleni.length)
-              ? index + 1
-              : null;
+          // Redni broj: broji samo BELE + PLAVE + ZELENE (ne broji CRVENE i ŽUTE)
+          int? redniBroj;
+          if (!putnik.jeOdsustvo && // nije ŽUTA (odsustvo)
+              !(putnik.status?.toLowerCase() == 'otkazano' ||
+                  putnik.status?.toLowerCase() == 'otkazan')) {
+            // nije CRVENA (otkazana)
+            // Broji koliko je neotkazanih i ne-odsutnih putnika pre ovog
+            redniBroj = prikaz
+                .take(index + 1)
+                .where((p) =>
+                    !p.jeOdsustvo &&
+                    !(p.status?.toLowerCase() == 'otkazano' ||
+                        p.status?.toLowerCase() == 'otkazan'))
+                .length;
+          }
           return PutnikCard(
             putnik: putnik,
             showActions: showActions,

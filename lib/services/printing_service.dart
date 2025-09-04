@@ -157,10 +157,10 @@ class PrintingService {
     final pdf = pw.Document();
 
     // Grupiši putnike po statusu
-    final pokupljeni = putnici.where((p) => p.pokupljen == true).toList();
+    final pokupljeni = putnici.where((p) => p.jePokupljen).toList();
     final otkazani = putnici.where((p) => p.jeOtkazan).toList();
     final cekaju =
-        putnici.where((p) => p.pokupljen != true && !p.jeOtkazan).toList();
+        putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
 
     // Sortiraj po gradu/destinaciji
     pokupljeni.sort((a, b) => a.grad.compareTo(b.grad));
@@ -366,7 +366,7 @@ class PrintingService {
           Putnik putnik = entry.value;
 
           String status = '';
-          if (putnik.pokupljen == true) {
+          if (putnik.jePokupljen) {
             status = '✅ Pokupljen';
           } else if (putnik.jeOtkazan) {
             status = '❌ Otkazan';

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:gavra_android/services/putnik_service.dart';
 
 import '../models/putnik.dart';
-import '../services/depozit_service.dart'; // 💸 DODANO za real-time depozit
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // DODANO za kreiranje dnevnih putovanja
@@ -52,7 +51,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
     // 💸 REAL-TIME DEPOZIT SYNC
     // 💸 DEPOZIT SYNC - SA REAL-TIME
-    DepozitService.startRealtimeSync();
+    // DepozitService.startRealtimeSync(); // UKLONJEN - servis ne postoji
 
     FirebaseService.getCurrentDriver().then((driver) {
       if (driver != null && driver.isNotEmpty) {
@@ -73,10 +72,10 @@ class _AdminScreenState extends State<AdminScreen> {
   // 💸 DEPOZIT METODE
   Future<void> _initializeDepoziti() async {
     try {
-      final depoziti = await DepozitService.loadAllDepozits();
+      // final depoziti = await DepozitService.loadAllDepozits(); // UKLONJEN - servis ne postoji
       if (mounted) {
         setState(() {
-          _depoziti = depoziti;
+          _depoziti = {}; // Postaviti prazan map umesto učitavanja iz servisa
         });
       }
     } catch (e) {
@@ -476,7 +475,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ),
       ),
       body: StreamBuilder<List<Putnik>>(
-        stream: _putnikService.streamPutnici(),
+        stream: _putnikService.streamKombinovaniPutnici(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -527,16 +526,21 @@ class _AdminScreenState extends State<AdminScreen> {
             final nijeOtkazan =
                 putnik.status != 'otkazan' && putnik.status != 'Otkazano';
             final jesteMesecni = putnik.mesecnaKarta == true;
-            final pokupljen = putnik.pokupljen == true;
+            final pokupljen = putnik.jePokupljen;
             return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
           }).toList();
+
+          print('🔍 ADMIN DEBUG: Ukupno putnika: ${filteredPutnici.length}');
+          print('🔍 ADMIN DEBUG: Broj dužnika: ${filteredDuznici.length}');
+          for (final d in filteredDuznici) {
+            print('🔍 ADMIN DEBUG: Dužnik - ${d.ime}');
+          }
           // Izračunaj pazar po vozačima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA 💰
           // ✅ ISPRAVKA: Umesto kalkulacije datuma, koristi već filtrirane putnike po danu
           // Ovo omogućava prikaz pazara za odabrani dan (Pon, Uto, itd.) direktno
 
-          return FutureBuilder<Map<String, double>>(
-            future: StatistikaService.pazarSvihVozaca(
-              filteredPutnici,
+          return StreamBuilder<Map<String, double>>(
+            stream: StatistikaService.streamPazarSvihVozaca(
               from: null, // Koristićemo default vrednosti (današnji dan)
               to: null,
             ),
@@ -685,7 +689,8 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(height: 12),
                     // 👥 VOZAČI + DEPOZIT (REAL-TIME)
                     StreamBuilder<Map<String, double>>(
-                      stream: DepozitService.depozitStream,
+                      stream: Stream
+                          .empty(), // Zakomentarisan DepozitService.depozitStream
                       initialData: _depoziti,
                       builder: (context, snapshot) {
                         final depoziti = snapshot.data ?? _depoziti;
@@ -804,7 +809,8 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(height: 4),
                     // 💸 DEPOZIT KOCKE (REAL-TIME)
                     StreamBuilder<Map<String, double>>(
-                      stream: DepozitService.depozitStream,
+                      stream: Stream
+                          .empty(), // Zakomentarisan DepozitService.depozitStream
                       initialData: _depoziti,
                       builder: (context, snapshot) {
                         final depoziti = snapshot.data ?? _depoziti;
@@ -974,7 +980,8 @@ class _AdminScreenState extends State<AdminScreen> {
                               // 💰 REAL-TIME UKUPAN PAZAR
                               // 💰 UKUPAN PAZAR (REAL-TIME)
                               StreamBuilder<Map<String, double>>(
-                                stream: DepozitService.depozitStream,
+                                stream: Stream
+                                    .empty(), // Zakomentarisan DepozitService.depozitStream
                                 initialData: _depoziti,
                                 builder: (context, snapshot) {
                                   final depoziti = snapshot.data ?? _depoziti;

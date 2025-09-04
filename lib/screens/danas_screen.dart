@@ -5,7 +5,7 @@ import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
 import '../services/firebase_service.dart';
-import '../services/depozit_service.dart'; // 💸 DODANO za real-time depozit
+import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_notification_service.dart';
@@ -41,6 +41,74 @@ class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
   final _putnikService = PutnikService(); // 🆕 DODANO PutnikService instanca
 
+  // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
+  Future<Map<String, int>> _calculateDjackieBrojeviAsync() async {
+    try {
+      final danasnjiDan = _getTodayForDatabase();
+
+      // Direktno dohvati mesečne putnike iz baze da imamo pristup tip informaciji
+      final sviMesecniPutnici =
+          await MesecniPutnikService.getAktivniMesecniPutnici();
+
+      // Filtriraj samo učenike za današnji dan
+      final djaci = sviMesecniPutnici.where((mp) {
+        final dayMatch =
+            mp.radniDani.toLowerCase().contains(danasnjiDan.toLowerCase());
+        final jeUcenik = mp.tip == 'ucenik';
+        final aktivanStatus = mp.status == 'radi'; // samo oni koji rade
+        return dayMatch && jeUcenik && aktivanStatus;
+      }).toList();
+
+      // NOVA LOGIKA: Broji po imenu koliko je puta upisan svaki đak
+      final Map<String, int> brojUnosaPoImenu = {};
+      final Map<String, bool> aktivanPoImenu = {};
+
+      for (final djak in djaci) {
+        final ime = djak.putnikIme;
+
+        // Broji koliko puta je đak upisan (koliko polazaka ima)
+        int polazaka = 0;
+        if (djak.polazakBelaCrkva != null &&
+            djak.polazakBelaCrkva!.isNotEmpty) {
+          polazaka++;
+        }
+        if (djak.polazakVrsac != null && djak.polazakVrsac!.isNotEmpty) {
+          polazaka++;
+        }
+
+        if (polazaka > 0) {
+          brojUnosaPoImenu[ime] = polazaka;
+          aktivanPoImenu[ime] = true;
+        }
+      }
+
+      // Računaj statistike na osnovu broja unosa
+      int ukupnoUpisano = aktivanPoImenu.length; // broj jedinstvenih imena
+      int upisanZaPovratak = 0; // oni koji su upisani 2+ puta
+
+      for (final entry in brojUnosaPoImenu.entries) {
+        if (entry.value >= 2) {
+          upisanZaPovratak++; // upisan 2+ puta = ima i povratak
+        }
+      }
+
+      final slobodnaZaPovratak = ukupnoUpisano - upisanZaPovratak;
+
+      return {
+        'ukupno': ukupnoUpisano,
+        'povratak': upisanZaPovratak,
+        'slobodno': slobodnaZaPovratak,
+      };
+    } catch (e) {
+      debugPrint('❌ Greška pri računanju đačkih statistika: $e');
+      return {
+        'ukupno': 0,
+        'povratak': 0,
+        'slobodno': 0,
+      };
+    }
+  }
+
   // ✨ DIGITALNI BROJAČ DATUM WIDGET - ISTI STIL KAO REZERVACIJE
   Widget _buildDigitalDateDisplay() {
     return StreamBuilder<DateTime>(
@@ -71,12 +139,12 @@ class _DanasScreenState extends State<DanasScreen> {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // GLAVNI TEKST - "SUBOTA 02.08.2025. 14:30:45"
+            // GLAVNI TEKST - "02.08.2025. SUBOTA 14:30:45"
             Container(
               height: 24,
               alignment: Alignment.center,
               child: Text(
-                '$dayName $dayStr.$monthStr.$yearStr. $hourStr:$minuteStr:$secondStr',
+                '$dayStr.$monthStr.$yearStr. $dayName $hourStr:$minuteStr:$secondStr',
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -139,41 +207,209 @@ class _DanasScreenState extends State<DanasScreen> {
         // Prikaži dugme uvek, ali onemogući ga ako nema putnika
         final hasPassengers = filtriraniPutnici.isNotEmpty;
 
-        return SizedBox(
-          height: 24,
-          child: ElevatedButton.icon(
-            onPressed: _isLoading || !hasPassengers
-                ? null
-                : () => _optimizeCurrentRoute(filtriraniPutnici),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isRouteOptimized
-                  ? Colors.green
-                  : (hasPassengers ? Colors.white : Colors.grey[300]),
-              foregroundColor: _isRouteOptimized
-                  ? Colors.white
-                  : (hasPassengers ? Colors.blue[700] : Colors.grey[600]),
-              elevation: hasPassengers ? 4 : 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 🎓 Đački brojač
+            _buildDjackiBrojac(sviPutnici),
+            const SizedBox(width: 4), // Manji razmak
+            // Kompaktno dugme za optimizaciju
+            Container(
+              height: 24,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading || !hasPassengers
+                    ? null
+                    : () => _optimizeCurrentRoute(filtriraniPutnici),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isRouteOptimized
+                      ? Colors.green.shade600
+                      : (hasPassengers
+                          ? Theme.of(context).primaryColor
+                          : Colors.grey.shade400),
+                  foregroundColor: Colors.white,
+                  elevation: hasPassengers ? 2 : 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                ),
+                icon: Icon(
+                  _isRouteOptimized ? Icons.check : Icons.route,
+                  size: 12,
+                ),
+                label: Text(
+                  _isRouteOptimized ? '✓' : 'Optimizuj',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 9,
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             ),
-            icon: Icon(
-              _isRouteOptimized ? Icons.check_circle : Icons.route,
-              size: 14,
+            const SizedBox(width: 4), // Manji razmak
+            // Kompaktni speedometer desno
+            StreamBuilder<double>(
+              stream: RealtimeGpsService.speedStream,
+              builder: (context, speedSnapshot) {
+                final speed = speedSnapshot.data ?? 0.0;
+                final speedColor = speed > 50
+                    ? Colors.red
+                    : speed > 30
+                        ? Colors.orange
+                        : speed > 0
+                            ? Colors.green
+                            : Colors.white70;
+
+                return Container(
+                  height: 32,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: speedColor.withOpacity(0.4), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.speed, color: speedColor, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${speed.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: speedColor,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-            label: Text(
-              _isRouteOptimized
-                  ? 'OPTIMIZOVANO'
-                  : (hasPassengers ? 'OPTIMIZUJ RUTU' : 'NEMA PUTNIKA'),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 9,
-              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 🎓 DJAČKI BROJAČ U APPBAR-U
+  Widget _buildDjackiBrojac(List<Putnik> sviPutnici) {
+    return FutureBuilder<Map<String, int>>(
+      future: _calculateDjackieBrojeviAsync(),
+      builder: (context, snapshot) {
+        final statistike =
+            snapshot.data ?? {'ukupno': 0, 'povratak': 0, 'slobodno': 0};
+        final ukupno = statistike['ukupno'] ?? 0;
+        final povratak = statistike['povratak'] ?? 0;
+
+        return GestureDetector(
+          onTap: () {
+            // Prikaži detaljan popup sa statistikama
+            _showDjackiDialog(statistike);
+          },
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade700,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade300, width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.school, color: Colors.white, size: 14),
+                const SizedBox(width: 3),
+                Text(
+                  '$ukupno',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const Text('/',
+                    style: TextStyle(color: Colors.white70, fontSize: 10)),
+                Text(
+                  '$povratak',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  // 🎓 POPUP SA DETALJNIM ĐAČKIM STATISTIKAMA
+  void _showDjackiDialog(Map<String, int> statistike) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.school, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Đaci - Danas'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatRow(
+                'Ukupno upisano:', '${statistike['ukupno']}', Colors.blue),
+            const SizedBox(height: 8),
+            _buildStatRow('Popodne (povratak):', '${statistike['povratak']}',
+                Colors.green),
+            const SizedBox(height: 8),
+            _buildStatRow(
+                'Slobodno:', '${statistike['slobodno']}', Colors.orange),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zatvori'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -188,9 +424,6 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // _filteredDuznici već postoji, ne treba duplirati
   // VRATITI NA PUTNIK SERVICE - BEZ CACHE-A
-
-  // Depozit kontroler
-  final TextEditingController _depozitController = TextEditingController();
 
   // Optimizacija rute - zadržavam zbog postojeće logike
   bool _isRouteOptimized = false;
@@ -347,11 +580,7 @@ class _DanasScreenState extends State<DanasScreen> {
     // 🛰️ REALTIME ROUTE TRACKING LISTENER
     _initializeRealtimeTracking();
 
-    // 💸 REAL-TIME DEPOZIT SYNC
-    // 💸 DEPOZIT SYNC - SA REAL-TIME
-    DepozitService.startRealtimeSync();
-
-    // 🔔 REAL-TIME NOTIFICATION COUNTER
+    //  REAL-TIME NOTIFICATION COUNTER
     RealtimeNotificationCounterService.initialize();
 
     // 🛰️ START GPS TRACKING
@@ -455,26 +684,11 @@ class _DanasScreenState extends State<DanasScreen> {
 
   Future<void> _initializeCurrentDriver() async {
     _currentDriver = await FirebaseService.getCurrentDriver();
-    // Učitaj depozit tek kada se vozač učita
-    if (_currentDriver != null) {
-      _initializeDepozit();
-    }
-  }
-
-  Future<void> _initializeDepozit() async {
-    final value = await _loadDepozit();
-    if (value != null && mounted) {
-      setState(() {
-        _depozitController.text = value;
-      });
-    }
+    // Inicijalizacija vozača završena
   }
 
   @override
   void dispose() {
-    // Uklonjen cache listener poziv
-    _depozitController.dispose();
-
     // 🛑 Zaustavi realtime tracking kad se ekran zatvori
     RealtimeRouteTrackingService.stopRouteTracking();
 
@@ -488,28 +702,6 @@ class _DanasScreenState extends State<DanasScreen> {
   // Uklonjeno, filtriranje ide u StreamBuilder
 
   // Filtriranje dužnika ide u StreamBuilder
-
-  Future<void> _saveDepozit(String value) async {
-    if (_currentDriver == null) return; // Proveri da li je vozač logovan
-
-    final iznos = double.tryParse(value) ?? 0.0;
-    await DepozitService.saveDepozit(
-        _currentDriver!, iznos); // 💸 REAL-TIME SAVE
-  }
-
-  Future<String?> _loadDepozit() async {
-    if (_currentDriver == null) return null; // Proveri da li je vozač logovan
-
-    final iznos =
-        await DepozitService.loadDepozit(_currentDriver!); // 💸 REAL-TIME LOAD
-    return iznos > 0 ? iznos.toString() : null;
-  }
-
-  double _getDepozitValue() {
-    final text = _depozitController.text.trim();
-    if (text.isEmpty) return 0.0;
-    return double.tryParse(text) ?? 0.0;
-  }
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici) async {
@@ -775,7 +967,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   final nijeOtkazan =
                       putnik.status != 'otkazan' && putnik.status != 'Otkazano';
                   final jesteMesecni = putnik.mesecnaKarta == true;
-                  final pokupljen = putnik.pokupljen == true;
+                  final pokupljen = putnik.jePokupljen;
                   return nijePlatio &&
                       nijeOtkazan &&
                       !jesteMesecni &&
@@ -801,8 +993,6 @@ class _DanasScreenState extends State<DanasScreen> {
                     double ukupnoPazarVozac = pazarSnapshot.data!;
 
                     // Mesečne karte su već uključene u pazarZaVozaca funkciju
-                    final depozitValue = _getDepozitValue();
-                    final ukupnoPazar = ukupnoPazarVozac + depozitValue;
                     return Column(
                       children: [
                         Container(
@@ -829,7 +1019,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                               fontWeight: FontWeight.bold,
                                               color: Colors.green)),
                                       const SizedBox(height: 4),
-                                      Text(ukupnoPazar.toStringAsFixed(0),
+                                      Text(ukupnoPazarVozac.toStringAsFixed(0),
                                           style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
@@ -846,113 +1036,42 @@ class _DanasScreenState extends State<DanasScreen> {
                                   height: 70,
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.yellow[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border:
-                                        Border.all(color: Colors.yellow[700]!),
-                                  ),
-                                  child: StreamBuilder<Map<String, double>>(
-                                    stream: DepozitService
-                                        .depozitStream, // 💸 REAL-TIME DEPOZIT STREAM
-                                    builder: (context, depozitSnapshot) {
-                                      // Koristi real-time vrednost ako je dostupna, inače local controller
-                                      final currentValue =
-                                          depozitSnapshot.hasData &&
-                                                  _currentDriver != null
-                                              ? (depozitSnapshot
-                                                      .data![_currentDriver!] ??
-                                                  0.0)
-                                              : _getDepozitValue();
-
-                                      // Ažuriraj controller samo ako se vrednost promenila
-                                      if (currentValue > 0 &&
-                                          _depozitController.text !=
-                                              currentValue.toString()) {
-                                        WidgetsBinding.instance
-                                            .addPostFrameCallback((_) {
-                                          _depozitController.text =
-                                              currentValue.toString();
-                                        });
-                                      }
-
-                                      return Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text('Depozit',
-                                              style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.orange)),
-                                          const SizedBox(height: 4),
-                                          Flexible(
-                                            child: SizedBox(
-                                              height: 24,
-                                              child: TextField(
-                                                controller: _depozitController,
-                                                keyboardType:
-                                                    TextInputType.number,
-                                                style: const TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.orange,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                decoration:
-                                                    const InputDecoration(
-                                                  hintText: '0',
-                                                  border: InputBorder.none,
-                                                  contentPadding:
-                                                      EdgeInsets.zero,
-                                                  isDense: true,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                onChanged: (value) {
-                                                  _saveDepozit(
-                                                      value); // 💸 REAL-TIME SAVE
-                                                  setState(
-                                                      () {}); // Trigger rebuild za pazar
-                                                },
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                flex: 1,
-                                child: Container(
-                                  height: 70,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
                                     color: Colors.purple[50],
                                     borderRadius: BorderRadius.circular(8),
                                     border:
                                         Border.all(color: Colors.purple[300]!),
                                   ),
-                                  child: const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('Mesečne',
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.purple)),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        '0',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.purple),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
+                                  child: StreamBuilder<int>(
+                                    stream: StatistikaService
+                                        .streamBrojMesecnihKarataZaVozaca(
+                                            _currentDriver ?? '',
+                                            from: dayStart,
+                                            to: dayEnd),
+                                    builder: (context, mesecneSnapshot) {
+                                      final brojMesecnih =
+                                          mesecneSnapshot.data ?? 0;
+                                      return Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text('Mesečne',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.purple)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            brojMesecnih.toString(),
+                                            style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.purple),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ),

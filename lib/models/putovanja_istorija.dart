@@ -4,15 +4,26 @@ class PutovanjaIstorija {
   final String tipPutnika;
   final DateTime datum;
   final String vremePolaska;
-  final DateTime vremeAkcije;
+  final DateTime? vremeAkcije; // OPCIONO - možda se mapira na vreme_pokupljenja
   final String adresaPolaska;
-  final String statusBelaCrkvaVrsac;
-  final String statusVrsacBelaCrkva;
+  final String status; // UMESTO statusBelaCrkvaVrsac i statusVrsacBelaCrkva
+  final String? statusBelaCrkvaVrsac; // DEPRECATED - čuva se za kompatibilnost
+  final String? statusVrsacBelaCrkva; // DEPRECATED - čuva se za kompatibilnost
   final String putnikIme;
   final String? brojTelefona;
   final double cena;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  // NOVA POLJA koja postoje u bazi
+  final String? dan;
+  final double? depozit;
+  final String? grad;
+  final bool obrisan;
+  final bool pokupljen;
+  final String? vozac;
+  final DateTime? vremePlacanja;
+  final DateTime? vremePokupljenja;
 
   PutovanjaIstorija({
     required this.id,
@@ -20,15 +31,25 @@ class PutovanjaIstorija {
     required this.tipPutnika,
     required this.datum,
     required this.vremePolaska,
-    required this.vremeAkcije,
+    this.vremeAkcije, // OPCIONO
     required this.adresaPolaska,
-    this.statusBelaCrkvaVrsac = 'nije_se_pojavio',
-    this.statusVrsacBelaCrkva = 'nije_se_pojavio',
+    this.status = 'nije_se_pojavio', // DEFAULT vrednost
+    this.statusBelaCrkvaVrsac = 'nije_se_pojavio', // DEPRECATED
+    this.statusVrsacBelaCrkva = 'nije_se_pojavio', // DEPRECATED
     required this.putnikIme,
     this.brojTelefona,
     this.cena = 0.0,
     required this.createdAt,
     required this.updatedAt,
+    // NOVA POLJA
+    this.dan,
+    this.depozit,
+    this.grad,
+    this.obrisan = false,
+    this.pokupljen = false,
+    this.vozac,
+    this.vremePlacanja,
+    this.vremePokupljenja,
   });
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
@@ -39,17 +60,34 @@ class PutovanjaIstorija {
       tipPutnika: map['tip_putnika'] as String,
       datum: DateTime.parse(map['datum'] as String),
       vremePolaska: map['vreme_polaska'] as String,
-      vremeAkcije: DateTime.parse(map['vreme_akcije'] as String),
+      vremeAkcije: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null, // MAPIRAN na vreme_pokupljenja umesto vreme_akcije
       adresaPolaska: map['adresa_polaska'] as String,
-      statusBelaCrkvaVrsac:
-          map['status_bela_crkva_vrsac'] as String? ?? 'nije_se_pojavio',
-      statusVrsacBelaCrkva:
-          map['status_vrsac_bela_crkva'] as String? ?? 'nije_se_pojavio',
+      status: map['status'] as String? ??
+          'nije_se_pojavio', // KORISTI status kolonu
+      statusBelaCrkvaVrsac: map['status'] as String? ??
+          'nije_se_pojavio', // DEPRECATED - za kompatibilnost
+      statusVrsacBelaCrkva: map['status'] as String? ??
+          'nije_se_pojavio', // DEPRECATED - za kompatibilnost
       putnikIme: map['putnik_ime'] as String,
       brojTelefona: map['broj_telefona'] as String?,
       cena: (map['cena'] as num?)?.toDouble() ?? 0.0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+      // NOVA POLJA
+      dan: map['dan'] as String?,
+      depozit: (map['depozit'] as num?)?.toDouble(),
+      grad: map['grad'] as String?,
+      obrisan: map['obrisan'] as bool? ?? false,
+      pokupljen: map['pokupljen'] as bool? ?? false,
+      vozac: map['vozac'] as String?,
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'] as String)
+          : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null,
     );
   }
 
@@ -61,15 +99,23 @@ class PutovanjaIstorija {
       'tip_putnika': tipPutnika,
       'datum': datum.toIso8601String().split('T')[0],
       'vreme_polaska': vremePolaska,
-      'vreme_akcije': vremeAkcije.toIso8601String(),
       'adresa_polaska': adresaPolaska,
-      'status_bela_crkva_vrsac': statusBelaCrkvaVrsac,
-      'status_vrsac_bela_crkva': statusVrsacBelaCrkva,
+      'status':
+          status, // KORISTI status umesto status_bela_crkva_vrsac/status_vrsac_bela_crkva
       'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
       'cena': cena,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      // NOVA POLJA
+      'dan': dan,
+      'depozit': depozit,
+      'grad': grad,
+      'obrisan': obrisan,
+      'pokupljen': pokupljen,
+      'vozac': vozac,
+      'vreme_placanja': vremePlacanja?.toIso8601String(),
+      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
     };
   }
 
@@ -82,6 +128,7 @@ class PutovanjaIstorija {
     String? vremePolaska,
     DateTime? vremeAkcije,
     String? adresaPolaska,
+    String? status,
     String? statusBelaCrkvaVrsac,
     String? statusVrsacBelaCrkva,
     String? putnikIme,
@@ -89,6 +136,15 @@ class PutovanjaIstorija {
     double? cena,
     DateTime? createdAt,
     DateTime? updatedAt,
+    // NOVA POLJA
+    String? dan,
+    double? depozit,
+    String? grad,
+    bool? obrisan,
+    bool? pokupljen,
+    String? vozac,
+    DateTime? vremePlacanja,
+    DateTime? vremePokupljenja,
   }) {
     return PutovanjaIstorija(
       id: id ?? this.id,
@@ -98,6 +154,7 @@ class PutovanjaIstorija {
       vremePolaska: vremePolaska ?? this.vremePolaska,
       vremeAkcije: vremeAkcije ?? this.vremeAkcije,
       adresaPolaska: adresaPolaska ?? this.adresaPolaska,
+      status: status ?? this.status,
       statusBelaCrkvaVrsac: statusBelaCrkvaVrsac ?? this.statusBelaCrkvaVrsac,
       statusVrsacBelaCrkva: statusVrsacBelaCrkva ?? this.statusVrsacBelaCrkva,
       putnikIme: putnikIme ?? this.putnikIme,
@@ -105,18 +162,27 @@ class PutovanjaIstorija {
       cena: cena ?? this.cena,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      // NOVA POLJA
+      dan: dan ?? this.dan,
+      depozit: depozit ?? this.depozit,
+      grad: grad ?? this.grad,
+      obrisan: obrisan ?? this.obrisan,
+      pokupljen: pokupljen ?? this.pokupljen,
+      vozac: vozac ?? this.vozac,
+      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
+      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
     );
   }
 
-  // Helper metodi za status
-  bool get jePokupljenBelaCrkvaVrsac => statusBelaCrkvaVrsac == 'pokupljen';
-  bool get jePokupljenVrsacBelaCrkva => statusVrsacBelaCrkva == 'pokupljen';
-  bool get jeOtkazaoBelaCrkvaVrsac => statusBelaCrkvaVrsac == 'otkazao_poziv';
-  bool get jeOtkazaoVrsacBelaCrkva => statusVrsacBelaCrkva == 'otkazao_poziv';
-  bool get nijeSePojavioBelaCrkvaVrsac =>
-      statusBelaCrkvaVrsac == 'nije_se_pojavio';
-  bool get nijeSePojavioVrsacBelaCrkva =>
-      statusVrsacBelaCrkva == 'nije_se_pojavio';
+  // Helper metodi za status - AŽURIRANI za novu status kolonu
+  bool get jePokupljenBelaCrkvaVrsac => status == 'pokupljen' || pokupljen;
+  bool get jePokupljenVrsacBelaCrkva => status == 'pokupljen' || pokupljen;
+  bool get jeOtkazaoBelaCrkvaVrsac =>
+      status == 'otkazao_poziv' || status == 'otkazano';
+  bool get jeOtkazaoVrsacBelaCrkva =>
+      status == 'otkazao_poziv' || status == 'otkazano';
+  bool get nijeSePojavioBelaCrkvaVrsac => status == 'nije_se_pojavio';
+  bool get nijeSePojavioVrsacBelaCrkva => status == 'nije_se_pojavio';
 
   bool get jeMesecni => tipPutnika == 'mesecni';
   bool get jeDnevni => tipPutnika == 'dnevni';

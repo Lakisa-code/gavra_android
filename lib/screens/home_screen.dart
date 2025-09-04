@@ -21,7 +21,7 @@ import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/autocomplete_ime_field.dart';
-import '../widgets/bottom_nav_bar_letnji.dart';
+import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
@@ -70,12 +70,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     'Nedelja'
   ];
 
-// Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - LETNJI RASPORED
+// Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - ZIMSKI RASPORED
   final List<String> _sviPolasci = [
     '5:00 Bela Crkva',
     '6:00 Bela Crkva',
+    '7:00 Bela Crkva',
     '8:00 Bela Crkva',
-    '10:00 Bela Crkva',
+    '9:00 Bela Crkva',
+    '11:00 Bela Crkva',
     '12:00 Bela Crkva',
     '13:00 Bela Crkva',
     '14:00 Bela Crkva',
@@ -83,7 +85,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     '18:00 Bela Crkva',
     '6:00 Vršac',
     '7:00 Vršac',
-    '9:00 Vršac',
+    '8:00 Vršac',
+    '10:00 Vršac',
     '11:00 Vršac',
     '13:00 Vršac',
     '14:00 Vršac',
@@ -1449,6 +1452,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   putnik: putnik,
                                   currentDriver: _currentDriver,
                                   redniBroj: index + 1,
+                                  selectedVreme:
+                                      _selectedVreme, // 🆕 Proslijedi trenutno vreme
+                                  selectedGrad:
+                                      _selectedGrad, // 🆕 Proslijedi trenutni grad
+                                  onChanged: () {
+                                    // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
+                                    if (mounted) {
+                                      setState(() {
+                                        // Trigger rebuild-a StreamBuilder-a
+                                      });
+                                    }
+                                  },
                                 ),
                               );
                             },
@@ -1458,7 +1473,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          bottomNavigationBar: BottomNavBarLetnji(
+          bottomNavigationBar: BottomNavBarZimski(
             sviPolasci: _sviPolasci,
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,

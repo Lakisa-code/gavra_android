@@ -38,18 +38,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.3),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -71,22 +65,64 @@ class _DugoviScreenState extends State<DugoviScreen> {
         ),
       ),
       body: StreamBuilder<List<Putnik>>(
-        stream: PutnikService().streamPutnici(),
+        stream: PutnikService().streamKombinovaniPutnici(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          // final danas = DateTime.now();
-          // final jePetak = danas.weekday == 5; // 5 = petak
-          // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0)
+
+          final danas = DateTime.now();
+          final danasString =
+              "${danas.day.toString().padLeft(2, '0')}.${danas.month.toString().padLeft(2, '0')}.${danas.year}";
+
+          print('🔍 DUGOVI DEBUG: Tražim dužnike za datum: $danasString');
+          print(
+              '🔍 DUGOVI DEBUG: Ukupno putnika u stream-u: ${snapshot.data!.length}');
+
+          // Ispišimo sve putnike za debug
+          for (final p in snapshot.data!) {
+            if (p.ime.contains('TESTDODAO') || p.ime.contains('KURAPAL')) {
+              print(
+                  '🔍 DUGOVI DEBUG: ${p.ime} - dan: "${p.dan}", jePokupljen: ${p.jePokupljen}, iznosPlacanja: ${p.iznosPlacanja}, mesecnaKarta: ${p.mesecnaKarta}, status: "${p.status}"');
+            }
+          }
+
+          // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - PRIVREMENO BEZ DATUMA
           final duznici = snapshot.data!
               .where((p) =>
                   (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
-                  (p.pokupljen == true) &&
+                  (p.jePokupljen) &&
                   (p.status == null ||
                       (p.status != 'Otkazano' && p.status != 'otkazan')) &&
                   (p.mesecnaKarta != true))
+              // (p.dan == danasString)) // PRIVREMENO ISKLJUČEN FILTER ZA DATUM
               .toList();
+
+          // Sortiraj po datumu i vremenu pokupljenja (najnoviji prvi)
+          duznici.sort((a, b) {
+            // Prvo poredi po vremenu pokupljenja
+            if (a.vremePokupljenja != null && b.vremePokupljenja != null) {
+              return b.vremePokupljenja!.compareTo(a.vremePokupljenja!);
+            }
+            // Ako nema vremena pokupljenja, sortiraj po datumu
+            if (a.dan != b.dan) {
+              return b.dan.compareTo(a.dan);
+            }
+            // Kao poslednju opciju, sortiraj po imenu
+            return a.ime.compareTo(b.ime);
+          });
+
+          // Sortiraj po datumu i vremenu (najnoviji prvi)
+          duznici.sort((a, b) {
+            final aTime = a.vremeDodavanja ?? DateTime(1970);
+            final bTime = b.vremeDodavanja ?? DateTime(1970);
+            return bTime.compareTo(aTime); // Obrnut redosled - najnoviji prvi
+          });
+
+          print('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
+          for (final d in duznici) {
+            print('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
+          }
           if (duznici.isEmpty) {
             return const Center(
               child: Column(
@@ -109,4 +145,3 @@ class _DugoviScreenState extends State<DugoviScreen> {
     );
   }
 }
-

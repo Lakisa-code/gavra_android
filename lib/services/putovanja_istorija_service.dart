@@ -316,11 +316,16 @@ class PutovanjaIstorijaService {
         'updated_at': DateTime.now().toIso8601String(),
       };
 
-      if (statusBelaCrkvaVrsac != null) {
-        updateData['status_bela_crkva_vrsac'] = statusBelaCrkvaVrsac;
-      }
-      if (statusVrsacBelaCrkva != null) {
-        updateData['status_vrsac_bela_crkva'] = statusVrsacBelaCrkva;
+      // Jednostavno ažuriranje - koristi jednu status kolonu
+      if (statusBelaCrkvaVrsac != null || statusVrsacBelaCrkva != null) {
+        // Ako je bilo koji status dat, koristi ga kao glavnog statusa
+        final noviStatus = statusBelaCrkvaVrsac ?? statusVrsacBelaCrkva;
+        updateData['status'] = noviStatus;
+        updateData['pokupljen'] = noviStatus == 'pokupljen';
+
+        if (noviStatus == 'pokupljen') {
+          updateData['vreme_pokupljenja'] = DateTime.now().toIso8601String();
+        }
       }
 
       await _supabase

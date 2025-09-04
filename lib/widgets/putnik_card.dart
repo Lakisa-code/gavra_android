@@ -1,13 +1,16 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../models/putnik.dart';
-import '../utils/vozac_boja.dart';
-import '../services/putnik_service.dart';
+import '../models/mesecni_putnik.dart';
 import '../services/geocoding_service.dart';
 import '../services/haptic_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
+import '../services/putnik_service.dart';
+import '../utils/vozac_boja.dart';
 
 /// 🚨 PAŽNJA: Ovaj widget sada koristi nove tabele!
 /// - mesecni_putnici za mesečne putnike (mesecnaKarta == true)
@@ -21,6 +24,9 @@ class PutnikCard extends StatefulWidget {
   final int? redniBroj;
   final List<String>? bcVremena;
   final List<String>? vsVremena;
+  final String? selectedVreme; // 🆕 Trenutno selektovano vreme polaska
+  final String? selectedGrad; // 🆕 Trenutno selektovani grad
+  final VoidCallback? onChanged; // 🆕 Callback za UI refresh
 
   const PutnikCard({
     Key? key,
@@ -30,6 +36,9 @@ class PutnikCard extends StatefulWidget {
     this.redniBroj,
     this.bcVremena,
     this.vsVremena,
+    this.selectedVreme, // 🆕 Trenutno selektovano vreme polaska
+    this.selectedGrad, // 🆕 Trenutno selektovani grad
+    this.onChanged, // 🆕 Callback za UI refresh
   }) : super(key: key);
 
   @override
@@ -49,6 +58,17 @@ class _PutnikCardState extends State<PutnikCard> {
   void initState() {
     super.initState();
     _putnik = widget.putnik;
+  }
+
+  @override
+  void didUpdateWidget(PutnikCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ✅ KLJUČNO: Ažuriraj _putnik kada se promeni widget.putnik iz StreamBuilder-a
+    if (widget.putnik != oldWidget.putnik) {
+      debugPrint(
+          '🔄 [WIDGET UPDATE] ${widget.putnik.ime}: ažuriram _putnik - jeOtkazan: ${oldWidget.putnik.jeOtkazan} → ${widget.putnik.jeOtkazan}');
+      _putnik = widget.putnik;
+    }
   }
 
   String _formatVremeDodavanja(DateTime vreme) {
@@ -110,7 +130,14 @@ class _PutnikCardState extends State<PutnikCard> {
           debugPrint(
               '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: oznaciPokupljen ZAVRŠEN USPEŠNO');
 
-          // 🔍 DEBUG: Loguj pokušaj ažuriranja
+          // � FORSIRAJ UI REFRESH NA PARENT WIDGET
+          if (mounted && widget.onChanged != null) {
+            widget.onChanged!();
+            debugPrint(
+                '🔄 [UI REFRESH] Pozvan onChanged callback za refresh parent widget-a');
+          }
+
+          // �🔍 DEBUG: Loguj pokušaj ažuriranja
           debugPrint(
               '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: pokušavam da dohvatim ažuriranog putnika iz baze');
 
@@ -181,14 +208,22 @@ class _PutnikCardState extends State<PutnikCard> {
     _isLongPressActive = true;
     _longPressTimer = Timer(const Duration(milliseconds: 1500), () async {
       if (_isLongPressActive) {
-        // Ako je Bojan ili Svetlana i kartica nije u početnom stanju, resetuj je
-        if (['Bojan', 'Svetlana'].contains(widget.currentDriver) &&
-            _canResetCard()) {
-          await _handleResetCard();
-        }
-        // Inače, ako nije pokupljen, označi kao pokupljen
-        else if (_putnik.vremePokupljenja == null) {
+        // Long press = SAMO pokupljanje
+        if (_putnik.vremePokupljenja == null) {
           await _handlePokupljen();
+
+          // 🔄 FORSIRAJ PARENT WIDGET REFRESH
+          if (mounted && widget.onChanged != null) {
+            widget.onChanged!();
+          }
+
+          // 🔄 FORSIRAJ UI REFRESH za promenu boje kartice
+          if (mounted) {
+            setState(() {
+              // Forsiranje rebuild-a za ažuriranje boje
+            });
+          }
+
           // 📳 Haptic feedback za pokupljanje - SUCCESS pattern!
           HapticService.success();
           if (mounted) {
@@ -441,10 +476,10 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 💰 UNIVERZALNA METODA ZA PLAĆANJE - različita logika za obične i mesečne
+  // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
     if (_putnik.mesecnaKarta == true) {
-      // MESEČNI PUTNIK - direktna postavka mesečne cene
+      // MESEČNI PUTNIK - CUSTOM CENA umesto fiksne
       await _handleMesecniPayment();
     } else {
       // OBIČNI PUTNIK - unos custom iznosa
@@ -452,17 +487,18 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 📅 PLAĆANJE MESEČNE KARTE - proširena logika sa statistikama i mesecima
+  // 📅 PLAĆANJE MESEČNE KARTE - CUSTOM CENA (korisnik unosi iznos)
   Future<void> _handleMesecniPayment() async {
-    // Prvo dohvati mesečnog putnika iz baze da dobijem statistike
+    // Prvo dohvati mesečnog putnika iz baze po imenu (ne po ID!)
     final mesecniPutnik =
-        await MesecniPutnikService.getMesecniPutnikById(_putnik.id!);
+        await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
 
     if (mesecniPutnik == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Greška: Mesečni putnik nije pronađen'),
+          SnackBar(
+            content:
+                Text('❌ Greška: Mesečni putnik "${_putnik.ime}" nije pronađen'),
             backgroundColor: Colors.red,
           ),
         );
@@ -496,8 +532,8 @@ class _PutnikCardState extends State<PutnikCard> {
       context: context,
       builder: (ctx) {
         final controller = TextEditingController();
-        DateTime selectedMonth =
-            DateTime(currentDate.year, currentDate.month, 1);
+        String selectedMonth = _getMonthNameStatic(DateTime.now().month) +
+            ' ${DateTime.now().year}';
 
         return StatefulBuilder(
           builder: (context, setState) => AlertDialog(
@@ -636,16 +672,40 @@ class _PutnikCardState extends State<PutnikCard> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<DateTime>(
+                      child: DropdownButton<String>(
                         value: selectedMonth,
                         isExpanded: true,
-                        items: _generateMonthOptions().map((month) {
-                          return DropdownMenuItem<DateTime>(
-                            value: month,
-                            child: Text(_formatMonth(month)),
+                        items: _getMonthOptionsStatic().map((monthYear) {
+                          // 💰 Proveri da li je mesec plaćen - ISTO kao u mesecni_putnici_screen.dart
+                          final bool isPlacen =
+                              _isMonthPaidStatic(monthYear, mesecniPutnik);
+
+                          return DropdownMenuItem<String>(
+                            value: monthYear,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 16,
+                                  color: isPlacen
+                                      ? Colors.green
+                                      : Colors.blue.shade300,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  monthYear,
+                                  style: TextStyle(
+                                    color: isPlacen ? Colors.green[700] : null,
+                                    fontWeight: isPlacen
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         }).toList(),
-                        onChanged: (DateTime? newMonth) {
+                        onChanged: (String? newMonth) {
                           if (newMonth != null) {
                             setState(() {
                               selectedMonth = newMonth;
@@ -725,7 +785,7 @@ class _PutnikCardState extends State<PutnikCard> {
     if (result != null && result['iznos'] != null && mounted) {
       // Koristimo iznos koji je korisnik uneo u dialog
       await _executePayment(result['iznos'],
-          isMesecni: true); // Koristi pravi iznos umesto fiksne vrednosti
+          mesec: result['mesec'], isMesecni: true);
     }
   }
 
@@ -798,12 +858,13 @@ class _PutnikCardState extends State<PutnikCard> {
     );
 
     if (iznos != null && iznos > 0) {
-      await _executePayment(iznos, isMesecni: false);
+      await _executePayment(iznos, isMesecni: false, mesec: null);
     }
   }
 
   // 🎯 IZVRŠAVANJE PLAĆANJA - zajedničko za oba tipa
-  Future<void> _executePayment(double iznos, {required bool isMesecni}) async {
+  Future<void> _executePayment(double iznos,
+      {required bool isMesecni, String? mesec}) async {
     try {
       // STRIKTNA VALIDACIJA VOZAČA
       if (!VozacBoja.isValidDriver(widget.currentDriver)) {
@@ -819,12 +880,33 @@ class _PutnikCardState extends State<PutnikCard> {
         return;
       }
 
-      // Pozovi service za plaćanje
-      await PutnikService()
-          .oznaciPlaceno(_putnik.id!, iznos, widget.currentDriver!);
+      // Pozovi odgovarajući service za plaćanje
+      debugPrint(
+          '💰 [PLAĆANJE] POČETAK plaćanja za putnika ID: ${_putnik.id}, ime: ${_putnik.ime}, iznos: $iznos');
+
+      if (isMesecni && mesec != null) {
+        // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
+        final mesecniPutnik =
+            await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
+        if (mesecniPutnik != null) {
+          // Koristi static funkciju kao u mesecni_putnici_screen.dart
+          await _sacuvajPlacanjeStatic(
+            putnikId: mesecniPutnik.id,
+            iznos: iznos,
+            mesec: mesec,
+            vozacIme: widget.currentDriver ?? 'Nepoznat vozač',
+          );
+        }
+      } else {
+        // Za obične putnike koristi postojeći servis
+        await PutnikService()
+            .oznaciPlaceno(_putnik.id!, iznos, widget.currentDriver!);
+      }
 
       if (mounted) {
         setState(() {});
+        debugPrint(
+            '✅ [PLAĆANJE] ZAVRŠENO plaćanje - UI ažuriran pomoću setState()');
 
         // Prikaži success poruku
         ScaffoldMessenger.of(context).showSnackBar(
@@ -923,11 +1005,15 @@ class _PutnikCardState extends State<PutnikCard> {
   Future<void> _postaviOdsustvo(String status) async {
     try {
       // Pozovi service za postavljanje statusa
+      debugPrint(
+          '🏖️ [ODSUSTVO] POČETAK postavljanja $status za putnika ID: ${_putnik.id}, ime: ${_putnik.ime}');
       await PutnikService().oznaciBolovanjeGodisnji(
           _putnik.id!, status, widget.currentDriver ?? '');
 
       if (mounted) {
         setState(() {});
+        debugPrint(
+            '✅ [ODSUSTVO] ZAVRŠENO postavljanje $status - UI ažuriran pomoću setState()');
 
         final String statusLabel =
             status == 'godisnji' ? 'godišnji odmor' : 'bolovanje';
@@ -1132,6 +1218,20 @@ class _PutnikCardState extends State<PutnikCard> {
 
   @override
   Widget build(BuildContext context) {
+    // � [BUILD DEBUG] Precrta kartica
+    debugPrint(
+        '🏗️ [BUILD] Precrta kartica za: ${_putnik.ime}, jeOtkazan=${_putnik.jeOtkazan}, status=${_putnik.status}');
+
+    // �🔍 DEBUG: Proverava uslove za prikazivanje X ikone
+    debugPrint(
+        '🔍 [X IKONA DEBUG] ${_putnik.ime}: jeOtkazan=${_putnik.jeOtkazan}, mesecnaKarta=${_putnik.mesecnaKarta}, vremePokupljenja=${_putnik.vremePokupljenja}, iznosPlacanja=${_putnik.iznosPlacanja}');
+
+    final bool canShowXButton = !_putnik.jeOtkazan &&
+        (_putnik.mesecnaKarta == true ||
+            (_putnik.vremePokupljenja == null &&
+                (_putnik.iznosPlacanja == null || _putnik.iznosPlacanja == 0)));
+    debugPrint('🔍 [X IKONA] ${_putnik.ime}: canShowXButton=$canShowXButton');
+
     // 🔍 DEBUG: Dodaj debug ispis za pokupljene putnike
     if (_putnik.ime == 'Ljilla') {
       debugPrint(
@@ -1143,17 +1243,25 @@ class _PutnikCardState extends State<PutnikCard> {
         _putnik.jePokupljen; // Koristi getter umesto direktno vremePokupljenja
     final bool isMesecna = _putnik.mesecnaKarta == true;
     final bool isPlaceno = (_putnik.iznosPlacanja ?? 0) > 0;
-    final Color cardColor = _putnik.jeOtkazan
-        ? const Color(0xFFFFE5E5) // ❌ Crveno za otkazane
-        : _putnik.jeOdsustvo
-            ? const Color(
-                0xFFFFF59D) // 🏖️ Žuto za odsustvo (godišnji/bolovanje)
+    // 🎨 NOVI REDOSLED BOJA - PREMA SPECIFIKACIJI:
+    // 1. BELE - nepokupljeni (default)
+    // 2. PLAVE - pokupljeni neplaćeni
+    // 3. ZELENE - pokupljeni plaćeni/mesečni
+    // 4. CRVENE - otkazane
+    // 5. ŽUTE - godišnji/bolovanje (najveći prioritet)
+    final Color cardColor = _putnik.jeOdsustvo
+        ? const Color(
+            0xFFFFF59D) // 🟡 ŽUTO za odsustvo (godišnji/bolovanje) - NAJVEĆI PRIORITET
+        : _putnik.jeOtkazan
+            ? const Color(0xFFFFE5E5) // 🔴 CRVENO za otkazane - DRUGI PRIORITET
             : (isSelected
                 ? (isMesecna || isPlaceno
-                    ? const Color(0xFF388E3C) // ✅ Zeleno za mesečne/plaćene
+                    ? const Color(
+                        0xFF388E3C) // 🟢 ZELENO za mesečne/plaćene - TREĆI PRIORITET
                     : const Color(
-                        0xFF7FB3D3)) // 🔵 Plavo za pokupljene neplaćene
-                : Colors.white.withOpacity(0.96)); // ⚪ Belo za nepokupljene
+                        0xFF7FB3D3)) // 🔵 PLAVO za pokupljene neplaćene - ČETVRTI PRIORITET
+                : Colors.white.withOpacity(
+                    0.96)); // ⚪ BELO za nepokupljene - PETI PRIORITET (default)
 
     // Prava po vozaču
     final String? driver = widget.currentDriver;
@@ -1182,18 +1290,18 @@ class _PutnikCardState extends State<PutnikCard> {
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
         decoration: BoxDecoration(
-          gradient: _putnik.jeOtkazan
-              ? null
-              : _putnik.jeOdsustvo
-                  ? LinearGradient(
-                      colors: [
-                        const Color(0xFFFFF59D)
-                            .withOpacity(0.85), // 🏖️ Žuto za odsustvo
-                        const Color(0xFFFFF59D),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
+          gradient: _putnik.jeOdsustvo
+              ? LinearGradient(
+                  colors: [
+                    const Color(0xFFFFF59D).withOpacity(
+                        0.85), // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
+                    const Color(0xFFFFF59D),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : _putnik.jeOtkazan
+                  ? null // 🔴 CRVENO za otkazane - bez gradient-a
                   : LinearGradient(
                       colors: [
                         Colors.white.withOpacity(0.98),
@@ -1211,34 +1319,38 @@ class _PutnikCardState extends State<PutnikCard> {
           color: cardColor,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: _putnik.jeOtkazan
-                ? Colors.red.withOpacity(0.25)
-                : _putnik.jeOdsustvo
-                    ? const Color(0xFFFFC107)
-                        .withOpacity(0.6) // 🏖️ Žuto za odsustvo
+            color: _putnik.jeOdsustvo
+                ? const Color(0xFFFFC107).withOpacity(
+                    0.6) // 🟡 ŽUTO border za odsustvo - NAJVEĆI PRIORITET
+                : _putnik.jeOtkazan
+                    ? Colors.red
+                        .withOpacity(0.25) // 🔴 CRVENO border za otkazane
                     : isSelected
                         ? (isMesecna || isPlaceno
-                            ? const Color(0xFF388E3C)
-                                .withOpacity(0.4) // Zelena za mesečne/plaćene
+                            ? const Color(0xFF388E3C).withOpacity(
+                                0.4) // 🟢 ZELENO border za mesečne/plaćene
                             : const Color(0xFF7FB3D3).withOpacity(
-                                0.4)) // Plava za pokupljene neplaćene
-                        : Colors.grey.withOpacity(0.10),
+                                0.4)) // 🔵 PLAVO border za pokupljene neplaćene
+                        : Colors.grey
+                            .withOpacity(0.10), // ⚪ BELO border za nepokupljene
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: _putnik.jeOtkazan
-                  ? Colors.red.withOpacity(0.08)
-                  : _putnik.jeOdsustvo
-                      ? const Color(0xFFFFC107)
-                          .withOpacity(0.2) // 🏖️ Žuto za odsustvo
+              color: _putnik.jeOdsustvo
+                  ? const Color(0xFFFFC107).withOpacity(
+                      0.2) // 🟡 ŽUTO shadow za odsustvo - NAJVEĆI PRIORITET
+                  : _putnik.jeOtkazan
+                      ? Colors.red
+                          .withOpacity(0.08) // 🔴 CRVENO shadow za otkazane
                       : isSelected
                           ? (isMesecna || isPlaceno
                               ? const Color(0xFF388E3C).withOpacity(
-                                  0.15) // Zelena za mesečne/plaćene
+                                  0.15) // 🟢 ZELENO shadow za mesečne/plaćene
                               : const Color(0xFF7FB3D3).withOpacity(
-                                  0.15)) // Plava za pokupljene neplaćene
-                          : Colors.black.withOpacity(0.07),
+                                  0.15)) // 🔵 PLAVO shadow za pokupljene neplaćene
+                          : Colors.black.withOpacity(
+                              0.07), // ⚪ BELO shadow za nepokupljene
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -1261,29 +1373,35 @@ class _PutnikCardState extends State<PutnikCard> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 20,
-                          color: _putnik.jeOtkazan
-                              ? Colors.red[400]
-                              : isSelected
-                                  ? (isMesecna || isPlaceno)
-                                      ? (isMesecna
-                                          ? Colors.green[600]
-                                          : Colors.green[600])
-                                      : const Color(0xFF0D47A1)
-                                  : Colors.black,
+                          color: _putnik.jeOdsustvo
+                              ? Colors.orange[
+                                  600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
+                              : _putnik.jeOtkazan
+                                  ? Colors.red[400] // 🔴 CRVENO za otkazane
+                                  : isSelected
+                                      ? (isMesecna || isPlaceno)
+                                          ? Colors.green[
+                                              600] // 🟢 ZELENO za mesečne/plaćene
+                                          : const Color(
+                                              0xFF0D47A1) // 🔵 PLAVO za pokupljene neplaćene
+                                      : Colors.black, // ⚪ BELO za nepokupljene
                         ),
                       ),
                     ),
                   Icon(
                     Icons.person,
-                    color: _putnik.jeOtkazan
-                        ? Colors.red[400]
-                        : isSelected
-                            ? (isMesecna || isPlaceno)
-                                ? (isMesecna
-                                    ? Colors.green[600]
-                                    : Colors.green[600])
-                                : const Color(0xFF0D47A1)
-                            : Colors.black,
+                    color: _putnik.jeOdsustvo
+                        ? Colors.orange[
+                            600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
+                        : _putnik.jeOtkazan
+                            ? Colors.red[400] // 🔴 CRVENO za otkazane
+                            : isSelected
+                                ? (isMesecna || isPlaceno)
+                                    ? Colors.green[
+                                        600] // 🟢 ZELENO za mesečne/plaćene
+                                    : const Color(
+                                        0xFF0D47A1) // 🔵 PLAVO za pokupljene neplaćene
+                                : Colors.black, // ⚪ BELO za nepokupljene
                     size: 20,
                   ),
                   const SizedBox(width: 7),
@@ -1297,15 +1415,19 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontWeight: FontWeight.w700,
                             fontStyle: FontStyle.italic,
                             fontSize: 15,
-                            color: _putnik.jeOtkazan
-                                ? Colors.red[400]
-                                : isSelected
-                                    ? (isMesecna || isPlaceno)
-                                        ? (isMesecna
-                                            ? Colors.green[600]
-                                            : Colors.green[600])
-                                        : const Color(0xFF0D47A1)
-                                    : Colors.black,
+                            color: _putnik.jeOdsustvo
+                                ? Colors.orange[
+                                    600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
+                                : _putnik.jeOtkazan
+                                    ? Colors.red[400] // 🔴 CRVENO za otkazane
+                                    : isSelected
+                                        ? (isMesecna || isPlaceno)
+                                            ? Colors.green[
+                                                600] // 🟢 ZELENO za mesečne/plaćene
+                                            : const Color(
+                                                0xFF0D47A1) // 🔵 PLAVO za pokupljene neplaćene
+                                        : Colors
+                                            .black, // ⚪ BELO za nepokupljene
                             letterSpacing: 0.5,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -1710,42 +1832,14 @@ class _PutnikCardState extends State<PutnikCard> {
                                         ),
                                         const SizedBox(width: 0),
                                       ],
-                                      // 🏖️ IKONA ZA GODIŠNJI/BOLOVANJE - samo za mesečne putnike koji rade
-                                      if (_putnik.mesecnaKarta == true &&
-                                          !_putnik.jeOtkazan &&
-                                          !_putnik.jeOdsustvo &&
-                                          isAdmin) ...[
-                                        GestureDetector(
-                                          onTap: () => _pokaziOdsustvoPicker(),
-                                          child: Container(
-                                            width: iconSize,
-                                            height: iconSize,
-                                            decoration: BoxDecoration(
-                                              color: Colors.orange
-                                                  .withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Icon(
-                                              Icons.beach_access,
-                                              color: Colors.orange,
-                                              size: iconInnerSize,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 0),
-                                      ],
-                                      // 💰 JEDINSTVENA IKONA ZA PLAĆANJE - radi za sve tipove putnika
+                                      // 💰 IKONA ZA PLAĆANJE - za sve korisnike (3. po redu)
                                       if (!_putnik.jeOtkazan &&
-                                          (_putnik.mesecnaKarta ==
-                                                  true || // ✅ MESEČNI PUTNICI uvek mogu da se naplaćuju
+                                          (_putnik.mesecnaKarta == true ||
                                               (_putnik.iznosPlacanja == null ||
                                                   _putnik.iznosPlacanja ==
                                                       0))) ...[
                                         GestureDetector(
-                                          onTap: () async {
-                                            await _handlePayment();
-                                          },
+                                          onTap: () => _handlePayment(),
                                           child: Container(
                                             width: iconSize,
                                             height: iconSize,
@@ -1764,175 +1858,40 @@ class _PutnikCardState extends State<PutnikCard> {
                                         ),
                                         const SizedBox(width: 0),
                                       ],
-                                      // Otkazivanje je moguće samo ako NIJE otkazan, NIJE pokupljen i za mesečne uvek
+                                      // ❌ IKS DUGME - za sve korisnike (4. po redu)
+                                      // Vozači: direktno otkazivanje | Admini: popup sa opcijama
                                       if (!_putnik.jeOtkazan &&
-                                          (_putnik.mesecnaKarta ==
-                                                  true || // ✅ MESEČNI PUTNICI uvek mogu da se otkažu
+                                          (_putnik.mesecnaKarta == true ||
                                               (_putnik.vremePokupljenja ==
                                                       null &&
                                                   (_putnik.iznosPlacanja ==
                                                           null ||
                                                       _putnik.iznosPlacanja ==
                                                           0))))
-                                        if (isAdmin) ...[
-                                          GestureDetector(
-                                            onTap: () async {
-                                              final confirm =
-                                                  await showDialog<bool>(
-                                                context: context,
-                                                builder: (ctx) => AlertDialog(
-                                                  title: const Text(
-                                                      'Otkazivanje putnika'),
-                                                  content: const Text(
-                                                      'Da li ste sigurni da želite da označite ovog putnika kao otkazanog?'),
-                                                  actions: [
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(ctx)
-                                                                .pop(false),
-                                                        child:
-                                                            const Text('Ne')),
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(ctx)
-                                                                .pop(true),
-                                                        child:
-                                                            const Text('Da')),
-                                                  ],
-                                                ),
-                                              );
-                                              if (confirm == true) {
-                                                await PutnikService()
-                                                    .otkaziPutnika(
-                                                        _putnik.id!,
-                                                        widget.currentDriver ??
-                                                            '');
-                                                if (mounted) {
-                                                  // Realtime će automatski ažurirati UI
-                                                }
-                                              }
-                                            },
-                                            child: Container(
-                                              width: iconSize,
-                                              height: iconSize,
-                                              decoration: BoxDecoration(
-                                                color: Colors.orange
-                                                    .withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Icon(
-                                                Icons.close,
-                                                color: Colors.orange,
-                                                size: iconInnerSize,
-                                              ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            if (isAdmin) {
+                                              _showAdminPopup();
+                                            } else {
+                                              _handleOtkazivanje();
+                                            }
+                                          },
+                                          child: Container(
+                                            width: iconSize,
+                                            height: iconSize,
+                                            decoration: BoxDecoration(
+                                              color: Colors.orange
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Icon(
+                                              Icons.close,
+                                              color: Colors.orange,
+                                              size: iconInnerSize,
                                             ),
                                           ),
-                                          const SizedBox(width: 0),
-                                          GestureDetector(
-                                            onTap: () async {
-                                              final confirm =
-                                                  await showDialog<bool>(
-                                                context: context,
-                                                builder: (ctx) => AlertDialog(
-                                                  title: const Text(
-                                                      'Brisanje putnika'),
-                                                  content: const Text(
-                                                      'Da li ste sigurni da želite da obrišete ovog putnika?'),
-                                                  actions: [
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(ctx)
-                                                                .pop(false),
-                                                        child:
-                                                            const Text('Ne')),
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(ctx)
-                                                                .pop(true),
-                                                        child:
-                                                            const Text('Da')),
-                                                  ],
-                                                ),
-                                              );
-                                              if (confirm == true) {
-                                                await PutnikService()
-                                                    .obrisiPutnika(_putnik.id!);
-                                                if (mounted) setState(() {});
-                                              }
-                                            },
-                                            child: Container(
-                                              width: iconSize,
-                                              height: iconSize,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    Colors.red.withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Icon(
-                                                Icons.delete_outline,
-                                                color: Colors.red,
-                                                size: iconInnerSize,
-                                              ),
-                                            ),
-                                          ),
-                                        ] else ...[
-                                          // Bruda i Bilevski: mogu samo otkazati SVE putnike (ne mogu da brišu)
-                                          GestureDetector(
-                                            onTap: () async {
-                                              final confirm =
-                                                  await showDialog<bool>(
-                                                context: context,
-                                                builder: (ctx) => AlertDialog(
-                                                  title: const Text(
-                                                      'Otkazivanje putnika'),
-                                                  content: const Text(
-                                                      'Da li ste sigurni da želite da označite ovog putnika kao otkazanog?'),
-                                                  actions: [
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(ctx)
-                                                                .pop(false),
-                                                        child:
-                                                            const Text('Ne')),
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.of(ctx)
-                                                                .pop(true),
-                                                        child:
-                                                            const Text('Da')),
-                                                  ],
-                                                ),
-                                              );
-                                              if (confirm == true) {
-                                                await PutnikService()
-                                                    .otkaziPutnika(
-                                                        _putnik.id!,
-                                                        widget.currentDriver ??
-                                                            '');
-                                                if (mounted) {
-                                                  // Realtime će automatski ažurirati UI
-                                                }
-                                              }
-                                            },
-                                            child: Container(
-                                              width: iconSize,
-                                              height: iconSize,
-                                              decoration: BoxDecoration(
-                                                color: Colors.orange
-                                                    .withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Icon(
-                                                Icons.close,
-                                                color: Colors.orange,
-                                                size: iconInnerSize,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                     ],
                                   );
                                 },
@@ -2016,7 +1975,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Pokupljen',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(widget.currentDriver),
+                              color: VozacBoja.get(_putnik.pokupioVozac ??
+                                  widget
+                                      .currentDriver), // ✅ KORISTI pokupioVozac!
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -2030,7 +1991,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             }(),
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(widget.currentDriver),
+                              color: VozacBoja.get(_putnik.pokupioVozac ??
+                                  widget
+                                      .currentDriver), // ✅ KORISTI pokupioVozac!
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2093,6 +2056,89 @@ class _PutnikCardState extends State<PutnikCard> {
     return '${months[date.month - 1]} ${date.year}';
   }
 
+  // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u mesecni_putnici_screen.dart
+  bool _isMonthPaidStatic(String monthYear, MesecniPutnik? mesecniPutnik) {
+    if (mesecniPutnik == null) return false;
+
+    if (mesecniPutnik.vremePlacanja == null ||
+        mesecniPutnik.cena == null ||
+        mesecniPutnik.cena! <= 0) {
+      return false;
+    }
+
+    // Ako imamo precizne podatke o plaćenom mesecu, koristi ih
+    if (mesecniPutnik.placeniMesec != null &&
+        mesecniPutnik.placenaGodina != null) {
+      // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
+      final parts = monthYear.split(' ');
+      if (parts.length != 2) return false;
+
+      final monthName = parts[0];
+      final year = int.tryParse(parts[1]);
+      if (year == null) return false;
+
+      final monthNumber = _getMonthNumberStatic(monthName);
+      if (monthNumber == 0) return false;
+
+      // Proveri da li se plaćeni mesec i godina poklapaju
+      return mesecniPutnik.placeniMesec == monthNumber &&
+          mesecniPutnik.placenaGodina == year;
+    }
+
+    return false; // Fallback
+  }
+
+  // HELPER FUNKCIJE - ISTO kao u mesecni_putnici_screen.dart
+  static String _getMonthNameStatic(int month) {
+    const months = [
+      '',
+      'Januar',
+      'Februar',
+      'Mart',
+      'April',
+      'Maj',
+      'Jun',
+      'Jul',
+      'Avgust',
+      'Septembar',
+      'Oktobar',
+      'Novembar',
+      'Decembar'
+    ];
+    return months[month];
+  }
+
+  static int _getMonthNumberStatic(String monthName) {
+    const months = {
+      'Januar': 1,
+      'Februar': 2,
+      'Mart': 3,
+      'April': 4,
+      'Maj': 5,
+      'Jun': 6,
+      'Jul': 7,
+      'Avgust': 8,
+      'Septembar': 9,
+      'Oktobar': 10,
+      'Novembar': 11,
+      'Decembar': 12,
+    };
+    return months[monthName] ?? 0;
+  }
+
+  static List<String> _getMonthOptionsStatic() {
+    final now = DateTime.now();
+    List<String> options = [];
+
+    // Dodaj svih 12 meseci trenutne godine
+    for (int month = 1; month <= 12; month++) {
+      final monthYear = _getMonthNameStatic(month) + ' ${now.year}';
+      options.add(monthYear);
+    }
+
+    return options;
+  }
+
   List<DateTime> _generateMonthOptions() {
     final now = DateTime.now();
     final options = <DateTime>[];
@@ -2110,5 +2156,246 @@ class _PutnikCardState extends State<PutnikCard> {
     }
 
     return options;
+  }
+
+  // 💰 ČUVANJE PLAĆANJA - KOPIJA iz mesecni_putnici_screen.dart
+  Future<void> _sacuvajPlacanjeStatic({
+    required String putnikId,
+    required double iznos,
+    required String mesec,
+    required String vozacIme,
+  }) async {
+    try {
+      // Parsiraj izabrani mesec (format: "Septembar 2025")
+      final parts = mesec.split(' ');
+      if (parts.length != 2) {
+        throw Exception('Neispravno format meseca: $mesec');
+      }
+
+      final monthName = parts[0];
+      final year = int.tryParse(parts[1]);
+      if (year == null) {
+        throw Exception('Neispravna godina: ${parts[1]}');
+      }
+
+      final monthNumber = _getMonthNumberStatic(monthName);
+      if (monthNumber == 0) {
+        throw Exception('Neispravno ime meseca: $monthName');
+      }
+
+      // Kreiraj DateTime za početak izabranog meseca
+      final pocetakMeseca = DateTime(year, monthNumber, 1);
+      final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
+
+      // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
+      final uspeh = await MesecniPutnikService.azurirajPlacanjeZaMesec(
+        putnikId,
+        iznos,
+        vozacIme,
+        pocetakMeseca,
+        krajMeseca,
+      );
+
+      if (uspeh) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Greška pri čuvanju plaćanja'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Greška: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // 🎯 ADMIN POPUP MENI - jedinstven pristup svim admin funkcijama
+  void _showAdminPopup() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.delete_outline,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Admin opcije - ${_putnik.ime}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Opcije
+            Column(
+              children: [
+                // Otkaži
+                if (!_putnik.jeOtkazan)
+                  ListTile(
+                    leading: const Icon(Icons.close, color: Colors.orange),
+                    title: const Text('Otkaži putnika'),
+                    subtitle: const Text('Otkaži za trenutno vreme i datum'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _handleOtkazivanje();
+                    },
+                  ),
+                // Obriši
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title: const Text('Obriši putnika'),
+                  subtitle: const Text('Trajno ukloni iz baze'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _handleBrisanje();
+                  },
+                ),
+                // Godišnji/Bolovanje
+                if (_putnik.mesecnaKarta == true &&
+                    !_putnik.jeOtkazan &&
+                    !_putnik.jeOdsustvo)
+                  ListTile(
+                    leading:
+                        const Icon(Icons.beach_access, color: Colors.orange),
+                    title: const Text('Godišnji/Bolovanje'),
+                    subtitle: const Text('Postavi odsustvo'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pokaziOdsustvoPicker();
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🚫 OTKAZIVANJE - izdvojeno u funkciju
+  Future<void> _handleOtkazivanje() async {
+    debugPrint('🔍 [OTKAZIVANJE] KLIKNUTO X DUGME za putnika: ${_putnik.ime}');
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Otkazivanje putnika'),
+        content: const Text(
+            'Da li ste sigurni da želite da označite ovog putnika kao otkazanog?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Ne'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Da'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      debugPrint(
+          '🔥 [X BUTTON] POČETAK otkazivanja putnika ID: ${_putnik.id}, ime: ${_putnik.ime} (vozač: ${widget.currentDriver})');
+      debugPrint(
+          '📊 [X BUTTON] PRE OTKAZIVANJA: jeOtkazan=${_putnik.jeOtkazan}, status=${_putnik.status}');
+
+      try {
+        await PutnikService().otkaziPutnika(
+          _putnik.id!,
+          widget.currentDriver ?? '',
+          selectedVreme: widget.selectedVreme,
+          selectedGrad: widget.selectedGrad,
+        );
+
+        debugPrint('✅ [X BUTTON] ZAVRŠENO otkazivanje putnika - ažuriram UI');
+        debugPrint(
+            '📊 [X BUTTON] POSLE OTKAZIVANJA: jeOtkazan=${_putnik.jeOtkazan}, status=${_putnik.status}');
+
+        if (mounted) {
+          setState(() {});
+          debugPrint(
+              '🔄 [X BUTTON] setState() pozvan - UI trebalo bi da se osvežava');
+        }
+      } catch (e) {
+        debugPrint('❌ [X BUTTON] GREŠKA pri otkazivanju: $e');
+      }
+    }
+  }
+
+  // 🗑️ BRISANJE - izdvojeno u funkciju
+  Future<void> _handleBrisanje() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Brisanje putnika'),
+        content:
+            const Text('Da li ste sigurni da želite da obrišete ovog putnika?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Ne'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Da'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      debugPrint(
+          '🗑️ [BRISANJE] POČETAK brisanja putnika ID: ${_putnik.id}, ime: ${_putnik.ime} (admin: ${widget.currentDriver})');
+      await PutnikService().obrisiPutnika(_putnik.id!);
+      if (mounted) {
+        setState(() {});
+        debugPrint(
+            '✅ [BRISANJE] ZAVRŠENO brisanje - UI ažuriran pomoću setState()');
+      }
+    }
   }
 } // kraj klase

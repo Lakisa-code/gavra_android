@@ -57,6 +57,7 @@ class Putnik {
   final bool? placeno;
   final double? iznosPlacanja;
   final String? naplatioVozac;
+  final String? pokupioVozac; // NOVO - vozač koji je pokupljanje izvršio
   final String? dodaoVozac;
   final String? vozac;
   final String grad;
@@ -84,6 +85,7 @@ class Putnik {
     this.placeno,
     this.iznosPlacanja,
     this.naplatioVozac,
+    this.pokupioVozac,
     this.dodaoVozac,
     this.vozac,
     required this.grad,
@@ -105,9 +107,10 @@ class Putnik {
 
   // Getter-i za centralizovanu logiku statusa
   bool get jeOtkazan =>
-      status != null &&
-      (status!.toLowerCase() == 'otkazano' ||
-          status!.toLowerCase() == 'otkazan');
+      obrisan || // 🆕 Dodaj prověru za obrisan (aktivan=false u bazi)
+      (status != null &&
+          (status!.toLowerCase() == 'otkazano' ||
+              status!.toLowerCase() == 'otkazan'));
 
   bool get jeBolovanje =>
       status != null && status!.toLowerCase() == 'bolovanje';
@@ -119,7 +122,9 @@ class Putnik {
 
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
-  bool get jePokupljen => vremePokupljenja != null;
+  bool get jePokupljen =>
+      vremePokupljenja != null || // Mesečni putnici
+      status == 'pokupljen'; // Dnevni putnici
 
   bool get jePlacen => (iznosPlacanja ?? 0) > 0;
 
@@ -171,8 +176,11 @@ class Putnik {
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
       placeno: (map['cena'] as double? ?? 0) > 0, // koristi cena kolonu
       iznosPlacanja: map['cena'] as double?, // koristi cena kolonu
-      naplatioVozac: map['vozac'] as String?, // ✅ ČITAJ vozača iz vozac kolone
-      dodaoVozac: map['vozac'] as String?, // ✅ ČITAJ vozača iz vozac kolone
+      naplatioVozac:
+          map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+      pokupioVozac:
+          map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
+      dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
       vozac: map['vozac'] as String?, // ✅ ČITAJ vozača iz vozac kolone
       grad: _determineGradFromMesecni(map),
       otkazaoVozac: null,
@@ -241,8 +249,11 @@ class Putnik {
         vremePlacanja: vremePlacanja,
         placeno: placeno,
         iznosPlacanja: iznosPlacanja,
-        naplatioVozac: vozac, // ✅ KORISTI vozač varijablu
-        dodaoVozac: vozac, // ✅ KORISTI vozač varijablu
+        naplatioVozac:
+            map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+        pokupioVozac:
+            map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
+        dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
         vozac: vozac, // ✅ KORISTI vozač varijablu
         grad: 'Bela Crkva',
         otkazaoVozac: null,
@@ -290,8 +301,11 @@ class Putnik {
         vremePlacanja: vremePlacanja,
         placeno: placeno,
         iznosPlacanja: iznosPlacanja,
-        naplatioVozac: vozac, // ✅ KORISTI vozač varijablu
-        dodaoVozac: vozac, // ✅ KORISTI vozač varijablu
+        naplatioVozac:
+            map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+        pokupioVozac:
+            map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
+        dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
         vozac: vozac, // ✅ KORISTI vozač varijablu
         grad: 'Vršac',
         otkazaoVozac: null,
@@ -312,35 +326,53 @@ class Putnik {
       id: map['id'], // ✅ UUID iz putovanja_istorija
       ime: map['putnik_ime'] as String? ?? '',
       polazak: _formatVremePolaska(map['vreme_polaska']?.toString() ?? '6:00'),
-      pokupljen: map['status'] == 'pokupljen', // ✅ NOVA LOGIKA - jednostavno
+      pokupljen: map['pokupljen'] == true ||
+          map['status'] == 'pokupljen', // ✅ KORISTI pokupljen kolonu ili status
       vremeDodavanja:
           map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
-      dan: _determineDanFromDatum(map['datum']),
+      dan: map['dan'] as String? ??
+          _determineDanFromDatum(map['datum']), // ✅ KORISTI dan kolonu direktno
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
-      statusVreme: map['vreme_akcije'] as String?,
-      vremePokupljenja:
-          map['vreme_akcije'] != null && map['status'] == 'pokupljen'
-              ? DateTime.parse(map['vreme_akcije'])
-              : null,
-      vremePlacanja: map['cena'] != null && (map['cena'] as double) > 0
-          ? (map['vreme_akcije'] != null
-              ? DateTime.parse(map['vreme_akcije'])
-              : null)
-          : null,
-      placeno: (map['cena'] as double? ?? 0) > 0,
-      iznosPlacanja: map['cena'] as double?,
-      naplatioVozac: null, // putovanja_istorija nema ovu kolonu
-      dodaoVozac: null, // putovanja_istorija nema ovu kolonu
-      vozac: null, // putovanja_istorija nema ovu kolonu
-      grad: map['adresa_polaska'] as String? ?? 'Bela Crkva',
-      otkazaoVozac: null,
+      statusVreme: map['updated_at']
+          as String?, // ✅ KORISTI updated_at umesto vreme_akcije
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'])
+          : null, // ✅ KORISTI vreme_pokupljenja kolonu
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'])
+          : null, // ✅ KORISTI vreme_placanja kolonu
+      placeno: _parseDouble(map['cena']) > 0,
+      iznosPlacanja: _parseDouble(map['cena']),
+      naplatioVozac:
+          map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+      pokupioVozac:
+          map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
+      dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
+      vozac: map['vozac'] as String?, // ✅ KORISTI vozac kolonu
+      grad: map['grad'] as String? ??
+          map['adresa_polaska'] as String? ??
+          'Bela Crkva', // ✅ KORISTI grad kolonu
+      otkazaoVozac:
+          map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
       vremeOtkazivanja: null,
       adresa: map['adresa_polaska'] as String?,
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
-      depozit: map['depozit'] as double?,
+      depozit: (map['depozit'] as num?)?.toDouble(), // ✅ KORISTI depozit kolonu
     );
+  }
+
+  // HELPER FUNKCIJA - Parseovanje double iz različitih tipova
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      return parsed ?? 0.0;
+    }
+    return 0.0;
   }
 
   // HELPER FUNKCIJA - Formatiranje vremena iz 06:00:00 u 6:00
@@ -487,9 +519,6 @@ class Putnik {
       'dan': dan, // ✅ DODATO NAZAD - dodajemo kolonu dan u tabelu
       'grad': grad, // ✅ DODATO NAZAD - dodajemo kolonu grad u tabelu
       'vreme_polaska': polazak,
-      // 'vreme_akcije': vremePokupljenja?.toIso8601String() ??
-      //     vremePlacanja?.toIso8601String() ??
-      //     DateTime.now().toIso8601String(), // ONEMOGUĆENO - kolona ne postoji u bazi
       'adresa_polaska': adresa ??
           (grad == 'Bela Crkva'
               ? 'Bela Crkva centar'
@@ -498,7 +527,21 @@ class Putnik {
       'broj_telefona': brojTelefona,
       'cena': iznosPlacanja ?? 0.0,
       'depozit': depozit ?? 0.0,
-      'status': status, // ✅ NOVA JEDNOSTAVNA KOLONA
+      'status': status ?? 'nije_se_pojavio', // ✅ NOVA JEDNOSTAVNA KOLONA
+      'obrisan': obrisan, // ✅ DODATO - soft delete flag
+      'pokupljen': pokupljen ?? false, // ✅ DODATO - da li je pokupljen
+      'vozac': vozac, // ✅ DODATO - vozač koji je dodao/pokupil
+      'dodao_vozac': dodaoVozac, // ✅ NOVA KOLONA - vozač koji je putnika dodao
+      'pokupljanje_vozac':
+          pokupioVozac, // ✅ NOVA KOLONA - vozač koji je pokupljanje izvršio
+      'naplata_vozac':
+          naplatioVozac, // ✅ NOVA KOLONA - vozač koji je naplatu izvršio
+      'otkazao_vozac':
+          otkazaoVozac, // ✅ NOVA KOLONA - vozač koji je otkazivanje izvršio
+      'vreme_placanja':
+          vremePlacanja?.toIso8601String(), // ✅ DODATO - vreme plaćanja
+      'vreme_pokupljenja':
+          vremePokupljenja?.toIso8601String(), // ✅ DODATO - vreme pokupljanja
       'created_at':
           vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(), // ✅ NOVA KOLONA

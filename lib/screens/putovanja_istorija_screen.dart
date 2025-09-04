@@ -44,18 +44,12 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.3),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -377,7 +371,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    _buildStatusChip(putovanje.statusBelaCrkvaVrsac),
+                    _buildStatusChip(putovanje.status),
                   ],
                 ),
               ),
@@ -395,7 +389,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    _buildStatusChip(putovanje.statusVrsacBelaCrkva),
+                    _buildStatusChip(putovanje.status),
                   ],
                 ),
               ),
@@ -922,4 +916,3 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     }
   }
 }
-

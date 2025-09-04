@@ -21,7 +21,9 @@ class StatistikaService {
 
   // 📊 DEBUG LOGOVANJE
   static void _debugLog(String message) {
-    if (kDebugMode) {}
+    if (kDebugMode) {
+      print('💰 [STATISTIKA] $message');
+    }
   }
 
   /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi se svuda!
@@ -68,16 +70,43 @@ class StatistikaService {
     return _calculatePazarSync(putnici, vozac, fromDate, toDate);
   }
 
-  /// 🔄 REAL-TIME PAZAR STREAM ZA ODREĐENOG VOZAČA
+  /// 🔄 REAL-TIME PAZAR STREAM ZA ODREĐENOG VOZAČA (uključuje mesečne karte)
   static Stream<double> streamPazarZaVozaca(String vozac,
       {DateTime? from, DateTime? to}) {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // Koristi PutnikService stream i kalkuliši pazar u real-time
-    return PutnikService().streamPutnici().map((putnici) {
-      return _calculatePazarSync(putnici, vozac, fromDate, toDate);
+    // 🔄 KORISTI KOMBINOVANE STREAMOVE (obični + mesečni putnici)
+    return _combineStreams(
+            PutnikService().streamPutnici(),
+            MesecniPutnikService.streamAktivniMesecniPutnici(),
+            fromDate,
+            toDate)
+        .map((pazarMap) {
+      return pazarMap[vozac] ?? 0.0;
+    });
+  }
+
+  /// 🎫 STREAM BROJ MESEČNIH KARATA ZA ODREĐENOG VOZAČA
+  static Stream<int> streamBrojMesecnihKarataZaVozaca(String vozac,
+      {DateTime? from, DateTime? to}) {
+    final now = _normalizeDateTime(DateTime.now());
+    final fromDate = from ?? DateTime(now.year, now.month, now.day);
+    final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    return MesecniPutnikService.streamAktivniMesecniPutnici()
+        .map((mesecniPutnici) {
+      int brojKarata = 0;
+      for (final putnik in mesecniPutnici) {
+        if (putnik.jePlacen &&
+            putnik.vozac == vozac &&
+            putnik.vremePlacanja != null &&
+            _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+          brojKarata++;
+        }
+      }
+      return brojKarata;
     });
   }
 
@@ -97,9 +126,7 @@ class StatistikaService {
         0.0, (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0));
 
     _debugLog(
-        'Obični putnici za $vozac: ${filteredPutnici.length} putnika = ${ukupnoObicni.toStringAsFixed(0)} RSD');
-
-    // 2. STVARNI PAZAR OD MESEČNIH KARATA
+        'Obični putnici za $vozac: ${filteredPutnici.length} putnika = ${ukupnoObicni.toStringAsFixed(0)} RSD'); // 2. STVARNI PAZAR OD MESEČNIH KARATA
     double ukupnoMesecne = 0.0;
     try {
       // Sinhrono računanje za stream - koristimo podatke iz putnici koji su mesečni
@@ -124,9 +151,7 @@ class StatistikaService {
     }
 
     final ukupno = ukupnoObicni + ukupnoMesecne;
-    _debugLog(
-        'REAL-TIME PAZAR za $vozac: ${ukupno.toStringAsFixed(0)} RSD (obični: ${ukupnoObicni.toStringAsFixed(0)}, mesečne: ${ukupnoMesecne.toStringAsFixed(0)})');
-
+    _debugLog('REAL-TIME PAZAR za $vozac: ${ukupno.toStringAsFixed(0)} RSD');
     return ukupno;
   }
 
@@ -151,9 +176,20 @@ class StatistikaService {
     List<Putnik> posledniPutnici = [];
     List<MesecniPutnik> posledniMesecni = [];
 
-    // Slušaj oba stream-a i kombinuj rezultate
-    await for (final update in putnicStream) {
-      posledniPutnici = update;
+    // Kombiniraj oba stream-a koristeći StreamGroup
+    await for (final kombinovani in StreamGroup.merge([
+      putnicStream.map((putnici) => {'putnici': putnici}),
+      mesecniStream.map((mesecni) => {'mesecni': mesecni}),
+    ])) {
+      // Ažuriraj odgovarajuću listu
+      if (kombinovani.containsKey('putnici')) {
+        posledniPutnici = kombinovani['putnici'] as List<Putnik>;
+      }
+      if (kombinovani.containsKey('mesecni')) {
+        posledniMesecni = kombinovani['mesecni'] as List<MesecniPutnik>;
+      }
+
+      // Uvek emituj novi rezultat kada se bilo koji stream ažurira
       yield _calculateKombinovanPazarSync(
           posledniPutnici, posledniMesecni, fromDate, toDate);
     }
@@ -182,18 +218,33 @@ class StatistikaService {
       }
     }
 
-    // 2. SABERI MESEČNE KARTE - KORISTI NOVA POLJA ZA PLAĆANJE
+    // 2. SABERI MESEČNE KARTE - KORISTI vremePlacanja (kad je plaćeno) umesto placeniMesec
+    _debugLog(
+        '🔍 PAZAR DEBUG: Procesuiram ${mesecniPutnici.length} mesečnih putnika');
     for (final putnik in mesecniPutnici) {
+      _debugLog(
+          '🔍 MESEČNI PUTNIK: ${putnik.putnikIme}, aktivan: ${putnik.aktivan}, obrisan: ${putnik.obrisan}, jePlacen: ${putnik.jePlacen}');
+
       if (putnik.aktivan && !putnik.obrisan && putnik.jePlacen) {
-        // Proveri da li je plaćen u vremenskom opsegu - koristi updatedAt umesto datumPlacanja
-        if (_jeUVremenskomOpsegu(putnik.updatedAt, fromDate, toDate)) {
-          final vozac = putnik.vozac ??
-              'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
+        // 💰 NOVA LOGIKA: Proveravamo da li je DANAS plaćeno (vremePlacanja), ne za koji mesec
+        if (putnik.vremePlacanja != null &&
+            _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+          final vozac = putnik.vozac ?? 'Nepoznat';
+          final iznos = putnik.iznosPlacanja ?? 0.0;
+
+          _debugLog(
+              '✅ DODAJEM MESEČNI PAZAR: ${putnik.putnikIme} -> $vozac, iznos: $iznos RSD (plaćeno: ${putnik.vremePlacanja})');
+
           if (pazarMesecne.containsKey(vozac)) {
-            pazarMesecne[vozac] =
-                pazarMesecne[vozac]! + (putnik.iznosPlacanja ?? 0.0);
+            pazarMesecne[vozac] = pazarMesecne[vozac]! + iznos;
           }
+        } else {
+          _debugLog(
+              '❌ MESEČNI PUTNIK ${putnik.putnikIme} NIJE PLAĆEN DANAS (vremePlacanja: ${putnik.vremePlacanja})');
         }
+      } else {
+        _debugLog(
+            '❌ MESEČNI PUTNIK ${putnik.putnikIme} NE ISPUNJAVA USLOVE (aktivan: ${putnik.aktivan}, obrisan: ${putnik.obrisan}, jePlacen: ${putnik.jePlacen})');
       }
     }
 
@@ -205,6 +256,11 @@ class StatistikaService {
       final ukupnoVozac = pazarObicni[vozac]! + pazarMesecne[vozac]!;
       rezultat[vozac] = ukupnoVozac;
       ukupno += ukupnoVozac;
+
+      // 📊 DEBUG LOGOVANJE PO VOZAČIMA
+      if (ukupnoVozac > 0) {
+        _debugLog('💰 VOZAČ $vozac: ${ukupnoVozac.toStringAsFixed(0)} RSD');
+      }
     }
 
     // Dodaj ukupan pazar
@@ -212,6 +268,8 @@ class StatistikaService {
     rezultat['_ukupno_obicni'] = pazarObicni.values.fold(0.0, (a, b) => a + b);
     rezultat['_ukupno_mesecni'] =
         pazarMesecne.values.fold(0.0, (a, b) => a + b);
+
+    _debugLog('🏆 UKUPAN PAZAR DANAS: ${ukupno.toStringAsFixed(0)} RSD');
 
     return rezultat;
   }
@@ -223,10 +281,9 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // Koristi PutnikService stream i kalkuliši pazar za sve vozače u real-time
-    return PutnikService().streamPutnici().map((putnici) {
-      return _calculatePazarSvihVozacaSync(putnici, fromDate, toDate);
-    });
+    // 🔄 KOMBINUJ DNEVNE I MESEČNE PUTNIKE
+    return _combineStreams(PutnikService().streamPutnici(),
+        MesecniPutnikService.streamAktivniMesecniPutnici(), fromDate, toDate);
   }
 
   /// 🔄 SINHRONA KALKULACIJA PAZARA ZA SVE VOZAČE (za stream)
@@ -241,14 +298,12 @@ class StatistikaService {
     }
 
     // 1. SABERI OBIČNI PAZAR iz putnici tabele
-    int brojObicnihPutnika = 0;
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           final vozac = putnik.naplatioVozac!;
           if (pazarObicni.containsKey(vozac)) {
             pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
-            brojObicnihPutnika++;
           }
         }
       }
@@ -275,7 +330,7 @@ class StatistikaService {
     rezultat['_ukupno'] = ukupno;
 
     _debugLog(
-        'REAL-TIME PAZAR SVE VOZAČE: ukupno=${ukupno.toStringAsFixed(0)} RSD, vozača=${sviVozaci.length}, obični putnici=$brojObicnihPutnika');
+        'REAL-TIME PAZAR SVE VOZAČE: ukupno=${ukupno.toStringAsFixed(0)} RSD, vozača=${sviVozaci.length}');
 
     return rezultat;
   }
@@ -319,31 +374,35 @@ class StatistikaService {
       }
     }
 
-    _debugLog('Procesuirano $brojObicnihPutnika običnih putnika');
+    _debugLog('Procesuirano $brojObicnihPutnika putnika');
 
-    // 2. SABERI MESEČNE KARTE
+    // 2. SABERI MESEČNE KARTE - STVARNI PODACI
     int brojMesecnihKarata = 0;
     try {
-      // MesecneKarteService je uklonjen - placeholder
-      // final mesecneKarteService = MesecneKarteService();
-      // final sveMesecneKarte = await mesecneKarteService.getMesecneKarte();
+      // Učitaj sve mesečne putnike
+      final mesecniPutnici =
+          await MesecniPutnikService.getAktivniMesecniPutnici();
 
-      // for (final karta in sveMesecneKarte) {
-      //   if (karta.datumPlacanja != null &&
-      //       karta.iznos > 0 &&
-      //       karta.naplatioVozac != null &&
-      //       karta.naplatioVozac!.isNotEmpty) {
-      //     if (_jeUVremenskomOpsegu(karta.datumPlacanja, fromDate, toDate)) {
-      //       final vozac = karta.naplatioVozac!;
-      //       if (pazarMesecne.containsKey(vozac)) {
-      //         pazarMesecne[vozac] = pazarMesecne[vozac]! + karta.iznos;
-      //         brojMesecnihKarata++;
-      //       }
-      //     }
-      //   }
-      // }
+      for (final putnik in mesecniPutnici) {
+        // Proveri da li je putnik platio u ovom periodu
+        if (putnik.vremePlacanja != null &&
+            putnik.cena != null &&
+            putnik.cena! > 0 &&
+            putnik.vozac != null &&
+            putnik.vozac!.isNotEmpty) {
+          if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+            final vozac = putnik.vozac!;
+            if (pazarMesecne.containsKey(vozac)) {
+              pazarMesecne[vozac] = pazarMesecne[vozac]! + putnik.cena!;
+              brojMesecnihKarata++;
+              _debugLog(
+                  '✅ Dodao mesečnu kartu: ${putnik.putnikIme} (${putnik.cena}) -> $vozac na dan ${putnik.vremePlacanja?.toString().split(' ')[0]}');
+            }
+          }
+        }
+      }
     } catch (e) {
-      _debugLog('Greška pri učitavanju mesečnih karata: $e');
+      _debugLog('Greška pri učitavanju mesečnih putnika: $e');
     }
 
     _debugLog('Procesuirano $brojMesecnihKarata mesečnih karata');
@@ -361,8 +420,7 @@ class StatistikaService {
       ukupno += ukupnoVozac;
 
       if (ukupnoVozac > 0) {
-        _debugLog(
-            '$vozac: ${ukupnoVozac.toStringAsFixed(0)} RSD (obični: ${obicni.toStringAsFixed(0)}, mesečne: ${mesecne.toStringAsFixed(0)})');
+        _debugLog('$vozac: ${ukupnoVozac.toStringAsFixed(0)} RSD');
       }
     }
 
@@ -425,21 +483,21 @@ class StatistikaService {
           }
         }
 
-        // 3. POKUPLJENI - ko je POKUPIOVOZAC (koristi dodaoVozac jer nema pokupioVozac)
-        if (putnik.pokupljen == true) {
-          final pokupioVozac = putnik.dodaoVozac ?? 'Nepoznat';
-          if (vozaciStats.containsKey(pokupioVozac)) {
+        // 3. POKUPLJENI - ko je POKUPIOVOZAC
+        if (putnik.jePokupljen) {
+          final pokupioVozac = putnik.pokupioVozac;
+          if (pokupioVozac != null && vozaciStats.containsKey(pokupioVozac)) {
             vozaciStats[pokupioVozac]!['pokupljeni']++;
           }
         }
 
         // 🆕 DUGOVI - pokupljen ali nije plaćen, nije otkazan, nije mesečni
-        if (putnik.pokupljen == true &&
+        if (putnik.jePokupljen &&
             !putnik.jeOtkazan &&
             putnik.mesecnaKarta != true &&
             (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0)) {
-          final pokupioVozac = putnik.dodaoVozac ?? 'Nepoznat';
-          if (vozaciStats.containsKey(pokupioVozac)) {
+          final pokupioVozac = putnik.pokupioVozac;
+          if (pokupioVozac != null && vozaciStats.containsKey(pokupioVozac)) {
             vozaciStats[pokupioVozac]!['dugovi']++;
           }
         }
@@ -466,15 +524,18 @@ class StatistikaService {
     int ukupnoMesecnihKarata = 0;
     for (final putnik in mesecniPutnici) {
       if (putnik.jePlacen) {
-        // ✅ UKLONJEN datumPlacanja check
-        // Proveri da li je mesečna karta plaćena u datom periodu - koristi updatedAt
-        if (_jeUVremenskomOpsegu(
-            putnik.updatedAt, normalizedFrom, normalizedTo)) {
+        // ✅ UNIFIKOVANA LOGIKA: koristi vremePlacanja umesto updatedAt
+        // Proveri da li je mesečna karta plaćena u datom periodu
+        if (putnik.vremePlacanja != null &&
+            _jeUVremenskomOpsegu(
+                putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
           final naplatioVozac = putnik.vozac ??
               'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
           if (vozaciStats.containsKey(naplatioVozac)) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[naplatioVozac]!['mesecneKarte']++;
+            // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
+            vozaciStats[naplatioVozac]!['naplaceni']++;
             vozaciStats[naplatioVozac]!['pazarMesecne'] +=
                 (putnik.iznosPlacanja ?? 0.0);
             vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
@@ -495,7 +556,7 @@ class StatistikaService {
       final stats = vozaciStats[vozac]!;
       if (stats['ukupnoPazar'] > 0 || stats['dodati'] > 0) {
         _debugLog(
-            '$vozac: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD (obični: ${stats['pazarObicni'].toStringAsFixed(0)}, mesečne: ${stats['pazarMesecne'].toStringAsFixed(0)}) | putnici: ${stats['naplaceni']}, mesečne: ${stats['mesecneKarte']}');
+            '$vozac: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD | putnici: ${stats['naplaceni']}, mesečne: ${stats['mesecneKarte']}');
       }
     }
 
@@ -584,16 +645,15 @@ class StatistikaService {
       if (putnik.vremePokupljenja != null) {
         if (_jeUVremenskomOpsegu(
             putnik.vremePokupljenja, normalizedFrom, normalizedTo)) {
-          final pokupioVozac = putnik.dodaoVozac ??
-              'Nepoznat'; // Koristi dodaoVozac jer pokupioVozac ne postoji
-          if (vozaciStats.containsKey(pokupioVozac)) {
+          final pokupioVozac = putnik.pokupioVozac;
+          if (pokupioVozac != null && vozaciStats.containsKey(pokupioVozac)) {
             vozaciStats[pokupioVozac]!['pokupljeni']++;
           }
         }
       }
 
       // 🆕 DUGOVI (SINHRONO) - pokupljen ali nije plaćen, nije otkazan, nije mesečni
-      if (putnik.pokupljen == true &&
+      if (putnik.jePokupljen &&
           !putnik.jeOtkazan &&
           putnik.mesecnaKarta != true &&
           (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0)) {
@@ -613,15 +673,18 @@ class StatistikaService {
     int ukupnoMesecnihKarata = 0;
     for (final putnik in mesecniPutnici) {
       if (putnik.jePlacen) {
-        // ✅ UKLONJEN datumPlacanja check
-        // Proveri da li je mesečna karta plaćena u datom periodu - koristi updatedAt
-        if (_jeUVremenskomOpsegu(
-            putnik.updatedAt, normalizedFrom, normalizedTo)) {
+        // ✅ UNIFIKOVANA LOGIKA: koristi vremePlacanja umesto updatedAt
+        // Proveri da li je mesečna karta plaćena u datom periodu
+        if (putnik.vremePlacanja != null &&
+            _jeUVremenskomOpsegu(
+                putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
           final naplatioVozac = putnik.vozac ??
               'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
           if (vozaciStats.containsKey(naplatioVozac)) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[naplatioVozac]!['mesecneKarte']++;
+            // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
+            vozaciStats[naplatioVozac]!['naplaceni']++;
             vozaciStats[naplatioVozac]!['pazarMesecne'] +=
                 (putnik.iznosPlacanja ?? 0.0);
             vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
@@ -630,6 +693,18 @@ class StatistikaService {
           }
         }
       }
+    }
+
+    // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE (SINHRONO - uprošćeno)
+    try {
+      // Za real-time stream, koristimo uprošćenu kilometražu bez database poziva
+      // jer bi to bilo previše sporo za real-time azuriranje
+      for (final vozac in sviVozaci) {
+        vozaciStats[vozac]!['kilometraza'] =
+            0.0; // Default vrednost za real-time
+      }
+    } catch (e) {
+      _debugLog('🚨 Greška pri sinhronoj kilometraži: $e');
     }
 
     _debugLog(
@@ -788,6 +863,133 @@ class StatistikaService {
       _debugLog('🚨 GREŠKA PRI RESETOVANJU KILOMETRAŽE: $e');
       return false;
     }
+  }
+
+  /// 💰 RESETUJ PAZAR ZA ODREĐENOG VOZAČA - briše podatke o naplatama
+  static Future<bool> resetujPazarZaVozaca(String vozac,
+      {DateTime? from, DateTime? to}) async {
+    try {
+      final now = _normalizeDateTime(DateTime.now());
+      final fromDate = from ?? DateTime(now.year, now.month, now.day);
+      final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+      _debugLog(
+          '🔄 RESET PAZAR START za $vozac od ${fromDate.toString().split(' ')[0]} do ${toDate.toString().split(' ')[0]}');
+
+      final supabase = Supabase.instance.client;
+      num ukupnoObrisano = 0;
+
+      // 1. RESETUJ OBIČNE PUTNIKE - postavi iznos_placanja na 0 i obriši vreme_placanja
+      try {
+        final putnikResult = await supabase
+            .from('putnici')
+            .update({
+              'iznos_placanja': 0.0,
+              'vreme_placanja': null,
+              'naplatio_vozac': null,
+            })
+            .eq('naplatio_vozac', vozac)
+            .not('vreme_placanja', 'is', null)
+            .gte('vreme_placanja', fromDate.toIso8601String())
+            .lte('vreme_placanja', toDate.toIso8601String());
+
+        _debugLog(
+            '✅ Resetovano ${putnikResult?.length ?? 0} običnih putnika za $vozac');
+        ukupnoObrisano += (putnikResult?.length ?? 0);
+      } catch (e) {
+        _debugLog('⚠️ Greška pri resetovanju putnika za $vozac: $e');
+      }
+
+      // 2. RESETUJ MESEČNE KARTE - postavi cena na 0 i obriši vreme_placanja
+      try {
+        final mesecniResult = await supabase
+            .from('mesecni_putnici')
+            .update({
+              'cena': 0.0,
+              'vreme_placanja': null,
+            })
+            .eq('vozac', vozac)
+            .not('vreme_placanja', 'is', null)
+            .gte('vreme_placanja', fromDate.toIso8601String())
+            .lte('vreme_placanja', toDate.toIso8601String());
+
+        _debugLog(
+            '✅ Resetovano ${mesecniResult?.length ?? 0} mesečnih karata za $vozac');
+        ukupnoObrisano += (mesecniResult?.length ?? 0);
+      } catch (e) {
+        _debugLog('⚠️ Greška pri resetovanju mesečnih putnika za $vozac: $e');
+      }
+
+      _debugLog(
+          '✅ RESET PAZAR ZAVRŠEN za $vozac - ukupno obrisano: $ukupnoObrisano stavki');
+      return true;
+    } catch (e) {
+      _debugLog('🚨 GREŠKA PRI RESETOVANJU PAZARA za $vozac: $e');
+      return false;
+    }
+  }
+
+  /// 💰 RESETUJ SAMO DANAS PAZAR ZA VOZAČA - brži reset za današnji dan
+  static Future<bool> resetujDanasPazarZaVozaca(String vozac) async {
+    final now = DateTime.now();
+    final danasStart = DateTime(now.year, now.month, now.day);
+    final danasEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    return await resetujPazarZaVozaca(vozac, from: danasStart, to: danasEnd);
+  }
+
+  /// 🚨 RESETUJ PAZAR ZA SVE VOZAČE - briše SVE podatke o naplatama za sve vozače
+  static Future<bool> resetujPazarZaSveVozace({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    _debugLog('🚨 POČETAK RESETOVANJA PAZARA ZA SVE VOZAČE...');
+
+    int uspesnoResetovano = 0;
+    int ukupnoVozaca = sviVozaci.length;
+    List<String> neuspesniVozaci = [];
+
+    for (String vozac in sviVozaci) {
+      _debugLog('🔄 Resetujem pazar za vozača: $vozac');
+
+      try {
+        bool uspeh = await resetujPazarZaVozaca(vozac, from: from, to: to);
+        if (uspeh) {
+          uspesnoResetovano++;
+          _debugLog('✅ Uspešno resetovan pazar za: $vozac');
+        } else {
+          neuspesniVozaci.add(vozac);
+          _debugLog('❌ Neuspešan reset pazara za: $vozac');
+        }
+      } catch (e) {
+        neuspesniVozaci.add(vozac);
+        _debugLog('🚨 Greška pri resetovanju pazara za $vozac: $e');
+      }
+    }
+
+    _debugLog('🏁 ZAVRŠEN RESET PAZARA ZA SVE VOZAČE:');
+    _debugLog(
+        '   ✅ Uspešno resetovano: $uspesnoResetovano/$ukupnoVozaca vozača');
+    if (neuspesniVozaci.isNotEmpty) {
+      _debugLog('   ❌ Neuspešno resetovani: ${neuspesniVozaci.join(", ")}');
+    }
+
+    return neuspesniVozaci.isEmpty;
+  }
+
+  /// 🚨 RESETUJ DANAŠNJI PAZAR ZA SVE VOZAČE - brži reset samo za današnji dan
+  static Future<bool> resetujDanasPazarZaSveVozace() async {
+    final now = DateTime.now();
+    final danasStart = DateTime(now.year, now.month, now.day);
+    final danasEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    return await resetujPazarZaSveVozace(from: danasStart, to: danasEnd);
+  }
+
+  /// 🚨 NUKLEARNI RESET - briše SVE podatke o naplatama za sve vozače (cela istorija!)
+  static Future<bool> nuklearniResetSvihPazara() async {
+    _debugLog('☢️ NUKLEARNI RESET - BRIŠEM SVU ISTORIJU PAZARA ZA SVE VOZAČE!');
+    return await resetujPazarZaSveVozace(); // Bez from/to parametara = briše sve
   }
 
   /// Računa rastojanje između dve GPS koordinate u kilometrima (Haversine formula)

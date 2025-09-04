@@ -392,28 +392,24 @@ class _StatistikaScreenState extends State<StatistikaScreen>
           return const Center(child: CircularProgressIndicator());
         }
 
-        // 🔄 REAL-TIME PAZAR STREAM sa kombinovanim putnicima
+        // 🔄 REAL-TIME PAZAR STREAM sa kombinovanim putnicima (uključuje mesečne karte)
         return StreamBuilder<Map<String, double>>(
-          stream: PutnikService().streamKombinovaniPutnici().map((putnici) {
-            // Filtruj putnice po datumu i izračunaj pazar
-            final filteredPutnici = putnici.where((p) {
-              if (p.vremeDodavanja == null) return true; // Mesečni putnici
-              return p.vremeDodavanja!.isAfter(from) &&
-                  p.vremeDodavanja!.isBefore(to);
-            }).toList();
-
-            return StatistikaService.pazarSamoPutnici(filteredPutnici);
-          }),
+          stream: StatistikaService.streamPazarSvihVozaca(
+            from: from,
+            to: to,
+          ),
           builder: (context, pazarSnapshot) {
             if (pazarSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
             final pazarMap = pazarSnapshot.data ?? <String, double>{};
-            final ukupno =
-                pazarMap.values.fold<double>(0.0, (sum, value) => sum + value);
+            final ukupno = pazarMap['_ukupno'] ?? 0.0;
+            // Ukloni '_ukupno' ključ za čist prikaz
+            final Map<String, double> cistPazarMap = Map.from(pazarMap)
+              ..remove('_ukupno');
             // Dodaj ukupno u mapu
-            pazarMap['_ukupno'] = ukupno;
+            cistPazarMap['_ukupno'] = ukupno;
 
             // 🎯 KORISTI CENTRALIZOVANE BOJE VOZAČA
             final Map<String, Color> vozacBoje = {
@@ -426,7 +422,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: PazarPoVozacimaWidget(
-                  vozaciPazar: pazarMap,
+                  vozaciPazar: cistPazarMap,
                   ukupno: ukupno,
                   periodLabel: _periodLabel(_period),
                   vozacBoje: vozacBoje,
