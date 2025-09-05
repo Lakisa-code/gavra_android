@@ -597,7 +597,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   const SizedBox(width: 8),
 
                   // 💰 DUGME ZA PLAĆANJE - kompaktno
-                  Container(
+                  SizedBox(
                     height: 26,
                     child: ElevatedButton.icon(
                       onPressed: () => _prikaziPlacanje(putnik),
@@ -663,7 +663,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               Row(
                 children: [
                   // 💰 DUGME ZA PLAĆANJE - kompaktno
-                  Container(
+                  SizedBox(
                     height: 26,
                     child: ElevatedButton.icon(
                       onPressed: () => _prikaziPlacanje(putnik),
@@ -1765,24 +1765,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           }).toList()
                             ..addAll([
                               // 📊 CELA GODINA I UKUPNO
-                              DropdownMenuItem(
+                              const DropdownMenuItem(
                                 value: 'Cela 2025',
                                 child: Row(
                                   children: [
                                     Icon(Icons.event_note,
                                         size: 16, color: Colors.blue),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Text('Cela 2025'),
                                   ],
                                 ),
                               ),
-                              DropdownMenuItem(
+                              const DropdownMenuItem(
                                 value: 'Ukupno',
                                 child: Row(
                                   children: [
                                     Icon(Icons.history,
                                         size: 16, color: Colors.purple),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Text('Ukupno'),
                                   ],
                                 ),
@@ -1823,13 +1823,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.error_outline,
+                                  const Icon(Icons.error_outline,
                                       color: Colors.red, size: 48),
                                   const SizedBox(height: 16),
                                   Text(
                                     'Greška pri učitavanju:\n${snapshot.error}',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.red),
+                                    style: const TextStyle(color: Colors.red),
                                   ),
                                   const SizedBox(height: 16),
                                   ElevatedButton.icon(
@@ -1837,8 +1837,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       // Restart stream
                                       setState(() {});
                                     },
-                                    icon: Icon(Icons.refresh),
-                                    label: Text('Pokušaj ponovo'),
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Pokušaj ponovo'),
                                   ),
                                 ],
                               ),
@@ -1855,7 +1855,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.warning_amber_outlined,
+                                  const Icon(Icons.warning_amber_outlined,
                                       color: Colors.orange, size: 48),
                                   const SizedBox(height: 16),
                                   Text(
@@ -2326,9 +2326,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         final status = putovanje['status'] as String?;
         final pokupljen = putovanje['pokupljen'] as bool?;
 
-        if (poslednjiDatum == null) {
-          poslednjiDatum = datum;
-        }
+        poslednjiDatum ??= datum;
 
         if (status == 'pokupljen' || pokupljen == true) {
           if (!uspesniDatumi.contains(datum)) {
@@ -2370,7 +2368,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // �📅 HELPER FUNKCIJE ZA MESECE
   String _getCurrentMonthYear() {
     final now = DateTime.now();
-    return _getMonthName(now.month) + ' ${now.year}';
+    return '${_getMonthName(now.month)} ${now.year}';
   }
 
   List<String> _getMonthOptions() {
@@ -2379,7 +2377,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     // Dodaj svih 12 meseci trenutne godine
     for (int month = 1; month <= 12; month++) {
-      final monthYear = _getMonthName(month) + ' ${now.year}';
+      final monthYear = '${_getMonthName(month)} ${now.year}';
       options.add(monthYear);
     }
 
@@ -2465,7 +2463,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 📅 STATIC HELPER FUNKCIJE - za korišćenje iz drugih widgeta
   static String _getCurrentMonthYearStatic() {
     final now = DateTime.now();
-    return _getMonthNameStatic(now.month) + ' ${now.year}';
+    return '${_getMonthNameStatic(now.month)} ${now.year}';
   }
 
   static List<String> _getMonthOptionsStatic() {
@@ -2474,7 +2472,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     // Dodaj svih 12 meseci trenutne godine
     for (int month = 1; month <= 12; month++) {
-      final monthYear = _getMonthNameStatic(month) + ' ${now.year}';
+      final monthYear = '${_getMonthNameStatic(month)} ${now.year}';
       options.add(monthYear);
     }
 
@@ -2585,9 +2583,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         final bool pokupljen = red['pokupljen'] as bool? ?? false;
         final String status = red['status'] as String? ?? '';
 
-        if (poslednjiDatum == null) {
-          poslednjiDatum = datum;
-        }
+        poslednjiDatum ??= datum;
 
         if (pokupljen || status == 'pokupljen') {
           uspesniDatumi.add(datum);
