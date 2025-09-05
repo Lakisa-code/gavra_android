@@ -530,10 +530,11 @@ class _AdminScreenState extends State<AdminScreen> {
             return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
           }).toList();
 
-          print('🔍 ADMIN DEBUG: Ukupno putnika: ${filteredPutnici.length}');
-          print('🔍 ADMIN DEBUG: Broj dužnika: ${filteredDuznici.length}');
+          debugPrint(
+              '🔍 ADMIN DEBUG: Ukupno putnika: ${filteredPutnici.length}');
+          debugPrint('🔍 ADMIN DEBUG: Broj dužnika: ${filteredDuznici.length}');
           for (final d in filteredDuznici) {
-            print('🔍 ADMIN DEBUG: Dužnik - ${d.ime}');
+            debugPrint('🔍 ADMIN DEBUG: Dužnik - ${d.ime}');
           }
           // Izračunaj pazar po vozačima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA 💰
           // ✅ ISPRAVKA: Umesto kalkulacije datuma, koristi već filtrirane putnike po danu

@@ -75,14 +75,14 @@ class _DugoviScreenState extends State<DugoviScreen> {
           final danasString =
               "${danas.day.toString().padLeft(2, '0')}.${danas.month.toString().padLeft(2, '0')}.${danas.year}";
 
-          print('🔍 DUGOVI DEBUG: Tražim dužnike za datum: $danasString');
-          print(
+          debugPrint('🔍 DUGOVI DEBUG: Tražim dužnike za datum: $danasString');
+          debugPrint(
               '🔍 DUGOVI DEBUG: Ukupno putnika u stream-u: ${snapshot.data!.length}');
 
           // Ispišimo sve putnike za debug
           for (final p in snapshot.data!) {
             if (p.ime.contains('TESTDODAO') || p.ime.contains('KURAPAL')) {
-              print(
+              debugPrint(
                   '🔍 DUGOVI DEBUG: ${p.ime} - dan: "${p.dan}", jePokupljen: ${p.jePokupljen}, iznosPlacanja: ${p.iznosPlacanja}, mesecnaKarta: ${p.mesecnaKarta}, status: "${p.status}"');
             }
           }
@@ -119,9 +119,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
             return bTime.compareTo(aTime); // Obrnut redosled - najnoviji prvi
           });
 
-          print('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
+          debugPrint('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
           for (final d in duznici) {
-            print('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
+            debugPrint('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
           }
           if (duznici.isEmpty) {
             return const Center(

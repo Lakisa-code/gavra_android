@@ -532,8 +532,8 @@ class _PutnikCardState extends State<PutnikCard> {
       context: context,
       builder: (ctx) {
         final controller = TextEditingController();
-        String selectedMonth = _getMonthNameStatic(DateTime.now().month) +
-            ' ${DateTime.now().year}';
+        String selectedMonth =
+            '${_getMonthNameStatic(DateTime.now().month)} ${DateTime.now().year}';
 
         return StatefulBuilder(
           builder: (context, setState) => AlertDialog(
@@ -2038,24 +2038,6 @@ class _PutnikCardState extends State<PutnikCard> {
     return '${date.day}.${date.month}.${date.year}';
   }
 
-  String _formatMonth(DateTime date) {
-    const months = [
-      'Januar',
-      'Februar',
-      'Mart',
-      'April',
-      'Maj',
-      'Jun',
-      'Jul',
-      'Avgust',
-      'Septembar',
-      'Oktobar',
-      'Novembar',
-      'Decembar'
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
-
   // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u mesecni_putnici_screen.dart
   bool _isMonthPaidStatic(String monthYear, MesecniPutnik? mesecniPutnik) {
     if (mesecniPutnik == null) return false;
@@ -2132,27 +2114,8 @@ class _PutnikCardState extends State<PutnikCard> {
 
     // Dodaj svih 12 meseci trenutne godine
     for (int month = 1; month <= 12; month++) {
-      final monthYear = _getMonthNameStatic(month) + ' ${now.year}';
+      final monthYear = '${_getMonthNameStatic(month)} ${now.year}';
       options.add(monthYear);
-    }
-
-    return options;
-  }
-
-  List<DateTime> _generateMonthOptions() {
-    final now = DateTime.now();
-    final options = <DateTime>[];
-
-    // Dodaj poslednja 3 meseca
-    for (int i = 2; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i, 1);
-      options.add(month);
-    }
-
-    // Dodaj sledeća 3 meseca
-    for (int i = 1; i <= 3; i++) {
-      final month = DateTime(now.year, now.month + i, 1);
-      options.add(month);
     }
 
     return options;

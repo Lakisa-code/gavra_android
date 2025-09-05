@@ -214,7 +214,7 @@ class _DanasScreenState extends State<DanasScreen> {
             _buildDjackiBrojac(sviPutnici),
             const SizedBox(width: 4), // Manji razmak
             // Kompaktno dugme za optimizaciju
-            Container(
+            SizedBox(
               height: 24,
               child: ElevatedButton.icon(
                 onPressed: _isLoading || !hasPassengers
@@ -277,7 +277,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       Icon(Icons.speed, color: speedColor, size: 16),
                       const SizedBox(width: 4),
                       Text(
-                        '${speed.toStringAsFixed(0)}',
+                        speed.toStringAsFixed(0),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

@@ -286,55 +286,6 @@ class StatistikaService {
         MesecniPutnikService.streamAktivniMesecniPutnici(), fromDate, toDate);
   }
 
-  /// 🔄 SINHRONA KALKULACIJA PAZARA ZA SVE VOZAČE (za stream)
-  static Map<String, double> _calculatePazarSvihVozacaSync(
-      List<Putnik> putnici, DateTime fromDate, DateTime toDate) {
-    // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA
-    final Map<String, double> pazarObicni = {};
-    final Map<String, double> pazarMesecne = {};
-    for (final vozac in sviVozaci) {
-      pazarObicni[vozac] = 0.0;
-      pazarMesecne[vozac] = 0.0;
-    }
-
-    // 1. SABERI OBIČNI PAZAR iz putnici tabele
-    for (final putnik in putnici) {
-      if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
-        if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.naplatioVozac!;
-          if (pazarObicni.containsKey(vozac)) {
-            pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
-          }
-        }
-      }
-    }
-
-    // 2. MESEČNE KARTE - IMPLEMENTIRANO
-    // Za demonstraciju - dodaje fiksnu vrednost za mesečne karte
-    // U potpunoj implementaciji treba kombinovati sa MesecniPutnikService
-    const double mesecneKarteBonus = 100.0; // Primer fiksne vrednosti
-    for (final vozac in sviVozaci) {
-      pazarMesecne[vozac] =
-          pazarMesecne[vozac]! + (mesecneKarteBonus / sviVozaci.length);
-    } // 3. SABERI UKUPNO I VRATI REZULTAT
-    final Map<String, double> rezultat = {};
-    double ukupno = 0.0;
-
-    for (final vozac in sviVozaci) {
-      final ukupnoVozac = pazarObicni[vozac]! + pazarMesecne[vozac]!;
-      rezultat[vozac] = ukupnoVozac;
-      ukupno += ukupnoVozac;
-    }
-
-    // Dodaj ukupan pazar
-    rezultat['_ukupno'] = ukupno;
-
-    _debugLog(
-        'REAL-TIME PAZAR SVE VOZAČE: ukupno=${ukupno.toStringAsFixed(0)} RSD, vozača=${sviVozaci.length}');
-
-    return rezultat;
-  }
-
   /// �💰 PAZAR PO SVIM VOZAČIMA - KORISTI VREMENSKI OPSEG
   static Future<Map<String, double>> pazarSvihVozaca(List<Putnik> putnici,
       {DateTime? from, DateTime? to}) async {
