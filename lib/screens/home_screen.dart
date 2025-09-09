@@ -602,27 +602,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           !dozvoljenaImena
                               .contains(imeController.text.trim())) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
+                          const SnackBar(
                             content: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                     '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 4),
-                                const Text(
+                                SizedBox(height: 4),
+                                Text(
                                     'Možete dodati samo POSTOJEĆE mesečne putnike.'),
-                                const SizedBox(height: 4),
-                                const Text('Za NOVE mesečne putnike idite na:'),
-                                const SizedBox(height: 2),
+                                SizedBox(height: 4),
+                                Text('Za NOVE mesečne putnike idite na:'),
+                                SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    const Icon(Icons.arrow_forward,
+                                    Icon(Icons.arrow_forward,
                                         size: 16, color: Colors.white),
-                                    const SizedBox(width: 4),
-                                    const Text('Meni → Mesečni putnici',
+                                    SizedBox(width: 4),
+                                    Text('Meni → Mesečni putnici',
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold)),
                                   ],
@@ -630,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ],
                             ),
                             backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 5),
+                            duration: Duration(seconds: 5),
                           ),
                         );
                         return;
