@@ -49,6 +49,27 @@ jobs:
           flutter pub get --verbose
           echo "✅ Geolocator dependencies force installed"
 
+      - name: 🔧 Fix Android Gradle Configuration for Geolocator
+        run: |
+          echo "=== FIXING ANDROID GRADLE CONFIGURATION ==="
+          
+          # Set Android environment variables
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          
+          # Update main android gradle.properties
+          echo "android.compileSdk=34" >> android/gradle.properties
+          echo "android.targetSdk=34" >> android/gradle.properties
+          echo "android.minSdk=21" >> android/gradle.properties
+          echo "android.buildToolsVersion=34.0.0" >> android/gradle.properties
+          echo "android.ndkVersion=21.4.7075529" >> android/gradle.properties
+          
+          # Show gradle.properties
+          echo "=== ANDROID GRADLE PROPERTIES ==="
+          cat android/gradle.properties
+          
+          echo "✅ Android Gradle configuration updated"
+
       - name: 🔧 Debug Geolocator Dependencies
         run: |
           echo "=== DEBUGGING GEOLOCATOR DEPENDENCY RESOLUTION ==="
