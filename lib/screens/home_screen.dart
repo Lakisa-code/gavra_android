@@ -65,9 +65,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     'Utorak',
     'Sreda',
     'Četvrtak',
-    'Petak',
-    'Subota',
-    'Nedelja'
+    'Petak'
   ];
 
 // Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - ZIMSKI RASPORED
@@ -312,28 +310,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // GitHub Actions automation has replaced manual updates
-  Future<void> _showAutomationInfo() async {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('🚀 Automatska Ažuriranja'),
-        content: const Text(
-          'Aplikacija se sada automatski ažurira preko:\n\n'
-          '📱 Android: GitHub Actions sa email delivery\n\n'
-          'Nema potrebe za manuelne update-ove! 😊',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Razumem'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _logout() async {
     // Prikaži confirmation dialog
     final bool? shouldLogout = await showDialog<bool>(
@@ -513,23 +489,45 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline,
-                            color: Colors.green[700], size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Prikazuju se samo dozvoljena imena za mesečnu kartu',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.w500,
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline,
+                                color: Colors.orange[700], size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'SAMO POSTOJEĆI MESEČNI PUTNICI',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange[700],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Možete dodati samo imena koja već postoje u mesečnoj listi.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange[600],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Za NOVE mesečne putnike → Meni → Mesečni putnici',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange[600],
+                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ],
@@ -599,15 +597,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         return;
                       }
 
-                      // Validacija za mesečnu kartu
+                      // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
                       if (mesecnaKarta &&
                           !dozvoljenaImena
                               .contains(imeController.text.trim())) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text('❌ Ime nije dozvoljeno za mesečnu kartu'),
+                          SnackBar(
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                    '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                const Text(
+                                    'Možete dodati samo POSTOJEĆE mesečne putnike.'),
+                                const SizedBox(height: 4),
+                                const Text('Za NOVE mesečne putnike idite na:'),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.arrow_forward,
+                                        size: 16, color: Colors.white),
+                                    const SizedBox(width: 4),
+                                    const Text('Meni → Mesečni putnici',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ],
+                            ),
                             backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 5),
                           ),
                         );
                         return;
@@ -1218,57 +1241,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         SizedBox(height: 1),
                                         Text(
                                           'Tema',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 1,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 2),
-
-                          // UPDATE - desno-sredina
-                          Expanded(
-                            flex: 25,
-                            child: InkWell(
-                              onTap: _showAutomationInfo,
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.4)),
-                                ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.auto_awesome,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 1),
-                                        Text(
-                                          'Auto',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 10,

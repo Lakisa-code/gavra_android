@@ -110,10 +110,13 @@ class _AdminScreenState extends State<AdminScreen> {
       'Sreda',
       'Četvrtak',
       'Petak',
-      'Subota',
-      'Nedelja'
     ];
-    final todayName = dayNames[now.weekday - 1];
+    // Ako je vikend (subota/nedelja), vraćamo ponedeljak
+    final weekday = now.weekday;
+    if (weekday > 5) {
+      return 'Ponedeljak';
+    }
+    final todayName = dayNames[weekday - 1];
 
     // ✅ UKLONJENA LOGIKA AUTOMATSKOG PREBACIVANJA NA PONEDELJAK
     // Sada vraća pravi trenutni dan u nedelji
@@ -128,8 +131,6 @@ class _AdminScreenState extends State<AdminScreen> {
       'Sreda': 'Sre',
       'Četvrtak': 'Čet',
       'Petak': 'Pet',
-      'Subota': 'Sub',
-      'Nedelja': 'Ned',
       '': '', // Prazno ostaje prazno
     };
     return dayMapping[fullDayName] ?? fullDayName;
@@ -399,9 +400,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       'Utorak',
                                       'Sreda',
                                       'Četvrtak',
-                                      'Petak',
-                                      'Subota',
-                                      'Nedelja'
+                                      'Petak'
                                     ].map<Widget>((String value) {
                                       return Center(
                                         child: FittedBox(
@@ -428,9 +427,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     'Utorak',
                                     'Sreda',
                                     'Četvrtak',
-                                    'Petak',
-                                    'Subota',
-                                    'Nedelja'
+                                    'Petak'
                                   ].map((dan) {
                                     return DropdownMenuItem<String>(
                                       value: dan,
@@ -690,7 +687,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(height: 12),
                     // 👥 VOZAČI + DEPOZIT (REAL-TIME)
                     StreamBuilder<Map<String, double>>(
-                      stream: Stream
+                      stream: const Stream
                           .empty(), // Zakomentarisan DepozitService.depozitStream
                       initialData: _depoziti,
                       builder: (context, snapshot) {
@@ -810,7 +807,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(height: 4),
                     // 💸 DEPOZIT KOCKE (REAL-TIME)
                     StreamBuilder<Map<String, double>>(
-                      stream: Stream
+                      stream: const Stream
                           .empty(), // Zakomentarisan DepozitService.depozitStream
                       initialData: _depoziti,
                       builder: (context, snapshot) {
@@ -981,7 +978,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               // 💰 REAL-TIME UKUPAN PAZAR
                               // 💰 UKUPAN PAZAR (REAL-TIME)
                               StreamBuilder<Map<String, double>>(
-                                stream: Stream
+                                stream: const Stream
                                     .empty(), // Zakomentarisan DepozitService.depozitStream
                                 initialData: _depoziti,
                                 builder: (context, snapshot) {

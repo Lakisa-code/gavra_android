@@ -368,38 +368,37 @@ class PutnikService {
       debugPrint('✅ [DODAJ PUTNIKA] Adresa validna: ${putnik.adresa}');
 
       if (putnik.mesecnaKarta == true) {
-        debugPrint('📊 [DODAJ PUTNIKA] Dodajem MESEČNOG putnika...');
-        // MESEČNI PUTNIK - dodaj u mesecni_putnici tabelu
-        final now = DateTime.now();
-        final firstDayOfMonth = DateTime(now.year, now.month, 1);
-        final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+        debugPrint(
+            '📊 [DODAJ PUTNIKA] Proveavam da li mesečni putnik već postoji...');
 
-        final insertData = {
-          'putnik_ime': putnik.ime,
-          'tip': 'radnik', // Default tip
-          'polazak_bela_crkva':
-              putnik.grad == 'Bela Crkva' ? putnik.polazak : null,
-          'polazak_vrsac': putnik.grad == 'Vršac' ? putnik.polazak : null,
-          'adresa_bela_crkva':
-              putnik.grad == 'Bela Crkva' ? putnik.adresa : null,
-          'adresa_vrsac': putnik.grad == 'Vršac' ? putnik.adresa : null,
-          'radni_dani': putnik.dan,
-          'status': 'radi', // ✅ JEDNOSTAVNO - default radi
-          'aktivan': true, // Koristi postojeću aktivan kolonu umesto obrisan
-          'dodao_vozac':
-              putnik.dodaoVozac, // ✅ NOVA KOLONA - vozač koji je putnika dodao
-          // 🔧 DODAJ OBAVEZNA POLJA:
-          'datum_pocetka_meseca':
-              firstDayOfMonth.toIso8601String().split('T')[0],
-          'datum_kraja_meseca': lastDayOfMonth.toIso8601String().split('T')[0],
-          'cena': 0.0, // Default cena
-          'broj_putovanja': 0,
-          'broj_otkazivanja': 0,
-        };
+        // 🚫 PROVERAVA DA LI MESEČNI PUTNIK VEĆ POSTOJI - NE MOŽE SE KREIRATI NOVI IZ HOME SCREEN-A
+        final existingPutnici = await supabase
+            .from('mesecni_putnici')
+            .select('id, putnik_ime, aktivan')
+            .eq('putnik_ime', putnik.ime)
+            .eq('aktivan', true);
 
-        debugPrint('📊 [DODAJ PUTNIKA] Insert data: $insertData');
-        await supabase.from('mesecni_putnici').insert(insertData);
-        debugPrint('✅ [DODAJ PUTNIKA] Mesečni putnik uspešno dodat');
+        if (existingPutnici.isEmpty) {
+          debugPrint('❌ [DODAJ PUTNIKA] Mesečni putnik ne postoji u bazi!');
+          throw Exception(
+              'NOVI MESEČNI PUTNIK SE NE MOŽE DODATI IZ HOME SCREEN-A!\n\n'
+              'Putnik "${putnik.ime}" ne postoji u listi mesečnih putnika.\n'
+              'Idite na: Meni → Mesečni putnici da kreirate novog mesečnog putnika.');
+        }
+
+        debugPrint(
+            '✅ [DODAJ PUTNIKA] Mesečni putnik "${putnik.ime}" već postoji - samo dodajem putovanje...');
+
+        // MESEČNI PUTNIK POSTOJI - DODAJ SAMO PUTOVANJE U putovanja_istorija
+        final insertData = putnik.toPutovanjaIstorijaMap();
+        // Dodaj mesecni_putnik_id reference
+        final mesecniPutnikId = existingPutnici.first['id'];
+        insertData['mesecni_putnik_id'] = mesecniPutnikId;
+
+        debugPrint('📊 [DODAJ PUTNIKA] Insert putovanje data: $insertData');
+        await supabase.from('putovanja_istorija').insert(insertData);
+        debugPrint(
+            '✅ [DODAJ PUTNIKA] Putovanje za postojećeg mesečnog putnika uspešno dodato');
       } else {
         debugPrint('📊 [DODAJ PUTNIKA] Dodajem DNEVNOG putnika...');
         // DNEVNI PUTNIK - dodaj u putovanja_istorija tabelu (RLS je sada rešen!)

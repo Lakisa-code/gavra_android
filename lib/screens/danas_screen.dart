@@ -219,7 +219,13 @@ class _DanasScreenState extends State<DanasScreen> {
               child: ElevatedButton.icon(
                 onPressed: _isLoading || !hasPassengers
                     ? null
-                    : () => _optimizeCurrentRoute(filtriraniPutnici),
+                    : () {
+                        if (_isRouteOptimized) {
+                          _resetOptimization();
+                        } else {
+                          _optimizeCurrentRoute(filtriraniPutnici);
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isRouteOptimized
                       ? Colors.green.shade600
@@ -235,11 +241,11 @@ class _DanasScreenState extends State<DanasScreen> {
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 ),
                 icon: Icon(
-                  _isRouteOptimized ? Icons.check : Icons.route,
+                  _isRouteOptimized ? Icons.close : Icons.route,
                   size: 12,
                 ),
                 label: Text(
-                  _isRouteOptimized ? '✓' : 'Optimizuj',
+                  _isRouteOptimized ? 'Reset' : 'Optimizuj',
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 9,
@@ -439,6 +445,28 @@ class _DanasScreenState extends State<DanasScreen> {
   // Lista varijable - zadržavam zbog UI
   int _currentPassengerIndex = 0;
   bool _isListReordered = false;
+
+  // 🔄 RESET OPTIMIZACIJE RUTE
+  void _resetOptimization() {
+    setState(() {
+      _isRouteOptimized = false;
+      _isListReordered = false;
+      _optimizedRoute.clear();
+      _currentPassengerIndex = 0;
+      _isGpsTracking = false;
+      _lastGpsUpdate = null;
+      _navigationStatus = '';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔄 Optimizacija rute je isključena'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   final bool _useAdvancedNavigation = true;
 
   String _selectedGrad = 'Bela Crkva';
@@ -705,6 +733,19 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici) async {
+    setState(() {
+      _isLoading = true; // ✅ POKRENI LOADING
+    });
+
+    // 🔍 DEBUG - ispišemo trenutne filter vrednosti
+    debugPrint(
+        '🎯 [OPTIMIZUJ] TRENUTNI FILTERI: grad="$_selectedGrad", vreme="$_selectedVreme"');
+    debugPrint('🎯 [OPTIMIZUJ] Ukupno putnika za analizu: ${putnici.length}');
+
+    // 🔍 DEBUG - ispišemo sva dostupna vremena polaska
+    final dostupnaVremena = putnici.map((p) => p.polazak).toSet().toList();
+    debugPrint('🎯 [OPTIMIZUJ] Dostupna vremena polaska: $dostupnaVremena');
+
     // 🎯 SAMO REORDER PUTNIKA - bez otvaranja mape
     final filtriraniPutnici = putnici.where((p) {
       final normalizedStatus = (p.status ?? '').toLowerCase().trim();
@@ -724,10 +765,21 @@ class _DanasScreenState extends State<DanasScreen> {
           normalizedStatus != 'obrisan');
       final hasAddress = p.adresa != null && p.adresa!.isNotEmpty;
 
+      // 🔍 DEBUG LOG za optimizaciju
+      debugPrint(
+          '🎯 [OPTIMIZUJ] Putnik: ${p.ime}, grad: "${p.grad}" vs "$_selectedGrad", vreme: "${p.polazak}" vs "$_selectedVreme", status: "$normalizedStatus", adresa: "${p.adresa}", gradMatch: $gradMatch, vremeMatch: $vremeMatch, danMatch: $danMatch, statusOk: $statusOk, hasAddress: $hasAddress');
+
       return vremeMatch && gradMatch && danMatch && statusOk && hasAddress;
     }).toList();
 
+    debugPrint(
+        '🎯 [OPTIMIZUJ] Ukupno putnika za optimizaciju: ${filtriraniPutnici.length}');
+
     if (filtriraniPutnici.isEmpty) {
+      setState(() {
+        _isLoading = false; // ✅ RESETUJ LOADING
+      });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -759,6 +811,7 @@ class _DanasScreenState extends State<DanasScreen> {
         _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
         _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
         _lastGpsUpdate = DateTime.now(); // 🛰️ Zapamti vreme
+        _isLoading = false; // ✅ ZAUSTAVI LOADING
       });
 
       // Prikaži rezultat reorderovanja
@@ -790,33 +843,58 @@ class _DanasScreenState extends State<DanasScreen> {
         );
       }
     } catch (e) {
-      // Fallback na osnovnu optimizaciju
-      final fallbackOptimized =
-          await RouteOptimizationService.optimizeRouteGeographically(
-        filtriraniPutnici,
-        startAddress: _selectedGrad == 'Bela Crkva'
-            ? 'Bela Crkva, Serbia'
-            : 'Vršac, Serbia',
-      );
+      debugPrint('❌ Greška pri optimizaciji rute: $e');
 
-      setState(() {
-        _optimizedRoute = fallbackOptimized;
-        _isRouteOptimized = true;
-        _isListReordered = true;
-        _currentPassengerIndex = 0;
-        _isGpsTracking = true;
-        _lastGpsUpdate = DateTime.now();
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                '⚠️ Koristim osnovnu GPS optimizaciju (napredna nije dostupna)'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 4),
-          ),
+      try {
+        // Fallback na osnovnu optimizaciju
+        final fallbackOptimized =
+            await RouteOptimizationService.optimizeRouteGeographically(
+          filtriraniPutnici,
+          startAddress: _selectedGrad == 'Bela Crkva'
+              ? 'Bela Crkva, Serbia'
+              : 'Vršac, Serbia',
         );
+
+        setState(() {
+          _optimizedRoute = fallbackOptimized;
+          _isRouteOptimized = true;
+          _isListReordered = true;
+          _currentPassengerIndex = 0;
+          _isGpsTracking = true;
+          _lastGpsUpdate = DateTime.now();
+          _isLoading = false; // ✅ RESETUJ LOADING
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  '⚠️ Koristim osnovnu GPS optimizaciju (napredna nije dostupna)'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (fallbackError) {
+        debugPrint('❌ Greška i sa fallback optimizacijom: $fallbackError');
+
+        // Kompletno neuspešna optimizacija - resetuj sve
+        setState(() {
+          _isLoading = false; // ✅ RESETUJ LOADING
+          _isRouteOptimized = false;
+          _isListReordered = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('❌ Nije moguće optimizovati rutu. Pokušajte ponovo.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
       }
     }
   }

@@ -364,7 +364,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   }
 
 // --- Pomocne/tab funkcije ---
-  Widget _buildVozaciTab() {
+
+  /// 📅 CENTRALIZOVANA KALKULACIJA PERIODA - koriste oba tab-a identično
+  Map<String, DateTime> _calculatePeriod() {
     DateTime now = DateTime.now();
     DateTime from, to;
 
@@ -383,6 +385,14 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       from = DateTime(now.year, 1, 1);
       to = DateTime(now.year, 12, 31, 23, 59, 59);
     }
+
+    return {'from': from, 'to': to};
+  }
+
+  Widget _buildVozaciTab() {
+    final period = _calculatePeriod(); // 📅 KORISTI CENTRALIZOVANU FUNKCIJU
+    final from = period['from']!;
+    final to = period['to']!;
 
     return StreamBuilder<List<Putnik>>(
       stream:
@@ -436,16 +446,10 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   }
 
   Widget _buildDetaljnoTab() {
-    DateTime now = DateTime.now();
-    DateTime from;
-    if (_period == 'nedelja') {
-      from = now.subtract(Duration(days: now.weekday - 1));
-    } else if (_period == 'mesec') {
-      from = DateTime(now.year, now.month, 1);
-    } else {
-      from = DateTime(now.year, 1, 1);
-    }
-    DateTime to = now;
+    final period =
+        _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
+    final from = period['from']!;
+    final to = period['to']!;
 
     return StreamBuilder<List<Putnik>>(
       stream:
@@ -456,10 +460,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         }
         final putnici = snapshot.data ?? [];
 
-        // 🔄 REAL-TIME DETALJNE STATISTIKE
-        return FutureBuilder<Map<String, Map<String, dynamic>>>(
-          future:
-              StatistikaService.detaljneStatistikePoVozacima(putnici, from, to),
+        // 🔄 REAL-TIME DETALJNE STATISTIKE - SINHRONIZOVANO SA VOZAČI TAB-OM
+        return StreamBuilder<Map<String, Map<String, dynamic>>>(
+          stream: Stream.periodic(const Duration(seconds: 3)).asyncMap((_) =>
+              StatistikaService.detaljneStatistikePoVozacima(
+                  putnici, from, to)),
           builder: (context, statsSnapshot) {
             if (statsSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());

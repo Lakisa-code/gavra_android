@@ -300,6 +300,9 @@ class _PutnikCardState extends State<PutnikCard> {
       debugPrint(
           '✅ RESET CARD SUCCESS - ${_putnik.ime}: reset u service završen');
 
+      // Malo sačekaj da se baza updateuje
+      await Future.delayed(const Duration(milliseconds: 500));
+
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
       if (updatedPutnik != null && mounted) {
@@ -311,6 +314,38 @@ class _PutnikCardState extends State<PutnikCard> {
       } else {
         debugPrint(
             '❌ RESET CARD REFRESH FAILED - ${_putnik.ime}: nema ažuriranih podataka');
+        // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
+        setState(() {
+          _putnik = Putnik(
+            id: _putnik.id,
+            ime: _putnik.ime,
+            polazak: _putnik.polazak,
+            pokupljen: false,
+            vremeDodavanja: _putnik.vremeDodavanja,
+            mesecnaKarta: _putnik.mesecnaKarta,
+            dan: _putnik.dan,
+            status: _putnik.mesecnaKarta == true ? 'radi' : 'nije_se_pojavio',
+            statusVreme: null,
+            vremePokupljenja: null,
+            vremePlacanja: null,
+            placeno: false,
+            iznosPlacanja: 0,
+            naplatioVozac: null,
+            pokupioVozac: null,
+            dodaoVozac: _putnik.dodaoVozac,
+            vozac: null,
+            grad: _putnik.grad,
+            otkazaoVozac: null,
+            vremeOtkazivanja: null,
+            adresa: _putnik.adresa,
+            obrisan: false,
+            priority: _putnik.priority,
+            brojTelefona: _putnik.brojTelefona,
+            depozit: _putnik.depozit,
+          );
+        });
+        debugPrint(
+            '🔧 RESET CARD FALLBACK - ${_putnik.ime}: lokalni reset primenjen');
       }
 
       if (mounted) {
@@ -1947,7 +1982,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Otkazano:',
+                            'Otkazao:',
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.get(_putnik.otkazaoVozac),
@@ -1955,14 +1990,43 @@ class _PutnikCardState extends State<PutnikCard> {
                             ),
                           ),
                           Text(
-                            _putnik.statusVreme != null
-                                ? _formatVremeDodavanja(
-                                    DateTime.parse(_putnik.statusVreme!))
-                                : '-',
+                            _putnik.otkazaoVozac?.isNotEmpty == true
+                                ? _putnik.otkazaoVozac!
+                                : 'sistem',
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.get(_putnik.otkazaoVozac),
                               fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (_putnik.statusVreme != null)
+                            Text(
+                              _formatVremeDodavanja(
+                                  DateTime.parse(_putnik.statusVreme!)),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: VozacBoja.get(_putnik.otkazaoVozac)
+                                    .withOpacity(0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      ),
+                    // Prikaz statusa bolovanja ili godišnjeg
+                    if (_putnik.jeOdsustvo)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _putnik.jeBolovanje
+                                ? 'Bolovanje'
+                                : _putnik.jeGodisnji
+                                    ? 'Godišnji'
+                                    : 'Odsustvo',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
