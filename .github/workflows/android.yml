@@ -41,13 +41,14 @@ jobs:
 
       - name: 🔧 Force Install Geolocator Dependencies
         run: |
-          echo "=== FORCE INSTALLING GEOLOCATOR AND PERMISSION_HANDLER ==="
-          flutter pub add geolocator:10.1.0
-          flutter pub add permission_handler:11.3.1
-          flutter pub add geolocator_platform_interface
+          echo "=== INSTALLING STABLE GEOLOCATOR VERSION ==="
+          # Use older, more stable versions that work better in CI
+          flutter pub add geolocator:9.0.2
+          flutter pub add permission_handler:10.4.5
+          flutter pub add geolocator_platform_interface:4.2.1
           flutter clean
           flutter pub get --verbose
-          echo "✅ Geolocator dependencies force installed"
+          echo "✅ Stable geolocator dependencies installed"
 
       - name: 🔧 Fix Android Gradle Configuration for Geolocator
         run: |
@@ -74,14 +75,36 @@ jobs:
           echo "flutter.sdk=/opt/hostedtoolcache/flutter/stable-3.24.0-x64" >> android/local.properties
           echo "sdk.dir=/usr/local/lib/android/sdk" >> android/local.properties
           
+          # DIRECT FIX: Patch geolocator_android build.gradle file
+          echo "=== PATCHING GEOLOCATOR_ANDROID BUILD.GRADLE ==="
+          
+          # Find geolocator_android build.gradle and patch it
+          GEOLOCATOR_GRADLE_FILE="$HOME/.pub-cache/hosted/pub.dev/geolocator_android-4.6.2/android/build.gradle"
+          
+          if [ -f "$GEOLOCATOR_GRADLE_FILE" ]; then
+            echo "Found geolocator_android build.gradle, patching..."
+            
+            # Backup original
+            cp "$GEOLOCATOR_GRADLE_FILE" "$GEOLOCATOR_GRADLE_FILE.backup"
+            
+            # Patch the file - replace flutter.compileSdkVersion with hardcoded value
+            sed -i 's/flutter\.compileSdkVersion/34/g' "$GEOLOCATOR_GRADLE_FILE"
+            sed -i 's/flutter\.targetSdkVersion/34/g' "$GEOLOCATOR_GRADLE_FILE"
+            sed -i 's/flutter\.minSdkVersion/21/g' "$GEOLOCATOR_GRADLE_FILE"
+            
+            echo "✅ Patched geolocator_android build.gradle"
+            echo "=== PATCHED FILE CONTENT ==="
+            head -40 "$GEOLOCATOR_GRADLE_FILE"
+          else
+            echo "❌ geolocator_android build.gradle not found at expected location"
+            find $HOME/.pub-cache -name "build.gradle" -path "*geolocator*" 2>/dev/null || echo "No geolocator build.gradle found"
+          fi
+          
           # Show gradle.properties
           echo "=== ANDROID GRADLE PROPERTIES ==="
           cat android/gradle.properties
           
-          echo "=== ANDROID LOCAL PROPERTIES ==="
-          cat android/local.properties
-          
-          echo "✅ Android Gradle configuration updated with Flutter properties"
+          echo "✅ Android Gradle configuration updated with direct plugin patching"
 
       - name: 🔧 Debug Geolocator Dependencies
         run: |
