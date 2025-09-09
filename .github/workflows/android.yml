@@ -42,9 +42,9 @@ jobs:
       - name: 🔧 Force Install Geolocator Dependencies
         run: |
           echo "=== FORCE INSTALLING GEOLOCATOR AND PERMISSION_HANDLER ==="
-          flutter pub add geolocator:10.1.0 --force
-          flutter pub add permission_handler:11.3.1 --force
-          flutter pub add geolocator_platform_interface --force
+          flutter pub add geolocator:10.1.0
+          flutter pub add permission_handler:11.3.1
+          flutter pub add geolocator_platform_interface
           flutter clean
           flutter pub get --verbose
           echo "✅ Geolocator dependencies force installed"
