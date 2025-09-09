@@ -39,6 +39,31 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: 🔧 Force Install Geolocator Dependencies
+        run: |
+          echo "=== FORCE INSTALLING GEOLOCATOR AND PERMISSION_HANDLER ==="
+          flutter pub add geolocator:10.1.0 --force
+          flutter pub add permission_handler:11.3.1 --force
+          flutter pub add geolocator_platform_interface --force
+          flutter clean
+          flutter pub get --verbose
+          echo "✅ Geolocator dependencies force installed"
+
+      - name: 🔧 Debug Geolocator Dependencies
+        run: |
+          echo "=== DEBUGGING GEOLOCATOR DEPENDENCY RESOLUTION ==="
+          echo "📄 Current pubspec.yaml content:"
+          cat pubspec.yaml | grep -A 20 "dependencies:"
+          echo ""
+          echo "🔍 Checking if geolocator is in pubspec.yaml:"
+          grep -n "geolocator" pubspec.yaml || echo "❌ Geolocator not found in pubspec.yaml!"
+          echo ""
+          echo "📦 Flutter pub deps output:"
+          flutter pub deps | grep -E "(geolocator|permission_handler)" || echo "❌ Dependencies not resolved!"
+          echo ""
+          echo "🔍 Pub cache contents:"
+          ls -la ~/.pub-cache/hosted/pub.dev/ | grep -E "(geolocator|permission)" || echo "❌ Packages not in cache!"
+
       - name: Analyze Flutter code
         run: flutter analyze --no-fatal-infos
 
