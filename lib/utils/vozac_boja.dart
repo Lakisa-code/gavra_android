@@ -18,6 +18,9 @@ class VozacBoja {
     return Colors.transparent;
   }
 
+  /// Alias za get() metodu - za kompatibilnost
+  static Color getColor(String? ime) => get(ime);
+
   static bool isValidDriver(String? ime) {
     return ime != null && boje.containsKey(ime);
   }

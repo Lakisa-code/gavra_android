@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
+import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
 
 class MesecniPutniciScreen extends StatefulWidget {
   const MesecniPutniciScreen({Key? key}) : super(key: key);
@@ -40,6 +41,42 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   String _novaAdresaVrsac = '';
   String _noviPolazakBelaCrkva = '';
   String _noviPolazakVrsac = '';
+
+  // 📅 RADNI DANI - checkbox state
+  Map<String, bool> _noviRadniDani = {
+    'pon': true,
+    'uto': true,
+    'sre': true,
+    'cet': true,
+    'pet': true,
+    'sub': false,
+    'ned': false,
+  };
+
+  // Helper metod za konverziju radnih dana u string
+  String _getRadniDaniString() {
+    final List<String> odabraniDani = [];
+    _noviRadniDani.forEach((dan, selected) {
+      if (selected) {
+        odabraniDani.add(dan);
+      }
+    });
+    return odabraniDani.join(',');
+  }
+
+  // Helper metod za parsiranje radnih dana iz string-a
+  void _setRadniDaniFromString(String radniDaniStr) {
+    final daniList = radniDaniStr.split(',');
+    _noviRadniDani = {
+      'pon': daniList.contains('pon'),
+      'uto': daniList.contains('uto'),
+      'sre': daniList.contains('sre'),
+      'cet': daniList.contains('cet'),
+      'pet': daniList.contains('pet'),
+      'sub': daniList.contains('sub'),
+      'ned': daniList.contains('ned'),
+    };
+  }
 
   // TextEditingController-i za edit dialog
   late TextEditingController _imeController;
@@ -768,6 +805,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
                 const SizedBox(width: 8),
 
+                // ✅ NOVO - Detaljne statistike
+                Expanded(
+                  child: _buildCompactActionButton(
+                    onPressed: () => _prikaziDetaljeStatistike(putnik),
+                    icon: Icons.analytics_outlined,
+                    label: 'Statistike',
+                    color: Colors.indigo,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
                 // Obriši
                 Expanded(
                   child: _buildCompactActionButton(
@@ -908,6 +957,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _noviPolazakBelaCrkva = putnik.polazakBelaCrkva ?? '';
       _noviPolazakVrsac = putnik.polazakVrsac ?? '';
 
+      // ✅ DODANO - učitaj postojeće radne dane
+      _setRadniDaniFromString(putnik.radniDani);
+
       // Postavi vrednosti u controller-e
       _imeController.text = _novoIme;
       _tipSkoleController.text = _novaTipSkole;
@@ -1003,6 +1055,65 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 ),
                 controller: _polazakVrsacController,
               ),
+              const SizedBox(height: 16),
+
+              // ✅ DODANO - Radni dani sekcija
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Radni dani u toku nedelje:',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Odaberi radne dane kada putnik koristi prevoz',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _buildRadniDanCheckbox(
+                                    'Ponedeljak', 'pon')),
+                            Expanded(
+                                child: _buildRadniDanCheckbox('Utorak', 'uto')),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _buildRadniDanCheckbox('Sreda', 'sre')),
+                            Expanded(
+                                child:
+                                    _buildRadniDanCheckbox('Četvrtak', 'cet')),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _buildRadniDanCheckbox('Petak', 'pet')),
+                            const Expanded(child: SizedBox()), // Prazno mesto
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -1049,7 +1160,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         polazakVrsac: polazakVrsac.isEmpty ? null : polazakVrsac,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         tipPrikazivanja: originalPutnik.tipPrikazivanja,
-        radniDani: originalPutnik.radniDani,
+        radniDani:
+            _getRadniDaniString(), // ✅ DODANO - koristi odabrane radne dane
         aktivan: originalPutnik.aktivan,
         status: originalPutnik.status,
         datumPocetkaMeseca: originalPutnik.datumPocetkaMeseca,
@@ -1188,6 +1300,81 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 ),
                 controller: _polazakVrsacController,
               ),
+              const SizedBox(height: 16),
+              // 📅 RADNI DANI SEKCIJA
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            size: 20, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Radni dani u nedelji',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade700,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Izaberite dane kada putnik radi:',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 4,
+                      children: [
+                        _buildRadniDanCheckbox('pon', 'Ponedeljak'),
+                        _buildRadniDanCheckbox('uto', 'Utorak'),
+                        _buildRadniDanCheckbox('sre', 'Sreda'),
+                        _buildRadniDanCheckbox('cet', 'Četvrtak'),
+                        _buildRadniDanCheckbox('pet', 'Petak'),
+                        _buildRadniDanCheckbox('sub', 'Subota'),
+                        _buildRadniDanCheckbox('ned', 'Nedelja'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 16, color: Colors.blue.shade600),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Primer: Ponedeljak, Sreda, Petak',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue.shade600,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -1233,6 +1420,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         polazakVrsac: polazakVrsac.isEmpty ? null : polazakVrsac,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
+        radniDani:
+            _getRadniDaniString(), // ✅ DODANO - koristi odabrane radne dane
         datumPocetkaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month, 1),
         datumKrajaMeseca:
@@ -2644,5 +2833,46 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       'mesecBroj': monthNumber,
       'godina': year,
     };
+  }
+
+  // 📅 BUILDER ZA CHECKBOX RADNIH DANA
+  Widget _buildRadniDanCheckbox(String danKod, String danNaziv) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: Checkbox(
+              value: _noviRadniDani[danKod] ?? false,
+              onChanged: (bool? value) {
+                setState(() {
+                  _noviRadniDani[danKod] = value ?? false;
+                });
+              },
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            danNaziv,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
+  void _prikaziDetaljeStatistike(MesecniPutnik putnik) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MesecniPutnikDetaljiScreen(putnik: putnik),
+      ),
+    );
   }
 }

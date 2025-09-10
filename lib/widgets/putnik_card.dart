@@ -341,7 +341,6 @@ class _PutnikCardState extends State<PutnikCard> {
             obrisan: false,
             priority: _putnik.priority,
             brojTelefona: _putnik.brojTelefona,
-            depozit: _putnik.depozit,
           );
         });
         debugPrint(

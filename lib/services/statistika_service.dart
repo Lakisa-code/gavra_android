@@ -8,6 +8,7 @@ import 'dart:async';
 import 'dart:math'; // 🚗 DODANO za kilometražu kalkulacije
 import 'package:async/async.dart'; // Za StreamZip
 import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS podatke
+import 'package:intl/intl.dart'; // Za DateFormat
 
 class StatistikaService {
   // 🎯 CENTRALIZOVANA LISTA VOZAČA
@@ -173,6 +174,9 @@ class StatistikaService {
       Stream<List<MesecniPutnik>> mesecniStream,
       DateTime fromDate,
       DateTime toDate) async* {
+    _debugLog(
+        '🔄 COMBINE STREAMS pozvan sa datumima: ${DateFormat('dd.MM.yyyy HH:mm').format(fromDate)} - ${DateFormat('dd.MM.yyyy HH:mm').format(toDate)}');
+
     List<Putnik> posledniPutnici = [];
     List<MesecniPutnik> posledniMesecni = [];
 
@@ -190,8 +194,16 @@ class StatistikaService {
       }
 
       // Uvek emituj novi rezultat kada se bilo koji stream ažurira
-      yield _calculateKombinovanPazarSync(
+      final rezultat = _calculateKombinovanPazarSync(
           posledniPutnici, posledniMesecni, fromDate, toDate);
+
+      // Debug ukupan pazar pre emitovanja
+      final ukupanPazar =
+          rezultat.values.fold<double>(0.0, (sum, value) => sum + value);
+      _debugLog(
+          '🔄 COMBINE STREAMS emituje rezultat: ${ukupanPazar.toStringAsFixed(0)} RSD');
+
+      yield rezultat;
     }
   }
 
@@ -280,6 +292,9 @@ class StatistikaService {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    _debugLog(
+        '🔍 STREAM PAZAR POZIV: od ${DateFormat('dd.MM.yyyy HH:mm').format(fromDate)} do ${DateFormat('dd.MM.yyyy HH:mm').format(toDate)}');
 
     // 🔄 KOMBINUJ DNEVNE I MESEČNE PUTNIKE
     return _combineStreams(PutnikService().streamPutnici(),
@@ -387,7 +402,8 @@ class StatistikaService {
     final normalizedTo = _normalizeDateTime(to);
 
     _debugLog(
-        'Računam detaljne statistike od ${normalizedFrom.toString().split(' ')[0]} do ${normalizedTo.toString().split(' ')[0]}');
+        '🔍 DETALJNE STATISTIKE: Računam od ${normalizedFrom.toString().split(' ')[0]} do ${normalizedTo.toString().split(' ')[0]}');
+    _debugLog('🔍 DETALJNE STATISTIKE: Ukupno putnika: ${putnici.length}');
 
     final Map<String, Map<String, dynamic>> vozaciStats = {};
 
@@ -503,13 +519,17 @@ class StatistikaService {
     await _dodajKilometrazu(vozaciStats, normalizedFrom, normalizedTo);
 
     // Debug prikaz rezultata
+    double ukupanPazar = 0;
     for (final vozac in sviVozaci) {
       final stats = vozaciStats[vozac]!;
+      ukupanPazar += stats['ukupnoPazar'];
       if (stats['ukupnoPazar'] > 0 || stats['dodati'] > 0) {
         _debugLog(
             '$vozac: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD | putnici: ${stats['naplaceni']}, mesečne: ${stats['mesecneKarte']}');
       }
     }
+    _debugLog(
+        '🔥 DETALJNE STATISTIKE UKUPAN PAZAR: ${ukupanPazar.toStringAsFixed(0)} RSD (${DateFormat('dd.MM.yyyy').format(from)} - ${DateFormat('dd.MM.yyyy').format(to)})');
 
     return vozaciStats;
   }
@@ -795,7 +815,13 @@ class StatistikaService {
     }
   }
 
-  /// 🔄 RESETUJ SVE KILOMETRAŽE NA 0 - briše sve GPS pozicije
+  /// � JAVNA METODA: Dobij kilometražu za vozača u određenom periodu
+  static Future<double> getKilometrazu(
+      String vozac, DateTime from, DateTime to) async {
+    return await _kmZaVozaca(vozac, from, to);
+  }
+
+  /// �🔄 RESETUJ SVE KILOMETRAŽE NA 0 - briše sve GPS pozicije
   static Future<bool> resetujSveKilometraze() async {
     try {
       _debugLog('🔄 RESET KILOMETRAŽA START - brišem sve GPS pozicije');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/vozac_boja.dart';
 
 // Model za GPS lokacije vozača
 class GpsLokacija {
@@ -275,35 +276,36 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD), // 🎨 Seksi svetla pozadina
+      backgroundColor:
+          Theme.of(context).colorScheme.surface, // 🎨 Tema-aware pozadina
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF4F7EFC),
-                Color(0xFF6B93FD),
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primaryContainer,
               ],
             ),
-            borderRadius: BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),
             ),
             boxShadow: [
               BoxShadow(
-                color: Color(0x304F7EFC),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 blurRadius: 16,
-                offset: Offset(0, 6),
+                offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: Color(0x204F7EFC),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 blurRadius: 24,
-                offset: Offset(0, 12),
+                offset: const Offset(0, 12),
               ),
             ],
           ),
@@ -334,7 +336,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Color(0xFF7C4DFF), // Purple
+                      backgroundColor: Colors.purple, // Bruda
                       radius: 12,
                       child: Text('B',
                           style: TextStyle(color: Colors.white, fontSize: 12)),
@@ -349,7 +351,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Color(0xFFFF9800), // Orange
+                      backgroundColor: Colors.orange, // Bilevski
                       radius: 12,
                       child: Text('B',
                           style: TextStyle(color: Colors.white, fontSize: 12)),
@@ -364,7 +366,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Color(0xFFFF1493), // Pink
+                      backgroundColor: Colors.pink, // Svetlana
                       radius: 12,
                       child: Text('S',
                           style: TextStyle(color: Colors.white, fontSize: 12)),
@@ -379,7 +381,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: Color(0xFF00E5FF), // Cyan
+                      backgroundColor: Colors.cyan, // Bojan
                       radius: 12,
                       child: Text('B',
                           style: TextStyle(color: Colors.white, fontSize: 12)),

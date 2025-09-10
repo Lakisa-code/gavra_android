@@ -1387,4 +1387,64 @@ class PutnikService {
       debugPrint('❌ RESET POKUPLJENJA ERROR: $e');
     }
   }
+
+  /// 📊 DOHVATI SVA UKRCAVANJA ZA PUTNIKA
+  static Future<List<Map<String, dynamic>>> dohvatiUkrcavanjaZaPutnika(
+      String putnikIme) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final ukrcavanja = await supabase
+          .from('putovanja_istorija')
+          .select('*')
+          .eq('putnik_ime', putnikIme)
+          .eq('status', 'pokupljen')
+          .order('created_at', ascending: false) as List<dynamic>;
+
+      return ukrcavanja.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('❌ Greška pri dohvatanju ukrcavanja: $e');
+      return [];
+    }
+  }
+
+  /// 📊 DOHVATI SVE OTKAZE ZA PUTNIKA
+  static Future<List<Map<String, dynamic>>> dohvatiOtkazeZaPutnika(
+      String putnikIme) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final otkazi = await supabase
+          .from('putovanja_istorija')
+          .select('*')
+          .eq('putnik_ime', putnikIme)
+          .eq('status', 'otkazano')
+          .order('created_at', ascending: false) as List<dynamic>;
+
+      return otkazi.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('❌ Greška pri dohvatanju otkaza: $e');
+      return [];
+    }
+  }
+
+  /// 📊 DOHVATI SVA PLAĆANJA ZA PUTNIKA
+  static Future<List<Map<String, dynamic>>> dohvatiPlacanjaZaPutnika(
+      String putnikIme) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final placanja = await supabase
+          .from('putovanja_istorija')
+          .select('*')
+          .eq('putnik_ime', putnikIme)
+          .gt('cena', 0)
+          .order('created_at', ascending: false) as List<dynamic>;
+
+      return placanja.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('❌ Greška pri dohvatanju plaćanja: $e');
+      return [];
+    }
+  }
 }

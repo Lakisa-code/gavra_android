@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/putnik.dart';
 
 class UnifiedNavigationWidget extends StatelessWidget {
@@ -32,27 +34,38 @@ class UnifiedNavigationWidget extends StatelessWidget {
     final putniciSaAdresom =
         putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
 
+    return Row(
+      children: [
+        // 🎯 DUGME 1: OPTIMIZUJ (samo reorganizuj listu)
+        _buildOptimizeButton(context, putniciSaAdresom),
+        const SizedBox(width: 8),
+        // 🗺️ DUGME 2: NAVIGACIJA (otvori Google Maps)
+        _buildNavigationButton(context, putniciSaAdresom),
+      ],
+    );
+  }
+
+  /// 🎯 OPTIMIZUJ dugme - samo reorganizuje listu putnika
+  Widget _buildOptimizeButton(
+      BuildContext context, List<Putnik> putniciSaAdresom) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isNavigating
+          colors: isRouteOptimized
               ? [
-                  const Color(0xFFFF9800), // Narandžasta kada navigira
-                  const Color(0xFFFF5722),
+                  const Color(0xFF4CAF50), // Zelena kada je optimizovano
+                  const Color(0xFF66BB6A),
                 ]
               : [
                   const Color(0xFF00D4FF), // Tirkiz kada nije
                   const Color(0xFF0077BE),
                 ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (isNavigating
-                    ? const Color(0xFFFF9800)
+            color: (isRouteOptimized
+                    ? const Color(0xFF4CAF50)
                     : const Color(0xFF00D4FF))
                 .withOpacity(0.3),
             blurRadius: 8,
@@ -64,16 +77,93 @@ class UnifiedNavigationWidget extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: putnici.isEmpty ? null : _handleTap,
-          onLongPress:
-              putnici.isEmpty ? null : () => _showNavigationMenu(context),
+          onTap: putniciSaAdresom.isEmpty ? null : onOptimizeCurrentRoute,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  isNavigating ? Icons.navigation : Icons.explore,
+                  isRouteOptimized ? Icons.check_circle : Icons.sort,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 4),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isRouteOptimized ? 'OPTIMIZOVANO' : 'OPTIMIZUJ',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (putniciSaAdresom.isNotEmpty)
+                      Text(
+                        '${putniciSaAdresom.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 🗺️ NAVIGACIJA dugme - otvara Google Maps
+  Widget _buildNavigationButton(
+      BuildContext context, List<Putnik> putniciSaAdresom) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isNavigating
+              ? [
+                  const Color(0xFFFF9800), // Narandžasta kada navigira
+                  const Color(0xFFFF5722),
+                ]
+              : [
+                  const Color(0xFF673AB7), // Ljubičasta za Maps
+                  const Color(0xFF9C27B0),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: (isNavigating
+                    ? const Color(0xFFFF9800)
+                    : const Color(0xFF673AB7))
+                .withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: putniciSaAdresom.isEmpty
+              ? null
+              : () => _openGoogleMapsNavigation(context, putniciSaAdresom),
+          onLongPress: putniciSaAdresom.isEmpty
+              ? null
+              : () => _showNavigationMenu(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isNavigating ? Icons.navigation : Icons.map,
                   color: Colors.white,
                   size: 18,
                 ),
@@ -126,13 +216,71 @@ class UnifiedNavigationWidget extends StatelessWidget {
     );
   }
 
-  void _handleTap() {
-    if (isNavigating) {
-      // Ako navigira, otvori novu rutu
-      onOptimizeAllRoutes();
-    } else {
-      // Ako ne navigira, počni navigaciju
-      onOptimizeAllRoutes();
+  /// 🗺️ Otvara Google Maps sa TRENUTNIM redosledom (bez dodatne optimizacije)
+  void _openGoogleMapsNavigation(
+      BuildContext context, List<Putnik> putnici) async {
+    if (putnici.isEmpty) return;
+
+    try {
+      // 🚨 VAŽNO: Koristi TRENUTNI redosled putnika (ne optimizuj ponovo!)
+      // Direktno kreiraj Google Maps URL sa trenutnim redosledom
+
+      // 1. Dobij trenutnu poziciju
+      final currentPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // 2. Kreiraj Google Maps URL sa TRENUTNIM redosledom putnika
+      String googleMapsUrl = 'https://www.google.com/maps/dir/';
+      googleMapsUrl +=
+          '${currentPosition.latitude},${currentPosition.longitude}';
+
+      // 3. Dodaj putnice u TRENUTNOM redosledu (bez optimizacije!)
+      for (final putnik in putnici) {
+        if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
+          final encodedAddress =
+              Uri.encodeComponent('${putnik.adresa}, ${putnik.grad}, Serbia');
+          googleMapsUrl += '/$encodedAddress';
+        }
+      }
+
+      // 4. Dodaj parametre za navigaciju
+      googleMapsUrl += '/data=!3m1!4b1!4m2!4m1!3e0'; // Driving mode
+
+      // 5. Otvori Google Maps
+      final uri = Uri.parse(googleMapsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+        // Pokreni GPS tracking
+        onStartGPSTracking();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('�️ Google Maps otvoren sa trenutnim redosledom'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ne mogu da otvorim Google Maps'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška pri pokretanju navigacije: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -141,9 +289,9 @@ class UnifiedNavigationWidget extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -169,11 +317,23 @@ class UnifiedNavigationWidget extends StatelessWidget {
             const SizedBox(height: 20),
             _buildMenuOption(
               icon: Icons.map,
-              title: 'Google Maps Ruta',
-              subtitle: 'Otvori optimizovanu rutu u Google Maps',
+              title: 'Reorganizuj Listu',
+              subtitle: 'Optimizuj redosled putnika u aplikaciji',
               onTap: () {
                 Navigator.pop(context);
                 onOptimizeAllRoutes();
+              },
+            ),
+            _buildMenuOption(
+              icon: Icons.navigation,
+              title: 'Google Maps Ruta',
+              subtitle: 'Otvori kompletan route u Google Maps',
+              onTap: () {
+                Navigator.pop(context);
+                final putniciSaAdresom = putnici
+                    .where((p) => p.adresa != null && p.adresa!.isNotEmpty)
+                    .toList();
+                _openGoogleMapsNavigation(context, putniciSaAdresom);
               },
             ),
             _buildMenuOption(
@@ -226,4 +386,3 @@ class UnifiedNavigationWidget extends StatelessWidget {
     );
   }
 }
-

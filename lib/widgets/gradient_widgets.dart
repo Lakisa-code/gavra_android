@@ -220,14 +220,36 @@ class FlutterBankButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🎨 Create theme-aware gradient decoration
+    final gradientDecoration = BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.primaryContainer,
+        ],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    );
+
     return Container(
       width: width,
-      decoration: isSecondary ? null : FlutterBankStyles.gradientButton,
+      decoration: isSecondary ? null : gradientDecoration,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: isSecondary ? Colors.white : Colors.transparent,
-          foregroundColor: isSecondary ? const Color(0xFF4F7EFC) : Colors.white,
+          foregroundColor: isSecondary
+              ? Theme.of(context).colorScheme.primary
+              : Colors.white,
           elevation: isSecondary ? 2 : 0,
           shadowColor: Colors.transparent,
           padding: padding ??
@@ -235,7 +257,8 @@ class FlutterBankButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: isSecondary
-                ? const BorderSide(color: Color(0xFF4F7EFC), width: 1.5)
+                ? BorderSide(
+                    color: Theme.of(context).colorScheme.primary, width: 1.5)
                 : BorderSide.none,
           ),
         ),
@@ -261,8 +284,9 @@ class FlutterBankButton extends StatelessWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
-                      color:
-                          isSecondary ? const Color(0xFF4F7EFC) : Colors.white,
+                      color: isSecondary
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.white,
                     ),
                   ),
                 ],
@@ -271,4 +295,3 @@ class FlutterBankButton extends StatelessWidget {
     );
   }
 }
-

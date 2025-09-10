@@ -107,18 +107,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.3),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -286,19 +280,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _changePassword,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF232526),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           strokeWidth: 2,
                         ),
                       )
@@ -344,4 +338,3 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
   }
 }
-

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne p
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
+import '../services/daily_checkin_service.dart'; // 🌅 DODANO za sitan novac
 import '../services/firebase_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
@@ -13,6 +14,7 @@ import '../services/route_optimization_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
 import '../services/putnik_service.dart'; // 🆕 DODANO za nove metode
+import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
 
@@ -358,6 +360,36 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
+  // 📊 DUGME ZA POPIS DANA
+  Widget _buildPopisButton() {
+    return SizedBox(
+      height: 24,
+      child: ElevatedButton.icon(
+        onPressed: () => _showPopisDana(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.deepOrange.shade600,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        ),
+        icon: const Icon(
+          Icons.assessment,
+          size: 12,
+        ),
+        label: const Text(
+          'POPIS',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 9,
+          ),
+        ),
+      ),
+    );
+  }
+
   // 🎓 POPUP SA DETALJNIM ĐAČKIM STATISTIKAMA
   void _showDjackiDialog(Map<String, int> statistike) {
     showDialog(
@@ -374,14 +406,14 @@ class _DanasScreenState extends State<DanasScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatRow(
-                'Ukupno upisano:', '${statistike['ukupno']}', Colors.blue),
+            _buildStatRow('Ukupno upisano', '${statistike['ukupno']}',
+                Icons.group, Colors.blue),
             const SizedBox(height: 8),
-            _buildStatRow('Popodne (povratak):', '${statistike['povratak']}',
-                Colors.green),
+            _buildStatRow('Popodne (povratak)', '${statistike['povratak']}',
+                Icons.arrow_back, Colors.green),
             const SizedBox(height: 8),
-            _buildStatRow(
-                'Slobodno:', '${statistike['slobodno']}', Colors.orange),
+            _buildStatRow('Slobodno', '${statistike['slobodno']}',
+                Icons.event_available, Colors.orange),
           ],
         ),
         actions: [
@@ -394,29 +426,117 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  Widget _buildStatRow(String label, String value, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 14)),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: Text(
-            value,
+  Widget _buildStatRow(
+      String label, dynamic value, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
             style: TextStyle(
+                color: Colors.grey[700], fontSize: 14), // 🎨 Tamniji tekst
+          ),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              color: color,
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: color,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
+  Future<void> _showPopisDana() async {
+    final vozac = _currentDriver ?? 'Nepoznat';
+
+    try {
+      // 1. OSNOVNI PODACI
+      final today = DateTime.now();
+      final dayStart = DateTime(today.year, today.month, today.day);
+      final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+
+      // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
+      final putnici = await PutnikService().streamKombinovaniPutnici().first;
+
+      // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
+      final detaljneStats =
+          await StatistikaService.detaljneStatistikePoVozacima(
+              putnici, dayStart, dayEnd);
+      final vozacStats = detaljneStats[vozac] ?? {};
+
+      // 4. REALTIME PAZAR STREAM
+      final ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
+              from: dayStart, to: dayEnd)
+          .map((pazarMap) => pazarMap[vozac] ?? 0.0)
+          .first;
+
+      // 5. SITAN NOVAC
+      final sitanNovac = await DailyCheckInService.getTodayAmount(vozac);
+
+      // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
+      final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
+      final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
+      final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
+      final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
+      final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
+      final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
+
+      // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
+      late double kilometraza;
+      try {
+        kilometraza =
+            await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
+        print(
+            '🚗 GPS kilometraža za $vozac danas: ${kilometraza.toStringAsFixed(1)} km');
+      } catch (e) {
+        print('⚠️ Greška pri GPS računanju kilometraže: $e');
+        kilometraza = 0.0; // Fallback vrednost
+      }
+
+      // 7. PRIKAŽI POPIS DIALOG SA REALTIME PODACIMA
+      final bool sacuvaj = await _showPopisDialog(
+        vozac: vozac,
+        datum: today,
+        ukupanPazar: ukupanPazar,
+        sitanNovac: sitanNovac ?? 0.0,
+        dodatiPutnici: dodatiPutnici,
+        otkazaniPutnici: otkazaniPutnici,
+        naplaceniPutnici: naplaceniPutnici,
+        pokupljeniPutnici: pokupljeniPutnici,
+        dugoviPutnici: dugoviPutnici,
+        mesecneKarte: mesecneKarte,
+        kilometraza: kilometraza,
+      );
+
+      // 8. SAČUVAJ POPIS AKO JE POTVRĐEN
+      if (sacuvaj) {
+        await _sacuvajPopis(vozac, today, {
+          'ukupanPazar': ukupanPazar,
+          'sitanNovac': sitanNovac,
+          'dodatiPutnici': dodatiPutnici,
+          'otkazaniPutnici': otkazaniPutnici,
+          'naplaceniPutnici': naplaceniPutnici,
+          'pokupljeniPutnici': pokupljeniPutnici,
+          'dugoviPutnici': dugoviPutnici,
+          'mesecneKarte': mesecneKarte,
+          'kilometraza': kilometraza,
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Greška pri učitavanju popisa: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   bool _isLoading = false;
@@ -465,6 +585,203 @@ class _DanasScreenState extends State<DanasScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  // 📊 DIALOG ZA PRIKAZ POPISA DANA - IDENTIČAN FORMAT SA STATISTIKA SCREEN
+  Future<bool> _showPopisDialog({
+    required String vozac,
+    required DateTime datum,
+    required double ukupanPazar,
+    required double sitanNovac,
+    required int dodatiPutnici,
+    required int otkazaniPutnici,
+    required int naplaceniPutnici,
+    required int pokupljeniPutnici,
+    required int dugoviPutnici,
+    required int mesecneKarte,
+    required double kilometraza,
+  }) async {
+    final vozacColor = VozacBoja.get(vozac);
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.person, color: vozacColor, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              '📊 POPIS DANA - ${datum.day}.${datum.month}.${datum.year}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Card(
+              margin: const EdgeInsets.all(0),
+              elevation: 4,
+              color: vozacColor.withOpacity(0.25),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: vozacColor.withOpacity(0.6),
+                  width: 2,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // HEADER SA VOZAČEM
+                    Row(
+                      children: [
+                        Icon(Icons.person, color: vozacColor, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          vozac,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
+                    _buildStatRow('Dodati putnici', dodatiPutnici,
+                        Icons.add_circle, Colors.blue),
+                    _buildStatRow(
+                        'Otkazani', otkazaniPutnici, Icons.cancel, Colors.red),
+                    _buildStatRow('Naplaćeni', naplaceniPutnici, Icons.payment,
+                        Colors.green),
+                    _buildStatRow('Pokupljeni', pokupljeniPutnici,
+                        Icons.check_circle, Colors.orange),
+                    _buildStatRow('Dugovi', dugoviPutnici, Icons.warning,
+                        Colors.redAccent),
+                    _buildStatRow('Mesečne karte', mesecneKarte,
+                        Icons.card_membership, Colors.purple),
+                    _buildStatRow(
+                        'Kilometraža',
+                        '${kilometraza.toStringAsFixed(1)} km',
+                        Icons.route,
+                        Colors.teal),
+
+                    const Divider(color: Colors.white24),
+
+                    // UKUPAN PAZAR - GLAVNI PODATAK
+                    _buildStatRow(
+                        'Ukupno pazar',
+                        '${ukupanPazar.toStringAsFixed(0)} RSD',
+                        Icons.monetization_on,
+                        Colors.amber),
+
+                    const SizedBox(height: 12),
+
+                    // DODATNE INFORMACIJE
+                    if (sitanNovac > 0)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: Colors.purple.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet,
+                                color: Colors.purple, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Sitan novac: ${sitanNovac.toStringAsFixed(0)} RSD',
+                              style: const TextStyle(
+                                color: Colors.purple,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: const Text(
+                        '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
+                        style: TextStyle(
+                            fontSize: 12, fontStyle: FontStyle.italic),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.save),
+            label: const Text('Sačuvaj popis'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: vozacColor,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  //  SAČUVAJ POPIS U DAILY CHECK-IN SERVICE
+  Future<void> _sacuvajPopis(
+      String vozac, DateTime datum, Map<String, dynamic> podaci) async {
+    try {
+      // Sačuvaj kompletan popis
+      await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
+
+      // Takođe sačuvaj i sitan novac (za kompatibilnost)
+      await DailyCheckInService.saveCheckIn(
+          vozac, podaci['sitanNovac'] as double);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Popis je uspešno sačuvan!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Greška pri čuvanju popisa: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   final bool _useAdvancedNavigation = true;
@@ -940,8 +1257,17 @@ class _DanasScreenState extends State<DanasScreen> {
                   // DATUM TEKST - kao rezervacije
                   _buildDigitalDateDisplay(),
                   const SizedBox(height: 4),
-                  // DUGME ZA OPTIMIZACIJU RUTE
-                  _buildOptimizeRouteButton(),
+                  // DUGMAD U APP BAR-U
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // DUGME ZA OPTIMIZACIJU RUTE
+                      Expanded(child: _buildOptimizeRouteButton()),
+                      const SizedBox(width: 8),
+                      // 📊 NOVO: DUGME ZA POPIS DANA
+                      _buildPopisButton(),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -1213,6 +1539,53 @@ class _DanasScreenState extends State<DanasScreen> {
                                         ),
                                       ],
                                     ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // 🌅 NOVA KOCKA ZA SITAN NOVAC
+                              Expanded(
+                                flex: 1,
+                                child: Container(
+                                  height: 70,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border:
+                                        Border.all(color: Colors.orange[300]!),
+                                  ),
+                                  child: StreamBuilder<double>(
+                                    stream:
+                                        DailyCheckInService.streamTodayAmount(
+                                            _currentDriver ?? ''),
+                                    builder: (context, sitanSnapshot) {
+                                      final sitanNovac =
+                                          sitanSnapshot.data ?? 0.0;
+                                      return Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text('Kusur',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.orange)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            sitanNovac > 0
+                                                ? sitanNovac.toStringAsFixed(0)
+                                                : '-',
+                                            style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.orange),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ),

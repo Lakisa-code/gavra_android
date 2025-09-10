@@ -17,7 +17,6 @@ class PutovanjaIstorija {
 
   // NOVA POLJA koja postoje u bazi
   final String? dan;
-  final double? depozit;
   final String? grad;
   final bool obrisan;
   final bool pokupljen;
@@ -43,7 +42,6 @@ class PutovanjaIstorija {
     required this.updatedAt,
     // NOVA POLJA
     this.dan,
-    this.depozit,
     this.grad,
     this.obrisan = false,
     this.pokupljen = false,
@@ -77,7 +75,6 @@ class PutovanjaIstorija {
       updatedAt: DateTime.parse(map['updated_at'] as String),
       // NOVA POLJA
       dan: map['dan'] as String?,
-      depozit: (map['depozit'] as num?)?.toDouble(),
       grad: map['grad'] as String?,
       obrisan: map['obrisan'] as bool? ?? false,
       pokupljen: map['pokupljen'] as bool? ?? false,
@@ -109,7 +106,6 @@ class PutovanjaIstorija {
       'updated_at': updatedAt.toIso8601String(),
       // NOVA POLJA
       'dan': dan,
-      'depozit': depozit,
       'grad': grad,
       'obrisan': obrisan,
       'pokupljen': pokupljen,
@@ -138,7 +134,6 @@ class PutovanjaIstorija {
     DateTime? updatedAt,
     // NOVA POLJA
     String? dan,
-    double? depozit,
     String? grad,
     bool? obrisan,
     bool? pokupljen,
@@ -164,7 +159,6 @@ class PutovanjaIstorija {
       updatedAt: updatedAt ?? this.updatedAt,
       // NOVA POLJA
       dan: dan ?? this.dan,
-      depozit: depozit ?? this.depozit,
       grad: grad ?? this.grad,
       obrisan: obrisan ?? this.obrisan,
       pokupljen: pokupljen ?? this.pokupljen,

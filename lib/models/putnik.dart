@@ -68,7 +68,6 @@ class Putnik {
   final int?
       priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
   final String? brojTelefona; // NOVO - broj telefona putnika
-  final double? depozit; // NOVO - depozit vozača za ovaj dan
 
   Putnik({
     this.id,
@@ -95,7 +94,6 @@ class Putnik {
     this.obrisan = false, // default vrednost
     this.priority, // prioritet za optimizaciju ruta
     this.brojTelefona, // broj telefona putnika
-    this.depozit, // depozit vozača
   });
 
   // Getter-i za kompatibilnost
@@ -188,7 +186,6 @@ class Putnik {
       adresa: _determineAdresaFromMesecni(map),
       obrisan: map['aktivan'] != true, // Koristi aktivan kolonu umesto obrisan
       brojTelefona: map['broj_telefona'] as String?,
-      depozit: map['depozit'] as double?,
     );
   }
 
@@ -261,7 +258,6 @@ class Putnik {
         adresa: map['adresa_bela_crkva'] as String?,
         obrisan: obrisan,
         brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
-        depozit: map['depozit'] as double?, // ✅ DODATO
       ));
     }
 
@@ -313,7 +309,6 @@ class Putnik {
         adresa: map['adresa_vrsac'] as String?,
         obrisan: obrisan,
         brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
-        depozit: map['depozit'] as double?, // ✅ DODATO
       ));
     }
 
@@ -359,7 +354,6 @@ class Putnik {
       adresa: map['adresa_polaska'] as String?,
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
-      depozit: (map['depozit'] as num?)?.toDouble(), // ✅ KORISTI depozit kolonu
     );
   }
 
@@ -460,7 +454,6 @@ class Putnik {
       'poslednje_putovanje':
           vremePokupljenja?.toIso8601String(), // ✅ TIMESTAMP format
       // Ne uključujemo 'obrisan' kolonu za putovanja_istorija tabelu
-      'depozit': depozit ?? 0.0,
       'created_at': vremeDodavanja?.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
@@ -526,7 +519,6 @@ class Putnik {
       'putnik_ime': ime,
       'broj_telefona': brojTelefona,
       'cena': iznosPlacanja ?? 0.0,
-      'depozit': depozit ?? 0.0,
       'status': status ?? 'nije_se_pojavio', // ✅ NOVA JEDNOSTAVNA KOLONA
       'obrisan': obrisan, // ✅ DODATO - soft delete flag
       'pokupljen': pokupljen ?? false, // ✅ DODATO - da li je pokupljen

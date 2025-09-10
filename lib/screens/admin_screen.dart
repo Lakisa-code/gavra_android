@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gavra_android/services/putnik_service.dart';
 
 import '../models/putnik.dart';
+import '../services/daily_checkin_service.dart'; // DODANO za kusur kocke
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // DODANO za kreiranje dnevnih putovanja
@@ -23,17 +24,13 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   String? _currentDriver;
-
   final PutnikService _putnikService = PutnikService();
-
-  // 💸 DEPOZITI - sa real-time stream
-  Map<String, double> _depoziti = {};
 
   //
   // Statistika pazara
 
-  // Filter za dan
-  String _selectedDan = '';
+  // Filter za dan - odmah postaviti na trenutni dan
+  late String _selectedDan;
 
   @override
   void initState() {
@@ -49,14 +46,9 @@ class _AdminScreenState extends State<AdminScreen> {
       // Error handling for notification services
     }
 
-    // 💸 REAL-TIME DEPOZIT SYNC
-    // 💸 DEPOZIT SYNC - SA REAL-TIME
-    // DepozitService.startRealtimeSync(); // UKLONJEN - servis ne postoji
-
     FirebaseService.getCurrentDriver().then((driver) {
       if (driver != null && driver.isNotEmpty) {
         RealtimeNotificationService.initialize();
-        _initializeDepoziti(); // Učitaj depozite iz baze
       }
     }).catchError((e) {
       // Error handling for getCurrentDriver
@@ -67,20 +59,6 @@ class _AdminScreenState extends State<AdminScreen> {
   void dispose() {
     // Real-time stream se automatski zatvaraju
     super.dispose();
-  }
-
-  // 💸 DEPOZIT METODE
-  Future<void> _initializeDepoziti() async {
-    try {
-      // final depoziti = await DepozitService.loadAllDepozits(); // UKLONJEN - servis ne postoji
-      if (mounted) {
-        setState(() {
-          _depoziti = {}; // Postaviti prazan map umesto učitavanja iz servisa
-        });
-      }
-    } catch (e) {
-      debugPrint('🚨 Greška pri učitavanju depozita: $e');
-    }
   }
 
   void _loadCurrentDriver() async {
@@ -131,7 +109,6 @@ class _AdminScreenState extends State<AdminScreen> {
       'Sreda': 'Sre',
       'Četvrtak': 'Čet',
       'Petak': 'Pet',
-      '': '', // Prazno ostaje prazno
     };
     return dayMapping[fullDayName] ?? fullDayName;
   }
@@ -145,7 +122,9 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD), // 🎨 Seksi svetla pozadina
+      backgroundColor: Theme.of(context)
+          .colorScheme
+          .surface, // 🎨 Dinamička pozadina iz theme
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Container(
@@ -185,14 +164,14 @@ class _AdminScreenState extends State<AdminScreen> {
                   Container(
                     height: 24,
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'A D M I N   P A N E L',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         letterSpacing: 1.8,
-                        shadows: [
+                        shadows: const [
                           Shadow(
                             offset: Offset(1, 1),
                             blurRadius: 3,
@@ -380,9 +359,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
-                                  value: _selectedDan.isEmpty
-                                      ? null
-                                      : _selectedDan,
+                                  value: _selectedDan,
                                   hint: const Center(
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
@@ -395,7 +372,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
                                   selectedItemBuilder: (BuildContext context) {
                                     return [
-                                      '',
                                       'Ponedeljak',
                                       'Utorak',
                                       'Sreda',
@@ -406,7 +382,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         child: FittedBox(
                                           fit: BoxFit.scaleDown,
                                           child: Text(
-                                            value.isEmpty ? '' : value,
+                                            value,
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 12,
@@ -419,10 +395,10 @@ class _AdminScreenState extends State<AdminScreen> {
                                     }).toList();
                                   },
                                   icon: const SizedBox.shrink(),
-                                  dropdownColor: const Color(0xFF4F7EFC),
+                                  dropdownColor:
+                                      Theme.of(context).colorScheme.primary,
                                   style: const TextStyle(color: Colors.white),
                                   items: [
-                                    '',
                                     'Ponedeljak',
                                     'Utorak',
                                     'Sreda',
@@ -438,7 +414,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Text(
-                                              dan.isEmpty ? 'Svi dani' : dan,
+                                              dan,
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
@@ -513,7 +489,7 @@ class _AdminScreenState extends State<AdminScreen> {
           final allPutnici = snapshot.data!;
           final filteredPutnici = allPutnici.where((putnik) {
             // 🗓️ FILTER PO DANU - Samo po danu nedelje
-            if (_selectedDan.isEmpty) return true; // SVE
+            // Filtriraj po odabranom danu
             final shortDayName = _getShortDayName(_selectedDan);
             return putnik.dan == shortDayName;
           }).toList();
@@ -548,10 +524,46 @@ class _AdminScreenState extends State<AdminScreen> {
           // ✅ ISPRAVKA: Umesto kalkulacije datuma, koristi već filtrirane putnike po danu
           // Ovo omogućava prikaz pazara za odabrani dan (Pon, Uto, itd.) direktno
 
+          // 📅 KALKULIRAJ DATUM NA OSNOVU DROPDOWN SELEKCIJE
+          final DateTime streamFrom, streamTo;
+
+          // Odabran je specifičan dan, pronađi taj dan u trenutnoj nedelji
+          final now = DateTime.now();
+          final currentWeekday =
+              now.weekday; // 1=Pon, 2=Uto, 3=Sre, 4=Čet, 5=Pet
+
+          int targetWeekday;
+          switch (_selectedDan) {
+            case 'Ponedeljak':
+              targetWeekday = 1;
+              break;
+            case 'Utorak':
+              targetWeekday = 2;
+              break;
+            case 'Sreda':
+              targetWeekday = 3;
+              break;
+            case 'Četvrtak':
+              targetWeekday = 4;
+              break;
+            case 'Petak':
+              targetWeekday = 5;
+              break;
+            default:
+              targetWeekday = currentWeekday;
+          }
+
+          final daysFromToday = targetWeekday - currentWeekday;
+          final targetDate = now.add(Duration(days: daysFromToday));
+          streamFrom =
+              DateTime(targetDate.year, targetDate.month, targetDate.day);
+          streamTo = DateTime(
+              targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
+
           return StreamBuilder<Map<String, double>>(
             stream: StatistikaService.streamPazarSvihVozaca(
-              from: null, // Koristićemo default vrednosti (današnji dan)
-              to: null,
+              from: streamFrom,
+              to: streamTo,
             ),
             builder: (context, pazarSnapshot) {
               if (!pazarSnapshot.hasData) {
@@ -603,25 +615,19 @@ class _AdminScreenState extends State<AdminScreen> {
                       child: Row(
                         children: [
                           Text(
-                            _selectedDan.isEmpty
-                                ? (isAdmin
-                                    ? 'Sedmični pazar po vozačima'
-                                    : 'Moj sedmični pazar')
-                                : (isAdmin
-                                    ? 'Dnevni pazar - $_selectedDan'
-                                    : 'Moj pazar - $_selectedDan'),
+                            isAdmin
+                                ? 'Dnevni pazar - $_selectedDan'
+                                : 'Moj pazar - $_selectedDan',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue[800],
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Icon(
-                            _selectedDan.isEmpty
-                                ? Icons.view_week
-                                : Icons.today,
-                            color: Colors.blue[600],
+                            Icons.today,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 20,
                           ),
                           if (!isAdmin) ...[
@@ -635,37 +641,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         ],
                       ),
                     ),
-                    // 💡 Info box o sedmičnom prikazu
-                    if (_selectedDan.isEmpty && isAdmin)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border:
-                              Border.all(color: Colors.blue[200]!, width: 1),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                color: Colors.blue[600], size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Za sedmični pazar (Pon-Pet) idi u Statistike → Vozači → Pon-Pet',
-                                style: TextStyle(
-                                  color: Colors.blue[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    // 👤 Info box za individualnog vozača
+                    //  Info box za individualnog vozača
                     if (!isAdmin)
                       Container(
                         width: double.infinity,
@@ -696,109 +672,84 @@ class _AdminScreenState extends State<AdminScreen> {
                         ),
                       ),
                     const SizedBox(height: 12),
-                    // 👥 VOZAČI + DEPOZIT (REAL-TIME)
-                    StreamBuilder<Map<String, double>>(
-                      stream: const Stream
-                          .empty(), // Zakomentarisan DepozitService.depozitStream
-                      initialData: _depoziti,
-                      builder: (context, snapshot) {
-                        final depoziti = snapshot.data ?? _depoziti;
-
-                        return Column(
-                          children: prikazaniVozaci
-                              .map(
-                                (vozac) => Container(
-                                  width: double.infinity,
-                                  height: 60,
-                                  margin: const EdgeInsets.only(bottom: 4),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 8,
+                    // 👥 VOZAČI PAZAR (BEZ DEPOZITA)
+                    Column(
+                      children: prikazaniVozaci
+                          .map(
+                            (vozac) => Container(
+                              width: double.infinity,
+                              height: 60,
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (vozacBoje[vozac] ?? Colors.blueGrey)
+                                    .withAlpha(
+                                  20,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: (vozacBoje[vozac] ?? Colors.blueGrey)
+                                      .withAlpha(
+                                    70,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                                        .withAlpha(
-                                      20,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color:
-                                          (vozacBoje[vozac] ?? Colors.blueGrey)
-                                              .withAlpha(
-                                        70,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor:
+                                        vozacBoje[vozac] ?? Colors.blueGrey,
+                                    radius: 16,
+                                    child: Text(
+                                      vozac[0],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
                                       ),
-                                      width: 1,
                                     ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundColor:
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      vozac,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color:
                                             vozacBoje[vozac] ?? Colors.blueGrey,
-                                        radius: 16,
-                                        child: Text(
-                                          vozac[0],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              vozac,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: vozacBoje[vozac] ??
-                                                    Colors.blueGrey,
-                                              ),
-                                            ),
-                                            Text(
-                                              isAdmin
-                                                  ? 'Vozač (+ depozit)'
-                                                  : 'Moje naplate',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.monetization_on,
+                                        color:
+                                            vozacBoje[vozac] ?? Colors.blueGrey,
+                                        size: 16,
                                       ),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.monetization_on,
-                                            color: vozacBoje[vozac] ??
-                                                Colors.blueGrey,
-                                            size: 16,
-                                          ),
-                                          const SizedBox(width: 2),
-                                          Text(
-                                            '${((filteredPazar[vozac] ?? 0.0) + (depoziti[vozac] ?? 0.0)).toStringAsFixed(0)} RSD',
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                              color: vozacBoje[vozac] ??
-                                                  Colors.blueGrey,
-                                            ),
-                                          ),
-                                        ],
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${(filteredPazar[vozac] ?? 0.0).toStringAsFixed(0)} RSD',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: vozacBoje[vozac] ??
+                                              Colors.blueGrey,
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              )
-                              .toList(),
-                        );
-                      },
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
                     DugButton(
                       brojDuznika: filteredDuznici.length,
@@ -816,141 +767,141 @@ class _AdminScreenState extends State<AdminScreen> {
                       wide: true,
                     ),
                     const SizedBox(height: 4),
-                    // 💸 DEPOZIT KOCKE (REAL-TIME)
-                    StreamBuilder<Map<String, double>>(
-                      stream: const Stream
-                          .empty(), // Zakomentarisan DepozitService.depozitStream
-                      initialData: _depoziti,
-                      builder: (context, snapshot) {
-                        final depoziti = snapshot.data ?? _depoziti;
+                    // 💸 KUSUR KOCKE (REAL-TIME)
+                    Row(
+                      children: [
+                        // Kusur za Bruda - REAL-TIME
+                        Expanded(
+                          child: StreamBuilder<double>(
+                            stream:
+                                DailyCheckInService.streamTodayAmount('Bruda'),
+                            builder: (context, snapshot) {
+                              final kusurBruda = snapshot.data ?? 0.0;
 
-                        return Container(
-                          width: double.infinity,
-                          height: 60,
-                          margin: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              // Depozit za Bruda
-                              Expanded(
-                                child: Container(
-                                  height: 60,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.purple[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: Colors.purple[300]!, width: 1.2),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.savings,
-                                        color: Colors.purple[700],
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'DEPOZIT',
-                                        style: TextStyle(
-                                          color: Colors.purple[800],
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          margin:
-                                              const EdgeInsets.only(left: 6),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple[100],
-                                            border: Border.all(
-                                              color: Colors.purple[300]!,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            '${(depoziti['Bruda'] ?? 0.0).toStringAsFixed(0)} RSD',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.purple[800],
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              return Container(
+                                height: 60,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: Colors.purple[300]!, width: 1.2),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              // Depozit za Bilevski
-                              Expanded(
-                                child: Container(
-                                  height: 60,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: Colors.orange[300]!, width: 1.2),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.savings,
-                                        color: Colors.orange[700],
-                                        size: 16,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.savings,
+                                      color: Colors.purple[700],
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'KUSUR',
+                                      style: TextStyle(
+                                        color: Colors.purple[800],
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
                                       ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'DEPOZIT',
-                                        style: TextStyle(
-                                          color: Colors.orange[800],
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
+                                    ),
+                                    Expanded(
+                                      child: Container(
+                                        margin: const EdgeInsets.only(left: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
                                         ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          margin:
-                                              const EdgeInsets.only(left: 6),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
+                                        decoration: BoxDecoration(
+                                          color: Colors.purple[100],
+                                          border: Border.all(
+                                            color: Colors.purple[300]!,
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.orange[100],
-                                            border: Border.all(
-                                              color: Colors.orange[300]!,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            '${(depoziti['Bilevski'] ?? 0.0).toStringAsFixed(0)} RSD',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.orange[800],
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${kusurBruda.toStringAsFixed(0)} RSD',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.purple[800],
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                        const SizedBox(width: 4),
+                        // Kusur za Bilevski - REAL-TIME
+                        Expanded(
+                          child: StreamBuilder<double>(
+                            stream: DailyCheckInService.streamTodayAmount(
+                                'Bilevski'),
+                            builder: (context, snapshot) {
+                              final kusurBilevski = snapshot.data ?? 0.0;
+
+                              return Container(
+                                height: 60,
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: Colors.orange[300]!, width: 1.2),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.savings,
+                                      color: Colors.orange[700],
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'KUSUR',
+                                      style: TextStyle(
+                                        color: Colors.orange[800],
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Container(
+                                        margin: const EdgeInsets.only(left: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange[100],
+                                          border: Border.all(
+                                            color: Colors.orange[300]!,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${kusurBilevski.toStringAsFixed(0)} RSD',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.orange[800],
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     // UKUPAN PAZAR
@@ -986,41 +937,21 @@ class _AdminScreenState extends State<AdminScreen> {
                                   letterSpacing: 1,
                                 ),
                               ),
-                              // 💰 REAL-TIME UKUPAN PAZAR
-                              // 💰 UKUPAN PAZAR (REAL-TIME)
-                              StreamBuilder<Map<String, double>>(
-                                stream: const Stream
-                                    .empty(), // Zakomentarisan DepozitService.depozitStream
-                                initialData: _depoziti,
-                                builder: (context, snapshot) {
-                                  final depoziti = snapshot.data ?? _depoziti;
-                                  final double mojPazar = isAdmin
-                                      ? ukupno
-                                      : filteredPazar.values
-                                          .fold(0.0, (sum, val) => sum + val);
-                                  final double depozitTotal = isAdmin
-                                      ? (depoziti['Bruda'] ?? 0.0) +
-                                          (depoziti['Bilevski'] ?? 0.0)
-                                      : 0.0;
-                                  final double ukupnoFinal =
-                                      mojPazar + depozitTotal;
-
-                                  return Text(
-                                    '${ukupnoFinal.toStringAsFixed(0)} RSD',
-                                    style: TextStyle(
-                                      color: Colors.green[900],
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 22,
-                                    ),
-                                  );
-                                },
+                              // 💰 UKUPAN PAZAR (BEZ DEPOZITA)
+                              Text(
+                                '${(isAdmin ? ukupno : filteredPazar.values.fold(0.0, (sum, val) => sum + val)).toStringAsFixed(0)} RSD',
+                                style: TextStyle(
+                                  color: Colors.green[900],
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 22,
+                                ),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    // 🗺️ SEKSI ADMIN MAPA KOCKA - Depozit Style
+                    // 🗺️ GPS ADMIN MAPA
                     Container(
                       width: double.infinity,
                       height: 60,

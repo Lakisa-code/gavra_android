@@ -5,9 +5,11 @@ import 'package:just_audio/just_audio.dart';
 import 'dart:math';
 import '../services/local_notification_service.dart';
 import '../services/password_service.dart';
+import '../services/daily_checkin_service.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import 'home_screen.dart';
 import 'change_password_screen.dart';
+import 'daily_checkin_screen.dart';
 import '../main.dart' show globalThemeRefresher; // DODATO za tema refresh
 
 class WelcomeScreen extends StatefulWidget {
@@ -138,20 +140,47 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final savedDriver = prefs.getString('current_driver');
 
     if (savedDriver != null && savedDriver.isNotEmpty) {
-      // Vozač je već logovan - DIREKTNI PRELAZAK BEZ PESME
+      // Vozač je već logovan - PROVERI DAILY CHECK-IN
       debugPrint(
-          '🔄 AUTO-LOGIN: $savedDriver je već logovan - idem direktno na HomeScreen BEZ pesme');
+          '🔄 AUTO-LOGIN: $savedDriver je već logovan - proveravam daily check-in');
 
       // 🎨 OSVEZI TEMU ZA VOZAČA
       if (globalThemeRefresher != null) {
         globalThemeRefresher!();
       }
 
+      // 🌅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
+      final hasCheckedIn =
+          await DailyCheckInService.hasCheckedInToday(savedDriver);
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+
+      if (!hasCheckedIn) {
+        // POŠALJI NA DAILY CHECK-IN SCREEN
+        debugPrint('🌅 DAILY CHECK-IN: $savedDriver mora da uradi check-in');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DailyCheckInScreen(
+              vozac: savedDriver,
+              onCompleted: () {
+                // Kada završi check-in, idi na HomeScreen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        // DIREKTNO NA HOME SCREEN
+        debugPrint('✅ DAILY CHECK-IN: $savedDriver već uradio check-in danas');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
     }
   }
 
@@ -229,11 +258,38 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       // 🎵 PUSTI PESMU SAMO PRI MANUELNOM LOGIN-U SA ŠIFROM (ne pri auto-login-u)
       await _WelcomeScreenState._playDriverWelcomeSong(driverName);
 
+      // 🌅 PROVERI DAILY CHECK-IN I NAKON MANUELNOG LOGIN-A
+      final hasCheckedIn =
+          await DailyCheckInService.hasCheckedInToday(driverName);
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+
+      if (!hasCheckedIn) {
+        // POŠALJI NA DAILY CHECK-IN SCREEN
+        debugPrint('🌅 MANUAL LOGIN: $driverName mora da uradi check-in');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DailyCheckInScreen(
+              vozac: driverName,
+              onCompleted: () {
+                // Kada završi check-in, idi na HomeScreen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        // DIREKTNO NA HOME SCREEN
+        debugPrint('✅ MANUAL LOGIN: $driverName već uradio check-in danas');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
     } else {
       // Pogrešna šifra
       if (!mounted) return;
@@ -808,11 +864,38 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       // 🎵 PUSTI SVETLANINU PESMU SAMO PRI MANUELNOM LOGIN-U SA ŠIFROM (ne pri auto-login-u)
       await _WelcomeScreenState._playDriverWelcomeSong('Svetlana');
 
+      // 🌅 PROVERI DAILY CHECK-IN I ZA SVETLANU
+      final hasCheckedIn =
+          await DailyCheckInService.hasCheckedInToday('Svetlana');
+
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+
+      if (!hasCheckedIn) {
+        // POŠALJI NA DAILY CHECK-IN SCREEN
+        debugPrint('🌅 SVETLANA LOGIN: mora da uradi check-in');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DailyCheckInScreen(
+              vozac: 'Svetlana',
+              onCompleted: () {
+                // Kada završi check-in, idi na HomeScreen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        // DIREKTNO NA HOME SCREEN
+        debugPrint('✅ SVETLANA LOGIN: već uradila check-in danas');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
     } else {
       // Pogrešna šifra
       if (!mounted) return;
@@ -1021,4 +1104,3 @@ class SvetlanaSPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
