@@ -141,18 +141,25 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
   Widget build(BuildContext context) {
     final vozacColor = VozacBoja.get(widget.vozac);
 
+    // Mekše jutarnje boje - pastelne verzije vozačevih boja
+    final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!;
+    final warmBackground =
+        Color.lerp(vozacColor, const Color(0xFFFFF8E1), 0.8)!;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: const Color(0xFF1A1A1A), // Tamni background za jutro
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              vozacColor.withOpacity(0.3),
-              vozacColor.withOpacity(0.1),
-              Theme.of(context).colorScheme.surface.withOpacity(0.9),
+              const Color(0xFF2C2C2C), // Tamna jutarnja boja
+              warmBackground.withOpacity(0.15),
+              softVozacColor.withOpacity(0.1),
+              const Color(0xFF1A1A1A), // Vraća se na tamno
             ],
+            stops: const [0.0, 0.3, 0.7, 1.0],
           ),
         ),
         child: SafeArea(
@@ -165,7 +172,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Pozdrav ikona
+                    // Jutarnja ikona - mekša i toplija
                     Container(
                       width: 120,
                       height: 120,
@@ -173,34 +180,46 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            vozacColor,
-                            vozacColor.withOpacity(0.7),
+                            softVozacColor.withOpacity(0.8),
+                            softVozacColor.withOpacity(0.4),
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: vozacColor.withOpacity(0.5),
-                            blurRadius: 25,
-                            spreadRadius: 8,
+                            color: softVozacColor.withOpacity(0.3),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                          // Dodatni warm glow
+                          BoxShadow(
+                            color: const Color(0xFFFFE0B2).withOpacity(0.2),
+                            blurRadius: 30,
+                            spreadRadius: 10,
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.wb_sunny,
+                      child: Icon(
+                        Icons.light_mode_outlined, // Mekša jutarnja ikona
                         size: 60,
-                        color: Colors.white,
+                        color: Colors.white.withOpacity(0.9),
                       ),
                     ),
 
                     const SizedBox(height: 32),
 
-                    // Pozdrav tekst
+                    // Jutarnji pozdrav
                     Text(
                       'Dobro jutro',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w300,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withOpacity(0.95),
+                        shadows: [
+                          Shadow(
+                            color: softVozacColor.withOpacity(0.3),
+                            blurRadius: 10,
+                          ),
+                        ],
                       ),
                     ),
 
@@ -211,28 +230,42 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: vozacColor,
+                        color: softVozacColor,
                         letterSpacing: 1.2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                     ),
 
                     const SizedBox(height: 48),
 
-                    // Instrukcije
+                    // Mekše instrukcije
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.black.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: vozacColor.withOpacity(0.3),
+                          color: softVozacColor.withOpacity(0.4),
+                          width: 1,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.info_outline,
-                            color: vozacColor,
+                            color: softVozacColor,
                             size: 24,
                           ),
                           const SizedBox(width: 12),
@@ -282,12 +315,12 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                           ),
                           suffixText: 'RSD',
                           suffixStyle: TextStyle(
-                            color: vozacColor,
+                            color: softVozacColor,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
+                          fillColor: Colors.black.withOpacity(0.15),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -295,7 +328,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide(
-                              color: vozacColor,
+                              color: softVozacColor,
                               width: 2,
                             ),
                           ),
@@ -317,10 +350,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _submitKusur,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: vozacColor,
+                          backgroundColor: softVozacColor,
                           foregroundColor: Colors.white,
-                          elevation: 8,
-                          shadowColor: vozacColor.withOpacity(0.4),
+                          elevation: 6,
+                          shadowColor: softVozacColor.withOpacity(0.3),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
