@@ -1293,14 +1293,13 @@ class _DanasScreenState extends State<DanasScreen> {
                   const SizedBox(height: 4),
                   // DUGMAD U APP BAR-U
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // DUGME ZA OPTIMIZACIJU RUTE
                       Expanded(child: _buildOptimizeRouteButton()),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 2),
                       // �️ NOVO: DUGME ZA GOOGLE MAPS
                       Expanded(child: _buildMapsButton()),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 2),
                       // 📊 DUGME ZA POPIS DANA
                       Expanded(child: _buildPopisButton()),
                     ],
