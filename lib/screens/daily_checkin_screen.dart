@@ -139,7 +139,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
   @override
   Widget build(BuildContext context) {
-    final vozacColor = VozacBoja.getColor(widget.vozac);
+    final vozacColor = VozacBoja.get(widget.vozac);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -149,9 +149,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              vozacColor.withOpacity(0.2),
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surface.withOpacity(0.8),
+              vozacColor.withOpacity(0.3),
+              vozacColor.withOpacity(0.1),
+              Theme.of(context).colorScheme.surface.withOpacity(0.9),
             ],
           ),
         ),
@@ -173,15 +173,15 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            vozacColor.withOpacity(0.8),
-                            vozacColor.withOpacity(0.4),
+                            vozacColor,
+                            vozacColor.withOpacity(0.7),
                           ],
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: vozacColor.withOpacity(0.3),
-                            blurRadius: 20,
-                            spreadRadius: 5,
+                            color: vozacColor.withOpacity(0.5),
+                            blurRadius: 25,
+                            spreadRadius: 8,
                           ),
                         ],
                       ),
