@@ -1039,6 +1039,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         return vremeMatch && gradMatch && statusOk;
                       }).toList()
                     : filtriraniPutnici;
+                // 💳 SVIH DUŽNIKA SORTIRANIH PO DATUMU (najnoviji na vrhu)
                 final filteredDuznici = danasPutnici.where((putnik) {
                   final nijePlatio = (putnik.iznosPlacanja == null ||
                       putnik.iznosPlacanja == 0);
@@ -1056,6 +1057,15 @@ class _DanasScreenState extends State<DanasScreen> {
                       pokupljen &&
                       jeOvajVozac;
                 }).toList();
+
+                // Sortiraj po datumu (najnoviji na vrhu)
+                filteredDuznici.sort((a, b) {
+                  final aTime =
+                      a.vremeDodavanja ?? a.vremePokupljenja ?? DateTime(1970);
+                  final bTime =
+                      b.vremeDodavanja ?? b.vremePokupljenja ?? DateTime(1970);
+                  return bTime.compareTo(aTime);
+                });
                 // KORISTI NOVU STANDARDIZOVANU LOGIKU ZA PAZAR 💰
                 final today = DateTime.now();
                 final dayStart = DateTime(today.year, today.month, today.day);

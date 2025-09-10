@@ -107,25 +107,20 @@ class _DugoviScreenState extends State<DugoviScreen> {
               // (p.dan == danasString)) // PRIVREMENO ISKLJUČEN FILTER ZA DATUM
               .toList();
 
-          // Sortiraj po datumu i vremenu pokupljenja (najnoviji prvi)
+          // Sortiraj po datumu (najnoviji prvi)
           duznici.sort((a, b) {
-            // Prvo poredi po vremenu pokupljenja
-            if (a.vremePokupljenja != null && b.vremePokupljenja != null) {
-              return b.vremePokupljenja!.compareTo(a.vremePokupljenja!);
-            }
-            // Ako nema vremena pokupljenja, sortiraj po datumu
-            if (a.dan != b.dan) {
-              return b.dan.compareTo(a.dan);
-            }
-            // Kao poslednju opciju, sortiraj po imenu
-            return a.ime.compareTo(b.ime);
-          });
+            // Koristiti vremeDodavanja ako postoji, inače vremePokupljenja, inače dan
+            DateTime? aDate = a.vremeDodavanja ?? a.vremePokupljenja;
+            DateTime? bDate = b.vremeDodavanja ?? b.vremePokupljenja;
 
-          // Sortiraj po datumu i vremenu (najnoviji prvi)
-          duznici.sort((a, b) {
-            final aTime = a.vremeDodavanja ?? DateTime(1970);
-            final bTime = b.vremeDodavanja ?? DateTime(1970);
-            return bTime.compareTo(aTime); // Obrnut redosled - najnoviji prvi
+            // Ako nema datuma, koristi dan string kao fallback
+            if (aDate == null && bDate == null) {
+              return b.dan.compareTo(a.dan); // najnoviji dan prvo
+            }
+            if (aDate == null) return 1; // b je noviji
+            if (bDate == null) return -1; // a je noviji
+
+            return bDate.compareTo(aDate); // najnoviji prvo
           });
 
           debugPrint('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
