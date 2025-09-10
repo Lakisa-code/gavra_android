@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // DODANO za kDebugMode
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
+import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za Google Maps
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
@@ -301,6 +302,39 @@ class _DanasScreenState extends State<DanasScreen> {
           ],
         );
       },
+    );
+  }
+
+  // 🗺️ DUGME ZA GOOGLE MAPS NAVIGACIJU
+  Widget _buildMapsButton() {
+    final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
+
+    return SizedBox(
+      height: 24,
+      child: ElevatedButton.icon(
+        onPressed: hasOptimizedRoute ? () => _openGoogleMapsNavigation() : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              hasOptimizedRoute ? Colors.blue.shade600 : Colors.grey.shade400,
+          foregroundColor: Colors.white,
+          elevation: hasOptimizedRoute ? 2 : 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        ),
+        icon: Icon(
+          Icons.navigation,
+          size: 12,
+        ),
+        label: Text(
+          'MAPA',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 9,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1263,8 +1297,11 @@ class _DanasScreenState extends State<DanasScreen> {
                     children: [
                       // DUGME ZA OPTIMIZACIJU RUTE
                       Expanded(child: _buildOptimizeRouteButton()),
+                      const SizedBox(width: 4),
+                      // �️ NOVO: DUGME ZA GOOGLE MAPS
+                      Expanded(child: _buildMapsButton()),
                       const SizedBox(width: 8),
-                      // 📊 NOVO: DUGME ZA POPIS DANA
+                      // 📊 DUGME ZA POPIS DANA
                       _buildPopisButton(),
                     ],
                   ),
@@ -1960,5 +1997,64 @@ class _DanasScreenState extends State<DanasScreen> {
         },
       ),
     );
+  }
+
+  // 🗺️ POKRETANJE GOOGLE MAPS NAVIGACIJE SA OPTIMIZOVANOM RUTOM
+  Future<void> _openGoogleMapsNavigation() async {
+    if (!_isRouteOptimized || _optimizedRoute.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Prvo optimizuj rutu pre pokretanja navigacije!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Kreiranje waypoints od optimizovane rute
+      final waypoints = _optimizedRoute
+          .where((p) => p.adresa?.isNotEmpty == true)
+          .map((p) => p.adresa!)
+          .join('|');
+
+      if (waypoints.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nema validnih adresa za navigaciju!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Google Maps URL sa waypoints
+      final googleMapsUrl =
+          'https://www.google.com/maps/dir/?api=1&waypoints=$waypoints&travelmode=driving';
+
+      // Pokušaj otvaranja URL-a
+      final uri = Uri.parse(googleMapsUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '🗺️ Navigacija pokrenuta sa ${_optimizedRoute.length} putnika'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        throw 'Could not launch Google Maps';
+      }
+    } catch (e) {
+      debugPrint('❌ Greška pri pokretanju Google Maps: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Greška pri pokretanju navigacije: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
