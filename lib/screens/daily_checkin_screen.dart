@@ -399,6 +399,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
   // 📊 DIALOG ZA PRIKAZ POPISA IZ PRETHODNOG DANA
   void _showPreviousDayReportDialog(Map<String, dynamic> lastReport) {
     final datum = lastReport['datum'] as DateTime;
+    final vozacColor = VozacBoja.get(widget.vozac);
+    final popis = lastReport['popis'] as Map<String, dynamic>;
 
     showDialog(
       context: context,
@@ -406,50 +408,110 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.history, color: Colors.blue),
+            Icon(Icons.person, color: vozacColor, size: 20),
             const SizedBox(width: 8),
-            Text('📊 Popis od ${datum.day}.${datum.month}.${datum.year}'),
+            Text(
+              '� RUČNI POPIS - ${datum.day}.${datum.month}.${datum.year}',
+              style: TextStyle(
+                color: vozacColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Evo popisa iz prethodnog radnog dana za vozača ${widget.vozac}:',
-              style: const TextStyle(fontSize: 14),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Vozač header
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: vozacColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: vozacColor, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '👤 VOZAČ: ${widget.vozac}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: vozacColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Statistike
+                _buildStatistikaRow(
+                    '💰 Ukupan pazar',
+                    '${popis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
+                    Colors.green),
+                _buildStatistikaRow('👥 Dodati putnici',
+                    '${popis['dodatiPutnici'] ?? 0}', Colors.blue),
+                _buildStatistikaRow('✅ Pokupljeni putnici',
+                    '${popis['pokupljeniPutnici'] ?? 0}', Colors.green),
+                _buildStatistikaRow('💳 Naplaćeni putnici',
+                    '${popis['naplaceniPutnici'] ?? 0}', Colors.teal),
+                _buildStatistikaRow('❌ Otkazani putnici',
+                    '${popis['otkazaniPutnici'] ?? 0}', Colors.red),
+                _buildStatistikaRow('💸 Dugovi',
+                    '${popis['dugoviPutnici'] ?? 0}', Colors.orange),
+                _buildStatistikaRow('🎫 Mesečne karte',
+                    '${popis['mesecneKarte'] ?? 0}', Colors.purple),
+                _buildStatistikaRow(
+                    '🛣️ Kilometraža',
+                    '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
+                    Colors.indigo),
+                if (popis['sitanNovac'] != null && popis['sitanNovac'] > 0)
+                  _buildStatistikaRow(
+                      '🪙 Sitan novac',
+                      '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
+                      Colors.amber),
+
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: vozacColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: vozacColor.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info, color: vozacColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '💡 Sada možete uneti sitan novac za današnji dan.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: vozacColor.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                lastReport['popis'].toString(),
-                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: const Text(
-                '💡 Sada možete uneti sitan novac za današnji dan.',
-                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-              ),
-            ),
-          ],
+          ),
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Razumem'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: vozacColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('👤 Razumem'),
           ),
         ],
       ),
