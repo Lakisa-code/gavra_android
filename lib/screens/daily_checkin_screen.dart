@@ -468,15 +468,15 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.person, color: VozacBoja.get(widget.vozac), size: 24),
+            const Icon(Icons.auto_awesome, color: Colors.orange, size: 24),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '📊 AUTOMATSKI POPIS - ${datum.day}.${datum.month}.${datum.year}',
+                '🤖 AUTOMATSKI POPIS - ${datum.day}.${datum.month}.${datum.year}',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+                  color: Colors.orange.shade800,
                 ),
               ),
             ),
@@ -525,18 +525,17 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: VozacBoja.get(widget.vozac).withOpacity(0.1),
+                        color: Colors.orange.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: VozacBoja.get(widget.vozac), width: 2),
+                        border: Border.all(color: Colors.orange, width: 2),
                       ),
                       child: Center(
                         child: Text(
-                          '🚗 VOZAČ: ${widget.vozac}',
-                          style: TextStyle(
+                          '🤖 AUTOMATSKI VOZAČ: ${widget.vozac}',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: VozacBoja.get(widget.vozac),
+                            color: Colors.orange,
                           ),
                         ),
                       ),
@@ -650,10 +649,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
               Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: VozacBoja.get(widget.vozac),
+              backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Sačuvaj kusur'),
+            child: const Text('🤖 Sačuvaj kusur'),
           ),
         ],
       ),
