@@ -1046,10 +1046,15 @@ class _DanasScreenState extends State<DanasScreen> {
                       putnik.status != 'otkazan' && putnik.status != 'Otkazano';
                   final jesteMesecni = putnik.mesecnaKarta == true;
                   final pokupljen = putnik.jePokupljen;
+
+                  // 🔥 NOVA LOGIKA: Samo dužnici koje je ovaj vozač pokupljao
+                  final jeOvajVozac = (putnik.pokupioVozac == _currentDriver);
+
                   return nijePlatio &&
                       nijeOtkazan &&
                       !jesteMesecni &&
-                      pokupljen;
+                      pokupljen &&
+                      jeOvajVozac;
                 }).toList();
                 // KORISTI NOVU STANDARDIZOVANU LOGIKU ZA PAZAR 💰
                 final today = DateTime.now();

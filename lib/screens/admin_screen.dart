@@ -524,7 +524,18 @@ class _AdminScreenState extends State<AdminScreen> {
                 putnik.status != 'otkazan' && putnik.status != 'Otkazano';
             final jesteMesecni = putnik.mesecnaKarta == true;
             final pokupljen = putnik.jePokupljen;
-            return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
+
+            // 🔥 NOVA LOGIKA: Admin vidi sve dužnike, vozači samo svoje
+            final bool isAdmin =
+                _currentDriver == 'Bojan' || _currentDriver == 'Svetlana';
+            final jeOvajVozac =
+                isAdmin || (putnik.pokupioVozac == _currentDriver);
+
+            return nijePlatio &&
+                nijeOtkazan &&
+                !jesteMesecni &&
+                pokupljen &&
+                jeOvajVozac;
           }).toList();
 
           debugPrint(

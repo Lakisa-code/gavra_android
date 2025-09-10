@@ -13,6 +13,13 @@ class DugoviScreen extends StatefulWidget {
 
 class _DugoviScreenState extends State<DugoviScreen> {
   // final PutnikService _putnikService = PutnikService();
+  String? _currentDriver;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentDriver = widget.currentDriver;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,14 +94,16 @@ class _DugoviScreenState extends State<DugoviScreen> {
             }
           }
 
-          // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - PRIVREMENO BEZ DATUMA
+          // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - SAMO PUTNICI KOJE JE OVAJ VOZAČ POKUPLJAO
           final duznici = snapshot.data!
               .where((p) =>
                   (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
                   (p.jePokupljen) &&
                   (p.status == null ||
                       (p.status != 'Otkazano' && p.status != 'otkazan')) &&
-                  (p.mesecnaKarta != true))
+                  (p.mesecnaKarta != true) &&
+                  (p.pokupioVozac ==
+                      _currentDriver)) // 🔥 NOVO: samo oni koje je OVAJ vozač pokupljao
               // (p.dan == danasString)) // PRIVREMENO ISKLJUČEN FILTER ZA DATUM
               .toList();
 
