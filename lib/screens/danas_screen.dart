@@ -1058,12 +1058,15 @@ class _DanasScreenState extends State<DanasScreen> {
                       jeOvajVozac;
                 }).toList();
 
-                // Sortiraj po datumu (najnoviji na vrhu)
+                // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)
                 filteredDuznici.sort((a, b) {
-                  final aTime =
-                      a.vremeDodavanja ?? a.vremePokupljenja ?? DateTime(1970);
-                  final bTime =
-                      b.vremeDodavanja ?? b.vremePokupljenja ?? DateTime(1970);
+                  final aTime = a.vremePokupljenja;
+                  final bTime = b.vremePokupljenja;
+
+                  if (aTime == null && bTime == null) return 0;
+                  if (aTime == null) return 1;
+                  if (bTime == null) return -1;
+
                   return bTime.compareTo(aTime);
                 });
                 // KORISTI NOVU STANDARDIZOVANU LOGIKU ZA PAZAR 💰

@@ -94,35 +94,29 @@ class _DugoviScreenState extends State<DugoviScreen> {
             }
           }
 
-          // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - SAMO PUTNICI KOJE JE OVAJ VOZAČ POKUPLJAO
+          // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - SVI DUŽNICI
           final duznici = snapshot.data!
               .where((p) =>
                   (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
                   (p.jePokupljen) &&
                   (p.status == null ||
                       (p.status != 'Otkazano' && p.status != 'otkazan')) &&
-                  (p.mesecnaKarta != true) &&
-                  (p.pokupioVozac ==
-                      _currentDriver)) // 🔥 NOVO: samo oni koje je OVAJ vozač pokupljao
-              // (p.dan == danasString)) // PRIVREMENO ISKLJUČEN FILTER ZA DATUM
+                  (p.mesecnaKarta != true))
+              // Uklonjeno ograničenje na trenutnog vozača - prikaži SVE dužnike
               .toList();
 
-          // Sortiraj po datumu (najnoviji prvi)
+          // Sortiraj po vremenu pokupljenja (najnoviji prvi)
           duznici.sort((a, b) {
-            // Koristiti vremeDodavanja ako postoji, inače vremePokupljenja, inače dan
-            DateTime? aDate = a.vremeDodavanja ?? a.vremePokupljenja;
-            DateTime? bDate = b.vremeDodavanja ?? b.vremePokupljenja;
+            final aTime = a.vremePokupljenja;
+            final bTime = b.vremePokupljenja;
 
-            // Ako nema datuma, koristi dan string kao fallback
-            if (aDate == null && bDate == null) {
-              return b.dan.compareTo(a.dan); // najnoviji dan prvo
-            }
-            if (aDate == null) return 1; // b je noviji
-            if (bDate == null) return -1; // a je noviji
+            // Ako nemaju vreme pokupljenja, stavi ih na kraj
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1; // a ide na kraj
+            if (bTime == null) return -1; // b ide na kraj
 
-            return bDate.compareTo(aDate); // najnoviji prvo
+            return bTime.compareTo(aTime); // najnoviji prvo
           });
-
           debugPrint('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
           for (final d in duznici) {
             debugPrint('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
