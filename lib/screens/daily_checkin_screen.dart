@@ -377,20 +377,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                               ),
                       ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    // Skip button (za slučaj da je hitno)
-                    TextButton(
-                      onPressed: _isLoading ? null : widget.onCompleted,
-                      child: Text(
-                        'Preskoči (uneći kasnije)',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
