@@ -1302,7 +1302,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       Expanded(child: _buildMapsButton()),
                       const SizedBox(width: 8),
                       // 📊 DUGME ZA POPIS DANA
-                      _buildPopisButton(),
+                      Expanded(child: _buildPopisButton()),
                     ],
                   ),
                 ],
