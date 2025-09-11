@@ -1171,7 +1171,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             Expanded(
                               flex: 35,
                               child: Container(
-                                height: 28,
+                                height: 32,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
@@ -1191,7 +1191,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     _currentDriver!,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       color: Colors.white,
                                     ),
                                     overflow: TextOverflow.ellipsis,
@@ -1216,7 +1216,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               },
                               borderRadius: BorderRadius.circular(14),
                               child: Container(
-                                height: 28,
+                                height: 32,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
@@ -1235,7 +1235,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       children: [
                                         Icon(
                                           Icons.palette,
-                                          size: 12,
+                                          size: 14,
                                           color: Colors.white,
                                         ),
                                         SizedBox(height: 1),
@@ -1243,7 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           'Tema',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 10,
+                                            fontSize: 26,
                                             color: Colors.white,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -1264,7 +1264,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           Expanded(
                             flex: 35,
                             child: Container(
-                              height: 28,
+                              height: 32,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
@@ -1290,24 +1290,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     color:
                                         Theme.of(context).colorScheme.onPrimary,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 14,
+                                    fontSize: 15,
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                   isExpanded: true,
+                                  selectedItemBuilder: (BuildContext context) {
+                                    return _dani.map<Widget>((String value) {
+                                      return Center(
+                                        child: Text(
+                                          value,
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      );
+                                    }).toList();
+                                  },
                                   items: _dani
                                       .map((dan) => DropdownMenuItem(
                                             value: dan,
-                                            child: Text(
-                                              dan,
-                                              style: TextStyle(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 13,
+                                            child: Center(
+                                              child: Text(
+                                                dan,
+                                                style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimary,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 14,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
                                               ),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
                                             ),
                                           ))
                                       .toList(),
@@ -1649,7 +1671,7 @@ class _HomeScreenButton extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 10, // Smanjeno sa 12 na 10
+                fontSize: 12, // Povećano sa 11 na 12
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,

@@ -5,7 +5,7 @@ import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // DODANO za kusur kocke
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/mesecni_putnik_service.dart'; // DODANO za kreiranje dnevnih putovanja
+
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/vozac_boja.dart';
@@ -188,61 +188,15 @@ class _AdminScreenState extends State<AdminScreen> {
                       final screenWidth = constraints.maxWidth;
                       const spacing = 4.0; // Razmak između dugmića
                       const totalSpacing =
-                          spacing * 3; // 3 razmaka između 4 dugmeta
+                          spacing * 2; // 2 razmaka između 3 dugmeta
                       final availableWidth = screenWidth - totalSpacing;
                       final buttonWidth =
-                          availableWidth / 4; // Maksimalna širina za svaki
+                          availableWidth / 3; // Maksimalna širina za svaki
 
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // KREIRAJ PUTOVANJA - levo
-                          SizedBox(
-                            width: buttonWidth,
-                            child: InkWell(
-                              onTap: _kreirajDnevnaPutovanja,
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                      color: Colors.white.withOpacity(0.4)),
-                                ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.auto_awesome,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 1),
-                                        Text(
-                                          'Kreiraj',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 13,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // MESEČNI PUTNICI - levo-sredina
+                          // MESEČNI PUTNICI - levo
                           SizedBox(
                             width: buttonWidth,
                             child: InkWell(
@@ -272,17 +226,11 @@ class _AdminScreenState extends State<AdminScreen> {
                                           MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          Icons.people_alt,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 1),
                                         Text(
                                           'Putnici',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 13,
+                                            fontSize: 14,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -324,17 +272,11 @@ class _AdminScreenState extends State<AdminScreen> {
                                           MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          Icons.analytics,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 1),
                                         Text(
                                           'Statistike',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 13,
+                                            fontSize: 14,
                                             color: Colors.white,
                                           ),
                                         ),
@@ -360,6 +302,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _selectedDan,
+                                  isExpanded: true,
                                   hint: const Center(
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
@@ -379,17 +322,33 @@ class _AdminScreenState extends State<AdminScreen> {
                                       'Petak'
                                     ].map<Widget>((String value) {
                                       return Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            value,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  value,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
                                             ),
-                                            textAlign: TextAlign.center,
-                                          ),
+                                            const SizedBox(width: 2),
+                                            Icon(
+                                              Icons.keyboard_arrow_down,
+                                              color:
+                                                  Colors.white.withOpacity(0.7),
+                                              size: 14,
+                                            ),
+                                          ],
                                         ),
                                       );
                                     }).toList();
@@ -416,7 +375,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: Text(
                                               dan,
                                               style: const TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 14,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                               textAlign: TextAlign.center,
@@ -1036,95 +995,6 @@ class _AdminScreenState extends State<AdminScreen> {
         },
       ),
     );
-  }
-
-  // Kreiraj dnevna putovanja iz mesečnih putnika
-  Future<void> _kreirajDnevnaPutovanja() async {
-    // Pokaži dialog za odabir perioda
-    final rezultat = await showDialog<int>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Kreiranje dnevnih putovanja'),
-          content: const Text(
-              'Za koliko dana unapred želite da kreirate putovanja iz mesečnih putnika?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(1),
-              child: const Text('Samo danas'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(7),
-              child: const Text('7 dana (nedelja)'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(30),
-              child: const Text('30 dana (mesec)'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Otkaži'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (rezultat == null) return;
-
-    // Pokaži indikator učitavanja
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Kreiram putovanja...'),
-            ],
-          ),
-        );
-      },
-    );
-
-    try {
-      final brojKreiranih =
-          await MesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-              danaUnapred: rezultat);
-
-      // Sakri indikator učitavanja
-      if (mounted) Navigator.of(context).pop();
-
-      // Pokaži rezultat
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Kreirano $brojKreiranih novih putovanja za $rezultat ${rezultat == 1 ? 'dan' : 'dana'}!',
-              style: const TextStyle(fontSize: 16),
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    } catch (e) {
-      // Sakri indikator učitavanja
-      if (mounted) Navigator.of(context).pop();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Greška: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
   }
 
   // String _getTodayName() { ... } // unused

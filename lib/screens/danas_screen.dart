@@ -62,45 +62,50 @@ class _DanasScreenState extends State<DanasScreen> {
         return dayMatch && jeUcenik && aktivanStatus;
       }).toList();
 
-      // NOVA LOGIKA: Broji po imenu koliko je puta upisan svaki đak
-      final Map<String, int> brojUnosaPoImenu = {};
-      final Map<String, bool> aktivanPoImenu = {};
+      // FINALNA LOGIKA: OSTALO/UKUPNO
+      int ukupnoUjutro = 0; // ukupno učenika koji idu ujutro (Bela Crkva)
+      int reseniUcenici =
+          0; // učenici upisani za OBA pravca (automatski rešeni)
+      int otkazaliUcenici = 0; // učenici koji su otkazali
 
       for (final djak in djaci) {
-        final ime = djak.putnikIme;
+        final status = djak.status.toLowerCase().trim();
 
-        // Broji koliko puta je đak upisan (koliko polazaka ima)
-        int polazaka = 0;
-        if (djak.polazakBelaCrkva != null &&
-            djak.polazakBelaCrkva!.isNotEmpty) {
-          polazaka++;
-        }
-        if (djak.polazakVrsac != null && djak.polazakVrsac!.isNotEmpty) {
-          polazaka++;
-        }
+        // Da li je otkazao?
+        final jeOtkazao = (status == 'otkazano' ||
+            status == 'otkazan' ||
+            status == 'bolovanje' ||
+            status == 'godisnji' ||
+            status == 'godišnji' ||
+            status == 'obrisan');
 
-        if (polazaka > 0) {
-          brojUnosaPoImenu[ime] = polazaka;
-          aktivanPoImenu[ime] = true;
+        // Da li ide ujutro (Bela Crkva)?
+        final ideBelaCrkva =
+            djak.polazakBelaCrkva != null && djak.polazakBelaCrkva!.isNotEmpty;
+
+        // Da li se vraća (Vršac)?
+        final vraca =
+            djak.polazakVrsac != null && djak.polazakVrsac!.isNotEmpty;
+
+        if (ideBelaCrkva) {
+          ukupnoUjutro++; // broji sve koji idu ujutro
+
+          if (jeOtkazao) {
+            otkazaliUcenici++; // otkazao nakon upisa
+          } else if (vraca) {
+            reseniUcenici++; // upisan za oba pravca = rešen
+          }
         }
       }
 
-      // Računaj statistike na osnovu broja unosa
-      int ukupnoUpisano = aktivanPoImenu.length; // broj jedinstvenih imena
-      int upisanZaPovratak = 0; // oni koji su upisani 2+ puta
-
-      for (final entry in brojUnosaPoImenu.entries) {
-        if (entry.value >= 2) {
-          upisanZaPovratak++; // upisan 2+ puta = ima i povratak
-        }
-      }
-
-      final slobodnaZaPovratak = ukupnoUpisano - upisanZaPovratak;
+      // RAČUNAJ OSTALO
+      final ostalo = ukupnoUjutro - reseniUcenici - otkazaliUcenici;
 
       return {
-        'ukupno': ukupnoUpisano,
-        'povratak': upisanZaPovratak,
-        'slobodno': slobodnaZaPovratak,
+        'ukupno_ujutro': ukupnoUjutro, // 30 - ukupno koji idu ujutro
+        'reseni': reseniUcenici, // 15 - upisani za oba pravca
+        'otkazali': otkazaliUcenici, // 5 - otkazani
+        'ostalo': ostalo, // 10 - ostalo da se vrati
       };
     } catch (e) {
       debugPrint('❌ Greška pri računanju đačkih statistika: $e');
@@ -142,25 +147,64 @@ class _DanasScreenState extends State<DanasScreen> {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // GLAVNI TEKST - "02.08.2025. SUBOTA 14:30:45"
+            // ROW SA TRI DELA: DATUM - DAN - VREME
             Container(
               height: 24,
-              alignment: Alignment.center,
-              child: Text(
-                '$dayStr.$monthStr.$yearStr. $dayName $hourStr:$minuteStr:$secondStr',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: 1.8,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(1, 1),
-                      blurRadius: 3,
-                      color: Colors.black54,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // LEVO - DATUM
+                  Text(
+                    '$dayStr.$monthStr.${yearStr.substring(2)}',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 1.8,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(1, 1),
+                          blurRadius: 3,
+                          color: Colors.black54,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // SREDINA - DAN
+                  Text(
+                    dayName,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 1.8,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(1, 1),
+                          blurRadius: 3,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // DESNO - VREME
+                  Text(
+                    '$hourStr:$minuteStr:$secondStr',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 1.8,
+                      shadows: [
+                        Shadow(
+                          offset: Offset(1, 1),
+                          blurRadius: 3,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -212,94 +256,292 @@ class _DanasScreenState extends State<DanasScreen> {
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // 🎓 Đački brojač
-            _buildDjackiBrojac(sviPutnici),
-            const SizedBox(width: 4), // Manji razmak
+            Expanded(flex: 1, child: _buildDjackiBrojac(sviPutnici)),
+            const SizedBox(width: 2), // Manji razmak
             // Kompaktno dugme za optimizaciju
-            SizedBox(
-              height: 24,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading || !hasPassengers
-                    ? null
-                    : () {
-                        if (_isRouteOptimized) {
-                          _resetOptimization();
-                        } else {
-                          _optimizeCurrentRoute(filtriraniPutnici);
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isRouteOptimized
-                      ? Colors.green.shade600
-                      : (hasPassengers
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey.shade400),
-                  foregroundColor: Colors.white,
-                  elevation: hasPassengers ? 2 : 1,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            Expanded(
+              flex: 2,
+              child: SizedBox(
+                height: 24,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading || !hasPassengers
+                      ? null
+                      : () {
+                          if (_isRouteOptimized) {
+                            _resetOptimization();
+                          } else {
+                            _optimizeCurrentRoute(filtriraniPutnici);
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isRouteOptimized
+                        ? Colors.green.shade600
+                        : (hasPassengers
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey.shade400),
+                    foregroundColor: Colors.white,
+                    elevation: hasPassengers ? 2 : 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                ),
-                icon: Icon(
-                  _isRouteOptimized ? Icons.close : Icons.route,
-                  size: 12,
-                ),
-                label: Text(
-                  _isRouteOptimized ? 'Reset' : 'Optimizuj',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 9,
+                  icon: Icon(
+                    _isRouteOptimized ? Icons.close : Icons.route,
+                    size: 10,
+                  ),
+                  label: Text(
+                    _isRouteOptimized ? 'Reset' : 'Optimizuj',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 8,
+                    ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 4), // Manji razmak
+            const SizedBox(width: 2), // Manji razmak
             // Kompaktni speedometer desno
-            StreamBuilder<double>(
-              stream: RealtimeGpsService.speedStream,
-              builder: (context, speedSnapshot) {
-                final speed = speedSnapshot.data ?? 0.0;
-                final speedColor = speed > 50
-                    ? Colors.red
-                    : speed > 30
-                        ? Colors.orange
-                        : speed > 0
-                            ? Colors.green
-                            : Colors.white70;
+            Expanded(
+              flex: 1,
+              child: StreamBuilder<double>(
+                stream: RealtimeGpsService.speedStream,
+                builder: (context, speedSnapshot) {
+                  final speed = speedSnapshot.data ?? 0.0;
+                  final speedColor = speed > 50
+                      ? Colors.red
+                      : speed > 30
+                          ? Colors.orange
+                          : speed > 0
+                              ? Colors.green
+                              : Colors.white70;
 
-                return Container(
-                  height: 32,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: speedColor.withOpacity(0.4), width: 1),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.speed, color: speedColor, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        speed.toStringAsFixed(0),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: speedColor,
-                          fontFamily: 'monospace',
+                  return Container(
+                    height: 32,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black87,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: speedColor.withOpacity(0.4), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.speed, color: speedColor, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          speed.toStringAsFixed(0),
+                          style: TextStyle(
+                            fontSize: 16, // povećao sa 14 na 16
+                            fontWeight: FontWeight.bold,
+                            color: speedColor,
+                            fontFamily: 'monospace',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // 🎓 FINALNO DUGME - OSTALO/UKUPNO FORMAT
+  Widget _buildDjackiBrojacButton() {
+    return FutureBuilder<Map<String, int>>(
+      future: _calculateDjackieBrojeviAsync(),
+      builder: (context, snapshot) {
+        final statistike = snapshot.data ??
+            {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
+        final ostalo = statistike['ostalo'] ?? 0; // 10 - ostalo da se vrati
+        final ukupnoUjutro =
+            statistike['ukupno_ujutro'] ?? 0; // 30 - ukupno ujutro
+
+        return SizedBox(
+          height: 26, // povećao sa 24 na 26
+          child: ElevatedButton(
+            onPressed: () => _showDjackiDialog(statistike),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade700,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 2), // povećao sa 4 na 8
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.school, size: 12), // povećao sa 9 na 12
+                const SizedBox(width: 2), // povećao sa 1 na 2
+                // UKUPNO UJUTRO (belo) - PRVI
+                Text(
+                  '$ukupnoUjutro',
+                  style: const TextStyle(
+                    fontSize: 14, // povećao sa 13 na 14
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const Text(
+                  '/',
+                  style: TextStyle(
+                    fontSize: 14, // povećao sa 13 na 14
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                // OSTALO (crveno) - DRUGI
+                Text(
+                  '$ostalo',
+                  style: const TextStyle(
+                    fontSize: 14, // povećao sa 13 na 14
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU
+  Widget _buildOptimizeButton() {
+    return StreamBuilder<List<Putnik>>(
+      stream: _putnikService.streamKombinovaniPutnici(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Container();
+
+        final sviPutnici = snapshot.data!;
+        final danasnjiDan = _getTodayForDatabase();
+        final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+
+        final danasPutnici = sviPutnici.where((p) {
+          final dayMatch =
+              p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
+          bool timeMatch = true;
+          if (p.mesecnaKarta != true && p.vremeDodavanja != null) {
+            timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
+          }
+          return dayMatch && timeMatch;
+        }).toList();
+
+        final filtriraniPutnici = danasPutnici.where((putnik) {
+          final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
+          final vremeMatch =
+              GradAdresaValidator.normalizeTime(putnik.polazak) ==
+                  GradAdresaValidator.normalizeTime(_selectedVreme);
+          final gradMatch = _isGradMatch(
+              putnik.grad, putnik.adresa, _selectedGrad,
+              isMesecniPutnik: putnik.mesecnaKarta == true);
+          final statusOk = (normalizedStatus != 'otkazano' &&
+              normalizedStatus != 'otkazan' &&
+              normalizedStatus != 'bolovanje' &&
+              normalizedStatus != 'godisnji' &&
+              normalizedStatus != 'godišnji' &&
+              normalizedStatus != 'obrisan');
+          return vremeMatch && gradMatch && statusOk;
+        }).toList();
+
+        final hasPassengers = filtriraniPutnici.isNotEmpty;
+
+        return SizedBox(
+          height: 26, // povećao sa 24 na 26
+          child: ElevatedButton.icon(
+            onPressed: _isLoading || !hasPassengers
+                ? null
+                : () {
+                    if (_isRouteOptimized) {
+                      _resetOptimization();
+                    } else {
+                      _optimizeCurrentRoute(filtriraniPutnici);
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isRouteOptimized
+                  ? Colors.green.shade600
+                  : (hasPassengers
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey.shade400),
+              foregroundColor: Colors.white,
+              elevation: hasPassengers ? 2 : 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 2), // povećao sa 4 na 8
+            ),
+            icon: Icon(
+              _isRouteOptimized ? Icons.close : Icons.route,
+              size: 12, // povećao sa 10 na 12
+            ),
+            label: Text(
+              _isRouteOptimized ? 'Reset' : 'Ruta',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13, // povećao sa 12 na 13
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ⚡ SPEEDOMETER DUGME U APPBAR-U
+  Widget _buildSpeedometerButton() {
+    return StreamBuilder<double>(
+      stream: RealtimeGpsService.speedStream,
+      builder: (context, speedSnapshot) {
+        final speed = speedSnapshot.data ?? 0.0;
+        final speedColor = speed >= 90
+            ? Colors.red
+            : speed >= 60
+                ? Colors.orange
+                : speed > 0
+                    ? Colors.green
+                    : Colors.white70;
+
+        return SizedBox(
+          height: 26,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: speedColor.withOpacity(0.4), width: 1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  speed.toStringAsFixed(0),
+                  style: TextStyle(
+                    fontSize: 14, // povećao sa 13 na 14
+                    fontWeight: FontWeight.bold,
+                    color: speedColor,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -310,7 +552,7 @@ class _DanasScreenState extends State<DanasScreen> {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
 
     return SizedBox(
-      height: 24,
+      height: 26, // povećao sa 24 na 26 za konzistentnost
       child: ElevatedButton.icon(
         onPressed: hasOptimizedRoute ? () => _openGoogleMapsNavigation() : null,
         style: ElevatedButton.styleFrom(
@@ -321,17 +563,17 @@ class _DanasScreenState extends State<DanasScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
         icon: Icon(
           Icons.navigation,
           size: 12,
         ),
         label: Text(
-          'MAPA',
+          'Mapa',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 9,
+            fontSize: 13, // povećao sa 12 na 13
           ),
         ),
       ),
@@ -397,7 +639,7 @@ class _DanasScreenState extends State<DanasScreen> {
   // 📊 DUGME ZA POPIS DANA
   Widget _buildPopisButton() {
     return SizedBox(
-      height: 24,
+      height: 26, // povećao sa 24 na 26 za konzistentnost
       child: ElevatedButton.icon(
         onPressed: () => _showPopisDana(),
         style: ElevatedButton.styleFrom(
@@ -407,7 +649,8 @@ class _DanasScreenState extends State<DanasScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 8, vertical: 2), // smanjio sa 10 na 8
         ),
         icon: const Icon(
           Icons.assessment,
@@ -417,37 +660,101 @@ class _DanasScreenState extends State<DanasScreen> {
           'POPIS',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 9,
+            fontSize: 11, // povećao sa 10 na 11
+            letterSpacing: 0.5,
           ),
         ),
       ),
     );
   }
 
-  // 🎓 POPUP SA DETALJNIM ĐAČKIM STATISTIKAMA
+  // 🎓 POPUP SA DETALJNIM ĐAČKIM STATISTIKAMA - OPTIMIZOVAN
   void _showDjackiDialog(Map<String, int> statistike) {
+    final zakazane = statistike['povratak'] ?? 0;
+    final ostale = statistike['slobodno'] ?? 0;
+    final ukupno = statistike['ukupno'] ?? 0;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.school, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Đaci - Danas'),
+            const Icon(Icons.school, color: Colors.blue),
+            const SizedBox(width: 8),
+            Text('Đaci - Danas ($zakazane/$ostale)'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatRow('Ukupno upisano', '${statistike['ukupno']}',
-                Icons.group, Colors.blue),
-            const SizedBox(height: 8),
-            _buildStatRow('Popodne (povratak)', '${statistike['povratak']}',
-                Icons.arrow_back, Colors.green),
-            const SizedBox(height: 8),
-            _buildStatRow('Slobodno', '${statistike['slobodno']}',
-                Icons.event_available, Colors.orange),
+            _buildStatRow(
+                'Ukupno upisano', '$ukupno', Icons.group, Colors.blue),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Zakazane ($zakazane)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Učenici koji imaju i jutarnji i popodnevni polazak',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: Colors.orangeAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Ostale ($ostale)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Učenici koji imaju samo jutarnji polazak',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
@@ -1287,21 +1594,31 @@ class _DanasScreenState extends State<DanasScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment:
+                    CrossAxisAlignment.center, // dodano za centriranje
                 children: [
                   // DATUM TEKST - kao rezervacije
-                  _buildDigitalDateDisplay(),
+                  Center(
+                      child:
+                          _buildDigitalDateDisplay()), // dodano Center widget
                   const SizedBox(height: 4),
-                  // DUGMAD U APP BAR-U
+                  // DUGMAD U APP BAR-U - 5 dugmića jednake širine
                   Row(
                     children: [
-                      // DUGME ZA OPTIMIZACIJU RUTE
-                      Expanded(child: _buildOptimizeRouteButton()),
+                      // 🎓 ĐAČKI BROJAČ
+                      Expanded(flex: 1, child: _buildDjackiBrojacButton()),
                       const SizedBox(width: 2),
-                      // �️ NOVO: DUGME ZA GOOGLE MAPS
-                      Expanded(child: _buildMapsButton()),
+                      // 🚀 DUGME ZA OPTIMIZACIJU RUTE
+                      Expanded(flex: 1, child: _buildOptimizeButton()),
                       const SizedBox(width: 2),
-                      // 📊 DUGME ZA POPIS DANA
-                      Expanded(child: _buildPopisButton()),
+                      // � DUGME ZA POPIS DANA
+                      Expanded(flex: 1, child: _buildPopisButton()),
+                      const SizedBox(width: 2),
+                      // �️ DUGME ZA GOOGLE MAPS
+                      Expanded(flex: 1, child: _buildMapsButton()),
+                      const SizedBox(width: 2),
+                      // ⚡ SPEEDOMETER
+                      Expanded(flex: 1, child: _buildSpeedometerButton()),
                     ],
                   ),
                 ],
@@ -1460,7 +1777,7 @@ class _DanasScreenState extends State<DanasScreen> {
                               Expanded(
                                 flex: 1,
                                 child: Container(
-                                  height: 70,
+                                  height: 69, // smanjio sa 70 na 69
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.green[50],
@@ -1491,7 +1808,7 @@ class _DanasScreenState extends State<DanasScreen> {
                               Expanded(
                                 flex: 1,
                                 child: Container(
-                                  height: 70,
+                                  height: 69, // smanjio sa 70 na 69
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.purple[50],
@@ -1537,7 +1854,7 @@ class _DanasScreenState extends State<DanasScreen> {
                               Expanded(
                                 flex: 1,
                                 child: Container(
-                                  height: 70,
+                                  height: 69, // smanjio sa 70 na 69
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.red[50],
@@ -1583,7 +1900,7 @@ class _DanasScreenState extends State<DanasScreen> {
                               Expanded(
                                 flex: 1,
                                 child: Container(
-                                  height: 70,
+                                  height: 69, // smanjio sa 70 na 69
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.orange[50],
