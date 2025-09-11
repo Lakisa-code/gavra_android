@@ -319,18 +319,18 @@ class _AdminScreenState extends State<AdminScreen> {
                                           MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          '🗺️',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                          ),
+                                        Icon(
+                                          Icons.map,
+                                          color: Colors.white,
+                                          size: 14,
                                         ),
                                         Text(
                                           'Maps',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 11,
+                                            fontSize: 12,
                                             color: Colors.white,
+                                            letterSpacing: 0.3,
                                           ),
                                         ),
                                       ],
