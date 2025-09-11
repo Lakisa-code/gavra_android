@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/adrese_service.dart';
+import '../services/location_service.dart';
 
 class AutocompleteAdresaField extends StatefulWidget {
   final TextEditingController controller;
@@ -26,13 +28,185 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
   List<String> _filteredAdrese = [];
   final FocusNode _focusNode = FocusNode();
   OverlayEntry? _overlayEntry;
+  bool _isLoading = false;
+  bool _isOnline = true;
 
   @override
   void initState() {
     super.initState();
     _loadAdrese();
+    _checkConnectivity();
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChanged);
+
+    // Listen za connectivity changes
+    Connectivity().onConnectivityChanged.listen((result) {
+      setState(() {
+        _isOnline = !result.contains(ConnectivityResult.none);
+      });
+    });
+  }
+
+  Future<void> _checkConnectivity() async {
+    final result = await Connectivity().checkConnectivity();
+    setState(() {
+      _isOnline = !result.contains(ConnectivityResult.none);
+    });
+  }
+
+  /// Dobija ikonu na osnovu tipa adrese/mesta
+  IconData _getIconForPlace(String adresa) {
+    final adresaLower = adresa.toLowerCase();
+
+    if (adresaLower.contains('bolnica') ||
+        adresaLower.contains('dom zdravlja') ||
+        adresaLower.contains('ambulanta')) {
+      return Icons.local_hospital;
+    } else if (adresaLower.contains('škola') ||
+        adresaLower.contains('vrtić') ||
+        adresaLower.contains('fakultet')) {
+      return Icons.school;
+    } else if (adresaLower.contains('pošta')) {
+      return Icons.local_post_office;
+    } else if (adresaLower.contains('banka')) {
+      return Icons.account_balance;
+    } else if (adresaLower.contains('crkva')) {
+      return Icons.church;
+    } else if (adresaLower.contains('park') ||
+        adresaLower.contains('stadion')) {
+      return Icons.park;
+    } else if (adresaLower.contains('market') ||
+        adresaLower.contains('prodavnica') ||
+        adresaLower.contains('trgovina')) {
+      return Icons.shopping_cart;
+    } else if (adresaLower.contains('restoran') ||
+        adresaLower.contains('kafić')) {
+      return Icons.restaurant;
+    } else if (adresaLower.contains('hotel')) {
+      return Icons.hotel;
+    } else if (adresaLower.contains('apoteka')) {
+      return Icons.local_pharmacy;
+    } else {
+      return Icons.location_on;
+    }
+  }
+
+  /// Dobija boju ikone na osnovu tipa mesta
+  Color _getColorForPlace(String adresa) {
+    final adresaLower = adresa.toLowerCase();
+
+    if (adresaLower.contains('bolnica') ||
+        adresaLower.contains('dom zdravlja') ||
+        adresaLower.contains('ambulanta')) {
+      return Colors.red[600]!;
+    } else if (adresaLower.contains('škola') || adresaLower.contains('vrtić')) {
+      return Colors.orange[600]!;
+    } else if (adresaLower.contains('pošta')) {
+      return Colors.yellow[700]!;
+    } else if (adresaLower.contains('banka')) {
+      return Colors.green[600]!;
+    } else if (adresaLower.contains('crkva')) {
+      return Colors.purple[600]!;
+    } else if (adresaLower.contains('park')) {
+      return Colors.green[700]!;
+    } else if (adresaLower.contains('market') ||
+        adresaLower.contains('prodavnica')) {
+      return Colors.blue[600]!;
+    } else if (adresaLower.contains('restoran') ||
+        adresaLower.contains('kafić')) {
+      return Colors.brown[600]!;
+    } else {
+      return Colors.blue[600]!;
+    }
+  }
+
+  /// Dobija trenutnu GPS lokaciju i postavlja je kao adresu
+  Future<void> _getCurrentLocation() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final address = await LocationService.getCurrentAddress();
+      if (address != null) {
+        widget.controller.text = address;
+
+        // Dodaj pronađenu adresu u lokalnu listu
+        await AdreseService.dodajAdresu(widget.grad, address);
+
+        // Ukloni overlay i fokus
+        _removeOverlay();
+        _focusNode.unfocus();
+
+        // Pokaži poruku uspešnosti
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.white, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Trenutna lokacija: $address',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        // Pokaži poruku greške
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.location_off, color: Colors.white, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    'Nije moguće dobiti trenutnu lokaciju',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange[600],
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Pokaži poruku greške
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'Greška kod dobijanja lokacije',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -65,16 +239,27 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
   }
 
   Future<void> _filterAdrese(String query) async {
-    final adrese = await AdreseService.pretraziAdrese(widget.grad, query);
     setState(() {
-      _filteredAdrese = adrese;
-      // Prikaži overlay samo ako ima unos ili je fokusiran
-      if (_focusNode.hasFocus && adrese.isNotEmpty) {
-        _showOverlay();
-      } else {
-        _removeOverlay();
-      }
+      _isLoading = true;
     });
+
+    try {
+      final adrese = await AdreseService.pretraziAdrese(widget.grad, query);
+      setState(() {
+        _filteredAdrese = adrese;
+        _isLoading = false;
+        // Prikaži overlay samo ako ima unos ili je fokusiran
+        if (_focusNode.hasFocus && adrese.isNotEmpty) {
+          _showOverlay();
+        } else {
+          _removeOverlay();
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _showOverlay() {
@@ -149,9 +334,9 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
                       final adresa = _filteredAdrese[index];
                       return ListTile(
                         dense: true,
-                        leading: const Icon(
-                          Icons.location_on,
-                          color: Colors.blue,
+                        leading: Icon(
+                          _getIconForPlace(adresa),
+                          color: _getColorForPlace(adresa),
                           size: 18,
                         ),
                         title: Text(
@@ -175,6 +360,30 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
                         },
                       );
                     },
+                  ),
+                ),
+                // OpenStreetMap attribution
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.map, size: 12, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Powered by OpenStreetMap',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -212,7 +421,22 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (widget.controller.text.trim().isNotEmpty)
+                // Loading indicator
+                if (_isLoading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                // Offline indicator
+                if (!_isOnline)
+                  Icon(
+                    Icons.wifi_off,
+                    color: Colors.orange[600],
+                    size: 18,
+                  ),
+                // Success indicator
+                if (widget.controller.text.trim().isNotEmpty && !_isLoading)
                   const Icon(Icons.check_circle, color: Colors.green, size: 20),
                 Container(
                   margin: const EdgeInsets.only(right: 8),
@@ -292,6 +516,32 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
             return null;
           },
         ),
+        // GPS dugme za trenutnu lokaciju
+        const SizedBox(height: 8),
+        ElevatedButton.icon(
+          onPressed: _isLoading ? null : _getCurrentLocation,
+          icon: Icon(
+            Icons.my_location,
+            size: 16,
+            color: _isLoading ? Colors.grey : Colors.blue[700],
+          ),
+          label: Text(
+            'Trenutna lokacija',
+            style: TextStyle(
+              fontSize: 12,
+              color: _isLoading ? Colors.grey : Colors.blue[700],
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue[50],
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.blue[200]!),
+            ),
+          ),
+        ),
         // Info widget
         const SizedBox(height: 8),
         Container(
@@ -340,4 +590,3 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
     );
   }
 }
-

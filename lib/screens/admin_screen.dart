@@ -12,6 +12,7 @@ import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart';
 import 'dugovi_screen.dart';
+import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'statistika_screen.dart'; // DODANO za statistike
 
@@ -188,10 +189,10 @@ class _AdminScreenState extends State<AdminScreen> {
                       final screenWidth = constraints.maxWidth;
                       const spacing = 4.0; // Razmak između dugmića
                       const totalSpacing =
-                          spacing * 2; // 2 razmaka između 3 dugmeta
+                          spacing * 3; // 3 razmaka između 4 dugmeta
                       final availableWidth = screenWidth - totalSpacing;
                       final buttonWidth =
-                          availableWidth / 3; // Maksimalna širina za svaki
+                          availableWidth / 4; // Maksimalna širina za svaki
 
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -277,6 +278,58 @@ class _AdminScreenState extends State<AdminScreen> {
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // GEOCODING ADMIN - novo
+                          SizedBox(
+                            width: buttonWidth,
+                            child: InkWell(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const GeocodingAdminScreen(),
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                height: 28,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                      color: Colors.white.withOpacity(0.4)),
+                                ),
+                                child: const Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '🗺️',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Maps',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 11,
                                             color: Colors.white,
                                           ),
                                         ),

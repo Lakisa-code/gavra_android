@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'cache_service.dart';
+import 'geocoding_stats_service.dart';
 import 'package:logger/logger.dart';
 
 class GeocodingService {
@@ -20,6 +21,8 @@ class GeocodingService {
       maxAge: const Duration(hours: 6), // Koordinate se retko menjaju
     );
     if (memoryCached != null) {
+      await GeocodingStatsService.incrementCacheHits();
+      await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
       _logger
           .d('✅ Koordinate iz memory cache: $grad, $adresa -> $memoryCached');
       return memoryCached;
@@ -33,17 +36,21 @@ class GeocodingService {
     if (diskCached != null) {
       // Sacuvaj u memory za sledeći put
       CacheService.saveToMemory(cacheKey, diskCached);
+      await GeocodingStatsService.incrementCacheHits();
+      await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
       _logger.d('✅ Koordinate iz disk cache: $grad, $adresa -> $diskCached');
       return diskCached;
     }
 
     // 3. Pozovi API samo ako nema cache
     try {
+      await GeocodingStatsService.incrementApiCalls();
       final coords = await _fetchFromNominatim(grad, adresa);
       if (coords != null) {
         // Sacuvaj u oba cache-a
         CacheService.saveToMemory(cacheKey, coords);
         await CacheService.saveToDisk(cacheKey, coords);
+        await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
         _logger.i('✅ Koordinate sa API: $grad, $adresa -> $coords');
         return coords;
       }
@@ -83,22 +90,15 @@ class GeocodingService {
             final coords = '$lat,$lon';
 
             return coords;
-          } else {
-
-          }
-        } else {
-
-        }
+          } else {}
+        } else {}
       } catch (e) {
-
-
         if (attempt < maxRetries) {
           // Kratka pauza pre sledećeg pokušaja
           await Future.delayed(Duration(milliseconds: 500 * attempt));
         }
       }
     }
-
 
     return null;
   }
