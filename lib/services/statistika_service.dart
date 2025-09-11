@@ -9,8 +9,22 @@ import 'dart:math'; // 🚗 DODANO za kilometražu kalkulacije
 import 'package:async/async.dart'; // Za StreamZip
 import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS podatke
 import 'package:intl/intl.dart'; // Za DateFormat
+import 'package:rxdart/rxdart.dart'; // 🔧 DODANO za share() metodu
 
 class StatistikaService {
+  // Singleton pattern
+  static StatistikaService? _instance;
+  static StatistikaService get instance =>
+      _instance ??= StatistikaService._internal();
+
+  StatistikaService._internal(); // Private constructor
+
+  // Instance cache za stream-ove da izbegnemo duplo kreiranje
+  final Map<String, Stream<Map<String, double>>> _streamCache = {};
+
+  // 🚫 GLOBALNI SET za praćenje već procesiranih mesečnih plaćanja
+  static final Set<String> _procesiraniMesecniPutnici = {};
+
   // 🎯 CENTRALIZOVANA LISTA VOZAČA
   static List<String> get sviVozaci => VozacBoja.boje.keys.toList();
 
@@ -79,7 +93,8 @@ class StatistikaService {
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     // 🔄 KORISTI KOMBINOVANE STREAMOVE (obični + mesečni putnici)
-    return _combineStreams(
+    return instance
+        ._combineStreams(
             PutnikService().streamPutnici(),
             MesecniPutnikService.streamAktivniMesecniPutnici(),
             fromDate,
@@ -164,12 +179,12 @@ class StatistikaService {
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     // Kombinuj oba stream-a koristeći async*
-    return _combineStreams(PutnikService().streamPutnici(),
+    return instance._combineStreams(PutnikService().streamPutnici(),
         MesecniPutnikService.streamAktivniMesecniPutnici(), fromDate, toDate);
   }
 
   /// 🔄 POMOĆNA FUNKCIJA ZA KOMBINOVANJE STREAM-OVA
-  static Stream<Map<String, double>> _combineStreams(
+  Stream<Map<String, double>> _combineStreams(
       Stream<List<Putnik>> putnicStream,
       Stream<List<MesecniPutnik>> mesecniStream,
       DateTime fromDate,
@@ -179,6 +194,7 @@ class StatistikaService {
 
     List<Putnik> posledniPutnici = [];
     List<MesecniPutnik> posledniMesecni = [];
+    Map<String, double>? posledniRezultat;
 
     // Kombiniraj oba stream-a koristeći StreamGroup
     await for (final kombinovani in StreamGroup.merge([
@@ -193,29 +209,50 @@ class StatistikaService {
         posledniMesecni = kombinovani['mesecni'] as List<MesecniPutnik>;
       }
 
-      // Uvek emituj novi rezultat kada se bilo koji stream ažurira
-      final rezultat = _calculateKombinovanPazarSync(
+      // Izračunaj novi rezultat
+      final noviRezultat = _calculateKombinovanPazarSync(
           posledniPutnici, posledniMesecni, fromDate, toDate);
 
-      // Debug ukupan pazar pre emitovanja
-      final ukupanPazar =
-          rezultat.values.fold<double>(0.0, (sum, value) => sum + value);
-      _debugLog(
-          '🔄 COMBINE STREAMS emituje rezultat: ${ukupanPazar.toStringAsFixed(0)} RSD');
+      // 🚫 DEDUPLICATION: Emituj samo ako se rezultat stvarno promenio
+      if (posledniRezultat == null ||
+          !_rezultatiJednaki(posledniRezultat, noviRezultat)) {
+        // 🔧 FIXED: Saberi SAMO vozače, ne i ukupne vrednosti (_ukupno, _ukupno_obicni, _ukupno_mesecni)
+        final ukupanPazar = noviRezultat.entries
+            .where((entry) => !entry.key.startsWith('_'))
+            .fold<double>(0.0, (sum, entry) => sum + entry.value);
+        _debugLog(
+            '🔄 COMBINE STREAMS emituje NOVI rezultat: ${ukupanPazar.toStringAsFixed(0)} RSD');
 
-      yield rezultat;
+        posledniRezultat = Map.from(noviRezultat);
+        yield noviRezultat;
+      } else {
+        _debugLog('🚫 COMBINE STREAMS preskače duplikat - rezultat je isti');
+      }
     }
+  }
+
+  /// 🔍 HELPER FUNKCIJA ZA POREĐENJE REZULTATA
+  static bool _rezultatiJednaki(
+      Map<String, double> stari, Map<String, double> novi) {
+    if (stari.length != novi.length) return false;
+
+    for (final entry in stari.entries) {
+      if (!novi.containsKey(entry.key)) return false;
+      if ((novi[entry.key]! - entry.value).abs() > 0.01)
+        return false; // 1 cent tolerancija
+    }
+    return true;
   }
 
   /// 🔄 SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (obični + mesečni)
   static Map<String, double> _calculateKombinovanPazarSync(List<Putnik> putnici,
       List<MesecniPutnik> mesecniPutnici, DateTime fromDate, DateTime toDate) {
-    // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA
+    // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA - RESETUJ SVE!
     final Map<String, double> pazarObicni = {};
     final Map<String, double> pazarMesecne = {};
     for (final vozac in sviVozaci) {
-      pazarObicni[vozac] = 0.0;
-      pazarMesecne[vozac] = 0.0;
+      pazarObicni[vozac] = 0.0; // 🔧 RESETUJ NA 0!
+      pazarMesecne[vozac] = 0.0; // 🔧 RESETUJ NA 0!
     }
 
     // 1. SABERI OBIČNI PAZAR iz putnici tabele
@@ -296,9 +333,36 @@ class StatistikaService {
     _debugLog(
         '🔍 STREAM PAZAR POZIV: od ${DateFormat('dd.MM.yyyy HH:mm').format(fromDate)} do ${DateFormat('dd.MM.yyyy HH:mm').format(toDate)}');
 
-    // 🔄 KOMBINUJ DNEVNE I MESEČNE PUTNIKE
-    return _combineStreams(PutnikService().streamPutnici(),
-        MesecniPutnikService.streamAktivniMesecniPutnici(), fromDate, toDate);
+    // Kreiraj ključ za cache
+    final cacheKey =
+        '${fromDate.millisecondsSinceEpoch}-${toDate.millisecondsSinceEpoch}';
+
+    // Koristi singleton instancu da proveri cache
+    return instance._getOrCreateStream(cacheKey, fromDate, toDate);
+  }
+
+  // Instance metoda za kreiranje i cache-ovanje stream-a
+  Stream<Map<String, double>> _getOrCreateStream(
+      String cacheKey, DateTime fromDate, DateTime toDate) {
+    if (!_streamCache.containsKey(cacheKey)) {
+      _debugLog('🆕 KREIRANJE NOVOG STREAM-A za ključ: $cacheKey');
+      _streamCache[cacheKey] = _combineStreams(
+              PutnikService().streamPutnici(),
+              MesecniPutnikService.streamAktivniMesecniPutnici(),
+              fromDate,
+              toDate)
+          .share(); // 🔧 SHARE STREAM da sprečimo duplu subscription!
+    } else {
+      _debugLog('♻️ KORIŠTENJE POSTOJEĆEG STREAM-A za ključ: $cacheKey');
+    }
+
+    return _streamCache[cacheKey]!;
+  }
+
+  // Metoda za čišćenje cache-a (korisno za testiranje ili promenu datuma)
+  static void clearStreamCache() {
+    instance._streamCache.clear();
+    _debugLog('🧹 STREAM CACHE OČIŠĆEN');
   }
 
   /// �💰 PAZAR PO SVIM VOZAČIMA - KORISTI VREMENSKI OPSEG

@@ -1433,15 +1433,47 @@ class PutnikService {
       String putnikIme) async {
     try {
       final supabase = Supabase.instance.client;
+      List<Map<String, dynamic>> svaPlacanja = [];
 
-      final placanja = await supabase
+      // 1. REDOVNA PUTOVANJA iz putovanja_istorija
+      final redovnaPlacanja = await supabase
           .from('putovanja_istorija')
-          .select('*')
+          .select('*, vozac_ime')
           .eq('putnik_ime', putnikIme)
           .gt('cena', 0)
           .order('created_at', ascending: false) as List<dynamic>;
 
-      return placanja.cast<Map<String, dynamic>>();
+      svaPlacanja.addAll(redovnaPlacanja.cast<Map<String, dynamic>>());
+
+      // 2. MESEČNA PLAĆANJA iz mesecni_putnici
+      final mesecnaPlacanja = await supabase
+          .from('mesecni_putnici')
+          .select('cena, vremePlacanja, vozac, placeniMesec, placenaGodina')
+          .eq('putnikIme', putnikIme)
+          .not('vremePlacanja', 'is', null)
+          .order('vremePlacanja', ascending: false) as List<dynamic>;
+
+      // Konvertuj mesečna plaćanja u isti format kao redovna
+      for (var mesecno in mesecnaPlacanja) {
+        svaPlacanja.add({
+          'cena': mesecno['cena'],
+          'created_at': mesecno['vremePlacanja'],
+          'vozac_ime': mesecno['vozac'],
+          'putnik_ime': putnikIme,
+          'tip': 'mesecna_karta',
+          'placeniMesec': mesecno['placeniMesec'],
+          'placenaGodina': mesecno['placenaGodina'],
+        });
+      }
+
+      // Sortiraj sve po datumu, najnovije prvo
+      svaPlacanja.sort((a, b) {
+        final dateA = DateTime.parse(a['created_at']);
+        final dateB = DateTime.parse(b['created_at']);
+        return dateB.compareTo(dateA);
+      });
+
+      return svaPlacanja;
     } catch (e) {
       debugPrint('❌ Greška pri dohvatanju plaćanja: $e');
       return [];

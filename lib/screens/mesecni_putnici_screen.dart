@@ -1084,24 +1084,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           children: [
                             Expanded(
                                 child: _buildRadniDanCheckbox(
-                                    'Ponedeljak', 'pon')),
+                                    'pon', 'Ponedeljak')),
                             Expanded(
-                                child: _buildRadniDanCheckbox('Utorak', 'uto')),
+                                child: _buildRadniDanCheckbox('uto', 'Utorak')),
                           ],
                         ),
                         Row(
                           children: [
                             Expanded(
-                                child: _buildRadniDanCheckbox('Sreda', 'sre')),
+                                child: _buildRadniDanCheckbox('sre', 'Sreda')),
                             Expanded(
                                 child:
-                                    _buildRadniDanCheckbox('Četvrtak', 'cet')),
+                                    _buildRadniDanCheckbox('cet', 'Četvrtak')),
                           ],
                         ),
                         Row(
                           children: [
                             Expanded(
-                                child: _buildRadniDanCheckbox('Petak', 'pet')),
+                                child: _buildRadniDanCheckbox('pet', 'Petak')),
                             const Expanded(child: SizedBox()), // Prazno mesto
                           ],
                         ),

@@ -58,13 +58,43 @@ class _MesecniPutnikDetaljiScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalji - ${widget.putnik.putnikIme}'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 80,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(25),
+              bottomRight: Radius.circular(25),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+        ),
+        title: Text('Detalji - ${widget.putnik.putnikIme}',
+            style: const TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             onPressed: _ucitajSveDetalje,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
           ),
         ],
       ),
@@ -530,31 +560,66 @@ class _MesecniPutnikDetaljiScreenState
   Widget _buildPlacanjeCard(Map<String, dynamic> placanje) {
     final datum = DateTime.parse(placanje['created_at']);
     final iznos = placanje['cena']?.toDouble() ?? 0.0;
-    final vozac = placanje['vozac_ime'] ?? 'Nepoznato';
+    final vozac = placanje['vozac_ime'] ?? placanje['vozac'] ?? 'Nepoznato';
+    final tipPlacanja = placanje['tip'] ?? 'redovno';
+
+    // Dodatne informacije za mesečne karte
+    String subtitle =
+        'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+    if (tipPlacanja == 'mesecna_karta') {
+      final mesec = placanje['placeniMesec'] ?? 0;
+      final godina = placanje['placenaGodina'] ?? 0;
+      final mesecNaziv = _getNazivMeseca(mesec);
+      subtitle =
+          'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.green.shade100,
+          backgroundColor: tipPlacanja == 'mesecna_karta'
+              ? Colors.blue.shade100
+              : Colors.green.shade100,
           child: Icon(
-            Icons.payments,
-            color: Colors.green.shade700,
+            tipPlacanja == 'mesecna_karta' ? Icons.credit_card : Icons.payments,
+            color: tipPlacanja == 'mesecna_karta'
+                ? Colors.blue.shade700
+                : Colors.green.shade700,
           ),
         ),
         title: Text(
           '${iznos.toStringAsFixed(0)} RSD',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}',
-        ),
+        subtitle: Text(subtitle),
         trailing: Icon(
-          Icons.check_circle,
-          color: Colors.green.shade600,
+          tipPlacanja == 'mesecna_karta'
+              ? Icons.event_available
+              : Icons.receipt,
+          color: Colors.grey.shade600,
         ),
       ),
     );
+  }
+
+  String _getNazivMeseca(int mesec) {
+    const meseci = [
+      '',
+      'Januar',
+      'Februar',
+      'Mart',
+      'April',
+      'Maj',
+      'Juni',
+      'Juli',
+      'Avgust',
+      'Septembar',
+      'Oktobar',
+      'Novembar',
+      'Decembar'
+    ];
+    return mesec > 0 && mesec < meseci.length ? meseci[mesec] : 'Nepoznat';
   }
 
   Widget _buildStatChip(String text, MaterialColor color) {
