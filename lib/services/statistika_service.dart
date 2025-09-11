@@ -277,7 +277,17 @@ class StatistikaService {
     // 2. SABERI MESEČNE KARTE - KORISTI vremePlacanja (kad je plaćeno) umesto placeniMesec
     _debugLog(
         '🔍 PAZAR DEBUG: Procesuiram ${mesecniPutnici.length} mesečnih putnika');
+
+    // 💡 GRUPIRAJ MESEČNE PUTNIKE PO ID DA SE IZBEGNE DUPLO RAČUNANJE
+    final Map<String, MesecniPutnik> uniqueMesecni = {};
     for (final putnik in mesecniPutnici) {
+      uniqueMesecni[putnik.id] = putnik;
+    }
+
+    _debugLog(
+        '🔄 PAZAR: ${mesecniPutnici.length} polazaka -> ${uniqueMesecni.length} jedinstvenih mesečnih putnika');
+
+    for (final putnik in uniqueMesecni.values) {
       _debugLog(
           '🔍 MESEČNI PUTNIK: ${putnik.putnikIme}, aktivan: ${putnik.aktivan}, obrisan: ${putnik.obrisan}, jePlacen: ${putnik.jePlacen}');
 
@@ -558,9 +568,20 @@ class StatistikaService {
 
     _debugLog('Procesuirano $ukupnoProcessiranihPutnika putnika');
 
-    // 🆕 DODAJ MESEČNE PUTNICE - KORISTI STVARNE PODATKE
+    // 🆕 DODAJ MESEČNE PUTNICE - KORISTI STVARNE PODATKE (GRUPE PO ID)
     int ukupnoMesecnihKarata = 0;
+
+    // 💡 GRUPIRAJ MESEČNE PUTNIKE PO ID - jedan mesečni putnik može imati više polazaka,
+    // ali treba se računati samo jednom u statistike
+    final Map<String, MesecniPutnik> uniqueMesecniPutnici = {};
     for (final putnik in mesecniPutnici) {
+      uniqueMesecniPutnici[putnik.id] = putnik;
+    }
+
+    _debugLog(
+        '🔄 MESEČNI PUTNICI: ${mesecniPutnici.length} polazaka -> ${uniqueMesecniPutnici.length} jedinstvenih putnika');
+
+    for (final putnik in uniqueMesecniPutnici.values) {
       if (putnik.jePlacen) {
         // ✅ UNIFIKOVANA LOGIKA: koristi vremePlacanja umesto updatedAt
         // Proveri da li je mesečna karta plaćena u datom periodu
@@ -579,6 +600,9 @@ class StatistikaService {
             vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
                 (putnik.iznosPlacanja ?? 0.0);
             ukupnoMesecnihKarata++;
+
+            _debugLog(
+                '✅ DODAO JEDINSTVENU MESEČNU KARTU: ${putnik.putnikIme} (${putnik.iznosPlacanja} RSD) -> $naplatioVozac');
           }
         }
       }
