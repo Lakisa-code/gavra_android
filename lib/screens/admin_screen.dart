@@ -320,12 +320,12 @@ class _AdminScreenState extends State<AdminScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
-                                          Icons.map,
+                                          Icons.settings,
                                           color: Colors.white,
                                           size: 14,
                                         ),
                                         Text(
-                                          'Maps',
+                                          'API',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 12,
@@ -1018,7 +1018,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                     SizedBox(width: 6),
                                     Text(
-                                      'GPS MAPA',
+                                      'MAPA',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
