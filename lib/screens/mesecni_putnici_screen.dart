@@ -49,8 +49,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'sre': true,
     'cet': true,
     'pet': true,
-    'sub': false,
-    'ned': false,
   };
 
   // Helper metod za konverziju radnih dana u string
@@ -73,8 +71,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       'sre': daniList.contains('sre'),
       'cet': daniList.contains('cet'),
       'pet': daniList.contains('pet'),
-      'sub': daniList.contains('sub'),
-      'ned': daniList.contains('ned'),
     };
   }
 
@@ -1343,8 +1339,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         _buildRadniDanCheckbox('sre', 'Sreda'),
                         _buildRadniDanCheckbox('cet', 'Četvrtak'),
                         _buildRadniDanCheckbox('pet', 'Petak'),
-                        _buildRadniDanCheckbox('sub', 'Subota'),
-                        _buildRadniDanCheckbox('ned', 'Nedelja'),
                       ],
                     ),
                     const SizedBox(height: 8),
