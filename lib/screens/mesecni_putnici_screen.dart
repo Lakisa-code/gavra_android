@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
+import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
 
 class MesecniPutniciScreen extends StatefulWidget {
@@ -2258,13 +2259,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  // 📊 DOHVATANJE STATISTIKA ZA RAZLIČITE PERIODE
-  // 📊 OPTIMIZOVANO: Stream verzija statistika umesto Future
+  // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
       String putnikId, String period) {
-    return Stream.periodic(const Duration(seconds: 10), (count) => count)
-        .startWith(0)
-        .asyncMap((_) async {
+    // 🔄 KORISTI NOVI CENTRALIZOVANI REAL-TIME SERVIS
+    return RealTimeStatistikaService.instance
+        .getPutnikStatistikeStream(putnikId)
+        .asyncMap((baseStats) async {
       try {
         // Posebni slučajevi
         if (period == 'Cela 2025') {

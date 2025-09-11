@@ -244,6 +244,13 @@ class StatistikaService {
     return true;
   }
 
+  /// 🔄 PUBLIC SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (za external usage)
+  static Map<String, double> calculateKombinovanPazarSync(List<Putnik> putnici,
+      List<MesecniPutnik> mesecniPutnici, DateTime fromDate, DateTime toDate) {
+    return _calculateKombinovanPazarSync(
+        putnici, mesecniPutnici, fromDate, toDate);
+  }
+
   /// 🔄 SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (obični + mesečni)
   static Map<String, double> _calculateKombinovanPazarSync(List<Putnik> putnici,
       List<MesecniPutnik> mesecniPutnici, DateTime fromDate, DateTime toDate) {
@@ -611,6 +618,16 @@ class StatistikaService {
       return _calculateDetaljneStatistikeSinhronno(
           putnici, mesecniPutnici, from, to);
     });
+  }
+
+  /// 🔄 PUBLIC SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za external usage)
+  static Map<String, Map<String, dynamic>> calculateDetaljneStatistikeSinhronno(
+      List<Putnik> putnici,
+      List<MesecniPutnik> mesecniPutnici,
+      DateTime from,
+      DateTime to) {
+    return _calculateDetaljneStatistikeSinhronno(
+        putnici, mesecniPutnici, from, to);
   }
 
   /// 🔄 SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za stream)

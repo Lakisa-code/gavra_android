@@ -1,0 +1,192 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../models/putnik.dart';
+import '../models/mesecni_putnik.dart';
+import 'putnik_service.dart';
+import 'mesecni_putnik_service.dart';
+import 'statistika_service.dart';
+
+/// 🔄 CENTRALIZOVANI REAL-TIME STATISTIKA SERVIS
+/// Rešava probleme sa duplikovanim stream-ovima i cache-om
+class RealTimeStatistikaService {
+  static RealTimeStatistikaService? _instance;
+  static RealTimeStatistikaService get instance =>
+      _instance ??= RealTimeStatistikaService._internal();
+
+  RealTimeStatistikaService._internal();
+
+  // 🎯 CENTRALIUZOVANI STREAM CACHE
+  final Map<String, Stream> _streamCache = {};
+
+  // 🔄 KOMBINOVANI STREAM za sve putnic (dnevne + mesečne)
+  Stream<List<dynamic>>? _kombinovaniStream;
+
+  /// 🔄 GLAVNI KOMBINOVANI STREAM - koristi se svugde
+  Stream<List<dynamic>> get kombinovaniPutniciStream {
+    if (_kombinovaniStream == null) {
+      debugPrint('🆕 KREIRANJE NOVOG KOMBINOVANOG STREAM-A');
+
+      _kombinovaniStream = CombineLatestStream.combine2(
+        PutnikService().streamPutnici(),
+        MesecniPutnikService.streamAktivniMesecniPutnici(),
+        (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
+          return [putnici, mesecni];
+        },
+      ).shareReplay(maxSize: 1); // 🔧 SHARE REPLAY za cache
+    }
+
+    return _kombinovaniStream!;
+  }
+
+  /// 💰 REAL-TIME PAZAR STREAM ZA SVE VOZAČE
+  Stream<Map<String, double>> getPazarStream({
+    DateTime? from,
+    DateTime? to,
+  }) {
+    final now = DateTime.now();
+    final fromDate = from ?? DateTime(now.year, now.month, now.day);
+    final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final cacheKey =
+        'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
+
+    if (!_streamCache.containsKey(cacheKey)) {
+      debugPrint('🆕 KREIRANJE PAZAR STREAM-A: $cacheKey');
+
+      _streamCache[cacheKey] = kombinovaniPutniciStream
+          .map((data) {
+            final putnici = data[0] as List<Putnik>;
+            final mesecniPutnici = data[1] as List<MesecniPutnik>;
+
+            return StatistikaService.calculateKombinovanPazarSync(
+              putnici,
+              mesecniPutnici,
+              fromDate,
+              toDate,
+            );
+          })
+          .distinct() // 🚫 Eliminiši duplikate
+          .shareReplay(maxSize: 1);
+    }
+
+    return _streamCache[cacheKey]! as Stream<Map<String, double>>;
+  }
+
+  /// 📊 REAL-TIME DETALJNE STATISTIKE STREAM
+  Stream<Map<String, Map<String, dynamic>>> getDetaljneStatistikeStream({
+    DateTime? from,
+    DateTime? to,
+  }) {
+    final now = DateTime.now();
+    final fromDate = from ?? DateTime(now.year, now.month, now.day);
+    final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final cacheKey =
+        'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
+
+    if (!_streamCache.containsKey(cacheKey)) {
+      debugPrint('🆕 KREIRANJE DETALJNE STATISTIKE STREAM-A: $cacheKey');
+
+      _streamCache[cacheKey] = kombinovaniPutniciStream
+          .map((data) {
+            final putnici = data[0] as List<Putnik>;
+            final mesecniPutnici = data[1] as List<MesecniPutnik>;
+
+            return StatistikaService.calculateDetaljneStatistikeSinhronno(
+              putnici,
+              mesecniPutnici,
+              fromDate,
+              toDate,
+            );
+          })
+          .distinct() // 🚫 Eliminiši duplikate
+          .shareReplay(maxSize: 1);
+    }
+
+    return _streamCache[cacheKey]! as Stream<Map<String, Map<String, dynamic>>>;
+  }
+
+  /// 📊 REAL-TIME STATISTIKE ZA ODREĐENOG PUTNIKA
+  Stream<Map<String, dynamic>> getPutnikStatistikeStream(String putnikId) {
+    final cacheKey = 'putnik_$putnikId';
+
+    if (!_streamCache.containsKey(cacheKey)) {
+      debugPrint('🆕 KREIRANJE PUTNIK STATISTIKE STREAM-A: $putnikId');
+
+      // Kombinuj putovanja_istorija stream sa osnovnim podatcima
+      _streamCache[cacheKey] = Supabase.instance.client
+          .from('putovanja_istorija')
+          .stream(primaryKey: ['id'])
+          .eq('putnik_id', putnikId)
+          .asyncMap((_) async {
+            // Ovde možete dodati specifične statistike za putnika
+            return await _calculatePutnikStatistike(putnikId);
+          })
+          .distinct()
+          .shareReplay(maxSize: 1);
+    }
+
+    return _streamCache[cacheKey]! as Stream<Map<String, dynamic>>;
+  }
+
+  /// 🧹 OČISTI CACHE
+  void clearCache() {
+    debugPrint('🧹 BRISANJE REAL-TIME STATISTIKA CACHE-A');
+    _streamCache.clear();
+    _kombinovaniStream = null;
+  }
+
+  /// 📊 PRIVATNA METODA - Računaj statistike za putnika
+  Future<Map<String, dynamic>> _calculatePutnikStatistike(
+      String putnikId) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Dohvati sva putovanja za putnika
+      final putovanja = await supabase
+          .from('putovanja_istorija')
+          .select()
+          .eq('putnik_id', putnikId)
+          .order('created_at', ascending: false);
+
+      // Osnovne statistike
+      int ukupnoPutovanja = 0;
+      int otkazi = 0;
+      double ukupanPrihod = 0;
+
+      for (final putovanje in putovanja) {
+        if (putovanje['status'] == 'pokupljen') {
+          ukupnoPutovanja++;
+          ukupanPrihod += (putovanje['cena'] ?? 0.0);
+        } else if (putovanje['status'] == 'otkazan') {
+          otkazi++;
+        }
+      }
+
+      final ukupno = ukupnoPutovanja + otkazi;
+      final uspesnost =
+          ukupno > 0 ? ((ukupnoPutovanja / ukupno) * 100).round() : 0;
+
+      return {
+        'ukupnoPutovanja': ukupnoPutovanja,
+        'otkazi': otkazi,
+        'ukupanPrihod': ukupanPrihod,
+        'uspesnost': uspesnost,
+        'poslednje':
+            putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
+      };
+    } catch (e) {
+      debugPrint('❌ Greška pri računanju statistika za putnika $putnikId: $e');
+      return {
+        'ukupnoPutovanja': 0,
+        'otkazi': 0,
+        'ukupanPrihod': 0.0,
+        'uspesnost': 0,
+        'poslednje': null,
+      };
+    }
+  }
+}
