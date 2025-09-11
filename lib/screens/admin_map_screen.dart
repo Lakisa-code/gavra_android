@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/vozac_boja.dart';
+import '../services/putnik_service.dart';
+import '../services/geocoding_service.dart';
+import '../models/putnik.dart';
 
 // Model za GPS lokacije vozača
 class GpsLokacija {
@@ -48,8 +50,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   GoogleMapController? _controller;
   Position? _currentPosition;
   List<GpsLokacija> _gpsLokacije = [];
+  List<Putnik> _putnici = [];
   Set<Marker> _markers = {};
   bool _isLoading = true;
+  bool _showDrivers = true;
+  bool _showPassengers = false;
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(44.7866, 20.4489), // Belgrade default
@@ -61,6 +66,20 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     super.initState();
     _getCurrentLocation();
     _loadGpsLokacije();
+    _loadPutnici();
+  }
+
+  Future<void> _loadPutnici() async {
+    try {
+      final putnikService = PutnikService();
+      final putnici = await putnikService.getAllPutniciFromBothTables();
+      setState(() {
+        _putnici = putnici;
+      });
+      _updateMarkers();
+    } catch (e) {
+      debugPrint('Greška učitavanja putnika: $e');
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -177,39 +196,85 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   void _updateMarkers() {
     Set<Marker> markers = {};
 
-    // Grupiši GPS lokacije po vozaču (name) i uzmi najnoviju za svakog
-    Map<String, GpsLokacija> najnovijeLokacije = {};
-    for (final lokacija in _gpsLokacije) {
-      if (!najnovijeLokacije.containsKey(lokacija.name) ||
-          najnovijeLokacije[lokacija.name]!.timestamp.isBefore(
-                lokacija.timestamp,
-              )) {
-        najnovijeLokacije[lokacija.name] = lokacija;
+    // VOZAČI - ako su uključeni
+    if (_showDrivers) {
+      // Grupiši GPS lokacije po vozaču (name) i uzmi najnoviju za svakog
+      Map<String, GpsLokacija> najnovijeLokacije = {};
+      for (final lokacija in _gpsLokacije) {
+        if (!najnovijeLokacije.containsKey(lokacija.name) ||
+            najnovijeLokacije[lokacija.name]!.timestamp.isBefore(
+                  lokacija.timestamp,
+                )) {
+          najnovijeLokacije[lokacija.name] = lokacija;
+        }
       }
+
+      // Kreiraj markere za svakog vozača
+      najnovijeLokacije.forEach((vozac, lokacija) {
+        final timeAgo = DateTime.now().difference(lokacija.timestamp).inMinutes;
+        final timeAgoText = timeAgo < 60
+            ? '${timeAgo}min ago'
+            : '${(timeAgo / 60).round()}h ago';
+
+        markers.add(
+          Marker(
+            markerId: MarkerId('driver_$vozac'),
+            position: LatLng(lokacija.lat, lokacija.lng),
+            infoWindow: InfoWindow(
+              title: '🚗 $vozac',
+              snippet: '${lokacija.vehicleType} • $timeAgoText',
+            ),
+            icon: _getMarkerIcon(lokacija),
+          ),
+        );
+      });
     }
 
-    // Kreiraj markere za svakog vozača
-    najnovijeLokacije.forEach((vozac, lokacija) {
-      final timeAgo = DateTime.now().difference(lokacija.timestamp).inMinutes;
-      final timeAgoText =
-          timeAgo < 60 ? '${timeAgo}min ago' : '${(timeAgo / 60).round()}h ago';
-
-      markers.add(
-        Marker(
-          markerId: MarkerId(vozac),
-          position: LatLng(lokacija.lat, lokacija.lng),
-          infoWindow: InfoWindow(
-            title: '🚗 $vozac',
-            snippet: '${lokacija.vehicleType} • $timeAgoText',
-          ),
-          icon: _getMarkerIcon(lokacija),
-        ),
-      );
-    });
+    // PUTNICI - ako su uključeni
+    if (_showPassengers) {
+      _addPassengerMarkers(markers);
+    }
 
     setState(() {
       _markers = markers;
     });
+  }
+
+  Future<void> _addPassengerMarkers(Set<Marker> markers) async {
+    for (final putnik in _putnici) {
+      if (putnik.adresa?.isNotEmpty == true) {
+        try {
+          final coords = await GeocodingService.getKoordinateZaAdresu(
+              putnik.grad, putnik.adresa!);
+
+          if (coords != null) {
+            final parts = coords.split(',');
+            if (parts.length == 2) {
+              final lat = double.tryParse(parts[0]);
+              final lng = double.tryParse(parts[1]);
+
+              if (lat != null && lng != null) {
+                markers.add(
+                  Marker(
+                    markerId: MarkerId('passenger_${putnik.id}'),
+                    position: LatLng(lat, lng),
+                    infoWindow: InfoWindow(
+                      title: '👤 ${putnik.ime}',
+                      snippet: '${putnik.adresa} • ${putnik.grad}',
+                    ),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueGreen,
+                    ),
+                  ),
+                );
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('Greška geocoding za ${putnik.ime}: $e');
+        }
+      }
+    }
   }
 
   BitmapDescriptor _getMarkerIcon(GpsLokacija lokacija) {
@@ -313,10 +378,43 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         title: const Text('GPS Mapa',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
-          // 🔄 Refresh dugme
+          // � Toggle vozači
+          IconButton(
+            icon: Icon(
+              _showDrivers
+                  ? Icons.directions_car
+                  : Icons.directions_car_outlined,
+              color: _showDrivers ? Colors.white : Colors.white54,
+            ),
+            onPressed: () {
+              setState(() {
+                _showDrivers = !_showDrivers;
+              });
+              _updateMarkers();
+            },
+            tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
+          ),
+          // 👥 Toggle putnici
+          IconButton(
+            icon: Icon(
+              _showPassengers ? Icons.people : Icons.people_outline,
+              color: _showPassengers ? Colors.white : Colors.white54,
+            ),
+            onPressed: () {
+              setState(() {
+                _showPassengers = !_showPassengers;
+              });
+              _updateMarkers();
+            },
+            tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
+          ),
+          // �🔄 Refresh dugme
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _loadGpsLokacije,
+            onPressed: () {
+              _loadGpsLokacije();
+              _loadPutnici();
+            },
             tooltip: 'Osveži GPS podatke',
           ),
           // 🗺️ Zoom out dugme
@@ -416,27 +514,91 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                     ],
                   ),
                 )
-              : GoogleMap(
-                  onMapCreated: (GoogleMapController controller) {
-                    _controller = controller;
-                    if (_currentPosition != null) {
-                      controller.animateCamera(
-                        CameraUpdate.newCameraPosition(
-                          CameraPosition(
-                            target: LatLng(
-                              _currentPosition!.latitude,
-                              _currentPosition!.longitude,
+              : Stack(
+                  children: [
+                    GoogleMap(
+                      onMapCreated: (GoogleMapController controller) {
+                        _controller = controller;
+                        if (_currentPosition != null) {
+                          controller.animateCamera(
+                            CameraUpdate.newCameraPosition(
+                              CameraPosition(
+                                target: LatLng(
+                                  _currentPosition!.latitude,
+                                  _currentPosition!.longitude,
+                                ),
+                                zoom: 15.0,
+                              ),
                             ),
-                            zoom: 15.0,
-                          ),
+                          );
+                        }
+                      },
+                      initialCameraPosition: _initialPosition,
+                      markers: _markers,
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: true,
+                    ),
+                    // Status overlay
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                      );
-                    }
-                  },
-                  initialCameraPosition: _initialPosition,
-                  markers: _markers,
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_showDrivers) ...[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.directions_car,
+                                      size: 16, color: Colors.blue[600]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${_gpsLokacije.length} vozača',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (_showPassengers) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.people,
+                                      size: 16, color: Colors.green[600]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${_putnici.length} putnika',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
     );
   }
