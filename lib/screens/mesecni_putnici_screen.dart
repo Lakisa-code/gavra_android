@@ -619,68 +619,101 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
             const SizedBox(height: 12),
 
-            // 💰 PLAĆANJE I STATISTIKE - jednostavan red
+            // 💰 PLAĆANJE I STATISTIKE - jednaki elementi u redu
             Row(
               children: [
-                // 💰 DUGME ZA PLAĆANJE - kompaktno
-                SizedBox(
-                  height: 26,
-                  child: ElevatedButton.icon(
+                // 💰 DUGME ZA PLAĆANJE
+                Expanded(
+                  child: _buildCompactActionButton(
                     onPressed: () => _prikaziPlacanje(putnik),
-                    icon: Icon(
-                      putnik.cena != null && putnik.cena! > 0
-                          ? Icons.check_circle_outline
-                          : Icons.payments_outlined,
-                      size: 14,
+                    icon: putnik.cena != null && putnik.cena! > 0
+                        ? Icons.check_circle_outline
+                        : Icons.payments_outlined,
+                    label: putnik.cena != null && putnik.cena! > 0
+                        ? '${putnik.cena!.toStringAsFixed(0)}din'
+                        : 'Plati',
+                    color: putnik.cena != null && putnik.cena! > 0
+                        ? Colors.green
+                        : Colors.purple,
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                // 📊 DUGME ZA DETALJE
+                Expanded(
+                  child: _buildCompactActionButton(
+                    onPressed: () => _prikaziDetaljeStatistike(putnik),
+                    icon: Icons.analytics_outlined,
+                    label: 'Detalji',
+                    color: Colors.blue,
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                // 📈 BROJAČ PUTOVANJA
+                Expanded(
+                  child: Container(
+                    height: 28,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: Colors.green.withOpacity(0.3), width: 1),
                     ),
-                    label: Text(
-                      putnik.cena != null && putnik.cena! > 0
-                          ? '${putnik.cena!.toStringAsFixed(0)}din'
-                          : 'Plati',
-                      style: const TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: putnik.cena != null && putnik.cena! > 0
-                          ? Colors.green.shade50
-                          : Colors.purple.shade50,
-                      foregroundColor: putnik.cena != null && putnik.cena! > 0
-                          ? Colors.green.shade700
-                          : Colors.purple.shade700,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      minimumSize: Size.zero,
-                      side: BorderSide(
-                        color: putnik.cena != null && putnik.cena! > 0
-                            ? Colors.green.shade200
-                            : Colors.purple.shade200,
-                        width: 1,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.trending_up,
+                            size: 14, color: Colors.green.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${putnik.brojPutovanja}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
 
-                const Spacer(),
+                const SizedBox(width: 6),
 
-                // Statistike putovanja i otkazivanja
-                Row(
-                  children: [
-                    _buildCompactStatsPill(
-                      '${putnik.brojPutovanja}',
-                      Colors.green,
-                      Icons.trending_up,
+                // ❌ BROJAČ OTKAZIVANJA
+                Expanded(
+                  child: Container(
+                    height: 28,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: Colors.orange.withOpacity(0.3), width: 1),
                     ),
-                    const SizedBox(width: 6),
-                    _buildCompactStatsPill(
-                      '${putnik.brojOtkazivanja}',
-                      Colors.orange,
-                      Icons.cancel_outlined,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cancel_outlined,
+                            size: 14, color: Colors.orange.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${putnik.brojOtkazivanja}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -715,100 +748,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
                 const SizedBox(width: 6),
 
-                // Menu sa opcijama (detalji i obriši)
+                // Obriši
                 Expanded(
-                  child: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'detalji':
-                          _prikaziDetaljeStatistike(putnik);
-                          break;
-                        case 'obrisi':
-                          _obrisiPutnika(putnik);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'detalji',
-                        child: Row(
-                          children: [
-                            Icon(Icons.analytics_outlined, size: 16),
-                            SizedBox(width: 8),
-                            Text('Detalji'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'obrisi',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline,
-                                size: 16, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Obriši', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    child: Container(
-                      height: 28,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                            color: Colors.grey.withOpacity(0.3), width: 1),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.more_vert, size: 14, color: Colors.grey),
-                          SizedBox(width: 4),
-                          Text(
-                            'Opcije',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: _buildCompactActionButton(
+                    onPressed: () => _obrisiPutnika(putnik),
+                    icon: Icons.delete_outline,
+                    label: 'Obriši',
+                    color: Colors.red,
                   ),
                 ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCompactStatsPill(String number, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color.withOpacity(0.8)),
-          const SizedBox(width: 4),
-          Text(
-            number,
-            style: TextStyle(
-              color: color.withOpacity(0.8),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }

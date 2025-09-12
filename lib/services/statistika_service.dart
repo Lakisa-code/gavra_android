@@ -560,6 +560,9 @@ class StatistikaService {
 
       // 4. NAPLAĆENI I PAZAR - ko je NAPLATIO (po vremenu plaćanja) - SAMO OBIČNI PUTNICI
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
+        // 🎯 ISKLJUČI MESEČNE PUTNIKE - isti kao u _calculateKombinovanPazarSync
+        if (putnik.mesecnaKarta == true) continue;
+
         // Proveri da li je plaćen u datom periodu
         if (_jeUVremenskomOpsegu(
             putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
