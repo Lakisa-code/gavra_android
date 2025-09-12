@@ -18,6 +18,15 @@ migrate_working_dir/
 *.iws
 .idea/
 
+# GitHub Actions artifacts
+gavra-android-debug/
+gavra-android-release/
+
+# Prevent unwanted workflow files
+.github/workflows/auto-release.yml
+.github/workflows/pr-check.yml
+.github/workflows/android.yml
+
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
