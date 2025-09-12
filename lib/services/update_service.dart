@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +14,95 @@ class UpdateService {
   static const String _skippedVersionKey = 'skipped_update_version';
   static const String _lastCheckKey = 'last_update_check';
   static const String _lastInstalledVersionKey = 'last_installed_version';
+  static const String _lastFoundVersionKey = 'last_found_version';
+
+  // Timer za background proveru
+  static Timer? _backgroundTimer;
+
+  /// Pokreće background proveru svakih sat vremena
+  static void startBackgroundUpdateCheck() {
+    // Zaustavi postojeći timer ako postoji
+    _backgroundTimer?.cancel();
+
+    debugPrint('🔄 Pokretanje background update provere (svakih 60 min)');
+
+    // Prva provera odmah
+    _checkUpdateInBackground();
+
+    // Timer za svakih sat vremena (60 minuta)
+    _backgroundTimer = Timer.periodic(const Duration(hours: 1), (timer) {
+      _checkUpdateInBackground();
+    });
+  }
+
+  /// Zaustavlja background proveru
+  static void stopBackgroundUpdateCheck() {
+    _backgroundTimer?.cancel();
+    _backgroundTimer = null;
+    debugPrint('⏹️ Background update provera zaustavljena');
+  }
+
+  /// Tiha provera u pozadini bez UI-ja
+  static Future<void> _checkUpdateInBackground() async {
+    try {
+      debugPrint('🔍 Background provera update-a...');
+
+      // Trenutna verzija aplikacije
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String currentVersion = packageInfo.version;
+
+      // GitHub API poziv
+      final response = await http.get(
+        Uri.parse(githubApiUrl),
+        headers: {'Accept': 'application/vnd.github.v3+json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Proveri da li release postoji i nije draft
+        if (data['draft'] == true) {
+          debugPrint('📝 Release je draft - nema update-a');
+          return;
+        }
+
+        String latestVersion = data['tag_name'].replaceAll('v', '');
+
+        debugPrint(
+            '🔍 Background: Current: $currentVersion, Latest: $latestVersion');
+
+        // Ako su verzije iste, nema update-a
+        if (currentVersion == latestVersion) {
+          debugPrint('✅ Background: Verzije su iste - nema update-a');
+          return;
+        }
+
+        // Proverava da li je novija verzija
+        bool hasUpdate = _isNewerVersion(currentVersion, latestVersion);
+
+        if (hasUpdate) {
+          // Pamti poslednju pronađenu verziju (za buduće UI implementacije)
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_lastFoundVersionKey, latestVersion);
+
+          debugPrint('🚀 Background: Nova verzija pronađena: $latestVersion');
+          debugPrint('💾 Verzija sačuvana u SharedPreferences');
+        } else {
+          debugPrint('📊 Background: Nema novije verzije');
+        }
+      } else {
+        debugPrint('❌ Background: GitHub API greška: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Background: Greška pri proveri: $e');
+    }
+  }
+
+  /// Vraća poslednju pronađenu verziju (ako postoji)
+  static Future<String?> getLastFoundVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lastFoundVersionKey);
+  }
 
   /// Pamti verziju koju je korisnik preskočio
   static Future<void> skipVersion(String version) async {
