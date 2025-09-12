@@ -206,7 +206,8 @@ class Putnik {
         ? DateTime.parse(map['vreme_placanja'])
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
-    final iznosPlacanja = map['cena'] as double?; // čita iz cena kolone
+    final iznosPlacanja =
+        map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
     final vozac = map['vozac'] as String?; // ✅ ČITAJ vozača
     final obrisan = map['aktivan'] == false;
 

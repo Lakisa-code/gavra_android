@@ -262,8 +262,15 @@ class StatistikaService {
       pazarMesecne[vozac] = 0.0; // 🔧 RESETUJ NA 0!
     }
 
-    // 1. SABERI OBIČNI PAZAR iz putnici tabele
+    // 1. SABERI OBIČNI PAZAR iz putnici tabele - ISKLJUČI MESEČNE KARTE
     for (final putnik in putnici) {
+      // 🛑 PRESKAČI MESEČNE KARTE - one se računaju odvojeno iz MesecniPutnikService
+      if (putnik.mesecnaKarta == true) {
+        _debugLog(
+            '⏭️ PRESKAČEM mesečni putnik iz PutnikService: ${putnik.ime}');
+        continue;
+      }
+
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           final vozac = putnik.naplatioVozac!;

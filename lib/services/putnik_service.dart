@@ -1448,21 +1448,22 @@ class PutnikService {
       // 2. MESEČNA PLAĆANJA iz mesecni_putnici
       final mesecnaPlacanja = await supabase
           .from('mesecni_putnici')
-          .select('cena, vremePlacanja, vozac, placeniMesec, placenaGodina')
-          .eq('putnikIme', putnikIme)
-          .not('vremePlacanja', 'is', null)
-          .order('vremePlacanja', ascending: false) as List<dynamic>;
+          .select(
+              'cena, vreme_placanja, naplata_vozac, placeni_mesec, placena_godina')
+          .eq('putnik_ime', putnikIme)
+          .not('vreme_placanja', 'is', null)
+          .order('vreme_placanja', ascending: false) as List<dynamic>;
 
       // Konvertuj mesečna plaćanja u isti format kao redovna
       for (var mesecno in mesecnaPlacanja) {
         svaPlacanja.add({
           'cena': mesecno['cena'],
-          'created_at': mesecno['vremePlacanja'],
-          'vozac_ime': mesecno['vozac'],
+          'created_at': mesecno['vreme_placanja'],
+          'vozac_ime': mesecno['naplata_vozac'],
           'putnik_ime': putnikIme,
           'tip': 'mesecna_karta',
-          'placeniMesec': mesecno['placeniMesec'],
-          'placenaGodina': mesecno['placenaGodina'],
+          'placeniMesec': mesecno['placeni_mesec'],
+          'placenaGodina': mesecno['placena_godina'],
         });
       }
 
