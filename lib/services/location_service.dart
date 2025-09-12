@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
-import 'geocoding_service.dart';
 import 'package:logger/logger.dart';
 
 class LocationService {

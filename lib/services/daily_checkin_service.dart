@@ -33,29 +33,45 @@ class DailyCheckInService {
     return prefs.getBool(todayKey) ?? false;
   }
 
-  /// Sačuvaj daily check-in (sitan novac)
-  static Future<void> saveCheckIn(String vozac, double sitanNovac) async {
+  /// Sačuvaj daily check-in (sitan novac i pazari)
+  static Future<void> saveCheckIn(String vozac, double sitanNovac,
+      {double dnevniPazari = 0.0}) async {
     final today = DateTime.now();
     final todayKey =
         '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
 
     try {
       // Sačuvaj u Supabase (ako postoji tabela)
-      await _saveToSupabase(vozac, sitanNovac, today);
+      await _saveToSupabase(vozac, sitanNovac, today,
+          dnevniPazari: dnevniPazari);
+      print(
+          '✅ Supabase save successful for $vozac: Kusur=$sitanNovac RSD, Pazari=$dnevniPazari RSD');
     } catch (e) {
-      // Ako nema tabele, samo nastavi sa lokalnim čuvanjem
-      print('Supabase save failed (možda tabela ne postoji): $e');
+      // Ako je RLS blokirao ili tabela ne postoji, nastavi sa lokalnim čuvanjem
+      print('⚠️ Supabase save failed (RLS ili tabela ne postoji): $e');
+      print('📱 Koristiće se samo lokalno čuvanje u SharedPreferences');
+      // Ne prosleđuj grešku dalje - lokalno čuvanje je dovoljno
     }
 
-    // Sačuvaj lokalno u SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(todayKey, true);
-    await prefs.setDouble('${todayKey}_amount', sitanNovac);
-    await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
+    try {
+      // Sačuvaj lokalno u SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(todayKey, true);
+      await prefs.setDouble('${todayKey}_amount', sitanNovac);
+      await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
+      await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
 
-    // 🔄 EMIT NOVI IZNOS NA STREAM ZA REAL-TIME UPDATE
-    if (!_sitanNovacController.isClosed) {
-      _sitanNovacController.add(sitanNovac);
+      // 🔄 EMIT NOVI IZNOS NA STREAM ZA REAL-TIME UPDATE
+      if (!_sitanNovacController.isClosed) {
+        _sitanNovacController.add(sitanNovac);
+      }
+
+      print(
+          '✅ Local save successful for $vozac: Kusur=$sitanNovac RSD, Pazari=$dnevniPazari RSD');
+    } catch (e) {
+      // Ovo je ozbiljna greška - lokalno čuvanje mora da radi
+      print('❌ CRITICAL: Local save failed: $e');
+      rethrow; // Proslijedi grešku jer je kritična
     }
   }
 
@@ -69,18 +85,88 @@ class DailyCheckInService {
     return prefs.getDouble('${todayKey}_amount');
   }
 
-  /// Sačuvaj u Supabase (biće implementirano kada napravimo tabelu)
+  /// Dohvati dnevne pazare za danas
+  static Future<double?> getTodayPazari(String vozac) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayKey =
+        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+
+    return prefs.getDouble('${todayKey}_pazari');
+  }
+
+  /// Dohvati kompletne podatke za danas (kusur + pazari)
+  static Future<Map<String, double?>> getTodayData(String vozac) async {
+    final kusur = await getTodayAmount(vozac);
+    final pazari = await getTodayPazari(vozac);
+
+    return {
+      'kusur': kusur,
+      'pazari': pazari,
+    };
+  }
+
+  /// Sačuvaj u Supabase tabelu daily_checkins
   static Future<void> _saveToSupabase(
-      String vozac, double sitanNovac, DateTime datum) async {
-    // Pokušaj da sačuva u tabelu daily_checkins
+      String vozac, double sitanNovac, DateTime datum,
+      {double dnevniPazari = 0.0}) async {
     final supabase = Supabase.instance.client;
 
-    await supabase.from('daily_checkins').upsert({
-      'vozac': vozac,
-      'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
-      'kusur_iznos': sitanNovac,
-      'created_at': datum.toIso8601String(),
-    });
+    try {
+      // Prvo pokušaj da sačuvaš u tabelu
+      await supabase.from('daily_checkins').upsert({
+        'vozac': vozac,
+        'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
+        'kusur_iznos': sitanNovac,
+        'dnevni_pazari': dnevniPazari,
+        'created_at': datum.toIso8601String(),
+      });
+
+      print(
+          '✅ Supabase daily_checkins: Uspešno sačuvano za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)');
+    } on PostgrestException catch (e) {
+      print('❌ PostgrestException: ${e.code} - ${e.message}');
+
+      // Ako je tabela missing, pokušaj da je kreiraš
+      if (e.code == 'PGRST106' ||
+          e.message.contains('does not exist') ||
+          e.code == '404') {
+        print('🏗️ Tabela daily_checkins ne postoji - pokušavam kreiranje...');
+        await _createDailyCheckinsTable();
+
+        // Ponovi pokušaj čuvanja nakon kreiranja tabele
+        await supabase.from('daily_checkins').upsert({
+          'vozac': vozac,
+          'datum': datum.toIso8601String().split('T')[0],
+          'kusur_iznos': sitanNovac,
+          'dnevni_pazari': dnevniPazari,
+          'created_at': datum.toIso8601String(),
+        });
+
+        print(
+            '✅ Supabase daily_checkins: Kreirao tabelu i sačuvao za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)');
+      } else {
+        rethrow; // Proslijedi dalju grešku
+      }
+    } catch (e) {
+      print('❌ Neočekivana greška u _saveToSupabase: $e');
+      rethrow;
+    }
+  }
+
+  /// Kreiraj tabelu daily_checkins ako ne postoji
+  static Future<void> _createDailyCheckinsTable() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Pokušaj kreiranje preko RPC ako postoji
+      await supabase.rpc('create_daily_checkins_table_if_not_exists');
+      print('✅ Tabela daily_checkins kreirana preko RPC');
+    } catch (e) {
+      print('⚠️ Ne mogu da kreiram tabelu preko RPC: $e');
+      print('💡 Molim te kreiraj tabelu ručno u Supabase SQL editoru');
+      // Ne bacaj grešku jer tabela možda postoji ali RPC ne radi
+    }
   }
 
   /// Dohvati istoriju check-in-ova za vozača
@@ -308,18 +394,30 @@ class DailyCheckInService {
       String vozac, Map<String, dynamic> popisPodaci, DateTime datum) async {
     final supabase = Supabase.instance.client;
 
-    await supabase.from('daily_reports').upsert({
-      'vozac': vozac,
-      'datum': datum.toIso8601String().split('T')[0],
-      'ukupan_pazar': popisPodaci['ukupanPazar'],
-      'sitan_novac': popisPodaci['sitanNovac'],
-      'broj_putnika': popisPodaci['brojPutnika'],
-      'broj_naplacenih': popisPodaci['brojNaplacenih'],
-      'broj_dugova': popisPodaci['brojDugova'],
-      'kilometraza': popisPodaci['kilometraza'],
-      'pazar_obicni': popisPodaci['pazarObicni'],
-      'pazar_mesecne': popisPodaci['pazarMesecne'],
-      'created_at': datum.toIso8601String(),
-    });
+    try {
+      await supabase.from('daily_reports').upsert({
+        'vozac': vozac,
+        'datum': datum.toIso8601String().split('T')[0],
+        'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
+        'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
+        'dnevni_pazari':
+            popisPodaci['ukupanPazar'] ?? 0.0, // Isti kao ukupan_pazar
+        'dodati_putnici': popisPodaci['dodatiPutnici'] ?? 0,
+        'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
+        'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,
+        'pokupljeni_putnici': popisPodaci['pokupljeniPutnici'] ?? 0,
+        'dugovi_putnici': popisPodaci['dugoviPutnici'] ?? 0,
+        'mesecne_karte': popisPodaci['mesecneKarte'] ?? 0,
+        'kilometraza': popisPodaci['kilometraza'] ?? 0.0,
+        'automatski_generisan': popisPodaci['automatskiGenerisal'] ?? true,
+        'created_at': datum.toIso8601String(),
+      });
+
+      print('✅ Automatski popis sačuvan u Supabase daily_reports tabelu');
+    } catch (e) {
+      print('❌ Greška pri čuvanju popisa u Supabase: $e');
+      // Tabela daily_reports možda ne postoji - potrebno je kreirati ručno
+      rethrow;
+    }
   }
 }

@@ -22,9 +22,6 @@ class StatistikaService {
   // Instance cache za stream-ove da izbegnemo duplo kreiranje
   final Map<String, Stream<Map<String, double>>> _streamCache = {};
 
-  // 🚫 GLOBALNI SET za praćenje već procesiranih mesečnih plaćanja
-  static final Set<String> _procesiraniMesecniPutnici = {};
-
   // 🎯 CENTRALIZOVANA LISTA VOZAČA
   static List<String> get sviVozaci => VozacBoja.boje.keys.toList();
 

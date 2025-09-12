@@ -1,11 +1,9 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
-import 'cache_service.dart';
 import 'geocoding_service.dart';
 
 class GeocodingStatsService {
   static final Logger _logger = Logger();
-  static const String _statsPrefix = 'geocoding_stats_';
   static const String _apiCallsKey = 'geocoding_api_calls';
   static const String _cacheHitsKey = 'geocoding_cache_hits';
   static const String _lastResetKey = 'geocoding_last_reset';

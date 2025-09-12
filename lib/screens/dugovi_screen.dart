@@ -13,12 +13,11 @@ class DugoviScreen extends StatefulWidget {
 
 class _DugoviScreenState extends State<DugoviScreen> {
   // final PutnikService _putnikService = PutnikService();
-  String? _currentDriver;
 
   @override
   void initState() {
     super.initState();
-    _currentDriver = widget.currentDriver;
+    // _currentDriver = widget.currentDriver; // Removed unused assignment
   }
 
   @override

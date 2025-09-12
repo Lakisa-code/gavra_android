@@ -422,11 +422,11 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        icon: Icon(
+        icon: const Icon(
           Icons.navigation,
           size: 12,
         ),
-        label: Text(
+        label: const Text(
           'Mapa',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -434,62 +434,6 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // 🎓 DJAČKI BROJAČ U APPBAR-U
-  Widget _buildDjackiBrojac(List<Putnik> sviPutnici) {
-    return FutureBuilder<Map<String, int>>(
-      future: _calculateDjackieBrojeviAsync(),
-      builder: (context, snapshot) {
-        final statistike = snapshot.data ??
-            {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
-        final ukupno = statistike['ukupno_ujutro'] ?? 0;
-        final ostalo = statistike['ostalo'] ?? 0;
-
-        return GestureDetector(
-          onTap: () {
-            // Prikaži detaljan popup sa statistikama
-            _showDjackiDialog(statistike);
-          },
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade700,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade300, width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.school, color: Colors.white, size: 14),
-                const SizedBox(width: 3),
-                Text(
-                  '$ukupno',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-                const Text('/',
-                    style: TextStyle(color: Colors.white70, fontSize: 10)),
-                Text(
-                  '$ostalo',
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.redAccent,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
