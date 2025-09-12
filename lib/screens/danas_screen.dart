@@ -585,10 +585,10 @@ class _DanasScreenState extends State<DanasScreen> {
     return FutureBuilder<Map<String, int>>(
       future: _calculateDjackieBrojeviAsync(),
       builder: (context, snapshot) {
-        final statistike =
-            snapshot.data ?? {'ukupno': 0, 'povratak': 0, 'slobodno': 0};
-        final ukupno = statistike['ukupno'] ?? 0;
-        final povratak = statistike['povratak'] ?? 0;
+        final statistike = snapshot.data ??
+            {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
+        final ukupno = statistike['ukupno_ujutro'] ?? 0;
+        final ostalo = statistike['ostalo'] ?? 0;
 
         return GestureDetector(
           onTap: () {
@@ -620,11 +620,11 @@ class _DanasScreenState extends State<DanasScreen> {
                 const Text('/',
                     style: TextStyle(color: Colors.white70, fontSize: 10)),
                 Text(
-                  '$povratak',
+                  '$ostalo',
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white70,
+                    color: Colors.redAccent,
                     fontFamily: 'monospace',
                   ),
                 ),
