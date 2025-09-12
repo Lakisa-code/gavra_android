@@ -10,7 +10,7 @@ import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
-import 'admin_map_screen.dart';
+import 'admin_map_screen_osm.dart'; // BESPLATNA OpenStreetMap verzija
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
@@ -973,12 +973,12 @@ class _AdminScreenState extends State<AdminScreen> {
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
-                                // 🗺️ OTVORI FLUTTER MAPU SA SVIM VOZAČIMA
+                                // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        const AdminMapScreen(),
+                                        const AdminMapScreenOSM(),
                                   ),
                                 );
                               },

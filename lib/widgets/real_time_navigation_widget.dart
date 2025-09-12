@@ -510,7 +510,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         putnici: _remainingPassengers,
         startCity: 'Bela Crkva', // ili dinamički na osnovu trenutne pozicije
         optimizeForTime: true,
-        useTrafficData: true,
+        useTrafficData: false, // ISKLJUČENO - trošilo Google API 💸
       );
 
       if (result.success) {

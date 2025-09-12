@@ -31,8 +31,8 @@ class AdvancedRouteOptimizationService {
     Position? driverPosition,
     String? startAddress,
     DateTime? departureTime,
-    bool useTrafficData = true,
-    bool useMLOptimization = false,
+    bool useTrafficData = false, // DEFAULT FALSE - štedimo pare
+    bool useMLOptimization = false, // DEFAULT FALSE - basic je dovoljno
   }) async {
     if (putnici.isEmpty) return putnici;
 

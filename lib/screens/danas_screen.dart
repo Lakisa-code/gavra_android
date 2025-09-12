@@ -652,41 +652,72 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
   Future<void> _showPopisDana() async {
+    print('🔥 [POPIS] 1. Početak _showPopisDana funkcije');
     final vozac = _currentDriver ?? 'Nepoznat';
+    print('🔥 [POPIS] 2. Vozač: $vozac');
 
     try {
       // 1. OSNOVNI PODACI
       final today = DateTime.now();
       final dayStart = DateTime(today.year, today.month, today.day);
       final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+      print('🔥 [POPIS] 3. Datum postavljen: ${dayStart.toString()}');
 
       // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
-      final putnici = await PutnikService().streamKombinovaniPutnici().first;
+      print('🔥 [POPIS] 4. Učitavam putnike...');
+      late List<Putnik> putnici;
+      try {
+        final stream = PutnikService().streamKombinovaniPutnici();
+        putnici = await stream.first.timeout(Duration(seconds: 10));
+        print('🔥 [POPIS] 5. Putnici učitani: ${putnici.length}');
+      } catch (e) {
+        print('🔥 [POPIS] 5.ERROR: Greška pri učitavanju putnika: $e');
+        putnici = []; // Prazan list kao fallback
+        print('🔥 [POPIS] 5.FALLBACK: Koristim prazan list putnika');
+      }
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
+      print('🔥 [POPIS] 6. Računam detaljne statistike...');
       final detaljneStats =
           await StatistikaService.detaljneStatistikePoVozacima(
               putnici, dayStart, dayEnd);
       final vozacStats = detaljneStats[vozac] ?? {};
+      print('🔥 [POPIS] 7. Statistike računate: $vozacStats');
 
       // 4. REALTIME PAZAR STREAM
-      final ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
-              from: dayStart, to: dayEnd)
-          .map((pazarMap) => pazarMap[vozac] ?? 0.0)
-          .first;
+      print('🔥 [POPIS] 8. Računam pazar stream...');
+      late double ukupanPazar;
+      try {
+        ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
+                from: dayStart, to: dayEnd)
+            .map((pazarMap) => pazarMap[vozac] ?? 0.0)
+            .first
+            .timeout(Duration(seconds: 10));
+        print('🔥 [POPIS] 9. Ukupan pazar: $ukupanPazar');
+      } catch (e) {
+        print('🔥 [POPIS] 9.ERROR: Greška pri učitavanju pazara: $e');
+        ukupanPazar = 0.0; // Fallback vrednost
+        print('🔥 [POPIS] 9.FALLBACK: Koristim pazar = 0.0');
+      }
 
       // 5. SITAN NOVAC
+      print('🔥 [POPIS] 10. Učitavam sitan novac...');
       final sitanNovac = await DailyCheckInService.getTodayAmount(vozac);
+      print('🔥 [POPIS] 11. Sitan novac: $sitanNovac');
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
+      print('🔥 [POPIS] 12. Mapiram podatke...');
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
       final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
       final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
       final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
       final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
       final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
+      print(
+          '🔥 [POPIS] 13. Podaci mapirani - dodati: $dodatiPutnici, pazar: $ukupanPazar');
 
       // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
+      print('🔥 [POPIS] 14. Računam GPS kilometražu...');
       late double kilometraza;
       try {
         kilometraza =
@@ -697,8 +728,10 @@ class _DanasScreenState extends State<DanasScreen> {
         print('⚠️ Greška pri GPS računanju kilometraže: $e');
         kilometraza = 0.0; // Fallback vrednost
       }
+      print('🔥 [POPIS] 15. Kilometraža: ${kilometraza.toStringAsFixed(1)} km');
 
       // 7. PRIKAŽI POPIS DIALOG SA REALTIME PODACIMA
+      print('🔥 [POPIS] 16. Pozivam _showPopisDialog...');
       final bool sacuvaj = await _showPopisDialog(
         vozac: vozac,
         datum: today,
@@ -712,9 +745,11 @@ class _DanasScreenState extends State<DanasScreen> {
         mesecneKarte: mesecneKarte,
         kilometraza: kilometraza,
       );
+      print('🔥 [POPIS] 17. Dialog zatovoren, sačuvaj: $sacuvaj');
 
       // 8. SAČUVAJ POPIS AKO JE POTVRĐEN
       if (sacuvaj) {
+        print('🔥 [POPIS] 18. Čuvam popis...');
         await _sacuvajPopis(vozac, today, {
           'ukupanPazar': ukupanPazar,
           'sitanNovac': sitanNovac,
@@ -726,8 +761,11 @@ class _DanasScreenState extends State<DanasScreen> {
           'mesecneKarte': mesecneKarte,
           'kilometraza': kilometraza,
         });
+        print('🔥 [POPIS] 19. Popis je sačuvan!');
       }
+      print('🔥 [POPIS] 20. _showPopisDana završen USPEŠNO!');
     } catch (e) {
+      print('🔥 [POPIS] ❌ GREŠKA u _showPopisDana: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Greška pri učitavanju popisa: $e'),
@@ -891,20 +929,20 @@ class _DanasScreenState extends State<DanasScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.purple.withOpacity(0.1),
+                          color: Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                           border:
-                              Border.all(color: Colors.purple.withOpacity(0.3)),
+                              Border.all(color: Colors.orange.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
                             const Icon(Icons.account_balance_wallet,
-                                color: Colors.purple, size: 20),
+                                color: Colors.orange, size: 20),
                             const SizedBox(width: 8),
                             Text(
                               'Sitan novac: ${sitanNovac.toStringAsFixed(0)} RSD',
                               style: const TextStyle(
-                                color: Colors.purple,
+                                color: Colors.orange,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1315,8 +1353,8 @@ class _DanasScreenState extends State<DanasScreen> {
             ? 'Bela Crkva, Serbia'
             : 'Vršac, Serbia',
         departureTime: DateTime.now(),
-        useTrafficData: true,
-        useMLOptimization: true,
+        useTrafficData: false, // ISKLJUČENO - trošilo Google API 💸
+        useMLOptimization: false, // ISKLJUČENO - ne treba za basic
       );
 
       setState(() {
