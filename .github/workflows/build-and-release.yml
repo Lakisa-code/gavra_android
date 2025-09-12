@@ -99,13 +99,13 @@ jobs:
       - name: 📦 Get dependencies
         run: flutter pub get
 
-      - name: 🔧 Create key.properties (mock for build)
+      - name: 🔧 Setup signing key
         run: |
-          mkdir -p android
-          echo "storePassword=dummy" > android/key.properties
-          echo "keyPassword=dummy" >> android/key.properties
-          echo "keyAlias=dummy" >> android/key.properties
-          echo "storeFile=dummy.jks" >> android/key.properties
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/gavra-release-key.jks
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=gavra-release-key.jks" >> android/key.properties
 
       - name: 🚀 Build Release APK
         run: flutter build apk --release --no-shrink
