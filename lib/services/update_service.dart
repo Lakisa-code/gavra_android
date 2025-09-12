@@ -3,16 +3,74 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UpdateService {
   static const String repoOwner = 'bojanbc83';
   static const String repoName = 'gavra_android';
   static const String githubApiUrl =
       'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
+  static const String _skippedVersionKey = 'skipped_update_version';
+  static const String _lastCheckKey = 'last_update_check';
+  static const String _lastInstalledVersionKey = 'last_installed_version';
+
+  /// Pamti verziju koju je korisnik preskočio
+  static Future<void> skipVersion(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_skippedVersionKey, version);
+    debugPrint('📝 Preskočena verzija: $version');
+  }
+
+  /// Pamti verziju koja je instalirana (kada korisnik klikne Download)
+  static Future<void> markVersionAsInstalled(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastInstalledVersionKey, version);
+    debugPrint('✅ Verzija označena kao instalirana: $version');
+  }
+
+  /// Proverava da li je verzija već instalirana
+  static Future<bool> isVersionInstalled(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    final installedVersion = prefs.getString(_lastInstalledVersionKey);
+    return installedVersion == version;
+  }
+
+  /// Proverava da li je verzija već preskočena
+  static Future<bool> isVersionSkipped(String version) async {
+    final prefs = await SharedPreferences.getInstance();
+    final skippedVersion = prefs.getString(_skippedVersionKey);
+    return skippedVersion == version;
+  }
+
+  /// Pamti kada je poslednji put proveravano
+  static Future<void> _saveLastCheckTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_lastCheckKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  /// Proverava da li je prošlo dovoljno vremena od poslednje provere (24h)
+  static Future<bool> _shouldCheckForUpdate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastCheck = prefs.getInt(_lastCheckKey);
+    if (lastCheck == null) return true;
+
+    final lastCheckTime = DateTime.fromMillisecondsSinceEpoch(lastCheck);
+    final now = DateTime.now();
+    final hoursSinceLastCheck = now.difference(lastCheckTime).inHours;
+
+    debugPrint('🕐 Sati od poslednje provere: $hoursSinceLastCheck');
+    return hoursSinceLastCheck >= 24; // Proveravaj samo jednom dnevno
+  }
 
   /// Proverava da li je dostupna nova verzija
   static Future<bool> checkForUpdate() async {
     try {
+      // Proverava da li je prošlo dovoljno vremena od poslednje provere
+      if (!await _shouldCheckForUpdate()) {
+        debugPrint('⏰ Prerano za novu proveru update-a');
+        return false;
+      }
+
       // Trenutna verzija aplikacije
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       String currentVersion = packageInfo.version;
@@ -51,6 +109,22 @@ class UpdateService {
         if (currentVersion == latestVersion) {
           debugPrint(
               '✅ VERZIJE SU ISTE ($currentVersion == $latestVersion) - NEMA UPDATE-A!');
+          await _saveLastCheckTime();
+          return false;
+        }
+
+        // Proverava da li je korisnik već preskočio ovu verziju
+        if (await isVersionSkipped(latestVersion)) {
+          debugPrint('⏭️ Verzija $latestVersion je već preskočena');
+          await _saveLastCheckTime();
+          return false;
+        }
+
+        // Proverava da li je ova verzija već "instalirana" (korisnik je već kliknuo Download)
+        if (await isVersionInstalled(latestVersion)) {
+          debugPrint(
+              '💿 Verzija $latestVersion je već instalirana/download-ovana');
+          await _saveLastCheckTime();
           return false;
         }
 
@@ -109,23 +183,24 @@ class UpdateService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         // Pronađi APK asset u assets listi
         String? apkDownloadUrl;
         if (data['assets'] != null && data['assets'].isNotEmpty) {
           for (var asset in data['assets']) {
-            if (asset['name'] != null && asset['name'].toString().endsWith('.apk')) {
+            if (asset['name'] != null &&
+                asset['name'].toString().endsWith('.apk')) {
               apkDownloadUrl = asset['browser_download_url'];
               break;
             }
           }
         }
-        
+
         // Fallback na GitHub release stranicu ako nema APK
         apkDownloadUrl ??= data['html_url'];
-        
+
         debugPrint('🔗 Download URL: $apkDownloadUrl');
-        
+
         return {
           'version': data['tag_name'].replaceAll('v', ''),
           'name': data['name'] ?? 'Nova verzija',
@@ -253,11 +328,21 @@ class UpdateChecker {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              // Označi verziju kao preskočenu
+              if (versionInfo != null && versionInfo['version'] != null) {
+                UpdateService.skipVersion(versionInfo['version']);
+              }
+              Navigator.pop(context);
+            },
             child: const Text('Kasnije'),
           ),
           ElevatedButton.icon(
             onPressed: () {
+              // Označi verziju kao instaliranu
+              if (versionInfo != null && versionInfo['version'] != null) {
+                UpdateService.markVersionAsInstalled(versionInfo['version']);
+              }
               Navigator.pop(context);
               UpdateService.downloadApk();
             },
