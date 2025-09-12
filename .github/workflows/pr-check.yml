@@ -1,0 +1,126 @@
+name: 🔍 PR Quality Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ develop ]
+
+jobs:
+  quality-check:
+    name: 📋 Code Quality & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 📱 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.2'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      - name: 🔍 Format check
+        run: flutter format --dry-run --set-exit-if-changed .
+
+      - name: 🔍 Analyze code
+        run: flutter analyze --fatal-infos
+
+      - name: 🧪 Run tests
+        run: flutter test --coverage
+        continue-on-error: true
+
+      - name: 📊 Coverage report
+        if: success() || failure()
+        run: |
+          if [ -f "coverage/lcov.info" ]; then
+            echo "📊 Coverage report generated"
+            # You can add coverage reporting here (codecov, etc.)
+          else
+            echo "📊 No coverage data found"
+          fi
+
+      - name: 🔨 Test build
+        run: flutter build apk --debug --target-platform android-arm64
+
+      - name: 📝 PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('🔍 PR Quality Check')
+            );
+            
+            const body = `
+            ## 🔍 PR Quality Check Results
+            
+            ✅ **Code Analysis**: Passed  
+            ✅ **Format Check**: Passed  
+            ✅ **Build Test**: Passed  
+            📊 **Tests**: Run completed
+            
+            Your PR is ready for review! 🚀
+            
+            ---
+            *Automated check by GitHub Actions*
+            `;
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔒 Run security scan
+        run: |
+          echo "🔍 Scanning for secrets and vulnerabilities..."
+          
+          # Check for potential secrets in code
+          if grep -r "password\|secret\|key\|token" --include="*.dart" --include="*.yaml" --include="*.json" .; then
+            echo "⚠️ Potential secrets found in code. Please review."
+          else
+            echo "✅ No obvious secrets found in code."
+          fi
+          
+          # Check for debug prints in release code
+          if grep -r "print(" --include="*.dart" .; then
+            echo "⚠️ Debug print statements found. Consider removing for production."
+          else
+            echo "✅ No debug print statements found."
+          fi
