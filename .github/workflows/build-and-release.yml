@@ -130,7 +130,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
-          name: Release ${{ github.ref_name }}
+          name: Gavra Android ${{ github.ref_name }}
           body: |
             🚀 **Gavra Android App - Release ${{ github.ref_name }}**
             
@@ -140,9 +140,12 @@ jobs:
             - ✅ Tree-shaken icons for smaller size
             
             ### 📋 Installation:
-            1. Download `app-release.apk`
+            1. Download `app-release.apk` directly from this release
             2. Enable "Install from unknown sources" in Android settings
             3. Install the APK file
+            
+            ### 🔄 Auto-Update:
+            The app will automatically check for updates and offer direct APK download.
             
             ### 🔄 Changes:
             See commit history for detailed changes since last release.
@@ -156,7 +159,7 @@ jobs:
   notify:
     name: 📢 Build Notification
     runs-on: ubuntu-latest
-    needs: [build-debug, build-release]
+    needs: [analyze, build-debug, build-release]
     if: always()
     steps:
       - name: 📊 Build Status

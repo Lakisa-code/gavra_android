@@ -109,13 +109,28 @@ class UpdateService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        
+        // Pronađi APK asset u assets listi
+        String? apkDownloadUrl;
+        if (data['assets'] != null && data['assets'].isNotEmpty) {
+          for (var asset in data['assets']) {
+            if (asset['name'] != null && asset['name'].toString().endsWith('.apk')) {
+              apkDownloadUrl = asset['browser_download_url'];
+              break;
+            }
+          }
+        }
+        
+        // Fallback na GitHub release stranicu ako nema APK
+        apkDownloadUrl ??= data['html_url'];
+        
+        debugPrint('🔗 Download URL: $apkDownloadUrl');
+        
         return {
           'version': data['tag_name'].replaceAll('v', ''),
           'name': data['name'] ?? 'Nova verzija',
           'body': data['body'] ?? 'Poboljšanja i ispravke',
-          'downloadUrl': data['assets'] != null && data['assets'].isNotEmpty
-              ? data['assets'][0]['browser_download_url']
-              : data['html_url'],
+          'downloadUrl': apkDownloadUrl,
           'publishedAt': data['published_at'],
         };
       }
