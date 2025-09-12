@@ -1438,7 +1438,7 @@ class PutnikService {
       // 1. REDOVNA PUTOVANJA iz putovanja_istorija
       final redovnaPlacanja = await supabase
           .from('putovanja_istorija')
-          .select('*, vozac_ime')
+          .select('*')
           .eq('putnik_ime', putnikIme)
           .gt('cena', 0)
           .order('created_at', ascending: false) as List<dynamic>;
@@ -1459,12 +1459,18 @@ class PutnikService {
         svaPlacanja.add({
           'cena': mesecno['cena'],
           'created_at': mesecno['vreme_placanja'],
-          'vozac_ime': mesecno['naplata_vozac'],
+          'vozac_ime': mesecno['naplata_vozac'], // Za konsistentnost sa UI
           'putnik_ime': putnikIme,
           'tip': 'mesecna_karta',
           'placeniMesec': mesecno['placeni_mesec'],
           'placenaGodina': mesecno['placena_godina'],
         });
+      }
+
+      // Dodaj vozac_ime i za redovna plaćanja (mapiranje naplata_vozac -> vozac_ime)
+      for (var redovno
+          in svaPlacanja.where((p) => p['tip'] != 'mesecna_karta')) {
+        redovno['vozac_ime'] = redovno['naplata_vozac'];
       }
 
       // Sortiraj sve po datumu, najnovije prvo
