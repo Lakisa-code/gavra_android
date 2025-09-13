@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 
 import '../models/putnik.dart';
 

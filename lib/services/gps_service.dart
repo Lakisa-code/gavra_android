@@ -1,4 +1,4 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 import 'package:logger/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

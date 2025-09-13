@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35  // Updated for flutter_plugin_android_lifecycle compatibility
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -26,7 +26,7 @@ android {
         applicationId = "com.gavra013.gavra_android"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 21  // Fixed to specific version
         targetSdk = 33  // Fixed for geolocator compatibility
         versionCode = flutter.versionCode
         versionName = flutter.versionName

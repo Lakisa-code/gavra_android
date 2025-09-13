@@ -1,4 +1,4 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 
 /// 🧭 MODEL ZA TURN-BY-TURN INSTRUKCIJE
 /// Predstavlja jednu instrukciju u navigaciji (skretanje, nastavi pravo, itd.)

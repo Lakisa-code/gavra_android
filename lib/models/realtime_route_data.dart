@@ -1,4 +1,4 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 import '../models/putnik.dart';
 
 /// 📊 Model za realtime podatke o ruti

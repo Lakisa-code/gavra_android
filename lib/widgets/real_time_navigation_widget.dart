@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 
 import '../models/putnik.dart';
 import '../models/turn_by_turn_instruction.dart';

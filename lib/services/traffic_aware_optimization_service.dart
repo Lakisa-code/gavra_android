@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 import '../models/putnik.dart';
 
 /// 🚦 TRAFFIC-AWARE OPTIMIZACIJA

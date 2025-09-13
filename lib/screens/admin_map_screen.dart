@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/putnik_service.dart';
 import '../models/putnik.dart';

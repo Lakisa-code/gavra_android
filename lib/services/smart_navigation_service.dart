@@ -1,4 +1,4 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:gavra_android/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/putnik.dart';
 import 'geocoding_service.dart';
