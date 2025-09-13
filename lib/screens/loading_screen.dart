@@ -82,10 +82,7 @@ class LoadingScreen extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [
                         Theme.of(context).colorScheme.primary,
-                        Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.8)
+                        Theme.of(context).colorScheme.primary.withOpacity(0.8)
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -170,4 +167,3 @@ class LoadingScreen extends StatelessWidget {
     );
   }
 }
-

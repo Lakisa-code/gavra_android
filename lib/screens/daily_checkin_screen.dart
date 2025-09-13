@@ -411,7 +411,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         }
       }
     } catch (e) {
-      print('Greška pri proveri prethodnog popisa: $e');
+      debugPrint('Greška pri proveri prethodnog popisa: $e');
     }
   }
 
@@ -671,12 +671,12 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            const Row(
                               children: [
-                                const Icon(Icons.monetization_on,
+                                Icon(Icons.monetization_on,
                                     color: Colors.orange, size: 20),
-                                const SizedBox(width: 8),
-                                const Text(
+                                SizedBox(width: 8),
+                                Text(
                                   '🪙 SITAN NOVAC (KUSUR)',
                                   style: TextStyle(
                                     fontSize: 14,

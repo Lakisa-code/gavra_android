@@ -1,0 +1,64 @@
+name: 🔧 Quick Debug Build
+
+on:
+  push:
+    branches: [ develop, feature/* ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+        - debug
+        - profile
+        - release
+
+jobs:
+  quick-build:
+    name: 🚀 Quick Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.3'
+        channel: 'stable'
+        cache: true
+
+    - name: ☕ Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 📦 Dependencies
+      run: flutter pub get
+
+    - name: 🔍 Quick Analysis
+      run: flutter analyze --no-fatal-infos
+
+    - name: 🔨 Build APK
+      run: |
+        BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+        echo "Building $BUILD_TYPE APK..."
+        flutter build apk --$BUILD_TYPE
+
+    - name: 📁 Prepare Artifact
+      run: |
+        BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+        mkdir -p quick-build
+        cp build/app/outputs/flutter-apk/app-$BUILD_TYPE.apk quick-build/gavra-quick-$BUILD_TYPE.apk
+        echo "Build complete: gavra-quick-$BUILD_TYPE.apk"
+
+    - name: 🚀 Upload Quick Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: gavra-quick-build-${{ github.run_number }}
+        path: quick-build/
+        retention-days: 7

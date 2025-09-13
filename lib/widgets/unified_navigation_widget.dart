@@ -153,7 +153,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: putniciSaAdresom.isEmpty
               ? null
-              : () => _openGoogleMapsNavigation(context, putniciSaAdresom),
+              : () => _openOSMNavigation(context, putniciSaAdresom),
           onLongPress: putniciSaAdresom.isEmpty
               ? null
               : () => _showNavigationMenu(context),
@@ -217,7 +217,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
   }
 
   /// 🗺️ Otvara Google Maps sa TRENUTNIM redosledom (bez dodatne optimizacije)
-  void _openGoogleMapsNavigation(
+  void _openOSMNavigation(
       BuildContext context, List<Putnik> putnici) async {
     if (putnici.isEmpty) return;
 
@@ -230,25 +230,26 @@ class UnifiedNavigationWidget extends StatelessWidget {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // 2. Kreiraj Google Maps URL sa TRENUTNIM redosledom putnika
-      String googleMapsUrl = 'https://www.google.com/maps/dir/';
-      googleMapsUrl +=
-          '${currentPosition.latitude},${currentPosition.longitude}';
+      // 2. Kreiraj OpenStreetMap URL sa TRENUTNIM redosledom putnika
+      String osmUrl = 'https://www.openstreetmap.org/directions?';
+      osmUrl +=
+          'from=${currentPosition.latitude}%2C${currentPosition.longitude}';
 
-      // 3. Dodaj putnice u TRENUTNOM redosledu (bez optimizacije!)
-      for (final putnik in putnici) {
-        if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
+      // 3. Dodaj poslednju destinaciju (OSM ne podržava multiple waypoints kao Google)
+      if (putnici.isNotEmpty) {
+        final lastPutnik = putnici.last;
+        if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
           final encodedAddress =
-              Uri.encodeComponent('${putnik.adresa}, ${putnik.grad}, Serbia');
-          googleMapsUrl += '/$encodedAddress';
+              Uri.encodeComponent('${lastPutnik.adresa}, ${lastPutnik.grad}, Serbia');
+          osmUrl += '&to=$encodedAddress';
         }
       }
 
       // 4. Dodaj parametre za navigaciju
-      googleMapsUrl += '/data=!3m1!4b1!4m2!4m1!3e0'; // Driving mode
+      osmUrl += '&route=car'; // Driving mode
 
-      // 5. Otvori Google Maps
-      final uri = Uri.parse(googleMapsUrl);
+      // 5. Otvori OpenStreetMap
+      final uri = Uri.parse(osmUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
 
@@ -257,7 +258,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('�️ Google Maps otvoren sa trenutnim redosledom'),
+              content: Text('🗺️ OpenStreetMap otvoren sa rutom'),
               backgroundColor: Colors.green,
             ),
           );
@@ -266,7 +267,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Ne mogu da otvorim Google Maps'),
+              content: Text('Ne mogu da otvorim navigaciju'),
               backgroundColor: Colors.red,
             ),
           );
@@ -333,7 +334,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
                 final putniciSaAdresom = putnici
                     .where((p) => p.adresa != null && p.adresa!.isNotEmpty)
                     .toList();
-                _openGoogleMapsNavigation(context, putniciSaAdresom);
+                _openOSMNavigation(context, putniciSaAdresom);
               },
             ),
             _buildMenuOption(

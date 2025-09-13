@@ -24,43 +24,6 @@ import 'supabase_client.dart';
 
 final _logger = Logger();
 
-// DEBUG FUNKCIJA za proveru KURAPAL-a
-void debugKurapal() async {
-  debugPrint('🔍 DEBUG: Checking KURAPAL data...');
-
-  try {
-    final client = Supabase.instance.client;
-
-    // Check mesecni_putnici
-    debugPrint('\n📋 MESECNI_PUTNICI - KURAPAL:');
-    final mesecniData = await client
-        .from('mesecni_putnici')
-        .select('id, ime, vreme_pokupljenja')
-        .ilike('ime', '%KURAPAL%');
-
-    for (var row in mesecniData) {
-      debugPrint(
-          '  ID: ${row['id']}, Ime: ${row['ime']}, Pokupljen: ${row['vreme_pokupljenja']}');
-    }
-
-    // Check putovanja_istorija
-    debugPrint('\n📋 PUTOVANJA_ISTORIJA - KURAPAL:');
-    final istorijaData = await client
-        .from('putovanja_istorija')
-        .select('id, ime, status')
-        .ilike('ime', '%KURAPAL%');
-
-    for (var row in istorijaData) {
-      debugPrint(
-          '  ID: ${row['id']}, Ime: ${row['ime']}, Status: ${row['status']}');
-    }
-
-    debugPrint('\n✅ DEBUG: KURAPAL check completed');
-  } catch (e) {
-    debugPrint('❌ DEBUG: Error checking KURAPAL: $e');
-  }
-}
-
 // Globalni navigator key za pristup navigation iz bilo kog dela aplikacije
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

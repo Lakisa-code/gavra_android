@@ -235,8 +235,9 @@ class StatistikaService {
 
     for (final entry in stari.entries) {
       if (!novi.containsKey(entry.key)) return false;
-      if ((novi[entry.key]! - entry.value).abs() > 0.01)
+      if ((novi[entry.key]! - entry.value).abs() > 0.01) {
         return false; // 1 cent tolerancija
+      }
     }
     return true;
   }

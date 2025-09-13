@@ -50,7 +50,7 @@ class SmartNavigationService {
       }
 
       // 4. OTVORI GOOGLE MAPS SA KOMPLETNOM RUTOM
-      final success = await _openGoogleMapsNavigation(
+      final success = await _openOSMNavigation(
         currentPosition,
         optimizedRoute,
         startCity,
@@ -265,62 +265,43 @@ class SmartNavigationService {
     );
   }
 
-  /// 🗺️ Otvori Google Maps sa optimizovanom rutom
-  static Future<bool> _openGoogleMapsNavigation(
+  /// 🗺️ Otvori OpenStreetMap sa optimizovanom rutom
+  static Future<bool> _openOSMNavigation(
     Position startPosition,
     List<Putnik> optimizedRoute,
     String startCity, {
     bool useTrafficData = false, // 🚦 DODATO za traffic parametere
   }) async {
     try {
-      // Kreiraj Google Maps URL za navigaciju
-      String googleMapsUrl = 'https://www.google.com/maps/dir/';
+      // Kreiraj OpenStreetMap URL za navigaciju (koristi osmand ili maps.me)
+      String osmNavigationUrl = 'https://www.openstreetmap.org/directions?';
 
       // Dodaj početnu poziciju
-      googleMapsUrl += '${startPosition.latitude},${startPosition.longitude}';
+      osmNavigationUrl += 'from=${startPosition.latitude}%2C${startPosition.longitude}';
 
-      // Dodaj sve waypoints (putnici)
-      for (final putnik in optimizedRoute) {
-        if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
+      // Za OpenStreetMap, koristimo prvi i poslednji destination
+      if (optimizedRoute.isNotEmpty) {
+        final lastPutnik = optimizedRoute.last;
+        if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
           final improvedAddress =
-              _improveAddressForGeocoding(putnik.adresa!, putnik.grad);
+              _improveAddressForGeocoding(lastPutnik.adresa!, lastPutnik.grad);
           final encodedAddress =
-              Uri.encodeComponent('$improvedAddress, ${putnik.grad}, Serbia');
-          googleMapsUrl += '/$encodedAddress';
+              Uri.encodeComponent('$improvedAddress, ${lastPutnik.grad}, Serbia');
+          osmNavigationUrl += '&to=$encodedAddress';
         }
       }
 
-      // Dodaj parametre za navigaciju OPTIMIZOVANE ZA KOMERCIJALNA VOZILA
-      googleMapsUrl += '?travelmode=driving&dir_action=navigate';
+      // Dodaj parametre za navigaciju
+      osmNavigationUrl += '&route=car';
 
-      // 🚗 DODAJ PARAMETRE ZA KOMERCIJALNA VOZILA
-      // avoid=tolls - izbegni naplate (opciono)
-      // avoid=highways - izbegni autoputeve (opciono za gradsku vožnju)
-      // prefer=roads - preferiraj glavne puteve umesto uskih ulica
-      if (useTrafficData) {
-        // 🚦 Tokom špic sati ili kada se koriste traffic podaci:
-        // Balansiraj između brzine i sigurnosti za komercijalna vozila
-        googleMapsUrl += '&avoid=tolls&optimize=true';
-      } else {
-        // 🛣️ Van špic sati: koristi najkraću i najbrže puteve
-        // Ne izbegavaj autoputeve jer su brži van gužve
-        googleMapsUrl += '&avoid=tolls&optimize=true';
-      }
+      final Uri uri = Uri.parse(osmNavigationUrl);
 
-      // 🎯 DODAJ OPTIMIZACIJU WAYPOINTS (Google će optimizovati redosled)
-      // Ovo pomaže kada imamo puno putnika
-      if (optimizedRoute.length > 3) {
-        googleMapsUrl += '&waypoint_optimization=true';
-      }
-
-      final Uri uri = Uri.parse(googleMapsUrl);
-
-      // Pokušaj da otvoriš Google Maps aplikaciju
+      // Pokušaj da otvoriš OpenStreetMap ili navigaciju
       if (await canLaunchUrl(uri)) {
         return await launchUrl(
           uri,
           mode:
-              LaunchMode.externalApplication, // Otvori u Google Maps aplikaciji
+              LaunchMode.externalApplication, // Otvori u navigacionoj aplikaciji
         );
       } else {
         throw Exception('Ne mogu da otvorim Google Maps');

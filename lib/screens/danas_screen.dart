@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // DODANO za kDebugMode
+import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
-import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za Google Maps
+import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreetMap
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
@@ -148,7 +149,7 @@ class _DanasScreenState extends State<DanasScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // ROW SA TRI DELA: DATUM - DAN - VREME
-            Container(
+            SizedBox(
               height: 24,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -411,7 +412,7 @@ class _DanasScreenState extends State<DanasScreen> {
     return SizedBox(
       height: 26, // povećao sa 24 na 26 za konzistentnost
       child: ElevatedButton.icon(
-        onPressed: hasOptimizedRoute ? () => _openGoogleMapsNavigation() : null,
+        onPressed: hasOptimizedRoute ? () => _openOSMNavigation() : null,
         style: ElevatedButton.styleFrom(
           backgroundColor:
               hasOptimizedRoute ? Colors.blue.shade600 : Colors.grey.shade400,
@@ -428,7 +429,7 @@ class _DanasScreenState extends State<DanasScreen> {
         ),
         label: const Text(
           'Mapa',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 13, // povećao sa 12 na 13
           ),
@@ -596,86 +597,87 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
   Future<void> _showPopisDana() async {
-    print('🔥 [POPIS] 1. Početak _showPopisDana funkcije');
+    debugPrint('🔥 [POPIS] 1. Početak _showPopisDana funkcije');
     final vozac = _currentDriver ?? 'Nepoznat';
-    print('🔥 [POPIS] 2. Vozač: $vozac');
+    debugPrint('🔥 [POPIS] 2. Vozač: $vozac');
 
     try {
       // 1. OSNOVNI PODACI
       final today = DateTime.now();
       final dayStart = DateTime(today.year, today.month, today.day);
       final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-      print('🔥 [POPIS] 3. Datum postavljen: ${dayStart.toString()}');
+      debugPrint('🔥 [POPIS] 3. Datum postavljen: ${dayStart.toString()}');
 
       // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
-      print('🔥 [POPIS] 4. Učitavam putnike...');
+      debugPrint('🔥 [POPIS] 4. Učitavam putnike...');
       late List<Putnik> putnici;
       try {
         final stream = PutnikService().streamKombinovaniPutnici();
-        putnici = await stream.first.timeout(Duration(seconds: 10));
-        print('🔥 [POPIS] 5. Putnici učitani: ${putnici.length}');
+        putnici = await stream.first.timeout(const Duration(seconds: 10));
+        debugPrint('🔥 [POPIS] 5. Putnici učitani: ${putnici.length}');
       } catch (e) {
-        print('🔥 [POPIS] 5.ERROR: Greška pri učitavanju putnika: $e');
+        debugPrint('🔥 [POPIS] 5.ERROR: Greška pri učitavanju putnika: $e');
         putnici = []; // Prazan list kao fallback
-        print('🔥 [POPIS] 5.FALLBACK: Koristim prazan list putnika');
+        debugPrint('🔥 [POPIS] 5.FALLBACK: Koristim prazan list putnika');
       }
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      print('🔥 [POPIS] 6. Računam detaljne statistike...');
+      debugPrint('🔥 [POPIS] 6. Računam detaljne statistike...');
       final detaljneStats =
           await StatistikaService.detaljneStatistikePoVozacima(
               putnici, dayStart, dayEnd);
       final vozacStats = detaljneStats[vozac] ?? {};
-      print('🔥 [POPIS] 7. Statistike računate: $vozacStats');
+      debugPrint('🔥 [POPIS] 7. Statistike računate: $vozacStats');
 
       // 4. REALTIME PAZAR STREAM
-      print('🔥 [POPIS] 8. Računam pazar stream...');
+      debugPrint('🔥 [POPIS] 8. Računam pazar stream...');
       late double ukupanPazar;
       try {
         ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
                 from: dayStart, to: dayEnd)
             .map((pazarMap) => pazarMap[vozac] ?? 0.0)
             .first
-            .timeout(Duration(seconds: 10));
-        print('🔥 [POPIS] 9. Ukupan pazar: $ukupanPazar');
+            .timeout(const Duration(seconds: 10));
+        debugPrint('🔥 [POPIS] 9. Ukupan pazar: $ukupanPazar');
       } catch (e) {
-        print('🔥 [POPIS] 9.ERROR: Greška pri učitavanju pazara: $e');
+        debugPrint('🔥 [POPIS] 9.ERROR: Greška pri učitavanju pazara: $e');
         ukupanPazar = 0.0; // Fallback vrednost
-        print('🔥 [POPIS] 9.FALLBACK: Koristim pazar = 0.0');
+        debugPrint('🔥 [POPIS] 9.FALLBACK: Koristim pazar = 0.0');
       }
 
       // 5. SITAN NOVAC
-      print('🔥 [POPIS] 10. Učitavam sitan novac...');
+      debugPrint('🔥 [POPIS] 10. Učitavam sitan novac...');
       final sitanNovac = await DailyCheckInService.getTodayAmount(vozac);
-      print('🔥 [POPIS] 11. Sitan novac: $sitanNovac');
+      debugPrint('🔥 [POPIS] 11. Sitan novac: $sitanNovac');
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
-      print('🔥 [POPIS] 12. Mapiram podatke...');
+      debugPrint('🔥 [POPIS] 12. Mapiram podatke...');
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
       final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
       final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
       final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
       final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
       final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
-      print(
+      debugPrint(
           '🔥 [POPIS] 13. Podaci mapirani - dodati: $dodatiPutnici, pazar: $ukupanPazar');
 
       // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
-      print('🔥 [POPIS] 14. Računam GPS kilometražu...');
+      debugPrint('🔥 [POPIS] 14. Računam GPS kilometražu...');
       late double kilometraza;
       try {
         kilometraza =
             await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
-        print(
+        debugPrint(
             '🚗 GPS kilometraža za $vozac danas: ${kilometraza.toStringAsFixed(1)} km');
       } catch (e) {
-        print('⚠️ Greška pri GPS računanju kilometraže: $e');
+        debugPrint('⚠️ Greška pri GPS računanju kilometraže: $e');
         kilometraza = 0.0; // Fallback vrednost
       }
-      print('🔥 [POPIS] 15. Kilometraža: ${kilometraza.toStringAsFixed(1)} km');
+      debugPrint(
+          '🔥 [POPIS] 15. Kilometraža: ${kilometraza.toStringAsFixed(1)} km');
 
       // 7. PRIKAŽI POPIS DIALOG SA REALTIME PODACIMA
-      print('🔥 [POPIS] 16. Pozivam _showPopisDialog...');
+      debugPrint('🔥 [POPIS] 16. Pozivam _showPopisDialog...');
       final bool sacuvaj = await _showPopisDialog(
         vozac: vozac,
         datum: today,
@@ -689,11 +691,11 @@ class _DanasScreenState extends State<DanasScreen> {
         mesecneKarte: mesecneKarte,
         kilometraza: kilometraza,
       );
-      print('🔥 [POPIS] 17. Dialog zatovoren, sačuvaj: $sacuvaj');
+      debugPrint('🔥 [POPIS] 17. Dialog zatovoren, sačuvaj: $sacuvaj');
 
       // 8. SAČUVAJ POPIS AKO JE POTVRĐEN
       if (sacuvaj) {
-        print('🔥 [POPIS] 18. Čuvam popis...');
+        debugPrint('🔥 [POPIS] 18. Čuvam popis...');
         await _sacuvajPopis(vozac, today, {
           'ukupanPazar': ukupanPazar,
           'sitanNovac': sitanNovac,
@@ -705,17 +707,19 @@ class _DanasScreenState extends State<DanasScreen> {
           'mesecneKarte': mesecneKarte,
           'kilometraza': kilometraza,
         });
-        print('🔥 [POPIS] 19. Popis je sačuvan!');
+        debugPrint('🔥 [POPIS] 19. Popis je sačuvan!');
       }
-      print('🔥 [POPIS] 20. _showPopisDana završen USPEŠNO!');
+      debugPrint('🔥 [POPIS] 20. _showPopisDana završen USPEŠNO!');
     } catch (e) {
-      print('🔥 [POPIS] ❌ GREŠKA u _showPopisDana: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Greška pri učitavanju popisa: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      debugPrint('🔥 [POPIS] ❌ GREŠKA u _showPopisDana: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Greška pri učitavanju popisa: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -947,20 +951,24 @@ class _DanasScreenState extends State<DanasScreen> {
       await DailyCheckInService.saveCheckIn(
           vozac, podaci['sitanNovac'] as double);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Popis je uspešno sačuvan!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Popis je uspešno sačuvan!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Greška pri čuvanju popisa: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Greška pri čuvanju popisa: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -1947,13 +1955,9 @@ class _DanasScreenState extends State<DanasScreen> {
                                                         .fromIterable([
                                                       finalPutnici
                                                     ]).map((putnici) =>
-                                                        RouteOptimizationService
-                                                            .generateRouteStringSync(
-                                                                putnici)),
+                                                        "Optimizovana ruta: ${putnici.length} putnika"),
                                                     initialData:
-                                                        RouteOptimizationService
-                                                            .generateRouteStringSync(
-                                                                finalPutnici),
+                                                        "Pripremi rutu...",
                                                     builder:
                                                         (context, snapshot) {
                                                       if (snapshot.hasData) {
@@ -2154,8 +2158,8 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // 🗺️ POKRETANJE GOOGLE MAPS NAVIGACIJE SA OPTIMIZOVANOM RUTOM
-  Future<void> _openGoogleMapsNavigation() async {
+  // 🗺️ POKRETANJE OPENSTREETMAP NAVIGACIJE SA OPTIMIZOVANOM RUTOM
+  Future<void> _openOSMNavigation() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -2183,33 +2187,39 @@ class _DanasScreenState extends State<DanasScreen> {
         return;
       }
 
-      // Google Maps URL sa waypoints
-      final googleMapsUrl =
-          'https://www.google.com/maps/dir/?api=1&waypoints=$waypoints&travelmode=driving';
+      // OpenStreetMap URL sa krajnjom destinacijom
+      final lastPutnik = _optimizedRoute.last;
+      final currentPosition = await Geolocator.getCurrentPosition();
+      final osmUrl =
+          'https://www.openstreetmap.org/directions?from=${currentPosition.latitude}%2C${currentPosition.longitude}&to=${Uri.encodeComponent(lastPutnik.adresa!)}&route=car';
 
       // Pokušaj otvaranja URL-a
-      final uri = Uri.parse(googleMapsUrl);
+      final uri = Uri.parse(osmUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '🗺️ Navigacija pokrenuta sa ${_optimizedRoute.length} putnika'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '🗺️ Navigacija pokrenuta sa ${_optimizedRoute.length} putnika'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         throw 'Could not launch Google Maps';
       }
     } catch (e) {
       debugPrint('❌ Greška pri pokretanju Google Maps: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Greška pri pokretanju navigacije: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Greška pri pokretanju navigacije: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

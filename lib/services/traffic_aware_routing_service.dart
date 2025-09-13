@@ -7,9 +7,8 @@ import '../models/putnik.dart';
 /// Integriše podatke o saobraćaju u optimizaciju rute
 /// 🚗 OPTIMIZOVANO ZA KOMERCIJALNA VOZILA
 class TrafficAwareRoutingService {
-  /// 🗺️ Google Maps API za Traffic Layer
-  static const String _googleMapsApiKey =
-      'AIzaSyBOhQKU9YoA1z_h_N_y_XhbOL5gHWZXqPY'; // Existing Google Maps API key
+  /// 🗺️ GOOGLE MAPS API UKLONJEN - koristi se lokalna optimizacija
+  // static const String _googleMapsApiKey = 'REMOVED_FOR_SECURITY';
 
   /// 🚗 KONFIGURACIJA ZA KOMERCIJALNA VOZILA
   static const double _maxTrafficDelayThreshold =
@@ -34,7 +33,7 @@ class TrafficAwareRoutingService {
               '&destination=${destination.latitude},${destination.longitude}'
               '&departure_time=${departureTime.millisecondsSinceEpoch ~/ 1000}'
               '&traffic_model=best_guess'
-              '&key=$_googleMapsApiKey');
+              '&key=REMOVED_FOR_SECURITY');
 
       final response = await http.get(url);
 

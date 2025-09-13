@@ -1,14 +1,12 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 
 import '../models/putnik.dart';
 
 class RouteOptimizationService {
-  static const String _googleMapsApiKey =
-      'AIzaSyBOhQKU9YoA1z_h_N_y_XhbOL5gHWZXqPY'; // Tvoj postojeći ključ
+  // 🗺️ GOOGLE MAPS API UKLONJEN - koristi se OpenStreetMap
+  // static const String _googleMapsApiKey = 'REMOVED_FOR_SECURITY';
 
   // 🎯 DOZVOLJENI GRADOVI za navigaciju - samo Bela Crkva i Vršac
   static const List<String> _dozvoljeninGradovi = ['Bela Crkva', 'Vršac'];
@@ -96,38 +94,10 @@ class RouteOptimizationService {
     }
   }
 
-  /// 🌍 Geokodiraj adresu u koordinate pomoću Google Geocoding API
+  /// 🌍 Geocoding uklonjen - koristi se lokalna optimizacija
   static Future<Position?> _geocodeAddress(String address) async {
-    try {
-      final encodedAddress = Uri.encodeComponent(address);
-      final url = 'https://maps.googleapis.com/maps/api/geocode/json'
-          '?address=$encodedAddress'
-          '&key=$_googleMapsApiKey';
-
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == 'OK' && data['results'].isNotEmpty) {
-          final location = data['results'][0]['geometry']['location'];
-          return Position(
-            latitude: location['lat'],
-            longitude: location['lng'],
-            timestamp: DateTime.now(),
-            accuracy: 0,
-            altitude: 0,
-            heading: 0,
-            speed: 0,
-            speedAccuracy: 0,
-            altitudeAccuracy: 0,
-            headingAccuracy: 0,
-          );
-        }
-      }
-    } catch (e) {
-      // Greška u geocoding procesu
-    }
+    // 🔒 GOOGLE GEOCODING API UKLONJEN ZA BEZBEDNOST
+    // Vraćamo null da se koristi lokalna optimizacija
     return null;
   }
 

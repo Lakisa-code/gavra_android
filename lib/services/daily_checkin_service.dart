@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
@@ -28,7 +29,7 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey =
-        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     return prefs.getBool(todayKey) ?? false;
   }
@@ -38,18 +39,18 @@ class DailyCheckInService {
       {double dnevniPazari = 0.0}) async {
     final today = DateTime.now();
     final todayKey =
-        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     try {
       // Sačuvaj u Supabase (ako postoji tabela)
       await _saveToSupabase(vozac, sitanNovac, today,
           dnevniPazari: dnevniPazari);
-      print(
+      debugPrint(
           '✅ Supabase save successful for $vozac: Kusur=$sitanNovac RSD, Pazari=$dnevniPazari RSD');
     } catch (e) {
       // Ako je RLS blokirao ili tabela ne postoji, nastavi sa lokalnim čuvanjem
-      print('⚠️ Supabase save failed (RLS ili tabela ne postoji): $e');
-      print('📱 Koristiće se samo lokalno čuvanje u SharedPreferences');
+      debugPrint('⚠️ Supabase save failed (RLS ili tabela ne postoji): $e');
+      debugPrint('📱 Koristiće se samo lokalno čuvanje u SharedPreferences');
       // Ne prosleđuj grešku dalje - lokalno čuvanje je dovoljno
     }
 
@@ -66,11 +67,11 @@ class DailyCheckInService {
         _sitanNovacController.add(sitanNovac);
       }
 
-      print(
+      debugPrint(
           '✅ Local save successful for $vozac: Kusur=$sitanNovac RSD, Pazari=$dnevniPazari RSD');
     } catch (e) {
       // Ovo je ozbiljna greška - lokalno čuvanje mora da radi
-      print('❌ CRITICAL: Local save failed: $e');
+      debugPrint('❌ CRITICAL: Local save failed: $e');
       rethrow; // Proslijedi grešku jer je kritična
     }
   }
@@ -80,7 +81,7 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey =
-        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     return prefs.getDouble('${todayKey}_amount');
   }
@@ -90,7 +91,7 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey =
-        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     return prefs.getDouble('${todayKey}_pazari');
   }
@@ -122,16 +123,17 @@ class DailyCheckInService {
         'created_at': datum.toIso8601String(),
       });
 
-      print(
+      debugPrint(
           '✅ Supabase daily_checkins: Uspešno sačuvano za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)');
     } on PostgrestException catch (e) {
-      print('❌ PostgrestException: ${e.code} - ${e.message}');
+      debugPrint('❌ PostgrestException: ${e.code} - ${e.message}');
 
       // Ako je tabela missing, pokušaj da je kreiraš
       if (e.code == 'PGRST106' ||
           e.message.contains('does not exist') ||
           e.code == '404') {
-        print('🏗️ Tabela daily_checkins ne postoji - pokušavam kreiranje...');
+        debugPrint(
+            '🏗️ Tabela daily_checkins ne postoji - pokušavam kreiranje...');
         await _createDailyCheckinsTable();
 
         // Ponovi pokušaj čuvanja nakon kreiranja tabele
@@ -143,13 +145,13 @@ class DailyCheckInService {
           'created_at': datum.toIso8601String(),
         });
 
-        print(
+        debugPrint(
             '✅ Supabase daily_checkins: Kreirao tabelu i sačuvao za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)');
       } else {
         rethrow; // Proslijedi dalju grešku
       }
     } catch (e) {
-      print('❌ Neočekivana greška u _saveToSupabase: $e');
+      debugPrint('❌ Neočekivana greška u _saveToSupabase: $e');
       rethrow;
     }
   }
@@ -161,10 +163,10 @@ class DailyCheckInService {
 
       // Pokušaj kreiranje preko RPC ako postoji
       await supabase.rpc('create_daily_checkins_table_if_not_exists');
-      print('✅ Tabela daily_checkins kreirana preko RPC');
+      debugPrint('✅ Tabela daily_checkins kreirana preko RPC');
     } catch (e) {
-      print('⚠️ Ne mogu da kreiram tabelu preko RPC: $e');
-      print('💡 Molim te kreiraj tabelu ručno u Supabase SQL editoru');
+      debugPrint('⚠️ Ne mogu da kreiram tabelu preko RPC: $e');
+      debugPrint('💡 Molim te kreiraj tabelu ručno u Supabase SQL editoru');
       // Ne bacaj grešku jer tabela možda postoji ali RPC ne radi
     }
   }
@@ -180,7 +182,7 @@ class DailyCheckInService {
     for (int i = 0; i < days; i++) {
       final date = today.subtract(Duration(days: i));
       final dateKey =
-          '${_checkInPrefix}${vozac}_${date.year}_${date.month}_${date.day}';
+          '$_checkInPrefix${vozac}_${date.year}_${date.month}_${date.day}';
 
       final hasCheckedIn = prefs.getBool(dateKey) ?? false;
       if (hasCheckedIn) {
@@ -204,7 +206,7 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey =
-        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     await prefs.remove(todayKey);
     await prefs.remove('${todayKey}_amount');
@@ -216,13 +218,13 @@ class DailyCheckInService {
   static Future<void> saveDailyReport(
       String vozac, DateTime datum, Map<String, dynamic> popisPodaci) async {
     final dateKey =
-        '${_checkInPrefix}${vozac}_${datum.year}_${datum.month}_${datum.day}';
+        '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
 
     try {
       // Sačuvaj u Supabase (ako postoji tabela)
       await _savePopisToSupabase(vozac, popisPodaci, datum);
     } catch (e) {
-      print('Supabase save failed for popis: $e');
+      debugPrint('Supabase save failed for popis: $e');
     }
 
     // Sačuvaj lokalno u SharedPreferences
@@ -234,7 +236,7 @@ class DailyCheckInService {
     await prefs.setString(
         '${dateKey}_popis_timestamp', datum.toIso8601String());
 
-    print(
+    debugPrint(
         '✅ Dnevni popis sačuvan za $vozac na dan ${datum.day}.${datum.month}.${datum.year}');
   }
 
@@ -247,7 +249,7 @@ class DailyCheckInService {
     for (int i = 1; i <= 7; i++) {
       final checkDate = today.subtract(Duration(days: i));
       final dateKey =
-          '${_checkInPrefix}${vozac}_${checkDate.year}_${checkDate.month}_${checkDate.day}';
+          '$_checkInPrefix${vozac}_${checkDate.year}_${checkDate.month}_${checkDate.day}';
 
       final popisString = prefs.getString('${dateKey}_popis');
       if (popisString != null) {
@@ -270,9 +272,9 @@ class DailyCheckInService {
     final yesterday = today.subtract(const Duration(days: 1));
 
     final yesterdayKey =
-        '${_checkInPrefix}${vozac}_${yesterday.year}_${yesterday.month}_${yesterday.day}';
+        '$_checkInPrefix${vozac}_${yesterday.year}_${yesterday.month}_${yesterday.day}';
     final todayKey =
-        '${_checkInPrefix}${vozac}_${today.year}_${today.month}_${today.day}';
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     // Ako je juče imao popis, a danas se prvi put uloguje
     final hadReportYesterday = prefs.getString('${yesterdayKey}_popis') != null;
@@ -355,10 +357,10 @@ class DailyCheckInService {
       try {
         kilometraza =
             await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
-        print(
+        debugPrint(
             '🚗 GPS kilometraža za $vozac za ${targetDate.day}.${targetDate.month}: ${kilometraza.toStringAsFixed(1)} km');
       } catch (e) {
-        print('⚠️ Greška pri GPS računanju kilometraže: $e');
+        debugPrint('⚠️ Greška pri GPS računanju kilometraže: $e');
         kilometraza = 0.0; // Fallback na 0 umesto dummy vrednost
       }
 
@@ -384,7 +386,7 @@ class DailyCheckInService {
 
       return automatskiPopis;
     } catch (e) {
-      print('Greška pri automatskom generisanju popisa: $e');
+      debugPrint('Greška pri automatskom generisanju popisa: $e');
       return null;
     }
   }
@@ -413,9 +415,9 @@ class DailyCheckInService {
         'created_at': datum.toIso8601String(),
       });
 
-      print('✅ Automatski popis sačuvan u Supabase daily_reports tabelu');
+      debugPrint('✅ Automatski popis sačuvan u Supabase daily_reports tabelu');
     } catch (e) {
-      print('❌ Greška pri čuvanju popisa u Supabase: $e');
+      debugPrint('❌ Greška pri čuvanju popisa u Supabase: $e');
       // Tabela daily_reports možda ne postoji - potrebno je kreirati ručno
       rethrow;
     }

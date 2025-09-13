@@ -33,7 +33,8 @@ class PutniciStatistikaWidget extends StatelessWidget {
           children: [
             if (periodOpis != null)
               Text(periodOpis!,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Card(
               color: Colors.blue[50],
@@ -41,8 +42,8 @@ class PutniciStatistikaWidget extends StatelessWidget {
                 leading: Icon(Icons.people, color: Colors.blue[700]),
                 title: const Text('Ukupno putnika'),
                 trailing: Text('$ukupnoPutnika',
-                    style:
-                        const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 16),

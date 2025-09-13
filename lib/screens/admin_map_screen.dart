@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/putnik_service.dart';
-import '../services/geocoding_service.dart';
 import '../models/putnik.dart';
 
 // Model za GPS lokacije vozača
@@ -47,19 +47,17 @@ class AdminMapScreen extends StatefulWidget {
 }
 
 class _AdminMapScreenState extends State<AdminMapScreen> {
-  GoogleMapController? _controller;
-  Position? _currentPosition;
+  final MapController _mapController = MapController();
   List<GpsLokacija> _gpsLokacije = [];
   List<Putnik> _putnici = [];
-  Set<Marker> _markers = {};
+  Position? _currentPosition;
   bool _isLoading = true;
   bool _showDrivers = true;
   bool _showPassengers = false;
+  List<Marker> _markers = [];
 
-  static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(44.7866, 20.4489), // Belgrade default
-    zoom: 11.0,
-  );
+  // Početna pozicija - Bela Crkva/Vršac region
+  static const LatLng _initialCenter = LatLng(44.9, 21.4);
 
   @override
   void initState() {
@@ -100,69 +98,31 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         _currentPosition = position;
       });
 
-      if (_controller != null) {
-        _controller!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 15.0,
-            ),
-          ),
-        );
-      }
+      // Centriraj mapu na trenutnu poziciju
+      _mapController.move(
+        LatLng(position.latitude, position.longitude),
+        13.0,
+      );
     } catch (e) {
-      // Greška u animaciji kamere na poziciju
+      debugPrint('Greška dobavljanja trenutne lokacije: $e');
     }
-  }
-
-  Future<void> _fitAllMarkers() async {
-    if (_controller == null || _markers.isEmpty) return;
-
-    // Pronađi granice svih markera
-    double minLat = double.infinity;
-    double maxLat = double.negativeInfinity;
-    double minLng = double.infinity;
-    double maxLng = double.negativeInfinity;
-
-    for (final marker in _markers) {
-      final lat = marker.position.latitude;
-      final lng = marker.position.longitude;
-
-      if (lat < minLat) minLat = lat;
-      if (lat > maxLat) maxLat = lat;
-      if (lng < minLng) minLng = lng;
-      if (lng > maxLng) maxLng = lng;
-    }
-
-    // Dodaj margine
-    final latDiff = maxLat - minLat;
-    final lngDiff = maxLng - minLng;
-    minLat -= latDiff * 0.1;
-    maxLat += latDiff * 0.1;
-    minLng -= lngDiff * 0.1;
-    maxLng += lngDiff * 0.1;
-
-    // Animiraj kameru
-    await _controller!.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
-        ),
-        100.0, // padding
-      ),
-    );
   }
 
   Future<void> _loadGpsLokacije() async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+
       final response = await Supabase.instance.client
           .from('gps_lokacije')
           .select()
-          .order('timestamp', ascending: false);
+          .order('timestamp', ascending: false)
+          .limit(1000);
 
-      final List<GpsLokacija> gpsLokacije =
-          (response as List).map((data) => GpsLokacija.fromMap(data)).toList();
+      final gpsLokacije = (response as List<dynamic>)
+          .map((json) => GpsLokacija.fromMap(json))
+          .toList();
 
       setState(() {
         _gpsLokacije = gpsLokacije;
@@ -172,8 +132,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
       // Automatski fokusiraj na sve vozače nakon učitavanja
       if (_markers.isNotEmpty) {
-        await Future.delayed(
-            const Duration(milliseconds: 500)); // Čekaj da se mapa učita
+        await Future.delayed(const Duration(milliseconds: 500));
         _fitAllMarkers();
       }
     } catch (e) {
@@ -181,7 +140,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         _isLoading = false;
       });
 
-      // Prikaži error poruku korisniku
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -194,37 +152,60 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   }
 
   void _updateMarkers() {
-    Set<Marker> markers = {};
+    List<Marker> markers = [];
 
     // VOZAČI - ako su uključeni
     if (_showDrivers) {
-      // Grupiši GPS lokacije po vozaču (name) i uzmi najnoviju za svakog
+      // Grupiši GPS lokacije po vozaču i uzmi najnoviju za svakog
       Map<String, GpsLokacija> najnovijeLokacije = {};
       for (final lokacija in _gpsLokacije) {
         if (!najnovijeLokacije.containsKey(lokacija.name) ||
-            najnovijeLokacije[lokacija.name]!.timestamp.isBefore(
-                  lokacija.timestamp,
-                )) {
+            najnovijeLokacije[lokacija.name]!
+                .timestamp
+                .isBefore(lokacija.timestamp)) {
           najnovijeLokacije[lokacija.name] = lokacija;
         }
       }
 
       // Kreiraj markere za svakog vozača
       najnovijeLokacije.forEach((vozac, lokacija) {
-        final timeAgo = DateTime.now().difference(lokacija.timestamp).inMinutes;
-        final timeAgoText = timeAgo < 60
-            ? '${timeAgo}min ago'
-            : '${(timeAgo / 60).round()}h ago';
-
         markers.add(
           Marker(
-            markerId: MarkerId('driver_$vozac'),
-            position: LatLng(lokacija.lat, lokacija.lng),
-            infoWindow: InfoWindow(
-              title: '🚗 $vozac',
-              snippet: '${lokacija.vehicleType} • $timeAgoText',
+            point: LatLng(lokacija.lat, lokacija.lng),
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: _getDriverColor(lokacija),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.directions_car,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  Text(
+                    vozac.substring(0, 1),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            icon: _getMarkerIcon(lokacija),
           ),
         );
       });
@@ -240,145 +221,76 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     });
   }
 
-  Future<void> _addPassengerMarkers(Set<Marker> markers) async {
-    for (final putnik in _putnici) {
-      if (putnik.adresa?.isNotEmpty == true) {
-        try {
-          final coords = await GeocodingService.getKoordinateZaAdresu(
-              putnik.grad, putnik.adresa!);
-
-          if (coords != null) {
-            final parts = coords.split(',');
-            if (parts.length == 2) {
-              final lat = double.tryParse(parts[0]);
-              final lng = double.tryParse(parts[1]);
-
-              if (lat != null && lng != null) {
-                markers.add(
-                  Marker(
-                    markerId: MarkerId('passenger_${putnik.id}'),
-                    position: LatLng(lat, lng),
-                    infoWindow: InfoWindow(
-                      title: '👤 ${putnik.ime}',
-                      snippet: '${putnik.adresa} • ${putnik.grad}',
-                    ),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueGreen,
-                    ),
-                  ),
-                );
-              }
-            }
-          }
-        } catch (e) {
-          debugPrint('Greška geocoding za ${putnik.ime}: $e');
-        }
-      }
-    }
-  }
-
-  BitmapDescriptor _getMarkerIcon(GpsLokacija lokacija) {
-    // 🎨 KORISTI OFICIJELNE BOJE VOZAČA - KONZISTENTNO SA APLIKACIJOM
+  Color _getDriverColor(GpsLokacija lokacija) {
+    // 🎨 KORISTI OFICIJELNE BOJE VOZAČA
     switch (lokacija.name.toLowerCase()) {
       case 'bojan':
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueCyan, // 🔵 Cyan - kao u VozacBoja (0xFF00E5FF)
-        );
-      case 'bruda':
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor
-              .hueViolet, // 🟣 Ljubičasta - kao u VozacBoja (0xFF7C4DFF)
-        );
-      case 'bilevski':
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor
-              .hueOrange, // 🟠 Narandžasta - kao u VozacBoja (0xFFFF9800)
-        );
+        return const Color(0xFF1976D2); // Plava
       case 'svetlana':
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor
-              .hueRose, // 🌸 Drecava pink - kao u VozacBoja (0xFFFF1493)
-        );
+        return const Color(0xFFE91E63); // Roze
+      case 'milorad':
+        return const Color(0xFF4CAF50); // Zelena
+      case 'milan':
+        return const Color(0xFFFF9800); // Narandžasta
+      case 'sasa':
+        return const Color(0xFF9C27B0); // Ljubičasta
+      case 'nikola':
+        return const Color(0xFF795548); // Braon
       default:
-        // Fallback na plavu za nepoznate vozače
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueBlue,
-        );
+        return const Color(0xFF607D8B); // Siva
     }
   }
 
-  // Prikaz samo izabranog vozača na mapi
-  void _prikaziVozaca(String vozac) {
-    final danas = DateTime.now();
-    final lokacije = _gpsLokacije
-        .where((l) =>
-            l.name.toLowerCase() == vozac.toLowerCase() &&
-            l.timestamp.year == danas.year &&
-            l.timestamp.month == danas.month &&
-            l.timestamp.day == danas.day)
-        .toList();
-    if (lokacije.isEmpty) return;
-    final najnovija =
-        lokacije.reduce((a, b) => a.timestamp.isAfter(b.timestamp) ? a : b);
-    setState(() {
-      _markers = {
-        Marker(
-          markerId: MarkerId(vozac),
-          position: LatLng(najnovija.lat, najnovija.lng),
-          infoWindow: InfoWindow(
-            title: '🚗 $vozac',
-            snippet: '${najnovija.vehicleType} • ${najnovija.timestamp}',
-          ),
-          icon: _getMarkerIcon(najnovija),
-        ),
-      };
-    });
-    // Pomeri kameru na vozača
-    _controller?.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(najnovija.lat, najnovija.lng), 15));
+  void _addPassengerMarkers(List<Marker> markers) {
+    // Dodaj markere za putnike sa adresama (sync verzija)
+    for (final putnik in _putnici) {
+      if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) continue;
+
+      // Za sada skip putničke markere jer zahtevaju async geocoding
+      // Možemo dodati kasnije ako bude potrebno
+    }
+  }
+
+  void _fitAllMarkers() {
+    if (_markers.isEmpty) return;
+
+    // Izračunaj granice svih markera
+    double minLat = double.infinity;
+    double maxLat = -double.infinity;
+    double minLng = double.infinity;
+    double maxLng = -double.infinity;
+
+    for (final marker in _markers) {
+      if (marker.point.latitude < minLat) minLat = marker.point.latitude;
+      if (marker.point.latitude > maxLat) maxLat = marker.point.latitude;
+      if (marker.point.longitude < minLng) minLng = marker.point.longitude;
+      if (marker.point.longitude > maxLng) maxLng = marker.point.longitude;
+    }
+
+    // Izračunaj centar i zoom za sve markere
+    final centerLat = (minLat + maxLat) / 2;
+    final centerLng = (minLng + maxLng) / 2;
+
+    // Jednostavan zoom na osnovu spread-a koordinata
+    final latRange = maxLat - minLat;
+    final lngRange = maxLng - minLng;
+    final zoom = latRange > 0.1 || lngRange > 0.1 ? 10.0 : 13.0;
+
+    _mapController.move(LatLng(centerLat, centerLng), zoom);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          Theme.of(context).colorScheme.surface, // 🎨 Tema-aware pozadina
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 80,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primaryContainer,
-              ],
-            ),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
+        title: const Text(
+          '🗺️ Admin GPS Mapa (OpenStreetMap)',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        title: const Text('GPS Mapa',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF1976D2),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // � Toggle vozači
+          // 🚗 Vozači toggle
           IconButton(
             icon: Icon(
               _showDrivers
@@ -394,7 +306,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             },
             tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
           ),
-          // 👥 Toggle putnici
+          // 👥 Putnici toggle
           IconButton(
             icon: Icon(
               _showPassengers ? Icons.people : Icons.people_outline,
@@ -408,7 +320,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             },
             tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
           ),
-          // �🔄 Refresh dugme
+          // 🔄 Refresh dugme
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
@@ -423,183 +335,113 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             onPressed: _fitAllMarkers,
             tooltip: 'Prikaži sve vozače',
           ),
-          // � Vozači menu
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.people, color: Colors.white),
-            tooltip: 'Izbor vozača',
-            onSelected: (vozac) => _prikaziVozaca(vozac),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'Bruda',
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.purple, // Bruda
-                      radius: 12,
-                      child: Text('B',
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    SizedBox(width: 8),
-                    Text('Bruda'),
-                  ],
-                ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // 🗺️ OpenStreetMap sa flutter_map
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _currentPosition != null
+                  ? LatLng(
+                      _currentPosition!.latitude, _currentPosition!.longitude)
+                  : _initialCenter,
+              initialZoom: 13.0,
+              minZoom: 8.0,
+              maxZoom: 18.0,
+            ),
+            children: [
+              // 🌍 OpenStreetMap tile layer - POTPUNO BESPLATNO!
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'rs.gavra.transport',
+                maxZoom: 19,
               ),
-              const PopupMenuItem(
-                value: 'Bilevski',
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.orange, // Bilevski
-                      radius: 12,
-                      child: Text('B',
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    SizedBox(width: 8),
-                    Text('Bilevski'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'Svetlana',
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.pink, // Svetlana
-                      radius: 12,
-                      child: Text('S',
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    SizedBox(width: 8),
-                    Text('Svetlana'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'Bojan',
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.cyan, // Bojan
-                      radius: 12,
-                      child: Text('B',
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                    SizedBox(width: 8),
-                    Text('Bojan'),
-                  ],
-                ),
-              ),
+              // 📍 Markeri
+              MarkerLayer(markers: _markers),
             ],
+          ),
+          // 📊 Loading indicator
+          if (_isLoading)
+            Container(
+              color: Colors.black26,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          // 📋 Legend
+          Positioned(
+            top: 10,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Legenda:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  if (_showDrivers) ...[
+                    _buildLegendItem(Colors.blue, '🚗 Bojan'),
+                    _buildLegendItem(Colors.pink, '🚗 Svetlana'),
+                    _buildLegendItem(Colors.green, '🚗 Milorad'),
+                    _buildLegendItem(Colors.orange, '🚗 Milan'),
+                  ],
+                  if (_showPassengers)
+                    _buildLegendItem(Colors.green, '👤 Putnici'),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '💚 BESPLATNO OpenStreetMap',
+                    style: TextStyle(fontSize: 10, color: Colors.green),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _gpsLokacije.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_off, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'Nema GPS podataka',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Tabela "gps_lokacije" je prazna',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-              : Stack(
-                  children: [
-                    GoogleMap(
-                      onMapCreated: (GoogleMapController controller) {
-                        _controller = controller;
-                        if (_currentPosition != null) {
-                          controller.animateCamera(
-                            CameraUpdate.newCameraPosition(
-                              CameraPosition(
-                                target: LatLng(
-                                  _currentPosition!.latitude,
-                                  _currentPosition!.longitude,
-                                ),
-                                zoom: 15.0,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      initialCameraPosition: _initialPosition,
-                      markers: _markers,
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled: true,
-                    ),
-                    // Status overlay
-                    Positioned(
-                      top: 16,
-                      left: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (_showDrivers) ...[
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.directions_car,
-                                      size: 16, color: Colors.blue[600]),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${_gpsLokacije.length} vozača',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (_showPassengers) ...[
-                              const SizedBox(height: 4),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.people,
-                                      size: 16, color: Colors.green[600]),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${_putnici.length} putnika',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10),
+          ),
+        ],
+      ),
     );
   }
 }

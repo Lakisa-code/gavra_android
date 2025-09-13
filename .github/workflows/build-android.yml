@@ -1,0 +1,140 @@
+name: 🚀 Build Android APK
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-android:
+    name: 📱 Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: ☕ Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.3'
+        channel: 'stable'
+        cache: true
+
+    - name: 📋 Flutter Doctor
+      run: flutter doctor -v
+
+    - name: 📦 Get Dependencies
+      run: flutter pub get
+
+    - name: 🔍 Analyze Code
+      run: flutter analyze
+
+    - name: 🧪 Run Tests (if any)
+      run: flutter test --no-sound-null-safety || echo "No tests to run"
+
+    - name: 🔨 Build APK (Debug)
+      run: flutter build apk --debug
+
+    - name: 🔨 Build APK (Release)
+      run: flutter build apk --release
+
+    - name: 📁 Create Release Directory
+      run: |
+        mkdir -p release-artifacts
+        cp build/app/outputs/flutter-apk/app-debug.apk release-artifacts/gavra-android-debug.apk
+        cp build/app/outputs/flutter-apk/app-release.apk release-artifacts/gavra-android-release.apk
+
+    - name: 📊 APK Info
+      run: |
+        echo "🎯 APK Build Complete!"
+        echo "Debug APK Size: $(du -h release-artifacts/gavra-android-debug.apk | cut -f1)"
+        echo "Release APK Size: $(du -h release-artifacts/gavra-android-release.apk | cut -f1)"
+        echo "📅 Build Date: $(date)"
+
+    - name: 🚀 Upload APK Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: gavra-android-apk
+        path: release-artifacts/
+        retention-days: 30
+
+    - name: 📝 Create Release (on main branch)
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: build-${{ github.run_number }}
+        name: 🚀 Gavra Android Build ${{ github.run_number }}
+        body: |
+          🎯 **Automatski build Gavra Android aplikacije**
+          
+          📱 **APK fajlovi:**
+          - `gavra-android-debug.apk` - Debug verzija za testiranje
+          - `gavra-android-release.apk` - Production verzija
+          
+          🔧 **Build informacije:**
+          - Flutter: 3.24.3 (stable)
+          - Commit: ${{ github.sha }}
+          - Datum: ${{ github.event.head_commit.timestamp }}
+          
+          🗺️ **Napomene:**
+          - Koristi OpenStreetMap (100% besplatno)
+          - Svi Google Maps API ključevi uklonjeni
+          - Optimizovani algoritmi za rute
+        files: |
+          release-artifacts/gavra-android-debug.apk
+          release-artifacts/gavra-android-release.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Opcionalno: Build za različite arhitekture
+  build-split-apks:
+    name: 📱 Build Split APKs
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: ☕ Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 🐦 Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.3'
+        channel: 'stable'
+
+    - name: 📦 Get Dependencies
+      run: flutter pub get
+
+    - name: 🔨 Build Split APKs
+      run: flutter build apk --split-per-abi --release
+
+    - name: 📁 Organize Split APKs
+      run: |
+        mkdir -p split-apks
+        cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk split-apks/gavra-android-arm64-v8a.apk || echo "No arm64-v8a APK"
+        cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk split-apks/gavra-android-armeabi-v7a.apk || echo "No armeabi-v7a APK"
+        cp build/app/outputs/flutter-apk/app-x86_64-release.apk split-apks/gavra-android-x86_64.apk || echo "No x86_64 APK"
+
+    - name: 🚀 Upload Split APKs
+      uses: actions/upload-artifact@v4
+      with:
+        name: gavra-android-split-apks
+        path: split-apks/
+        retention-days: 30

@@ -54,8 +54,8 @@ class PazarPoVozacimaWidget extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                        .withOpacity(0.1),
+                    color:
+                        (vozacBoje[vozac] ?? Colors.blueGrey).withOpacity(0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -159,4 +159,3 @@ class PazarPoVozacimaWidget extends StatelessWidget {
     );
   }
 }
-
