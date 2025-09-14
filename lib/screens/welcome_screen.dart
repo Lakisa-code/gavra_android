@@ -150,6 +150,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       }
 
       // 🌅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
+      final today = DateTime.now();
+
+      // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
+      if (today.weekday == 6 || today.weekday == 7) {
+        debugPrint(
+            '🚫 Preskačem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+        return;
+      }
+
       final hasCheckedIn =
           await DailyCheckInService.hasCheckedInToday(savedDriver);
 
@@ -259,6 +272,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await _WelcomeScreenState._playDriverWelcomeSong(driverName);
 
       // 🌅 PROVERI DAILY CHECK-IN I NAKON MANUELNOG LOGIN-A
+      final today = DateTime.now();
+
+      // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
+      if (today.weekday == 6 || today.weekday == 7) {
+        debugPrint(
+            '🚫 Preskačem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+        return;
+      }
+
       final hasCheckedIn =
           await DailyCheckInService.hasCheckedInToday(driverName);
 
@@ -865,6 +891,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await _WelcomeScreenState._playDriverWelcomeSong('Svetlana');
 
       // 🌅 PROVERI DAILY CHECK-IN I ZA SVETLANU
+      final today = DateTime.now();
+
+      // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
+      if (today.weekday == 6 || today.weekday == 7) {
+        debugPrint(
+            '🚫 Preskačem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+        return;
+      }
+
       final hasCheckedIn =
           await DailyCheckInService.hasCheckedInToday('Svetlana');
 
