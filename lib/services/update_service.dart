@@ -149,7 +149,7 @@ class UpdateService {
     final hoursSinceLastCheck = now.difference(lastCheckTime).inHours;
 
     debugPrint('🕐 Sati od poslednje provere: $hoursSinceLastCheck');
-    return hoursSinceLastCheck >= 24; // Proveravaj samo jednom dnevno
+    return hoursSinceLastCheck >= 1; // Proveravaj svakih sat vremena
   }
 
   /// Proverava da li je dostupna nova verzija
@@ -228,8 +228,8 @@ class UpdateService {
         debugPrint('🚀 Najnovija verzija na GitHub: $latestVersion');
         debugPrint('📅 Objavljena: ${publishedAt ?? "Nepoznato"}');
 
-        // Dodatna provera - samo ako je release stvarno objavljen u poslednjih 30 dana
-        // ili je verzija značajno veća
+        // Dodatna provera - samo ako je release stvarno objavljen u poslednjih 7 dana
+        // ili je verzija značajno veća (major update)
         bool hasUpdate = _isNewerVersion(currentVersion, latestVersion);
 
         if (hasUpdate && publishedAt != null) {
@@ -237,15 +237,26 @@ class UpdateService {
               DateTime.now().difference(publishedAt).inDays;
           debugPrint('📊 Dana od objave: $daysSincePublish');
 
-          // Ako je release stariji od 30 dana, ne prikazuj update osim ako nije major verzija
-          if (daysSincePublish > 30) {
+          // STROŽIJA PROVERA: Ako je release stariji od 7 dana, ne prikazuj update osim ako nije major verzija
+          if (daysSincePublish > 7) {
             bool isMajorUpdate =
                 _isMajorVersionDifference(currentVersion, latestVersion);
             if (!isMajorUpdate) {
               debugPrint(
                   '🕰️ Release je prestari ($daysSincePublish dana), preskačem update');
+              await _saveLastCheckTime();
               return false;
             }
+          }
+
+          // Dodatno: Proverava da li je release "nightly" build - ne prikazuj update za nightly
+          String releaseTag = data['tag_name'].toLowerCase();
+          if (releaseTag.contains('nightly') ||
+              releaseTag.contains('beta') ||
+              releaseTag.contains('alpha')) {
+            debugPrint('🌙 Nightly/Beta release - preskačem update');
+            await _saveLastCheckTime();
+            return false;
           }
         }
 

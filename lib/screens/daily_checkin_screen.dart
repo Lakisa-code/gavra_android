@@ -392,6 +392,13 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     try {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
 
+      // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
+      if (yesterday.weekday == 6 || yesterday.weekday == 7) {
+        debugPrint(
+            '🚫 Preskačem automatski popis za vikend (${yesterday.weekday == 6 ? "Subota" : "Nedelja"})');
+        return;
+      }
+
       // Proveri da li postoji popis od juče
       final lastReport =
           await DailyCheckInService.getLastDailyReport(widget.vozac);

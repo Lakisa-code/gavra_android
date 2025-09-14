@@ -287,6 +287,13 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> generateAutomaticReport(
       String vozac, DateTime targetDate) async {
     try {
+      // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
+      if (targetDate.weekday == 6 || targetDate.weekday == 7) {
+        debugPrint(
+            '🚫 Preskačem automatski popis za vikend (${targetDate.weekday == 6 ? "Subota" : "Nedelja"}) ${targetDate.day}.${targetDate.month}.${targetDate.year}');
+        return null;
+      }
+
       // Uvoz potrebnih servisa
       final PutnikService putnikService = PutnikService();
 

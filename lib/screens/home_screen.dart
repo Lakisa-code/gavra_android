@@ -54,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // CACHE UKLONJEN - nepotrebne varijable uklonjene
   Timer? _smartNotifikacijeTimer;
+  Timer? _updateCheckTimer; // 🔄 Timer za periodičnu proveru update-a
   List<Putnik> _allPutnici = [];
 
   // Real-time subscription variables
@@ -175,10 +176,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     LocalNotificationService.initialize(context);
     RealtimeNotificationService.listenForForegroundNotifications(context);
 
-    // 🔄 Automatska provera update-a - AKTIVNA!
-    Timer(const Duration(seconds: 5), () {
+    // 🔄 Automatska provera update-a - POČETNA provera za 30 sekundi
+    Timer(const Duration(seconds: 30), () {
       if (mounted) {
         UpdateChecker.checkAndShowUpdate(context);
+      }
+    });
+
+    // ⏰ PERIODIČNA provera update-a svakih sat vremena
+    _updateCheckTimer = Timer.periodic(const Duration(hours: 1), (timer) {
+      if (mounted) {
+        UpdateChecker.checkAndShowUpdate(context);
+      } else {
+        timer.cancel(); // Otkaži timer ako widget nije više mounted
       }
     });
 
@@ -1497,6 +1507,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _smartNotifikacijeTimer?.cancel();
+    _updateCheckTimer?.cancel(); // 🔄 Otkaži update check timer
     _selectedGradSubject.close();
 
     // Cleanup real-time subscriptions
