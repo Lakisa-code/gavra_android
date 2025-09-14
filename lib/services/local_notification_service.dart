@@ -49,24 +49,8 @@ class LocalNotificationService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    // Request permissions
-    await _requestPermissions();
-  }
-
-  static Future<void> _requestPermissions() async {
-    // Request notification permission using flutter_local_notifications
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    // Request only notification permission using permission_handler
-    try {
-      // Request notification permission
-      await Permission.notification.request();
-    } catch (e) {
-      // Ignorišemo greške sa permission zahtevima
-    }
+    // Permission requests are handled by RealtimeNotificationService
+    // to avoid conflicts - no local permission requests here
   }
 
   /// Prikaz realtime notifikacije sa popup, zvuk i lock screen

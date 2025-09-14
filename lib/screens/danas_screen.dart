@@ -13,6 +13,8 @@ import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO 
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_notification_service.dart';
 import '../services/route_optimization_service.dart';
+import '../utils/date_utils.dart'
+    as AppDateUtils; // DODANO: Centralna vikend logika
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
 import '../services/putnik_service.dart'; // 🆕 DODANO za nove metode
@@ -44,6 +46,16 @@ class DanasScreen extends StatefulWidget {
 class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
   final _putnikService = PutnikService(); // 🆕 DODANO PutnikService instanca
+
+  // ✅ KORISTI UTILS FUNKCIJU UMESTO DUPLIRANE LOGIKE
+  DateTime _getTargetDateForWeekend(DateTime today) {
+    return AppDateUtils.DateUtils.getWeekendTargetDate(today);
+  }
+
+  // ✅ KORISTI UTILS FUNKCIJU UMESTO DUPLIRANE LOGIKE
+  String _getDayName(int weekday) {
+    return AppDateUtils.DateUtils.weekdayToString(weekday);
+  }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
   Future<Map<String, int>> _calculateDjackieBrojeviAsync() async {
@@ -1600,10 +1612,17 @@ class _DanasScreenState extends State<DanasScreen> {
                   return bTime.compareTo(aTime);
                 });
                 // KORISTI NOVU STANDARDIZOVANU LOGIKU ZA PAZAR 💰
+                // ✅ KORISTI ISTU VIKEND LOGIKU KAO I LISTA PUTNIKA
                 final today = DateTime.now();
-                final dayStart = DateTime(today.year, today.month, today.day);
-                final dayEnd =
-                    DateTime(today.year, today.month, today.day, 23, 59, 59);
+                final targetDate = _getTargetDateForWeekend(today);
+                final dayStart =
+                    DateTime(targetDate.year, targetDate.month, targetDate.day);
+                final dayEnd = DateTime(targetDate.year, targetDate.month,
+                    targetDate.day, 23, 59, 59);
+
+                debugPrint(
+                    '🎯 [PAZAR LOGIKA] Danas: ${today.weekday} (${_getDayName(today.weekday)})');
+                debugPrint('🎯 [PAZAR LOGIKA] Target datum: $targetDate');
 
                 if (kDebugMode) {}
 

@@ -174,8 +174,10 @@ class Putnik {
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
       placeno: (map['cena'] as double? ?? 0) > 0, // koristi cena kolonu
       iznosPlacanja: map['cena'] as double?, // koristi cena kolonu
-      naplatioVozac:
-          map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+      naplatioVozac: ((map['cena'] as double? ?? 0) > 0)
+          ? (map['naplata_vozac']
+              as String?) // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+          : null, // ✅ Samo ako je stvarno plaćeno
       pokupioVozac:
           map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
       dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
@@ -247,8 +249,10 @@ class Putnik {
         vremePlacanja: vremePlacanja,
         placeno: placeno,
         iznosPlacanja: iznosPlacanja,
-        naplatioVozac:
-            map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+        naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
+            ? map['naplata_vozac']
+                as String? // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+            : null, // ✅ Samo ako je stvarno plaćeno
         pokupioVozac:
             map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
         dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
@@ -298,8 +302,10 @@ class Putnik {
         vremePlacanja: vremePlacanja,
         placeno: placeno,
         iznosPlacanja: iznosPlacanja,
-        naplatioVozac:
-            map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+        naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
+            ? map['naplata_vozac']
+                as String? // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+            : null, // ✅ Samo ako je stvarno plaćeno
         pokupioVozac:
             map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
         dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
@@ -340,8 +346,10 @@ class Putnik {
           : null, // ✅ KORISTI vreme_placanja kolonu
       placeno: _parseDouble(map['cena']) > 0,
       iznosPlacanja: _parseDouble(map['cena']),
-      naplatioVozac:
-          map['naplata_vozac'] as String?, // ✅ NOVA KOLONA za naplatu
+      naplatioVozac: _parseDouble(map['cena']) > 0
+          ? (map['naplata_vozac']
+              as String?) // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+          : null, // ✅ Samo ako je stvarno plaćeno
       pokupioVozac:
           map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
       dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje

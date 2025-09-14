@@ -66,7 +66,7 @@ void main() async {
     _logger.i('🔄 Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 15)); // Povećan timeout
 
     // Registruj background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -74,7 +74,7 @@ void main() async {
     _logger.i('✅ Firebase initialized with background handler');
   } catch (e) {
     _logger.e('❌ Firebase initialization failed: $e');
-    // Continue without Firebase if it fails
+    // Nastavi bez Firebase ako ne može - aplikacija neće da krahira
   }
 
   try {
@@ -128,49 +128,42 @@ class _MyAppState extends State<MyApp> {
       // Store context to check if widget is still mounted
       if (!mounted) return;
 
-      // Inicijalizuj lokalne notifikacije
-      await LocalNotificationService.initialize(context);
+      // INICIJALIZUJ NOTIFIKACIJE SEKVENCIJALNO da izbegneš konflikte
+      try {
+        _logger.i('� Initializing notification system...');
 
-      // UVEK inicijalizuj realtime notifikacije, bez obzira na to da li je app bio zatvoren
-      // Dohvati vozača iz SharedPreferences
-      final vozacId = await getCurrentDriver();
-      _logger.i('🔄 Pronađen vozač iz SharedPreferences: $vozacId');
+        // 1. Prvo inicijalizuj lokalne notifikacije (bez permission zahteva)
+        await LocalNotificationService.initialize(context);
 
-      if (vozacId != null && vozacId.isNotEmpty) {
-        _logger.i('✅ Inicijalizujem notifikacije za vozača: $vozacId');
-        // Initialize multi-channel notification system
-        try {
-          // First request notification permissions
-          _logger.i('🔔 Requesting notification permissions...');
-          final hasPermissions =
-              await RealtimeNotificationService.requestNotificationPermissions()
-                  .timeout(const Duration(seconds: 15));
-          _logger.i('🔔 Notification permissions result: $hasPermissions');
+        // 2. Zatim zatraži permissions jednom kroz Firebase sistem
+        _logger.i('🔔 Requesting notification permissions...');
+        final hasPermissions =
+            await RealtimeNotificationService.requestNotificationPermissions()
+                .timeout(const Duration(seconds: 15));
+        _logger.i('🔔 Notification permissions result: $hasPermissions');
 
-          await RealtimeNotificationService.initialize();
-          if (mounted) {
-            RealtimeNotificationService.listenForForegroundNotifications(
-                context);
-          }
-          // Subscribe to Firebase topics for this driver
+        // 3. Inicijalizuj realtime notifikacije
+        await RealtimeNotificationService.initialize();
+        if (mounted) {
+          RealtimeNotificationService.listenForForegroundNotifications(context);
+        }
+
+        // 4. Pretplati se na topike na osnovu vozača
+        final vozacId = await getCurrentDriver();
+        _logger.i('🔄 Pronađen vozač iz SharedPreferences: $vozacId');
+
+        if (vozacId != null && vozacId.isNotEmpty) {
+          _logger.i('✅ Inicijalizujem notifikacije za vozača: $vozacId');
           await RealtimeNotificationService.subscribeToDriverTopics(vozacId);
-        } catch (e) {
-          _logger.w('⚠️ Notification system error: $e');
-        }
-      } else {
-        _logger.w('⚠️ Nema logovanog vozača - notifikacije neće raditi');
-        // Ipak zatraži dozvole i pretplati se na osnovne topike za sve vozače
-        try {
-          _logger.i('🔔 Requesting notification permissions...');
-          final hasPermissions =
-              await RealtimeNotificationService.requestNotificationPermissions()
-                  .timeout(const Duration(seconds: 15));
-          _logger.i('🔔 Notification permissions result: $hasPermissions');
-
+        } else {
+          _logger.w('⚠️ Nema logovanog vozača - notifikacije neće raditi');
           await RealtimeNotificationService.subscribeToDriverTopics(null);
-        } catch (e) {
-          _logger.w('⚠️ Notification permissions error: $e');
         }
+
+        _logger.i('✅ Notification system initialized successfully');
+      } catch (e) {
+        _logger.w('⚠️ Notification system error: $e');
+        // Continue without notifications if they fail
       }
 
       // 📱 POKRETANJE SMS SERVISA za automatsko slanje poruka

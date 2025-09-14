@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 // Firebase messaging imports - enabled for multi-channel notifications
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
@@ -131,16 +132,23 @@ class RealtimeNotificationService {
   static Future<bool> requestNotificationPermissions() async {
     _logger.i('🔔 Requesting Firebase notification permissions...');
     try {
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        announcement: false,
-      );
+      // Check if Firebase is available first
+      if (!Firebase.apps.isNotEmpty) {
+        _logger.w('⚠️ Firebase not initialized, skipping permission request');
+        return false;
+      }
+
+      NotificationSettings settings = await FirebaseMessaging.instance
+          .requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+            carPlay: false,
+            criticalAlert: false,
+            provisional: false,
+            announcement: false,
+          )
+          .timeout(const Duration(seconds: 10));
 
       bool granted =
           settings.authorizationStatus == AuthorizationStatus.authorized;
@@ -148,6 +156,7 @@ class RealtimeNotificationService {
       return granted;
     } catch (e) {
       _logger.e('❌ Error requesting Firebase permissions: $e');
+      // Return false but don't crash the app
       return false;
     }
   }

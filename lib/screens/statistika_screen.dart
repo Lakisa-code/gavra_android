@@ -4,6 +4,8 @@ import '../services/firebase_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
 import '../services/local_notification_service.dart';
+import '../utils/date_utils.dart'
+    as AppDateUtils; // DODANO: Centralna vikend logika
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
@@ -371,9 +373,22 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     DateTime from, to;
 
     if (_period == 'nedelja') {
-      // 📅 POKRECI NEDELJU OD PONEDELJKA (1=Pon, 7=Ned)
-      final ponedeljak = now.subtract(Duration(days: now.weekday - 1));
-      from = DateTime(ponedeljak.year, ponedeljak.month, ponedeljak.day);
+      // ✅ KORISTI UTILS FUNKCIJU ZA VIKEND LOGIKU
+      final targetDate = AppDateUtils.DateUtils.getWeekendTargetDate();
+      DateTime ponedeljak;
+
+      if (AppDateUtils.DateUtils.isWeekend()) {
+        // 🎯 Vikend: koristi target datum (sledeći ponedeljak)
+        ponedeljak = targetDate;
+      } else {
+        // 📅 Radni dan: računaj za ovu nedelju (običan ponedeljak)
+        ponedeljak = now.subtract(Duration(days: now.weekday - 1));
+      }
+
+      // 🔄 Period ide od subote pre ponedeljka do petka te nedelje
+      final subota =
+          ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
+      from = DateTime(subota.year, subota.month, subota.day);
 
       // 📅 ZAVRŠI U PETAK (dodaj 4 dana od ponedeljka)
       final petak = ponedeljak.add(const Duration(days: 4));
@@ -381,6 +396,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     } else if (_period == 'mesec') {
       from = DateTime(now.year, now.month, 1);
       to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+
+      // 🔍 DEBUG: Prikazi mesečni period
+      print(
+          '📅 [MESEČNA STATISTIKA] Period: ${from.toString().split(' ')[0]} - ${to.toString().split(' ')[0]}');
+      print('📅 [MESEČNA STATISTIKA] Mesec: ${now.month}/${now.year}');
     } else {
       from = DateTime(now.year, 1, 1);
       to = DateTime(now.year, 12, 31, 23, 59, 59);
@@ -403,14 +423,39 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         }
 
         // 🔄 REAL-TIME PAZAR STREAM sa kombinovanim putnicima (uključuje mesečne karte)
+        print(
+            '🎯 [VOZAČI TAB] Pozivam streamPazarSvihVozaca sa from: ${from.toString()}, to: ${to.toString()}');
         return StreamBuilder<Map<String, double>>(
           stream: StatistikaService.streamPazarSvihVozaca(
             from: from,
             to: to,
           ),
           builder: (context, pazarSnapshot) {
+            print(
+                '📊 VOZAČI TAB STREAM STATE: ${pazarSnapshot.connectionState}');
+            print('📊 VOZAČI TAB HAS DATA: ${pazarSnapshot.hasData}');
+            print('📊 VOZAČI TAB DATA: ${pazarSnapshot.data}');
+
             if (pazarSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+
+            if (pazarSnapshot.hasError) {
+              print('❌ VOZAČI TAB ERROR: ${pazarSnapshot.error}');
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text('Greška: ${pazarSnapshot.error}'),
+                    ElevatedButton(
+                      onPressed: () => setState(() {}),
+                      child: const Text('Pokušaj ponovo'),
+                    ),
+                  ],
+                ),
+              );
             }
 
             final pazarMap = pazarSnapshot.data ?? <String, double>{};
@@ -451,120 +496,102 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     final from = period['from']!;
     final to = period['to']!;
 
-    return StreamBuilder<List<Putnik>>(
-      stream:
-          PutnikService().streamKombinovaniPutnici(), // 🔄 KOMBINOVANI STREAM
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    // 🔄 DIREKTNO KORISTI STREAM DETALJNIH STATISTIKA
+    return StreamBuilder<Map<String, Map<String, dynamic>>>(
+      stream: StatistikaService.streamDetaljneStatistikePoVozacima(from, to),
+      builder: (context, statsSnapshot) {
+        if (statsSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final putnici = snapshot.data ?? [];
 
-        // 🔄 REAL-TIME DETALJNE STATISTIKE - SINHRONIZOVANO SA VOZAČI TAB-OM
-        return StreamBuilder<Map<String, Map<String, dynamic>>>(
-          stream: Stream.periodic(const Duration(seconds: 3)).asyncMap((_) =>
-              StatistikaService.detaljneStatistikePoVozacima(
-                  putnici, from, to)),
-          builder: (context, statsSnapshot) {
-            if (statsSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        final detaljneStats = statsSnapshot.data ?? {};
 
-            final detaljneStats = statsSnapshot.data ?? {};
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Detaljne Statistike - ${_periodLabel(_period)}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...detaljneStats.entries.map((entry) {
+                  final vozac = entry.key;
+                  final stats = entry.value;
+                  final Color vozacColor = _getVozacColor(vozac);
 
-            return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Detaljne Statistike - ${_periodLabel(_period)}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 4, // 🎨 Dodao shadow
+                    color: vozacColor
+                        .withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
+                      side: BorderSide(
+                        color: vozacColor.withOpacity(0.6), // 🎨 Jasniji border
+                        width: 2,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    ...detaljneStats.entries.map((entry) {
-                      final vozac = entry.key;
-                      final stats = entry.value;
-                      final Color vozacColor = _getVozacColor(vozac);
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        elevation: 4, // 🎨 Dodao shadow
-                        color: vozacColor
-                            .withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
-                          side: BorderSide(
-                            color: vozacColor
-                                .withOpacity(0.6), // 🎨 Jasniji border
-                            width: 2,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.person,
-                                      color: vozacColor, size: 24),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    vozac,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[
-                                          800], // 🎨 Tamniji tekst za bolji kontrast
-                                    ),
-                                  ),
-                                ],
+                              Icon(Icons.person, color: vozacColor, size: 24),
+                              const SizedBox(width: 8),
+                              Text(
+                                vozac,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[
+                                      800], // 🎨 Tamniji tekst za bolji kontrast
+                                ),
                               ),
-                              const SizedBox(height: 12),
-                              _buildStatRow('Dodati putnici', stats['dodati'],
-                                  Icons.add_circle, Colors.blue),
-                              _buildStatRow('Otkazani', stats['otkazani'],
-                                  Icons.cancel, Colors.red),
-                              _buildStatRow('Naplaćeni', stats['naplaceni'],
-                                  Icons.payment, Colors.green),
-                              _buildStatRow('Pokupljeni', stats['pokupljeni'],
-                                  Icons.check_circle, Colors.orange),
-                              _buildStatRow('Dugovi', stats['dugovi'],
-                                  Icons.warning, Colors.redAccent),
-                              _buildStatRow(
-                                  'Mesečne karte',
-                                  stats['mesecneKarte'],
-                                  Icons.card_membership,
-                                  Colors.purple),
-                              _buildStatRow(
-                                  'Kilometraža',
-                                  '${(stats['kilometraza'] ?? 0.0).toStringAsFixed(1)} km',
-                                  Icons.route,
-                                  Colors.teal),
-                              const Divider(color: Colors.white24),
-                              _buildStatRow(
-                                  'Ukupno pazar',
-                                  '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
-                                  Icons.monetization_on,
-                                  Colors.amber),
                             ],
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              ),
-            );
-          }, // 🔹 ZATVARAMO FutureBuilder
-        ); // 🔹 ZATVARAMO StreamBuilder
+                          const SizedBox(height: 12),
+                          _buildStatRow('Dodati putnici', stats['dodati'],
+                              Icons.add_circle, Colors.blue),
+                          _buildStatRow('Otkazani', stats['otkazani'],
+                              Icons.cancel, Colors.red),
+                          _buildStatRow('Naplaćeni', stats['naplaceni'],
+                              Icons.payment, Colors.green),
+                          _buildStatRow('Pokupljeni', stats['pokupljeni'],
+                              Icons.check_circle, Colors.orange),
+                          _buildStatRow('Dugovi', stats['dugovi'],
+                              Icons.warning, Colors.redAccent),
+                          _buildStatRow('Mesečne karte', stats['mesecneKarte'],
+                              Icons.card_membership, Colors.purple),
+                          _buildStatRow(
+                              'Kilometraža',
+                              '${(stats['kilometraza'] ?? 0.0).toStringAsFixed(1)} km',
+                              Icons.route,
+                              Colors.teal),
+                          const Divider(color: Colors.white24),
+                          _buildStatRow(
+                              'Ukupno pazar',
+                              '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
+                              Icons.monetization_on,
+                              Colors.amber),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
       },
     );
   }

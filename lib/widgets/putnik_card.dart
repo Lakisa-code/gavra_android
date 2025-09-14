@@ -2034,60 +2034,39 @@ class _PutnikCardState extends State<PutnikCard> {
                         ],
                       ),
                     if (_putnik.vremePokupljenja != null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Pokupljen',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.get(_putnik.pokupioVozac ??
-                                  widget
-                                      .currentDriver), // ✅ KORISTI pokupioVozac!
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            () {
-                              // 🔍 DEBUG: Ispis stvarnog vremena
-                              final vreme = _putnik.vremePokupljenja!;
-                              debugPrint(
-                                  '🔍 DEBUG vremePokupljenja formatting - ${_putnik.ime}: vreme=$vreme, hour=${vreme.hour}, minute=${vreme.minute}');
-                              return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
-                            }(),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.get(_putnik.pokupioVozac ??
-                                  widget
-                                      .currentDriver), // ✅ KORISTI pokupioVozac!
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        () {
+                          // 🔍 DEBUG: Ispis stvarnog vremena
+                          final vreme = _putnik.vremePokupljenja!;
+                          debugPrint(
+                              '🔍 DEBUG vremePokupljenja formatting - ${_putnik.ime}: vreme=$vreme, hour=${vreme.hour}, minute=${vreme.minute}');
+                          return 'Pokupljen ${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+                        }(),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: VozacBoja.get(_putnik.pokupioVozac ??
+                              widget.currentDriver), // ✅ KORISTI pokupioVozac!
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     if (_putnik.iznosPlacanja != null &&
                         _putnik.iznosPlacanja! > 0)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Plaćeno:',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.get(_putnik.naplatioVozac),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            _putnik.iznosPlacanja!.toStringAsFixed(0),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.get(_putnik.naplatioVozac),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: VozacBoja.get(_putnik.naplatioVozac),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                    // 🔍 DEBUG LOG za Ljilju i Radošević
+                    if (_putnik.ime.toLowerCase().contains('ljil') ||
+                        _putnik.ime.toLowerCase().contains('rado'))
+                      () {
+                        debugPrint(
+                            '🔍 [PLAĆENO DEBUG] ${_putnik.ime}: iznosPlacanja=${_putnik.iznosPlacanja}, naplatioVozac=${_putnik.naplatioVozac}, placeno=${_putnik.placeno}, jePlacen=${_putnik.jePlacen}');
+                        return const SizedBox.shrink();
+                      }(),
                   ],
                 ),
               ),

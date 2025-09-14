@@ -15,6 +15,8 @@ import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/update_service.dart'; // 🔄 Update sistem aktiviran!
 import '../utils/animation_utils.dart';
+import '../utils/date_utils.dart'
+    as AppDateUtils; // DODANO: Centralna vikend logika
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/text_utils.dart';
@@ -94,27 +96,77 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     '19:00 Vršac'
   ];
 
-  // Mapiranje punih naziva na kratke nazive u bazi
+  // ✅ KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
   String _getTodayName() {
-    final now = DateTime.now();
-    final dayNames = [
-      'Ponedeljak',
-      'Utorak',
-      'Sreda',
-      'Četvrtak',
-      'Petak',
-      'Subota',
-      'Nedelja'
-    ];
-    final todayName = dayNames[now.weekday - 1];
+    return AppDateUtils.DateUtils.getTodayFullName();
+  }
 
-    // ✅ PAMETNA LOGIKA - vikendom prebaci na Ponedeljak jer ne vozite
-    if (todayName == 'Subota' || todayName == 'Nedelja') {
-      debugPrint('🔄 [HOME SCREEN] Vikend je - prebacujem na Ponedeljak');
-      return 'Ponedeljak';
-    }
+  // ✅ KORISTI UTILS FUNKCIJU ZA TARGET DATUM
+  DateTime _getTargetDate() {
+    return AppDateUtils.DateUtils.getWeekendTargetDate();
+  }
 
-    return todayName;
+  // ✅ CUSTOM STREAM - Koristi target datum umesto trenutnog
+  Stream<List<Putnik>> _streamKombinovaniPutniciZaTargetDatum() {
+    print('🎯 [CUSTOM STREAM] Koristi se CUSTOM stream za vikend logiku!');
+    final targetDate = _getTargetDate();
+    final targetDateString = targetDate.toIso8601String().split('T')[0];
+    final danasKratica = _getFilterDayAbbreviation(targetDate.weekday);
+
+    debugPrint(
+        '🎯 [CUSTOM STREAM] Target datum: $targetDateString, dan: $danasKratica');
+
+    return supabase
+        .from('mesecni_putnici')
+        .stream(primaryKey: ['id']).asyncMap((mesecniData) async {
+      List<Putnik> sviPutnici = [];
+
+      // 1. MESEČNI PUTNICI
+      for (final item in mesecniData) {
+        try {
+          final radniDani = item['radni_dani']?.toString() ?? '';
+          if (radniDani.toLowerCase().contains(danasKratica.toLowerCase())) {
+            final mesecniPutnici = Putnik.fromMesecniPutniciMultiple(item);
+            sviPutnici.addAll(mesecniPutnici);
+          }
+        } catch (e) {
+          debugPrint('❌ [CUSTOM STREAM] Greška za mesečnog putnika: $e');
+        }
+      }
+
+      // 2. DNEVNI PUTNICI - ZA TARGET DATUM
+      try {
+        final dnevniResponse = await supabase
+            .from('putovanja_istorija')
+            .select('*')
+            .eq('datum', targetDateString)
+            .eq('tip_putnika', 'dnevni');
+
+        debugPrint(
+            '📊 [CUSTOM STREAM] Dobio ${dnevniResponse.length} dnevnih putnika za $targetDateString');
+
+        for (final item in dnevniResponse) {
+          try {
+            final putnik = Putnik.fromPutovanjaIstorija(item);
+            sviPutnici.add(putnik);
+          } catch (e) {
+            debugPrint('❌ [CUSTOM STREAM] Greška za dnevnog putnika: $e');
+          }
+        }
+      } catch (e) {
+        debugPrint(
+            '❌ [CUSTOM STREAM] Greška pri učitavanju dnevnih putnika: $e');
+      }
+
+      debugPrint('🎯 [CUSTOM STREAM] UKUPNO PUTNIKA: ${sviPutnici.length}');
+      return sviPutnici;
+    });
+  }
+
+  // Helper funkcija za dan
+  String _getFilterDayAbbreviation(int weekday) {
+    const dayMap = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    return dayMap[weekday - 1];
   }
 
   // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
@@ -893,9 +945,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // ✅ KORISTI REAL-TIME STREAM umesto statičke _allPutnici liste
+    // ✅ KORISTI CUSTOM STREAM koji uvažava target datum (vikend -> sledeći ponedeljak)
     return StreamBuilder<List<Putnik>>(
-      stream: _putnikService.streamKombinovaniPutnici(),
+      stream: _streamKombinovaniPutniciZaTargetDatum(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

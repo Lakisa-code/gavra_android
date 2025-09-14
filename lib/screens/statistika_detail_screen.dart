@@ -254,6 +254,27 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                                               ),
                                             ],
                                           ),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: _StatRow(
+                                                  icon: Icons.credit_card,
+                                                  color: Colors.purple,
+                                                  label: 'Mesečne karte',
+                                                  value:
+                                                      '${stats['mesecneKarte']}',
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: _StatRow(
+                                                  icon: Icons.warning,
+                                                  color: Colors.red[700]!,
+                                                  label: 'Dugovi',
+                                                  value: '${stats['dugovi']}',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                           Builder(
                                             builder: (context) {
                                               return FutureBuilder<double>(

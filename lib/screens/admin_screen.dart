@@ -8,6 +8,8 @@ import '../services/local_notification_service.dart';
 
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
+import '../utils/date_utils.dart'
+    as AppDateUtils; // DODANO: Centralna vikend logika
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
@@ -36,7 +38,8 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDan = _getTodayFullName();
+    _selectedDan =
+        AppDateUtils.DateUtils.getTodayFullName(); // ✅ KORISTI UTILS FUNKCIJU
     _loadCurrentDriver();
 
     // Inicijalizuj heads-up i zvuk notifikacije
@@ -78,28 +81,6 @@ class _AdminScreenState extends State<AdminScreen> {
         _currentDriver = null;
       });
     }
-  }
-
-  // Vraca puno ime trenutnog dana
-  String _getTodayFullName() {
-    final now = DateTime.now();
-    final dayNames = [
-      'Ponedeljak',
-      'Utorak',
-      'Sreda',
-      'Četvrtak',
-      'Petak',
-    ];
-    // Ako je vikend (subota/nedelja), vraćamo ponedeljak
-    final weekday = now.weekday;
-    if (weekday > 5) {
-      return 'Ponedeljak';
-    }
-    final todayName = dayNames[weekday - 1];
-
-    // ✅ UKLONJENA LOGIKA AUTOMATSKOG PREBACIVANJA NA PONEDELJAK
-    // Sada vraća pravi trenutni dan u nedelji
-    return todayName;
   }
 
   // Mapiranje punih imena dana u skraćenice za filtriranje
@@ -565,12 +546,30 @@ class _AdminScreenState extends State<AdminScreen> {
               targetWeekday = currentWeekday;
           }
 
-          final daysFromToday = targetWeekday - currentWeekday;
-          final targetDate = now.add(Duration(days: daysFromToday));
-          streamFrom =
-              DateTime(targetDate.year, targetDate.month, targetDate.day);
-          streamTo = DateTime(
-              targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
+          // 🎯 VIKEND LOGIKA: Koristi centralizovanu funkciju za sve screen-ove
+          final DateTime targetDate;
+          if (_selectedDan == 'Ponedeljak' &&
+              AppDateUtils.DateUtils.isWeekend()) {
+            // Vikend + Ponedeljak = sledeći ponedeljak (koristi utils funkciju)
+            targetDate = AppDateUtils.DateUtils.getWeekendTargetDate();
+          } else {
+            // Standardna logika za ostale dane
+            final daysFromToday = targetWeekday - currentWeekday;
+            targetDate = now.add(Duration(days: daysFromToday));
+          }
+
+          // ✅ KORISTI UTILS ZA KREIRANJE DATE RANGE
+          final dateRange = AppDateUtils.DateUtils.getDateRange(targetDate);
+          streamFrom = dateRange['from']!;
+          streamTo = dateRange['to']!;
+
+          // 🔍 DEBUG: Prikaži koje datume koristi Admin screen
+          print(
+              '🔍 [ADMIN SCREEN] Koristi datum: ${AppDateUtils.DateUtils.formatDateForDebug(targetDate).split(' ')[0]}');
+          print(
+              '🔍 [ADMIN SCREEN] streamFrom: ${AppDateUtils.DateUtils.formatDateForDebug(streamFrom)}');
+          print(
+              '🔍 [ADMIN SCREEN] streamTo: ${AppDateUtils.DateUtils.formatDateForDebug(streamTo)}');
 
           return StreamBuilder<Map<String, double>>(
             stream: StatistikaService.streamPazarSvihVozaca(
