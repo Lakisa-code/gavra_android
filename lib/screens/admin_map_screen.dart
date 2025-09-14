@@ -225,17 +225,17 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     // 🎨 KORISTI OFICIJELNE BOJE VOZAČA
     switch (lokacija.name.toLowerCase()) {
       case 'bojan':
-        return const Color(0xFF1976D2); // Plava
+        return const Color(0xFF00E5FF); // svetla cyan plava
       case 'svetlana':
-        return const Color(0xFFE91E63); // Roze
-      case 'milorad':
-        return const Color(0xFF4CAF50); // Zelena
-      case 'milan':
-        return const Color(0xFFFF9800); // Narandžasta
+        return const Color(0xFFFF1493); // deep pink
+      case 'bruda':
+        return const Color(0xFF7C4DFF); // ljubičasta
+      case 'bilevski':
+        return const Color(0xFFFF9800); // narandžasta
       case 'sasa':
         return const Color(0xFF9C27B0); // Ljubičasta
       case 'nikola':
-        return const Color(0xFF795548); // Braon
+        return const Color(0xFF4CAF50); // Zelena
       default:
         return const Color(0xFF607D8B); // Siva
     }
@@ -399,10 +399,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   ),
                   const SizedBox(height: 4),
                   if (_showDrivers) ...[
-                    _buildLegendItem(Colors.blue, '🚗 Bojan'),
-                    _buildLegendItem(Colors.pink, '🚗 Svetlana'),
-                    _buildLegendItem(Colors.green, '🚗 Milorad'),
-                    _buildLegendItem(Colors.orange, '🚗 Milan'),
+                    _buildLegendItem(const Color(0xFF00E5FF), '🚗 Bojan'),
+                    _buildLegendItem(const Color(0xFFFF1493), '🚗 Svetlana'),
+                    _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
+                    _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
                   ],
                   if (_showPassengers)
                     _buildLegendItem(Colors.green, '👤 Putnici'),
