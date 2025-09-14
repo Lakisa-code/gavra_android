@@ -186,7 +186,7 @@ class SMSService {
     }
   }
 
-  /// Kreiranje SMS poruke sa Gavra 013 potpisom
+  /// Kreiranje SMS poruke sa poboljšanim formatiranjem
   static String _createReminderSMS(
     String ime,
     String datum,
@@ -194,11 +194,41 @@ class SMSService {
     int putovanja,
     int otkazivanja,
   ) {
-    return "Poštovani $ime, mesečna karta ističe sutra.\n"
-        "Poslednja uplata: $datum - $iznos RSD\n"
-        "Od tada: $putovanja putovanja, $otkazivanja otkazivanja\n\n"
-        "S pozdravom,\n"
-        "Gavra 013";
+    // Određi koji mesec nije plaćen (sledeći mesec)
+    DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
+    String nextMonth = _getMonthName(tomorrow.month);
+
+    return "🚌 PODSETNIK 🚌\n\n"
+        "Poštovani $ime,\n"
+        "Obaveštavamo Vas da izmirite obaveze za $nextMonth i da rok ističe sutra.\n\n"
+        "📊 PODACI:\n"
+        "• Poslednja uplata: $datum - $iznos RSD\n"
+        "• Od tada: $putovanja putovanja\n"
+        "• Otkazivanja: $otkazivanja\n\n"
+        "Molimo platiti do kraja dana.\n"
+        "Kontakt: Bojan - Gavra 013\n\n"
+        "Hvala na razumevanju! 🚌\n"
+        "---\n"
+        "Automatska poruka.";
+  }
+
+  /// Dobijanje naziva meseca na srpskom
+  static String _getMonthName(int month) {
+    const List<String> months = [
+      'Januar',
+      'Februar',
+      'Mart',
+      'April',
+      'Maj',
+      'Jun',
+      'Jul',
+      'Avgust',
+      'Septembar',
+      'Oktobar',
+      'Novembar',
+      'Decembar'
+    ];
+    return months[month - 1];
   }
 
   /// Slanje SMS poruke
