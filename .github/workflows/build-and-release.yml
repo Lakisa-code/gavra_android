@@ -180,15 +180,6 @@ jobs:
             **Commit:** ${{ github.event.head_commit.message }}
           draft: false
           prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            See commit history for detailed changes since last release.
-            
-            **Built with Flutter 3.35.2** 📱
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   notify:
     name: 📢 Build Notification
