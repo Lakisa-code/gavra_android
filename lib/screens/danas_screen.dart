@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // DODANO za kDebugMode
-import 'package:gavra_android/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
+import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreetMap
 import '../models/putnik.dart';

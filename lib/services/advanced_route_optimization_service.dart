@@ -1,5 +1,5 @@
 import 'dart:math' as math;
-import 'package:gavra_android/geolocator.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/putnik.dart';

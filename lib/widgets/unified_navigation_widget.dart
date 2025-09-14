@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:gavra_android/geolocator.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/putnik.dart';
 
 class UnifiedNavigationWidget extends StatelessWidget {

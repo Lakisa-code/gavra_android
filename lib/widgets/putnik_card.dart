@@ -540,12 +540,12 @@ class _PutnikCardState extends State<PutnikCard> {
       return;
     }
 
-    // Izračunaj statistike od poslednjeg plaćanja do danas
+    // ✅ NOVA LOGIKA - računa za ceo trenutni mesec (1. do 30.)
     final currentDate = DateTime.now();
-    final lastPaymentDate =
-        mesecniPutnik.updatedAt; // ✅ KORISTI updated_at umesto datumPlacanja
+    final firstDayOfMonth = DateTime(currentDate.year, currentDate.month, 1);
+    final lastDayOfMonth = DateTime(currentDate.year, currentDate.month + 1, 0); // poslednji dan u mesecu
 
-    // Broj putovanja od poslednjeg plaćanja
+    // Broj putovanja za trenutni mesec
     int brojPutovanja = 0;
     int brojOtkazivanja = 0;
     try {
@@ -615,7 +615,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Statistike od poslednjeg plaćanja',
+                                'Statistike za trenutni mesec',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.blue[700],
@@ -675,7 +675,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           // ✅ KORISTI jePlacen umesto datumPlacanja
                           const SizedBox(height: 6),
                           Text(
-                            'Period: ${_formatDate(lastPaymentDate)} - ${_formatDate(currentDate)}',
+                            'Period: ${_formatDate(firstDayOfMonth)} - ${_formatDate(lastDayOfMonth)}',
                             style: TextStyle(
                               fontSize: 11,
                               color: Colors.grey[600],

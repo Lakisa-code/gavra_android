@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:gavra_android/geolocator.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 
 /// 🛰️ REAL-TIME GPS POSITION SERVICE

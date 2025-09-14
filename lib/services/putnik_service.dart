@@ -221,6 +221,15 @@ class PutnikService {
     return dani[weekday - 1];
   }
 
+  // ✅ NOVA FUNKCIJA - vikendom vraća ponedeljak kao home_screen
+  String _getFilterDayAbbreviation(int weekday) {
+    // Vikend (subota=6, nedelja=7) -> prebaci na ponedeljak (1)
+    if (weekday == 6 || weekday == 7) {
+      return 'pon'; // ponedeljak
+    }
+    return _getDayAbbreviation(weekday);
+  }
+
   // 🆕 NOVI: Sačuvaj putnika u odgovarajuću tabelu (workaround - sve u mesecni_putnici)
   Future<bool> savePutnikToCorrectTable(Putnik putnik) async {
     try {
@@ -447,7 +456,7 @@ class PutnikService {
     debugPrint(
         '🔄 [PUTNIK SERVICE] Pokretam KOMBINOVANI stream sa OBE tabele...');
 
-    final danasKratica = _getDayAbbreviation(DateTime.now().weekday);
+    final danasKratica = _getFilterDayAbbreviation(DateTime.now().weekday);
     final danas = DateTime.now().toIso8601String().split('T')[0];
 
     debugPrint(
