@@ -1041,12 +1041,23 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         status: originalPutnik.status,
         datumPocetkaMeseca: originalPutnik.datumPocetkaMeseca,
         datumKrajaMeseca: originalPutnik.datumKrajaMeseca,
-        ukupnaCenaMeseca: 0.0,
+        ukupnaCenaMeseca:
+            originalPutnik.ukupnaCenaMeseca, // ✅ ZADRŽAVA POSTOJEĆE PLAĆANJE
+        cena: originalPutnik.cena, // ✅ ZADRŽAVA PLAĆANJE I U CENA POLJU
         brojPutovanja: originalPutnik.brojPutovanja,
         brojOtkazivanja: originalPutnik.brojOtkazivanja,
         poslednjiPutovanje: originalPutnik.poslednjiPutovanje,
         createdAt: originalPutnik.createdAt,
         updatedAt: DateTime.now(),
+        obrisan: originalPutnik.obrisan, // ✅ ZADRŽAVA STATUS OBRISANOSTI
+        // Zadržava plaćanje polja
+        vremePlacanja: originalPutnik.vremePlacanja,
+        placeniMesec: originalPutnik.placeniMesec,
+        placenaGodina: originalPutnik.placenaGodina,
+        // Zadržava driver tracking polja
+        vozac: originalPutnik.vozac,
+        pokupljen: originalPutnik.pokupljen,
+        vremePokupljenja: originalPutnik.vremePokupljenja,
       );
 
       await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);

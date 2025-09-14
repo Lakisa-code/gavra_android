@@ -128,8 +128,10 @@ class MesecniPutnik {
       'datum_pocetka_meseca':
           datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
-      // 'ukupna_cena_meseca': ukupnaCenaMeseca, // ❌ UKLONJENO - kolona ne postoji u bazi
-      'cena': cena, // ✅ NOVA KOLONA - mapiranje u bazu
+      // 💰 MAPPING PLAĆANJA - koristi ukupnaCenaMeseca ako cena nije definisana
+      'cena': cena ?? ukupnaCenaMeseca, // ✅ ZADRŽAVA PLAĆANJE
+      // 📅 MESEČNA KARTA DO - izračunava na osnovu datuma kraja meseca  
+      'mesecna_karta_do': datumKrajaMeseca.toIso8601String().split('T')[0],
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
       'poslednje_putovanje':
