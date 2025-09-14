@@ -793,6 +793,22 @@ class PutnikService {
       debugPrint('🔍 DEBUG oznaciPokupljen - dnevni putnik ažuriran!');
     }
 
+    // 📊 AUTOMATSKA SINHRONIZACIJA BROJA PUTOVANJA (NOVO za putovanja_istorija!)
+    if (tabela == 'putovanja_istorija' &&
+        response['mesecni_putnik_id'] != null) {
+      try {
+        debugPrint(
+            '📊 [AUTO SYNC PICKUP] Sinhronizujem broj putovanja za mesečnog putnika ID: ${response['mesecni_putnik_id']}');
+        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+            response['mesecni_putnik_id']);
+        debugPrint('✅ [AUTO SYNC PICKUP] Broj putovanja automatski ažuriran');
+      } catch (syncError) {
+        debugPrint(
+            '❌ [AUTO SYNC PICKUP] Greška pri sinhronizaciji putovanja: $syncError');
+        // Nastavi dalje - sinhronizacija nije kritična
+      }
+    }
+
     // 📊 AŽURIRAJ STATISTIKE ako je mesečni putnik i pokupljen je
     if (putnik.mesecnaKarta == true) {
       // Statistike se računaju dinamički kroz StatistikaService
@@ -971,6 +987,22 @@ class PutnikService {
       } catch (notifError) {
         debugPrint('📬 Greška pri slanju notifikacije: $notifError');
         // Nastavi dalje - notifikacija nije kritična
+      }
+
+      // 📊 AUTOMATSKA SINHRONIZACIJA BROJA OTKAZIVANJA (NOVO!)
+      if (tabela == 'putovanja_istorija' &&
+          response['mesecni_putnik_id'] != null) {
+        try {
+          debugPrint(
+              '📊 [AUTO SYNC] Sinhronizujem broj otkazivanja za mesečnog putnika ID: ${response['mesecni_putnik_id']}');
+          await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
+              response['mesecni_putnik_id']);
+          debugPrint('✅ [AUTO SYNC] Broj otkazivanja automatski ažuriran');
+        } catch (syncError) {
+          debugPrint(
+              '❌ [AUTO SYNC] Greška pri sinhronizaciji otkazivanja: $syncError');
+          // Nastavi dalje - sinhronizacija nije kritična
+        }
       }
 
       debugPrint('🎉 [OTKAZI PUTNIKA] ZAVRŠENO USPEŠNO');
@@ -1242,6 +1274,27 @@ class PutnikService {
             'vozac': null, // ✅ UKLONI vozača
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
+
+          // 📊 SINHRONIZUJ broj otkazivanja nakon reset-a (VAŽNO!)
+          try {
+            debugPrint(
+                '📊 [RESET SYNC] Sinhronizujem broj otkazivanja za: $imePutnika');
+            final putnikId = mesecniResponse['id'] as String;
+            await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
+                putnikId);
+            debugPrint(
+                '✅ [RESET SYNC] Broj otkazivanja sinhronizovan nakon reset-a');
+
+            // 📊 TAKOĐE sinhronizuj broj putovanja (NOVO!)
+            debugPrint(
+                '📊 [RESET SYNC] Sinhronizujem broj putovanja za: $imePutnika');
+            await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+                putnikId);
+            debugPrint(
+                '✅ [RESET SYNC] Broj putovanja sinhronizovan nakon reset-a');
+          } catch (syncError) {
+            debugPrint('❌ [RESET SYNC] Greška pri sinhronizaciji: $syncError');
+          }
 
           debugPrint('✅ RESET MESECNI PUTNIK ZAVRŠEN - $imePutnika');
           return;

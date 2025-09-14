@@ -534,7 +534,68 @@ class MesecniPutnikService {
     }
   }
 
-  // 📊 STATISTIKE - broj otkazivanja za putnika
+  // 📊 IZRAČUNAJ broj otkazivanja na osnovu istorije (STVARNI BROJ)
+  static Future<int> izracunajBrojOtkazivanjaIzIstorije(
+      String mesecniPutnikId) async {
+    try {
+      // Dobij sve JEDINSTVENE DATUME kada je putnik otkazan
+      final response = await _supabase
+          .from('putovanja_istorija')
+          .select('datum')
+          .eq('mesecni_putnik_id', mesecniPutnikId)
+          .or('status.eq.otkazan,status.eq.otkazano,status.eq.nije_se_pojavio');
+
+      // Broji JEDINSTVENE datume (jedan dan = jedno otkazivanje)
+      final jedinstveniDatumi = <String>{};
+      for (final red in response) {
+        if (red['datum'] != null) {
+          jedinstveniDatumi.add(red['datum'] as String);
+        }
+      }
+
+      final brojOtkazivanja = jedinstveniDatumi.length;
+
+      if (kDebugMode) {
+        debugPrint(
+            '📊 [MESECNI PUTNIK SERVICE] Broj otkazivanja iz istorije za $mesecniPutnikId: $brojOtkazivanja (datumi: ${jedinstveniDatumi.toList()})');
+      }
+
+      return brojOtkazivanja;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju otkazivanja iz istorije: $e');
+      }
+      return 0;
+    }
+  }
+
+  // 📊 SINHRONIZUJ broj otkazivanja sa istorijom (AUTOMATSKA EVIDENCIJA)
+  static Future<bool> sinhronizujBrojOtkazivanjaSaIstorijom(String id) async {
+    try {
+      final brojIzIstorije = await izracunajBrojOtkazivanjaIzIstorije(id);
+
+      await _supabase.from('mesecni_putnici').update({
+        'broj_otkazivanja': brojIzIstorije,
+        'updated_at': DateTime.now().toIso8601String()
+      }).eq('id', id);
+
+      if (kDebugMode) {
+        debugPrint(
+            '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj otkazivanja ($id): $brojIzIstorije');
+      }
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja otkazivanja: $e');
+      }
+      return false;
+    }
+  }
+
+  // 📊 STATISTIKE - broj otkazivanja za putnika (DEPRECATED - koristi sinhronizujBrojOtkazivanjaSaIstorijom)
   static Future<bool> azurirajBrojOtkazivanja(String id, int noviBroj) async {
     try {
       await _supabase.from('mesecni_putnici').update({

@@ -543,7 +543,8 @@ class _PutnikCardState extends State<PutnikCard> {
     // ✅ NOVA LOGIKA - računa za ceo trenutni mesec (1. do 30.)
     final currentDate = DateTime.now();
     final firstDayOfMonth = DateTime(currentDate.year, currentDate.month, 1);
-    final lastDayOfMonth = DateTime(currentDate.year, currentDate.month + 1, 0); // poslednji dan u mesecu
+    final lastDayOfMonth = DateTime(
+        currentDate.year, currentDate.month + 1, 0); // poslednji dan u mesecu
 
     // Broj putovanja za trenutni mesec
     int brojPutovanja = 0;
@@ -552,8 +553,10 @@ class _PutnikCardState extends State<PutnikCard> {
       brojPutovanja =
           await MesecniPutnikService.izracunajBrojPutovanjaIzIstorije(
               _putnik.id!);
-      // Za broj otkazivanja koristimo podatak iz modela jer nema specifičnu metodu
-      brojOtkazivanja = mesecniPutnik.brojOtkazivanja;
+      // ✅ NOVA LOGIKA - računaj otkazivanja iz stvarne istorije
+      brojOtkazivanja =
+          await MesecniPutnikService.izracunajBrojOtkazivanjaIzIstorije(
+              _putnik.id!);
     } catch (e) {
       // Fallback na podatke iz modela
       brojPutovanja = mesecniPutnik.brojPutovanja;
