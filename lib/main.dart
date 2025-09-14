@@ -332,7 +332,7 @@ class _MyAppState extends State<MyApp> {
         '🎨 Building MyApp... initialized: $_isInitialized, error: $_initError, nocniRezim: $_nocniRezim');
 
     return MaterialApp(
-      title: 'Rezervacije',
+      title: 'Gavra 013',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey, // Dodaj globalni navigator key
       theme: ThemeService.svetlaTema(

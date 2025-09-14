@@ -1014,8 +1014,12 @@ class _DanasScreenState extends State<DanasScreen> {
     ]; // Koristi iste kratice kao Home screen
     final todayName = dayNames[now.weekday - 1];
 
-    // ✅ UKLONJENA LOGIKA AUTOMATSKOG PREBACIVANJA NA PONEDELJAK
-    // Sada vraća pravi trenutni dan u nedelji
+    // ✅ PAMETNA LOGIKA - vikendom prebaci na Ponedeljak jer ne vozite
+    if (todayName == 'sub' || todayName == 'ned') {
+      debugPrint('🔄 [DANAS SCREEN] Vikend je - prebacujem na Ponedeljak');
+      return 'pon';
+    }
+
     debugPrint('🗓️ [DANAS SCREEN] Današnji dan: $todayName');
     return todayName;
   }

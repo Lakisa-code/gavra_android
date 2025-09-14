@@ -38,13 +38,13 @@ class ThemeService {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      // 🎯 Tamna color scheme - SVE TAMNO!
+      // 🎯 Tamna color scheme - SVE TAMNO sa sivom!
       colorScheme: const ColorScheme(
         brightness: Brightness.dark,
-        // Primary - plava za dugmad
-        primary: Color(0xFF6B93FD),
+        // Primary - siva za dugmad
+        primary: Color(0xFF9E9E9E),
         onPrimary: Colors.white,
-        primaryContainer: Color(0xFF1565C0),
+        primaryContainer: Color(0xFF616161),
         onPrimaryContainer: Colors.white,
         // Secondary - zelena za akcije
         secondary: Color(0xFF66BB6A),
@@ -73,7 +73,7 @@ class ThemeService {
       // cardTheme: skipped for Flutter 3.24.3 compatibility
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6B93FD), // Plava dugmad
+          backgroundColor: const Color(0xFF9E9E9E), // Siva dugmad
           foregroundColor: Colors.white,
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -82,7 +82,7 @@ class ThemeService {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: Color(0xFF6B93FD),
+        backgroundColor: Color(0xFF9E9E9E),
         foregroundColor: Colors.white,
       ),
       textTheme: const TextTheme(
@@ -118,7 +118,7 @@ class ThemeService {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF6B93FD), width: 2),
+          borderSide: const BorderSide(color: Color(0xFF9E9E9E), width: 2),
         ),
         hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
         labelStyle: const TextStyle(color: Color(0xFF9E9E9E)),

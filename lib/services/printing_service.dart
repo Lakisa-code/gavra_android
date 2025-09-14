@@ -17,9 +17,9 @@ class PrintingService {
     try {
       debugPrint('📄 Priprema spiska putnika za štampanje...');
 
-      // Učitaj sve putnike
+      // ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
       List<Putnik> sviPutnici =
-          await _putnikService.getAllPutniciFromBothTables();
+          await _putnikService.streamKombinovaniPutnici().first;
 
       // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
       String getDayAbbreviation(String fullDayName) {
