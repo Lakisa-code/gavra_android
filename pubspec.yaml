@@ -44,7 +44,7 @@ dependencies:
   # Vraćam se na URL launcher pristup - jedini koji radi
   printing: ^5.14.2
   pdf: ^3.11.3
-  geolocator: ^14.0.2
+  geolocator: ^10.1.1
 
 dev_dependencies:
   flutter_test:
