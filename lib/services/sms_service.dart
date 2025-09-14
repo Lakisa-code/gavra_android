@@ -16,8 +16,9 @@ class SMSService {
     if (_isServiceRunning) return;
 
     _isServiceRunning = true;
-    debugPrint(
-        '🚀 SMS servis pokrenult - automatsko slanje predzadnjeg dana u mesecu u 20:00');
+    debugPrint('🚀 SMS servis pokrenut - dupli sistem:\n'
+        '   📅 Predzadnji dan meseca u 20:00 - podsećaj da ističe sutra\n'
+        '   📅 Prvi dan meseca u 10:00 - krajnji rok za prethodni mesec');
 
     // Provera svakih sat vremena
     _monthlyTimer = Timer.periodic(const Duration(hours: 1), (timer) async {
@@ -38,15 +39,23 @@ class SMSService {
     DateTime now = DateTime.now();
     DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
 
-    // Proverava da li je predzadnji dan u 20:00
+    // Proverava da li je predzadnji dan u 20:00 - podsećaj da ističe sutra
     if (now.day == secondToLastDay.day &&
         now.hour == 20 &&
         now.minute >= 0 &&
         now.minute < 5) {
       // 5-minutni prozor
 
-      debugPrint('📅 Predzadnji dan meseca u 20:00 - šaljem SMS poruke...');
+      debugPrint('📅 Predzadnji dan meseca u 20:00 - šaljem SMS podsećaje...');
       await sendSMSToUnpaidMonthlyPassengers();
+    }
+
+    // Proverava da li je prvi dan meseca u 10:00 - krajnji rok upozorenje
+    if (now.day == 1 && now.hour == 10 && now.minute >= 0 && now.minute < 5) {
+      // 5-minutni prozor
+
+      debugPrint('📅 Prvi dan meseca u 10:00 - šaljem SMS krajnji rok...');
+      await sendSMSToOverdueMonthlyPassengers();
     }
   }
 
@@ -124,6 +133,77 @@ class SMSService {
       debugPrint('📊 SMS rezultati: $successCount uspešno, $errorCount greška');
     } catch (e) {
       debugPrint('💥 Greška u SMS servisu: $e');
+    }
+  }
+
+  /// Šalje SMS putnicima koji nisu platili za prethodni mesec (prvi dan meseca)
+  static Future<void> sendSMSToOverdueMonthlyPassengers() async {
+    try {
+      // 🚨 SAMO BOJAN MOŽE DA ŠALJE SMS PORUKE
+      final currentDriver = await FirebaseService.getCurrentDriver();
+
+      if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
+        debugPrint(
+            '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver');
+        return;
+      }
+
+      debugPrint(
+          '📱 Učitavam putnike koji nisu platili za prethodni mesec... (Vozač: $currentDriver)');
+
+      // Učitaj sve mesečne putnike kojima je istekla karta jučer (nisu platili za prethodni mesec)
+      DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
+      String yesterdayStr = DateFormat('yyyy-MM-dd').format(yesterday);
+
+      final response = await supabase
+          .from('mesecni_putnici')
+          .select('*')
+          .eq('mesecna_karta_do', yesterdayStr);
+
+      List<Putnik> overduePassengers = (response as List)
+          .map((data) => Putnik.fromMesecniPutnici(data))
+          .where((putnik) =>
+              putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty)
+          .toList();
+
+      debugPrint(
+          '📋 Pronađeno ${overduePassengers.length} putnika koji nisu platili za prethodni mesec');
+
+      int successCount = 0;
+      int errorCount = 0;
+
+      for (Putnik putnik in overduePassengers) {
+        try {
+          // Dobij statistike putovanja za putnika
+          Map<String, dynamic> stats = await _getPaymentStats(putnik.id!);
+
+          // Kreiraj SMS poruku za krajnji rok
+          String message = _createOverdueReminderSMS(
+              putnik.ime,
+              stats['lastPaymentDate'],
+              stats['lastPaymentAmount'],
+              stats['tripsSincePayment'],
+              stats['cancellationsSincePayment']);
+
+          // Pošalji SMS
+          await _sendSMS(putnik.brojTelefona!, message);
+          successCount++;
+
+          debugPrint(
+              '✅ Krajnji rok SMS poslat: ${putnik.ime} (${putnik.brojTelefona})');
+
+          // Pauza između SMS-ova (da se izbegne spam)
+          await Future.delayed(const Duration(seconds: 2));
+        } catch (e) {
+          errorCount++;
+          debugPrint('❌ Greška slanja krajnji rok SMS: ${putnik.ime} - $e');
+        }
+      }
+
+      debugPrint(
+          '📊 Krajnji rok SMS rezultati: $successCount uspešno, $errorCount greška');
+    } catch (e) {
+      debugPrint('💥 Greška u krajnji rok SMS servisu: $e');
     }
   }
 
@@ -206,6 +286,32 @@ class SMSService {
         "• Od tada: $putovanja putovanja\n"
         "• Otkazivanja: $otkazivanja\n\n"
         "Molimo platiti do kraja dana.\n"
+        "Kontakt: Bojan - Gavra 013\n\n"
+        "Hvala na razumevanju! 🚌\n"
+        "---\n"
+        "Automatska poruka.";
+  }
+
+  /// Kreiranje SMS poruke za krajnji rok (prvi dan meseca)
+  static String _createOverdueReminderSMS(
+    String ime,
+    String datum,
+    int iznos,
+    int putovanja,
+    int otkazivanja,
+  ) {
+    // Određi koji mesec nije plaćen (prethodni mesec)
+    DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
+    String previousMonth = _getMonthName(yesterday.month);
+
+    return "⚠️ KRAJNJI ROK ⚠️\n\n"
+        "Poštovani $ime,\n"
+        "Podse​ćamo Vas da niste izmirili obaveze za $previousMonth i da je krajnji rok 5. u ovom mesecu.\n\n"
+        "📊 PODACI:\n"
+        "• Poslednja uplata: $datum - $iznos RSD\n"
+        "• Od tada: $putovanja putovanja\n"
+        "• Otkazivanja: $otkazivanja\n\n"
+        "🚨 UPOZORENJE: Ako se ne plati do 5. u mesecu, automatski ćete biti skinuti sa liste mesečnih putnika.\n\n"
         "Kontakt: Bojan - Gavra 013\n\n"
         "Hvala na razumevanju! 🚌\n"
         "---\n"
