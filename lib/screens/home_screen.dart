@@ -71,6 +71,34 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     'Petak'
   ];
 
+  // 🕐 VREMENA ZA DROPDOWN
+  final List<String> bcVremena = [
+    '5:00',
+    '6:00',
+    '7:00',
+    '8:00',
+    '9:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:30',
+    '18:00'
+  ];
+
+  final List<String> vsVremena = [
+    '6:00',
+    '7:00',
+    '8:00',
+    '10:00',
+    '11:00',
+    '13:00',
+    '14:00',
+    '15:30',
+    '16:15',
+    '19:00'
+  ];
+
 // Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - ZIMSKI RASPORED
   final List<String> _sviPolasci = [
     '5:00 Bela Crkva',
@@ -333,7 +361,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<List<Putnik>> _getAllPutnici() async {
     try {
       // 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
-      return await _putnikService.getAllPutniciFromBothTables();
+      // 🎯 PROSLIJEDI SELEKTOVANI DAN umesto današnjeg
+      return await _putnikService.getAllPutniciFromBothTables(
+          targetDay: _selectedDay);
     } catch (e) {
       debugPrint('🔥 Greška pri učitavanju putnika: $e');
       return [];
@@ -493,24 +523,72 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ],
                     )),
                 const SizedBox(height: 16),
-                AutocompleteImeField(
-                  controller: imeController,
-                  mesecnaKarta: mesecnaKarta,
-                  dozvoljenaImena: dozvoljenaImena,
-                  onChanged: (ime) {
-                    // Automatski označi mesečnu kartu ako je pronađen mesečni putnik
-                    final isMesecniPutnik =
-                        dozvoljenaImena.contains(ime.trim());
-                    if (isMesecniPutnik != mesecnaKarta) {
-                      setStateDialog(() {
-                        // 🔧 SAMO ažuriraj checkbox ako NIJE manuelno označeno
-                        if (!manuelnoOznaceno) {
-                          mesecnaKarta = isMesecniPutnik;
-                        }
-                      });
-                    }
-                  },
-                ),
+
+                // ✅ IZBOR IMENA - drugačiji UI za mesečne i obične putnike
+                if (mesecnaKarta)
+                  // DROPDOWN ZA MESEČNE PUTNIKE
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Izaberite mesečnog putnika:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: imeController.text.trim().isEmpty
+                            ? null
+                            : (dozvoljenaImena
+                                    .contains(imeController.text.trim())
+                                ? imeController.text.trim()
+                                : null),
+                        decoration: InputDecoration(
+                          labelText: 'Mesečni putnik',
+                          hintText: 'Izaberite putnika...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          prefixIcon:
+                              Icon(Icons.person, color: Colors.blue.shade600),
+                        ),
+                        items: dozvoljenaImena
+                            .map((ime) => DropdownMenuItem(
+                                  value: ime,
+                                  child: Text(ime),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            imeController.text = value ?? '';
+                          });
+                        },
+                      ),
+                    ],
+                  )
+                else
+                  // AUTOCOMPLETE ZA OBIČNE PUTNIKE
+                  AutocompleteImeField(
+                    controller: imeController,
+                    mesecnaKarta: mesecnaKarta,
+                    dozvoljenaImena: dozvoljenaImena,
+                    onChanged: (ime) {
+                      // Automatski označi mesečnu kartu ako je pronađen mesečni putnik
+                      final isMesecniPutnik =
+                          dozvoljenaImena.contains(ime.trim());
+                      if (isMesecniPutnik != mesecnaKarta) {
+                        setStateDialog(() {
+                          // 🔧 SAMO ažuriraj checkbox ako NIJE manuelno označeno
+                          if (!manuelnoOznaceno) {
+                            mesecnaKarta = isMesecniPutnik;
+                          }
+                        });
+                      }
+                    },
+                  ),
                 const SizedBox(height: 12),
                 // Novo AutocompleteAdresaField - filtrira po gradu!
                 AutocompleteAdresaField(
@@ -609,6 +687,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   },
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
+
+                // � INFO SEKCIJA ZA MESEČNE PUTNIKE
+                if (mesecnaKarta) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Putnik će biti dodat za: $_selectedVreme - $_selectedGrad',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -730,6 +838,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                         debugPrint(
                             '🔥 [HOME SCREEN] Kreiram putnik objekat...');
+
+                        // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
+                        debugPrint(
+                            '🕐 [HOME SCREEN] Koristi selektovano vreme: $_selectedVreme');
+
                         final putnik = Putnik(
                           ime: imeController.text.trim(),
                           polazak: _selectedVreme,

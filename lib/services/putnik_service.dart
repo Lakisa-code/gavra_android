@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -160,7 +161,7 @@ class PutnikService {
   }
 
   // 🆕 NOVI: Učitaj sve putnike iz obe tabele
-  Future<List<Putnik>> getAllPutniciFromBothTables() async {
+  Future<List<Putnik>> getAllPutniciFromBothTables({String? targetDay}) async {
     List<Putnik> allPutnici = [];
 
     try {
@@ -175,42 +176,43 @@ class PutnikService {
         allPutnici.add(Putnik.fromPutovanjaIstorija(data));
       }
 
-      // 🔧 ISPRAVKA: Učitaj i mesečne putnike kreirane kao dnevna putovanja
-      final mesecniDnevniResponse = await supabase
-          .from('putovanja_istorija')
-          .select('*')
-          .eq('tip_putnika', 'mesecni')
-          .order('created_at', ascending: false);
+      // � UKLONJENO: Ne učitavaj mesečne putnike iz putovanja_istorija
+      // jer oni postoje u mesecni_putnici tabeli i ne treba da se duplikuju
 
-      for (final data in mesecniDnevniResponse) {
-        allPutnici.add(Putnik.fromPutovanjaIstorija(data));
-      }
+      // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz mesecni_putnici za selektovani dan
+      // Ako nije prosleđen targetDay, koristi današnji dan
+      final targetDate = targetDay ?? _getTodayName();
+      final danKratica = _getDayAbbreviationFromName(targetDate);
 
-      // 🗓️ SAMO DANAŠNJI DAN: Učitaj mesečne putnike iz mesecni_putnici SAMO za današnji dan
-      // Ovo sprečava duplikate kada se kreiraju dnevna putovanja za buduće dane
-      final danas = DateTime.now();
-      final danasKratica = _getDayAbbreviation(danas.weekday);
+      debugPrint(
+          '🎯 [getAllPutniciFromBothTables] Target day: $targetDate, kratica: $danKratica');
 
       final mesecniResponse = await supabase
           .from('mesecni_putnici')
           .select('*')
           // UKLONJEN FILTER za aktivan - sada prikazuje SVE putnike (aktivne i otkazane)
-          .like('radni_dani', '%$danasKratica%')
+          .like('radni_dani', '%$danKratica%')
           .order('created_at', ascending: false);
+
+      debugPrint(
+          '🎯 [getAllPutniciFromBothTables] Pronađeno ${mesecniResponse.length} mesečnih putnika');
 
       for (final data in mesecniResponse) {
         // NOVA LOGIKA: Koristi fromMesecniPutniciMultiple da kreira više objekata
         final mesecniPutnici = Putnik.fromMesecniPutniciMultiple(data);
-        // Filtriraj samo za današnji dan
+        // Filtriraj samo za ciljani dan
         for (final putnik in mesecniPutnici) {
-          if (putnik.dan.toLowerCase().contains(danasKratica.toLowerCase())) {
+          if (putnik.dan.toLowerCase().contains(danKratica.toLowerCase())) {
             allPutnici.add(putnik);
           }
         }
       }
 
+      debugPrint(
+          '🎯 [getAllPutniciFromBothTables] Ukupno putnika: ${allPutnici.length}');
       return allPutnici;
     } catch (e) {
+      debugPrint('💥 [getAllPutniciFromBothTables] Greška: $e');
       return [];
     }
   }
@@ -219,6 +221,43 @@ class PutnikService {
   String _getDayAbbreviation(int weekday) {
     const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     return dani[weekday - 1];
+  }
+
+  // Helper funkcija za dobijanje današnjeg imena dana
+  String _getTodayName() {
+    final danas = DateTime.now();
+    const daniNazivi = [
+      'Ponedeljak',
+      'Utorak',
+      'Sreda',
+      'Četvrtak',
+      'Petak',
+      'Subota',
+      'Nedelja'
+    ];
+    return daniNazivi[danas.weekday - 1];
+  }
+
+  // Helper funkcija za konverziju punog naziva dana u kraticu
+  String _getDayAbbreviationFromName(String dayName) {
+    switch (dayName.toLowerCase()) {
+      case 'ponedeljak':
+        return 'pon';
+      case 'utorak':
+        return 'uto';
+      case 'sreda':
+        return 'sre';
+      case 'četvrtak':
+        return 'cet';
+      case 'petak':
+        return 'pet';
+      case 'subota':
+        return 'sub';
+      case 'nedelja':
+        return 'ned';
+      default:
+        return 'pon'; // default fallback
+    }
   }
 
   // ✅ NOVA FUNKCIJA - vikendom vraća ponedeljak kao home_screen
@@ -380,7 +419,7 @@ class PutnikService {
         debugPrint(
             '📊 [DODAJ PUTNIKA] Proveavam da li mesečni putnik već postoji...');
 
-        // 🚫 PROVERAVA DA LI MESEČNI PUTNIK VEĆ POSTOJI - NE MOŽE SE KREIRATI NOVI IZ HOME SCREEN-A
+        // ✅ PROVERAVA DA LI MESEČNI PUTNIK VEĆ POSTOJI
         final existingPutnici = await supabase
             .from('mesecni_putnici')
             .select('id, putnik_ime, aktivan')
@@ -389,25 +428,21 @@ class PutnikService {
 
         if (existingPutnici.isEmpty) {
           debugPrint('❌ [DODAJ PUTNIKA] Mesečni putnik ne postoji u bazi!');
-          throw Exception(
-              'NOVI MESEČNI PUTNIK SE NE MOŽE DODATI IZ HOME SCREEN-A!\n\n'
+          throw Exception('MESEČNI PUTNIK NE POSTOJI!\n\n'
               'Putnik "${putnik.ime}" ne postoji u listi mesečnih putnika.\n'
               'Idite na: Meni → Mesečni putnici da kreirate novog mesečnog putnika.');
         }
 
+        // 🎯 NOVA LOGIKA: NE DODAVAJ NOVO PUTOVANJE, već samo označi da se pojavio
         debugPrint(
-            '✅ [DODAJ PUTNIKA] Mesečni putnik "${putnik.ime}" već postoji - samo dodajem putovanje...');
-
-        // MESEČNI PUTNIK POSTOJI - DODAJ SAMO PUTOVANJE U putovanja_istorija
-        final insertData = putnik.toPutovanjaIstorijaMap();
-        // Dodaj mesecni_putnik_id reference
-        final mesecniPutnikId = existingPutnici.first['id'];
-        insertData['mesecni_putnik_id'] = mesecniPutnikId;
-
-        debugPrint('📊 [DODAJ PUTNIKA] Insert putovanje data: $insertData');
-        await supabase.from('putovanja_istorija').insert(insertData);
+            '✅ [DODAJ PUTNIKA] Mesečni putnik "${putnik.ime}" već postoji u mesecni_putnici tabeli');
         debugPrint(
-            '✅ [DODAJ PUTNIKA] Putovanje za postojećeg mesečnog putnika uspešno dodato');
+            '🎯 [DODAJ PUTNIKA] MESEČNI PUTNIK - ne kreiram novo putovanje, već se oslanjam na mesecni_putnici tabelu');
+
+        // ℹ️ Za mesečne putnike, njihovo prisustvo se već evidentira kroz mesecni_putnici tabelu
+        // Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike
+        debugPrint(
+            '✅ [DODAJ PUTNIKA] Mesečni putnik evidentiran - koristiti će se postojeći red iz mesecni_putnici');
       } else {
         debugPrint('📊 [DODAJ PUTNIKA] Dodajem DNEVNOG putnika...');
         // DNEVNI PUTNIK - dodaj u putovanja_istorija tabelu (RLS je sada rešen!)
@@ -1360,7 +1395,7 @@ class PutnikService {
         final mesecniPutnici = await supabase
             .from('mesecni_putnici')
             .select(
-                'id, putnik_ime, polazak_bela_crkva, polazak_vrsac, poslednje_putovanje')
+                'id, putnik_ime, polazak_bc_pon, polazak_bc_uto, polazak_bc_sre, polazak_bc_cet, polazak_bc_pet, polazak_vs_pon, polazak_vs_uto, polazak_vs_sre, polazak_vs_cet, polazak_vs_pet, polazak_bela_crkva, polazak_vrsac, poslednje_putovanje')
             .eq('aktivan', true)
             .not('poslednje_putovanje', 'is', null);
 
@@ -1371,12 +1406,54 @@ class PutnikService {
 
           if (vremePokupljenja == null) continue;
 
-          // Provjeri polazak za odgovarajući grad
+          // Provjeri polazak za odgovarajući grad i trenutni dan
           String? polazakVreme;
+          final danasnjiDan = _getDanNedelje();
+
           if (grad == 'Bela Crkva') {
-            polazakVreme = putnik['polazak_bela_crkva'] as String?;
+            // Prvo pokušaj da čitaš iz nove kolone za trenutni dan
+            final novaKolona = 'polazak_bc_$danasnjiDan';
+            polazakVreme = putnik[novaKolona] as String?;
+
+            // Fallback na staru kolonu ako nova nije dostupna
+            if (polazakVreme == null || polazakVreme.isEmpty) {
+              try {
+                final polazakData = putnik['polazak_bela_crkva'];
+                if (polazakData is String && polazakData.startsWith('{')) {
+                  final Map<String, dynamic> polazakMapa =
+                      jsonDecode(polazakData);
+                  polazakVreme = polazakMapa[danasnjiDan] as String?;
+                } else if (polazakData is String) {
+                  // Stari format - koristi direktno
+                  polazakVreme = polazakData;
+                }
+              } catch (e) {
+                // Fallback na stari format
+                polazakVreme = putnik['polazak_bela_crkva'] as String?;
+              }
+            }
           } else if (grad == 'Vršac') {
-            polazakVreme = putnik['polazak_vrsac'] as String?;
+            // Prvo pokušaj da čitaš iz nove kolone za trenutni dan
+            final novaKolona = 'polazak_vs_$danasnjiDan';
+            polazakVreme = putnik[novaKolona] as String?;
+
+            // Fallback na staru kolonu ako nova nije dostupna
+            if (polazakVreme == null || polazakVreme.isEmpty) {
+              try {
+                final polazakData = putnik['polazak_vrsac'];
+                if (polazakData is String && polazakData.startsWith('{')) {
+                  final Map<String, dynamic> polazakMapa =
+                      jsonDecode(polazakData);
+                  polazakVreme = polazakMapa[danasnjiDan] as String?;
+                } else if (polazakData is String) {
+                  // Stari format - koristi direktno
+                  polazakVreme = polazakData;
+                }
+              } catch (e) {
+                // Fallback na stari format
+                polazakVreme = putnik['polazak_vrsac'] as String?;
+              }
+            }
           }
 
           if (polazakVreme == null ||
@@ -1546,6 +1623,31 @@ class PutnikService {
     } catch (e) {
       debugPrint('❌ Greška pri dohvatanju plaćanja: $e');
       return [];
+    }
+  }
+
+  // Helper metod za dobijanje naziva dana nedelje
+  static String _getDanNedelje() {
+    final sada = DateTime.now();
+    final danNedelje = sada.weekday; // 1=Monday, 7=Sunday
+
+    switch (danNedelje) {
+      case 1:
+        return 'pon';
+      case 2:
+        return 'uto';
+      case 3:
+        return 'sre';
+      case 4:
+        return 'cet';
+      case 5:
+        return 'pet';
+      case 6:
+        return 'sub'; // Subota (ako dodamo)
+      case 7:
+        return 'ned'; // Nedelja (ako dodamo)
+      default:
+        return 'pon';
     }
   }
 }

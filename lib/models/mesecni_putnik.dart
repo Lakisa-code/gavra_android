@@ -4,10 +4,23 @@ class MesecniPutnik {
   final String tip;
   final String? tipSkole;
   final String? brojTelefona;
-  final String? polazakBelaCrkva;
+  // Vremena polaska iz Bele Crkve po danima
+  final String? polazakBcPon;
+  final String? polazakBcUto;
+  final String? polazakBcSre;
+  final String? polazakBcCet;
+  final String? polazakBcPet;
   final String? adresaBelaCrkva;
-  final String? polazakVrsac;
+  // Vremena polaska iz Vršca po danima
+  final String? polazakVsPon;
+  final String? polazakVsUto;
+  final String? polazakVsSre;
+  final String? polazakVsCet;
+  final String? polazakVsPet;
   final String? adresaVrsac;
+  // Stare kolone - zadržavamo za kompatibilnost
+  final Map<String, String>? polazakBelaCrkva;
+  final Map<String, String>? polazakVrsac;
   final String tipPrikazivanja;
   final String radniDani;
   final bool aktivan;
@@ -34,16 +47,83 @@ class MesecniPutnik {
   final bool pokupljen; // da li je pokupljen
   final DateTime? vremePokupljenja; // kada je pokupljen
 
+  // Helper funkcije za JSON konverziju
+  static Map<String, String>? _parsePolazakVreme(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      // Ako je string, verovatno je stari format - konvertuj u novi
+      if (value.isEmpty || value == '00:00:00') return null;
+      // Za sada, postavi isto vreme za sve dane
+      return {
+        'pon': value,
+        'uto': value,
+        'sre': value,
+        'cet': value,
+        'pet': value,
+      };
+    }
+    if (value is Map) {
+      // Ako je već mapa, konvertuj u Map<String, String>
+      return Map<String, String>.from(value);
+    }
+    return null;
+  }
+
+  static String? _polazakVremeToTime(Map<String, String>? polazakVreme) {
+    if (polazakVreme == null || polazakVreme.isEmpty) return null;
+
+    // Pronađi prvo definirano vreme iz mape
+    for (final entry in polazakVreme.entries) {
+      if (entry.value.isNotEmpty && entry.value != '00:00') {
+        // Konvertuj u TIME format HH:MM:SS
+        String timeValue = entry.value;
+        if (timeValue.length == 5) {
+          // Ako je HH:MM, dodaj :00
+          timeValue = '$timeValue:00';
+        }
+        return timeValue;
+      }
+    }
+    return null;
+  }
+
+  // Helper metoda za formatiranje vremena iz string-a (za nove kolone)
+  static String? _formatTimeString(String? timeString) {
+    if (timeString == null || timeString.isEmpty) {
+      return null;
+    }
+
+    // Ukloni sekunde ako postoje (12:00:00 -> 12:00)
+    if (timeString.length == 8 && timeString.contains(':')) {
+      return timeString.substring(0, 5); // Uzmi samo HH:MM deo
+    }
+
+    return timeString;
+  }
+
   MesecniPutnik({
     required this.id,
     required this.putnikIme,
     required this.tip,
     this.tipSkole,
     this.brojTelefona,
-    this.polazakBelaCrkva,
+    // Vremena polaska iz Bele Crkve po danima
+    this.polazakBcPon,
+    this.polazakBcUto,
+    this.polazakBcSre,
+    this.polazakBcCet,
+    this.polazakBcPet,
     this.adresaBelaCrkva,
-    this.polazakVrsac,
+    // Vremena polaska iz Vršca po danima
+    this.polazakVsPon,
+    this.polazakVsUto,
+    this.polazakVsSre,
+    this.polazakVsCet,
+    this.polazakVsPet,
     this.adresaVrsac,
+    // Stare kolone za kompatibilnost
+    this.polazakBelaCrkva,
+    this.polazakVrsac,
     this.tipPrikazivanja = 'fiksan',
     this.radniDani = 'pon,uto,sre,cet,pet',
     this.aktivan = true,
@@ -76,10 +156,22 @@ class MesecniPutnik {
       tip: map['tip'] as String,
       tipSkole: map['tip_skole'] as String?,
       brojTelefona: map['broj_telefona'] as String?,
-      polazakBelaCrkva: map['polazak_bela_crkva'] as String?,
+      // Nove kolone za vremena po danima
+      polazakBcPon: map['polazak_bc_pon'] as String?,
+      polazakBcUto: map['polazak_bc_uto'] as String?,
+      polazakBcSre: map['polazak_bc_sre'] as String?,
+      polazakBcCet: map['polazak_bc_cet'] as String?,
+      polazakBcPet: map['polazak_bc_pet'] as String?,
       adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
-      polazakVrsac: map['polazak_vrsac'] as String?,
+      polazakVsPon: map['polazak_vs_pon'] as String?,
+      polazakVsUto: map['polazak_vs_uto'] as String?,
+      polazakVsSre: map['polazak_vs_sre'] as String?,
+      polazakVsCet: map['polazak_vs_cet'] as String?,
+      polazakVsPet: map['polazak_vs_pet'] as String?,
       adresaVrsac: map['adresa_vrsac'] as String?,
+      // Stare kolone za kompatibilnost
+      polazakBelaCrkva: _parsePolazakVreme(map['polazak_bela_crkva']),
+      polazakVrsac: _parsePolazakVreme(map['polazak_vrsac']),
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'fiksan',
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
       aktivan: map['aktivan'] as bool? ?? true,
@@ -117,10 +209,24 @@ class MesecniPutnik {
       'tip': tip,
       'tip_skole': tipSkole,
       'broj_telefona': brojTelefona,
-      'polazak_bela_crkva': polazakBelaCrkva,
+      // Nove kolone za vremena po danima
+      'polazak_bc_pon': polazakBcPon,
+      'polazak_bc_uto': polazakBcUto,
+      'polazak_bc_sre': polazakBcSre,
+      'polazak_bc_cet': polazakBcCet,
+      'polazak_bc_pet': polazakBcPet,
+      'polazak_vs_pon': polazakVsPon,
+      'polazak_vs_uto': polazakVsUto,
+      'polazak_vs_sre': polazakVsSre,
+      'polazak_vs_cet': polazakVsCet,
+      'polazak_vs_pet': polazakVsPet,
       'adresa_bela_crkva': adresaBelaCrkva,
-      'polazak_vrsac': polazakVrsac,
       'adresa_vrsac': adresaVrsac,
+      // Stare kolone - postavi na null ako koristimo nova vremena po danima
+      'polazak_bela_crkva':
+          _hasNewTimeColumns() ? null : _polazakVremeToTime(polazakBelaCrkva),
+      'polazak_vrsac':
+          _hasNewTimeColumns() ? null : _polazakVremeToTime(polazakVrsac),
       'tip_prikazivanja': tipPrikazivanja,
       'radni_dani': radniDani,
       'aktivan': aktivan,
@@ -130,8 +236,6 @@ class MesecniPutnik {
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       // 💰 MAPPING PLAĆANJA - koristi ukupnaCenaMeseca ako cena nije definisana
       'cena': cena ?? ukupnaCenaMeseca, // ✅ ZADRŽAVA PLAĆANJE
-      // 📅 MESEČNA KARTA DO - izračunava na osnovu datuma kraja meseca  
-      'mesecna_karta_do': datumKrajaMeseca.toIso8601String().split('T')[0],
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
       'poslednje_putovanje':
@@ -162,10 +266,22 @@ class MesecniPutnik {
     String? tip,
     String? tipSkole,
     String? brojTelefona,
-    String? polazakBelaCrkva,
+    // Nove kolone za vremena po danima
+    String? polazakBcPon,
+    String? polazakBcUto,
+    String? polazakBcSre,
+    String? polazakBcCet,
+    String? polazakBcPet,
+    String? polazakVsPon,
+    String? polazakVsUto,
+    String? polazakVsSre,
+    String? polazakVsCet,
+    String? polazakVsPet,
     String? adresaBelaCrkva,
-    String? polazakVrsac,
     String? adresaVrsac,
+    // Stare kolone za kompatibilnost
+    Map<String, String>? polazakBelaCrkva,
+    Map<String, String>? polazakVrsac,
     String? tipPrikazivanja,
     String? radniDani,
     bool? aktivan,
@@ -193,10 +309,22 @@ class MesecniPutnik {
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
       brojTelefona: brojTelefona ?? this.brojTelefona,
-      polazakBelaCrkva: polazakBelaCrkva ?? this.polazakBelaCrkva,
+      // Nove kolone za vremena po danima
+      polazakBcPon: polazakBcPon ?? this.polazakBcPon,
+      polazakBcUto: polazakBcUto ?? this.polazakBcUto,
+      polazakBcSre: polazakBcSre ?? this.polazakBcSre,
+      polazakBcCet: polazakBcCet ?? this.polazakBcCet,
+      polazakBcPet: polazakBcPet ?? this.polazakBcPet,
+      polazakVsPon: polazakVsPon ?? this.polazakVsPon,
+      polazakVsUto: polazakVsUto ?? this.polazakVsUto,
+      polazakVsSre: polazakVsSre ?? this.polazakVsSre,
+      polazakVsCet: polazakVsCet ?? this.polazakVsCet,
+      polazakVsPet: polazakVsPet ?? this.polazakVsPet,
       adresaBelaCrkva: adresaBelaCrkva ?? this.adresaBelaCrkva,
-      polazakVrsac: polazakVrsac ?? this.polazakVrsac,
       adresaVrsac: adresaVrsac ?? this.adresaVrsac,
+      // Stare kolone za kompatibilnost
+      polazakBelaCrkva: polazakBelaCrkva ?? this.polazakBelaCrkva,
+      polazakVrsac: polazakVrsac ?? this.polazakVrsac,
       tipPrikazivanja: tipPrikazivanja ?? this.tipPrikazivanja,
       radniDani: radniDani ?? this.radniDani,
       aktivan: aktivan ?? this.aktivan,
@@ -253,6 +381,97 @@ class MesecniPutnik {
   String? get otkazaoVozac => (!aktivan && vozac != null)
       ? vozac
       : null; // Ko je otkazao (ako je neaktivan)
+
+  // 📅 HELPER METODE ZA VREMENA POLASKA PO DANIMA
+  /// Vraća vreme polaska iz Bele Crkve za specifičan dan
+  /// [dan] može biti: 'pon', 'uto', 'sre', 'cet', 'pet'
+  String? getPolazakBelaCrkvaZaDan(String dan) {
+    switch (dan) {
+      case 'pon':
+        return _formatTimeString(polazakBcPon) ?? polazakBelaCrkva?[dan];
+      case 'uto':
+        return _formatTimeString(polazakBcUto) ?? polazakBelaCrkva?[dan];
+      case 'sre':
+        return _formatTimeString(polazakBcSre) ?? polazakBelaCrkva?[dan];
+      case 'cet':
+        return _formatTimeString(polazakBcCet) ?? polazakBelaCrkva?[dan];
+      case 'pet':
+        return _formatTimeString(polazakBcPet) ?? polazakBelaCrkva?[dan];
+      default:
+        return polazakBelaCrkva?[dan];
+    }
+  }
+
+  /// Vraća vreme polaska iz Vršca za specifičan dan
+  /// [dan] može biti: 'pon', 'uto', 'sre', 'cet', 'pet'
+  String? getPolazakVrsacZaDan(String dan) {
+    switch (dan) {
+      case 'pon':
+        return _formatTimeString(polazakVsPon) ?? polazakVrsac?[dan];
+      case 'uto':
+        return _formatTimeString(polazakVsUto) ?? polazakVrsac?[dan];
+      case 'sre':
+        return _formatTimeString(polazakVsSre) ?? polazakVrsac?[dan];
+      case 'cet':
+        return _formatTimeString(polazakVsCet) ?? polazakVrsac?[dan];
+      case 'pet':
+        return _formatTimeString(polazakVsPet) ?? polazakVrsac?[dan];
+      default:
+        return polazakVrsac?[dan];
+    }
+  }
+
+  /// Vraća vreme polaska za trenutni dan nedelje
+  String? getPolazakZaDanasnjiDan(String grad) {
+    final danasnjiDan = _getDanNedelje();
+    if (grad.toLowerCase().contains('bela') ||
+        grad.toLowerCase().contains('crkva')) {
+      return getPolazakBelaCrkvaZaDan(danasnjiDan);
+    } else if (grad.toLowerCase().contains('vršac') ||
+        grad.toLowerCase().contains('vrsac')) {
+      return getPolazakVrsacZaDan(danasnjiDan);
+    }
+    return null;
+  }
+
+  /// Helper metod za dobijanje naziva dana nedelje
+  String _getDanNedelje() {
+    final sada = DateTime.now();
+    final danNedelje = sada.weekday; // 1=Monday, 7=Sunday
+
+    switch (danNedelje) {
+      case 1:
+        return 'pon';
+      case 2:
+        return 'uto';
+      case 3:
+        return 'sre';
+      case 4:
+        return 'cet';
+      case 5:
+        return 'pet';
+      case 6:
+        return 'sub'; // Subota (ako dodamo)
+      case 7:
+        return 'ned'; // Nedelja (ako dodamo)
+      default:
+        return 'pon';
+    }
+  }
+
+  /// Proverava da li putnik koristi nova vremena po danima
+  bool _hasNewTimeColumns() {
+    return polazakBcPon != null ||
+        polazakBcUto != null ||
+        polazakBcSre != null ||
+        polazakBcCet != null ||
+        polazakBcPet != null ||
+        polazakVsPon != null ||
+        polazakVsUto != null ||
+        polazakVsSre != null ||
+        polazakVsCet != null ||
+        polazakVsPet != null;
+  }
 
   @override
   bool operator ==(Object other) {

@@ -93,12 +93,12 @@ class _DanasScreenState extends State<DanasScreen> {
             status == 'obrisan');
 
         // Da li ide ujutro (Bela Crkva)?
-        final ideBelaCrkva =
-            djak.polazakBelaCrkva != null && djak.polazakBelaCrkva!.isNotEmpty;
+        final polazakBC = djak.getPolazakBelaCrkvaZaDan(danasnjiDan);
+        final ideBelaCrkva = polazakBC != null && polazakBC.isNotEmpty;
 
         // Da li se vraća (Vršac)?
-        final vraca =
-            djak.polazakVrsac != null && djak.polazakVrsac!.isNotEmpty;
+        final polazakVS = djak.getPolazakVrsacZaDan(danasnjiDan);
+        final vraca = polazakVS != null && polazakVS.isNotEmpty;
 
         if (ideBelaCrkva) {
           ukupnoUjutro++; // broji sve koji idu ujutro

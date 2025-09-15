@@ -89,7 +89,7 @@ class SMSService {
       final response = await supabase
           .from('mesecni_putnici')
           .select('*')
-          .eq('mesecna_karta_do', tomorrowStr);
+          .eq('datum_kraja_meseca', tomorrowStr);
 
       List<Putnik> unpaidPassengers = (response as List)
           .map((data) => Putnik.fromMesecniPutnici(data))
@@ -158,7 +158,7 @@ class SMSService {
       final response = await supabase
           .from('mesecni_putnici')
           .select('*')
-          .eq('mesecna_karta_do', yesterdayStr);
+          .eq('datum_kraja_meseca', yesterdayStr);
 
       List<Putnik> overduePassengers = (response as List)
           .map((data) => Putnik.fromMesecniPutnici(data))

@@ -40,8 +40,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   String _noviBrojTelefona = '';
   String _novaAdresaBelaCrkva = '';
   String _novaAdresaVrsac = '';
-  String _noviPolazakBelaCrkva = '';
-  String _noviPolazakVrsac = '';
 
   // 📅 RADNI DANI - checkbox state
   Map<String, bool> _noviRadniDani = {
@@ -50,6 +48,38 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'sre': true,
     'cet': true,
     'pet': true,
+  };
+
+  // ⏰ VREMENA POLASKA PO DANIMA - TextEditingController za svaki dan
+  // Bela Crkva
+  final TextEditingController _polazakBcPonController = TextEditingController();
+  final TextEditingController _polazakBcUtoController = TextEditingController();
+  final TextEditingController _polazakBcSreController = TextEditingController();
+  final TextEditingController _polazakBcCetController = TextEditingController();
+  final TextEditingController _polazakBcPetController = TextEditingController();
+
+  // Vršac
+  final TextEditingController _polazakVsPonController = TextEditingController();
+  final TextEditingController _polazakVsUtoController = TextEditingController();
+  final TextEditingController _polazakVsSreController = TextEditingController();
+  final TextEditingController _polazakVsCetController = TextEditingController();
+  final TextEditingController _polazakVsPetController = TextEditingController();
+
+  // Stare Map strukture - zadržavamo za kompatibilnost
+  Map<String, String> _novaVremenaBC = {
+    'pon': '',
+    'uto': '',
+    'sre': '',
+    'cet': '',
+    'pet': '',
+  };
+
+  Map<String, String> _novaVremenaVS = {
+    'pon': '',
+    'uto': '',
+    'sre': '',
+    'cet': '',
+    'pet': '',
   };
 
   // Helper metod za konverziju radnih dana u string
@@ -81,14 +111,21 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late TextEditingController _brojTelefonaController;
   late TextEditingController _adresaBelaCrkvaController;
   late TextEditingController _adresaVrsacController;
-  late TextEditingController _polazakBelaCrkvaController;
-  late TextEditingController _polazakVrsacController;
+
+  // Controller-i za vremena polaska
+  final Map<String, TextEditingController> _vremenaBC_Controllers = {};
+  final Map<String, TextEditingController> _vremenaVS_Controllers = {};
 
   @override
   void initState() {
     super.initState();
     _initializeControllers();
     _initializeOptimizations();
+
+    // 🔍 DEBUG - proverava strukturu tabele
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MesecniPutnikService.debugTableStructure();
+    });
   }
 
   void _initializeControllers() {
@@ -97,8 +134,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _brojTelefonaController = TextEditingController();
     _adresaBelaCrkvaController = TextEditingController();
     _adresaVrsacController = TextEditingController();
-    _polazakBelaCrkvaController = TextEditingController();
-    _polazakVrsacController = TextEditingController();
+
+    // Kreiraj controller-e za svaки dan
+    const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
+    for (final dan in dani) {
+      _vremenaBC_Controllers[dan] = TextEditingController();
+      _vremenaVS_Controllers[dan] = TextEditingController();
+    }
   }
 
   // 🔄 OPTIMIZACIJA: Inicijalizacija debounced search i error handling
@@ -132,8 +174,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _brojTelefonaController.dispose();
     _adresaBelaCrkvaController.dispose();
     _adresaVrsacController.dispose();
-    _polazakBelaCrkvaController.dispose();
-    _polazakVrsacController.dispose();
+
+    // Dispose vremena controller-e
+    for (final controller in _vremenaBC_Controllers.values) {
+      controller.dispose();
+    }
+    for (final controller in _vremenaVS_Controllers.values) {
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
@@ -203,12 +252,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox.shrink();
                     final brojRadnika = snapshot.data!
-                        .where((p) =>
-                            p.tip == 'radnik' &&
-                            p.aktivan &&
-                            !p.obrisan &&
-                            p.status.toLowerCase() != 'godisnji' &&
-                            p.status.toLowerCase() != 'bolovanje')
+                        .where(
+                            (p) => p.tip == 'radnik' && p.aktivan && !p.obrisan)
                         .length;
                     return Container(
                       padding: const EdgeInsets.all(2),
@@ -262,12 +307,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox.shrink();
                     final brojUcenika = snapshot.data!
-                        .where((p) =>
-                            p.tip == 'ucenik' &&
-                            p.aktivan &&
-                            !p.obrisan &&
-                            p.status.toLowerCase() != 'godisnji' &&
-                            p.status.toLowerCase() != 'bolovanje')
+                        .where(
+                            (p) => p.tip == 'ucenik' && p.aktivan && !p.obrisan)
                         .length;
                     return Container(
                       padding: const EdgeInsets.all(2),
@@ -475,6 +516,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   Widget _buildPutnikCard(MesecniPutnik putnik, int redniBroj) {
+    // Pronađi prvi dan koji ima definisano vreme
+    String? danSaVremenom;
+    for (String dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      if (putnik.getPolazakBelaCrkvaZaDan(dan) != null ||
+          putnik.getPolazakVrsacZaDan(dan) != null) {
+        danSaVremenom = dan;
+        break;
+      }
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -619,7 +670,113 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
             const SizedBox(height: 12),
 
-            // 💰 PLAĆANJE I STATISTIKE - jednaki elementi u redu
+            // � RADNO VREME - prikaži polazak vremena ako su definisana za bilo koji dan
+            if (danSaVremenom != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: Colors.blue.withOpacity(0.2), width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.schedule,
+                            size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Radno vreme',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Polazak iz Bele Crkve
+                        if (putnik.getPolazakBelaCrkvaZaDan(danSaVremenom) !=
+                            null)
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(Icons.departure_board,
+                                    size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'B.Crkva: ${putnik.getPolazakBelaCrkvaZaDan(danSaVremenom)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Polazak iz Vršca
+                        if (putnik.getPolazakVrsacZaDan(danSaVremenom) != null)
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(Icons.departure_board,
+                                    size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Vršac: ${putnik.getPolazakVrsacZaDan(danSaVremenom)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    // Radni dani
+                    if (putnik.radniDani.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today,
+                              size: 14, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Radni dani: ${putnik.radniDani}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+            // �💰 PLAĆANJE I STATISTIKE - jednaki elementi u redu
             Row(
               children: [
                 // 💰 DUGME ZA PLAĆANJE
@@ -829,8 +986,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _noviBrojTelefona = putnik.brojTelefona ?? '';
       _novaAdresaBelaCrkva = putnik.adresaBelaCrkva ?? '';
       _novaAdresaVrsac = putnik.adresaVrsac ?? '';
-      _noviPolazakBelaCrkva = putnik.polazakBelaCrkva ?? '';
-      _noviPolazakVrsac = putnik.polazakVrsac ?? '';
+
+      // Učitaj vremena iz novih kolona ili fallback na stare - sa formatiranjem
+      _polazakBcPonController.text =
+          putnik.getPolazakBelaCrkvaZaDan('pon') ?? '';
+      _polazakBcUtoController.text =
+          putnik.getPolazakBelaCrkvaZaDan('uto') ?? '';
+      _polazakBcSreController.text =
+          putnik.getPolazakBelaCrkvaZaDan('sre') ?? '';
+      _polazakBcCetController.text =
+          putnik.getPolazakBelaCrkvaZaDan('cet') ?? '';
+      _polazakBcPetController.text =
+          putnik.getPolazakBelaCrkvaZaDan('pet') ?? '';
+
+      _polazakVsPonController.text = putnik.getPolazakVrsacZaDan('pon') ?? '';
+      _polazakVsUtoController.text = putnik.getPolazakVrsacZaDan('uto') ?? '';
+      _polazakVsSreController.text = putnik.getPolazakVrsacZaDan('sre') ?? '';
+      _polazakVsCetController.text = putnik.getPolazakVrsacZaDan('cet') ?? '';
+      _polazakVsPetController.text = putnik.getPolazakVrsacZaDan('pet') ?? '';
 
       // ✅ DODANO - učitaj postojeće radne dane
       _setRadniDaniFromString(putnik.radniDani);
@@ -841,8 +1014,22 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _brojTelefonaController.text = _noviBrojTelefona;
       _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
       _adresaVrsacController.text = _novaAdresaVrsac;
-      _polazakBelaCrkvaController.text = _noviPolazakBelaCrkva;
-      _polazakVrsacController.text = _noviPolazakVrsac;
+
+      // Postavi controller-e za vremena - koristi postojeće izmene
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
+      for (final dan in dani) {
+        // Koristi izmenjene vrednosti iz _novaVremenaBC/_novaVremenaVS ako postoje
+        final trenutnaBC = _novaVremenaBC[dan] ?? '';
+        final trenutnaVS = _novaVremenaVS[dan] ?? '';
+
+        // Postavi controller samo ako nisu već postavljeni ili ako se vrednost promenila
+        if (_vremenaBC_Controllers[dan]?.text != trenutnaBC) {
+          _vremenaBC_Controllers[dan]?.text = trenutnaBC;
+        }
+        if (_vremenaVS_Controllers[dan]?.text != trenutnaVS) {
+          _vremenaVS_Controllers[dan]?.text = trenutnaVS;
+        }
+      }
     });
 
     showDialog(
@@ -905,30 +1092,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               ),
               const SizedBox(height: 8),
               TextField(
-                onChanged: (value) => _noviPolazakBelaCrkva = value,
-                decoration: const InputDecoration(
-                  labelText: 'Vreme polaska - Bela Crkva',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _polazakBelaCrkvaController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
                 onChanged: (value) => _novaAdresaVrsac = value,
                 decoration: const InputDecoration(
                   labelText: 'Adresa polaska - Vršac',
                   border: OutlineInputBorder(),
                 ),
                 controller: _adresaVrsacController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _noviPolazakVrsac = value,
-                decoration: const InputDecoration(
-                  labelText: 'Vreme polaska - Vršac',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _polazakVrsacController,
               ),
               const SizedBox(height: 16),
 
@@ -989,12 +1158,22 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              // ⏰ VREMENA POLASKA SEKCIJA - dodato u edit dialog
+              _buildVremenaPolaskaSekcija(),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              // Očisti mape izmena kada se otkaže
+              setState(() {
+                _novaVremenaBC.clear();
+                _novaVremenaVS.clear();
+              });
+              Navigator.pop(context);
+            },
             child: const Text('Otkaži'),
           ),
           ElevatedButton(
@@ -1013,8 +1192,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final brojTelefona = _brojTelefonaController.text.trim();
     final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
     final adresaVrsac = _adresaVrsacController.text.trim();
-    final polazakBelaCrkva = _polazakBelaCrkvaController.text.trim();
-    final polazakVrsac = _polazakVrsacController.text.trim();
 
     if (ime.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1024,43 +1201,59 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
 
     try {
-      final editovanPutnik = MesecniPutnik(
-        id: originalPutnik.id,
+      // Kreiraj ažurirani putnik sa novim kolona za vremena po danima
+      final editovanPutnik = originalPutnik.copyWith(
         putnikIme: ime,
         tip: _noviTip,
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        polazakBelaCrkva: polazakBelaCrkva.isEmpty ? null : polazakBelaCrkva,
+        // Nove kolone za vremena po danima
+        polazakBcPon: _polazakBcPonController.text.trim().isEmpty
+            ? null
+            : _polazakBcPonController.text.trim(),
+        polazakBcUto: _polazakBcUtoController.text.trim().isEmpty
+            ? null
+            : _polazakBcUtoController.text.trim(),
+        polazakBcSre: _polazakBcSreController.text.trim().isEmpty
+            ? null
+            : _polazakBcSreController.text.trim(),
+        polazakBcCet: _polazakBcCetController.text.trim().isEmpty
+            ? null
+            : _polazakBcCetController.text.trim(),
+        polazakBcPet: _polazakBcPetController.text.trim().isEmpty
+            ? null
+            : _polazakBcPetController.text.trim(),
+        polazakVsPon: _polazakVsPonController.text.trim().isEmpty
+            ? null
+            : _polazakVsPonController.text.trim(),
+        polazakVsUto: _polazakVsUtoController.text.trim().isEmpty
+            ? null
+            : _polazakVsUtoController.text.trim(),
+        polazakVsSre: _polazakVsSreController.text.trim().isEmpty
+            ? null
+            : _polazakVsSreController.text.trim(),
+        polazakVsCet: _polazakVsCetController.text.trim().isEmpty
+            ? null
+            : _polazakVsCetController.text.trim(),
+        polazakVsPet: _polazakVsPetController.text.trim().isEmpty
+            ? null
+            : _polazakVsPetController.text.trim(),
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
-        polazakVrsac: polazakVrsac.isEmpty ? null : polazakVrsac,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
-        tipPrikazivanja: originalPutnik.tipPrikazivanja,
-        radniDani:
-            _getRadniDaniString(), // ✅ DODANO - koristi odabrane radne dane
-        aktivan: originalPutnik.aktivan,
-        status: originalPutnik.status,
-        datumPocetkaMeseca: originalPutnik.datumPocetkaMeseca,
-        datumKrajaMeseca: originalPutnik.datumKrajaMeseca,
-        ukupnaCenaMeseca:
-            originalPutnik.ukupnaCenaMeseca, // ✅ ZADRŽAVA POSTOJEĆE PLAĆANJE
-        cena: originalPutnik.cena, // ✅ ZADRŽAVA PLAĆANJE I U CENA POLJU
-        brojPutovanja: originalPutnik.brojPutovanja,
-        brojOtkazivanja: originalPutnik.brojOtkazivanja,
-        poslednjiPutovanje: originalPutnik.poslednjiPutovanje,
-        createdAt: originalPutnik.createdAt,
+        // Očisti stara polja da se koriste samo nova
+        polazakBelaCrkva: null,
+        polazakVrsac: null,
+        radniDani: _getRadniDaniString(),
         updatedAt: DateTime.now(),
-        obrisan: originalPutnik.obrisan, // ✅ ZADRŽAVA STATUS OBRISANOSTI
-        // Zadržava plaćanje polja
-        vremePlacanja: originalPutnik.vremePlacanja,
-        placeniMesec: originalPutnik.placeniMesec,
-        placenaGodina: originalPutnik.placenaGodina,
-        // Zadržava driver tracking polja
-        vozac: originalPutnik.vozac,
-        pokupljen: originalPutnik.pokupljen,
-        vremePokupljenja: originalPutnik.vremePokupljenja,
       );
 
       await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
+
+      // Očisti mape izmena nakon uspešnog čuvanja
+      setState(() {
+        _novaVremenaBC.clear();
+        _novaVremenaVS.clear();
+      });
 
       if (mounted) {
         Navigator.pop(context);
@@ -1089,8 +1282,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _noviBrojTelefona = '';
       _novaAdresaBelaCrkva = '';
       _novaAdresaVrsac = '';
-      _noviPolazakBelaCrkva = '';
-      _noviPolazakVrsac = '';
 
       // Očisti controller-e
       _imeController.clear();
@@ -1098,163 +1289,238 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _brojTelefonaController.clear();
       _adresaBelaCrkvaController.clear();
       _adresaVrsacController.clear();
-      _polazakBelaCrkvaController.clear();
-      _polazakVrsacController.clear();
+
+      // Očisti controller-e za vremena
+      _polazakBcPonController.clear();
+      _polazakBcUtoController.clear();
+      _polazakBcSreController.clear();
+      _polazakBcCetController.clear();
+      _polazakBcPetController.clear();
+      _polazakVsPonController.clear();
+      _polazakVsUtoController.clear();
+      _polazakVsSreController.clear();
+      _polazakVsCetController.clear();
+      _polazakVsPetController.clear();
+
+      // Resetuj radne dane na standardnu radnu nedelju
+      _noviRadniDani = {
+        'pon': true,
+        'uto': true,
+        'sre': true,
+        'cet': true,
+        'pet': true,
+      };
     });
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Dodaj novog mesečnog putnika'),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                onChanged: (value) => _novoIme = value,
-                textCapitalization:
-                    TextCapitalization.words, // 🔤 Prvo slovo veliko za ime
-                decoration: const InputDecoration(
-                  labelText: 'Ime putnika *',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _imeController,
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _noviTip,
-                decoration: const InputDecoration(
-                  labelText: 'Tip putnika',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'radnik', child: Text('Radnik')),
-                  DropdownMenuItem(value: 'ucenik', child: Text('Učenik')),
-                ],
-                onChanged: (value) => setState(() => _noviTip = value!),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _novaTipSkole = value,
-                decoration: const InputDecoration(
-                  labelText: 'Tip škole (za školarce/studente)',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _tipSkoleController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Broj telefona',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-                controller: _brojTelefonaController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _novaAdresaBelaCrkva = value,
-                decoration: const InputDecoration(
-                  labelText: 'Adresa polaska - Bela Crkva',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _adresaBelaCrkvaController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _noviPolazakBelaCrkva = value,
-                decoration: const InputDecoration(
-                  labelText: 'Vreme polaska - Bela Crkva',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _polazakBelaCrkvaController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _novaAdresaVrsac = value,
-                decoration: const InputDecoration(
-                  labelText: 'Adresa polaska - Vršac',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _adresaVrsacController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _noviPolazakVrsac = value,
-                decoration: const InputDecoration(
-                  labelText: 'Vreme polaska - Vršac',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _polazakVrsacController,
-              ),
-              const SizedBox(height: 16),
-              // 📅 RADNI DANI SEKCIJA
+              // Header
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.blue.shade50,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(4)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today,
-                            size: 20, color: Colors.blue.shade700),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Radni dani u nedelji',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
-                            fontSize: 16,
-                          ),
+                    Icon(Icons.person_add,
+                        color: Colors.blue.shade700, size: 20),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'Dodaj novog mesečnog putnika',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Izaberite dane kada putnik radi:',
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 4,
-                      children: [
-                        _buildRadniDanCheckbox('pon', 'Ponedeljak'),
-                        _buildRadniDanCheckbox('uto', 'Utorak'),
-                        _buildRadniDanCheckbox('sre', 'Sreda'),
-                        _buildRadniDanCheckbox('cet', 'Četvrtak'),
-                        _buildRadniDanCheckbox('pet', 'Petak'),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(6),
+                  ],
+                ),
+              ),
+              // Scrollable content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        onChanged: (value) => _novoIme = value,
+                        textCapitalization: TextCapitalization
+                            .words, // 🔤 Prvo slovo veliko za ime
+                        decoration: const InputDecoration(
+                          labelText: 'Ime putnika *',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _imeController,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline,
-                              size: 16, color: Colors.blue.shade600),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Primer: Ponedeljak, Sreda, Petak',
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _noviTip,
+                        decoration: const InputDecoration(
+                          labelText: 'Tip putnika',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'radnik', child: Text('Radnik')),
+                          DropdownMenuItem(
+                              value: 'ucenik', child: Text('Učenik')),
+                        ],
+                        onChanged: (value) => setState(() => _noviTip = value!),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        onChanged: (value) => _novaTipSkole = value,
+                        decoration: const InputDecoration(
+                          labelText: 'Tip škole (za školarce/studente)',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _tipSkoleController,
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'Broj telefona',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        controller: _brojTelefonaController,
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        onChanged: (value) => _novaAdresaBelaCrkva = value,
+                        decoration: const InputDecoration(
+                          labelText: 'Adresa polaska - Bela Crkva',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _adresaBelaCrkvaController,
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        onChanged: (value) => _novaAdresaVrsac = value,
+                        decoration: const InputDecoration(
+                          labelText: 'Adresa polaska - Vršac',
+                          border: OutlineInputBorder(),
+                        ),
+                        controller: _adresaVrsacController,
+                      ),
+                      const SizedBox(height: 16),
+                      // 📅 RADNI DANI SEKCIJA
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.calendar_today,
+                                    size: 20, color: Colors.blue.shade700),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Radni dani u nedelji',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Izaberite dane kada putnik radi:',
                               style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.blue.shade600,
-                                fontStyle: FontStyle.italic,
+                                color: Colors.grey.shade700,
+                                fontSize: 12,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 2,
+                              runSpacing: 2,
+                              children: [
+                                _buildRadniDanCheckbox('pon', 'Ponedeljak'),
+                                _buildRadniDanCheckbox('uto', 'Utorak'),
+                                _buildRadniDanCheckbox('sre', 'Sreda'),
+                                _buildRadniDanCheckbox('cet', 'Četvrtak'),
+                                _buildRadniDanCheckbox('pet', 'Petak'),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      size: 16, color: Colors.blue.shade600),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Primer: Ponedeljak, Sreda, Petak',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.blue.shade600,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // ⏰ VREMENA POLASKA SEKCIJA - nova logika
+                            const SizedBox(height: 16),
+                            _buildVremenaPolaskaSekcija(),
+                          ],
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              // Actions
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(4)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Otkaži'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () => _sacuvajNovogPutnika(),
+                      child: const Text('Sačuvaj'),
                     ),
                   ],
                 ),
@@ -1262,16 +1528,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Otkaži'),
-          ),
-          ElevatedButton(
-            onPressed: () => _sacuvajNovogPutnika(),
-            child: const Text('Sačuvaj'),
-          ),
-        ],
       ),
     );
   }
@@ -1283,8 +1539,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final brojTelefona = _brojTelefonaController.text.trim();
     final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
     final adresaVrsac = _adresaVrsacController.text.trim();
-    final polazakBelaCrkva = _polazakBelaCrkvaController.text.trim();
-    final polazakVrsac = _polazakVrsacController.text.trim();
 
     if (ime.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1300,10 +1554,42 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         tip: _noviTip,
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        polazakBelaCrkva: polazakBelaCrkva.isEmpty ? null : polazakBelaCrkva,
+        // Nove kolone za vremena po danima - čitaj iz TextEditingController-a
+        polazakBcPon: _getControllerBelaCrkva('pon').text.trim().isEmpty
+            ? null
+            : _getControllerBelaCrkva('pon').text.trim(),
+        polazakBcUto: _getControllerBelaCrkva('uto').text.trim().isEmpty
+            ? null
+            : _getControllerBelaCrkva('uto').text.trim(),
+        polazakBcSre: _getControllerBelaCrkva('sre').text.trim().isEmpty
+            ? null
+            : _getControllerBelaCrkva('sre').text.trim(),
+        polazakBcCet: _getControllerBelaCrkva('cet').text.trim().isEmpty
+            ? null
+            : _getControllerBelaCrkva('cet').text.trim(),
+        polazakBcPet: _getControllerBelaCrkva('pet').text.trim().isEmpty
+            ? null
+            : _getControllerBelaCrkva('pet').text.trim(),
+        polazakVsPon: _getControllerVrsac('pon').text.trim().isEmpty
+            ? null
+            : _getControllerVrsac('pon').text.trim(),
+        polazakVsUto: _getControllerVrsac('uto').text.trim().isEmpty
+            ? null
+            : _getControllerVrsac('uto').text.trim(),
+        polazakVsSre: _getControllerVrsac('sre').text.trim().isEmpty
+            ? null
+            : _getControllerVrsac('sre').text.trim(),
+        polazakVsCet: _getControllerVrsac('cet').text.trim().isEmpty
+            ? null
+            : _getControllerVrsac('cet').text.trim(),
+        polazakVsPet: _getControllerVrsac('pet').text.trim().isEmpty
+            ? null
+            : _getControllerVrsac('pet').text.trim(),
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
-        polazakVrsac: polazakVrsac.isEmpty ? null : polazakVrsac,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
+        // Postavi stare kolone na null jer koristimo nove
+        polazakBelaCrkva: null,
+        polazakVrsac: null,
         radniDani:
             _getRadniDaniString(), // ✅ DODANO - koristi odabrane radne dane
         datumPocetkaMeseca:
@@ -1315,16 +1601,26 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         updatedAt: DateTime.now(),
       );
 
-      await MesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+      final rezultat =
+          await MesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mesečni putnik je uspešno dodat'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (rezultat != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Mesečni putnik je uspešno dodat'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Greška pri dodavanju putnika u bazu'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -2722,28 +3018,231 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 📅 BUILDER ZA CHECKBOX RADNIH DANA
   Widget _buildRadniDanCheckbox(String danKod, String danNaziv) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      child: Row(
+      margin: const EdgeInsets.only(bottom: 2),
+      child: IntrinsicWidth(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: Transform.scale(
+                scale: 0.9,
+                child: Checkbox(
+                  value: _noviRadniDani[danKod] ?? false,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _noviRadniDani[danKod] = value ?? false;
+                    });
+                  },
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                danNaziv,
+                style: const TextStyle(fontSize: 11),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ⏰ BUILDER ZA VREMENA POLASKA PO DANIMA
+  Widget _buildVremenaPolaskaSekcija() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.orange.shade300),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: Checkbox(
-              value: _noviRadniDani[danKod] ?? false,
-              onChanged: (bool? value) {
-                setState(() {
-                  _noviRadniDani[danKod] = value ?? false;
-                });
-              },
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.schedule, size: 16, color: Colors.orange.shade700),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  'Vremena polaska po danima',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Unesite vremena polaska za svaki radni dan:',
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontSize: 10,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(height: 6),
+          // Dinamički prikaz samo za označene dane
+          ..._noviRadniDani.entries
+              .where((entry) => entry.value) // Samo označeni dani
+              .map((entry) => _buildDanVremeInput(entry.key))
+              .toList(),
+          if (_noviRadniDani.values.any((selected) => selected))
+            const SizedBox(height: 4),
+          if (_noviRadniDani.values.any((selected) => selected))
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline,
+                      size: 12, color: Colors.orange.shade600),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: Text(
+                      'Format: HH:MM (npr. 05:00)',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.orange.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Helper za dobijanje kontrolera za određeni dan i smer
+  TextEditingController _getControllerBelaCrkva(String dan) {
+    switch (dan) {
+      case 'pon':
+        return _polazakBcPonController;
+      case 'uto':
+        return _polazakBcUtoController;
+      case 'sre':
+        return _polazakBcSreController;
+      case 'cet':
+        return _polazakBcCetController;
+      case 'pet':
+        return _polazakBcPetController;
+      default:
+        return TextEditingController();
+    }
+  }
+
+  TextEditingController _getControllerVrsac(String dan) {
+    switch (dan) {
+      case 'pon':
+        return _polazakVsPonController;
+      case 'uto':
+        return _polazakVsUtoController;
+      case 'sre':
+        return _polazakVsSreController;
+      case 'cet':
+        return _polazakVsCetController;
+      case 'pet':
+        return _polazakVsPetController;
+      default:
+        return TextEditingController();
+    }
+  }
+
+  // Helper za input polja za vreme po danu
+  Widget _buildDanVremeInput(String danKod) {
+    final daniMapa = {
+      'pon': 'Pon',
+      'uto': 'Uto',
+      'sre': 'Sre',
+      'cet': 'Čet',
+      'pet': 'Pet',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Dan nazad
           Text(
-            danNaziv,
-            style: const TextStyle(fontSize: 12),
+            daniMapa[danKod] ?? danKod,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 3),
+          // Vremena u kompaktnom redu
+          IntrinsicHeight(
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextFormField(
+                      controller: _getControllerBelaCrkva(danKod),
+                      decoration: const InputDecoration(
+                        labelText: 'BC',
+                        hintText: '05:00',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        labelStyle: TextStyle(fontSize: 9),
+                        hintStyle: TextStyle(fontSize: 10),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  flex: 1,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextFormField(
+                      controller: _getControllerVrsac(danKod),
+                      decoration: const InputDecoration(
+                        labelText: 'VS',
+                        hintText: '05:30',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        labelStyle: TextStyle(fontSize: 9),
+                        hintStyle: TextStyle(fontSize: 10),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

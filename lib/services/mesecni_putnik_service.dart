@@ -183,6 +183,12 @@ class MesecniPutnikService {
   static Future<MesecniPutnik?> dodajMesecnogPutnika(
       MesecniPutnik putnik) async {
     try {
+      if (kDebugMode) {
+        debugPrint(
+            '🔄 [MESECNI PUTNIK SERVICE] Pokušavam dodavanje: ${putnik.putnikIme}');
+        debugPrint('📊 [DEBUG] Podaci: ${putnik.toMap()}');
+      }
+
       final response = await _supabase
           .from('mesecni_putnici')
           .insert(putnik.toMap())
@@ -191,15 +197,46 @@ class MesecniPutnikService {
 
       if (kDebugMode) {
         debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Dodat mesečni putnik: ${putnik.putnikIme}');
+            '✅ [MESECNI PUTNIK SERVICE] Uspešno dodat mesečni putnik: ${putnik.putnikIme}');
+        debugPrint('📊 [DEBUG] Response: $response');
       }
 
       return MesecniPutnik.fromMap(response);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška pri dodavanju: $e');
+        debugPrint(
+            '❌ [MESECNI PUTNIK SERVICE] GREŠKA pri dodavanju putnika: ${putnik.putnikIme}');
+        debugPrint('❌ [ERROR DETAILS] $e');
+        debugPrint('📊 [DEBUG] Podaci koji su poslani: ${putnik.toMap()}');
       }
       return null;
+    }
+  }
+
+  // 🔍 DEBUG METODA - proverava strukturu tabele
+  static Future<void> debugTableStructure() async {
+    try {
+      debugPrint('🔍 [DEBUG] Proveravam strukturu tabele mesecni_putnici...');
+
+      final result = await _supabase.from('mesecni_putnici').select().limit(1);
+
+      if (result.isNotEmpty) {
+        final firstRow = result.first;
+        debugPrint('📊 [DEBUG] Kolone u tabeli mesecni_putnici:');
+        for (final entry in firstRow.entries) {
+          debugPrint(
+              '  - ${entry.key}: ${entry.value} (${entry.value?.runtimeType})');
+        }
+
+        // Posebno proveravamo polazak kolone
+        debugPrint('\n🕐 [DEBUG] Polazak kolone:');
+        debugPrint('  - polazak_bela_crkva: ${firstRow['polazak_bela_crkva']}');
+        debugPrint('  - polazak_vrsac: ${firstRow['polazak_vrsac']}');
+      } else {
+        debugPrint('⚠️ [DEBUG] Tabela mesecni_putnici je prazna');
+      }
+    } catch (e) {
+      debugPrint('❌ [DEBUG] Greška pri čitanju strukture tabele: $e');
     }
   }
 
@@ -207,9 +244,22 @@ class MesecniPutnikService {
   static Future<MesecniPutnik?> azurirajMesecnogPutnika(
       MesecniPutnik putnik) async {
     try {
+      final dataToSend = putnik.toMap();
+      if (kDebugMode) {
+        debugPrint('🔧 [DEBUG] Podaci koji se šalju u bazu:');
+        debugPrint(
+            '  - polazak_bela_crkva: ${dataToSend['polazak_bela_crkva']}');
+        debugPrint('  - polazak_vrsac: ${dataToSend['polazak_vrsac']}');
+        debugPrint('  - polazak_bc_pon: ${dataToSend['polazak_bc_pon']}');
+        debugPrint('  - polazak_bc_cet: ${dataToSend['polazak_bc_cet']}');
+        debugPrint('  - polazak_vs_pon: ${dataToSend['polazak_vs_pon']}');
+        debugPrint('  - polazak_vs_cet: ${dataToSend['polazak_vs_cet']}');
+        debugPrint('  - svi podaci: $dataToSend');
+      }
+
       final response = await _supabase
           .from('mesecni_putnici')
-          .update(putnik.toMap())
+          .update(dataToSend)
           .eq('id', putnik.id)
           .select()
           .single();
@@ -717,14 +767,15 @@ class MesecniPutnikService {
           }
 
           // Kreiraj putovanje za Bela Crkva polazak ako ima vreme
-          if (mesecniPutnik.polazakBelaCrkva != null &&
-              mesecniPutnik.polazakBelaCrkva!.isNotEmpty) {
+          final vremeBelaCrkva =
+              mesecniPutnik.getPolazakBelaCrkvaZaDan(danUNedelji);
+          if (vremeBelaCrkva != null && vremeBelaCrkva.isNotEmpty) {
             final postojeciBC = await _supabase
                 .from('putovanja_istorija')
                 .select('id')
                 .eq('putnik_ime', mesecniPutnik.putnikIme)
                 .eq('datum', datumStr)
-                .eq('vreme_polaska', mesecniPutnik.polazakBelaCrkva!)
+                .eq('vreme_polaska', vremeBelaCrkva)
                 .like('adresa_polaska', '%Bela Crkva%');
 
             if (postojeciBC.isEmpty) {
@@ -733,7 +784,7 @@ class MesecniPutnikService {
                 'putnik_ime': mesecniPutnik.putnikIme,
                 'tip_putnika': 'mesecni',
                 'mesecni_putnik_id': mesecniPutnik.id,
-                'vreme_polaska': mesecniPutnik.polazakBelaCrkva!,
+                'vreme_polaska': vremeBelaCrkva,
                 'adresa_polaska': mesecniPutnik.adresaBelaCrkva ??
                     'Bela Crkva', // Default adresa ako nema
                 'status': 'nije_se_pojavio', // ✅ NOVA KOLONA
@@ -748,20 +799,20 @@ class MesecniPutnikService {
 
               if (kDebugMode) {
                 debugPrint(
-                    '✅ Kreiran BC putnik: ${mesecniPutnik.putnikIme} ${mesecniPutnik.polazakBelaCrkva} na $datumStr');
+                    '✅ Kreiran BC putnik: ${mesecniPutnik.putnikIme} $vremeBelaCrkva na $datumStr');
               }
             }
           }
 
           // Kreiraj putovanje za Vršac polazak ako ima vreme
-          if (mesecniPutnik.polazakVrsac != null &&
-              mesecniPutnik.polazakVrsac!.isNotEmpty) {
+          final vremeVrsac = mesecniPutnik.getPolazakVrsacZaDan(danUNedelji);
+          if (vremeVrsac != null && vremeVrsac.isNotEmpty) {
             final postojeciVS = await _supabase
                 .from('putovanja_istorija')
                 .select('id')
                 .eq('putnik_ime', mesecniPutnik.putnikIme)
                 .eq('datum', datumStr)
-                .eq('vreme_polaska', mesecniPutnik.polazakVrsac!)
+                .eq('vreme_polaska', vremeVrsac)
                 .like('adresa_polaska', '%Vršac%');
 
             if (postojeciVS.isEmpty) {
@@ -770,7 +821,7 @@ class MesecniPutnikService {
                 'putnik_ime': mesecniPutnik.putnikIme,
                 'tip_putnika': 'mesecni',
                 'mesecni_putnik_id': mesecniPutnik.id,
-                'vreme_polaska': mesecniPutnik.polazakVrsac!,
+                'vreme_polaska': vremeVrsac,
                 'adresa_polaska': mesecniPutnik.adresaVrsac ??
                     'Vršac', // Default adresa ako nema
                 'status': 'nije_se_pojavio', // ✅ NOVA KOLONA
@@ -785,7 +836,7 @@ class MesecniPutnikService {
 
               if (kDebugMode) {
                 debugPrint(
-                    '✅ Kreiran VS putnik: ${mesecniPutnik.putnikIme} ${mesecniPutnik.polazakVrsac} na $datumStr');
+                    '✅ Kreiran VS putnik: ${mesecniPutnik.putnikIme} $vremeVrsac na $datumStr');
               }
             }
           }
@@ -894,9 +945,12 @@ class MesecniPutnikService {
       // 3. Računaj upisane za školu (UJUTRU - bez obzira na pokupljanje)
       int upisanoZaSkolu = 0;
       for (final djak in djaciDanas) {
-        // Proveri da li ima jutarnji polazak (BC ili VS)
-        final polazakBC = djak['polazak_bela_crkva'] as String?;
-        final polazakVS = djak['polazak_vrsac'] as String?;
+        // Kreiraj MesecniPutnik objekat da koristimo postojeće metode
+        final mesecniPutnik = MesecniPutnik.fromMap(djak);
+
+        // Proveri da li ima jutarnji polazak (BC ili VS) za današnji dan
+        final polazakBC = mesecniPutnik.getPolazakBelaCrkvaZaDan(danUNedelji);
+        final polazakVS = mesecniPutnik.getPolazakVrsacZaDan(danUNedelji);
 
         if ((polazakBC != null && polazakBC.isNotEmpty) ||
             (polazakVS != null && polazakVS.isNotEmpty)) {

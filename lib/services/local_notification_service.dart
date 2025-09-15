@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart';
 import '../screens/danas_screen.dart';
+import '../models/mesecni_putnik.dart';
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -304,7 +305,7 @@ class LocalNotificationService {
       // Traži u mesecni_putnici tabeli
       final mesecniResult = await supabase
           .from('mesecni_putnici')
-          .select('putnik_ime, grad, polazak, dan')
+          .select()
           .eq('putnik_ime', putnikIme)
           .eq('aktivan', true)
           .eq('obrisan', false)
@@ -313,18 +314,63 @@ class LocalNotificationService {
 
       if (mesecniResult.isNotEmpty) {
         final data = mesecniResult.first;
-        return {
-          'grad': data['grad'],
-          'polazak': data['polazak'],
-          'dan': data['dan'],
-          'tip': 'mesecni'
-        };
+        final mesecniPutnik = MesecniPutnik.fromMap(data);
+
+        // Preuzmi trenutni dan i određi polazak
+        final sada = DateTime.now();
+        final danNedelje = _getDanNedelje(sada.weekday);
+
+        String? polazak;
+        String? grad;
+
+        // Pokušaj da nađeš polazak za trenutni dan
+        final polazakBC = mesecniPutnik.getPolazakBelaCrkvaZaDan(danNedelje);
+        final polazakVS = mesecniPutnik.getPolazakVrsacZaDan(danNedelje);
+
+        if (polazakBC != null && polazakBC.isNotEmpty) {
+          polazak = polazakBC;
+          grad = 'Bela Crkva';
+        } else if (polazakVS != null && polazakVS.isNotEmpty) {
+          polazak = polazakVS;
+          grad = 'Vršac';
+        }
+
+        if (polazak != null && grad != null) {
+          return {
+            'grad': grad,
+            'polazak': polazak,
+            'dan': danNedelje,
+            'tip': 'mesecni'
+          };
+        }
       }
 
       return null;
     } catch (e) {
       // Return null on error - fallback to basic navigation
       return null;
+    }
+  }
+
+  // Helper metoda za formatiranje dana nedelje
+  static String _getDanNedelje(int weekday) {
+    switch (weekday) {
+      case 1:
+        return 'pon';
+      case 2:
+        return 'uto';
+      case 3:
+        return 'sre';
+      case 4:
+        return 'cet';
+      case 5:
+        return 'pet';
+      case 6:
+        return 'sub';
+      case 7:
+        return 'ned';
+      default:
+        return 'pon';
     }
   }
 }
