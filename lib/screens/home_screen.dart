@@ -23,8 +23,7 @@ import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/autocomplete_ime_field.dart';
-import '../widgets/seasonal_nav_bar_wrapper.dart';
-import '../widgets/season_indicator.dart';
+import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
@@ -1279,7 +1278,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         return Scaffold(
           appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
+            preferredSize: const Size.fromHeight(
+                95), // Povećano sa 80 na 95 zbog sezonskog indikatora
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -1519,16 +1519,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      // TREĆI RED - Sezonski indikator
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SeasonIndicator(
-                            showToggleButton: false,
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -1653,7 +1643,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          bottomNavigationBar: SeasonalNavBarWrapper(
+          bottomNavigationBar: BottomNavBarZimski(
             sviPolasci: _sviPolasci,
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,

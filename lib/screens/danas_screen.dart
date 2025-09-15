@@ -22,7 +22,7 @@ import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
 
-import '../widgets/seasonal_nav_bar_wrapper.dart'; // 🚀 DODANO za sezonski nav bar
+import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import 'dugovi_screen.dart';
 import '../services/local_notification_service.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
@@ -2154,7 +2154,7 @@ class _DanasScreenState extends State<DanasScreen> {
             return matchingPutnici.length;
           }
 
-          return SeasonalNavBarWrapper(
+          return BottomNavBarLetnji(
             sviPolasci: _sviPolasci,
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,
