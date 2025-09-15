@@ -23,7 +23,8 @@ import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/autocomplete_ime_field.dart';
-import '../widgets/bottom_nav_bar_zimski.dart';
+import '../widgets/seasonal_nav_bar_wrapper.dart';
+import '../widgets/season_indicator.dart';
 import '../widgets/putnik_card.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
@@ -1518,6 +1519,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 4),
+                      // TREĆI RED - Sezonski indikator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SeasonIndicator(
+                            showToggleButton: false,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -1642,7 +1653,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-          bottomNavigationBar: BottomNavBarZimski(
+          bottomNavigationBar: SeasonalNavBarWrapper(
             sviPolasci: _sviPolasci,
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,
