@@ -70,8 +70,6 @@ class PutnikService {
 
   // 🔍 HELPER - Određi tabelu na osnovu putnika
   Future<String> _getTableForPutnik(dynamic id) async {
-    debugPrint('🔍 DEBUG _getTableForPutnik - ID=$id (tip: ${id.runtimeType})');
-
     try {
       // Pokušaj prvo putovanja_istorija (int ili string ID)
       await supabase
@@ -79,11 +77,8 @@ class PutnikService {
           .select('id')
           .eq('id', id)
           .single();
-      debugPrint('🔍 DEBUG _getTableForPutnik - pronašao u putovanja_istorija');
       return 'putovanja_istorija';
     } catch (e) {
-      debugPrint(
-          '🔍 DEBUG _getTableForPutnik - nije u putovanja_istorija, vraćam mesecni_putnici');
       return 'mesecni_putnici';
     }
   }

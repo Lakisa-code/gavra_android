@@ -213,33 +213,6 @@ class MesecniPutnikService {
     }
   }
 
-  // 🔍 DEBUG METODA - proverava strukturu tabele
-  static Future<void> debugTableStructure() async {
-    try {
-      debugPrint('🔍 [DEBUG] Proveravam strukturu tabele mesecni_putnici...');
-
-      final result = await _supabase.from('mesecni_putnici').select().limit(1);
-
-      if (result.isNotEmpty) {
-        final firstRow = result.first;
-        debugPrint('📊 [DEBUG] Kolone u tabeli mesecni_putnici:');
-        for (final entry in firstRow.entries) {
-          debugPrint(
-              '  - ${entry.key}: ${entry.value} (${entry.value?.runtimeType})');
-        }
-
-        // Posebno proveravamo polazak kolone
-        debugPrint('\n🕐 [DEBUG] Polazak kolone:');
-        debugPrint('  - polazak_bela_crkva: ${firstRow['polazak_bela_crkva']}');
-        debugPrint('  - polazak_vrsac: ${firstRow['polazak_vrsac']}');
-      } else {
-        debugPrint('⚠️ [DEBUG] Tabela mesecni_putnici je prazna');
-      }
-    } catch (e) {
-      debugPrint('❌ [DEBUG] Greška pri čitanju strukture tabele: $e');
-    }
-  }
-
   // ✏️ AŽURIRAJ mesečnog putnika
   static Future<MesecniPutnik?> azurirajMesecnogPutnika(
       MesecniPutnik putnik) async {

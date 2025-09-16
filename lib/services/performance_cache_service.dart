@@ -220,22 +220,4 @@ class PerformanceCacheService {
 
     await preloadPopularAddresses(uniqueAddresses);
   }
-
-  /// 🔍 Debug funkcija - isprintaj cache sadržaj
-  static void printCacheContents() {
-    for (final key in _memoryRouteCache.keys) {
-      // Check cache timestamp for key
-      final timestamp = _memoryCacheTimestamps[key]!;
-      // Calculate age for potential cleanup
-      DateTime.now().difference(timestamp).inMinutes;
-    }
-
-    // Iterate through first 5 coordinate cache keys for warming
-    for (final _ in _memoryCoordinateCache.keys.take(5)) {
-      // Warm up coordinate cache access patterns
-    }
-
-    // Get cache statistics for monitoring
-    getCacheStats();
-  }
 }

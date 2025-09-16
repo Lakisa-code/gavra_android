@@ -121,11 +121,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     super.initState();
     _initializeControllers();
     _initializeOptimizations();
-
-    // 🔍 DEBUG - proverava strukturu tabele
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      MesecniPutnikService.debugTableStructure();
-    });
   }
 
   void _initializeControllers() {
