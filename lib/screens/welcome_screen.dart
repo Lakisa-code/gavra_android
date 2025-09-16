@@ -156,6 +156,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (today.weekday == 6 || today.weekday == 7) {
         debugPrint(
             '🚫 Preskačem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -278,6 +279,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (today.weekday == 6 || today.weekday == 7) {
         debugPrint(
             '🚫 Preskačem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -897,6 +899,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (today.weekday == 6 || today.weekday == 7) {
         debugPrint(
             '🚫 Preskačem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),

@@ -83,8 +83,9 @@ class AdvancedCachingService {
       // 1️⃣ LEVEL 1: Memory cache (fastest)
       if (_level1MemoryCache.containsKey(key)) {
         final value = _level1MemoryCache[key];
-        if (updateStats)
+        if (updateStats) {
           _stats.recordHit(CacheLevel.level1, stopwatch.elapsedMicroseconds);
+        }
         _logger.d('🎯 L1 Cache hit: $key');
         return value as T?;
       }
@@ -97,8 +98,9 @@ class AdvancedCachingService {
           _level1MemoryCache[key] = entry.data;
           _maintainL1Size();
 
-          if (updateStats)
+          if (updateStats) {
             _stats.recordHit(CacheLevel.level2, stopwatch.elapsedMicroseconds);
+          }
           _logger.d('🎯 L2 Cache hit: $key');
           return entry.data as T?;
         } else {
@@ -116,8 +118,9 @@ class AdvancedCachingService {
         _maintainL1Size();
         _maintainL2Size();
 
-        if (updateStats)
+        if (updateStats) {
           _stats.recordHit(CacheLevel.level3, stopwatch.elapsedMicroseconds);
+        }
         _logger.d('🎯 L3 Cache hit: $key');
         return l3Result;
       }
@@ -132,8 +135,9 @@ class AdvancedCachingService {
         _maintainL1Size();
         _maintainL2Size();
 
-        if (updateStats)
+        if (updateStats) {
           _stats.recordHit(CacheLevel.level4, stopwatch.elapsedMicroseconds);
+        }
         _logger.d('🎯 L4 Cache hit: $key');
         return l4Result;
       }
@@ -150,8 +154,9 @@ class AdvancedCachingService {
           _maintainL1Size();
           _maintainL2Size();
 
-          if (updateStats)
+          if (updateStats) {
             _stats.recordHit(CacheLevel.level5, stopwatch.elapsedMicroseconds);
+          }
           _logger.d('🎯 L5 Cache hit: $key');
           return l5Result;
         }
@@ -183,7 +188,7 @@ class AdvancedCachingService {
     try {
       final ttl = customTTLSeconds != null
           ? Duration(seconds: customTTLSeconds)
-          : _cacheTTL[type] ?? Duration(hours: 1);
+          : _cacheTTL[type] ?? const Duration(hours: 1);
 
       // 1️⃣ LEVEL 1: Always set to memory for fastest access
       _level1MemoryCache[key] = value;
@@ -349,7 +354,7 @@ class AdvancedCachingService {
   static Future<void> _setToLevel3(
       String key, dynamic value, CacheType type) async {
     try {
-      final ttl = _cacheTTL[type] ?? Duration(hours: 1);
+      final ttl = _cacheTTL[type] ?? const Duration(hours: 1);
       final expiry = DateTime.now().add(ttl);
 
       final dataJson = json.encode(value);
@@ -406,7 +411,7 @@ class AdvancedCachingService {
     try {
       if (_level4FileCache == null) return;
 
-      final ttl = _cacheTTL[type] ?? Duration(hours: 1);
+      final ttl = _cacheTTL[type] ?? const Duration(hours: 1);
       final expiry = DateTime.now().add(ttl);
 
       final cacheData = {
@@ -472,7 +477,7 @@ class AdvancedCachingService {
     try {
       if (_level5NetworkCache == null) return;
 
-      final expiry = DateTime.now().add(Duration(hours: 2));
+      final expiry = DateTime.now().add(const Duration(hours: 2));
 
       final cacheData = {
         'data': value,
@@ -582,7 +587,7 @@ class AdvancedCachingService {
 
   static void _startBackgroundMaintenance() {
     // Periodična održavanja na svakih 30 minuta
-    Future.delayed(Duration(minutes: 30), () {
+    Future.delayed(const Duration(minutes: 30), () {
       _backgroundMaintenance();
       _startBackgroundMaintenance(); // Reschedule
     });

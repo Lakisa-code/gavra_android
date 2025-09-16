@@ -5,7 +5,7 @@ import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
 import '../services/local_notification_service.dart';
 import '../utils/date_utils.dart'
-    as AppDateUtils; // DODANO: Centralna vikend logika
+    as app_date_utils; // DODANO: Centralna vikend logika
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
@@ -24,6 +24,8 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   late TabController _tabController;
   String _period = 'nedelja'; // nedelja, mesec, godina
   final List<String> _periods = ['nedelja', 'mesec', 'godina'];
+  int _selectedYear = DateTime.now().year; // 🆕 Dodato za izbor godine
+  List<int> _availableYears = []; // 🆕 Lista dostupnih godina
   String? _currentDriver;
   bool _checkedDriver = false;
 
@@ -35,6 +37,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     _tabController.addListener(() {
       setState(() {}); // Refresh UI kada se promeni tab
     });
+    _initializeAvailableYears(); // 🆕 Inicijalizuj dostupne godine
     _checkDriver();
     // Inicijalizuj heads-up i zvuk notifikacije
     LocalNotificationService.initialize(context);
@@ -58,6 +61,15 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       _currentDriver = driver;
       _checkedDriver = true;
     });
+  }
+
+  /// 🆕 INICIJALIZUJ DOSTUPNE GODINE IZ BAZE
+  void _initializeAvailableYears() {
+    // Za sada dodajem nekoliko godina (možemo kasnije proširiti da čita iz baze)
+    final currentYear = DateTime.now().year;
+    _availableYears =
+        List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
+    if (mounted) setState(() {});
   }
 
   /// 🔄 RESETUJ SVE KILOMETRAŽE - briše sve GPS pozicije
@@ -340,6 +352,64 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                             ),
                           ),
                         ),
+                        // 🆕 GODINA DROPDOWN - prikaži samo kada je selektovana "godina"
+                        if (_period == 'godina') ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            height: 32,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.4),
+                                width: 1,
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _selectedYear,
+                                dropdownColor:
+                                    Theme.of(context).colorScheme.primary,
+                                icon: const Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                                items: _availableYears
+                                    .map((year) => DropdownMenuItem(
+                                          value: year,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            child: Center(
+                                              child: Text(
+                                                '$year',
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                          ),
+                                        ))
+                                    .toList(),
+                                onChanged: (v) {
+                                  if (v != null) {
+                                    setState(() => _selectedYear = v);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -372,12 +442,16 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     DateTime now = DateTime.now();
     DateTime from, to;
 
+    // 🔍 DEBUG: Log current state
+    debugPrint(
+        '🔍 [CALCULATE PERIOD] _period = $_period, _selectedYear = $_selectedYear');
+
     if (_period == 'nedelja') {
       // ✅ KORISTI UTILS FUNKCIJU ZA VIKEND LOGIKU
-      final targetDate = AppDateUtils.DateUtils.getWeekendTargetDate();
+      final targetDate = app_date_utils.DateUtils.getWeekendTargetDate();
       DateTime ponedeljak;
 
-      if (AppDateUtils.DateUtils.isWeekend()) {
+      if (app_date_utils.DateUtils.isWeekend()) {
         // 🎯 Vikend: koristi target datum (sledeći ponedeljak)
         ponedeljak = targetDate;
       } else {
@@ -398,13 +472,18 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
       // 🔍 DEBUG: Prikazi mesečni period
-      print(
+      debugPrint(
           '📅 [MESEČNA STATISTIKA] Period: ${from.toString().split(' ')[0]} - ${to.toString().split(' ')[0]}');
-      print('📅 [MESEČNA STATISTIKA] Mesec: ${now.month}/${now.year}');
+      debugPrint('📅 [MESEČNA STATISTIKA] Mesec: ${now.month}/${now.year}');
     } else {
-      from = DateTime(now.year, 1, 1);
-      to = DateTime(now.year, 12, 31, 23, 59, 59);
+      // 🔧 FIX: Koristi selektovanu godinu umesto now.year
+      from = DateTime(_selectedYear, 1, 1);
+      to = DateTime(_selectedYear, 12, 31, 23, 59, 59);
     }
+
+    // 🔍 DEBUG: Log final calculated dates
+    debugPrint(
+        '🔍 [CALCULATE PERIOD] Final dates: ${from.toString()} to ${to.toString()}');
 
     return {'from': from, 'to': to};
   }
@@ -423,7 +502,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         }
 
         // 🔄 REAL-TIME PAZAR STREAM sa kombinovanim putnicima (uključuje mesečne karte)
-        print(
+        debugPrint(
             '🎯 [VOZAČI TAB] Pozivam streamPazarSvihVozaca sa from: ${from.toString()}, to: ${to.toString()}');
         return StreamBuilder<Map<String, double>>(
           stream: StatistikaService.streamPazarSvihVozaca(
@@ -431,17 +510,17 @@ class _StatistikaScreenState extends State<StatistikaScreen>
             to: to,
           ),
           builder: (context, pazarSnapshot) {
-            print(
+            debugPrint(
                 '📊 VOZAČI TAB STREAM STATE: ${pazarSnapshot.connectionState}');
-            print('📊 VOZAČI TAB HAS DATA: ${pazarSnapshot.hasData}');
-            print('📊 VOZAČI TAB DATA: ${pazarSnapshot.data}');
+            debugPrint('📊 VOZAČI TAB HAS DATA: ${pazarSnapshot.hasData}');
+            debugPrint('📊 VOZAČI TAB DATA: ${pazarSnapshot.data}');
 
             if (pazarSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
             if (pazarSnapshot.hasError) {
-              print('❌ VOZAČI TAB ERROR: ${pazarSnapshot.error}');
+              debugPrint('❌ VOZAČI TAB ERROR: ${pazarSnapshot.error}');
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

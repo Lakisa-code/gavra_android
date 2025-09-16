@@ -66,7 +66,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final TextEditingController _polazakVsPetController = TextEditingController();
 
   // Stare Map strukture - zadržavamo za kompatibilnost
-  Map<String, String> _novaVremenaBC = {
+  final Map<String, String> _novaVremenaBC = {
     'pon': '',
     'uto': '',
     'sre': '',
@@ -74,7 +74,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'pet': '',
   };
 
-  Map<String, String> _novaVremenaVS = {
+  final Map<String, String> _novaVremenaVS = {
     'pon': '',
     'uto': '',
     'sre': '',
@@ -113,8 +113,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late TextEditingController _adresaVrsacController;
 
   // Controller-i za vremena polaska
-  final Map<String, TextEditingController> _vremenaBC_Controllers = {};
-  final Map<String, TextEditingController> _vremenaVS_Controllers = {};
+  final Map<String, TextEditingController> _vremenaBcControllers = {};
+  final Map<String, TextEditingController> _vremenaVsControllers = {};
 
   @override
   void initState() {
@@ -138,8 +138,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     // Kreiraj controller-e za svaки dan
     const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     for (final dan in dani) {
-      _vremenaBC_Controllers[dan] = TextEditingController();
-      _vremenaVS_Controllers[dan] = TextEditingController();
+      _vremenaBcControllers[dan] = TextEditingController();
+      _vremenaVsControllers[dan] = TextEditingController();
     }
   }
 
@@ -176,10 +176,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _adresaVrsacController.dispose();
 
     // Dispose vremena controller-e
-    for (final controller in _vremenaBC_Controllers.values) {
+    for (final controller in _vremenaBcControllers.values) {
       controller.dispose();
     }
-    for (final controller in _vremenaVS_Controllers.values) {
+    for (final controller in _vremenaVsControllers.values) {
       controller.dispose();
     }
 
@@ -1023,11 +1023,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         final trenutnaVS = _novaVremenaVS[dan] ?? '';
 
         // Postavi controller samo ako nisu već postavljeni ili ako se vrednost promenila
-        if (_vremenaBC_Controllers[dan]?.text != trenutnaBC) {
-          _vremenaBC_Controllers[dan]?.text = trenutnaBC;
+        if (_vremenaBcControllers[dan]?.text != trenutnaBC) {
+          _vremenaBcControllers[dan]?.text = trenutnaBC;
         }
-        if (_vremenaVS_Controllers[dan]?.text != trenutnaVS) {
-          _vremenaVS_Controllers[dan]?.text = trenutnaVS;
+        if (_vremenaVsControllers[dan]?.text != trenutnaVS) {
+          _vremenaVsControllers[dan]?.text = trenutnaVS;
         }
       }
     });

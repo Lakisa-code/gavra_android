@@ -151,7 +151,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                     child: Text('Nema podataka za izabrani period'),
                   )
                 : StreamBuilder<List<Putnik>>(
-                    stream: PutnikService().streamPutnici(),
+                    stream: PutnikService()
+                        .streamKombinovaniPutnici(), // ✅ ISPRAVKA: Koristi filtriranu verziju
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());

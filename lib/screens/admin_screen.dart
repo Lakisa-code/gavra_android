@@ -9,7 +9,7 @@ import '../services/local_notification_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/date_utils.dart'
-    as AppDateUtils; // DODANO: Centralna vikend logika
+    as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
@@ -39,7 +39,7 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
     _selectedDan =
-        AppDateUtils.DateUtils.getTodayFullName(); // ✅ KORISTI UTILS FUNKCIJU
+        app_date_utils.DateUtils.getTodayFullName(); // ✅ KORISTI UTILS FUNKCIJU
     _loadCurrentDriver();
 
     // Inicijalizuj heads-up i zvuk notifikacije
@@ -549,9 +549,9 @@ class _AdminScreenState extends State<AdminScreen> {
           // 🎯 VIKEND LOGIKA: Koristi centralizovanu funkciju za sve screen-ove
           final DateTime targetDate;
           if (_selectedDan == 'Ponedeljak' &&
-              AppDateUtils.DateUtils.isWeekend()) {
+              app_date_utils.DateUtils.isWeekend()) {
             // Vikend + Ponedeljak = sledeći ponedeljak (koristi utils funkciju)
-            targetDate = AppDateUtils.DateUtils.getWeekendTargetDate();
+            targetDate = app_date_utils.DateUtils.getWeekendTargetDate();
           } else {
             // Standardna logika za ostale dane
             final daysFromToday = targetWeekday - currentWeekday;
@@ -559,17 +559,17 @@ class _AdminScreenState extends State<AdminScreen> {
           }
 
           // ✅ KORISTI UTILS ZA KREIRANJE DATE RANGE
-          final dateRange = AppDateUtils.DateUtils.getDateRange(targetDate);
+          final dateRange = app_date_utils.DateUtils.getDateRange(targetDate);
           streamFrom = dateRange['from']!;
           streamTo = dateRange['to']!;
 
           // 🔍 DEBUG: Prikaži koje datume koristi Admin screen
-          print(
-              '🔍 [ADMIN SCREEN] Koristi datum: ${AppDateUtils.DateUtils.formatDateForDebug(targetDate).split(' ')[0]}');
-          print(
-              '🔍 [ADMIN SCREEN] streamFrom: ${AppDateUtils.DateUtils.formatDateForDebug(streamFrom)}');
-          print(
-              '🔍 [ADMIN SCREEN] streamTo: ${AppDateUtils.DateUtils.formatDateForDebug(streamTo)}');
+          debugPrint(
+              '🔍 [ADMIN SCREEN] Koristi datum: ${app_date_utils.DateUtils.formatDateForDebug(targetDate).split(' ')[0]}');
+          debugPrint(
+              '🔍 [ADMIN SCREEN] streamFrom: ${app_date_utils.DateUtils.formatDateForDebug(streamFrom)}');
+          debugPrint(
+              '🔍 [ADMIN SCREEN] streamTo: ${app_date_utils.DateUtils.formatDateForDebug(streamTo)}');
 
           return StreamBuilder<Map<String, double>>(
             stream: StatistikaService.streamPazarSvihVozaca(

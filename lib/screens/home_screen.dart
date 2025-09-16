@@ -16,13 +16,14 @@ import '../services/realtime_notification_service.dart';
 import '../services/update_service.dart'; // 🔄 Update sistem aktiviran!
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart'
-    as AppDateUtils; // DODANO: Centralna vikend logika
+    as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/autocomplete_ime_field.dart';
+// import '../widgets/supabase_analysis_widget.dart'; // REMOVED - file not found
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
 import '../widgets/shimmer_widgets.dart';
@@ -126,17 +127,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ✅ KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
   String _getTodayName() {
-    return AppDateUtils.DateUtils.getTodayFullName();
+    return app_date_utils.DateUtils.getTodayFullName();
   }
 
   // ✅ KORISTI UTILS FUNKCIJU ZA TARGET DATUM
   DateTime _getTargetDate() {
-    return AppDateUtils.DateUtils.getWeekendTargetDate();
+    return app_date_utils.DateUtils.getWeekendTargetDate();
   }
 
   // ✅ CUSTOM STREAM - Koristi target datum umesto trenutnog
   Stream<List<Putnik>> _streamKombinovaniPutniciZaTargetDatum() {
-    print('🎯 [CUSTOM STREAM] Koristi se CUSTOM stream za vikend logiku!');
+    debugPrint('🎯 [CUSTOM STREAM] Koristi se CUSTOM stream za vikend logiku!');
     final targetDate = _getTargetDate();
     final targetDateString = targetDate.toIso8601String().split('T')[0];
     final danasKratica = _getFilterDayAbbreviation(targetDate.weekday);
@@ -1665,6 +1666,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   '🔄 VREME POLASKA PROMENJENO: $grad $vreme - StreamBuilder će se ažurirati nakon resetovanja pokupljanja');
             },
           ),
+          // floatingActionButton: kDebugMode ? FloatingActionButton(
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => const SupabaseAnalysisWidget(),
+          //       ),
+          //     );
+          //   },
+          //   backgroundColor: Colors.orange,
+          //   child: const Icon(Icons.analytics),
+          // ) : null,
         );
       }, // Zatvaranje StreamBuilder builder funkcije
     ); // Zatvaranje StreamBuilder widgeta

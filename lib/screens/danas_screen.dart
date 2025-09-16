@@ -14,7 +14,7 @@ import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS trackin
 import '../services/realtime_notification_service.dart';
 import '../services/route_optimization_service.dart';
 import '../utils/date_utils.dart'
-    as AppDateUtils; // DODANO: Centralna vikend logika
+    as app_date_utils; // DODANO: Centralna vikend logika
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
 import '../services/putnik_service.dart'; // 🆕 DODANO za nove metode
@@ -49,12 +49,12 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // ✅ KORISTI UTILS FUNKCIJU UMESTO DUPLIRANE LOGIKE
   DateTime _getTargetDateForWeekend(DateTime today) {
-    return AppDateUtils.DateUtils.getWeekendTargetDate(today);
+    return app_date_utils.DateUtils.getWeekendTargetDate(today);
   }
 
   // ✅ KORISTI UTILS FUNKCIJU UMESTO DUPLIRANE LOGIKE
   String _getDayName(int weekday) {
-    return AppDateUtils.DateUtils.weekdayToString(weekday);
+    return app_date_utils.DateUtils.weekdayToString(weekday);
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
@@ -319,13 +319,22 @@ class _DanasScreenState extends State<DanasScreen> {
           final gradMatch = _isGradMatch(
               putnik.grad, putnik.adresa, _selectedGrad,
               isMesecniPutnik: putnik.mesecnaKarta == true);
-          final statusOk = (normalizedStatus != 'otkazano' &&
-              normalizedStatus != 'otkazan' &&
-              normalizedStatus != 'bolovanje' &&
-              normalizedStatus != 'godisnji' &&
-              normalizedStatus != 'godišnji' &&
-              normalizedStatus != 'obrisan');
-          return vremeMatch && gradMatch && statusOk;
+
+          // MESEČNI PUTNICI - isto kao u home_screen
+          if (putnik.mesecnaKarta == true) {
+            // Za mesečne putnike, samo isključi obrisane
+            final statusOk = normalizedStatus != 'obrisan';
+            return vremeMatch && gradMatch && statusOk;
+          } else {
+            // DNEVNI PUTNICI - standardno filtriranje
+            final statusOk = (normalizedStatus != 'otkazano' &&
+                normalizedStatus != 'otkazan' &&
+                normalizedStatus != 'bolovanje' &&
+                normalizedStatus != 'godisnji' &&
+                normalizedStatus != 'godišnji' &&
+                normalizedStatus != 'obrisan');
+            return vremeMatch && gradMatch && statusOk;
+          }
         }).toList();
 
         final hasPassengers = filtriraniPutnici.isNotEmpty;
@@ -1465,7 +1474,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       child:
                           _buildDigitalDateDisplay()), // dodano Center widget
                   const SizedBox(height: 4),
-                  // DUGMAD U APP BAR-U - 5 dugmića jednake širine
+                  // DUGMAD U APP BAR-U - dinamički broj dugmića
                   Row(
                     children: [
                       // 🎓 ĐAČKI BROJAČ
@@ -1474,10 +1483,10 @@ class _DanasScreenState extends State<DanasScreen> {
                       // 🚀 DUGME ZA OPTIMIZACIJU RUTE
                       Expanded(flex: 1, child: _buildOptimizeButton()),
                       const SizedBox(width: 2),
-                      // � DUGME ZA POPIS DANA
+                      // 📋 DUGME ZA POPIS DANA
                       Expanded(flex: 1, child: _buildPopisButton()),
                       const SizedBox(width: 2),
-                      // �️ DUGME ZA GOOGLE MAPS
+                      // 🗺️ DUGME ZA GOOGLE MAPS
                       Expanded(flex: 1, child: _buildMapsButton()),
                       const SizedBox(width: 2),
                       // ⚡ SPEEDOMETER
@@ -1546,14 +1555,21 @@ class _DanasScreenState extends State<DanasScreen> {
                       putnik.grad, putnik.adresa, grad,
                       isMesecniPutnik: putnik.mesecnaKarta == true);
 
-                  final statusOk = (normalizedStatus != 'otkazano' &&
-                      normalizedStatus != 'otkazan' &&
-                      normalizedStatus != 'bolovanje' &&
-                      normalizedStatus != 'godisnji' &&
-                      normalizedStatus != 'godišnji' &&
-                      normalizedStatus != 'obrisan');
-
-                  return vremeMatch && gradMatch && statusOk;
+                  // MESEČNI PUTNICI - isto kao u home_screen
+                  if (putnik.mesecnaKarta == true) {
+                    // Za mesečne putnike, samo isključi obrisane
+                    final statusOk = normalizedStatus != 'obrisan';
+                    return vremeMatch && gradMatch && statusOk;
+                  } else {
+                    // DNEVNI PUTNICI - standardno filtriranje
+                    final statusOk = (normalizedStatus != 'otkazano' &&
+                        normalizedStatus != 'otkazan' &&
+                        normalizedStatus != 'bolovanje' &&
+                        normalizedStatus != 'godisnji' &&
+                        normalizedStatus != 'godišnji' &&
+                        normalizedStatus != 'obrisan');
+                    return vremeMatch && gradMatch && statusOk;
+                  }
                 }).toList();
 
                 // Koristiti optimizovanu rutu ako postoji, ali filtriraj je po trenutnom polazaku
@@ -1571,12 +1587,20 @@ class _DanasScreenState extends State<DanasScreen> {
                             putnik.grad, putnik.adresa, grad,
                             isMesecniPutnik: putnik.mesecnaKarta == true);
 
-                        final statusOk = (normalizedStatus != 'otkazano' &&
-                            normalizedStatus != 'otkazan' &&
-                            normalizedStatus != 'bolovanje' &&
-                            normalizedStatus != 'godisnji' &&
-                            normalizedStatus != 'godišnji' &&
-                            normalizedStatus != 'obrisan');
+                        // MESEČNI PUTNICI - isto kao u home_screen
+                        bool statusOk;
+                        if (putnik.mesecnaKarta == true) {
+                          // Za mesečne putnike, samo isključi obrisane
+                          statusOk = normalizedStatus != 'obrisan';
+                        } else {
+                          // DNEVNI PUTNICI - standardno filtriranje
+                          statusOk = (normalizedStatus != 'otkazano' &&
+                              normalizedStatus != 'otkazan' &&
+                              normalizedStatus != 'bolovanje' &&
+                              normalizedStatus != 'godisnji' &&
+                              normalizedStatus != 'godišnji' &&
+                              normalizedStatus != 'obrisan');
+                        }
 
                         return vremeMatch && gradMatch && statusOk;
                       }).toList()
@@ -2137,11 +2161,24 @@ class _DanasScreenState extends State<DanasScreen> {
                       GradAdresaValidator.normalizeTime(vreme);
               final danMatch =
                   putnik.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
-              final statusOk = (normalizedStatus != 'otkazano' &&
-                  normalizedStatus != 'otkazan' &&
-                  normalizedStatus != 'bolovanje' &&
-                  normalizedStatus != 'godisnji' &&
-                  normalizedStatus != 'obrisan');
+
+              // BROJČANIK - ne računa mesečne putnike na godišnjem/bolovanju
+              bool statusOk;
+              if (putnik.mesecnaKarta == true) {
+                // Za mesečne putnike u BROJČANIKU, isključi obrisane, godišnji i bolovanje
+                statusOk = (normalizedStatus != 'obrisan' &&
+                    normalizedStatus != 'godisnji' &&
+                    normalizedStatus != 'godišnji' &&
+                    normalizedStatus != 'bolovanje');
+              } else {
+                // DNEVNI PUTNICI - standardno filtriranje
+                statusOk = (normalizedStatus != 'otkazano' &&
+                    normalizedStatus != 'otkazan' &&
+                    normalizedStatus != 'bolovanje' &&
+                    normalizedStatus != 'godisnji' &&
+                    normalizedStatus != 'godišnji' &&
+                    normalizedStatus != 'obrisan');
+              }
 
               debugPrint(
                   '🎯 [COUNT] Putnik: ${putnik.ime}, grad: "${putnik.grad}" vs "$grad", vreme: "${putnik.polazak}" vs "$vreme", status: "${putnik.status}", gradMatch: $gradMatch, vremeMatch: $vremeMatch, statusOk: $statusOk');

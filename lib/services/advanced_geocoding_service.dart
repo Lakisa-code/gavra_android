@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
@@ -423,8 +422,12 @@ class AdvancedGeocodingService {
     final matrix =
         List.generate(a.length + 1, (i) => List<int>.filled(b.length + 1, 0));
 
-    for (int i = 0; i <= a.length; i++) matrix[i][0] = i;
-    for (int j = 0; j <= b.length; j++) matrix[0][j] = j;
+    for (int i = 0; i <= a.length; i++) {
+      matrix[i][0] = i;
+    }
+    for (int j = 0; j <= b.length; j++) {
+      matrix[0][j] = j;
+    }
 
     for (int i = 1; i <= a.length; i++) {
       for (int j = 1; j <= b.length; j++) {

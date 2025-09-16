@@ -30,7 +30,8 @@ class RealTimeStatistikaService {
       debugPrint('🆕 KREIRANJE NOVOG KOMBINOVANOG STREAM-A');
 
       _kombinovaniStream = CombineLatestStream.combine2(
-        PutnikService().streamPutnici(),
+        PutnikService()
+            .streamKombinovaniPutnici(), // ✅ ISPRAVKA: Koristi filtriranu verziju
         MesecniPutnikService.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
           return [putnici, mesecni];

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -8,15 +9,15 @@ void main() async {
     final result = await supabase.from('mesecni_putnici').select().limit(1);
 
     if (result.isNotEmpty) {
-      print('📊 Struktura tabele mesecni_putnici:');
-      final firstRow = result.first as Map<String, dynamic>;
-      firstRow.keys.forEach((column) {
-        print('  - $column: ${firstRow[column]?.runtimeType}');
-      });
+      debugPrint('📊 Struktura tabele mesecni_putnici:');
+      final firstRow = result.first;
+      for (final column in firstRow.keys) {
+        debugPrint('  - $column: ${firstRow[column]?.runtimeType}');
+      }
     } else {
-      print('❌ Nema podataka u tabeli mesecni_putnici');
+      debugPrint('❌ Nema podataka u tabeli mesecni_putnici');
     }
   } catch (e) {
-    print('❌ Greška: $e');
+    debugPrint('❌ Greška: $e');
   }
 }

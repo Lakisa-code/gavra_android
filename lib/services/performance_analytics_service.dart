@@ -240,7 +240,8 @@ class PerformanceAnalyticsService {
       final exportData = <String, dynamic>{};
 
       // Filter data by date range
-      final start = startDate ?? DateTime.now().subtract(Duration(days: 7));
+      final start =
+          startDate ?? DateTime.now().subtract(const Duration(days: 7));
       final end = endDate ?? DateTime.now();
 
       // Export metrics
@@ -567,7 +568,7 @@ class PerformanceAnalyticsService {
     final values = dataPoints.map((p) => p.value).toList()..sort();
     final min = values.first;
     final max = values.last;
-    final bucketCount = 10;
+    const bucketCount = 10;
     final bucketSize = (max - min) / bucketCount;
 
     for (int i = 0; i < bucketCount; i++) {
