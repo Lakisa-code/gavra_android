@@ -6,8 +6,6 @@ class BottomNavBarZimski extends StatefulWidget {
   final String selectedVreme;
   final Function(String grad, String vreme) onPolazakChanged;
   final Function(String grad, String vreme) getPutnikCount;
-  final int? totalPutnici;
-
   const BottomNavBarZimski({
     super.key,
     required this.sviPolasci,
@@ -15,7 +13,6 @@ class BottomNavBarZimski extends StatefulWidget {
     required this.selectedVreme,
     required this.onPolazakChanged,
     required this.getPutnikCount,
-    this.totalPutnici,
   });
 
   @override
@@ -145,27 +142,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Row(
-                children: [
-                  const Expanded(child: SizedBox()),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.blueAccent : Colors.blue,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      (widget.totalPutnici ?? 0).toString(),
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // top-right total removed per user request
             _PolazakRow(
               label: 'BC',
               vremena: bcVremena,

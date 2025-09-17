@@ -1613,22 +1613,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,
             getPutnikCount: getPutnikCount,
-            totalPutnici: putniciZaPrikaz.where((p) {
-              final normalizedStatus = (p.status ?? '').toLowerCase().trim();
-              if (p.mesecnaKarta == true) {
-                return !(normalizedStatus == 'obrisan' ||
-                    normalizedStatus == 'godisnji' ||
-                    normalizedStatus == 'godišnji' ||
-                    normalizedStatus == 'bolovanje');
-              } else {
-                return !(normalizedStatus == 'otkazano' ||
-                    normalizedStatus == 'otkazan' ||
-                    normalizedStatus == 'bolovanje' ||
-                    normalizedStatus == 'godisnji' ||
-                    normalizedStatus == 'godišnji' ||
-                    normalizedStatus == 'obrisan');
-              }
-            }).length,
             onPolazakChanged: (grad, vreme) async {
               // Prvo resetuj pokupljanje za novo vreme polaska
               await _putnikService.resetPokupljenjaNaPolazak(

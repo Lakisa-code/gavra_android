@@ -2208,30 +2208,11 @@ class _DanasScreenState extends State<DanasScreen> {
             return matchingPutnici.length;
           }
 
-          // compute total putnici for today to show in bottom bar
-          final int totalToday = todayPutnici.where((p) {
-            final normalizedStatus = (p.status ?? '').toLowerCase().trim();
-            if (p.mesecnaKarta == true) {
-              return !(normalizedStatus == 'obrisan' ||
-                  normalizedStatus == 'godisnji' ||
-                  normalizedStatus == 'godišnji' ||
-                  normalizedStatus == 'bolovanje');
-            } else {
-              return !(normalizedStatus == 'otkazano' ||
-                  normalizedStatus == 'otkazan' ||
-                  normalizedStatus == 'bolovanje' ||
-                  normalizedStatus == 'godisnji' ||
-                  normalizedStatus == 'godišnji' ||
-                  normalizedStatus == 'obrisan');
-            }
-          }).length;
-
           return BottomNavBarLetnji(
             sviPolasci: _sviPolasci,
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,
             getPutnikCount: getPutnikCount,
-            totalPutnici: totalToday,
             onPolazakChanged: (grad, vreme) async {
               // Prvo resetuj pokupljanje za novo vreme polaska
               await _putnikService.resetPokupljenjaNaPolazak(

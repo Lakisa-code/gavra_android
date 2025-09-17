@@ -6,8 +6,6 @@ class BottomNavBarLetnji extends StatefulWidget {
   final String selectedVreme;
   final Function(String grad, String vreme) onPolazakChanged;
   final Function(String grad, String vreme) getPutnikCount;
-  final int? totalPutnici;
-
   const BottomNavBarLetnji({
     super.key,
     required this.sviPolasci,
@@ -15,7 +13,6 @@ class BottomNavBarLetnji extends StatefulWidget {
     required this.selectedVreme,
     required this.onPolazakChanged,
     required this.getPutnikCount,
-    this.totalPutnici,
   });
 
   @override
@@ -137,28 +134,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // show total passengers as a pill at the top-right
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Row(
-                children: [
-                  const Expanded(child: SizedBox()),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.blueAccent : Colors.blue,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      (widget.totalPutnici ?? 0).toString(),
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // top-right total removed per user request
             _PolazakRow(
               label: 'BC',
               vremena: bcVremena,
