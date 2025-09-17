@@ -86,15 +86,53 @@ class MesecniPutnikService {
   // 🔍 DOBIJ sve mesečne putnike
   static Future<List<MesecniPutnik>> getAllMesecniPutnici() async {
     try {
-      final response =
-          await _supabase.from('mesecni_putnici').select().order('putnik_ime');
+      // Zamenjeno: umesto direktnog čitanja iz mesecni_putnici,
+      // dohvatamo današnje "zakupljeno" iz putovanja_istorija kako ste zahtevali.
+      final danas = DateTime.now().toIso8601String().split('T')[0];
+      final response = await _supabase
+          .from('putovanja_istorija')
+          .select()
+          .eq('datum', danas)
+          .eq('status', 'zakupljeno')
+          .order('vreme_polaska');
 
-      return response
-          .map<MesecniPutnik>((json) => MesecniPutnik.fromMap(json))
-          .toList();
+      // Mapiraj rezultate u MesecniPutnik ako polja postoje, inače preskoči
+      final List<MesecniPutnik> mapped = [];
+      for (final row in response) {
+        try {
+          final map = Map<String, dynamic>.from(row as Map);
+          // Ako red sadrži mesecni_putnik_id, pokušaj da dobijemo mesecnog putnika
+          if (map['mesecni_putnik_id'] != null) {
+            final mp =
+                await getMesecniPutnikById(map['mesecni_putnik_id'].toString());
+            if (mp != null) {
+              mapped.add(mp);
+              continue;
+            }
+          }
+
+          // Ako nema povezanog mesecnog putnika, pokušamo osnovni map u MesecniPutnik
+          // koristeći polja koja se poklapaju (putnik_ime → putnikIme)
+          final tentative = MesecniPutnik.fromMap({
+            'putnik_ime': map['putnik_ime'] ?? map['ime'] ?? '',
+            'adresa_bela_crkva': map['adresa_polaska'] ?? '',
+            'adresa_vrsac': map['adresa_polaska'] ?? '',
+            'id': map['mesecni_putnik_id'] ?? map['id']?.toString(),
+            // ostatak polja ostavljamo na default u fromMap
+          });
+          mapped.add(tentative);
+        } catch (rowErr) {
+          if (kDebugMode) {
+            debugPrint('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
+          }
+        }
+      }
+
+      return mapped;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju svih: $e');
+        debugPrint(
+            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
       }
       return [];
     }
@@ -103,19 +141,67 @@ class MesecniPutnikService {
   // 🔍 DOBIJ aktivne mesečne putnike
   static Future<List<MesecniPutnik>> getAktivniMesecniPutnici() async {
     try {
-      final response = await _supabase
-          .from('mesecni_putnici')
-          .select()
-          .eq('aktivan', true)
-          .order('putnik_ime');
+      // Umesto direktnog čitanja iz mesecni_putnici, koristimo putovanja_istorija
+      // za današnje "zakupljeno" zapise i mapiramo nazad na MesecniPutnik gde je moguće.
+      final zakupljeno = await getZakupljenoDanas();
 
+      final List<MesecniPutnik> mapped = [];
+      for (final row in zakupljeno) {
+        try {
+          final map = Map<String, dynamic>.from(row);
+          if (map['mesecni_putnik_id'] != null) {
+            final mp =
+                await getMesecniPutnikById(map['mesecni_putnik_id'].toString());
+            if (mp != null) {
+              mapped.add(mp);
+              continue;
+            }
+          }
+
+          // Fallback: create tentative MesecniPutnik from available fields
+          final tentative = MesecniPutnik.fromMap({
+            'putnik_ime': map['putnik_ime'] ?? map['ime'] ?? '',
+            'adresa_bela_crkva': map['adresa_polaska'] ?? '',
+            'adresa_vrsac': map['adresa_polaska'] ?? '',
+            'id': map['mesecni_putnik_id'] ?? map['id']?.toString(),
+          });
+          mapped.add(tentative);
+        } catch (rowErr) {
+          if (kDebugMode)
+            debugPrint('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
+        }
+      }
+
+      return mapped;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih (zakupljeno danas): $e');
+      }
+      return [];
+    }
+  }
+
+  // 🔍 NOVO: Dobij "zakupljeno" putovanja za danas iz putovanja_istorija
+  // Vraća listu mapi (raw rows) jer struktura putovanja_istorija se razlikuje
+  static Future<List<Map<String, dynamic>>> getZakupljenoDanas() async {
+    try {
+      final danas = DateTime.now().toIso8601String().split('T')[0];
+      final response = await _supabase
+          .from('putovanja_istorija')
+          .select()
+          .eq('datum', danas)
+          .eq('status', 'zakupljeno')
+          .order('vreme_polaska');
+
+      // Supabase returns List<dynamic> of maps
       return response
-          .map<MesecniPutnik>((json) => MesecniPutnik.fromMap(json))
+          .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih: $e');
+            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
       }
       return [];
     }
@@ -1031,5 +1117,23 @@ class MesecniPutnikService {
       }
       return false;
     }
+  }
+
+  /// Filtrira mesečne putnike po više različitih polazaka (mesta ili vremena).
+  /// [polasci] je lista stringova (npr. vremena ili mesta polaska) po kojoj se filtrira.
+  /// [tipPolaska] može biti 'bc' (Bela Crkva) ili 'vs' (Vršac) ili oba.
+  /// Novi filter: filtrira po polasciPoDanu (JSON map)
+  /// [dan] je npr. 'pon', 'uto', ...
+  /// [polasci] je lista stringova ("6 VS", "13 BC"...)
+  static List<MesecniPutnik> filterByPolasci(
+    List<MesecniPutnik> putnici, {
+    required String dan,
+    required List<String> polasci,
+  }) {
+    return putnici.where((putnik) {
+      final polasciZaDan = putnik.polasciPoDanu[dan] ?? [];
+      // Ako bar jedan polazak iz liste postoji kod putnika za taj dan
+      return polasci.any((p) => polasciZaDan.contains(p));
+    }).toList();
   }
 }

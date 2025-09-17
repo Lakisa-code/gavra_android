@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-// Firebase messaging imports - enabled for multi-channel notifications
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'local_notification_service.dart';
@@ -8,6 +8,51 @@ import 'notification_navigation_service.dart';
 import 'package:logger/logger.dart';
 
 class RealtimeNotificationService {
+  /// OneSignal REST API endpoint
+  static const String _oneSignalApiUrl =
+      'https://onesignal.com/api/v1/notifications';
+
+  /// TODO: Unesi svoj OneSignal REST API ključ ovde
+  static const String _oneSignalRestApiKey = 'dymepwhpkubkfxhqhc4mlh2x7';
+
+  /// Pošalji OneSignal notifikaciju putem REST API-ja
+  static Future<void> sendOneSignalNotification({
+    required String title,
+    required String body,
+    String? playerId, // Ako želiš da šalješ pojedinačno
+    String? segment, // Ili segment (npr. "All")
+    Map<String, dynamic>? data,
+  }) async {
+    if (_oneSignalRestApiKey.isEmpty) {
+      _logger.w(
+          '❗ OneSignal REST API ključ nije postavljen. Notifikacija nije poslata.');
+      return;
+    }
+    try {
+      final payload = {
+        'app_id': '4fd57af1-568a-45e0-a737-3b3918c4e92a',
+        'headings': {'en': title},
+        'contents': {'en': body},
+        if (playerId != null) 'include_player_ids': [playerId],
+        if (segment != null) 'included_segments': [segment],
+        if (data != null) 'data': data,
+      };
+      final req = await HttpClient().postUrl(Uri.parse(_oneSignalApiUrl));
+      req.headers.set('Content-Type', 'application/json');
+      req.headers.set('Authorization', 'Basic $_oneSignalRestApiKey');
+      req.add(utf8.encode(jsonEncode(payload)));
+      final httpResponse = await req.close();
+      final responseBody = await utf8.decoder.bind(httpResponse).join();
+      if (httpResponse.statusCode == 200) {
+        _logger.i('✅ OneSignal notifikacija poslata: $responseBody');
+      } else {
+        _logger.e('❌ Greška pri slanju OneSignal notifikacije: $responseBody');
+      }
+    } catch (e) {
+      _logger.e('❌ Exception pri slanju OneSignal notifikacije: $e');
+    }
+  }
+
   static final Logger _logger = Logger();
 
   /// Initialize service with full multi-channel support (Firebase + OneSignal + Local)
@@ -25,13 +70,34 @@ class RealtimeNotificationService {
       _logger
           .i('📱 Foreground Firebase message: ${message.notification?.title}');
 
-      // Show local notification for foreground messages
-      LocalNotificationService.showRealtimeNotification(
-        title: message.notification?.title ?? 'Gavra Notification',
-        body: message.notification?.body ?? 'Nova poruka',
-        payload: message.data['type'] ?? 'firebase_foreground',
-        playCustomSound: true,
-      );
+      // Filtriraj notifikacije: samo za današnji dan i za tip "dodat" ili "otkazan"
+      final data = message.data;
+      final type = (data['type'] ?? '').toString().toLowerCase();
+      final datumString = data['datum'] ?? data['date'] ?? '';
+      final danas = DateTime.now();
+      bool isToday = false;
+      if (datumString.isNotEmpty) {
+        try {
+          final datum = DateTime.parse(datumString);
+          isToday = datum.year == danas.year &&
+              datum.month == danas.month &&
+              datum.day == danas.day;
+        } catch (_) {
+          isToday = false;
+        }
+      }
+
+      if ((type == 'dodat' || type == 'otkazan') && isToday) {
+        LocalNotificationService.showRealtimeNotification(
+          title: message.notification?.title ?? 'Gavra Notification',
+          body: message.notification?.body ?? 'Nova poruka',
+          payload: message.data['type'] ?? 'firebase_foreground',
+          playCustomSound: true,
+        );
+      } else {
+        _logger.i(
+            '🔕 Notifikacija ignorisana (nije za danas ili nije tip dodat/otkazan)');
+      }
     });
 
     // Listen for message taps
@@ -87,9 +153,14 @@ class RealtimeNotificationService {
       // Note: FCM sending is typically done from server, not client
       _logger.i('📡 Firebase notification would be sent from server');
 
-      // 3. OneSignal notification (server-side or REST API call)
-      // Note: OneSignal sending is typically done from server or REST API
-      _logger.i('📱 OneSignal notification would be sent from server');
+      // 3. OneSignal notification (REST API poziv iz klijenta)
+      // Slanje svima u segmentu "All" (ili koristi playerId za pojedinačne korisnike)
+      RealtimeNotificationService.sendOneSignalNotification(
+        title: title,
+        body: body,
+        segment: 'All',
+        data: data,
+      );
 
       _logger.i(
           '🎯 Multi-channel notification completed: Firebase + OneSignal + Local');

@@ -1,3 +1,5 @@
+import 'mesecni_putnik.dart';
+
 // Enum za statuse putnika
 enum PutnikStatus {
   otkazano,
@@ -193,7 +195,6 @@ class Putnik {
 
   // NOVA METODA: Kreira VIŠE putnik objekata za mesečne putnike sa više polazaka
   static List<Putnik> fromMesecniPutniciMultiple(Map<String, dynamic> map) {
-    final List<Putnik> putnici = [];
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
@@ -217,18 +218,86 @@ class Putnik {
     final danas = DateTime.now();
     final trenutniDan = _getDanNedeljeKratica(danas.weekday);
 
+    return _createPutniciForDay(
+        map,
+        ime,
+        danString,
+        status,
+        vremeDodavanja,
+        vremePokupljenja,
+        vremePlacanja,
+        placeno,
+        iznosPlacanja,
+        vozac,
+        obrisan,
+        trenutniDan);
+  }
+
+  // NOVA METODA: Kreira putnik objekte za SPECIFIČAN DAN (umesto trenutni dan)
+  static List<Putnik> fromMesecniPutniciMultipleForDay(
+      Map<String, dynamic> map, String targetDan) {
+    final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
+    final danString = map['radni_dani'] as String? ?? 'pon';
+    final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
+    final vremeDodavanja =
+        map['created_at'] != null ? DateTime.parse(map['created_at']) : null;
+    final vremePokupljenja = map['poslednje_putovanje'] != null
+        ? DateTime.parse(map['poslednje_putovanje'])
+        : (map['vreme_pokupljenja'] != null
+            ? DateTime.parse(map['vreme_pokupljenja'])
+            : null); // ✅ FALLBACK na vreme_pokupljenja
+    final vremePlacanja = map['vreme_placanja'] != null
+        ? DateTime.parse(map['vreme_placanja'])
+        : null; // ✅ ČITAJ iz vreme_placanja
+    final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
+    final iznosPlacanja =
+        map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
+    final vozac = map['vozac'] as String?; // ✅ ČITAJ vozača
+    final obrisan = map['aktivan'] == false;
+
+    return _createPutniciForDay(
+        map,
+        ime,
+        danString,
+        status,
+        vremeDodavanja,
+        vremePokupljenja,
+        vremePlacanja,
+        placeno,
+        iznosPlacanja,
+        vozac,
+        obrisan,
+        targetDan);
+  }
+
+  // Helper metoda za kreiranje putnika za određen dan
+  static List<Putnik> _createPutniciForDay(
+      Map<String, dynamic> map,
+      String ime,
+      String danString,
+      String status,
+      DateTime? vremeDodavanja,
+      DateTime? vremePokupljenja,
+      DateTime? vremePlacanja,
+      bool placeno,
+      double? iznosPlacanja,
+      String? vozac,
+      bool obrisan,
+      String targetDan) {
+    final List<Putnik> putnici = [];
+
     // ✅ NOVA LOGIKA: Čitaj vremena iz novih kolona po danima
-    // Određi da li putnik radi danas
+    // Određi da li putnik radi za targetDan
     final radniDani = danString.split(',');
-    if (!radniDani.contains(trenutniDan)) {
-      return putnici; // Putnik ne radi danas
+    if (!radniDani.contains(targetDan)) {
+      return putnici; // Putnik ne radi za targetDan
     }
 
-    // Čitaj vremena za trenutni dan iz novih kolona
-    final polazakBC = _getPolazakZaDan(map, trenutniDan, 'bc');
-    final polazakVS = _getPolazakZaDan(map, trenutniDan, 'vs');
+    // Čitaj vremena za targetDan iz novih kolona
+    final polazakBC = _getPolazakZaDan(map, targetDan, 'bc');
+    final polazakVS = _getPolazakZaDan(map, targetDan, 'vs');
 
-    // Kreiraj putnik za Bela Crkva ako ima polazak za danas
+    // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
       bool pokupljenZaOvajPolazak = false;
@@ -251,7 +320,7 @@ class Putnik {
         pokupljen: pokupljenZaOvajPolazak,
         vremeDodavanja: vremeDodavanja,
         mesecnaKarta: true,
-        dan: trenutniDan,
+        dan: targetDan,
         status: status,
         statusVreme: map['updated_at'] as String?,
         vremePokupljenja: vremePokupljenja,
@@ -275,7 +344,7 @@ class Putnik {
       ));
     }
 
-    // Kreiraj putnik za Vršac ako ima polazak za danas
+    // Kreiraj putnik za Vršac ako ima polazak za targetDan
     if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
       bool pokupljenZaOvajPolazak = false;
@@ -298,7 +367,7 @@ class Putnik {
         pokupljen: pokupljenZaOvajPolazak,
         vremeDodavanja: vremeDodavanja,
         mesecnaKarta: true,
-        dan: trenutniDan,
+        dan: targetDan,
         status: status,
         statusVreme: map['updated_at'] as String?,
         vremePokupljenja: vremePokupljenja,
@@ -571,5 +640,26 @@ class Putnik {
     }
 
     return vreme;
+  }
+
+  // NOVI: Factory za konverziju iz MesecniPutnik u Putnik
+  factory Putnik.fromMesecniPutnik(MesecniPutnik mesecniPutnik) {
+    // Odredi kraticu dana (pon, uto, ...)
+    final weekday = DateTime.now().weekday;
+    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final danKratica = daniKratice[weekday - 1];
+    // Pronađi prvi polazak za taj dan iz polasciPoDanu
+    String polazak = mesecniPutnik.polasciPoDanu[danKratica]?.first ?? '6:00';
+    return Putnik(
+      id: mesecniPutnik.id,
+      ime: mesecniPutnik.putnikIme,
+      polazak: polazak,
+      grad: 'Bela Crkva',
+      dan: DateTime.now().toIso8601String().split('T')[0],
+      mesecnaKarta: true,
+      placeno: true,
+      iznosPlacanja: 14000.0,
+      status: 'radi',
+    );
   }
 }

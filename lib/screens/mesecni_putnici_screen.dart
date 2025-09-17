@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/mesecni_putnik.dart';
+import '../utils/filter_and_sort_putnici.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
@@ -247,8 +249,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox.shrink();
                     final brojRadnika = snapshot.data!
-                        .where(
-                            (p) => p.tip == 'radnik' && p.aktivan && !p.obrisan)
+                        .where((p) =>
+                            p.tip == 'radnik' &&
+                            p.aktivan &&
+                            !p.obrisan &&
+                            p.status != 'bolovanje' &&
+                            p.status != 'godišnje')
                         .length;
                     return Container(
                       padding: const EdgeInsets.all(2),
@@ -302,8 +308,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) return const SizedBox.shrink();
                     final brojUcenika = snapshot.data!
-                        .where(
-                            (p) => p.tip == 'ucenik' && p.aktivan && !p.obrisan)
+                        .where((p) =>
+                            p.tip == 'ucenik' &&
+                            p.aktivan &&
+                            !p.obrisan &&
+                            p.status != 'bolovanje' &&
+                            p.status != 'godišnje')
                         .length;
                     return Container(
                       padding: const EdgeInsets.all(2),
@@ -377,31 +387,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 _filterSubject.stream,
                 (List<MesecniPutnik> putnici, String searchTerm,
                     String filterType) {
-                  // Filtriranje po search terme i tipu putnika
-                  return putnici.where((putnik) {
-                    // Filtriraj po search termu
-                    bool matchesSearch = true;
-                    if (searchTerm.isNotEmpty) {
-                      final search = searchTerm.toLowerCase();
-                      matchesSearch =
-                          putnik.putnikIme.toLowerCase().contains(search) ||
-                              (putnik.brojTelefona
-                                      ?.toLowerCase()
-                                      .contains(search) ??
-                                  false) ||
-                              putnik.tip.toLowerCase().contains(search);
-                    }
-
-                    // Filtriraj po tipu putnika
-                    bool matchesType = true;
-                    if (filterType != 'svi') {
-                      matchesType = putnik.tip == filterType;
-                    }
-
-                    return matchesSearch && matchesType;
-                  }).toList();
+                  // Offload filtering/sorting to a separate isolate
+                  return compute(filterAndSortPutnici, {
+                    'putnici': putnici,
+                    'searchTerm': searchTerm,
+                    'filterType': filterType,
+                  });
                 },
-              ),
+              ).asyncExpand((future) => Stream.fromFuture(future)),
               builder: (context, snapshot) {
                 // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -447,20 +440,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 }
 
                 final filteredPutnici = snapshot.data ?? [];
+                // Prikaži samo prvih 50 rezultata
+                final prikazaniPutnici = filteredPutnici.length > 50
+                    ? filteredPutnici.sublist(0, 50)
+                    : filteredPutnici;
 
-                // Sortiranje: prvo po aktivnosti (aktivni gore), zatim po abecednom redu
-                filteredPutnici.sort((a, b) {
-                  // Prvo sortiranje po aktivnosti - aktivni gore (true > false)
-                  if (a.aktivan != b.aktivan) {
-                    return b.aktivan ? 1 : -1; // aktivni (true) idu gore
-                  }
-                  // Ako je isti status aktivnosti, sortiranje po abecednom redu
-                  return a.putnikIme
-                      .toLowerCase()
-                      .compareTo(b.putnikIme.toLowerCase());
-                });
-
-                if (filteredPutnici.isEmpty) {
+                if (prikazaniPutnici.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -496,9 +481,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filteredPutnici.length,
+                  itemCount: prikazaniPutnici.length,
                   itemBuilder: (context, index) {
-                    final putnik = filteredPutnici[index];
+                    final putnik = prikazaniPutnici[index];
                     return _buildPutnikCard(putnik, index + 1);
                   },
                 );
@@ -511,6 +496,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   Widget _buildPutnikCard(MesecniPutnik putnik, int redniBroj) {
+    final bool bolovanje = putnik.status == 'bolovanje';
     // Pronađi prvi dan koji ima definisano vreme
     String? danSaVremenom;
     for (String dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -524,6 +510,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
+      color: bolovanje ? Colors.yellow[100] : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -549,32 +536,38 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       Expanded(
                         child: Text(
                           putnik.putnikIme,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: bolovanje ? Colors.orange : null,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Switch za aktivnost
+                // Switch za aktivnost ili bolovanje
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN',
+                      bolovanje
+                          ? 'BOLUJE'
+                          : (putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: putnik.aktivan ? Colors.green : Colors.orange,
+                        color: bolovanje
+                            ? Colors.orange
+                            : (putnik.aktivan ? Colors.green : Colors.orange),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Switch(
                       value: putnik.aktivan,
-                      onChanged: (value) => _toggleAktivnost(putnik),
+                      onChanged: bolovanje
+                          ? null
+                          : (value) => _toggleAktivnost(putnik),
                       activeColor: Colors.green,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -703,6 +696,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           Expanded(
                             child: Row(
                               children: [
+                                Icon(Icons.departure_board,
+                                    size: 14, color: Colors.grey.shade600),
                                 Icon(Icons.departure_board,
                                     size: 14, color: Colors.grey.shade600),
                                 const SizedBox(width: 4),
@@ -1196,52 +1191,29 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
 
     try {
-      // Kreiraj ažurirani putnik sa novim kolona za vremena po danima
+      // Pripremi mapu polazaka po danima (JSON)
+      final Map<String, List<String>> polasciPoDanu = {};
+      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+        final bc = _getControllerBelaCrkva(dan).text.trim();
+        final vs = _getControllerVrsac(dan).text.trim();
+        final List<String> polasci = [];
+        if (bc.isNotEmpty) polasci.add('$bc BC');
+        if (vs.isNotEmpty) polasci.add('$vs VS');
+        if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
+      }
       final editovanPutnik = originalPutnik.copyWith(
         putnikIme: ime,
         tip: _noviTip,
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        // Nove kolone za vremena po danima
-        polazakBcPon: _polazakBcPonController.text.trim().isEmpty
-            ? null
-            : _polazakBcPonController.text.trim(),
-        polazakBcUto: _polazakBcUtoController.text.trim().isEmpty
-            ? null
-            : _polazakBcUtoController.text.trim(),
-        polazakBcSre: _polazakBcSreController.text.trim().isEmpty
-            ? null
-            : _polazakBcSreController.text.trim(),
-        polazakBcCet: _polazakBcCetController.text.trim().isEmpty
-            ? null
-            : _polazakBcCetController.text.trim(),
-        polazakBcPet: _polazakBcPetController.text.trim().isEmpty
-            ? null
-            : _polazakBcPetController.text.trim(),
-        polazakVsPon: _polazakVsPonController.text.trim().isEmpty
-            ? null
-            : _polazakVsPonController.text.trim(),
-        polazakVsUto: _polazakVsUtoController.text.trim().isEmpty
-            ? null
-            : _polazakVsUtoController.text.trim(),
-        polazakVsSre: _polazakVsSreController.text.trim().isEmpty
-            ? null
-            : _polazakVsSreController.text.trim(),
-        polazakVsCet: _polazakVsCetController.text.trim().isEmpty
-            ? null
-            : _polazakVsCetController.text.trim(),
-        polazakVsPet: _polazakVsPetController.text.trim().isEmpty
-            ? null
-            : _polazakVsPetController.text.trim(),
+        polasciPoDanu: polasciPoDanu,
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
-        // Očisti stara polja da se koriste samo nova
         polazakBelaCrkva: null,
         polazakVrsac: null,
         radniDani: _getRadniDaniString(),
         updatedAt: DateTime.now(),
       );
-
       await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
 
       // Očisti mape izmena nakon uspešnog čuvanja
@@ -1543,50 +1515,28 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
 
     try {
+      // Pripremi mapu polazaka po danima (JSON)
+      final Map<String, List<String>> polasciPoDanu = {};
+      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+        final bc = _getControllerBelaCrkva(dan).text.trim();
+        final vs = _getControllerVrsac(dan).text.trim();
+        final List<String> polasci = [];
+        if (bc.isNotEmpty) polasci.add('$bc BC');
+        if (vs.isNotEmpty) polasci.add('$vs VS');
+        if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
+      }
       final noviPutnik = MesecniPutnik(
-        id: '', // Biće automatski generisan u Supabase
+        id: '',
         putnikIme: ime,
         tip: _noviTip,
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        // Nove kolone za vremena po danima - čitaj iz TextEditingController-a
-        polazakBcPon: _getControllerBelaCrkva('pon').text.trim().isEmpty
-            ? null
-            : _getControllerBelaCrkva('pon').text.trim(),
-        polazakBcUto: _getControllerBelaCrkva('uto').text.trim().isEmpty
-            ? null
-            : _getControllerBelaCrkva('uto').text.trim(),
-        polazakBcSre: _getControllerBelaCrkva('sre').text.trim().isEmpty
-            ? null
-            : _getControllerBelaCrkva('sre').text.trim(),
-        polazakBcCet: _getControllerBelaCrkva('cet').text.trim().isEmpty
-            ? null
-            : _getControllerBelaCrkva('cet').text.trim(),
-        polazakBcPet: _getControllerBelaCrkva('pet').text.trim().isEmpty
-            ? null
-            : _getControllerBelaCrkva('pet').text.trim(),
-        polazakVsPon: _getControllerVrsac('pon').text.trim().isEmpty
-            ? null
-            : _getControllerVrsac('pon').text.trim(),
-        polazakVsUto: _getControllerVrsac('uto').text.trim().isEmpty
-            ? null
-            : _getControllerVrsac('uto').text.trim(),
-        polazakVsSre: _getControllerVrsac('sre').text.trim().isEmpty
-            ? null
-            : _getControllerVrsac('sre').text.trim(),
-        polazakVsCet: _getControllerVrsac('cet').text.trim().isEmpty
-            ? null
-            : _getControllerVrsac('cet').text.trim(),
-        polazakVsPet: _getControllerVrsac('pet').text.trim().isEmpty
-            ? null
-            : _getControllerVrsac('pet').text.trim(),
+        polasciPoDanu: polasciPoDanu,
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
-        // Postavi stare kolone na null jer koristimo nove
         polazakBelaCrkva: null,
         polazakVrsac: null,
-        radniDani:
-            _getRadniDaniString(), // ✅ DODANO - koristi odabrane radne dane
+        radniDani: _getRadniDaniString(),
         datumPocetkaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month, 1),
         datumKrajaMeseca:
@@ -2692,7 +2642,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
         poslednjiDatum ??= datum;
 
-        if (status == 'pokupljen' || pokupljen == true) {
+        if (pokupljen == true) {
           if (!uspesniDatumi.contains(datum)) {
             uspesniDatumi.add(datum);
           }
@@ -2708,7 +2658,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final int brojOtkazivanja = otkazaniDatumi.length;
       final int ukupno = brojPutovanja + brojOtkazivanja;
       final double uspesnost =
-          ukupno > 0 ? (brojPutovanja / ukupno * 100) : 0.0;
+          ukupno > 0 ? ((brojPutovanja / ukupno) * 100).roundToDouble() : 0;
 
       return {
         'putovanja': brojPutovanja,
@@ -2980,7 +2930,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  // Helper funkcija za konvertovanje meseca u datume
+  // Helper za konvertovanje meseca u datume
   Map<String, dynamic> _konvertujMesecUDatume(String izabranMesec) {
     // Parsiraj izabrani mesec (format: "Septembar 2025")
     final parts = izabranMesec.split(' ');

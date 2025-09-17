@@ -293,54 +293,72 @@ class _DanasScreenState extends State<DanasScreen> {
   // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU
   Widget _buildOptimizeButton() {
     return StreamBuilder<List<Putnik>>(
-      stream: _putnikService.streamKombinovaniPutnici(),
+      stream: Stream.fromFuture(() async {
+        // Fetch ALL active monthly passengers (not just 'zakupljeno')
+        final mesecniResponse = await supabase
+            .from('mesecni_putnici')
+            .select('*')
+            .eq('aktivan', true)
+            .eq('obrisan', false);
+
+        final danasnjiDan = _getTodayForDatabase();
+        final selectedGrad = _selectedGrad;
+        final selectedVreme = _selectedVreme;
+
+        // Expand each monthly passenger into all valid slots for the selected day
+        final List<Putnik> mesecniPutniciAsPutnik = [];
+        for (final item in mesecniResponse) {
+          final putniciZaDan =
+              Putnik.fromMesecniPutniciMultipleForDay(item, danasnjiDan);
+          for (final p in putniciZaDan) {
+            // Match grad and vreme
+            final normPolazak = GradAdresaValidator.normalizeTime(p.polazak);
+            if (p.grad == selectedGrad &&
+                normPolazak ==
+                    GradAdresaValidator.normalizeTime(selectedVreme)) {
+              // Exclude deleted
+              final normalizedStatus = (p.status ?? '').toLowerCase().trim();
+              if (normalizedStatus != 'obrisan') {
+                mesecniPutniciAsPutnik.add(p);
+              }
+            }
+          }
+        }
+
+        // Fetch daily passengers for today
+        final danas = DateTime.now().toIso8601String().split('T')[0];
+        final dnevniResponse = await supabase
+            .from('putovanja_istorija')
+            .select('*')
+            .eq('datum', danas)
+            .eq('tip_putnika', 'dnevni');
+
+        final List<Putnik> dnevniPutnici = dnevniResponse
+            .map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item))
+            .where((putnik) {
+          final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
+          return normalizedStatus != 'otkazano' &&
+              normalizedStatus != 'otkazan' &&
+              normalizedStatus != 'bolovanje' &&
+              normalizedStatus != 'godisnji' &&
+              normalizedStatus != 'godišnji' &&
+              normalizedStatus != 'obrisan';
+        }).toList();
+
+        final filtriraniPutnici = <Putnik>[
+          ...mesecniPutniciAsPutnik,
+          ...dnevniPutnici
+        ];
+        // ...existing code...
+
+        return filtriraniPutnici;
+      }()),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Container();
-
-        final sviPutnici = snapshot.data!;
-        final danasnjiDan = _getTodayForDatabase();
-        final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
-
-        final danasPutnici = sviPutnici.where((p) {
-          final dayMatch =
-              p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
-          bool timeMatch = true;
-          if (p.mesecnaKarta != true && p.vremeDodavanja != null) {
-            timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
-          }
-          return dayMatch && timeMatch;
-        }).toList();
-
-        final filtriraniPutnici = danasPutnici.where((putnik) {
-          final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
-          final vremeMatch =
-              GradAdresaValidator.normalizeTime(putnik.polazak) ==
-                  GradAdresaValidator.normalizeTime(_selectedVreme);
-          final gradMatch = _isGradMatch(
-              putnik.grad, putnik.adresa, _selectedGrad,
-              isMesecniPutnik: putnik.mesecnaKarta == true);
-
-          // MESEČNI PUTNICI - isto kao u home_screen
-          if (putnik.mesecnaKarta == true) {
-            // Za mesečne putnike, samo isključi obrisane
-            final statusOk = normalizedStatus != 'obrisan';
-            return vremeMatch && gradMatch && statusOk;
-          } else {
-            // DNEVNI PUTNICI - standardno filtriranje
-            final statusOk = (normalizedStatus != 'otkazano' &&
-                normalizedStatus != 'otkazan' &&
-                normalizedStatus != 'bolovanje' &&
-                normalizedStatus != 'godisnji' &&
-                normalizedStatus != 'godišnji' &&
-                normalizedStatus != 'obrisan');
-            return vremeMatch && gradMatch && statusOk;
-          }
-        }).toList();
-
+        final filtriraniPutnici = snapshot.data!;
         final hasPassengers = filtriraniPutnici.isNotEmpty;
-
         return SizedBox(
-          height: 26, // povećao sa 24 na 26
+          height: 26,
           child: ElevatedButton.icon(
             onPressed: _isLoading || !hasPassengers
                 ? null
@@ -362,18 +380,17 @@ class _DanasScreenState extends State<DanasScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 2), // povećao sa 4 na 8
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             ),
             icon: Icon(
               _isRouteOptimized ? Icons.close : Icons.route,
-              size: 12, // povećao sa 10 na 12
+              size: 12,
             ),
             label: Text(
               _isRouteOptimized ? 'Reset' : 'Ruta',
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 13, // povećao sa 12 na 13
+                fontSize: 13,
               ),
             ),
           ),

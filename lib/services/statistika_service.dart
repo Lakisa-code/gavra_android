@@ -1067,26 +1067,8 @@ class StatistikaService {
       final supabase = Supabase.instance.client;
       num ukupnoObrisano = 0;
 
-      // 1. RESETUJ OBIČNE PUTNIKE - postavi iznos_placanja na 0 i obriši vreme_placanja
-      try {
-        final putnikResult = await supabase
-            .from('putnici')
-            .update({
-              'iznos_placanja': 0.0,
-              'vreme_placanja': null,
-              'naplatio_vozac': null,
-            })
-            .eq('naplatio_vozac', vozac)
-            .not('vreme_placanja', 'is', null)
-            .gte('vreme_placanja', fromDate.toIso8601String())
-            .lte('vreme_placanja', toDate.toIso8601String());
-
-        _debugLog(
-            '✅ Resetovano ${putnikResult?.length ?? 0} običnih putnika za $vozac');
-        ukupnoObrisano += (putnikResult?.length ?? 0);
-      } catch (e) {
-        _debugLog('⚠️ Greška pri resetovanju putnika za $vozac: $e');
-      }
+      // 1. RESETUJ OBIČNE PUTNIKE - (upit ka tabeli 'putnici' uklonjen po zahtevu)
+      // Ova sekcija je prazna jer tabela 'putnici' više nije u upotrebi.
 
       // 2. RESETUJ MESEČNE KARTE - postavi cena na 0 i obriši vreme_placanja
       try {

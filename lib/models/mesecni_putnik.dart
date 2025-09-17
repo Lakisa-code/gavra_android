@@ -1,22 +1,15 @@
+import 'dart:convert';
+
 class MesecniPutnik {
   final String id;
   final String putnikIme;
   final String tip;
   final String? tipSkole;
   final String? brojTelefona;
-  // Vremena polaska iz Bele Crkve po danima
-  final String? polazakBcPon;
-  final String? polazakBcUto;
-  final String? polazakBcSre;
-  final String? polazakBcCet;
-  final String? polazakBcPet;
+
+  /// Nova struktura: mapa dan -> lista polazaka (npr. {"pon": ["6 VS", "13 BC"]})
+  final Map<String, List<String>> polasciPoDanu;
   final String? adresaBelaCrkva;
-  // Vremena polaska iz Vršca po danima
-  final String? polazakVsPon;
-  final String? polazakVsUto;
-  final String? polazakVsSre;
-  final String? polazakVsCet;
-  final String? polazakVsPet;
   final String? adresaVrsac;
   // Stare kolone - zadržavamo za kompatibilnost
   final Map<String, String>? polazakBelaCrkva;
@@ -87,39 +80,14 @@ class MesecniPutnik {
     return null;
   }
 
-  // Helper metoda za formatiranje vremena iz string-a (za nove kolone)
-  static String? _formatTimeString(String? timeString) {
-    if (timeString == null || timeString.isEmpty) {
-      return null;
-    }
-
-    // Ukloni sekunde ako postoje (12:00:00 -> 12:00)
-    if (timeString.length == 8 && timeString.contains(':')) {
-      return timeString.substring(0, 5); // Uzmi samo HH:MM deo
-    }
-
-    return timeString;
-  }
-
   MesecniPutnik({
     required this.id,
     required this.putnikIme,
     required this.tip,
     this.tipSkole,
     this.brojTelefona,
-    // Vremena polaska iz Bele Crkve po danima
-    this.polazakBcPon,
-    this.polazakBcUto,
-    this.polazakBcSre,
-    this.polazakBcCet,
-    this.polazakBcPet,
+    required this.polasciPoDanu,
     this.adresaBelaCrkva,
-    // Vremena polaska iz Vršca po danima
-    this.polazakVsPon,
-    this.polazakVsUto,
-    this.polazakVsSre,
-    this.polazakVsCet,
-    this.polazakVsPet,
     this.adresaVrsac,
     // Stare kolone za kompatibilnost
     this.polazakBelaCrkva,
@@ -131,18 +99,16 @@ class MesecniPutnik {
     required this.datumPocetkaMeseca,
     required this.datumKrajaMeseca,
     this.ukupnaCenaMeseca = 0.0,
-    this.cena, // ✅ NOVA KOLONA - cena mesečne karte
+    this.cena,
     this.brojPutovanja = 0,
     this.brojOtkazivanja = 0,
     this.poslednjiPutovanje,
     required this.createdAt,
     required this.updatedAt,
     this.obrisan = false,
-    // 💰 NOVA POLJA ZA STATISTIKU - ISPRAVNO MAPIRANJE
     this.vremePlacanja,
     this.placeniMesec,
     this.placenaGodina,
-    // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
     this.vozac,
     this.pokupljen = false,
     this.vremePokupljenja,
@@ -150,26 +116,41 @@ class MesecniPutnik {
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
+    // Backward kompatibilnost: ako nema polasci_po_danu koristi stare kolone
+    Map<String, List<String>> polasciPoDanu = {};
+    if (map['polasci_po_danu'] != null) {
+      final raw = map['polasci_po_danu'];
+      if (raw is String) {
+        // JSON string
+        polasciPoDanu =
+            Map<String, dynamic>.from(jsonDecode(raw) as Map<String, dynamic>)
+                .map((k, v) => MapEntry(k, List<String>.from(v)));
+      } else if (raw is Map) {
+        polasciPoDanu =
+            raw.map((k, v) => MapEntry(k as String, List<String>.from(v)));
+      }
+    } else {
+      // Ako nema JSON, koristi stare kolone (samo jedan polazak po danu)
+      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+        final bc = map['polazak_bc_$dan'];
+        final vs = map['polazak_vs_$dan'];
+        final List<String> polasci = [];
+        if (bc != null && bc is String && bc.isNotEmpty)
+          polasci.add('${bc} BC');
+        if (vs != null && vs is String && vs.isNotEmpty)
+          polasci.add('${vs} VS');
+        if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
+      }
+    }
     return MesecniPutnik(
       id: map['id'] as String,
       putnikIme: map['putnik_ime'] as String,
       tip: map['tip'] as String,
       tipSkole: map['tip_skole'] as String?,
       brojTelefona: map['broj_telefona'] as String?,
-      // Nove kolone za vremena po danima
-      polazakBcPon: map['polazak_bc_pon'] as String?,
-      polazakBcUto: map['polazak_bc_uto'] as String?,
-      polazakBcSre: map['polazak_bc_sre'] as String?,
-      polazakBcCet: map['polazak_bc_cet'] as String?,
-      polazakBcPet: map['polazak_bc_pet'] as String?,
+      polasciPoDanu: polasciPoDanu,
       adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
-      polazakVsPon: map['polazak_vs_pon'] as String?,
-      polazakVsUto: map['polazak_vs_uto'] as String?,
-      polazakVsSre: map['polazak_vs_sre'] as String?,
-      polazakVsCet: map['polazak_vs_cet'] as String?,
-      polazakVsPet: map['polazak_vs_pet'] as String?,
       adresaVrsac: map['adresa_vrsac'] as String?,
-      // Stare kolone za kompatibilnost
       polazakBelaCrkva: _parsePolazakVreme(map['polazak_bela_crkva']),
       polazakVrsac: _parsePolazakVreme(map['polazak_vrsac']),
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'fiksan',
@@ -178,9 +159,8 @@ class MesecniPutnik {
       status: map['status'] as String? ?? 'radi',
       datumPocetkaMeseca: DateTime.parse(map['datum_pocetka_meseca'] as String),
       datumKrajaMeseca: DateTime.parse(map['datum_kraja_meseca'] as String),
-      ukupnaCenaMeseca: (map['cena'] as num?)?.toDouble() ??
-          0.0, // ✅ FALLBACK - koristi cena kolonu za ukupnaCenaMeseca
-      cena: (map['cena'] as num?)?.toDouble(), // ✅ NOVA KOLONA - mapiranje
+      ukupnaCenaMeseca: (map['cena'] as num?)?.toDouble() ?? 0.0,
+      cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
       poslednjiPutovanje: map['poslednje_putovanje'] != null
@@ -189,16 +169,14 @@ class MesecniPutnik {
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       obrisan: map['obrisan'] as bool? ?? false,
-      // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA - ISPRAVNO MAPIRANJE
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String)
           : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
-      // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
-      vozac: map['naplata_vozac'] as String?, // Vozač koji je naplatio plaćanje
-      pokupljen: false, // ❌ FIKSNA VREDNOST - kolona možda ne postoji u bazi
-      vremePokupljenja: null, // ❌ FIKSNA VREDNOST - kolona ne postoji u bazi
+      vozac: map['naplata_vozac'] as String?,
+      pokupljen: false,
+      vremePokupljenja: null,
     );
   }
 
@@ -209,24 +187,11 @@ class MesecniPutnik {
       'tip': tip,
       'tip_skole': tipSkole,
       'broj_telefona': brojTelefona,
-      // Nove kolone za vremena po danima
-      'polazak_bc_pon': polazakBcPon,
-      'polazak_bc_uto': polazakBcUto,
-      'polazak_bc_sre': polazakBcSre,
-      'polazak_bc_cet': polazakBcCet,
-      'polazak_bc_pet': polazakBcPet,
-      'polazak_vs_pon': polazakVsPon,
-      'polazak_vs_uto': polazakVsUto,
-      'polazak_vs_sre': polazakVsSre,
-      'polazak_vs_cet': polazakVsCet,
-      'polazak_vs_pet': polazakVsPet,
+      'polasci_po_danu': polasciPoDanu,
       'adresa_bela_crkva': adresaBelaCrkva,
       'adresa_vrsac': adresaVrsac,
-      // Stare kolone - postavi na null ako koristimo nova vremena po danima
-      'polazak_bela_crkva':
-          _hasNewTimeColumns() ? null : _polazakVremeToTime(polazakBelaCrkva),
-      'polazak_vrsac':
-          _hasNewTimeColumns() ? null : _polazakVremeToTime(polazakVrsac),
+      'polazak_bela_crkva': _polazakVremeToTime(polazakBelaCrkva),
+      'polazak_vrsac': _polazakVremeToTime(polazakVrsac),
       'tip_prikazivanja': tipPrikazivanja,
       'radni_dani': radniDani,
       'aktivan': aktivan,
@@ -234,8 +199,7 @@ class MesecniPutnik {
       'datum_pocetka_meseca':
           datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
-      // 💰 MAPPING PLAĆANJA - koristi ukupnaCenaMeseca ako cena nije definisana
-      'cena': cena ?? ukupnaCenaMeseca, // ✅ ZADRŽAVA PLAĆANJE
+      'cena': cena ?? ukupnaCenaMeseca,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
       'poslednje_putovanje':
@@ -243,19 +207,12 @@ class MesecniPutnik {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'obrisan': obrisan,
-      // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA - ISPRAVNO MAPIRANJE
       'vreme_placanja': vremePlacanja?.toIso8601String(),
-      // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
       'vozac': vozac,
-      // 'pokupljen': pokupljen, // ❌ MOŽDA NE POSTOJI - treba proveriti
-      // 'vreme_pokupljanja': vremePokupljenja?.toIso8601String(), // ❌ UKLONJENO - kolona ne postoji u bazi
     };
-
-    // Dodaj ID samo ako nije prazan (za ažuriranje postojećih putnika)
     if (id.isNotEmpty) {
       map['id'] = id;
     }
-
     return map;
   }
 
@@ -266,20 +223,9 @@ class MesecniPutnik {
     String? tip,
     String? tipSkole,
     String? brojTelefona,
-    // Nove kolone za vremena po danima
-    String? polazakBcPon,
-    String? polazakBcUto,
-    String? polazakBcSre,
-    String? polazakBcCet,
-    String? polazakBcPet,
-    String? polazakVsPon,
-    String? polazakVsUto,
-    String? polazakVsSre,
-    String? polazakVsCet,
-    String? polazakVsPet,
+    Map<String, List<String>>? polasciPoDanu,
     String? adresaBelaCrkva,
     String? adresaVrsac,
-    // Stare kolone za kompatibilnost
     Map<String, String>? polazakBelaCrkva,
     Map<String, String>? polazakVrsac,
     String? tipPrikazivanja,
@@ -289,16 +235,14 @@ class MesecniPutnik {
     DateTime? datumPocetkaMeseca,
     DateTime? datumKrajaMeseca,
     double? ukupnaCenaMeseca,
-    double? cena, // ✅ NOVA KOLONA - copyWith parametar
+    double? cena,
     int? brojPutovanja,
     int? brojOtkazivanja,
     DateTime? poslednjiPutovanje,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? obrisan,
-    // 💰 NOVA POLJA ZA STATISTIKU - ISPRAVNO MAPIRANJE
     DateTime? vremePlacanja,
-    // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
     String? vozac,
     bool? pokupljen,
     DateTime? vremePokupljenja,
@@ -309,20 +253,9 @@ class MesecniPutnik {
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
       brojTelefona: brojTelefona ?? this.brojTelefona,
-      // Nove kolone za vremena po danima
-      polazakBcPon: polazakBcPon ?? this.polazakBcPon,
-      polazakBcUto: polazakBcUto ?? this.polazakBcUto,
-      polazakBcSre: polazakBcSre ?? this.polazakBcSre,
-      polazakBcCet: polazakBcCet ?? this.polazakBcCet,
-      polazakBcPet: polazakBcPet ?? this.polazakBcPet,
-      polazakVsPon: polazakVsPon ?? this.polazakVsPon,
-      polazakVsUto: polazakVsUto ?? this.polazakVsUto,
-      polazakVsSre: polazakVsSre ?? this.polazakVsSre,
-      polazakVsCet: polazakVsCet ?? this.polazakVsCet,
-      polazakVsPet: polazakVsPet ?? this.polazakVsPet,
+      polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
       adresaBelaCrkva: adresaBelaCrkva ?? this.adresaBelaCrkva,
       adresaVrsac: adresaVrsac ?? this.adresaVrsac,
-      // Stare kolone za kompatibilnost
       polazakBelaCrkva: polazakBelaCrkva ?? this.polazakBelaCrkva,
       polazakVrsac: polazakVrsac ?? this.polazakVrsac,
       tipPrikazivanja: tipPrikazivanja ?? this.tipPrikazivanja,
@@ -332,16 +265,14 @@ class MesecniPutnik {
       datumPocetkaMeseca: datumPocetkaMeseca ?? this.datumPocetkaMeseca,
       datumKrajaMeseca: datumKrajaMeseca ?? this.datumKrajaMeseca,
       ukupnaCenaMeseca: ukupnaCenaMeseca ?? this.ukupnaCenaMeseca,
-      cena: cena ?? this.cena, // ✅ NOVA KOLONA - copyWith kopija
+      cena: cena ?? this.cena,
       brojPutovanja: brojPutovanja ?? this.brojPutovanja,
       brojOtkazivanja: brojOtkazivanja ?? this.brojOtkazivanja,
       poslednjiPutovanje: poslednjiPutovanje ?? this.poslednjiPutovanje,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       obrisan: obrisan ?? this.obrisan,
-      // 💰 NOVA POLJA ZA STATISTIKU - ISPRAVNO MAPIRANJE
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
-      // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
       vozac: vozac ?? this.vozac,
       pokupljen: pokupljen ?? this.pokupljen,
       vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
@@ -388,15 +319,16 @@ class MesecniPutnik {
   String? getPolazakBelaCrkvaZaDan(String dan) {
     switch (dan) {
       case 'pon':
-        return _formatTimeString(polazakBcPon) ?? polazakBelaCrkva?[dan];
+        // Više nema polazakBcPon, koristi polazakBelaCrkva?[dan] ili null
+        return polazakBelaCrkva?[dan];
       case 'uto':
-        return _formatTimeString(polazakBcUto) ?? polazakBelaCrkva?[dan];
+        return polazakBelaCrkva?[dan];
       case 'sre':
-        return _formatTimeString(polazakBcSre) ?? polazakBelaCrkva?[dan];
+        return polazakBelaCrkva?[dan];
       case 'cet':
-        return _formatTimeString(polazakBcCet) ?? polazakBelaCrkva?[dan];
+        return polazakBelaCrkva?[dan];
       case 'pet':
-        return _formatTimeString(polazakBcPet) ?? polazakBelaCrkva?[dan];
+        return polazakBelaCrkva?[dan];
       default:
         return polazakBelaCrkva?[dan];
     }
@@ -407,15 +339,15 @@ class MesecniPutnik {
   String? getPolazakVrsacZaDan(String dan) {
     switch (dan) {
       case 'pon':
-        return _formatTimeString(polazakVsPon) ?? polazakVrsac?[dan];
+        return polazakVrsac?[dan];
       case 'uto':
-        return _formatTimeString(polazakVsUto) ?? polazakVrsac?[dan];
+        return polazakVrsac?[dan];
       case 'sre':
-        return _formatTimeString(polazakVsSre) ?? polazakVrsac?[dan];
+        return polazakVrsac?[dan];
       case 'cet':
-        return _formatTimeString(polazakVsCet) ?? polazakVrsac?[dan];
+        return polazakVrsac?[dan];
       case 'pet':
-        return _formatTimeString(polazakVsPet) ?? polazakVrsac?[dan];
+        return polazakVrsac?[dan];
       default:
         return polazakVrsac?[dan];
     }
@@ -457,20 +389,6 @@ class MesecniPutnik {
       default:
         return 'pon';
     }
-  }
-
-  /// Proverava da li putnik koristi nova vremena po danima
-  bool _hasNewTimeColumns() {
-    return polazakBcPon != null ||
-        polazakBcUto != null ||
-        polazakBcSre != null ||
-        polazakBcCet != null ||
-        polazakBcPet != null ||
-        polazakVsPon != null ||
-        polazakVsUto != null ||
-        polazakVsSre != null ||
-        polazakVsCet != null ||
-        polazakVsPet != null;
   }
 
   @override

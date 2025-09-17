@@ -550,6 +550,29 @@ class PutnikService {
         debugPrint('❌ [STREAM] Greška pri učitavanju dnevnih putnika: $e');
       }
 
+      // 3. DODATNO: Uključi specijalne "zakupljeno" zapise iz putovanja_istorija
+      // koji su kreirani/vezani za mesečne putnike (ako ih ima)
+      try {
+        final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
+        if (zakupljenoRows.isNotEmpty) {
+          debugPrint(
+              '📊 [STREAM] Dobio ${zakupljenoRows.length} zakupljeno zapisa za danas');
+        }
+
+        for (final item in zakupljenoRows) {
+          try {
+            final putnik = Putnik.fromPutovanjaIstorija(item);
+            sviPutnici.add(putnik);
+            debugPrint(
+                '✅ [STREAM] Dodao zakupljenog putnika: ${item['putnik_ime']}');
+          } catch (e) {
+            debugPrint('❌ [STREAM] Greška za zakupljenog putnika: $e');
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ [STREAM] Greška pri učitavanju zakupljeno danas: $e');
+      }
+
       debugPrint(
           '🎯 [STREAM] UKUPNO PUTNIKA: ${sviPutnici.length} (mesečni + dnevni)');
 

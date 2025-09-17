@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart'; // Za kDebugMode
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,7 +14,7 @@ import '../services/mesecni_putnik_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
-import '../services/update_service.dart'; // 🔄 Update sistem aktiviran!
+// import '../services/update_service.dart'; // 🔄 Uklonjeno: Update sistem
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart'
     as app_date_utils; // DODANO: Centralna vikend logika
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // CACHE UKLONJEN - nepotrebne varijable uklonjene
   Timer? _smartNotifikacijeTimer;
-  Timer? _updateCheckTimer; // 🔄 Timer za periodičnu proveru update-a
+  // Timer? _updateCheckTimer; // 🔄 Uklonjeno: Timer za periodičnu proveru update-a
   List<Putnik> _allPutnici = [];
 
   // Real-time subscription variables
@@ -137,65 +138,55 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ✅ CUSTOM STREAM - Koristi target datum umesto trenutnog
   Stream<List<Putnik>> _streamKombinovaniPutniciZaTargetDatum() {
-    debugPrint('🎯 [CUSTOM STREAM] Koristi se CUSTOM stream za vikend logiku!');
-    final targetDate = _getTargetDate();
-    final targetDateString = targetDate.toIso8601String().split('T')[0];
-    final danasKratica = _getFilterDayAbbreviation(targetDate.weekday);
+    debugPrint('🎯 [CUSTOM STREAM] Konvertujem MesecniPutnik u Putnik!');
 
-    debugPrint(
-        '🎯 [CUSTOM STREAM] Target datum: $targetDateString, dan: $danasKratica');
-
-    return supabase
-        .from('mesecni_putnici')
-        .stream(primaryKey: ['id']).asyncMap((mesecniData) async {
-      List<Putnik> sviPutnici = [];
-
-      // 1. MESEČNI PUTNICI
-      for (final item in mesecniData) {
-        try {
-          final radniDani = item['radni_dani']?.toString() ?? '';
-          if (radniDani.toLowerCase().contains(danasKratica.toLowerCase())) {
-            final mesecniPutnici = Putnik.fromMesecniPutniciMultiple(item);
-            sviPutnici.addAll(mesecniPutnici);
-          }
-        } catch (e) {
-          debugPrint('❌ [CUSTOM STREAM] Greška za mesečnog putnika: $e');
-        }
-      }
-
-      // 2. DNEVNI PUTNICI - ZA TARGET DATUM
+    return Stream.fromFuture(() async {
       try {
+        // Fetch ALL active monthly passengers (not just 'zakupljeno')
+        final mesecniResponse = await supabase
+            .from('mesecni_putnici')
+            .select('*')
+            .eq('aktivan', true)
+            .eq('obrisan', false);
+
+        final String selectedDayAbbr = _getDayAbbreviation(_selectedDay);
+        final String selectedGrad = _selectedGrad;
+        final String selectedVreme = _selectedVreme;
+
+        // Expand each monthly passenger into all valid slots for the selected day
+        final List<Putnik> mesecniPutniciAsPutnik = [];
+        for (final item in mesecniResponse) {
+          final putniciZaDan =
+              Putnik.fromMesecniPutniciMultipleForDay(item, selectedDayAbbr);
+          for (final p in putniciZaDan) {
+            // Match grad and vreme
+            final normPolazak = _normalizeTime(p.polazak);
+            if (p.grad == selectedGrad && normPolazak == selectedVreme) {
+              mesecniPutniciAsPutnik.add(p);
+            }
+          }
+        }
+
+        // Fetch daily passengers for the selected date
+        final targetDateString =
+            _getTargetDate().toIso8601String().split('T')[0];
         final dnevniResponse = await supabase
             .from('putovanja_istorija')
             .select('*')
             .eq('datum', targetDateString)
             .eq('tip_putnika', 'dnevni');
 
-        debugPrint(
-            '📊 [CUSTOM STREAM] Dobio ${dnevniResponse.length} dnevnih putnika za $targetDateString');
+        final List<Putnik> dnevniPutnici = dnevniResponse
+            .map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item))
+            .toList();
 
-        for (final item in dnevniResponse) {
-          try {
-            final putnik = Putnik.fromPutovanjaIstorija(item);
-            sviPutnici.add(putnik);
-          } catch (e) {
-            debugPrint('❌ [CUSTOM STREAM] Greška za dnevnog putnika: $e');
-          }
-        }
+        // Combine and return
+        return <Putnik>[...mesecniPutniciAsPutnik, ...dnevniPutnici];
       } catch (e) {
-        debugPrint(
-            '❌ [CUSTOM STREAM] Greška pri učitavanju dnevnih putnika: $e');
+        debugPrint('❌ Greška pri učitavanju putnika: $e');
+        return <Putnik>[];
       }
-
-      debugPrint('🎯 [CUSTOM STREAM] UKUPNO PUTNIKA: ${sviPutnici.length}');
-      return sviPutnici;
-    });
-  }
-
-  // Helper funkcija za dan
-  String _getFilterDayAbbreviation(int weekday) {
-    const dayMap = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    return dayMap[weekday - 1];
+    }());
   }
 
   // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
@@ -257,21 +248,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     LocalNotificationService.initialize(context);
     RealtimeNotificationService.listenForForegroundNotifications(context);
 
-    // 🔄 Automatska provera update-a - POČETNA provera za 30 sekundi
-    Timer(const Duration(seconds: 30), () {
-      if (mounted) {
-        UpdateChecker.checkAndShowUpdate(context);
-      }
-    });
-
-    // ⏰ PERIODIČNA provera update-a svakih sat vremena
-    _updateCheckTimer = Timer.periodic(const Duration(hours: 1), (timer) {
-      if (mounted) {
-        UpdateChecker.checkAndShowUpdate(context);
-      } else {
-        timer.cancel(); // Otkaži timer ako widget nije više mounted
-      }
-    });
+    // 🔄 Automatska provera update-a - UKLONJENO po zahtevu korisnika
 
     // Inicijalizuj realtime notifikacije za aktivnog vozača
     FirebaseService.getCurrentDriver().then((driver) {
@@ -1075,114 +1052,98 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         debugPrint(
             '📊 [HOME SCREEN] Filter: $_selectedDay, $_selectedVreme, $_selectedGrad'); // ✅ KORISTI SELEKTOVANI DAN
 
+        // --- NOVO: Priprema broja putnika po slotu (vreme) za bottom nav bar ---
+        // Prvo filtriraj sve putnike koji nisu odsutni (godišnji, bolovanje, otkazani)
+        final putniciBezOdsustva = allPutnici.where((putnik) {
+          final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
+          return normalizedStatus != 'obrisan' &&
+              normalizedStatus != 'godišnji' &&
+              normalizedStatus != 'bolovanje';
+        }).toList();
+
+        // Mapiraj: { '5:00': broj, '6:00': broj, ... } za BC i VS
+        Map<String, int> brojPutnikaBC = {for (var v in bcVremena) v: 0};
+        Map<String, int> brojPutnikaVS = {for (var v in vsVremena) v: 0};
+        for (final p in putniciBezOdsustva) {
+          final vreme = p.polazak;
+          final grad = p.grad;
+          if (bcVremena.contains(vreme) &&
+              GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
+            brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
+          }
+          if (vsVremena.contains(vreme) &&
+              GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
+            brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
+          }
+        }
+
+        // --- Stari filter za prikaz samo selektovanog slota ---
         final sviPutnici = allPutnici.where((putnik) {
           final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
-
-          // Uklonjen verbose debug log - problem je rešen
-
-          // MESEČNI PUTNICI - sada imaju polazak kolonu!
-          if (putnik.mesecnaKarta == true) {
-            // ✅ JEDNOSTAVNA LOGIKA - direktno poređenje grada i polaska
-            final odgovarajuciGrad = putnik.grad == _selectedGrad;
-
-            // Poređenje vremena - normalizuj oba formata
-            final putnikPolazak = putnik.polazak.toString().trim();
-            final selectedVreme = _selectedVreme.trim();
-            final odgovarajuciPolazak = _normalizeTime(putnikPolazak) ==
-                    _normalizeTime(selectedVreme) ||
-                (_normalizeTime(putnikPolazak)
-                    .startsWith(_normalizeTime(selectedVreme)));
-
-            // DODAJ FILTRIRANJE PO DANU I ZA MESEČNE PUTNIKE - KORISTI SELEKTOVANI DAN
-            final danBaza =
-                _selectedDay; // ✅ KORISTI SELEKTOVANI DAN umesto _getTodayName()
-            final normalizedPutnikDan =
-                GradAdresaValidator.normalizeString(putnik.dan);
-            final normalizedDanBaza = GradAdresaValidator.normalizeString(
-                _getDayAbbreviation(danBaza));
-            final odgovarajuciDan =
-                normalizedPutnikDan.contains(normalizedDanBaza);
-
-            final result = odgovarajuciGrad &&
-                odgovarajuciPolazak &&
-                odgovarajuciDan &&
-                normalizedStatus != 'obrisan';
-
-            // Debug za mesečne putnike
-            if (result) {
-              debugPrint('✅ MESEČNI PUTNIK PROŠAO: ${putnik.ime}');
-              debugPrint(
-                  '   - polazak: ${putnik.polazak} vs $_selectedVreme -> ${_normalizeTime(putnikPolazak)} vs ${_normalizeTime(selectedVreme)}');
-              debugPrint('   - grad: ${putnik.grad} vs $_selectedGrad');
-              debugPrint(
-                  '   - dan: ${putnik.dan} vs ${_getDayAbbreviation(danBaza)} -> odgovarajuciDan: $odgovarajuciDan');
-              debugPrint('   - MESEČNA KARTA - sada PROVERAVA I DAN!');
-            }
-
-            return result;
-          } else {
-            // DNEVNI/OBIČNI PUTNICI - standardno filtriranje
-            // 🆕 KORISTI NOVU VALIDACIJU GRADOVA
-            final gradMatch = GradAdresaValidator.isGradMatch(
-                putnik.grad, putnik.adresa, _selectedGrad);
-
-            // Konvertuj pun naziv dana u kraticu za poređenje sa bazom - KORISTI SELEKTOVANI DAN
-            final danBaza =
-                _selectedDay; // ✅ KORISTI SELEKTOVANI DAN umesto _getTodayName()
-            final normalizedPutnikDan =
-                GradAdresaValidator.normalizeString(putnik.dan);
-            final normalizedDanBaza = GradAdresaValidator.normalizeString(
-                _getDayAbbreviation(danBaza));
-
-            final odgovara = gradMatch &&
-                _normalizeTime(putnik.polazak) ==
-                    _normalizeTime(_selectedVreme) &&
-                normalizedPutnikDan.contains(normalizedDanBaza) &&
-                normalizedStatus != 'obrisan';
-
-            // Debug za dnevne putnike
-            if (odgovara) {
-              debugPrint('✅ DNEVNI PUTNIK PROŠAO: ${putnik.ime}');
-              debugPrint(
-                  '   - polazak: ${putnik.polazak} vs $_selectedVreme -> ${_normalizeTime(putnik.polazak)} vs ${_normalizeTime(_selectedVreme)}');
-              debugPrint(
-                  '   - dan: ${putnik.dan} vs ${_getDayAbbreviation(danBaza)} -> $normalizedPutnikDan vs $normalizedDanBaza');
-              debugPrint('   - grad: ${putnik.grad} vs $_selectedGrad');
-            } else {
-              // Debug za neprošle putnike
-              debugPrint('❌ DNEVNI PUTNIK NIJE PROŠAO: ${putnik.ime}');
-              debugPrint('   - gradMatch: $gradMatch');
-              debugPrint(
-                  '   - vremeMatch: ${_normalizeTime(putnik.polazak) == _normalizeTime(_selectedVreme)}');
-              debugPrint(
-                  '   - danMatch: ${normalizedPutnikDan.contains(normalizedDanBaza)} ($normalizedPutnikDan vs $normalizedDanBaza)');
-              debugPrint('   - status: $normalizedStatus');
-            }
-
-            return odgovara;
+          final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
+          final imaGrad = putnik.grad.toString().trim().isNotEmpty;
+          final imaDan = putnik.dan.toString().trim().isNotEmpty;
+          final danBaza = _selectedDay;
+          final normalizedPutnikDan =
+              GradAdresaValidator.normalizeString(putnik.dan);
+          final normalizedDanBaza =
+              GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
+          final odgovarajuciDan =
+              normalizedPutnikDan.contains(normalizedDanBaza);
+          final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
+              putnik.grad, putnik.adresa, _selectedGrad);
+          final prikazi = imaVreme &&
+              imaGrad &&
+              imaDan &&
+              odgovarajuciDan &&
+              odgovarajuciGrad &&
+              normalizedStatus != 'obrisan';
+          if (prikazi) {
+            debugPrint('✅ PUTNIK PRIKAZAN: ${putnik.ime}');
           }
+          return prikazi;
         }).toList();
+
+        // DEDUPLIKACIJA PO COMPOSITE KLJUČU: id + polazak + dan
+        final Map<String, Putnik> uniquePutnici = {};
+        for (final p in sviPutnici) {
+          final key = '${p.id}_${p.polazak}_${p.dan}';
+          uniquePutnici[key] = p;
+        }
+        final sviPutniciBezDuplikata = uniquePutnici.values.toList();
+
+        // 🔍 DEBUG: Koliko putnika prolazi glavni filter
+        debugPrint(
+            '🔍 DEBUG: Nakon glavnog filtra - sviPutnici.length: ${sviPutnici.length}');
+        if (sviPutnici.isNotEmpty) {
+          debugPrint('🔍 DEBUG: Putnici koji su prošli filter:');
+          for (final p in sviPutnici) {
+            debugPrint('  - ${p.ime} (status: ${p.status})');
+          }
+        }
 
         // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
         List<Putnik> sortiraniPutnici(List<Putnik> lista) {
           int sortKey(Putnik p) {
             final status = TextUtils.normalizeText(p.status ?? '');
-
-            // PRVO proveri status - najvažnije
+            // Leave/inactive (bolovanje, godišnji, obrisan) always at the bottom
             if (status == 'bolovanje' || status == 'godisnji') {
-              return 4; // žute/narandžaste pre crvenih
+              return 100;
             }
             if (status == 'otkazano' || status == 'otkazan') {
-              return 5; // crvene na dno liste
+              return 101;
             }
-
-            // MESEČNI PUTNICI - NOVA LOGIKA
+            if (status == 'obrisan' || p.obrisan) {
+              return 102;
+            }
+            // Mesečni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
             if (p.mesecnaKarta == true) {
-              // Koristi vremePokupljenja za determininaciju stanja
-              return p.vremePokupljenja == null ? 0 : 3; // bela ili zelena
+              if (p.vremePokupljenja == null) return 0; // bela
+              if (p.iznosPlacanja != null && p.iznosPlacanja! > 0)
+                return 2; // zelena
+              return 1; // plava
             }
-
-            // OBIČNI PUTNICI - stara logika
+            // Dnevni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
             if (p.vremePokupljenja == null) return 0; // bela
             if (p.vremePokupljenja != null &&
                 (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
@@ -1199,20 +1160,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           kopija.sort((a, b) {
             final cmp = sortKey(a).compareTo(sortKey(b));
             if (cmp != 0) return cmp;
-            return 0;
+            // Optionally, secondary sort by ime
+            return a.ime.compareTo(b.ime);
           });
-
-          // Uklonjen DEBUG ispis sortirane liste - problem je rešen
-          // if (kopija.isNotEmpty) {
-          //   for (int i = 0; i < kopija.length; i++) {
-          //     final sk = sortKey(kopija[i]);
-          //   }
-          // }
-
           return kopija;
         }
 
-        final putniciZaPrikaz = sortiraniPutnici(sviPutnici);
+        final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
+
+        // 🔍 DEBUG: Koliko putnika je nakon sortiranja
+        debugPrint(
+            '🔍 DEBUG: Nakon sortiranja - putniciZaPrikaz.length: ${putniciZaPrikaz.length}');
+        debugPrint('🔍 DEBUG: sviPutnici.length: ${sviPutnici.length}');
+        if (putniciZaPrikaz.isNotEmpty) {
+          debugPrint('🔍 DEBUG: Prvi putnik: ${putniciZaPrikaz.first.ime}');
+        }
 
         // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
         int getPutnikCount(String grad, String vreme) {
@@ -1686,7 +1648,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _smartNotifikacijeTimer?.cancel();
-    _updateCheckTimer?.cancel(); // 🔄 Otkaži update check timer
+    // _updateCheckTimer?.cancel(); // 🔄 Uklonjeno: Otkaži update check timer
     _selectedGradSubject.close();
 
     // Cleanup real-time subscriptions
