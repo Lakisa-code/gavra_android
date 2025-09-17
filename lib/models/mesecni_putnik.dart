@@ -1,4 +1,4 @@
-import 'dart:convert';
+import '../utils/mesecni_helpers.dart';
 
 class MesecniPutnik {
   final String id;
@@ -11,9 +11,7 @@ class MesecniPutnik {
   final Map<String, List<String>> polasciPoDanu;
   final String? adresaBelaCrkva;
   final String? adresaVrsac;
-  // Stare kolone - zadržavamo za kompatibilnost
-  final Map<String, String>? polazakBelaCrkva;
-  final Map<String, String>? polazakVrsac;
+  // Legacy single-time columns removed: use `polasciPoDanu` instead
   final String tipPrikazivanja;
   final String radniDani;
   final bool aktivan;
@@ -40,45 +38,7 @@ class MesecniPutnik {
   final bool pokupljen; // da li je pokupljen
   final DateTime? vremePokupljenja; // kada je pokupljen
 
-  // Helper funkcije za JSON konverziju
-  static Map<String, String>? _parsePolazakVreme(dynamic value) {
-    if (value == null) return null;
-    if (value is String) {
-      // Ako je string, verovatno je stari format - konvertuj u novi
-      if (value.isEmpty || value == '00:00:00') return null;
-      // Za sada, postavi isto vreme za sve dane
-      return {
-        'pon': value,
-        'uto': value,
-        'sre': value,
-        'cet': value,
-        'pet': value,
-      };
-    }
-    if (value is Map) {
-      // Ako je već mapa, konvertuj u Map<String, String>
-      return Map<String, String>.from(value);
-    }
-    return null;
-  }
-
-  static String? _polazakVremeToTime(Map<String, String>? polazakVreme) {
-    if (polazakVreme == null || polazakVreme.isEmpty) return null;
-
-    // Pronađi prvo definirano vreme iz mape
-    for (final entry in polazakVreme.entries) {
-      if (entry.value.isNotEmpty && entry.value != '00:00') {
-        // Konvertuj u TIME format HH:MM:SS
-        String timeValue = entry.value;
-        if (timeValue.length == 5) {
-          // Ako je HH:MM, dodaj :00
-          timeValue = '$timeValue:00';
-        }
-        return timeValue;
-      }
-    }
-    return null;
-  }
+  // No legacy single-time helpers; canonical data is in `polasciPoDanu` (map day -> list)
 
   MesecniPutnik({
     required this.id,
@@ -90,8 +50,7 @@ class MesecniPutnik {
     this.adresaBelaCrkva,
     this.adresaVrsac,
     // Stare kolone za kompatibilnost
-    this.polazakBelaCrkva,
-    this.polazakVrsac,
+    // legacy single-time columns removed
     this.tipPrikazivanja = 'fiksan',
     this.radniDani = 'pon,uto,sre,cet,pet',
     this.aktivan = true,
@@ -116,29 +75,27 @@ class MesecniPutnik {
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
-    // Backward kompatibilnost: ako nema polasci_po_danu koristi stare kolone
+    // Backward kompatibilnost: koristi helpers da parsira polasci_po_danu ili per-day kolone
     Map<String, List<String>> polasciPoDanu = {};
-    if (map['polasci_po_danu'] != null) {
-      final raw = map['polasci_po_danu'];
-      if (raw is String) {
-        // JSON string
-        polasciPoDanu =
-            Map<String, dynamic>.from(jsonDecode(raw) as Map<String, dynamic>)
-                .map((k, v) => MapEntry(k, List<String>.from(v)));
-      } else if (raw is Map) {
-        polasciPoDanu =
-            raw.map((k, v) => MapEntry(k as String, List<String>.from(v)));
-      }
+    // Try to use unified parser which normalizes times
+    final parsed = MesecniHelpers.parsePolasciPoDanu(map['polasci_po_danu']);
+    if (parsed.isNotEmpty) {
+      parsed.forEach((day, inner) {
+        final List<String> list = [];
+        final bc = inner['bc'];
+        final vs = inner['vs'];
+        if (bc != null && bc.isNotEmpty) list.add('$bc BC');
+        if (vs != null && vs.isNotEmpty) list.add('$vs VS');
+        if (list.isNotEmpty) polasciPoDanu[day] = list;
+      });
     } else {
-      // Ako nema JSON, koristi stare kolone (samo jedan polazak po danu)
+      // Fallback: check per-day columns via helper getPolazakForDay
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final bc = map['polazak_bc_$dan'];
-        final vs = map['polazak_vs_$dan'];
         final List<String> polasci = [];
-        if (bc != null && bc is String && bc.isNotEmpty)
-          polasci.add('${bc} BC');
-        if (vs != null && vs is String && vs.isNotEmpty)
-          polasci.add('${vs} VS');
+        final bc = MesecniHelpers.getPolazakForDay(map, dan, 'bc');
+        final vs = MesecniHelpers.getPolazakForDay(map, dan, 'vs');
+        if (bc != null && bc.isNotEmpty) polasci.add('$bc BC');
+        if (vs != null && vs.isNotEmpty) polasci.add('$vs VS');
         if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
       }
     }
@@ -151,11 +108,10 @@ class MesecniPutnik {
       polasciPoDanu: polasciPoDanu,
       adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
       adresaVrsac: map['adresa_vrsac'] as String?,
-      polazakBelaCrkva: _parsePolazakVreme(map['polazak_bela_crkva']),
-      polazakVrsac: _parsePolazakVreme(map['polazak_vrsac']),
+      // legacy columns removed; rely on polasci_po_danu and helpers
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'fiksan',
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
-      aktivan: map['aktivan'] as bool? ?? true,
+      aktivan: MesecniHelpers.isActiveFromMap(map),
       status: map['status'] as String? ?? 'radi',
       datumPocetkaMeseca: DateTime.parse(map['datum_pocetka_meseca'] as String),
       datumKrajaMeseca: DateTime.parse(map['datum_kraja_meseca'] as String),
@@ -168,7 +124,7 @@ class MesecniPutnik {
           : null,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
-      obrisan: map['obrisan'] as bool? ?? false,
+      obrisan: !(MesecniHelpers.isActiveFromMap(map)),
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String)
           : null,
@@ -190,8 +146,7 @@ class MesecniPutnik {
       'polasci_po_danu': polasciPoDanu,
       'adresa_bela_crkva': adresaBelaCrkva,
       'adresa_vrsac': adresaVrsac,
-      'polazak_bela_crkva': _polazakVremeToTime(polazakBelaCrkva),
-      'polazak_vrsac': _polazakVremeToTime(polazakVrsac),
+      // legacy fields removed - keep canonical `polasci_po_danu`
       'tip_prikazivanja': tipPrikazivanja,
       'radni_dani': radniDani,
       'aktivan': aktivan,
@@ -226,8 +181,7 @@ class MesecniPutnik {
     Map<String, List<String>>? polasciPoDanu,
     String? adresaBelaCrkva,
     String? adresaVrsac,
-    Map<String, String>? polazakBelaCrkva,
-    Map<String, String>? polazakVrsac,
+    // legacy polazak fields removed
     String? tipPrikazivanja,
     String? radniDani,
     bool? aktivan,
@@ -256,8 +210,7 @@ class MesecniPutnik {
       polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
       adresaBelaCrkva: adresaBelaCrkva ?? this.adresaBelaCrkva,
       adresaVrsac: adresaVrsac ?? this.adresaVrsac,
-      polazakBelaCrkva: polazakBelaCrkva ?? this.polazakBelaCrkva,
-      polazakVrsac: polazakVrsac ?? this.polazakVrsac,
+      // legacy fields removed
       tipPrikazivanja: tipPrikazivanja ?? this.tipPrikazivanja,
       radniDani: radniDani ?? this.radniDani,
       aktivan: aktivan ?? this.aktivan,
@@ -317,40 +270,28 @@ class MesecniPutnik {
   /// Vraća vreme polaska iz Bele Crkve za specifičan dan
   /// [dan] može biti: 'pon', 'uto', 'sre', 'cet', 'pet'
   String? getPolazakBelaCrkvaZaDan(String dan) {
-    switch (dan) {
-      case 'pon':
-        // Više nema polazakBcPon, koristi polazakBelaCrkva?[dan] ili null
-        return polazakBelaCrkva?[dan];
-      case 'uto':
-        return polazakBelaCrkva?[dan];
-      case 'sre':
-        return polazakBelaCrkva?[dan];
-      case 'cet':
-        return polazakBelaCrkva?[dan];
-      case 'pet':
-        return polazakBelaCrkva?[dan];
-      default:
-        return polazakBelaCrkva?[dan];
+    // Prefer explicit polasciPoDanu parsed during fromMap
+    final list = polasciPoDanu[dan];
+    if (list != null && list.isNotEmpty) {
+      for (final entry in list) {
+        if (entry.endsWith(' BC')) return entry.replaceFirst(' BC', '');
+      }
+      return list.first.replaceAll(RegExp(r'\s+(BC|VS)\$'), '');
     }
+    return null;
   }
 
   /// Vraća vreme polaska iz Vršca za specifičan dan
   /// [dan] može biti: 'pon', 'uto', 'sre', 'cet', 'pet'
   String? getPolazakVrsacZaDan(String dan) {
-    switch (dan) {
-      case 'pon':
-        return polazakVrsac?[dan];
-      case 'uto':
-        return polazakVrsac?[dan];
-      case 'sre':
-        return polazakVrsac?[dan];
-      case 'cet':
-        return polazakVrsac?[dan];
-      case 'pet':
-        return polazakVrsac?[dan];
-      default:
-        return polazakVrsac?[dan];
+    final list = polasciPoDanu[dan];
+    if (list != null && list.isNotEmpty) {
+      for (final entry in list) {
+        if (entry.endsWith(' VS')) return entry.replaceFirst(' VS', '');
+      }
+      return list.first.replaceAll(RegExp(r'\s+(BC|VS)\$'), '');
     }
+    return null;
   }
 
   /// Vraća vreme polaska za trenutni dan nedelje

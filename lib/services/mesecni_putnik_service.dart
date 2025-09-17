@@ -167,8 +167,9 @@ class MesecniPutnikService {
           });
           mapped.add(tentative);
         } catch (rowErr) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
+          }
         }
       }
 
@@ -306,13 +307,7 @@ class MesecniPutnikService {
       final dataToSend = putnik.toMap();
       if (kDebugMode) {
         debugPrint('🔧 [DEBUG] Podaci koji se šalju u bazu:');
-        debugPrint(
-            '  - polazak_bela_crkva: ${dataToSend['polazak_bela_crkva']}');
-        debugPrint('  - polazak_vrsac: ${dataToSend['polazak_vrsac']}');
-        debugPrint('  - polazak_bc_pon: ${dataToSend['polazak_bc_pon']}');
-        debugPrint('  - polazak_bc_cet: ${dataToSend['polazak_bc_cet']}');
-        debugPrint('  - polazak_vs_pon: ${dataToSend['polazak_vs_pon']}');
-        debugPrint('  - polazak_vs_cet: ${dataToSend['polazak_vs_cet']}');
+        debugPrint('  - polasci_po_danu: ${dataToSend['polasci_po_danu']}');
         debugPrint('  - svi podaci: $dataToSend');
       }
 
@@ -801,7 +796,7 @@ class MesecniPutnikService {
             '🔍 [DEBUG] Pronađeno ${mesecniPutnici.length} aktivnih mesečnih putnika');
         for (final putnik in mesecniPutnici) {
           debugPrint(
-              '🔍 [DEBUG] Putnik: ${putnik['putnik_ime']}, BC: ${putnik['polazak_bela_crkva']}, VS: ${putnik['polazak_vrsac']}, radni_dani: ${putnik['radni_dani']}');
+              '🔍 [DEBUG] Putnik: ${putnik['putnik_ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}');
         }
       }
 

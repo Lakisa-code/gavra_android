@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart'; // Za kDebugMode
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -1138,9 +1137,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
             // Mesečni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
             if (p.mesecnaKarta == true) {
-              if (p.vremePokupljenja == null) return 0; // bela
-              if (p.iznosPlacanja != null && p.iznosPlacanja! > 0)
+              if (p.vremePokupljenja == null) {
+                return 0; // bela
+              }
+              if (p.iznosPlacanja != null && p.iznosPlacanja! > 0) {
                 return 2; // zelena
+              }
               return 1; // plava
             }
             // Dnevni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
@@ -1611,6 +1613,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             selectedGrad: _selectedGrad,
             selectedVreme: _selectedVreme,
             getPutnikCount: getPutnikCount,
+            totalPutnici: putniciZaPrikaz.where((p) {
+              final normalizedStatus = (p.status ?? '').toLowerCase().trim();
+              if (p.mesecnaKarta == true) {
+                return !(normalizedStatus == 'obrisan' ||
+                    normalizedStatus == 'godisnji' ||
+                    normalizedStatus == 'godišnji' ||
+                    normalizedStatus == 'bolovanje');
+              } else {
+                return !(normalizedStatus == 'otkazano' ||
+                    normalizedStatus == 'otkazan' ||
+                    normalizedStatus == 'bolovanje' ||
+                    normalizedStatus == 'godisnji' ||
+                    normalizedStatus == 'godišnji' ||
+                    normalizedStatus == 'obrisan');
+              }
+            }).length,
             onPolazakChanged: (grad, vreme) async {
               // Prvo resetuj pokupljanje za novo vreme polaska
               await _putnikService.resetPokupljenjaNaPolazak(

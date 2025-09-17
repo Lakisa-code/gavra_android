@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
+import '../utils/mesecni_helpers.dart';
 import 'realtime_notification_service.dart';
 import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 
@@ -193,14 +193,10 @@ class PutnikService {
           '🎯 [getAllPutniciFromBothTables] Pronađeno ${mesecniResponse.length} mesečnih putnika');
 
       for (final data in mesecniResponse) {
-        // NOVA LOGIKA: Koristi fromMesecniPutniciMultiple da kreira više objekata
-        final mesecniPutnici = Putnik.fromMesecniPutniciMultiple(data);
-        // Filtriraj samo za ciljani dan
-        for (final putnik in mesecniPutnici) {
-          if (putnik.dan.toLowerCase().contains(danKratica.toLowerCase())) {
-            allPutnici.add(putnik);
-          }
-        }
+        // KORISTI fromMesecniPutniciMultipleForDay da kreira putnike samo za selektovani dan
+        final mesecniPutnici =
+            Putnik.fromMesecniPutniciMultipleForDay(data, danKratica);
+        allPutnici.addAll(mesecniPutnici);
       }
 
       debugPrint(
@@ -509,7 +505,9 @@ class PutnikService {
               '🔍 [STREAM DEBUG] Putnik ${item['putnik_ime']}: radni_dani="$radniDani", traži se="$danasKratica"');
 
           if (radniDani.toLowerCase().contains(danasKratica.toLowerCase())) {
-            final mesecniPutnici = Putnik.fromMesecniPutniciMultiple(item);
+            // Kreiraj putnike za konkretan dan (danasKratica)
+            final mesecniPutnici =
+                Putnik.fromMesecniPutniciMultipleForDay(item, danasKratica);
             sviPutnici.addAll(mesecniPutnici);
             final status = item['aktivan'] == true ? 'AKTIVAN' : 'OTKAZAN';
             debugPrint(
@@ -1413,7 +1411,7 @@ class PutnikService {
         final mesecniPutnici = await supabase
             .from('mesecni_putnici')
             .select(
-                'id, putnik_ime, polazak_bc_pon, polazak_bc_uto, polazak_bc_sre, polazak_bc_cet, polazak_bc_pet, polazak_vs_pon, polazak_vs_uto, polazak_vs_sre, polazak_vs_cet, polazak_vs_pet, polazak_bela_crkva, polazak_vrsac, poslednje_putovanje')
+                'id, putnik_ime, polazak_bc_pon, polazak_bc_uto, polazak_bc_sre, polazak_bc_cet, polazak_bc_pet, polazak_vs_pon, polazak_vs_uto, polazak_vs_sre, polazak_vs_cet, polazak_vs_pet, poslednje_putovanje')
             .eq('aktivan', true)
             .not('poslednje_putovanje', 'is', null);
 
@@ -1428,51 +1426,10 @@ class PutnikService {
           String? polazakVreme;
           final danasnjiDan = _getDanNedelje();
 
-          if (grad == 'Bela Crkva') {
-            // Prvo pokušaj da čitaš iz nove kolone za trenutni dan
-            final novaKolona = 'polazak_bc_$danasnjiDan';
-            polazakVreme = putnik[novaKolona] as String?;
-
-            // Fallback na staru kolonu ako nova nije dostupna
-            if (polazakVreme == null || polazakVreme.isEmpty) {
-              try {
-                final polazakData = putnik['polazak_bela_crkva'];
-                if (polazakData is String && polazakData.startsWith('{')) {
-                  final Map<String, dynamic> polazakMapa =
-                      jsonDecode(polazakData);
-                  polazakVreme = polazakMapa[danasnjiDan] as String?;
-                } else if (polazakData is String) {
-                  // Stari format - koristi direktno
-                  polazakVreme = polazakData;
-                }
-              } catch (e) {
-                // Fallback na stari format
-                polazakVreme = putnik['polazak_bela_crkva'] as String?;
-              }
-            }
-          } else if (grad == 'Vršac') {
-            // Prvo pokušaj da čitaš iz nove kolone za trenutni dan
-            final novaKolona = 'polazak_vs_$danasnjiDan';
-            polazakVreme = putnik[novaKolona] as String?;
-
-            // Fallback na staru kolonu ako nova nije dostupna
-            if (polazakVreme == null || polazakVreme.isEmpty) {
-              try {
-                final polazakData = putnik['polazak_vrsac'];
-                if (polazakData is String && polazakData.startsWith('{')) {
-                  final Map<String, dynamic> polazakMapa =
-                      jsonDecode(polazakData);
-                  polazakVreme = polazakMapa[danasnjiDan] as String?;
-                } else if (polazakData is String) {
-                  // Stari format - koristi direktno
-                  polazakVreme = polazakData;
-                }
-              } catch (e) {
-                // Fallback na stari format
-                polazakVreme = putnik['polazak_vrsac'] as String?;
-              }
-            }
-          }
+          // Unified parsing: prefer JSON `polasci_po_danu` then per-day columns
+          final place = grad == 'Bela Crkva' ? 'bc' : 'vs';
+          polazakVreme =
+              MesecniHelpers.getPolazakForDay(putnik, danasnjiDan, place);
 
           if (polazakVreme == null ||
               polazakVreme.isEmpty ||

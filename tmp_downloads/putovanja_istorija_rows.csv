@@ -1,0 +1,4 @@
+id,mesecni_putnik_id,tip_putnika,datum,vreme_polaska,adresa_polaska,putnik_ime,broj_telefona,created_at,updated_at,status,pokupljen,vreme_pokupljenja,vreme_placanja,vozac,dan,grad,obrisan,cena,pokupljanje_vozac,naplata_vozac,otkazao_vozac,dodao_vozac,sitan_novac
+27a08d8a-6dfa-4f72-896a-2111d5e9a02b,,dnevni,2025-09-15,18:00:00,Posta,Logoped,,2025-09-15 11:28:18.206513+00,2025-09-15 11:28:18.210006+00,nije_se_pojavio,false,,,,pon,Bela Crkva,false,0.0,,,,Bojan,
+aac00ff1-d52d-4639-bd3b-2726c38445a5,,dnevni,2025-09-15,13:00:00,Bolnica,Logoped,,2025-09-15 11:26:55.518931+00,2025-09-15 11:26:55.536067+00,nije_se_pojavio,false,,,,pon,Vršac,false,0.0,,,,Bojan,
+d5bad3c1-3bb0-4e52-8f5c-416096246c99,,dnevni,2025-09-15,06:00:00,Vršac centar,TEST,,2025-09-15 06:08:37.673792+00,2025-09-15 10:02:27.707967+00,obrisan,false,,,,pon,Vršac,true,0.0,,,,Bojan,

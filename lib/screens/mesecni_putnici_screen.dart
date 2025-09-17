@@ -387,12 +387,55 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 _filterSubject.stream,
                 (List<MesecniPutnik> putnici, String searchTerm,
                     String filterType) {
-                  // Offload filtering/sorting to a separate isolate
+                  // Serialize putnici to List<Map<String, dynamic>> for compute
+                  final putniciMap = putnici
+                      .map((p) => {
+                            'id': p.id,
+                            'putnik_ime': p.putnikIme,
+                            'tip': p.tip,
+                            'tip_skole': p.tipSkole,
+                            'broj_telefona': p.brojTelefona,
+                            'polasci_po_danu': p.polasciPoDanu,
+                            'adresa_bela_crkva': p.adresaBelaCrkva,
+                            'adresa_vrsac': p.adresaVrsac,
+                            // legacy single-time fields removed
+                            'tip_prikazivanja': p.tipPrikazivanja,
+                            'radni_dani': p.radniDani,
+                            'aktivan': p.aktivan,
+                            'status': p.status,
+                            'datum_pocetka_meseca':
+                                p.datumPocetkaMeseca.toIso8601String(),
+                            'datum_kraja_meseca':
+                                p.datumKrajaMeseca.toIso8601String(),
+                            'cena': p.cena,
+                            'ukupna_cena_meseca': p.ukupnaCenaMeseca,
+                            'broj_putovanja': p.brojPutovanja,
+                            'broj_otkazivanja': p.brojOtkazivanja,
+                            'poslednje_putovanje':
+                                p.poslednjiPutovanje?.toIso8601String(),
+                            'created_at': p.createdAt.toIso8601String(),
+                            'updated_at': p.updatedAt.toIso8601String(),
+                            'obrisan': p.obrisan,
+                            'vreme_placanja':
+                                p.vremePlacanja?.toIso8601String(),
+                            'placeni_mesec': p.placeniMesec,
+                            'placena_godina': p.placenaGodina,
+                            'naplata_vozac': p.vozac,
+                            'pokupljen': p.pokupljen,
+                            'vreme_pokupljenja':
+                                p.vremePokupljenja?.toIso8601String(),
+                          })
+                      .toList();
                   return compute(filterAndSortPutnici, {
-                    'putnici': putnici,
+                    'putnici': putniciMap,
                     'searchTerm': searchTerm,
                     'filterType': filterType,
-                  });
+                  }).then((resultList) =>
+                      // Deserialize result back to MesecniPutnik
+                      (resultList as List)
+                          .map((m) => MesecniPutnik.fromMap(
+                              Map<String, dynamic>.from(m)))
+                          .toList());
                 },
               ).asyncExpand((future) => Stream.fromFuture(future)),
               builder: (context, snapshot) {
@@ -1209,8 +1252,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         polasciPoDanu: polasciPoDanu,
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
-        polazakBelaCrkva: null,
-        polazakVrsac: null,
         radniDani: _getRadniDaniString(),
         updatedAt: DateTime.now(),
       );
@@ -1534,8 +1575,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         polasciPoDanu: polasciPoDanu,
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
-        polazakBelaCrkva: null,
-        polazakVrsac: null,
         radniDani: _getRadniDaniString(),
         datumPocetkaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month, 1),

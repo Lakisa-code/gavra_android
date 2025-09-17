@@ -1,0 +1,3 @@
+-- Removed: migrate_polasci_po_danu_safe.sql
+-- Per user request, migration SQL removed from repository content.
+-- If needed later, script can be regenerated on demand.
