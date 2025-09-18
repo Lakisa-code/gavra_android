@@ -18,9 +18,10 @@ class MesecniHelpers {
       token = token.split(RegExp(r"[+\-]"))[0];
 
       // Try to match with optional seconds and optional AM/PM suffix (with optional space)
-      final re = RegExp(
-          r'^(\d{1,2}):(\d{1,2})(?::\d{1,2}(?:\.\d+)?)?\s*([aApP][mM])?\$');
-      var m = re.firstMatch(raw);
+      final timeRe = RegExp(
+          r'^(\d{1,2}):(\d{1,2})(?::\d{1,2}(?:\.\d+)?)?\s*([aApP][mM])?$');
+      // Dart raw string doesn't need escaped end-anchor; use '$' directly
+      var m = timeRe.firstMatch(token);
       // If not matched against full raw (covers cases like "6:00 pm"), try token + possible suffix
       if (m == null) {
         // Try to capture if AM/PM is separate token, e.g. "6:00 pm"
@@ -29,9 +30,9 @@ class MesecniHelpers {
             RegExp(r'^[aApP][mM]\$').hasMatch(parts.last)) {
           final joined =
               '${parts.sublist(0, parts.length - 1).join(' ')}${parts.last}';
-          m = re.firstMatch(joined);
+          m = timeRe.firstMatch(joined);
         } else {
-          m = re.firstMatch(token);
+          m = timeRe.firstMatch(token);
         }
       }
 
@@ -51,7 +52,7 @@ class MesecniHelpers {
       }
 
       final minStr = min.toString().padLeft(2, '0');
-      final hourStr = hour.toString().padLeft(2, '0');
+      final hourStr = hour.toString();
       return '$hourStr:$minStr';
     } catch (_) {
       return raw;
@@ -78,8 +79,16 @@ class MesecniHelpers {
     decoded.forEach((dayKey, val) {
       if (val == null) return;
       if (val is Map) {
-        final bc = val['bc'] ?? val['bela_crkva'] ?? val['polazak_bc'];
-        final vs = val['vs'] ?? val['vrsac'] ?? val['polazak_vs'];
+        final bc = val['bc'] ??
+            val['bela_crkva'] ??
+            val['polazak_bc'] ??
+            val['bc_time'] ??
+            val['polazak_bela_crkva'];
+        final vs = val['vs'] ??
+            val['vrsac'] ??
+            val['polazak_vs'] ??
+            val['vs_time'] ??
+            val['polazak_vrsac'];
         out[dayKey] = {
           'bc': normalizeTime(bc?.toString()),
           'vs': normalizeTime(vs?.toString())
@@ -107,8 +116,16 @@ class MesecniHelpers {
     // - polazak_bc_pon / polazak_vs_pon
     // - polazak_bc_pon_time / polazak_vs_pon_time (some exports)
     final candidates = <String>[
-      'polazak_${place}_$dayKratica',
-      'polazak_${place}_${dayKratica}_time',
+      // canonical per-day columns
+      'polazak_' + place + '_' + dayKratica,
+      'polazak_' + place + '_' + dayKratica + '_time',
+      // alternative export variants
+      place + '_polazak_' + dayKratica,
+      place + '_' + dayKratica + '_polazak',
+      place + '_' + dayKratica + '_polazak',
+      place + '_' + dayKratica + '_time',
+      'polazak_' + dayKratica + '_' + place,
+      'polazak_' + dayKratica + '_' + place + '_time',
     ];
 
     for (final col in candidates) {

@@ -15,9 +15,15 @@ def normalize_time(t):
         t = t.split(' ')[0]
     parts = t.split(':')
     if len(parts) >= 2:
-        hh = parts[0].lstrip('0') or '0'
-        mm = parts[1]
-        return f"{int(hh)}:{mm}"
+        try:
+            hh = int(parts[0])
+        except Exception:
+            hh = 0
+        try:
+            mm = int(parts[1])
+        except Exception:
+            mm = 0
+        return f"{hh:02d}:{mm:02d}"
     return t
 
 
