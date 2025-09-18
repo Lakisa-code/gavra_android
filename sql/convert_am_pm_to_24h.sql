@@ -1,3 +1,0 @@
--- Removed: convert_am_pm_to_24h.sql
--- Per user request, migration/backup SQL was removed from the repository.
--- If you need this later, I can re-create it on demand.
