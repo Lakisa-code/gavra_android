@@ -138,12 +138,37 @@ class MesecniPutnik {
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {
+    // Normalize polasci_po_danu into canonical form expected by parser:
+    // { 'pon': { 'bc': '6:00', 'vs': '14:00' }, ... }
+    final Map<String, dynamic> polasciPoDanuForDb = {};
+    polasciPoDanu.forEach((day, list) {
+      if (list.isEmpty) return;
+      final Map<String, String?> inner = {};
+      for (final entry in list) {
+        final s = entry.toString();
+        // Expect formats like '6 BC' or '6:00 BC' or '14 VS'
+        final parts = s.split(RegExp(r"\s+"));
+        if (parts.isEmpty) continue;
+        final val = parts[0];
+        final suffix = parts.length > 1 ? parts[1].toLowerCase() : '';
+        if (suffix.startsWith('bc')) {
+          inner['bc'] = val;
+        } else if (suffix.startsWith('vs')) {
+          inner['vs'] = val;
+        } else {
+          // Fallback: try to infer by time (hours < 12 -> bc?) - keep as bc by default
+          inner['bc'] = val;
+        }
+      }
+      if (inner.isNotEmpty) polasciPoDanuForDb[day] = inner;
+    });
+
     final map = <String, dynamic>{
       'putnik_ime': putnikIme,
       'tip': tip,
       'tip_skole': tipSkole,
       'broj_telefona': brojTelefona,
-      'polasci_po_danu': polasciPoDanu,
+      'polasci_po_danu': polasciPoDanuForDb,
       'adresa_bela_crkva': adresaBelaCrkva,
       'adresa_vrsac': adresaVrsac,
       // legacy fields removed - keep canonical `polasci_po_danu`

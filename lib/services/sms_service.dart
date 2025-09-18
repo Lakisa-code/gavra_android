@@ -86,9 +86,14 @@ class SMSService {
       DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
       String tomorrowStr = DateFormat('yyyy-MM-dd').format(tomorrow);
 
+      const mesecniFields = '*,'
+          'polasci_po_danu,'
+          'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
+          'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+
       final response = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select(mesecniFields)
           .eq('datum_kraja_meseca', tomorrowStr);
 
       List<Putnik> unpaidPassengers = (response as List)
@@ -155,9 +160,14 @@ class SMSService {
       DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
       String yesterdayStr = DateFormat('yyyy-MM-dd').format(yesterday);
 
+      const mesecniFields = '*,'
+          'polasci_po_danu,'
+          'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
+          'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+
       final response = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select(mesecniFields)
           .eq('datum_kraja_meseca', yesterdayStr);
 
       List<Putnik> overduePassengers = (response as List)

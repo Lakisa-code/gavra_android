@@ -5,6 +5,11 @@ import '../models/mesecni_putnik.dart';
 
 class MesecniPutnikService {
   static final _supabase = Supabase.instance.client;
+  // Fields to request from mesecni_putnici when selecting explicitly
+  static const String _mesecniFields = '*,'
+      'polasci_po_danu,'
+      'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
+      'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
 
   // 📱 REALTIME STREAM svih mesečnih putnika - OTPORAN NA GREŠKE
   static Stream<List<MesecniPutnik>> streamMesecniPutnici() {
@@ -213,7 +218,7 @@ class MesecniPutnikService {
     try {
       final response = await _supabase
           .from('mesecni_putnici')
-          .select()
+          .select(_mesecniFields)
           .eq('id', id)
           .single();
 
@@ -232,7 +237,7 @@ class MesecniPutnikService {
     try {
       final response = await _supabase
           .from('mesecni_putnici')
-          .select()
+          .select(_mesecniFields)
           .eq('putnik_ime', ime)
           .single();
 
@@ -251,7 +256,7 @@ class MesecniPutnikService {
     try {
       final response = await _supabase
           .from('mesecni_putnici')
-          .select()
+          .select(_mesecniFields)
           .ilike('putnik_ime', '%$ime%')
           .order('putnik_ime');
 

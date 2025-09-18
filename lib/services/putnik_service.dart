@@ -27,6 +27,12 @@ class UndoAction {
 class PutnikService {
   final supabase = Supabase.instance.client;
 
+  // Fields to explicitly request from mesecni_putnici
+  static const String mesecniFields = '*,'
+      'polasci_po_danu,'
+      'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
+      'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+
   // 📚 UNDO STACK - Čuva poslednje akcije (max 10)
   static final List<UndoAction> _undoStack = [];
   static const int maxUndoActions = 10;
@@ -89,7 +95,7 @@ class PutnikService {
       // Prvo pokušaj iz mesecni_putnici
       final mesecniResponse = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select(mesecniFields)
           .eq('putnik_ime', imePutnika)
           .maybeSingle();
 
@@ -138,7 +144,7 @@ class PutnikService {
       // Ako nije u putovanja_istorija, pokušaj iz mesecni_putnici
       final mesecniResponse = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select(mesecniFields)
           .eq('id', id)
           .limit(1);
 
@@ -182,9 +188,15 @@ class PutnikService {
       debugPrint(
           '🎯 [getAllPutniciFromBothTables] Target day: $targetDate, kratica: $danKratica');
 
+      // Explicitly request polasci_po_danu and common per-day columns
+      const mesecniFields = '*,'
+          'polasci_po_danu,'
+          'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
+          'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+
       final mesecniResponse = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select(mesecniFields)
           // UKLONJEN FILTER za aktivan - sada prikazuje SVE putnike (aktivne i otkazane)
           .like('radni_dani', '%$danKratica%')
           .order('created_at', ascending: false);

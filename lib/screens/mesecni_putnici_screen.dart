@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mesecni_putnik.dart';
 import '../utils/filter_and_sort_putnici.dart';
 import '../services/mesecni_putnik_service.dart';
+import '../utils/mesecni_helpers.dart';
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
 
@@ -1237,8 +1238,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Pripremi mapu polazaka po danima (JSON)
       final Map<String, List<String>> polasciPoDanu = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final bc = _getControllerBelaCrkva(dan).text.trim();
-        final vs = _getControllerVrsac(dan).text.trim();
+        final bcRaw = _getControllerBelaCrkva(dan).text.trim();
+        final vsRaw = _getControllerVrsac(dan).text.trim();
+        final bc =
+            bcRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(bcRaw) ?? '') : '';
+        final vs =
+            vsRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(vsRaw) ?? '') : '';
         final List<String> polasci = [];
         if (bc.isNotEmpty) polasci.add('$bc BC');
         if (vs.isNotEmpty) polasci.add('$vs VS');
@@ -1257,6 +1262,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       );
       await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
 
+      // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
+      try {
+        await MesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
+            danaUnapred: 1);
+      } catch (_) {}
       // Očisti mape izmena nakon uspešnog čuvanja
       setState(() {
         _novaVremenaBC.clear();
@@ -1559,8 +1569,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Pripremi mapu polazaka po danima (JSON)
       final Map<String, List<String>> polasciPoDanu = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final bc = _getControllerBelaCrkva(dan).text.trim();
-        final vs = _getControllerVrsac(dan).text.trim();
+        final bcRaw = _getControllerBelaCrkva(dan).text.trim();
+        final vsRaw = _getControllerVrsac(dan).text.trim();
+        final bc =
+            bcRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(bcRaw) ?? '') : '';
+        final vs =
+            vsRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(vsRaw) ?? '') : '';
         final List<String> polasci = [];
         if (bc.isNotEmpty) polasci.add('$bc BC');
         if (vs.isNotEmpty) polasci.add('$vs VS');
@@ -1587,6 +1601,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       final rezultat =
           await MesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+
+      // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
+      try {
+        await MesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
+            danaUnapred: 1);
+      } catch (_) {}
 
       if (mounted) {
         Navigator.pop(context);

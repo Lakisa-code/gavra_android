@@ -82,13 +82,9 @@ class MesecniHelpers {
         final bc = val['bc'] ??
             val['bela_crkva'] ??
             val['polazak_bc'] ??
-            val['bc_time'] ??
-            val['polazak_bela_crkva'];
-        final vs = val['vs'] ??
-            val['vrsac'] ??
-            val['polazak_vs'] ??
-            val['vs_time'] ??
-            val['polazak_vrsac'];
+            val['bc_time'];
+        final vs =
+            val['vs'] ?? val['vrsac'] ?? val['polazak_vs'] ?? val['vs_time'];
         out[dayKey] = {
           'bc': normalizeTime(bc?.toString()),
           'vs': normalizeTime(vs?.toString())
