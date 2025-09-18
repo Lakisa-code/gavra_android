@@ -1,0 +1,24 @@
+name: Run Postgres Migrations
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  run-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run migrations in order
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+        run: |
+          set -euo pipefail
+          echo "Running migrations from migrations/"
+          for f in $(ls -1 migrations/*.sql | sort); do
+            echo "-> Running $f"
+            docker run --rm -v "$GITHUB_WORKSPACE":/workspace -w /workspace postgres:15 \
+              psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$f"
+            echo "<- Finished $f"
+          done
