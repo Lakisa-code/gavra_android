@@ -1069,176 +1069,139 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Padding(
-          padding: const EdgeInsets.only(bottom: 4.0),
-          child: Text('Uredi mesečnog putnika',
-              style: Theme.of(context).textTheme.titleLarge),
-        ),
+        title: const Text('Uredi mesečnog putnika'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Row/Column grouping for compact inputs
               TextField(
                 onChanged: (value) => _novoIme = value,
-                textCapitalization: TextCapitalization.words,
+                textCapitalization:
+                    TextCapitalization.words, // 🔤 Prvo slovo veliko za ime
                 decoration: const InputDecoration(
                   labelText: 'Ime putnika *',
                   border: OutlineInputBorder(),
                 ),
                 controller: _imeController,
               ),
-              const SizedBox(height: 10),
-
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: DropdownButtonFormField<String>(
-                      value: _noviTip,
-                      decoration: const InputDecoration(
-                        labelText: 'Tip putnika',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'radnik', child: Text('Radnik')),
-                        DropdownMenuItem(
-                            value: 'ucenik', child: Text('Učenik')),
-                      ],
-                      onChanged: (value) => setState(() => _noviTip = value!),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      onChanged: (value) => _novaTipSkole = value,
-                      decoration: const InputDecoration(
-                        labelText: 'Tip škole (za školarce/studente)',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      controller: _tipSkoleController,
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _noviTip,
+                decoration: const InputDecoration(
+                  labelText: 'Tip putnika',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'radnik', child: Text('Radnik')),
+                  DropdownMenuItem(value: 'ucenik', child: Text('Učenik')),
                 ],
+                onChanged: (value) => setState(() => _noviTip = value!),
               ),
-              const SizedBox(height: 10),
-
+              const SizedBox(height: 8),
+              TextField(
+                onChanged: (value) => _novaTipSkole = value,
+                decoration: const InputDecoration(
+                  labelText: 'Tip škole (za školarce/studente)',
+                  border: OutlineInputBorder(),
+                ),
+                controller: _tipSkoleController,
+              ),
+              const SizedBox(height: 8),
               TextField(
                 decoration: const InputDecoration(
                   labelText: 'Broj telefona',
                   border: OutlineInputBorder(),
-                  isDense: true,
                 ),
                 keyboardType: TextInputType.phone,
                 controller: _brojTelefonaController,
               ),
-              const SizedBox(height: 10),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) => _novaAdresaBelaCrkva = value,
-                      decoration: const InputDecoration(
-                        labelText: 'Adresa polaska - Bela Crkva',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      controller: _adresaBelaCrkvaController,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) => _novaAdresaVrsac = value,
-                      decoration: const InputDecoration(
-                        labelText: 'Adresa polaska - Vršac',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      controller: _adresaVrsacController,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 8),
+              TextField(
+                onChanged: (value) => _novaAdresaBelaCrkva = value,
+                decoration: const InputDecoration(
+                  labelText: 'Adresa polaska - Bela Crkva',
+                  border: OutlineInputBorder(),
+                ),
+                controller: _adresaBelaCrkvaController,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
+              TextField(
+                onChanged: (value) => _novaAdresaVrsac = value,
+                decoration: const InputDecoration(
+                  labelText: 'Adresa polaska - Vršac',
+                  border: OutlineInputBorder(),
+                ),
+                controller: _adresaVrsacController,
+              ),
+              const SizedBox(height: 16),
 
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
-                color: Theme.of(context).colorScheme.surfaceVariant,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Radni dani u toku nedelje:',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 6),
-                      Text('Odaberi radne dane kada putnik koristi prevoz',
-                          style: Theme.of(context).textTheme.bodySmall),
-                      const SizedBox(height: 8),
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _buildRadniDanCheckbox(
-                                      'pon', 'Ponedeljak')),
-                              Expanded(
-                                  child:
-                                      _buildRadniDanCheckbox('uto', 'Utorak')),
-                            ],
+              // ✅ DODANO - Radni dani sekcija
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Radni dani u toku nedelje:',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          Row(
-                            children: [
-                              Expanded(
-                                  child:
-                                      _buildRadniDanCheckbox('sre', 'Sreda')),
-                              Expanded(
-                                  child: _buildRadniDanCheckbox(
-                                      'cet', 'Četvrtak')),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                  child:
-                                      _buildRadniDanCheckbox('pet', 'Petak')),
-                              const Expanded(child: SizedBox()),
-                            ],
-                          ),
-                        ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Odaberi radne dane kada putnik koristi prevoz',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _buildRadniDanCheckbox(
+                                    'pon', 'Ponedeljak')),
+                            Expanded(
+                                child: _buildRadniDanCheckbox('uto', 'Utorak')),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _buildRadniDanCheckbox('sre', 'Sreda')),
+                            Expanded(
+                                child:
+                                    _buildRadniDanCheckbox('cet', 'Četvrtak')),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: _buildRadniDanCheckbox('pet', 'Petak')),
+                            const Expanded(child: SizedBox()), // Prazno mesto
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 14),
-
-              // Vremena sekcija kept as-is but with slightly larger padding
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                child: _buildVremenaPolaskaSekcija(),
-              ),
+              const SizedBox(height: 16),
+              // ⏰ VREMENA POLASKA SEKCIJA - dodato u edit dialog
+              _buildVremenaPolaskaSekcija(),
             ],
           ),
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         actions: [
           TextButton(
             onPressed: () {
+              // Očisti mape izmena kada se otkaže
               setState(() {
                 _novaVremenaBC.clear();
                 _novaVremenaVS.clear();
@@ -1248,11 +1211,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             child: const Text('Otkaži'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8))),
             onPressed: () => _sacuvajEditPutnika(putnik),
             child: const Text('Sačuvaj'),
           ),
