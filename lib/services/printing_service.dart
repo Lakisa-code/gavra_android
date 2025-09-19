@@ -1,9 +1,11 @@
-import 'dart:typed_data';
+// 'dart:typed_data' not required; elements available via Flutter packages
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart';
+import '../utils/logging.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/text_utils.dart';
@@ -11,11 +13,13 @@ import '../utils/text_utils.dart';
 class PrintingService {
   static final PutnikService _putnikService = PutnikService();
 
+  // Use centralized logger
+
   /// Štampa spisak putnika za selektovani dan i vreme
   static Future<void> printPutniksList(String selectedDay, String selectedVreme,
       String selectedGrad, BuildContext context) async {
     try {
-      debugPrint('📄 Priprema spiska putnika za štampanje...');
+      dlog('📄 Priprema spiska putnika za štampanje...');
 
       // ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
       List<Putnik> sviPutnici =
@@ -137,9 +141,9 @@ class PrintingService {
             'Spisak_putnika_${selectedDay}_${selectedVreme}_${selectedGrad}_${DateFormat('dd_MM_yyyy').format(DateTime.now())}.pdf',
       );
 
-      debugPrint('✅ PDF kreiran uspešno!');
+      dlog('✅ PDF kreiran uspešno!');
     } catch (e) {
-      debugPrint('❌ Greška pri štampanju: $e');
+      dlog('❌ Greška pri štampanju: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

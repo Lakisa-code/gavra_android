@@ -18,6 +18,9 @@ import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'statistika_screen.dart'; // DODANO za statistike
 
+// foundation import not needed; material.dart provides kDebugMode
+import '../utils/logging.dart';
+
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
 
@@ -507,11 +510,10 @@ class _AdminScreenState extends State<AdminScreen> {
                 jeOvajVozac;
           }).toList();
 
-          debugPrint(
-              '🔍 ADMIN DEBUG: Ukupno putnika: ${filteredPutnici.length}');
-          debugPrint('🔍 ADMIN DEBUG: Broj dužnika: ${filteredDuznici.length}');
+          dlog('🔍 ADMIN DEBUG: Ukupno putnika: ${filteredPutnici.length}');
+          dlog('🔍 ADMIN DEBUG: Broj dužnika: ${filteredDuznici.length}');
           for (final d in filteredDuznici) {
-            debugPrint('🔍 ADMIN DEBUG: Dužnik - ${d.ime}');
+            dlog('🔍 ADMIN DEBUG: Dužnik - ${d.ime}');
           }
           // Izračunaj pazar po vozačima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA 💰
           // ✅ ISPRAVKA: Umesto kalkulacije datuma, koristi već filtrirane putnike po danu
@@ -564,11 +566,11 @@ class _AdminScreenState extends State<AdminScreen> {
           streamTo = dateRange['to']!;
 
           // 🔍 DEBUG: Prikaži koje datume koristi Admin screen
-          debugPrint(
+          dlog(
               '🔍 [ADMIN SCREEN] Koristi datum: ${app_date_utils.DateUtils.formatDateForDebug(targetDate).split(' ')[0]}');
-          debugPrint(
+          dlog(
               '🔍 [ADMIN SCREEN] streamFrom: ${app_date_utils.DateUtils.formatDateForDebug(streamFrom)}');
-          debugPrint(
+          dlog(
               '🔍 [ADMIN SCREEN] streamTo: ${app_date_utils.DateUtils.formatDateForDebug(streamTo)}');
 
           return StreamBuilder<Map<String, double>>(
@@ -616,430 +618,434 @@ class _AdminScreenState extends State<AdminScreen> {
               final List<String> prikazaniVozaci = isAdmin
                   ? vozaciRedosled
                   : vozaciRedosled.where((v) => v == _currentDriver).toList();
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Row(
-                        children: [
-                          Text(
-                            isAdmin
-                                ? 'Dnevni pazar - $_selectedDan'
-                                : 'Moj pazar - $_selectedDan',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.today,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 20,
-                          ),
-                          if (!isAdmin) ...[
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.person,
-                              color: Colors.green[600],
-                              size: 18,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    //  Info box za individualnog vozača
-                    if (!isAdmin)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
-                          border:
-                              Border.all(color: Colors.green[200]!, width: 1),
-                        ),
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Row(
                           children: [
-                            Icon(Icons.person,
-                                color: Colors.green[600], size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Prikazuju se samo VAŠE naplate, vozač: $_currentDriver',
-                                style: TextStyle(
-                                  color: Colors.green[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            Text(
+                              isAdmin
+                                  ? 'Dnevni pazar - $_selectedDan'
+                                  : 'Moj pazar - $_selectedDan',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.today,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 20,
+                            ),
+                            if (!isAdmin) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.person,
+                                color: Colors.green[600],
+                                size: 18,
+                              ),
+                            ],
                           ],
                         ),
                       ),
-                    const SizedBox(height: 12),
-                    // 👥 VOZAČI PAZAR (BEZ DEPOZITA)
-                    Column(
-                      children: prikazaniVozaci
-                          .map(
-                            (vozac) => Container(
-                              width: double.infinity,
-                              height: 60,
-                              margin: const EdgeInsets.only(bottom: 4),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                                    .withAlpha(
-                                  20,
+                      //  Info box za individualnog vozača
+                      if (!isAdmin)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: Colors.green[200]!, width: 1),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.person,
+                                  color: Colors.green[600], size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Prikazuju se samo VAŠE naplate, vozač: $_currentDriver',
+                                  style: TextStyle(
+                                    color: Colors.green[700],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      // 👥 VOZAČI PAZAR (BEZ DEPOZITA)
+                      Column(
+                        children: prikazaniVozaci
+                            .map(
+                              (vozac) => Container(
+                                width: double.infinity,
+                                height: 60,
+                                margin: const EdgeInsets.only(bottom: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
                                   color: (vozacBoje[vozac] ?? Colors.blueGrey)
                                       .withAlpha(
-                                    70,
+                                    20,
                                   ),
-                                  width: 1,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: (vozacBoje[vozac] ?? Colors.blueGrey)
+                                        .withAlpha(
+                                      70,
+                                    ),
+                                    width: 1,
+                                  ),
                                 ),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor:
-                                        vozacBoje[vozac] ?? Colors.blueGrey,
-                                    radius: 16,
-                                    child: Text(
-                                      vozac[0],
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor:
+                                          vozacBoje[vozac] ?? Colors.blueGrey,
+                                      radius: 16,
+                                      child: Text(
+                                        vozac[0],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      vozac,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            vozacBoje[vozac] ?? Colors.blueGrey,
-                                      ),
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.monetization_on,
-                                        color:
-                                            vozacBoje[vozac] ?? Colors.blueGrey,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        '${(filteredPazar[vozac] ?? 0.0).toStringAsFixed(0)} RSD',
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        vozac,
                                         style: TextStyle(
-                                          fontSize: 15,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           color: vozacBoje[vozac] ??
                                               Colors.blueGrey,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    DugButton(
-                      brojDuznika: filteredDuznici.length,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DugoviScreen(
-                              // duznici: filteredDuznici,
-                              currentDriver: _currentDriver,
-                            ),
-                          ),
-                        );
-                      },
-                      wide: true,
-                    ),
-                    const SizedBox(height: 4),
-                    // 💸 KUSUR KOCKE (REAL-TIME)
-                    Row(
-                      children: [
-                        // Kusur za Bruda - REAL-TIME
-                        Expanded(
-                          child: StreamBuilder<double>(
-                            stream:
-                                DailyCheckInService.streamTodayAmount('Bruda'),
-                            builder: (context, snapshot) {
-                              final kusurBruda = snapshot.data ?? 0.0;
-
-                              return Container(
-                                height: 60,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple[50],
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: Colors.purple[300]!, width: 1.2),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.savings,
-                                      color: Colors.purple[700],
-                                      size: 16,
                                     ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'KUSUR',
-                                      style: TextStyle(
-                                        color: Colors.purple[800],
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Container(
-                                        margin: const EdgeInsets.only(left: 6),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.monetization_on,
+                                          color: vozacBoje[vozac] ??
+                                              Colors.blueGrey,
+                                          size: 16,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.purple[100],
-                                          border: Border.all(
-                                            color: Colors.purple[300]!,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '${kusurBruda.toStringAsFixed(0)} RSD',
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          '${(filteredPazar[vozac] ?? 0.0).toStringAsFixed(0)} RSD',
                                           style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.purple[800],
+                                            fontSize: 15,
                                             fontWeight: FontWeight.bold,
+                                            color: vozacBoje[vozac] ??
+                                                Colors.blueGrey,
                                           ),
                                         ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        // Kusur za Bilevski - REAL-TIME
-                        Expanded(
-                          child: StreamBuilder<double>(
-                            stream: DailyCheckInService.streamTodayAmount(
-                                'Bilevski'),
-                            builder: (context, snapshot) {
-                              final kusurBilevski = snapshot.data ?? 0.0;
-
-                              return Container(
-                                height: 60,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange[50],
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: Colors.orange[300]!, width: 1.2),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.savings,
-                                      color: Colors.orange[700],
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'KUSUR',
-                                      style: TextStyle(
-                                        color: Colors.orange[800],
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Container(
-                                        margin: const EdgeInsets.only(left: 6),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange[100],
-                                          border: Border.all(
-                                            color: Colors.orange[300]!,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '${kusurBilevski.toStringAsFixed(0)} RSD',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.orange[800],
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // UKUPAN PAZAR
-                    Container(
-                      width: double.infinity,
-                      height: 70,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border:
-                            Border.all(color: Colors.green[300]!, width: 1.2),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.account_balance_wallet,
-                            color: Colors.green[700],
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            children: [
-                              Text(
-                                isAdmin ? 'UKUPAN PAZAR' : 'MOJ UKUPAN PAZAR',
-                                style: TextStyle(
-                                  color: Colors.green[800],
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
                               ),
-                              // 💰 UKUPAN PAZAR (BEZ DEPOZITA)
-                              Text(
-                                '${(isAdmin ? ukupno : filteredPazar.values.fold(0.0, (sum, val) => sum + val)).toStringAsFixed(0)} RSD',
-                                style: TextStyle(
-                                  color: Colors.green[900],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                            )
+                            .toList(),
                       ),
-                    ),
-                    // 🗺️ GPS ADMIN MAPA
-                    Container(
-                      width: double.infinity,
-                      height: 60,
-                      margin: const EdgeInsets.only(top: 4),
-                      child: Row(
+                      DugButton(
+                        brojDuznika: filteredDuznici.length,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DugoviScreen(
+                                // duznici: filteredDuznici,
+                                currentDriver: _currentDriver,
+                              ),
+                            ),
+                          );
+                        },
+                        wide: true,
+                      ),
+                      const SizedBox(height: 4),
+                      // 💸 KUSUR KOCKE (REAL-TIME)
+                      Row(
                         children: [
+                          // Kusur za Bruda - REAL-TIME
                           Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const AdminMapScreen(),
+                            child: StreamBuilder<double>(
+                              stream: DailyCheckInService.streamTodayAmount(
+                                  'Bruda'),
+                              builder: (context, snapshot) {
+                                final kusurBruda = snapshot.data ?? 0.0;
+
+                                return Container(
+                                  height: 60,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: Colors.purple[300]!, width: 1.2),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.savings,
+                                        color: Colors.purple[700],
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'KUSUR',
+                                        style: TextStyle(
+                                          color: Colors.purple[800],
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 6),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple[100],
+                                            border: Border.all(
+                                              color: Colors.purple[300]!,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            '${kusurBruda.toStringAsFixed(0)} RSD',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.purple[800],
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
-                              child: Container(
-                                height: 60,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF00D4FF),
-                                      Color(0xFF0077BE)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          // Kusur za Bilevski - REAL-TIME
+                          Expanded(
+                            child: StreamBuilder<double>(
+                              stream: DailyCheckInService.streamTodayAmount(
+                                  'Bilevski'),
+                              builder: (context, snapshot) {
+                                final kusurBilevski = snapshot.data ?? 0.0;
+
+                                return Container(
+                                  height: 60,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: Colors.orange[300]!, width: 1.2),
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                      color: const Color(0xFF0077BE),
-                                      width: 1.2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF00D4FF)
-                                          .withOpacity(0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'MAPA',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                        letterSpacing: 0.8,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.savings,
+                                        color: Colors.orange[700],
+                                        size: 16,
                                       ),
-                                    ),
-                                    SizedBox(width: 6),
-                                    Icon(
-                                      Icons.my_location,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'KUSUR',
+                                        style: TextStyle(
+                                          color: Colors.orange[800],
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 6),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange[100],
+                                            border: Border.all(
+                                              color: Colors.orange[300]!,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            '${kusurBilevski.toStringAsFixed(0)} RSD',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.orange[800],
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      // UKUPAN PAZAR
+                      Container(
+                        width: double.infinity,
+                        height: 70,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: Colors.green[300]!, width: 1.2),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.account_balance_wallet,
+                              color: Colors.green[700],
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              children: [
+                                Text(
+                                  isAdmin ? 'UKUPAN PAZAR' : 'MOJ UKUPAN PAZAR',
+                                  style: TextStyle(
+                                    color: Colors.green[800],
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                // 💰 UKUPAN PAZAR (BEZ DEPOZITA)
+                                Text(
+                                  '${(isAdmin ? ukupno : filteredPazar.values.fold(0.0, (sum, val) => sum + val)).toStringAsFixed(0)} RSD',
+                                  style: TextStyle(
+                                    color: Colors.green[900],
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 22,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // 🗺️ GPS ADMIN MAPA
+                      Container(
+                        width: double.infinity,
+                        height: 60,
+                        margin: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AdminMapScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  height: 60,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF00D4FF),
+                                        Color(0xFF0077BE)
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: const Color(0xFF0077BE),
+                                        width: 1.2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00D4FF)
+                                            .withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'MAPA',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6),
+                                      Icon(
+                                        Icons.my_location,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

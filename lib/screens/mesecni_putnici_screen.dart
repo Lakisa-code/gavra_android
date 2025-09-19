@@ -12,6 +12,7 @@ import '../services/mesecni_putnik_service.dart';
 import '../utils/mesecni_helpers.dart';
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
+import '../utils/logging.dart';
 
 class MesecniPutniciScreen extends StatefulWidget {
   const MesecniPutniciScreen({Key? key}) : super(key: key);
@@ -1052,23 +1053,29 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Postavi controller-e za vremena - koristi postojeće izmene
       const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
       for (final dan in dani) {
-        // Koristi izmenjene vrednosti iz _novaVremenaBC/_novaVremenaVS ako postoje
-        final trenutnaBC = _novaVremenaBC[dan] ?? '';
-        final trenutnaVS = _novaVremenaVS[dan] ?? '';
+        // Koristi izmenjene vrednosti iz _novaVremenaBC/_novaVremenaVS
+        // samo ako su stvarno unesene (ne prazne), da ne prebrisemo
+        // vrednosti koje smo prethodno učitali iz modela.
+        final novaBC = _novaVremenaBC[dan];
+        final novaVS = _novaVremenaVS[dan];
 
-        // Postavi controller samo ako nisu već postavljeni ili ako se vrednost promenila
-        if (_vremenaBcControllers[dan]?.text != trenutnaBC) {
-          _vremenaBcControllers[dan]?.text = trenutnaBC;
+        if (novaBC != null && novaBC.isNotEmpty) {
+          if (_vremenaBcControllers[dan]?.text != novaBC) {
+            _vremenaBcControllers[dan]?.text = novaBC;
+          }
         }
-        if (_vremenaVsControllers[dan]?.text != trenutnaVS) {
-          _vremenaVsControllers[dan]?.text = trenutnaVS;
+
+        if (novaVS != null && novaVS.isNotEmpty) {
+          if (_vremenaVsControllers[dan]?.text != novaVS) {
+            _vremenaVsControllers[dan]?.text = novaVS;
+          }
         }
       }
     });
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+    // Use a responsive approach: bottom sheet on small screens, dialog on larger
+    Widget dialogBuilder(BuildContext ctx) {
+      return AlertDialog(
         title: const Text('Uredi mesečnog putnika'),
         content: SingleChildScrollView(
           child: Column(
@@ -1076,8 +1083,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             children: [
               TextField(
                 onChanged: (value) => _novoIme = value,
-                textCapitalization:
-                    TextCapitalization.words, // 🔤 Prvo slovo veliko za ime
+                textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Ime putnika *',
                   border: OutlineInputBorder(),
@@ -1134,8 +1140,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 controller: _adresaVrsacController,
               ),
               const SizedBox(height: 16),
-
-              // ✅ DODANO - Radni dani sekcija
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1184,7 +1188,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           children: [
                             Expanded(
                                 child: _buildRadniDanCheckbox('pet', 'Petak')),
-                            const Expanded(child: SizedBox()), // Prazno mesto
+                            const Expanded(child: SizedBox()),
                           ],
                         ),
                       ],
@@ -1201,7 +1205,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              // Očisti mape izmena kada se otkaže
               setState(() {
                 _novaVremenaBC.clear();
                 _novaVremenaVS.clear();
@@ -1215,8 +1218,28 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             child: const Text('Sačuvaj'),
           ),
         ],
-      ),
-    );
+      );
+    }
+
+    final mq = MediaQuery.of(context);
+    if (mq.size.height < 700 || mq.size.width < 600) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (ctx) => Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: SingleChildScrollView(child: dialogBuilder(ctx)),
+        ),
+      );
+    } else {
+      showDialog(
+          context: context, builder: (context) => dialogBuilder(context));
+    }
   }
 
   Future<void> _sacuvajEditPutnika(MesecniPutnik originalPutnik) async {
@@ -1260,7 +1283,56 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         radniDani: _getRadniDaniString(),
         updatedAt: DateTime.now(),
       );
-      await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
+      // Log and await the update result so we can surface errors to the user
+      if (kDebugMode) {
+        final payload = editovanPutnik.toMap();
+        dlog('🛠️ [UI] Pozivam azurirajMesecnogPutnika sa payload: $payload');
+        // Show debug confirmation dialog so developer can inspect payload
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('DEBUG: Potvrdi payload'),
+            content: SingleChildScrollView(
+              child: Text(payload.toString()),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Otkaži')),
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Pošalji')),
+            ],
+          ),
+        );
+
+        if (confirm != true) {
+          // Developer cancelled - don't proceed
+          return;
+        }
+      }
+
+      // Debug: log payload right before sending to service (debug only)
+      if (kDebugMode) {
+        final payload = editovanPutnik.toMap();
+        dlog('🛡️ [UI DEBUG] Payload pre slanja: $payload');
+      }
+
+      final updated =
+          await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
+
+      if (updated == null) {
+        // Update failed - show error and don't pop the dialog so user can retry
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Greška pri ažuriranju u bazi. Pokušajte ponovo.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
@@ -2481,7 +2553,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         // Fallback na trenutni mesec
         return await _getMesecneStatistike(putnikId);
       } catch (e) {
-        debugPrint('❌ Greška pri dohvatanju statistika za period $period: $e');
+        dlog('❌ Greška pri dohvatanju statistika za period $period: $e');
         return {
           'putovanja': 0,
           'otkazivanja': 0,
@@ -2491,7 +2563,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         };
       }
     }).handleError((error) {
-      debugPrint('❌ Stream error za statistike: $error');
+      dlog('❌ Stream error za statistike: $error');
       return {
         'putovanja': 0,
         'otkazivanja': 0,
@@ -2728,7 +2800,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             : null,
       };
     } catch (e) {
-      debugPrint('❌ Greška pri dohvatanju statistika za $mesec/$godina: $e');
+      dlog('❌ Greška pri dohvatanju statistika za $mesec/$godina: $e');
       return {
         'putovanja': 0,
         'otkazivanja': 0,
@@ -2979,7 +3051,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             : null,
       };
     } catch (e) {
-      debugPrint('❌ Greška pri dohvatanju mesečnih statistika: $e');
+      dlog('❌ Greška pri dohvatanju mesečnih statistika: $e');
       return {
         'putovanja': 0,
         'otkazivanja': 0,
@@ -3061,10 +3133,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // ⏰ BUILDER ZA VREMENA POLASKA PO DANIMA
   Widget _buildVremenaPolaskaSekcija() {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.orange.shade300),
-        borderRadius: BorderRadius.circular(6),
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3073,29 +3146,28 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.schedule, size: 16, color: Colors.orange.shade700),
-              const SizedBox(width: 4),
+              Icon(Icons.schedule, size: 18, color: Colors.orange.shade800),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Vremena polaska po danima',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
-                    fontSize: 13,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.orange.shade800,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             'Unesite vremena polaska za svaki radni dan:',
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontSize: 10,
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.grey[700], fontSize: 12),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           // Dinamički prikaz samo za označene dane
           ..._noviRadniDani.entries
               .where((entry) => entry.value) // Samo označeni dani
@@ -3188,13 +3260,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           // Dan nazad
           Text(
             daniMapa[danKod] ?? danKod,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600, color: Colors.grey[700]),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 6),
           // Vremena u kompaktnom redu
           IntrinsicHeight(
             child: Row(
@@ -3206,19 +3275,23 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     width: double.infinity,
                     child: TextFormField(
                       controller: _getControllerBelaCrkva(danKod),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'BC',
                         hintText: '05:00',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                        labelStyle: TextStyle(fontSize: 9),
-                        hintStyle: TextStyle(fontSize: 10),
                         isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 10),
+                        labelStyle: const TextStyle(fontSize: 12),
+                        hintStyle:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      style: const TextStyle(fontSize: 11),
+                      style: const TextStyle(fontSize: 14, height: 1.1),
                     ),
                   ),
                 ),
@@ -3229,19 +3302,23 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     width: double.infinity,
                     child: TextFormField(
                       controller: _getControllerVrsac(danKod),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'VS',
                         hintText: '05:30',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                        labelStyle: TextStyle(fontSize: 9),
-                        hintStyle: TextStyle(fontSize: 10),
                         isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: Colors.grey.shade300, width: 1)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 10),
+                        labelStyle: const TextStyle(fontSize: 12),
+                        hintStyle:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      style: const TextStyle(fontSize: 11),
+                      style: const TextStyle(fontSize: 14, height: 1.1),
                     ),
                   ),
                 ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/mesecni_putnik.dart';
 import '../services/putnik_service.dart';
+// foundation import not needed; using centralized logger
+import '../utils/logging.dart';
 
 class MesecniPutnikDetaljiScreen extends StatefulWidget {
   final MesecniPutnik putnik;
@@ -48,7 +50,7 @@ class _MesecniPutnikDetaljiScreenState
         widget.putnik.putnikIme,
       );
     } catch (e) {
-      debugPrint('Greška pri učitavanju detalja: $e');
+      dlog('Greška pri učitavanju detalja: $e');
     } finally {
       setState(() => _loading = false);
     }

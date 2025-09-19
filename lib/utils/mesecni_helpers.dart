@@ -113,15 +113,15 @@ class MesecniHelpers {
     // - polazak_bc_pon_time / polazak_vs_pon_time (some exports)
     final candidates = <String>[
       // canonical per-day columns
-      'polazak_' + place + '_' + dayKratica,
-      'polazak_' + place + '_' + dayKratica + '_time',
+      'polazak_${place}_$dayKratica',
+      'polazak_${place}_${dayKratica}_time',
       // alternative export variants
-      place + '_polazak_' + dayKratica,
-      place + '_' + dayKratica + '_polazak',
-      place + '_' + dayKratica + '_polazak',
-      place + '_' + dayKratica + '_time',
-      'polazak_' + dayKratica + '_' + place,
-      'polazak_' + dayKratica + '_' + place + '_time',
+      '${place}_polazak_$dayKratica',
+      '${place}_${dayKratica}_polazak',
+      '${place}_${dayKratica}_polazak',
+      '${place}_${dayKratica}_time',
+      'polazak_${dayKratica}_$place',
+      'polazak_${dayKratica}_${place}_time',
     ];
 
     for (final col in candidates) {
@@ -215,5 +215,84 @@ class MesecniHelpers {
     if (cena != null && cena > 0) return true;
 
     return false;
+  }
+
+  // Build a simple statistics map from known fields.
+  // Example keys: trips_total, trips_cancelled, last_trip_at
+  static Map<String, dynamic> buildStatistics(Map<String, dynamic>? m) {
+    if (m == null) return <String, dynamic>{};
+    final out = <String, dynamic>{};
+    try {
+      final trips = m['broj_putovanja'] ?? m['brojPutovanja'] ?? 0;
+      final cancelled = m['broj_otkazivanja'] ?? m['brojOtkazivanja'] ?? 0;
+      final last = m['poslednje_putovanje'] ?? m['poslednjePutovanje'];
+      out['trips_total'] =
+          (trips is num) ? trips : int.tryParse(trips?.toString() ?? '0') ?? 0;
+      out['trips_cancelled'] = (cancelled is num)
+          ? cancelled
+          : int.tryParse(cancelled?.toString() ?? '0') ?? 0;
+      if (last != null) out['last_trip_at'] = last.toString();
+    } catch (_) {
+      // swallow parse errors and return minimal map
+    }
+    return out;
+  }
+
+  // Normalize polasci map into canonical structure for sending to DB.
+  // Accepts either Map or JSON string; returns Map<String, Map<String,String?>>
+  static Map<String, Map<String, String?>> normalizePolasciForSend(
+      dynamic raw) {
+    // Support client-side shape Map<String, List<String>> (e.g. {'pon': ['6:00 BC','14:00 VS']})
+    if (raw is Map) {
+      final hasListValues = raw.values.any((v) => v is List);
+      if (hasListValues) {
+        final temp = <String, Map<String, String?>>{};
+        raw.forEach((key, val) {
+          if (val is List) {
+            String? bc;
+            String? vs;
+            for (final entry in val) {
+              if (entry == null) continue;
+              final s = entry.toString().trim();
+              if (s.isEmpty) continue;
+              final parts = s.split(RegExp(r"\s+"));
+              final valPart = parts[0];
+              final suffix = parts.length > 1 ? parts[1].toLowerCase() : '';
+              if (suffix.startsWith('bc')) {
+                bc = normalizeTime(valPart) ?? valPart;
+              } else if (suffix.startsWith('vs')) {
+                vs = normalizeTime(valPart) ?? valPart;
+              } else {
+                bc = normalizeTime(valPart) ?? valPart;
+              }
+            }
+            if ((bc != null && bc.isNotEmpty) ||
+                (vs != null && vs.isNotEmpty)) {
+              temp[key.toString()] = {'bc': bc, 'vs': vs};
+            }
+          }
+        });
+        final days = ['pon', 'uto', 'sre', 'cet', 'pet'];
+        final out = <String, Map<String, String?>>{};
+        for (final d in days) {
+          if (temp.containsKey(d)) out[d] = temp[d]!;
+        }
+        return out;
+      }
+    }
+
+    final parsed = parsePolasciPoDanu(raw);
+    final days = ['pon', 'uto', 'sre', 'cet', 'pet'];
+    final out = <String, Map<String, String?>>{};
+    for (final d in days) {
+      final p = parsed[d];
+      if (p == null) continue;
+      final bc = p['bc'];
+      final vs = p['vs'];
+      if ((bc != null && bc.isNotEmpty) || (vs != null && vs.isNotEmpty)) {
+        out[d] = {'bc': bc, 'vs': vs};
+      }
+    }
+    return out;
   }
 }

@@ -1,5 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+
+// Local debug helper: prints only in debug mode
+import '../utils/logging.dart';
 
 /// 🎯 JEDINSTVENA VIKEND LOGIKA ZA SVE SCREEN-OVE
 ///
@@ -26,12 +28,12 @@ class DateUtils {
       final daysUntilMonday = 8 - today.weekday;
       final targetDate = today.add(Duration(days: daysUntilMonday));
 
-      debugPrint(
+      dlog(
           '🎯 [WEEKEND TARGET] Vikend - ciljan datum: ${DateFormat('dd.MM.yyyy').format(targetDate)}');
       return targetDate;
     } else {
       // Radni dan: koristi današnji datum
-      debugPrint(
+      dlog(
           '🎯 [WEEKDAY TARGET] Radni dan - ciljan datum: ${DateFormat('dd.MM.yyyy').format(today)}');
       return today;
     }
@@ -81,12 +83,12 @@ class DateUtils {
 
     // Ako je vikend (subota/nedelja), vraćamo ponedeljak
     if (isWeekend(today)) {
-      debugPrint('🎯 [ADMIN DROPDOWN] Vikend - vraćam Ponedeljak');
+      dlog('🎯 [ADMIN DROPDOWN] Vikend - vraćam Ponedeljak');
       return 'Ponedeljak';
     }
 
     final todayName = dayNames[today.weekday - 1];
-    debugPrint('🎯 [ADMIN DROPDOWN] Radni dan - vraćam $todayName');
+    dlog('🎯 [ADMIN DROPDOWN] Radni dan - vraćam $todayName');
     return todayName;
   }
 

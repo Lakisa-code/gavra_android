@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// foundation import removed; material.dart includes kDebugMode
 
 import '../main.dart' show globalThemeToggler; // Za theme toggle
 import '../models/putnik.dart';
@@ -26,10 +27,13 @@ import '../widgets/autocomplete_ime_field.dart';
 // import '../widgets/supabase_analysis_widget.dart'; // REMOVED - file not found
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
+import '../utils/logging.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
 import 'welcome_screen.dart';
+
+// Using centralized debug logger from utils
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -137,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ✅ CUSTOM STREAM - Koristi target datum umesto trenutnog
   Stream<List<Putnik>> _streamKombinovaniPutniciZaTargetDatum() {
-    debugPrint('🎯 [CUSTOM STREAM] Konvertujem MesecniPutnik u Putnik!');
+    dlog('🎯 [CUSTOM STREAM] Konvertujem MesecniPutnik u Putnik!');
 
     return Stream.fromFuture(() async {
       try {
@@ -187,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // Combine and return
         return <Putnik>[...mesecniPutniciAsPutnik, ...dnevniPutnici];
       } catch (e) {
-        debugPrint('❌ Greška pri učitavanju putnika: $e');
+        dlog('❌ Greška pri učitavanju putnika: $e');
         return <Putnik>[];
       }
     }());
@@ -279,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
 
     // Debug log za praćenje driver initialization
-    debugPrint('🔍 DEBUG: Current driver initialized: $_currentDriver');
+    dlog('🔍 DEBUG: Current driver initialized: $_currentDriver');
   }
 
   Future<void> _initializeRealtimeService() async {
@@ -297,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _realtimeSubscription = supabase
         .from('putovanja_istorija')
         .stream(primaryKey: ['id']).listen((data) {
-      debugPrint('🔄 Real-time update detected in putovanja_istorija');
+      dlog('🔄 Real-time update detected in putovanja_istorija');
       // Stream će automatski ažurirati StreamBuilder u build() metodi
     });
 
@@ -305,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _mesecniSubscription = supabase
         .from('mesecni_putnici')
         .stream(primaryKey: ['id']).listen((data) {
-      debugPrint('🔄 Real-time update detected in mesecni_putnici');
+      dlog('🔄 Real-time update detected in mesecni_putnici');
       // Stream će automatski ažurirati StreamBuilder u build() metodi
     });
   }
@@ -347,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return await _putnikService.getAllPutniciFromBothTables(
           targetDay: _selectedDay);
     } catch (e) {
-      debugPrint('🔥 Greška pri učitavanju putnika: $e');
+      dlog('🔥 Greška pri učitavanju putnika: $e');
       return [];
     }
   }
@@ -818,11 +822,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           _isAddingPutnik = true;
                         });
 
-                        debugPrint(
-                            '🔥 [HOME SCREEN] Kreiram putnik objekat...');
+                        dlog('🔥 [HOME SCREEN] Kreiram putnik objekat...');
 
                         // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
-                        debugPrint(
+                        dlog(
                             '🕐 [HOME SCREEN] Koristi selektovano vreme: $_selectedVreme');
 
                         final putnik = Putnik(
@@ -838,28 +841,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               : adresaController.text.trim(),
                         );
 
-                        debugPrint('🔥 [HOME SCREEN] Pozivam dodajPutnika...');
+                        dlog('🔥 [HOME SCREEN] Pozivam dodajPutnika...');
                         await _putnikService.dodajPutnika(putnik);
-                        debugPrint(
-                            '🔥 [HOME SCREEN] dodajPutnika završen, refreshujem listu...');
-
-                        debugPrint(
+                        dlog(
                             '🔥 [HOME SCREEN] dodajPutnika završen, refreshujem listu...');
 
                         // ✅ FORSIRANA REFRESH LISTE
                         await _loadPutnici();
-                        debugPrint(
-                            '🔥 [HOME SCREEN] Lista putnika refreshovana');
+                        dlog('🔥 [HOME SCREEN] Lista putnika refreshovana');
 
                         if (!mounted) return;
 
                         setState(() {
                           _isAddingPutnik = false;
                         });
-                        debugPrint('🔥 [HOME SCREEN] Loading state isključen');
+                        dlog('🔥 [HOME SCREEN] Loading state isključen');
 
                         if (mounted) {
-                          debugPrint('🔥 [HOME SCREEN] Zatvarám dialog...');
+                          dlog('🔥 [HOME SCREEN] Zatvarám dialog...');
                           // ignore: use_build_context_synchronously
                           Navigator.pop(context);
                           // ignore: use_build_context_synchronously
@@ -870,11 +869,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               duration: Duration(seconds: 2),
                             ),
                           );
-                          debugPrint(
-                              '🔥 [HOME SCREEN] SUCCESS snackbar prikazan');
+                          dlog('🔥 [HOME SCREEN] SUCCESS snackbar prikazan');
                         }
                       } catch (e) {
-                        debugPrint(
+                        dlog(
                             '💥 [HOME SCREEN] GREŠKA pri dodavanju putnika: $e');
                         setState(() {
                           _isAddingPutnik = false;
@@ -1051,9 +1049,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final allPutnici = snapshot.data ?? [];
 
         // Debug log za praćenje broja putnika
-        debugPrint(
+        dlog(
             '🔍 DEBUG: HomeScreen build() - ukupno putnika: ${allPutnici.length}');
-        debugPrint(
+        dlog(
             '📊 [HOME SCREEN] Filter: $_selectedDay, $_selectedVreme, $_selectedGrad'); // ✅ KORISTI SELEKTOVANI DAN
 
         // --- NOVO: Priprema broja putnika po slotu (vreme) za bottom nav bar ---
@@ -1103,7 +1101,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               odgovarajuciGrad &&
               normalizedStatus != 'obrisan';
           if (prikazi) {
-            debugPrint('✅ PUTNIK PRIKAZAN: ${putnik.ime}');
+            dlog('✅ PUTNIK PRIKAZAN: ${putnik.ime}');
           }
           return prikazi;
         }).toList();
@@ -1117,12 +1115,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
         // 🔍 DEBUG: Koliko putnika prolazi glavni filter
-        debugPrint(
+        dlog(
             '🔍 DEBUG: Nakon glavnog filtra - sviPutnici.length: ${sviPutnici.length}');
         if (sviPutnici.isNotEmpty) {
-          debugPrint('🔍 DEBUG: Putnici koji su prošli filter:');
+          dlog('🔍 DEBUG: Putnici koji su prošli filter:');
           for (final p in sviPutnici) {
-            debugPrint('  - ${p.ime} (status: ${p.status})');
+            dlog('  - ${p.ime} (status: ${p.status})');
           }
         }
 
@@ -1176,11 +1174,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
 
         // 🔍 DEBUG: Koliko putnika je nakon sortiranja
-        debugPrint(
+        dlog(
             '🔍 DEBUG: Nakon sortiranja - putniciZaPrikaz.length: ${putniciZaPrikaz.length}');
-        debugPrint('🔍 DEBUG: sviPutnici.length: ${sviPutnici.length}');
+        dlog('🔍 DEBUG: sviPutnici.length: ${sviPutnici.length}');
         if (putniciZaPrikaz.isNotEmpty) {
-          debugPrint('🔍 DEBUG: Prvi putnik: ${putniciZaPrikaz.first.ime}');
+          dlog('🔍 DEBUG: Prvi putnik: ${putniciZaPrikaz.first.ime}');
         }
 
         // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
@@ -1631,7 +1629,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
               // 🔄 REFRESH putnika kada se promeni vreme polaska
               // setState() će automatski reload-ovati StreamBuilder sa novom logikom
-              debugPrint(
+              dlog(
                   '🔄 VREME POLASKA PROMENJENO: $grad $vreme - StreamBuilder će se ažurirati nakon resetovanja pokupljanja');
             },
           ),

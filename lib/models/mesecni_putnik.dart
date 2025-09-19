@@ -37,6 +37,8 @@ class MesecniPutnik {
       vozac; // jedan vozač za sve akcije (dodao, pokupil, naplatio, otkazao)
   final bool pokupljen; // da li je pokupljen
   final DateTime? vremePokupljenja; // kada je pokupljen
+  final Map<String, dynamic>
+      statistics; // fleksibilne metrike i statistika (jsonb)
 
   // No legacy single-time helpers; canonical data is in `polasciPoDanu` (map day -> list)
 
@@ -71,34 +73,22 @@ class MesecniPutnik {
     this.vozac,
     this.pokupljen = false,
     this.vremePokupljenja,
+    this.statistics = const {},
   });
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
-    // Backward kompatibilnost: koristi helpers da parsira polasci_po_danu ili per-day kolone
+    // Expect canonical `polasci_po_danu` JSON structure from DB
     Map<String, List<String>> polasciPoDanu = {};
-    // Try to use unified parser which normalizes times
     final parsed = MesecniHelpers.parsePolasciPoDanu(map['polasci_po_danu']);
-    if (parsed.isNotEmpty) {
-      parsed.forEach((day, inner) {
-        final List<String> list = [];
-        final bc = inner['bc'];
-        final vs = inner['vs'];
-        if (bc != null && bc.isNotEmpty) list.add('$bc BC');
-        if (vs != null && vs.isNotEmpty) list.add('$vs VS');
-        if (list.isNotEmpty) polasciPoDanu[day] = list;
-      });
-    } else {
-      // Fallback: check per-day columns via helper getPolazakForDay
-      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final List<String> polasci = [];
-        final bc = MesecniHelpers.getPolazakForDay(map, dan, 'bc');
-        final vs = MesecniHelpers.getPolazakForDay(map, dan, 'vs');
-        if (bc != null && bc.isNotEmpty) polasci.add('$bc BC');
-        if (vs != null && vs.isNotEmpty) polasci.add('$vs VS');
-        if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
-      }
-    }
+    parsed.forEach((day, inner) {
+      final List<String> list = [];
+      final bc = inner['bc'];
+      final vs = inner['vs'];
+      if (bc != null && bc.isNotEmpty) list.add('$bc BC');
+      if (vs != null && vs.isNotEmpty) list.add('$vs VS');
+      if (list.isNotEmpty) polasciPoDanu[day] = list;
+    });
     return MesecniPutnik(
       id: map['id'] as String,
       putnikIme: map['putnik_ime'] as String,
@@ -133,35 +123,17 @@ class MesecniPutnik {
       vozac: map['naplata_vozac'] as String?,
       pokupljen: false,
       vremePokupljenja: null,
+      statistics: (map['statistics'] != null && map['statistics'] is Map)
+          ? Map<String, dynamic>.from(map['statistics'] as Map)
+          : <String, dynamic>{},
     );
   }
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {
-    // Normalize polasci_po_danu into canonical form expected by parser:
-    // { 'pon': { 'bc': '6:00', 'vs': '14:00' }, ... }
-    final Map<String, dynamic> polasciPoDanuForDb = {};
-    polasciPoDanu.forEach((day, list) {
-      if (list.isEmpty) return;
-      final Map<String, String?> inner = {};
-      for (final entry in list) {
-        final s = entry.toString();
-        // Expect formats like '6 BC' or '6:00 BC' or '14 VS'
-        final parts = s.split(RegExp(r"\s+"));
-        if (parts.isEmpty) continue;
-        final val = parts[0];
-        final suffix = parts.length > 1 ? parts[1].toLowerCase() : '';
-        if (suffix.startsWith('bc')) {
-          inner['bc'] = val;
-        } else if (suffix.startsWith('vs')) {
-          inner['vs'] = val;
-        } else {
-          // Fallback: try to infer by time (hours < 12 -> bc?) - keep as bc by default
-          inner['bc'] = val;
-        }
-      }
-      if (inner.isNotEmpty) polasciPoDanuForDb[day] = inner;
-    });
+    // Normalize polasci_po_danu into canonical form expected by parser.
+    final polasciPoDanuForDb =
+        MesecniHelpers.normalizePolasciForSend(polasciPoDanu);
 
     final map = <String, dynamic>{
       'putnik_ime': putnikIme,
@@ -189,6 +161,14 @@ class MesecniPutnik {
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'vozac': vozac,
+      // Ensure statistics is populated: if empty, try to build from known fields
+      'statistics': (statistics.isNotEmpty)
+          ? statistics
+          : MesecniHelpers.buildStatistics({
+              'broj_putovanja': brojPutovanja,
+              'broj_otkazivanja': brojOtkazivanja,
+              'poslednje_putovanje': poslednjiPutovanje?.toIso8601String(),
+            }),
     };
     if (id.isNotEmpty) {
       map['id'] = id;

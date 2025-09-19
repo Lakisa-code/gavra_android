@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/putnik.dart';
 import '../widgets/putnik_list.dart';
 import '../services/putnik_service.dart';
@@ -81,14 +82,18 @@ class _DugoviScreenState extends State<DugoviScreen> {
           final danasString =
               "${danas.day.toString().padLeft(2, '0')}.${danas.month.toString().padLeft(2, '0')}.${danas.year}";
 
-          debugPrint('🔍 DUGOVI DEBUG: Tražim dužnike za datum: $danasString');
-          debugPrint(
+          void debugLog(Object? message) {
+            if (kDebugMode) debugPrint(message?.toString());
+          }
+
+          debugLog('🔍 DUGOVI DEBUG: Tražim dužnike za datum: $danasString');
+          debugLog(
               '🔍 DUGOVI DEBUG: Ukupno putnika u stream-u: ${snapshot.data!.length}');
 
           // Ispišimo sve putnike za debug
           for (final p in snapshot.data!) {
             if (p.ime.contains('TESTDODAO') || p.ime.contains('KURAPAL')) {
-              debugPrint(
+              debugLog(
                   '🔍 DUGOVI DEBUG: ${p.ime} - dan: "${p.dan}", jePokupljen: ${p.jePokupljen}, iznosPlacanja: ${p.iznosPlacanja}, mesecnaKarta: ${p.mesecnaKarta}, status: "${p.status}"');
             }
           }
@@ -116,9 +121,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
             return bTime.compareTo(aTime); // najnoviji prvo
           });
-          debugPrint('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
+          debugLog('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
           for (final d in duznici) {
-            debugPrint('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
+            debugLog('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
           }
           if (duznici.isEmpty) {
             return const Center(

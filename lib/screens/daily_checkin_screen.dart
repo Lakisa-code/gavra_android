@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// foundation import not needed; material.dart provides kDebugMode
 import '../services/daily_checkin_service.dart';
 import '../utils/vozac_boja.dart';
+import '../utils/logging.dart';
 
 class DailyCheckInScreen extends StatefulWidget {
   final String vozac;
@@ -394,7 +396,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
       // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
       if (yesterday.weekday == 6 || yesterday.weekday == 7) {
-        debugPrint(
+        dlog(
             '🚫 Preskačem automatski popis za vikend (${yesterday.weekday == 6 ? "Subota" : "Nedelja"})');
         return;
       }
@@ -418,7 +420,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         }
       }
     } catch (e) {
-      debugPrint('Greška pri proveri prethodnog popisa: $e');
+      dlog('Greška pri proveri prethodnog popisa: $e');
     }
   }
 

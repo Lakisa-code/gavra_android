@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import '../utils/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,6 +8,8 @@ import '../models/mesecni_putnik.dart';
 import 'putnik_service.dart';
 import 'mesecni_putnik_service.dart';
 import 'statistika_service.dart';
+
+// Use centralized logger via dlog directly
 
 /// 🔄 CENTRALIZOVANI REAL-TIME STATISTIKA SERVIS
 /// Rešava probleme sa duplikovanim stream-ovima i cache-om
@@ -27,7 +29,7 @@ class RealTimeStatistikaService {
   /// 🔄 GLAVNI KOMBINOVANI STREAM - koristi se svugde
   Stream<List<dynamic>> get kombinovaniPutniciStream {
     if (_kombinovaniStream == null) {
-      debugPrint('🆕 KREIRANJE NOVOG KOMBINOVANOG STREAM-A');
+      dlog('🆕 KREIRANJE NOVOG KOMBINOVANOG STREAM-A');
 
       _kombinovaniStream = CombineLatestStream.combine2(
         PutnikService()
@@ -55,7 +57,7 @@ class RealTimeStatistikaService {
         'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
-      debugPrint('🆕 KREIRANJE PAZAR STREAM-A: $cacheKey');
+      dlog('🆕 KREIRANJE PAZAR STREAM-A: $cacheKey');
 
       _streamCache[cacheKey] = kombinovaniPutniciStream
           .map((data) {
@@ -89,7 +91,7 @@ class RealTimeStatistikaService {
         'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
-      debugPrint('🆕 KREIRANJE DETALJNE STATISTIKE STREAM-A: $cacheKey');
+      dlog('🆕 KREIRANJE DETALJNE STATISTIKE STREAM-A: $cacheKey');
 
       _streamCache[cacheKey] = kombinovaniPutniciStream
           .map((data) {
@@ -115,7 +117,7 @@ class RealTimeStatistikaService {
     final cacheKey = 'putnik_$putnikId';
 
     if (!_streamCache.containsKey(cacheKey)) {
-      debugPrint('🆕 KREIRANJE PUTNIK STATISTIKE STREAM-A: $putnikId');
+      dlog('🆕 KREIRANJE PUTNIK STATISTIKE STREAM-A: $putnikId');
 
       // Kombinuj putovanja_istorija stream sa osnovnim podatcima
       _streamCache[cacheKey] = Supabase.instance.client
@@ -135,7 +137,7 @@ class RealTimeStatistikaService {
 
   /// 🧹 OČISTI CACHE
   void clearCache() {
-    debugPrint('🧹 BRISANJE REAL-TIME STATISTIKA CACHE-A');
+    dlog('🧹 BRISANJE REAL-TIME STATISTIKA CACHE-A');
     _streamCache.clear();
     _kombinovaniStream = null;
   }
@@ -180,7 +182,7 @@ class RealTimeStatistikaService {
             putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
       };
     } catch (e) {
-      debugPrint('❌ Greška pri računanju statistika za putnika $putnikId: $e');
+      dlog('❌ Greška pri računanju statistika za putnika $putnikId: $e');
       return {
         'ukupnoPutovanja': 0,
         'otkazi': 0,

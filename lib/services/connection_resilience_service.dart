@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/logging.dart';
 
 /// 🌐 CONNECTION RESILIENCE SERVICE
 /// Automatski reconnect, network monitoring, fallback strategije (FIXED VERSION)
 class ConnectionResilienceService {
   static final _supabase = Supabase.instance.client;
+
+  // Use centralized debug logger
 
   // Stream kontroleri
   static final StreamController<bool> _connectionStateController =
@@ -40,7 +42,7 @@ class ConnectionResilienceService {
 
   /// 🚀 INICIJALIZACIJA SERVISA
   static Future<void> initialize() async {
-    debugPrint('🌐 [CONNECTION RESILIENCE] Inicijalizujem servis...');
+    dlog('🌐 [CONNECTION RESILIENCE] Inicijalizujem servis...');
 
     // Proveri početno stanje konekcije
     await _checkInitialConnectivity();
@@ -51,7 +53,7 @@ class ConnectionResilienceService {
     // Pokreni health check
     _startHealthCheck();
 
-    debugPrint('✅ [CONNECTION RESILIENCE] Servis inicijalizovan');
+    dlog('✅ [CONNECTION RESILIENCE] Servis inicijalizovan');
   }
 
   /// 📡 PROVERA POČETNE KONEKCIJE
@@ -64,7 +66,7 @@ class ConnectionResilienceService {
         await _checkSupabaseConnection();
       }
     } catch (e) {
-      debugPrint('❌ [CONNECTION RESILIENCE] Greška provere konekcije: $e');
+      dlog('❌ [CONNECTION RESILIENCE] Greška provere konekcije: $e');
       _updateConnectionState(false);
     }
   }
@@ -75,7 +77,7 @@ class ConnectionResilienceService {
       final result = await InternetAddress.lookup('google.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
-      debugPrint('❌ [CONNECTION RESILIENCE] Network check failed: $e');
+      dlog('❌ [CONNECTION RESILIENCE] Network check failed: $e');
       return false;
     }
   }
@@ -87,7 +89,7 @@ class ConnectionResilienceService {
       final isConnected = await _checkNetworkConnection();
 
       if (wasOnline != isConnected) {
-        debugPrint(
+        dlog(
             '🔄 [CONNECTION RESILIENCE] Network status changed: ${isConnected ? "ONLINE" : "OFFLINE"}');
 
         _updateConnectionState(isConnected);
@@ -120,11 +122,11 @@ class ConnectionResilienceService {
           .timeout(const Duration(seconds: 10));
 
       if (!_isSupabaseConnected) {
-        debugPrint('✅ [CONNECTION RESILIENCE] Supabase reconnected!');
+        dlog('✅ [CONNECTION RESILIENCE] Supabase reconnected!');
         _updateSupabaseState(true);
       }
     } catch (e) {
-      debugPrint('❌ [CONNECTION RESILIENCE] Supabase check failed: $e');
+      dlog('❌ [CONNECTION RESILIENCE] Supabase check failed: $e');
       _updateSupabaseState(false);
 
       if (_isOnline) {
@@ -136,31 +138,31 @@ class ConnectionResilienceService {
 
   /// 🔄 POKUŠAJ SUPABASE RECONNECT
   static Future<void> _attemptSupabaseReconnect() async {
-    debugPrint('🔄 [CONNECTION RESILIENCE] Pokušavam Supabase reconnect...');
+    dlog('🔄 [CONNECTION RESILIENCE] Pokušavam Supabase reconnect...');
 
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
         await _checkSupabaseConnection();
 
         if (_isSupabaseConnected) {
-          debugPrint(
+          dlog(
               '✅ [CONNECTION RESILIENCE] Reconnect uspešan nakon $attempt pokušaja');
           return;
         }
       } catch (e) {
-        debugPrint(
+        dlog(
             '❌ [CONNECTION RESILIENCE] Reconnect pokušaj $attempt/$_maxRetries failed: $e');
       }
 
       if (attempt < _maxRetries) {
         final delay = _baseRetryDelay * attempt;
-        debugPrint(
+        dlog(
             '⏳ [CONNECTION RESILIENCE] Čekam ${delay.inSeconds}s pre sledećeg pokušaja...');
         await Future.delayed(delay);
       }
     }
 
-    debugPrint('💥 [CONNECTION RESILIENCE] Svi reconnect pokušaji neuspešni');
+    dlog('💥 [CONNECTION RESILIENCE] Svi reconnect pokušaji neuspešni');
   }
 
   /// ⏰ ZAKAŽI SUPABASE RECONNECT
@@ -180,7 +182,7 @@ class ConnectionResilienceService {
       final status = isConnected ? 'Online' : 'Offline';
       _connectionStatusController.add(status);
 
-      debugPrint('🌐 [CONNECTION RESILIENCE] Network: $status');
+      dlog('🌐 [CONNECTION RESILIENCE] Network: $status');
     }
   }
 
@@ -193,19 +195,19 @@ class ConnectionResilienceService {
           isConnected ? 'Supabase Connected' : 'Supabase Disconnected';
       _connectionStatusController.add(status);
 
-      debugPrint('🗄️ [CONNECTION RESILIENCE] Supabase: $status');
+      dlog('🗄️ [CONNECTION RESILIENCE] Supabase: $status');
     }
   }
 
   /// 🧪 FORSIRAJ RECONNECT TEST
   static Future<void> forceReconnectTest() async {
-    debugPrint('🧪 [CONNECTION RESILIENCE] Force reconnect test...');
+    dlog('🧪 [CONNECTION RESILIENCE] Force reconnect test...');
     await _attemptSupabaseReconnect();
   }
 
   /// 🔄 MANUAL REFRESH KONEKCIJE
   static Future<bool> refreshConnection() async {
-    debugPrint('🔄 [CONNECTION RESILIENCE] Manual refresh...');
+    dlog('🔄 [CONNECTION RESILIENCE] Manual refresh...');
 
     await _checkInitialConnectivity();
     return isFullyConnected;
@@ -213,7 +215,7 @@ class ConnectionResilienceService {
 
   /// 🧹 CLEANUP
   static void dispose() {
-    debugPrint('🧹 [CONNECTION RESILIENCE] Cleanup...');
+    dlog('🧹 [CONNECTION RESILIENCE] Cleanup...');
 
     _reconnectTimer?.cancel();
     _healthCheckTimer?.cancel();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // DODANO za kDebugMode
+import 'package:flutter/foundation.dart';
+import '../utils/logging.dart';
 import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreetMap
@@ -26,6 +27,8 @@ import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import 'dugovi_screen.dart';
 import '../services/local_notification_service.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
+
+// Using centralized logger
 
 class DanasScreen extends StatefulWidget {
   final String? highlightPutnikIme;
@@ -121,7 +124,7 @@ class _DanasScreenState extends State<DanasScreen> {
         'ostalo': ostalo, // 10 - ostalo da se vrati
       };
     } catch (e) {
-      debugPrint('❌ Greška pri računanju đačkih statistika: $e');
+      dlog('❌ Greška pri računanju đačkih statistika: $e');
       return {
         'ukupno': 0,
         'povratak': 0,
@@ -640,40 +643,40 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
   Future<void> _showPopisDana() async {
-    debugPrint('🔥 [POPIS] 1. Početak _showPopisDana funkcije');
+    dlog('🔥 [POPIS] 1. Početak _showPopisDana funkcije');
     final vozac = _currentDriver ?? 'Nepoznat';
-    debugPrint('🔥 [POPIS] 2. Vozač: $vozac');
+    dlog('🔥 [POPIS] 2. Vozač: $vozac');
 
     try {
       // 1. OSNOVNI PODACI
       final today = DateTime.now();
       final dayStart = DateTime(today.year, today.month, today.day);
       final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-      debugPrint('🔥 [POPIS] 3. Datum postavljen: ${dayStart.toString()}');
+      dlog('🔥 [POPIS] 3. Datum postavljen: ${dayStart.toString()}');
 
       // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
-      debugPrint('🔥 [POPIS] 4. Učitavam putnike...');
+      dlog('🔥 [POPIS] 4. Učitavam putnike...');
       late List<Putnik> putnici;
       try {
         final stream = PutnikService().streamKombinovaniPutnici();
         putnici = await stream.first.timeout(const Duration(seconds: 10));
-        debugPrint('🔥 [POPIS] 5. Putnici učitani: ${putnici.length}');
+        dlog('🔥 [POPIS] 5. Putnici učitani: ${putnici.length}');
       } catch (e) {
-        debugPrint('🔥 [POPIS] 5.ERROR: Greška pri učitavanju putnika: $e');
+        dlog('🔥 [POPIS] 5.ERROR: Greška pri učitavanju putnika: $e');
         putnici = []; // Prazan list kao fallback
-        debugPrint('🔥 [POPIS] 5.FALLBACK: Koristim prazan list putnika');
+        dlog('🔥 [POPIS] 5.FALLBACK: Koristim prazan list putnika');
       }
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      debugPrint('🔥 [POPIS] 6. Računam detaljne statistike...');
+      dlog('🔥 [POPIS] 6. Računam detaljne statistike...');
       final detaljneStats =
           await StatistikaService.detaljneStatistikePoVozacima(
               putnici, dayStart, dayEnd);
       final vozacStats = detaljneStats[vozac] ?? {};
-      debugPrint('🔥 [POPIS] 7. Statistike računate: $vozacStats');
+      dlog('🔥 [POPIS] 7. Statistike računate: $vozacStats');
 
       // 4. REALTIME PAZAR STREAM
-      debugPrint('🔥 [POPIS] 8. Računam pazar stream...');
+      dlog('🔥 [POPIS] 8. Računam pazar stream...');
       late double ukupanPazar;
       try {
         ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
@@ -681,46 +684,45 @@ class _DanasScreenState extends State<DanasScreen> {
             .map((pazarMap) => pazarMap[vozac] ?? 0.0)
             .first
             .timeout(const Duration(seconds: 10));
-        debugPrint('🔥 [POPIS] 9. Ukupan pazar: $ukupanPazar');
+        dlog('🔥 [POPIS] 9. Ukupan pazar: $ukupanPazar');
       } catch (e) {
-        debugPrint('🔥 [POPIS] 9.ERROR: Greška pri učitavanju pazara: $e');
+        dlog('🔥 [POPIS] 9.ERROR: Greška pri učitavanju pazara: $e');
         ukupanPazar = 0.0; // Fallback vrednost
-        debugPrint('🔥 [POPIS] 9.FALLBACK: Koristim pazar = 0.0');
+        dlog('🔥 [POPIS] 9.FALLBACK: Koristim pazar = 0.0');
       }
 
       // 5. SITAN NOVAC
-      debugPrint('🔥 [POPIS] 10. Učitavam sitan novac...');
+      dlog('🔥 [POPIS] 10. Učitavam sitan novac...');
       final sitanNovac = await DailyCheckInService.getTodayAmount(vozac);
-      debugPrint('🔥 [POPIS] 11. Sitan novac: $sitanNovac');
+      dlog('🔥 [POPIS] 11. Sitan novac: $sitanNovac');
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
-      debugPrint('🔥 [POPIS] 12. Mapiram podatke...');
+      dlog('🔥 [POPIS] 12. Mapiram podatke...');
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
       final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
       final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
       final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
       final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
       final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
-      debugPrint(
+      dlog(
           '🔥 [POPIS] 13. Podaci mapirani - dodati: $dodatiPutnici, pazar: $ukupanPazar');
 
       // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
-      debugPrint('🔥 [POPIS] 14. Računam GPS kilometražu...');
+      dlog('🔥 [POPIS] 14. Računam GPS kilometražu...');
       late double kilometraza;
       try {
         kilometraza =
             await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
-        debugPrint(
+        dlog(
             '🚗 GPS kilometraža za $vozac danas: ${kilometraza.toStringAsFixed(1)} km');
       } catch (e) {
-        debugPrint('⚠️ Greška pri GPS računanju kilometraže: $e');
+        dlog('⚠️ Greška pri GPS računanju kilometraže: $e');
         kilometraza = 0.0; // Fallback vrednost
       }
-      debugPrint(
-          '🔥 [POPIS] 15. Kilometraža: ${kilometraza.toStringAsFixed(1)} km');
+      dlog('🔥 [POPIS] 15. Kilometraža: ${kilometraza.toStringAsFixed(1)} km');
 
       // 7. PRIKAŽI POPIS DIALOG SA REALTIME PODACIMA
-      debugPrint('🔥 [POPIS] 16. Pozivam _showPopisDialog...');
+      dlog('🔥 [POPIS] 16. Pozivam _showPopisDialog...');
       final bool sacuvaj = await _showPopisDialog(
         vozac: vozac,
         datum: today,
@@ -734,11 +736,11 @@ class _DanasScreenState extends State<DanasScreen> {
         mesecneKarte: mesecneKarte,
         kilometraza: kilometraza,
       );
-      debugPrint('🔥 [POPIS] 17. Dialog zatovoren, sačuvaj: $sacuvaj');
+      dlog('🔥 [POPIS] 17. Dialog zatovoren, sačuvaj: $sacuvaj');
 
       // 8. SAČUVAJ POPIS AKO JE POTVRĐEN
       if (sacuvaj) {
-        debugPrint('🔥 [POPIS] 18. Čuvam popis...');
+        dlog('🔥 [POPIS] 18. Čuvam popis...');
         await _sacuvajPopis(vozac, today, {
           'ukupanPazar': ukupanPazar,
           'sitanNovac': sitanNovac,
@@ -750,11 +752,11 @@ class _DanasScreenState extends State<DanasScreen> {
           'mesecneKarte': mesecneKarte,
           'kilometraza': kilometraza,
         });
-        debugPrint('🔥 [POPIS] 19. Popis je sačuvan!');
+        dlog('🔥 [POPIS] 19. Popis je sačuvan!');
       }
-      debugPrint('🔥 [POPIS] 20. _showPopisDana završen USPEŠNO!');
+      dlog('🔥 [POPIS] 20. _showPopisDana završen USPEŠNO!');
     } catch (e) {
-      debugPrint('🔥 [POPIS] ❌ GREŠKA u _showPopisDana: $e');
+      dlog('🔥 [POPIS] ❌ GREŠKA u _showPopisDana: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1059,11 +1061,11 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // ✅ PAMETNA LOGIKA - vikendom prebaci na Ponedeljak jer ne vozite
     if (todayName == 'sub' || todayName == 'ned') {
-      debugPrint('🔄 [DANAS SCREEN] Vikend je - prebacujem na Ponedeljak');
+      dlog('🔄 [DANAS SCREEN] Vikend je - prebacujem na Ponedeljak');
       return 'pon';
     }
 
-    debugPrint('🗓️ [DANAS SCREEN] Današnji dan: $todayName');
+    dlog('🗓️ [DANAS SCREEN] Današnji dan: $todayName');
     return todayName;
   }
 
@@ -1122,7 +1124,7 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     });
 
-    debugPrint(
+    dlog(
         '🕐 [DANAS SCREEN] Inicijalizovano vreme: $_selectedVreme, grad: $_selectedGrad');
   }
 
@@ -1133,12 +1135,11 @@ class _DanasScreenState extends State<DanasScreen> {
     // ✅ SETUP FILTERS FROM NOTIFICATION DATA
     if (widget.filterGrad != null) {
       _selectedGrad = widget.filterGrad!;
-      debugPrint('🔔 [NOTIFICATION] Setting filter grad: ${widget.filterGrad}');
+      dlog('🔔 [NOTIFICATION] Setting filter grad: ${widget.filterGrad}');
     }
     if (widget.filterVreme != null) {
       _selectedVreme = widget.filterVreme!;
-      debugPrint(
-          '🔔 [NOTIFICATION] Setting filter vreme: ${widget.filterVreme}');
+      dlog('🔔 [NOTIFICATION] Setting filter vreme: ${widget.filterVreme}');
     }
 
     // Ako nema filter podataka iz notifikacije, koristi default logiku
@@ -1165,7 +1166,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🛰️ START GPS TRACKING
     RealtimeGpsService.startTracking().catchError((e) {
-      debugPrint('🚨 GPS tracking failed: $e');
+      dlog('🚨 GPS tracking failed: $e');
     });
 
     // 🔔 SHOW NOTIFICATION MESSAGE IF PASSENGER NAME PROVIDED
@@ -1290,13 +1291,13 @@ class _DanasScreenState extends State<DanasScreen> {
     });
 
     // 🔍 DEBUG - ispišemo trenutne filter vrednosti
-    debugPrint(
+    dlog(
         '🎯 [OPTIMIZUJ] TRENUTNI FILTERI: grad="$_selectedGrad", vreme="$_selectedVreme"');
-    debugPrint('🎯 [OPTIMIZUJ] Ukupno putnika za analizu: ${putnici.length}');
+    dlog('🎯 [OPTIMIZUJ] Ukupno putnika za analizu: ${putnici.length}');
 
     // 🔍 DEBUG - ispišemo sva dostupna vremena polaska
     final dostupnaVremena = putnici.map((p) => p.polazak).toSet().toList();
-    debugPrint('🎯 [OPTIMIZUJ] Dostupna vremena polaska: $dostupnaVremena');
+    dlog('🎯 [OPTIMIZUJ] Dostupna vremena polaska: $dostupnaVremena');
 
     // 🎯 SAMO REORDER PUTNIKA - bez otvaranja mape
     final filtriraniPutnici = putnici.where((p) {
@@ -1318,13 +1319,13 @@ class _DanasScreenState extends State<DanasScreen> {
       final hasAddress = p.adresa != null && p.adresa!.isNotEmpty;
 
       // 🔍 DEBUG LOG za optimizaciju
-      debugPrint(
+      dlog(
           '🎯 [OPTIMIZUJ] Putnik: ${p.ime}, grad: "${p.grad}" vs "$_selectedGrad", vreme: "${p.polazak}" vs "$_selectedVreme", status: "$normalizedStatus", adresa: "${p.adresa}", gradMatch: $gradMatch, vremeMatch: $vremeMatch, danMatch: $danMatch, statusOk: $statusOk, hasAddress: $hasAddress');
 
       return vremeMatch && gradMatch && danMatch && statusOk && hasAddress;
     }).toList();
 
-    debugPrint(
+    dlog(
         '🎯 [OPTIMIZUJ] Ukupno putnika za optimizaciju: ${filtriraniPutnici.length}');
 
     if (filtriraniPutnici.isEmpty) {
@@ -1395,7 +1396,7 @@ class _DanasScreenState extends State<DanasScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Greška pri optimizaciji rute: $e');
+      dlog('❌ Greška pri optimizaciji rute: $e');
 
       try {
         // Fallback na osnovnu optimizaciju
@@ -1428,7 +1429,7 @@ class _DanasScreenState extends State<DanasScreen> {
           );
         }
       } catch (fallbackError) {
-        debugPrint('❌ Greška i sa fallback optimizacijom: $fallbackError');
+        dlog('❌ Greška i sa fallback optimizacijom: $fallbackError');
 
         // Kompletno neuspešna optimizacija - resetuj sve
         setState(() {
@@ -1540,7 +1541,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 final sviPutnici = snapshot.data ?? [];
                 final danasnjiDan = _getTodayForDatabase();
 
-                debugPrint(
+                dlog(
                     '🕐 [DANAS SCREEN] Filter: $danasnjiDan, $_selectedVreme, $_selectedGrad'); // ✅ DEBUG
 
                 // 🔄 REAL-TIME FILTRIRANJE - kombinuj sa vremenskim filterom poslednje nedelje
@@ -1666,9 +1667,9 @@ class _DanasScreenState extends State<DanasScreen> {
                 final dayEnd = DateTime(targetDate.year, targetDate.month,
                     targetDate.day, 23, 59, 59);
 
-                debugPrint(
+                dlog(
                     '🎯 [PAZAR LOGIKA] Danas: ${today.weekday} (${_getDayName(today.weekday)})');
-                debugPrint('🎯 [PAZAR LOGIKA] Target datum: $targetDate');
+                dlog('🎯 [PAZAR LOGIKA] Target datum: $targetDate');
 
                 if (kDebugMode) {}
 
@@ -2146,9 +2147,9 @@ class _DanasScreenState extends State<DanasScreen> {
           final danasnjiDan = _getTodayForDatabase();
           final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
 
-          debugPrint(
+          dlog(
               '🔍 [DANAS SCREEN] Ukupno putnika iz stream-a: ${allPutnici.length}');
-          debugPrint('🔍 [DANAS SCREEN] Današnji dan: $danasnjiDan');
+          dlog('🔍 [DANAS SCREEN] Današnji dan: $danasnjiDan');
 
           // 🔄 REAL-TIME FILTRIRANJE za bottom nav
           final todayPutnici = allPutnici.where((p) {
@@ -2159,13 +2160,13 @@ class _DanasScreenState extends State<DanasScreen> {
               timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
             }
 
-            debugPrint(
+            dlog(
                 '📍 [DANAS SCREEN] Putnik: ${p.ime}, dan: ${p.dan}, dayMatch: $dayMatch, timeMatch: $timeMatch');
 
             return dayMatch && timeMatch;
           }).toList();
 
-          debugPrint(
+          dlog(
               '🔍 [DANAS SCREEN] Filtrirani putnici za danas: ${todayPutnici.length}');
 
           // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
@@ -2202,13 +2203,13 @@ class _DanasScreenState extends State<DanasScreen> {
                     normalizedStatus != 'obrisan');
               }
 
-              debugPrint(
+              dlog(
                   '🎯 [COUNT] Putnik: ${putnik.ime}, grad: "${putnik.grad}" vs "$grad", vreme: "${putnik.polazak}" vs "$vreme", status: "${putnik.status}", gradMatch: $gradMatch, vremeMatch: $vremeMatch, statusOk: $statusOk');
 
               return gradMatch && vremeMatch && danMatch && statusOk;
             }).toList();
 
-            debugPrint(
+            dlog(
                 '📊 [COUNT] Za $grad $vreme: ${matchingPutnici.length} putnika');
             return matchingPutnici.length;
           }
@@ -2231,7 +2232,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
               // 🔄 REFRESH putnika kada se promeni vreme polaska
               // setState() će automatski reload-ovati widget sa novom logikom
-              debugPrint(
+              dlog(
                   '🔄 VREME POLASKA PROMENJENO: $grad $vreme - widget će se ažurirati nakon resetovanja pokupljanja');
             },
           );
@@ -2293,7 +2294,7 @@ class _DanasScreenState extends State<DanasScreen> {
         throw 'Could not launch Google Maps';
       }
     } catch (e) {
-      debugPrint('❌ Greška pri pokretanju Google Maps: $e');
+      dlog('❌ Greška pri pokretanju Google Maps: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

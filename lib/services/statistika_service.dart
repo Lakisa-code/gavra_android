@@ -833,7 +833,7 @@ class StatistikaService {
     final mesecniTo = normalizedTo;
 
     for (final putnik in mesecniPutnici) {
-      debugPrint(
+      _debugLog(
           '💰 [DETALJNE DEBUG] 🎫 Putnik: ${putnik.putnikIme}, jePlacen: ${putnik.jePlacen}, vremePlacanja: ${putnik.vremePlacanja}, iznosPlacanja: ${putnik.iznosPlacanja}');
       if (putnik.jePlacen) {
         // ✅ MESEČNE KARTE: koristi MESEČNI opseg umesto sedmičnog/dnevnog
@@ -845,15 +845,15 @@ class StatistikaService {
           final kljuc = putnik.putnikIme.trim();
           if (!grupisaniMesecniPutnici.containsKey(kljuc)) {
             grupisaniMesecniPutnici[kljuc] = putnik;
-            debugPrint(
+            _debugLog(
                 '💰 [DETALJNE STATISTIKE] 🎫 [MESEČNI] Grupisanje: $kljuc -> prvi valjan polazak u mesecu');
           }
         } else {
-          debugPrint(
+          _debugLog(
               '💰 [DETALJNE DEBUG] ❌ ${putnik.putnikIme} NIJE u MESEČNOM opsegu: vremePlacanja=${putnik.vremePlacanja}, mesecniFrom=$mesecniFrom, mesecniTo=$mesecniTo');
         }
       } else {
-        debugPrint(
+        _debugLog(
             '💰 [DETALJNE DEBUG] ❌ ${putnik.putnikIme} NIJE plaćen: jePlacen=${putnik.jePlacen}');
       }
     }
@@ -874,7 +874,7 @@ class StatistikaService {
       }
     }
 
-    debugPrint(
+    _debugLog(
         '💰 [DETALJNE STATISTIKE] 📊 [GRUPIRANJE MESEČNIH] Originalno: ${mesecniPutnici.length}, Posle grupiranja: ${grupisaniMesecniPutnici.length}');
 
     // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE (SINHRONO - uprošćeno)

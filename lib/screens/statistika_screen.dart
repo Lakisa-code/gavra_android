@@ -12,6 +12,8 @@ import '../services/putnik_service.dart';
 import '../widgets/pazar_po_vozacima_widget.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
 
+import '../utils/logging.dart';
+
 class StatistikaScreen extends StatefulWidget {
   const StatistikaScreen({Key? key}) : super(key: key);
 
@@ -443,7 +445,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     DateTime from, to;
 
     // 🔍 DEBUG: Log current state
-    debugPrint(
+    dlog(
         '🔍 [CALCULATE PERIOD] _period = $_period, _selectedYear = $_selectedYear');
 
     if (_period == 'nedelja') {
@@ -472,9 +474,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
       // 🔍 DEBUG: Prikazi mesečni period
-      debugPrint(
+      dlog(
           '📅 [MESEČNA STATISTIKA] Period: ${from.toString().split(' ')[0]} - ${to.toString().split(' ')[0]}');
-      debugPrint('📅 [MESEČNA STATISTIKA] Mesec: ${now.month}/${now.year}');
+      dlog('📅 [MESEČNA STATISTIKA] Mesec: ${now.month}/${now.year}');
     } else {
       // 🔧 FIX: Koristi selektovanu godinu umesto now.year
       from = DateTime(_selectedYear, 1, 1);
@@ -482,7 +484,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     }
 
     // 🔍 DEBUG: Log final calculated dates
-    debugPrint(
+    dlog(
         '🔍 [CALCULATE PERIOD] Final dates: ${from.toString()} to ${to.toString()}');
 
     return {'from': from, 'to': to};
@@ -502,7 +504,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         }
 
         // 🔄 REAL-TIME PAZAR STREAM sa kombinovanim putnicima (uključuje mesečne karte)
-        debugPrint(
+        dlog(
             '🎯 [VOZAČI TAB] Pozivam streamPazarSvihVozaca sa from: ${from.toString()}, to: ${to.toString()}');
         return StreamBuilder<Map<String, double>>(
           stream: StatistikaService.streamPazarSvihVozaca(
@@ -510,17 +512,17 @@ class _StatistikaScreenState extends State<StatistikaScreen>
             to: to,
           ),
           builder: (context, pazarSnapshot) {
-            debugPrint(
+            dlog(
                 '📊 VOZAČI TAB STREAM STATE: ${pazarSnapshot.connectionState}');
-            debugPrint('📊 VOZAČI TAB HAS DATA: ${pazarSnapshot.hasData}');
-            debugPrint('📊 VOZAČI TAB DATA: ${pazarSnapshot.data}');
+            dlog('📊 VOZAČI TAB HAS DATA: ${pazarSnapshot.hasData}');
+            dlog('📊 VOZAČI TAB DATA: ${pazarSnapshot.data}');
 
             if (pazarSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
             if (pazarSnapshot.hasError) {
-              debugPrint('❌ VOZAČI TAB ERROR: ${pazarSnapshot.error}');
+              dlog('❌ VOZAČI TAB ERROR: ${pazarSnapshot.error}');
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

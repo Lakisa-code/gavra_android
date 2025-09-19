@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/putnik_service.dart';
 import '../models/putnik.dart';
+// foundation import not needed; material.dart provides kDebugMode
+import '../utils/logging.dart';
 
 // Model za GPS lokacije vozača
 class GpsLokacija {
@@ -76,7 +78,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       });
       _updateMarkers();
     } catch (e) {
-      debugPrint('Greška učitavanja putnika: $e');
+      dlog('Greška učitavanja putnika: $e');
     }
   }
 
@@ -104,7 +106,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         13.0,
       );
     } catch (e) {
-      debugPrint('Greška dobavljanja trenutne lokacije: $e');
+      dlog('Greška dobavljanja trenutne lokacije: $e');
     }
   }
 

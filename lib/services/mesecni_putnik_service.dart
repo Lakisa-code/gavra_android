@@ -1,15 +1,13 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
+import '../utils/logging.dart';
 
 class MesecniPutnikService {
   static final _supabase = Supabase.instance.client;
   // Fields to request from mesecni_putnici when selecting explicitly
   static const String _mesecniFields = '*,'
-      'polasci_po_danu,'
-      'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
-      'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+      'polasci_po_danu';
 
   // 📱 REALTIME STREAM svih mesečnih putnika - OTPORAN NA GREŠKE
   static Stream<List<MesecniPutnik>> streamMesecniPutnici() {
@@ -19,42 +17,34 @@ class MesecniPutnikService {
           .stream(primaryKey: ['id'])
           .order('putnik_ime')
           .map((data) {
-            if (kDebugMode) {
-              debugPrint(
-                  '📊 [MESECNI PUTNIK STREAM] Dobio ${data.length} putnika iz baze');
-            }
+            dlog(
+                '📊 [MESECNI PUTNIK STREAM] Dobio ${data.length} putnika iz baze');
             final allPutnici =
                 data.map((json) => MesecniPutnik.fromMap(json)).toList();
             final filteredPutnici =
                 allPutnici.where((putnik) => !putnik.obrisan).toList();
 
-            if (kDebugMode) {
-              debugPrint(
-                  '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon uklanjanja obrisanih');
-              for (final putnik in allPutnici) {
-                final status = putnik.obrisan
-                    ? 'OBRISAN'
-                    : (putnik.aktivan ? 'AKTIVAN' : 'NEAKTIVAN');
-                final placen = (putnik.cena != null && putnik.cena! > 0)
-                    ? 'PLAĆEN(${putnik.cena})'
-                    : 'NEPLAĆEN';
-                debugPrint('   - ${putnik.putnikIme}: $status, $placen');
-              }
+            dlog(
+                '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon uklanjanja obrisanih');
+            for (final putnik in allPutnici) {
+              final status = putnik.obrisan
+                  ? 'OBRISAN'
+                  : (putnik.aktivan ? 'AKTIVAN' : 'NEAKTIVAN');
+              final placen = (putnik.cena != null && putnik.cena! > 0)
+                  ? 'PLAĆEN(${putnik.cena})'
+                  : 'NEPLAĆEN';
+              dlog('   - ${putnik.putnikIme}: $status, $placen');
             }
 
             return filteredPutnici;
           })
           .handleError((error) {
-            if (kDebugMode) {
-              debugPrint('❌ [MESECNI PUTNIK SERVICE] Stream error: $error');
-            }
+            dlog('❌ [MESECNI PUTNIK SERVICE] Stream error: $error');
             // Ne prekidaj stream, nastavi sa praznom listom
             return <MesecniPutnik>[];
           });
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška u stream: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška u stream: $e');
       // Fallback na običan fetch ako stream ne radi
       return getAllMesecniPutnici().asStream();
     }
@@ -72,17 +62,12 @@ class MesecniPutnikService {
               .where((putnik) => putnik.aktivan && !putnik.obrisan)
               .toList())
           .handleError((error) {
-            if (kDebugMode) {
-              debugPrint(
-                  '❌ [MESECNI PUTNIK SERVICE] Stream error (aktivni): $error');
-            }
+            dlog('❌ [MESECNI PUTNIK SERVICE] Stream error (aktivni): $error');
             // Ne prekidaj stream, nastavi sa praznom listom
             return <MesecniPutnik>[];
           });
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška u stream aktivnih: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška u stream aktivnih: $e');
       // Fallback na običan fetch ako stream ne radi
       return getAktivniMesecniPutnici().asStream();
     }
@@ -127,18 +112,14 @@ class MesecniPutnikService {
           });
           mapped.add(tentative);
         } catch (rowErr) {
-          if (kDebugMode) {
-            debugPrint('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
-          }
+          dlog('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
         }
       }
 
       return mapped;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
       return [];
     }
   }
@@ -172,18 +153,14 @@ class MesecniPutnikService {
           });
           mapped.add(tentative);
         } catch (rowErr) {
-          if (kDebugMode) {
-            debugPrint('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
-          }
+          dlog('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
         }
       }
 
       return mapped;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih (zakupljeno danas): $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih (zakupljeno danas): $e');
       return [];
     }
   }
@@ -205,10 +182,8 @@ class MesecniPutnikService {
           .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
       return [];
     }
   }
@@ -224,10 +199,7 @@ class MesecniPutnikService {
 
       return MesecniPutnik.fromMap(response);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju po ID: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju po ID: $e');
       return null;
     }
   }
@@ -243,10 +215,7 @@ class MesecniPutnikService {
 
       return MesecniPutnik.fromMap(response);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju po imenu: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju po imenu: $e');
       return null;
     }
   }
@@ -264,9 +233,7 @@ class MesecniPutnikService {
           .map<MesecniPutnik>((json) => MesecniPutnik.fromMap(json))
           .toList();
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška pri pretrazi: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri pretrazi: $e');
       return [];
     }
   }
@@ -275,11 +242,9 @@ class MesecniPutnikService {
   static Future<MesecniPutnik?> dodajMesecnogPutnika(
       MesecniPutnik putnik) async {
     try {
-      if (kDebugMode) {
-        debugPrint(
-            '🔄 [MESECNI PUTNIK SERVICE] Pokušavam dodavanje: ${putnik.putnikIme}');
-        debugPrint('📊 [DEBUG] Podaci: ${putnik.toMap()}');
-      }
+      dlog(
+          '🔄 [MESECNI PUTNIK SERVICE] Pokušavam dodavanje: ${putnik.putnikIme}');
+      dlog('📊 [DEBUG] Podaci: ${putnik.toMap()}');
 
       final response = await _supabase
           .from('mesecni_putnici')
@@ -287,20 +252,16 @@ class MesecniPutnikService {
           .select()
           .single();
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Uspešno dodat mesečni putnik: ${putnik.putnikIme}');
-        debugPrint('📊 [DEBUG] Response: $response');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Uspešno dodat mesečni putnik: ${putnik.putnikIme}');
+      dlog('📊 [DEBUG] Response: $response');
 
       return MesecniPutnik.fromMap(response);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] GREŠKA pri dodavanju putnika: ${putnik.putnikIme}');
-        debugPrint('❌ [ERROR DETAILS] $e');
-        debugPrint('📊 [DEBUG] Podaci koji su poslani: ${putnik.toMap()}');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] GREŠKA pri dodavanju putnika: ${putnik.putnikIme}');
+      dlog('❌ [ERROR DETAILS] $e');
+      dlog('📊 [DEBUG] Podaci koji su poslani: ${putnik.toMap()}');
       return null;
     }
   }
@@ -310,12 +271,9 @@ class MesecniPutnikService {
       MesecniPutnik putnik) async {
     try {
       final dataToSend = putnik.toMap();
-      if (kDebugMode) {
-        debugPrint('🔧 [DEBUG] Podaci koji se šalju u bazu:');
-        debugPrint('  - polasci_po_danu: ${dataToSend['polasci_po_danu']}');
-        debugPrint('  - svi podaci: $dataToSend');
-      }
-
+      dlog('🔧 [DEBUG] Podaci koji se šalju u bazu:');
+      dlog('  - polasci_po_danu: ${dataToSend['polasci_po_danu']}');
+      dlog('  - svi podaci: $dataToSend');
       final response = await _supabase
           .from('mesecni_putnici')
           .update(dataToSend)
@@ -323,16 +281,21 @@ class MesecniPutnikService {
           .select()
           .single();
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Ažuriran mesečni putnik: ${putnik.putnikIme}');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Ažuriran mesečni putnik: ${putnik.putnikIme}');
+      dlog('📤 [MESECNI PUTNIK SERVICE] Response od Supabase: $response');
 
-      return MesecniPutnik.fromMap(response);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju: $e');
+      try {
+        return MesecniPutnik.fromMap(response);
+      } catch (parseErr, st) {
+        dlog(
+            '❌ [MESECNI PUTNIK SERVICE] Greška pri parsiranju response-a: $parseErr');
+        dlog('❗ StackTrace: $st');
+        return null;
       }
+    } catch (e) {
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju: $e');
+      dlog('❗ StackTrace: ${StackTrace.current}');
       return null;
     }
   }
@@ -347,16 +310,11 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Soft delete mesečnog putnika: $id');
-      }
+      dlog('✅ [MESECNI PUTNIK SERVICE] Soft delete mesečnog putnika: $id');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [MESECNI PUTNIK SERVICE] Greška pri soft delete: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri soft delete: $e');
       return false;
     }
   }
@@ -369,17 +327,11 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Promenjena aktivnost ($id): $aktivan');
-      }
+      dlog('✅ [MESECNI PUTNIK SERVICE] Promenjena aktivnost ($id): $aktivan');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri promeni aktivnosti: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri promeni aktivnosti: $e');
       return false;
     }
   }
@@ -395,17 +347,12 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Označen kao pokupljen: $id od strane $vozac');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Označen kao pokupljen: $id od strane $vozac');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri označavanju pokupljenog: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri označavanju pokupljenog: $e');
       return false;
     }
   }
@@ -420,17 +367,12 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Otkazano pokupljanje: $id od strane $vozac');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Otkazano pokupljanje: $id od strane $vozac');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri otkazivanju pokupljanja: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri otkazivanju pokupljanja: $e');
       return false;
     }
   }
@@ -446,17 +388,12 @@ class MesecniPutnikService {
             DateTime.now().toIso8601String(), // ✅ NOVO - timestamp plaćanja
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Označeno plaćanje: $id - $iznos RSD od strane $vozac u ${DateTime.now()}');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Označeno plaćanje: $id - $iznos RSD od strane $vozac u ${DateTime.now()}');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri označavanju plaćanja: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri označavanju plaćanja: $e');
       return false;
     }
   }
@@ -470,17 +407,13 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj putovanja ($id): $noviBroj');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj putovanja ($id): $noviBroj');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja putovanja: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja putovanja: $e');
       return false;
     }
   }
@@ -506,17 +439,13 @@ class MesecniPutnikService {
 
       final brojPutovanja = jedinstveniDatumi.length;
 
-      if (kDebugMode) {
-        debugPrint(
-            '📊 [MESECNI PUTNIK SERVICE] Broj putovanja iz istorije za $mesecniPutnikId: $brojPutovanja (jedinstveni datumi: ${jedinstveniDatumi.toList()})');
-      }
+      dlog(
+          '📊 [MESECNI PUTNIK SERVICE] Broj putovanja iz istorije za $mesecniPutnikId: $brojPutovanja (jedinstveni datumi: ${jedinstveniDatumi.toList()})');
 
       return brojPutovanja;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja iz istorije: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja iz istorije: $e');
       return 0;
     }
   }
@@ -537,17 +466,13 @@ class MesecniPutnikService {
       // Za određeni datum: ima pokupljanja = 1 putovanje, nema = 0 putovanja
       final brojPutovanja = response.isNotEmpty ? 1 : 0;
 
-      if (kDebugMode) {
-        debugPrint(
-            '📊 [MESECNI PUTNIK SERVICE] Broj putovanja za datum $datumStr: $brojPutovanja (pokupljanja: ${response.length})');
-      }
+      dlog(
+          '📊 [MESECNI PUTNIK SERVICE] Broj putovanja za datum $datumStr: $brojPutovanja (pokupljanja: ${response.length})');
 
       return brojPutovanja;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja za datum: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja za datum: $e');
       return 0;
     }
   }
@@ -597,10 +522,8 @@ class MesecniPutnikService {
         }
       }
 
-      if (kDebugMode) {
-        debugPrint(
-            '📊 [MESECNI PUTNIK SERVICE] Za datum $datumStr: ujutru=$ujutru, popodne=$popodne, ukupno=$ukupno');
-      }
+      dlog(
+          '📊 [MESECNI PUTNIK SERVICE] Za datum $datumStr: ujutru=$ujutru, popodne=$popodne, ukupno=$ukupno');
 
       return {
         'ujutru': ujutru,
@@ -611,10 +534,7 @@ class MesecniPutnikService {
             : 0, // 1 ako je bilo bilo kakve vožnje
       };
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri detaljnom računanju: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri detaljnom računanju: $e');
       return {'ujutru': 0, 'popodne': 0, 'ukupno': 0, 'dnevno': 0};
     }
   }
@@ -628,17 +548,13 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj putovanja ($id): $brojIzIstorije');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj putovanja ($id): $brojIzIstorije');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja putovanja: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja putovanja: $e');
       return false;
     }
   }
@@ -664,17 +580,13 @@ class MesecniPutnikService {
 
       final brojOtkazivanja = jedinstveniDatumi.length;
 
-      if (kDebugMode) {
-        debugPrint(
-            '📊 [MESECNI PUTNIK SERVICE] Broj otkazivanja iz istorije za $mesecniPutnikId: $brojOtkazivanja (datumi: ${jedinstveniDatumi.toList()})');
-      }
+      dlog(
+          '📊 [MESECNI PUTNIK SERVICE] Broj otkazivanja iz istorije za $mesecniPutnikId: $brojOtkazivanja (datumi: ${jedinstveniDatumi.toList()})');
 
       return brojOtkazivanja;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju otkazivanja iz istorije: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju otkazivanja iz istorije: $e');
       return 0;
     }
   }
@@ -689,17 +601,13 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj otkazivanja ($id): $brojIzIstorije');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj otkazivanja ($id): $brojIzIstorije');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja otkazivanja: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja otkazivanja: $e');
       return false;
     }
   }
@@ -712,17 +620,13 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj otkazivanja ($id): $noviBroj');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj otkazivanja ($id): $noviBroj');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja otkazivanja: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja otkazivanja: $e');
       return false;
     }
   }
@@ -736,17 +640,12 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Postavljena odsutnost ($id): $statusOdsutnosti');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Postavljena odsutnost ($id): $statusOdsutnosti');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri postavljanju odsutnosti: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri postavljanju odsutnosti: $e');
       return false;
     }
   }
@@ -769,10 +668,7 @@ class MesecniPutnikService {
           .map<MesecniPutnik>((json) => MesecniPutnik.fromMap(json))
           .toList();
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju za danas: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju za danas: $e');
       return [];
     }
   }
@@ -783,10 +679,8 @@ class MesecniPutnikService {
     try {
       final pocetniDatum = datum ?? DateTime.now();
 
-      if (kDebugMode) {
-        debugPrint(
-            '🚀 [MESECNI PUTNIK SERVICE] Kreiranje dnevnih putovanja za $danaUnapred dana od ${pocetniDatum.toIso8601String().split('T')[0]}');
-      }
+      dlog(
+          '🚀 [MESECNI PUTNIK SERVICE] Kreiranje dnevnih putovanja za $danaUnapred dana od ${pocetniDatum.toIso8601String().split('T')[0]}');
 
       // Dobij sve aktivne mesečne putnike
       final mesecniPutnici = await _supabase
@@ -796,13 +690,11 @@ class MesecniPutnikService {
           .eq('obrisan', false)
           .eq('status', 'radi');
 
-      if (kDebugMode) {
-        debugPrint(
-            '🔍 [DEBUG] Pronađeno ${mesecniPutnici.length} aktivnih mesečnih putnika');
-        for (final putnik in mesecniPutnici) {
-          debugPrint(
-              '🔍 [DEBUG] Putnik: ${putnik['putnik_ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}');
-        }
+      dlog(
+          '🔍 [DEBUG] Pronađeno ${mesecniPutnici.length} aktivnih mesečnih putnika');
+      for (final putnik in mesecniPutnici) {
+        dlog(
+            '🔍 [DEBUG] Putnik: ${putnik['putnik_ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}');
       }
 
       int kreirano = 0;
@@ -813,9 +705,7 @@ class MesecniPutnikService {
         final danUNedelji = _getDanUNedelji(ciljniDatum.weekday);
         final datumStr = ciljniDatum.toIso8601String().split('T')[0];
 
-        if (kDebugMode) {
-          debugPrint('📅 [DEBUG] Obrađujem datum: $datumStr ($danUNedelji)');
-        }
+        dlog('📅 [DEBUG] Obrađujem datum: $datumStr ($danUNedelji)');
 
         for (final mesecniData in mesecniPutnici) {
           final mesecniPutnik = MesecniPutnik.fromMap(mesecniData);
@@ -856,10 +746,8 @@ class MesecniPutnikService {
               });
               kreirano++;
 
-              if (kDebugMode) {
-                debugPrint(
-                    '✅ Kreiran BC putnik: ${mesecniPutnik.putnikIme} $vremeBelaCrkva na $datumStr');
-              }
+              dlog(
+                  '✅ Kreiran BC putnik: ${mesecniPutnik.putnikIme} $vremeBelaCrkva na $datumStr');
             }
           }
 
@@ -893,19 +781,15 @@ class MesecniPutnikService {
               });
               kreirano++;
 
-              if (kDebugMode) {
-                debugPrint(
-                    '✅ Kreiran VS putnik: ${mesecniPutnik.putnikIme} $vremeVrsac na $datumStr');
-              }
+              dlog(
+                  '✅ Kreiran VS putnik: ${mesecniPutnik.putnikIme} $vremeVrsac na $datumStr');
             }
           }
         }
       }
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Kreirano $kreirano novih putovanja za period od $danaUnapred dana');
-      }
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Kreirano $kreirano novih putovanja za period od $danaUnapred dana');
 
       // 🔄 SINHRONIZUJ brojPutovanja za sve mesečne putnike koji su imali nova putovanja
       if (kreirano > 0) {
@@ -920,24 +804,18 @@ class MesecniPutnikService {
             await sinhronizujBrojPutovanjaSaIstorijom(putnikData['id']);
           }
 
-          if (kDebugMode) {
-            debugPrint(
-                '✅ [MESECNI PUTNIK SERVICE] Sinhronizacija brojPutovanja završena za ${sviMesecniPutnici.length} putnika');
-          }
+          dlog(
+              '✅ [MESECNI PUTNIK SERVICE] Sinhronizacija brojPutovanja završena za ${sviMesecniPutnici.length} putnika');
         } catch (e) {
-          if (kDebugMode) {
-            debugPrint(
-                '⚠️ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji brojPutovanja: $e');
-          }
+          dlog(
+              '⚠️ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji brojPutovanja: $e');
         }
       }
 
       return kreirano;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri kreiranju dnevnih putovanja: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri kreiranju dnevnih putovanja: $e');
       return 0;
     }
   }
@@ -972,10 +850,8 @@ class MesecniPutnikService {
       final datumStr = ciljniDatum.toIso8601String().split('T')[0];
       final danUNedelji = _getDanUNedelji(ciljniDatum.weekday);
 
-      if (kDebugMode) {
-        debugPrint(
-            '🎓 [DJACI STATISTIKE] Računam mesta za datum: $datumStr ($danUNedelji)');
-      }
+      dlog(
+          '🎓 [DJACI STATISTIKE] Računam mesta za datum: $datumStr ($danUNedelji)');
 
       // 1. Dobij sve aktivne đake (tip = 'ucenik')
       final sviDjaci = await _supabase
@@ -985,10 +861,7 @@ class MesecniPutnikService {
           .eq('aktivan', true)
           .eq('obrisan', false);
 
-      if (kDebugMode) {
-        debugPrint(
-            '🎓 [DJACI STATISTIKE] Ukupno aktivnih đaka: ${sviDjaci.length}');
-      }
+      dlog('🎓 [DJACI STATISTIKE] Ukupno aktivnih đaka: ${sviDjaci.length}');
 
       // 2. Filtriraj đake koji rade danas
       final djaciDanas = sviDjaci.where((djak) {
@@ -996,10 +869,8 @@ class MesecniPutnikService {
         return radniDani.toLowerCase().contains(danUNedelji.toLowerCase());
       }).toList();
 
-      if (kDebugMode) {
-        debugPrint(
-            '🎓 [DJACI STATISTIKE] Đaci koji rade danas ($danUNedelji): ${djaciDanas.length}');
-      }
+      dlog(
+          '🎓 [DJACI STATISTIKE] Đaci koji rade danas ($danUNedelji): ${djaciDanas.length}');
 
       // 3. Računaj upisane za školu (UJUTRU - bez obzira na pokupljanje)
       int upisanoZaSkolu = 0;
@@ -1041,15 +912,11 @@ class MesecniPutnikService {
         'slobodna_mesta': slobodnaMesta,
       };
 
-      if (kDebugMode) {
-        debugPrint('🎓 [DJACI STATISTIKE] Rezultat: $rezultat');
-      }
+      dlog('🎓 [DJACI STATISTIKE] Rezultat: $rezultat');
 
       return rezultat;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [DJACI STATISTIKE] Greška: $e');
-      }
+      dlog('❌ [DJACI STATISTIKE] Greška: $e');
       return {
         'ukupno_djaka': 0,
         'djaci_danas': 0,
@@ -1071,17 +938,11 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje ($id): $iznos din');
-      }
+      dlog('✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje ($id): $iznos din');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju plaćanja: $e');
-      }
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju plaćanja: $e');
       return false;
     }
   }
@@ -1103,18 +964,14 @@ class MesecniPutnikService {
         'placena_godina': pocetakMeseca.year,
       }).eq('id', id);
 
-      if (kDebugMode) {
-        String mesecGodina = "${pocetakMeseca.month}/${pocetakMeseca.year}";
-        debugPrint(
-            '✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje za $mesecGodina ($id): $iznos din');
-      }
+      String mesecGodina = "${pocetakMeseca.month}/${pocetakMeseca.year}";
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje za $mesecGodina ($id): $iznos din');
 
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju plaćanja za mesec: $e');
-      }
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju plaćanja za mesec: $e');
       return false;
     }
   }
