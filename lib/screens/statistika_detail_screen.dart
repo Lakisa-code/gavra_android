@@ -152,7 +152,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                   )
                 : StreamBuilder<List<Putnik>>(
                     stream: PutnikService()
-                        .streamKombinovaniPutnici(), // ✅ ISPRAVKA: Koristi filtriranu verziju
+                        .streamKombinovaniPutniciFiltered(), // ✅ Server-filtered combined stream
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());

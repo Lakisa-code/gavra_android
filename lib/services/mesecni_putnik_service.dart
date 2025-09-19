@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../utils/logging.dart';
+import 'realtime_service.dart';
 
 class MesecniPutnikService {
   static final _supabase = Supabase.instance.client;
@@ -12,37 +13,39 @@ class MesecniPutnikService {
   // 📱 REALTIME STREAM svih mesečnih putnika - OTPORAN NA GREŠKE
   static Stream<List<MesecniPutnik>> streamMesecniPutnici() {
     try {
-      return _supabase
-          .from('mesecni_putnici')
-          .stream(primaryKey: ['id'])
-          .order('putnik_ime')
-          .map((data) {
-            dlog(
-                '📊 [MESECNI PUTNIK STREAM] Dobio ${data.length} putnika iz baze');
-            final allPutnici =
-                data.map((json) => MesecniPutnik.fromMap(json)).toList();
-            final filteredPutnici =
-                allPutnici.where((putnik) => !putnik.obrisan).toList();
+      return RealtimeService.instance
+          .tableStream('mesecni_putnici')
+          .map<List<MesecniPutnik>>((dynamic data) {
+        try {
+          final listRaw = data as List<dynamic>;
+          dlog(
+              '📊 [MESECNI PUTNIK STREAM] Dobio ${listRaw.length} putnika iz baze');
+          final allPutnici =
+              listRaw.map((json) => MesecniPutnik.fromMap(json)).toList();
+          final filteredPutnici =
+              allPutnici.where((putnik) => !putnik.obrisan).toList();
 
-            dlog(
-                '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon uklanjanja obrisanih');
-            for (final putnik in allPutnici) {
-              final status = putnik.obrisan
-                  ? 'OBRISAN'
-                  : (putnik.aktivan ? 'AKTIVAN' : 'NEAKTIVAN');
-              final placen = (putnik.cena != null && putnik.cena! > 0)
-                  ? 'PLAĆEN(${putnik.cena})'
-                  : 'NEPLAĆEN';
-              dlog('   - ${putnik.putnikIme}: $status, $placen');
-            }
+          dlog(
+              '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon uklanjanja obrisanih');
+          for (final putnik in allPutnici) {
+            final status = putnik.obrisan
+                ? 'OBRISAN'
+                : (putnik.aktivan ? 'AKTIVAN' : 'NEAKTIVAN');
+            final placen = (putnik.cena != null && putnik.cena! > 0)
+                ? 'PLAĆEN(${putnik.cena})'
+                : 'NEPLAĆEN';
+            dlog('   - ${putnik.putnikIme}: $status, $placen');
+          }
 
-            return filteredPutnici;
-          })
-          .handleError((error) {
-            dlog('❌ [MESECNI PUTNIK SERVICE] Stream error: $error');
-            // Ne prekidaj stream, nastavi sa praznom listom
-            return <MesecniPutnik>[];
-          });
+          return filteredPutnici;
+        } catch (e) {
+          dlog('❌ [MESECNI PUTNIK SERVICE] Error mapping realtime data: $e');
+          return <MesecniPutnik>[];
+        }
+      }).handleError((error) {
+        dlog('❌ [MESECNI PUTNIK SERVICE] Stream error: $error');
+        return <MesecniPutnik>[];
+      });
     } catch (e) {
       dlog('❌ [MESECNI PUTNIK SERVICE] Greška u stream: $e');
       // Fallback na običan fetch ako stream ne radi
@@ -53,19 +56,26 @@ class MesecniPutnikService {
   // 📱 REALTIME STREAM aktivnih mesečnih putnika - OTPORAN NA GREŠKE
   static Stream<List<MesecniPutnik>> streamAktivniMesecniPutnici() {
     try {
-      return _supabase
-          .from('mesecni_putnici')
-          .stream(primaryKey: ['id'])
-          .order('putnik_ime')
-          .map((data) => data
+      return RealtimeService.instance
+          .tableStream('mesecni_putnici')
+          .map<List<MesecniPutnik>>((dynamic data) {
+        try {
+          final listRaw = data as List<dynamic>;
+          final list = listRaw
               .map((json) => MesecniPutnik.fromMap(json))
               .where((putnik) => putnik.aktivan && !putnik.obrisan)
-              .toList())
-          .handleError((error) {
-            dlog('❌ [MESECNI PUTNIK SERVICE] Stream error (aktivni): $error');
-            // Ne prekidaj stream, nastavi sa praznom listom
-            return <MesecniPutnik>[];
-          });
+              .toList();
+          list.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+          return list;
+        } catch (e) {
+          dlog(
+              '❌ [MESECNI PUTNIK SERVICE] Error mapping realtime active data: $e');
+          return <MesecniPutnik>[];
+        }
+      }).handleError((error) {
+        dlog('❌ [MESECNI PUTNIK SERVICE] Stream error (aktivni): $error');
+        return <MesecniPutnik>[];
+      });
     } catch (e) {
       dlog('❌ [MESECNI PUTNIK SERVICE] Greška u stream aktivnih: $e');
       // Fallback na običan fetch ako stream ne radi

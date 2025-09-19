@@ -8,6 +8,7 @@ import '../models/mesecni_putnik.dart';
 import 'putnik_service.dart';
 import 'mesecni_putnik_service.dart';
 import 'statistika_service.dart';
+import 'realtime_service.dart';
 
 // Use centralized logger via dlog directly
 
@@ -32,8 +33,7 @@ class RealTimeStatistikaService {
       dlog('🆕 KREIRANJE NOVOG KOMBINOVANOG STREAM-A');
 
       _kombinovaniStream = CombineLatestStream.combine2(
-        PutnikService()
-            .streamKombinovaniPutnici(), // ✅ ISPRAVKA: Koristi filtriranu verziju
+        PutnikService().streamKombinovaniPutniciFiltered(),
         MesecniPutnikService.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
           return [putnici, mesecni];
@@ -119,13 +119,23 @@ class RealTimeStatistikaService {
     if (!_streamCache.containsKey(cacheKey)) {
       dlog('🆕 KREIRANJE PUTNIK STATISTIKE STREAM-A: $putnikId');
 
-      // Kombinuj putovanja_istorija stream sa osnovnim podatcima
-      _streamCache[cacheKey] = Supabase.instance.client
-          .from('putovanja_istorija')
-          .stream(primaryKey: ['id'])
-          .eq('putnik_id', putnikId)
+      // Kombinuj centralizovani putovanja_istorija stream i filtriraj lokalno po putnikId
+      _streamCache[cacheKey] = RealtimeService.instance
+          .tableStream('putovanja_istorija')
+          .map((data) {
+            final List<dynamic> items =
+                data is List ? List<dynamic>.from(data) : <dynamic>[];
+            final filtered = items.where((row) {
+              try {
+                return row['putnik_id']?.toString() == putnikId.toString();
+              } catch (_) {
+                return false;
+              }
+            }).toList();
+            return filtered;
+          })
           .asyncMap((_) async {
-            // Ovde možete dodati specifične statistike za putnika
+            // Recompute statistics when relevant changes arrive
             return await _calculatePutnikStatistike(putnikId);
           })
           .distinct()

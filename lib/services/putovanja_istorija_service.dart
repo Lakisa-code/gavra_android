@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/logging.dart';
 import '../models/putovanja_istorija.dart';
 import '../models/mesecni_putnik.dart';
+import 'realtime_service.dart';
 
 // Use centralized logger
 
@@ -11,13 +12,22 @@ class PutovanjaIstorijaService {
   // 📱 REALTIME STREAM svih putovanja
   static Stream<List<PutovanjaIstorija>> streamPutovanjaIstorija() {
     try {
-      return _supabase
-          .from('putovanja_istorija')
-          .stream(primaryKey: ['id'])
-          .order('datum', ascending: false)
-          .order('vreme_polaska', ascending: false)
-          .map((data) =>
-              data.map((json) => PutovanjaIstorija.fromMap(json)).toList());
+      return RealtimeService.instance.putovanjaStream.map((data) {
+        try {
+          final list =
+              data.map((json) => PutovanjaIstorija.fromMap(json)).toList();
+          list.sort((a, b) {
+            final cmp = b.datum.compareTo(a.datum);
+            if (cmp != 0) return cmp;
+            return b.vremePolaska.compareTo(a.vremePolaska);
+          });
+          return list;
+        } catch (e) {
+          dlog(
+              '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data: $e');
+          return <PutovanjaIstorija>[];
+        }
+      });
     } catch (e) {
       dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream: $e');
       return Stream.value([]);
@@ -28,15 +38,23 @@ class PutovanjaIstorijaService {
   static Stream<List<PutovanjaIstorija>> streamPutovanjaZaDatum(
       DateTime datum) {
     try {
-      final datumStr = datum.toIso8601String().split('T')[0];
+      final targetDate = datum.toIso8601String().split('T')[0];
 
-      return _supabase
-          .from('putovanja_istorija')
-          .stream(primaryKey: ['id'])
-          .eq('datum', datumStr)
-          .order('vreme_polaska')
-          .map((data) =>
-              data.map((json) => PutovanjaIstorija.fromMap(json)).toList());
+      return RealtimeService.instance.putovanjaStream.map((data) {
+        try {
+          final list = data
+              .map((json) => PutovanjaIstorija.fromMap(json))
+              .where(
+                  (p) => p.datum.toIso8601String().split('T')[0] == targetDate)
+              .toList();
+          list.sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
+          return list;
+        } catch (e) {
+          dlog(
+              '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for date: $e');
+          return <PutovanjaIstorija>[];
+        }
+      });
     } catch (e) {
       dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream za datum: $e');
       return Stream.value([]);
@@ -47,13 +65,20 @@ class PutovanjaIstorijaService {
   static Stream<List<PutovanjaIstorija>> streamPutovanjaMesecnogPutnika(
       String mesecniPutnikId) {
     try {
-      return _supabase
-          .from('putovanja_istorija')
-          .stream(primaryKey: ['id'])
-          .eq('mesecni_putnik_id', mesecniPutnikId)
-          .order('datum', ascending: false)
-          .map((data) =>
-              data.map((json) => PutovanjaIstorija.fromMap(json)).toList());
+      return RealtimeService.instance.putovanjaStream.map((data) {
+        try {
+          final list = data
+              .map((json) => PutovanjaIstorija.fromMap(json))
+              .where((p) => p.mesecniPutnikId == mesecniPutnikId)
+              .toList();
+          list.sort((a, b) => b.datum.compareTo(a.datum));
+          return list;
+        } catch (e) {
+          dlog(
+              '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for mesecni: $e');
+          return <PutovanjaIstorija>[];
+        }
+      });
     } catch (e) {
       dlog(
           '❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream za mesečnog putnika: $e');

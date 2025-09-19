@@ -22,8 +22,23 @@ class PrintingService {
       dlog('📄 Priprema spiska putnika za štampanje...');
 
       // ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
-      List<Putnik> sviPutnici =
-          await _putnikService.streamKombinovaniPutnici().first;
+      // Try to compute isoDate from selectedDay (if present) - otherwise leave null
+      String? isoDate;
+      try {
+        // selectedDay is a full name like "Ponedeljak" - map to next matching date (best-effort)
+        // Fallback: use today
+        isoDate = DateTime.now().toIso8601String().split('T')[0];
+      } catch (_) {
+        isoDate = DateTime.now().toIso8601String().split('T')[0];
+      }
+
+      List<Putnik> sviPutnici = await _putnikService
+          .streamKombinovaniPutniciFiltered(
+            isoDate: isoDate,
+            grad: selectedGrad,
+            vreme: selectedVreme,
+          )
+          .first;
 
       // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
       String getDayAbbreviation(String fullDayName) {

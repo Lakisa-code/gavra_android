@@ -72,7 +72,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
         ),
       ),
       body: StreamBuilder<List<Putnik>>(
-        stream: PutnikService().streamKombinovaniPutnici(),
+        stream: PutnikService().streamKombinovaniPutniciFiltered(
+          isoDate: DateTime.now().toIso8601String().split('T')[0],
+        ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());

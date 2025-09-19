@@ -72,6 +72,8 @@ class Putnik {
   final int?
       priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
   final String? brojTelefona; // NOVO - broj telefona putnika
+  final String?
+      datum; // NOVO - originalni datum za dnevne putnike (ISO yyyy-MM-dd)
 
   Putnik({
     this.id,
@@ -98,6 +100,7 @@ class Putnik {
     this.obrisan = false, // default vrednost
     this.priority, // prioritet za optimizaciju ruta
     this.brojTelefona, // broj telefona putnika
+    this.datum,
   });
 
   // Getter-i za kompatibilnost

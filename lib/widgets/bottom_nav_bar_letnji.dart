@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/slot_utils.dart';
 
 class BottomNavBarLetnji extends StatefulWidget {
   final List<String> sviPolasci;
@@ -6,6 +7,7 @@ class BottomNavBarLetnji extends StatefulWidget {
   final String selectedVreme;
   final Function(String grad, String vreme) onPolazakChanged;
   final Function(String grad, String vreme) getPutnikCount;
+  final bool Function(String grad, String vreme)? isSlotLoading;
   const BottomNavBarLetnji({
     super.key,
     required this.sviPolasci,
@@ -13,6 +15,7 @@ class BottomNavBarLetnji extends StatefulWidget {
     required this.selectedVreme,
     required this.onPolazakChanged,
     required this.getPutnikCount,
+    this.isSlotLoading,
   });
 
   @override
@@ -45,7 +48,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    final List<String> bcVremena = [
+    const List<String> bcVremena = [
       '5:00',
       '6:00',
       '8:00',
@@ -56,7 +59,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
       '15:30',
       '18:00'
     ];
-    final List<String> vsVremena = [
+    const List<String> vsVremena = [
       '6:00',
       '7:00',
       '9:00',
@@ -104,28 +107,8 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final List<String> bcVremena = [
-      '5:00',
-      '6:00',
-      '8:00',
-      '10:00',
-      '12:00',
-      '13:00',
-      '14:00',
-      '15:30',
-      '18:00',
-    ];
-    final List<String> vsVremena = [
-      '6:00',
-      '7:00',
-      '9:00',
-      '11:00',
-      '13:00',
-      '14:00',
-      '15:30',
-      '16:15',
-      '19:00',
-    ];
+    const List<String> bcVremena = SlotUtils.bcVremena;
+    const List<String> vsVremena = SlotUtils.vsVremena;
     return Material(
       color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
       elevation: 8,
@@ -134,7 +117,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // top-right total removed per user request
+            // top-right total removed (per user request)
             _PolazakRow(
               label: 'BC',
               vremena: bcVremena,
@@ -143,6 +126,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
               grad: 'Bela Crkva',
               onPolazakChanged: widget.onPolazakChanged,
               getPutnikCount: widget.getPutnikCount,
+              isSlotLoading: widget.isSlotLoading,
               fixedBoxWidth: 56,
               scrollController: _bcScrollController,
             ),
@@ -154,6 +138,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
               grad: 'Vršac',
               onPolazakChanged: widget.onPolazakChanged,
               getPutnikCount: widget.getPutnikCount,
+              isSlotLoading: widget.isSlotLoading,
               fixedBoxWidth: 56,
               scrollController: _vsScrollController,
             ),
@@ -172,6 +157,7 @@ class _PolazakRow extends StatelessWidget {
   final String grad;
   final Function(String grad, String vreme) onPolazakChanged;
   final Function(String grad, String vreme) getPutnikCount;
+  final bool Function(String grad, String vreme)? isSlotLoading;
   final double fixedBoxWidth;
   final ScrollController? scrollController;
 
@@ -183,6 +169,7 @@ class _PolazakRow extends StatelessWidget {
     required this.grad,
     required this.onPolazakChanged,
     required this.getPutnikCount,
+    this.isSlotLoading,
     this.fixedBoxWidth = 56,
     this.scrollController,
     Key? key,
@@ -248,17 +235,29 @@ class _PolazakRow extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            getPutnikCount(grad, vreme).toString(),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: selected
-                                  ? Colors.blue
-                                  : (isDarkMode
-                                      ? Colors.grey[300]
-                                      : Colors.grey[700]),
-                            ),
-                          ),
+                          Builder(builder: (ctx) {
+                            final loading =
+                                isSlotLoading?.call(grad, vreme) ?? false;
+                            if (loading) {
+                              return const SizedBox(
+                                height: 12,
+                                width: 12,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              );
+                            }
+                            return Text(
+                              getPutnikCount(grad, vreme).toString(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: selected
+                                    ? Colors.blue
+                                    : (isDarkMode
+                                        ? Colors.grey[300]
+                                        : Colors.grey[700]),
+                              ),
+                            );
+                          }),
                         ],
                       ),
                     ),

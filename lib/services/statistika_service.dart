@@ -102,7 +102,7 @@ class StatistikaService {
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     // � SAMO KOMBINOVANI STREAM - ne duplikuj mesečne putnike!
-    return PutnikService().streamKombinovaniPutnici().map((putnici) {
+    return PutnikService().streamKombinovaniPutniciFiltered().map((putnici) {
       final pazar = _calculateSimplePazarSync(putnici, vozac, fromDate, toDate);
       _debugLog('🔄 PAZAR za $vozac: ${pazar.toStringAsFixed(0)} RSD');
       return pazar;
@@ -215,8 +215,7 @@ class StatistikaService {
 
     // Kombinuj oba stream-a koristeći async*
     return instance._combineStreams(
-        PutnikService()
-            .streamKombinovaniPutnici(), // ✅ ISPRAVKA: Koristi filtriranu verziju
+        PutnikService().streamKombinovaniPutniciFiltered(),
         MesecniPutnikService.streamAktivniMesecniPutnici(),
         fromDate,
         toDate);
@@ -368,7 +367,7 @@ class StatistikaService {
         '🔍 STREAM PAZAR POZIV: od ${DateFormat('dd.MM.yyyy HH:mm').format(fromDate)} do ${DateFormat('dd.MM.yyyy HH:mm').format(toDate)}');
 
     // 🔧 SAMO KOMBINOVANI STREAM - ne duplikuj mesečne putnike!
-    return PutnikService().streamKombinovaniPutnici().map((putnici) {
+    return PutnikService().streamKombinovaniPutniciFiltered().map((putnici) {
       final rezultat = <String, double>{};
 
       // Inicijalizuj sve vozače na 0
@@ -704,8 +703,7 @@ class StatistikaService {
       streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
-      PutnikService()
-          .streamKombinovaniPutnici(), // ✅ ISPRAVKA: Koristi filtriranu verziju
+      PutnikService().streamKombinovaniPutniciFiltered(),
       MesecniPutnikService.streamAktivniMesecniPutnici(),
     ]).map((data) {
       final putnici = data[0] as List<Putnik>;

@@ -496,8 +496,8 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     final to = period['to']!;
 
     return StreamBuilder<List<Putnik>>(
-      stream:
-          PutnikService().streamKombinovaniPutnici(), // 🔄 KOMBINOVANI STREAM
+      stream: PutnikService()
+          .streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

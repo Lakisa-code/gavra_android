@@ -444,7 +444,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ),
       ),
       body: StreamBuilder<List<Putnik>>(
-        stream: _putnikService.streamKombinovaniPutnici(),
+        stream: _putnikService.streamKombinovaniPutniciFiltered(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(

@@ -21,6 +21,7 @@ import 'services/sms_service.dart';
 import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
 import 'supabase_client.dart';
+import 'services/realtime_service.dart';
 
 final _logger = Logger();
 
@@ -155,6 +156,13 @@ class _MyAppState extends State<MyApp> {
         if (vozacId != null && vozacId.isNotEmpty) {
           _logger.i('✅ Inicijalizujem notifikacije za vozača: $vozacId');
           await RealtimeNotificationService.subscribeToDriverTopics(vozacId);
+          // Pokreni centralizovane realtime pretplate za ovog vozača
+          try {
+            RealtimeService.instance.startForDriver(vozacId);
+            _logger.i('✅ RealtimeService started for driver: $vozacId');
+          } catch (e) {
+            _logger.w('⚠️ RealtimeService.startForDriver failed: $e');
+          }
         } else {
           _logger.w('⚠️ Nema logovanog vozača - notifikacije neće raditi');
           await RealtimeNotificationService.subscribeToDriverTopics(null);
@@ -225,6 +233,13 @@ class _MyAppState extends State<MyApp> {
     // 📱 ZAUSTAVITI SMS SERVIS
     SMSService.stopAutomaticSMSService();
     _logger.i('🛑 SMS servis zaustavljen');
+
+    // Stop centralized realtime subscriptions
+    try {
+      RealtimeService.instance.stopForDriver();
+    } catch (e) {
+      _logger.w('⚠️ Error stopping RealtimeService: $e');
+    }
 
     super.dispose();
   }
