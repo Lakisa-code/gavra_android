@@ -1,8 +1,5 @@
 class AppConfig {
-  // 🗝️ Google Maps API Key
-  static const String googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
-
-  // 🔧 App Configuration
+  //  App Configuration
   static const String appName = 'Gavra Bus';
   static const String version = '1.0.1';
 
