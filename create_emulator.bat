@@ -25,10 +25,10 @@ if not defined ANDROID_SDK_ROOT (
 :: Add common SDK tool paths for this session only
 set "PATH=%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin;%ANDROID_SDK_ROOT%\tools\bin;%ANDROID_SDK_ROOT%\platform-tools;%ANDROID_SDK_ROOT%\emulator;%PATH%"
 
-necho Using ANDROID_SDK_ROOT=%ANDROID_SDK_ROOT%
+echo Using ANDROID_SDK_ROOT=%ANDROID_SDK_ROOT%
 echo.
 
-necho === Locate sdkmanager ===
+echo === Locate sdkmanager ===
 if exist "%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\sdkmanager.bat" (
   set "SDKMANAGER=%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\sdkmanager.bat"
 ) else if exist "%ANDROID_SDK_ROOT%\tools\bin\sdkmanager.bat" (
@@ -40,18 +40,18 @@ if exist "%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\sdkmanager.bat" (
   exit /b 2
 )
 
-necho SDKMANAGER=%SDKMANAGER%
+echo SDKMANAGER=%SDKMANAGER%
 echo.
 
-necho === Accept licenses (may prompt) ===
+echo === Accept licenses (may prompt) ===
 echo y | "%SDKMANAGER%" --licenses
 echo.
 
-necho === Install required packages (platform-tools, emulator, android-33, system image) ===
+echo === Install required packages (platform-tools, emulator, android-33, system image) ===
 echo y | "%SDKMANAGER%" "platform-tools" "platforms;android-33" "emulator" "system-images;android-33;google_apis;x86_64"
 echo.
 
-necho === Locate avdmanager ===
+echo === Locate avdmanager ===
 if exist "%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\avdmanager.bat" (
   set "AVDMANAGER=%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\avdmanager.bat"
 ) else if exist "%ANDROID_SDK_ROOT%\tools\bin\avdmanager.bat" (
@@ -62,14 +62,14 @@ if exist "%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\avdmanager.bat" (
   exit /b 3
 )
 
-necho AVDMANAGER=%AVDMANAGER%
+echo AVDMANAGER=%AVDMANAGER%
 echo.
 
-necho === Create AVD Pixel_3a_API_33_x86_64 (force) ===
+echo === Create AVD Pixel_3a_API_33_x86_64 (force) ===
 "%AVDMANAGER%" create avd -n Pixel_3a_API_33_x86_64 -k "system-images;android-33;google_apis;x86_64" -d "pixel_3a" --force
 echo.
 
-necho === List AVDs ===
+echo === List AVDs ===
 if exist "%ANDROID_SDK_ROOT%\emulator\emulator.exe" (
   "%ANDROID_SDK_ROOT%\emulator\emulator.exe" -list-avds
 ) else (
@@ -77,7 +77,7 @@ if exist "%ANDROID_SDK_ROOT%\emulator\emulator.exe" (
 )
 echo.
 
-necho === Start emulator (background) ===
+echo === Start emulator (background) ===
 if exist "%ANDROID_SDK_ROOT%\emulator\emulator.exe" (
   start "" "%ANDROID_SDK_ROOT%\emulator\emulator.exe" -avd Pixel_3a_API_33_x86_64 -netspeed full -netdelay none
 ) else (
@@ -87,7 +87,7 @@ if exist "%ANDROID_SDK_ROOT%\emulator\emulator.exe" (
 )
 echo.
 
-necho === Wait for emulator to appear in adb (up to ~1 minute) ===
+echo === Wait for emulator to appear in adb (up to ~1 minute) ===
 set "FOUND=0"
 for /L %%i in (1,1,12) do (
   "%ANDROID_SDK_ROOT%\platform-tools\adb.exe" devices | findstr /R /C:"emulator-[0-9]*" >nul
@@ -105,7 +105,7 @@ if "!FOUND!"=="1" (
   "%ANDROID_SDK_ROOT%\platform-tools\adb.exe" devices
   echo Emulator should be ready. You can run 'flutter devices' or 'adb shell' now.
 ) else (
-  echo Emulator did not appear within the timeout. Check virtualization (HAXM/WHPX) and emulator logs.
+  echo Emulator did not appear within the timeout. Check virtualization support (WHPX/VirtualMachinePlatform) and emulator logs.
   echo === adb devices (current) ===
   "%ANDROID_SDK_ROOT%\platform-tools\adb.exe" devices
 )

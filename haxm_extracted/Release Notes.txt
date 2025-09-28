@@ -1,0 +1,45 @@
+Intel(R) Hardware Accelerated Execution Manager (HAXM)
+with Intel(R) Virtualization Technology (VT)
+for faster Android* Emulation
+
+
+Version 7.8.0
+----------------------------
+Changelog
+----------------------------
+- Enabled XSAVE feature in CPUID (#472).
+- Enabled INVPCID instruction (#471).
+- Improved the implementation of CPUID module (#470).
+- Fixed a host crash issue caused by a regression (#469).
+- Improved the user experience of installer (#474).
+
+----------------------------
+Overview
+----------------------------
+The Hardware Accelerated Execution Manager (HAXM) is a hardware-assisted virtualization engine (hypervisor) that uses Intel(R) Virtualization Technology (VT) to speed up Android* development.
+
+This software:
+- Uses Intel VT, available on selected Intel processors
+- Provides hardware-accelerated emulation of Intel(R) x86 and x86_64 Android virtual devices
+- Integrates with the Android SDK
+
+----------------------------
+Prerequisites
+----------------------------
+Intel(R) HAXM requires the Android SDK to be installed (version 17 or higher).
+For best performance, using SDK version 20 or higher is recommended.
+
+Please refer to the Android developer website (http://developer.android.com/sdk/) for more information.
+
+----------------------------
+System Requirements
+----------------------------
+Hardware Requirements:
+- Intel(R) processor with support for VT-x, EM64T, and Execute Disable Bit
+NOTE: Intel HAXM files were previously included in this repository but have been removed.
+
+If you need HAXM, obtain it from the official Intel repository:
+https://github.com/intel/haxm
+
+This project now prefers using the Windows Hypervisor Platform / VirtualMachinePlatform for Android Emulator acceleration on Windows.
+Windows* 7 (64-bit)
