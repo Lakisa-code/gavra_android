@@ -9,6 +9,7 @@ import 'package:logger/logger.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 
 import 'firebase_options.dart';
 // 🤖 GitHub Actions Android workflow for unlimited free APK delivery
@@ -38,7 +39,16 @@ void Function()? globalThemeRefresher;
 /// Ovo mora biti top-level funkcija da bi radila kad je app zatvoren
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    // Initialize only if not already initialized in this isolate
+    final alreadyInitialized = Firebase.apps.isNotEmpty;
+    if (!alreadyInitialized) {
+      await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform);
+    }
+  } catch (e) {
+    // Ignore duplicate-init or platform-specific errors in background isolate
+  }
   _logger.i('📬 Background message received: ${message.notification?.title}');
   // Pozovi LocalNotificationService da obradi poruku
   await LocalNotificationService.showRealtimeNotification(
@@ -90,8 +100,17 @@ void main() async {
     // Continue without Supabase if it fails
   }
 
+  // Initialize GraphQL client
+  final HttpLink httpLink = HttpLink(
+    'https://gjtabtwudbrmfeyjiicu.supabase.co/graphql/v1',
+    defaultHeaders: {'apiKey': supabaseAnonKey},
+  );
+  final Link link = httpLink;
+  ValueNotifier<GraphQLClient> client =
+      ValueNotifier(GraphQLClient(link: link, cache: GraphQLCache()));
+
   _logger.i('� Starting app with professional CI/CD automation...');
-  runApp(const MyApp());
+  runApp(GraphQLProvider(client: client, child: const MyApp()));
 }
 
 // Simple helper instead of FirebaseService.getCurrentDriver()

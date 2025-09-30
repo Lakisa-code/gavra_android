@@ -20,6 +20,7 @@ import '../utils/date_utils.dart'
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
 import '../services/putnik_service.dart'; // 🆕 DODANO za nove metode
+import '../services/combined_putnik_service.dart'; // 🆕 NOVI kombinovani servis
 import '../services/realtime_service.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/putnik_list.dart';
@@ -53,7 +54,7 @@ class DanasScreen extends StatefulWidget {
 
 class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
-  final _putnikService = PutnikService(); // 🆕 DODANO PutnikService instanca
+  final _putnikService = CombinedPutnikService(); // 🆕 NOVI kombinovani servis
   final Set<String> _resettingSlots = {};
   Timer? _resetDebounceTimer;
 
@@ -2227,20 +2228,12 @@ class _DanasScreenState extends State<DanasScreen> {
                         Timer(const Duration(milliseconds: 150), () async {
                       final key = '$grad|$vreme';
                       setState(() => _resettingSlots.add(key));
-                      final isoDate =
-                          DateTime.now().toIso8601String().split('T')[0];
-                      final paramStream = RealtimeService.instance
-                          .streamKombinovaniPutniciParametric(
-                              isoDate: isoDate, grad: grad, vreme: vreme)
-                          .skip(1)
-                          .first;
                       try {
                         await _putnikService.resetPokupljenjaNaPolazak(
                             vreme, grad, _currentDriver ?? 'Unknown');
                         await RealtimeService.instance.refreshNow();
-                        await paramStream.timeout(const Duration(seconds: 5));
                       } catch (e) {
-                        dlog('reset error or timeout: $e');
+                        dlog('reset error: $e');
                       } finally {
                         if (mounted) {
                           setState(() => _resettingSlots.remove(key));
@@ -2267,20 +2260,12 @@ class _DanasScreenState extends State<DanasScreen> {
                         Timer(const Duration(milliseconds: 150), () async {
                       final key = '$grad|$vreme';
                       setState(() => _resettingSlots.add(key));
-                      final isoDate =
-                          DateTime.now().toIso8601String().split('T')[0];
-                      final paramStream = RealtimeService.instance
-                          .streamKombinovaniPutniciParametric(
-                              isoDate: isoDate, grad: grad, vreme: vreme)
-                          .skip(1)
-                          .first;
                       try {
                         await _putnikService.resetPokupljenjaNaPolazak(
                             vreme, grad, _currentDriver ?? 'Unknown');
                         await RealtimeService.instance.refreshNow();
-                        await paramStream.timeout(const Duration(seconds: 5));
                       } catch (e) {
-                        dlog('reset error or timeout: $e');
+                        dlog('reset error: $e');
                       } finally {
                         if (mounted) {
                           setState(() => _resettingSlots.remove(key));

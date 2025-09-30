@@ -515,6 +515,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.max,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Moderni welcome tekst
@@ -617,71 +619,77 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                   ),
                 ),
-                // Moderno dugme GAVRA 013 dole
-                Center(
-                  child: GestureDetector(
-                    onTap: () async {
-                      try {
-                        await _audioPlayer.setAsset('assets/gavra.mp3');
-                        await _audioPlayer.play();
-                      } catch (e) {
-                        if (kDebugMode) {}
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF2979FF)],
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomLeft,
-                        ),
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF2979FF,
-                            ).withOpacity(0.22),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
+                // Moderno dugme GAVRA 013 dole - fleksibilno da ne izaziva overflow
+                Flexible(
+                  fit: FlexFit.loose,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: GestureDetector(
+                        onTap: () async {
+                          try {
+                            await _audioPlayer.setAsset('assets/gavra.mp3');
+                            await _audioPlayer.play();
+                          } catch (e) {
+                            // Swallow audio errors silently in production
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
                           ),
-                        ],
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.18),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.directions_bus,
-                            color: Colors.white.withOpacity(0.92),
-                            size: 28,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'GAVRA 013',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 2,
-                              shadows: [
-                                Shadow(
-                                  color: const Color(
-                                    0xFF00E5FF,
-                                  ).withOpacity(0.7),
-                                  blurRadius: 8,
-                                ),
-                              ],
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF00E5FF), Color(0xFF2979FF)],
+                              begin: Alignment.topRight,
+                              end: Alignment.bottomLeft,
                             ),
-                            textAlign: TextAlign.center,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF2979FF,
+                                ).withOpacity(0.22),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.18),
+                              width: 1.5,
+                            ),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.directions_bus,
+                                color: Colors.white.withOpacity(0.92),
+                                size: 28,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'GAVRA 013',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                  shadows: [
+                                    Shadow(
+                                      color: const Color(
+                                        0xFF00E5FF,
+                                      ).withOpacity(0.7),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),

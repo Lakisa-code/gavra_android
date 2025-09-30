@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/putnik.dart';
 import 'firebase_service.dart';
 import '../utils/logging.dart';
+import 'supabase_safe.dart';
 
 class SMSService {
   static Timer? _monthlyTimer;
@@ -86,9 +87,7 @@ class SMSService {
       String tomorrowStr = DateFormat('yyyy-MM-dd').format(tomorrow);
 
       const mesecniFields = '*,'
-          'polasci_po_danu,'
-          'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
-          'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+          'polasci_po_danu';
 
       final response = await supabase
           .from('mesecni_putnici')
@@ -160,9 +159,7 @@ class SMSService {
       String yesterdayStr = DateFormat('yyyy-MM-dd').format(yesterday);
 
       const mesecniFields = '*,'
-          'polasci_po_danu,'
-          'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
-          'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+          'polasci_po_danu';
 
       final response = await supabase
           .from('mesecni_putnici')
@@ -220,15 +217,17 @@ class SMSService {
   static Future<Map<String, dynamic>> _getPaymentStats(String putnikId) async {
     try {
       // 1. Poslednja uplata
-      final lastPaymentResponse = await supabase
-          .from('putovanja_istorija')
-          .select('datum_i_vreme, iznos_uplate')
-          .eq('putnik_id', putnikId)
-          .gt('iznos_uplate', 0)
-          .order('datum_i_vreme', ascending: false)
-          .limit(1);
+      final lastPaymentResponse = await SupabaseSafe.run(
+          () => supabase
+              .from('putovanja_istorija')
+              .select('datum_i_vreme, iznos_uplate')
+              .eq('putnik_id', putnikId)
+              .gt('iznos_uplate', 0)
+              .order('datum_i_vreme', ascending: false)
+              .limit(1),
+          fallback: <dynamic>[]);
 
-      if (lastPaymentResponse.isEmpty) {
+      if (lastPaymentResponse is! List || lastPaymentResponse.isEmpty) {
         return {
           'lastPaymentDate': 'Nema podataka',
           'lastPaymentAmount': 0,
@@ -241,18 +240,23 @@ class SMSService {
       int lastPaymentAmount = lastPaymentResponse[0]['iznos_uplate'];
 
       // 2. Putovanja od poslednje uplate
-      final tripsResponse = await supabase
-          .from('putovanja_istorija')
-          .select('tip_promene')
-          .eq('putnik_id', putnikId)
-          .gte('datum_i_vreme', lastPaymentDate);
+      final tripsResponse = await SupabaseSafe.run(
+          () => supabase
+              .from('putovanja_istorija')
+              .select('tip_promene')
+              .eq('putnik_id', putnikId)
+              .gte('datum_i_vreme', lastPaymentDate),
+          fallback: <dynamic>[]);
 
       // Brojanje putovanja i otkazivanja
-      int putovanja =
-          tripsResponse.where((t) => t['tip_promene'] == 'putovanje').length;
-
-      int otkazivanja =
-          tripsResponse.where((t) => t['tip_promene'] == 'otkazano').length;
+      int putovanja = 0;
+      int otkazivanja = 0;
+      if (tripsResponse is List) {
+        putovanja =
+            tripsResponse.where((t) => t['tip_promene'] == 'putovanje').length;
+        otkazivanja =
+            tripsResponse.where((t) => t['tip_promene'] == 'otkazano').length;
+      }
 
       // Formatiranje datuma
       DateTime date = DateTime.parse(lastPaymentDate);

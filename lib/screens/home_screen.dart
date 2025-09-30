@@ -12,7 +12,7 @@ import '../services/haptic_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/printing_service.dart';
-import '../services/putnik_service.dart';
+import '../services/combined_putnik_service.dart'; // 🆕 NOVI kombinovani servis
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 // import '../services/update_service.dart'; // 🔄 Uklonjeno: Update sistem
@@ -47,7 +47,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final PutnikService _putnikService = PutnikService();
+  final CombinedPutnikService _putnikService =
+      CombinedPutnikService(); // 🆕 NOVI kombinovani servis
   final SupabaseClient supabase = Supabase.instance.client;
 
   bool _isLoading = true;
@@ -56,8 +57,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'Ponedeljak'; // Biće postavljeno na današnji dan u initState
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
-  final Set<String> _resettingSlots = {}; // track slots currently resetting
-  Timer? _resetDebounceTimer;
 
   // Stream kontroleri za reaktivno ažuriranje
   final StreamController<String> _selectedGradSubject =
@@ -1523,44 +1522,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
                   getPutnikCount: getPutnikCount,
-                  isSlotLoading: (grad, vreme) =>
-                      _resettingSlots.contains('$grad|$vreme'),
                   onPolazakChanged: (grad, vreme) {
                     // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
                     setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                       _selectedGradSubject.add(grad); // Ažuriraj stream
-                    });
-
-                    // Debounce the reset to avoid multiple rapid requests
-                    _resetDebounceTimer?.cancel();
-                    _resetDebounceTimer =
-                        Timer(const Duration(milliseconds: 150), () async {
-                      final key = '$grad|$vreme';
-                      setState(() => _resettingSlots.add(key));
-                      // Prepare to wait for the next parametric realtime emission
-                      final isoDate =
-                          DateTime.now().toIso8601String().split('T')[0];
-                      final paramStream = RealtimeService.instance
-                          .streamKombinovaniPutniciParametric(
-                              isoDate: isoDate, grad: grad, vreme: vreme)
-                          .skip(1)
-                          .first;
-                      try {
-                        await _putnikService.resetPokupljenjaNaPolazak(
-                            vreme, grad, _currentDriver ?? 'Unknown');
-                        // Force a refresh of RealtimeService so listeners receive updated data
-                        await RealtimeService.instance.refreshNow();
-                        // Wait for the next parametric emission (or timeout)
-                        await paramStream.timeout(const Duration(seconds: 5));
-                      } catch (e) {
-                        dlog('reset error or timeout: $e');
-                      } finally {
-                        if (mounted) {
-                          setState(() => _resettingSlots.remove(key));
-                        }
-                      }
                     });
                   },
                 )
@@ -1569,40 +1536,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
                   getPutnikCount: getPutnikCount,
-                  isSlotLoading: (grad, vreme) =>
-                      _resettingSlots.contains('$grad|$vreme'),
                   onPolazakChanged: (grad, vreme) async {
                     setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                       _selectedGradSubject.add(grad);
-                    });
-
-                    // Debounce then run reset with loading indicator
-                    _resetDebounceTimer?.cancel();
-                    _resetDebounceTimer =
-                        Timer(const Duration(milliseconds: 150), () async {
-                      final key = '$grad|$vreme';
-                      setState(() => _resettingSlots.add(key));
-                      final isoDate =
-                          DateTime.now().toIso8601String().split('T')[0];
-                      final paramStream = RealtimeService.instance
-                          .streamKombinovaniPutniciParametric(
-                              isoDate: isoDate, grad: grad, vreme: vreme)
-                          .skip(1)
-                          .first;
-                      try {
-                        await _putnikService.resetPokupljenjaNaPolazak(
-                            vreme, grad, _currentDriver ?? 'Unknown');
-                        await RealtimeService.instance.refreshNow();
-                        await paramStream.timeout(const Duration(seconds: 5));
-                      } catch (e) {
-                        dlog('reset error or timeout: $e');
-                      } finally {
-                        if (mounted) {
-                          setState(() => _resettingSlots.remove(key));
-                        }
-                      }
                     });
                   },
                 ),

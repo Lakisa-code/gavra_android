@@ -45,6 +45,8 @@ dependencies:
   pdf: ^3.11.3
   geolocator: ^10.1.1
   crypto: ^3.0.3
+  graphql: ^5.1.2
+  graphql_flutter: ^5.1.2
 
 dev_dependencies:
   flutter_test:

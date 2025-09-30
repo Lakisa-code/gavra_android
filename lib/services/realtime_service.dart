@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/slot_utils.dart';
+import '../utils/logging.dart';
+import 'supabase_safe.dart';
 
 typedef RealtimePayloadHandler = void Function(Map<String, dynamic> payload);
 
@@ -53,7 +55,13 @@ class RealtimeService {
   /// Vrati stream za tabelu. Pozivaoci mogu sami da se pretplate i obrade evente.
   Stream<dynamic> tableStream(String table) {
     final client = Supabase.instance.client;
-    return client.from(table).stream(primaryKey: ['id']);
+    try {
+      return client.from(table).stream(primaryKey: ['id']);
+    } catch (e) {
+      dlog('❌ [REALTIME SERVICE] Failed to create stream for $table: $e');
+      // Return an empty list stream so callers can subscribe safely.
+      return Stream.value(<dynamic>[]);
+    }
   }
 
   /// Pomoćna metoda: pretplati se na tabelu i vrati StreamSubscription.
@@ -88,12 +96,8 @@ class RealtimeService {
   /// If `vozac` is provided, daily_checkins events will be filtered by driver
   /// in the handler before adding to the controller.
   void startForDriver(String? vozac) {
-    final client = Supabase.instance.client;
-
     // daily_checkins
-    _dailySub = client
-        .from('daily_checkins')
-        .stream(primaryKey: ['id']).listen((List<dynamic> data) {
+    _dailySub = tableStream('daily_checkins').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in data) {
@@ -114,9 +118,7 @@ class RealtimeService {
     });
 
     // putovanja_istorija
-    _putovanjaSub = client
-        .from('putovanja_istorija')
-        .stream(primaryKey: ['id']).listen((List<dynamic> data) {
+    _putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in data) {
@@ -220,8 +222,6 @@ class RealtimeService {
     _paramLastDaily[key] = [];
     _paramLastPutovanja[key] = [];
 
-    final client = Supabase.instance.client;
-
     // Helper to emit combined for this key
     void emitForKey() {
       try {
@@ -241,9 +241,7 @@ class RealtimeService {
     }
 
     // Subscribe to daily_checkins and putovanja_istorija; filter incoming rows
-    final dailySub = client
-        .from('daily_checkins')
-        .stream(primaryKey: ['id']).listen((List<dynamic> data) {
+    final dailySub = tableStream('daily_checkins').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in data) {
@@ -278,9 +276,8 @@ class RealtimeService {
       } catch (_) {}
     });
 
-    final putovanjaSub = client
-        .from('putovanja_istorija')
-        .stream(primaryKey: ['id']).listen((List<dynamic> data) {
+    final putovanjaSub =
+        tableStream('putovanja_istorija').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in data) {
@@ -335,18 +332,15 @@ class RealtimeService {
   /// and emit the latest combined set.
   Future<void> refreshNow() async {
     try {
-      final client = Supabase.instance.client;
-      final putovanja = await client.from('putovanja_istorija').select();
-      final daily = await client.from('daily_checkins').select();
+      final putovanja = await SupabaseSafe.select('putovanja_istorija');
+      final daily = await SupabaseSafe.select('daily_checkins');
 
-      _lastPutovanjaRows = (putovanja as List?)
-              ?.map((e) => Map<String, dynamic>.from(e as Map))
-              .toList() ??
-          [];
-      _lastDailyRows = (daily as List?)
-              ?.map((e) => Map<String, dynamic>.from(e as Map))
-              .toList() ??
-          [];
+      _lastPutovanjaRows = (putovanja is List)
+          ? putovanja.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+          : [];
+      _lastDailyRows = (daily is List)
+          ? daily.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+          : [];
       _emitCombinedPutnici();
     } catch (e) {
       // ignore

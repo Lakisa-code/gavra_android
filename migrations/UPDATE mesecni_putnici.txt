@@ -1,4 +1,0 @@
-UPDATE mesecni_putnici
-SET radni_dani_arr = regexp_split_to_array(trim(radni_dani), E'\\s*,\\s*')
-WHERE (radni_dani_arr IS NULL OR array_length(radni_dani_arr,1) IS NULL)
-  AND radni_dani IS NOT NULL AND trim(radni_dani) <> '';

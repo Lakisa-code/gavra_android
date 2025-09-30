@@ -9,6 +9,7 @@ import 'putnik_service.dart';
 import 'mesecni_putnik_service.dart';
 import 'statistika_service.dart';
 import 'realtime_service.dart';
+import 'supabase_safe.dart';
 
 // Use centralized logger via dlog directly
 
@@ -156,14 +157,16 @@ class RealTimeStatistikaService {
   Future<Map<String, dynamic>> _calculatePutnikStatistike(
       String putnikId) async {
     try {
-      final supabase = Supabase.instance.client;
+      // Dohvati sva putovanja za putnika (safely)
+      final response = await SupabaseSafe.run(
+          () => Supabase.instance.client
+              .from('putovanja_istorija')
+              .select()
+              .eq('putnik_id', putnikId)
+              .order('created_at', ascending: false),
+          fallback: <dynamic>[]);
 
-      // Dohvati sva putovanja za putnika
-      final putovanja = await supabase
-          .from('putovanja_istorija')
-          .select()
-          .eq('putnik_id', putnikId)
-          .order('created_at', ascending: false);
+      final putovanja = response is List ? response : <dynamic>[];
 
       // Osnovne statistike
       int ukupnoPutovanja = 0;

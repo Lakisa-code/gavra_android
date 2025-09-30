@@ -1,4 +1,7 @@
 import 'package:uuid/uuid.dart';
+import 'putnik.dart';
+import 'adresa.dart';
+import 'ruta.dart';
 
 /// Tip mesečnih putnika
 enum MesecniPutnikTip {
@@ -175,5 +178,38 @@ class MesecniPutnik {
     if (polasciPoDanu[dan]?.isEmpty ?? false) {
       polasciPoDanu.remove(dan);
     }
+  }
+
+  /// Konvertuje MesecniPutnik u listu legacy Putnik objekata za dati dan
+  List<Putnik> toPutnikList(String targetDan, Adresa adresa, Ruta ruta) {
+    final List<Putnik> putnici = [];
+    final vremena = polasciPoDanu[targetDan] ?? [];
+
+    for (final vreme in vremena) {
+      putnici.add(Putnik(
+        id: id,
+        ime: '$ime $prezime',
+        polazak: vreme,
+        pokupljen: false, // TODO: Implementirati kada se doda status po polasku
+        vremeDodavanja: DateTime.now(), // TODO: Koristiti createdAt
+        mesecnaKarta: true,
+        dan: targetDan,
+        status: aktivan ? 'radi' : 'neaktivan',
+        vremePokupljenja:
+            null, // TODO: Implementirati kada se doda vreme po polasku
+        vremePlacanja:
+            null, // TODO: Implementirati kada se doda vreme po polasku
+        placeno: false, // TODO: Implementirati kada se doda status po polasku
+        iznosPlacanja:
+            null, // TODO: Implementirati kada se doda cena po polasku
+        vozac: null, // TODO: Dodati kada se implementira veza sa vozacima
+        grad: adresa.grad,
+        adresa: '${adresa.ulica} ${adresa.broj}',
+        obrisan: !aktivan,
+        brojTelefona: brojTelefona,
+      ));
+    }
+
+    return putnici;
   }
 }

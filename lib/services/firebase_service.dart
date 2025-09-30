@@ -7,7 +7,17 @@ class FirebaseService {
 
   /// Inicijalizuje Firebase
   static Future<void> initialize() async {
-    await Firebase.initializeApp();
+    try {
+      // Avoid duplicate initialization when app already initialized
+      // Firebase.apps is only available on platforms that support it; use try/catch to be safe
+      final alreadyInitialized = Firebase.apps.isNotEmpty;
+      if (!alreadyInitialized) {
+        await Firebase.initializeApp();
+      }
+    } catch (e) {
+      // If initialization fails because it's already initialized, ignore the error
+      // This makes initialization idempotent and safe to call from multiple places
+    }
   }
 
   /// Dobija trenutnog vozača iz SharedPreferences

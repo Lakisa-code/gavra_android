@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gavra_android/services/putnik_service.dart';
+import '../services/combined_putnik_service.dart'; // 🆕 NOVI kombinovani servis
 
 import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // DODANO za kusur kocke
@@ -30,7 +30,8 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   String? _currentDriver;
-  final PutnikService _putnikService = PutnikService();
+  final CombinedPutnikService _putnikService =
+      CombinedPutnikService(); // 🆕 NOVI kombinovani servis
 
   //
   // Statistika pazara

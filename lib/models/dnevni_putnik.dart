@@ -1,4 +1,7 @@
 import 'package:uuid/uuid.dart';
+import 'putnik.dart';
+import 'adresa.dart';
+import 'ruta.dart';
 
 /// Status dnevnih putnika
 enum DnevniPutnikStatus {
@@ -155,4 +158,43 @@ class DnevniPutnik {
   bool get jeOdsustvo =>
       status == DnevniPutnikStatus.bolovanje ||
       status == DnevniPutnikStatus.godisnji;
+
+  /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
+  Putnik toPutnik(Adresa adresa, Ruta ruta) {
+    return Putnik(
+      id: id,
+      ime: punoIme,
+      polazak: vremePolaska,
+      pokupljen: jePokupljen,
+      vremeDodavanja: createdAt,
+      mesecnaKarta: false,
+      dan: datumPutovanja.weekday == 1
+          ? 'pon'
+          : datumPutovanja.weekday == 2
+              ? 'uto'
+              : datumPutovanja.weekday == 3
+                  ? 'sre'
+                  : datumPutovanja.weekday == 4
+                      ? 'cet'
+                      : datumPutovanja.weekday == 5
+                          ? 'pet'
+                          : datumPutovanja.weekday == 6
+                              ? 'sub'
+                              : 'ned',
+      status: status.value,
+      vremePokupljenja: vremePokupljenja,
+      vremePlacanja: vremePlacanja,
+      placeno: jePlacen,
+      iznosPlacanja: cena,
+      naplatioVozac: naplatioVozacId,
+      pokupioVozac: pokupioVozacId,
+      dodaoVozac: dodaoVozacId,
+      vozac: null, // TODO: Dodati kada se implementira veza sa vozacima
+      grad: adresa.grad,
+      adresa: '${adresa.ulica} ${adresa.broj}',
+      obrisan: obrisan,
+      brojTelefona: brojTelefona,
+      datum: datumPutovanja.toIso8601String().split('T')[0],
+    );
+  }
 }

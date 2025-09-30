@@ -7,8 +7,10 @@ import 'package:just_audio/just_audio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart';
+import '../utils/logging.dart';
 import '../screens/danas_screen.dart';
 import '../models/mesecni_putnik.dart';
+import 'supabase_safe.dart';
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -120,7 +122,11 @@ class LocalNotificationService {
       await _audioPlayer.setVolume(1.0); // Maksimalna glasnoća
       await _audioPlayer.play();
     } catch (e) {
-      // Ignorišemo greške sa reprodukcijom zvuka
+      // Log the error to help diagnose issues like unsupported audio format
+      try {
+        // Use navigatorKey context-safe logger if available
+        dlog('❌ Greška u LocalNotificationService audio playback: $e');
+      } catch (_) {}
     }
   }
 
@@ -283,15 +289,17 @@ class LocalNotificationService {
       final supabase = Supabase.instance.client;
 
       // Traži u putovanja_istorija tabeli (dnevni putnici)
-      final dnevniResult = await supabase
-          .from('putovanja_istorija')
-          .select('putnik_ime, grad, vreme_polaska, dan, polazak')
-          .eq('putnik_ime', putnikIme)
-          .eq('obrisan', false)
-          .order('created_at', ascending: false)
-          .limit(1);
+      final dnevniResult = await SupabaseSafe.run(
+          () => supabase
+              .from('putovanja_istorija')
+              .select('putnik_ime, grad, vreme_polaska, dan, polazak')
+              .eq('putnik_ime', putnikIme)
+              .eq('obrisan', false)
+              .order('created_at', ascending: false)
+              .limit(1),
+          fallback: <dynamic>[]);
 
-      if (dnevniResult.isNotEmpty) {
+      if (dnevniResult is List && dnevniResult.isNotEmpty) {
         final data = dnevniResult.first;
         return {
           'grad': data['grad'],
@@ -303,9 +311,7 @@ class LocalNotificationService {
 
       // Traži u mesecni_putnici tabeli
       const mesecniFields = '*,'
-          'polasci_po_danu,'
-          'polazak_bc_pon,polazak_bc_uto,polazak_bc_sre,polazak_bc_cet,polazak_bc_pet,'
-          'polazak_vs_pon,polazak_vs_uto,polazak_vs_sre,polazak_vs_cet,polazak_vs_pet';
+          'polasci_po_danu';
 
       final mesecniResult = await supabase
           .from('mesecni_putnici')
