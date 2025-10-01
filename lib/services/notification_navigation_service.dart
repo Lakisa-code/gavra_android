@@ -116,10 +116,18 @@ class NotificationNavigationService {
     Map<String, dynamic> putnikData,
     bool mesecnaKarta,
   ) {
-    // Always navigate to today's screen for all notification types
+    // Navigate to today's screen with filters for the passenger
+    final putnikIme = putnikData['ime'];
+    final putnikGrad = putnikData['grad'];
+    final putnikVreme = putnikData['polazak'] ?? putnikData['vreme'];
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const DanasScreen(),
+        builder: (context) => DanasScreen(
+          highlightPutnikIme: putnikIme,
+          filterGrad: putnikGrad,
+          filterVreme: putnikVreme,
+        ),
       ),
     );
   }

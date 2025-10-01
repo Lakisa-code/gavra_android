@@ -103,7 +103,7 @@ class RealtimeNotificationService {
       _logger
           .i('📱 Foreground Firebase message: ${message.notification?.title}');
 
-      // Filtriraj notifikacije: samo za današnji dan i za tip "dodat" ili "otkazan"
+      // Filtriraj notifikacije: samo za današnji dan i za tip "dodat"/"novi_putnik" ili "otkazan"/"otkazan_putnik"
       final data = message.data;
       final type = (data['type'] ?? '').toString().toLowerCase();
       final datumString = data['datum'] ?? data['date'] ?? '';
@@ -120,7 +120,11 @@ class RealtimeNotificationService {
         }
       }
 
-      if ((type == 'dodat' || type == 'otkazan') && isToday) {
+      if ((type == 'dodat' ||
+              type == 'novi_putnik' ||
+              type == 'otkazan' ||
+              type == 'otkazan_putnik') &&
+          isToday) {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
