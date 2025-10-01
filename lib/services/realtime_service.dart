@@ -156,6 +156,9 @@ class RealtimeService {
         // ignore
       }
     });
+
+    // Fetch initial data to ensure streams have data immediately
+    refreshNow();
   }
 
   /// Stop any centralized subscriptions started with [startForDriver]
@@ -175,6 +178,18 @@ class RealtimeService {
       await _mesecniSub?.cancel();
       _mesecniSub = null;
     } catch (_) {}
+
+    // Clear internal state
+    _lastPutovanjaRows.clear();
+    _lastMesecniRows.clear();
+
+    // Emit empty lists to clear UI
+    if (!_putovanjaController.isClosed) {
+      _putovanjaController.add([]);
+    }
+    if (!_combinedPutniciController.isClosed) {
+      _combinedPutniciController.add([]);
+    }
   }
 
   void _emitCombinedPutnici() {
@@ -225,8 +240,9 @@ class RealtimeService {
               (p.datum == null &&
                   GradAdresaValidator.normalizeString(p.dan ?? '').contains(
                       GradAdresaValidator.normalizeString(targetDayAbbr)));
-          if (!matches)
+          if (!matches) {
             dlog('❌ Filtered out: ${p.ime}, dan: ${p.dan}, datum: ${p.datum}');
+          }
           return matches;
         });
       }
@@ -235,8 +251,9 @@ class RealtimeService {
         filtered = filtered.where((p) {
           final matches =
               GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
-          if (!matches)
+          if (!matches) {
             dlog('❌ Filtered out by grad: ${p.ime}, grad: ${p.grad}');
+          }
           return matches;
         });
       }
@@ -245,8 +262,9 @@ class RealtimeService {
         filtered = filtered.where((p) {
           final matches = GradAdresaValidator.normalizeTime(p.polazak) ==
               GradAdresaValidator.normalizeTime(vreme);
-          if (!matches)
+          if (!matches) {
             dlog('❌ Filtered out by vreme: ${p.ime}, polazak: ${p.polazak}');
+          }
           return matches;
         });
       }
@@ -381,9 +399,13 @@ class RealtimeService {
   Future<void> refreshNow() async {
     try {
       final putovanja = await SupabaseSafe.select('putovanja_istorija');
+      final mesecni = await SupabaseSafe.select('mesecni_putnici');
 
       _lastPutovanjaRows = (putovanja is List)
           ? putovanja.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+          : [];
+      _lastMesecniRows = (mesecni is List)
+          ? mesecni.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : [];
       _emitCombinedPutnici();
     } catch (e) {
