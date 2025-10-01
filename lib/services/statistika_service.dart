@@ -63,11 +63,9 @@ class StatistikaService {
     final normalizedFrom = _normalizeDateTime(from);
     final normalizedTo = _normalizeDateTime(to);
 
-    // ✅ FIXED: Use proper inclusive date comparison
-    final result = normalized.isAtSameMomentAs(normalizedFrom) ||
-        normalized.isAtSameMomentAs(normalizedTo) ||
-        (normalized.isAfter(normalizedFrom) &&
-            normalized.isBefore(normalizedTo));
+    // ✅ FIXED: Use proper inclusive date range comparison
+    final result = !normalized.isBefore(normalizedFrom) &&
+        !normalized.isAfter(normalizedTo);
 
     if (!result) {
       _debugLog(
