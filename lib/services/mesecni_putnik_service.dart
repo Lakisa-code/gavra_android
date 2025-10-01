@@ -435,7 +435,7 @@ class MesecniPutnikService {
           .from('putovanja_istorija')
           .select('datum')
           .eq('mesecni_putnik_id', mesecniPutnikId)
-          .or('pokupljen.eq.true,status.eq.pokupljen');
+          .or('pokupljen.eq.true,status.eq.pokupljeno');
 
       // Broji JEDINSTVENE datume (jedan dan = jedno putovanje)
       final jedinstveniDatumi = <String>{};
@@ -469,7 +469,7 @@ class MesecniPutnikService {
           .select('id')
           .eq('mesecni_putnik_id', mesecniPutnikId)
           .eq('datum', datumStr)
-          .or('pokupljen.eq.true,status.eq.pokupljen');
+          .or('pokupljen.eq.true,status.eq.pokupljeno');
 
       // Za određeni datum: ima pokupljanja = 1 putovanje, nema = 0 putovanja
       final brojPutovanja = response.isNotEmpty ? 1 : 0;
@@ -514,7 +514,7 @@ class MesecniPutnikService {
         final grad = red['grad'] as String? ?? '';
 
         // Ako je pokupljen
-        if (pokupljen || status == 'pokupljen') {
+        if (pokupljen || status == 'pokupljeno') {
           // Odrediti ujutru ili popodne na osnovu grada i vremena
           if (grad.contains('Bela Crkva') ||
               vremePolaska.startsWith('6') ||
@@ -576,7 +576,7 @@ class MesecniPutnikService {
           .from('putovanja_istorija')
           .select('datum')
           .eq('mesecni_putnik_id', mesecniPutnikId)
-          .or('status.eq.otkazan,status.eq.otkazano,status.eq.nije_se_pojavio');
+          .or('status.eq.otkazano,status.eq.nije_se_pojavio');
 
       // Broji JEDINSTVENE datume (jedan dan = jedno otkazivanje)
       final jedinstveniDatumi = <String>{};
@@ -904,7 +904,7 @@ class MesecniPutnikService {
           .eq('tip_putnika', 'mesecni')
           .inFilter('ime', djaciDanas.map((d) => d['ime']).toList())
           .gte('vreme_polaska', '14:00') // Popodnevni termini
-          .neq('status', 'otkazan'); // Nisu otkazali
+          .neq('status', 'otkazano'); // Nisu otkazali
 
       final upisanoZaPovratak = upisaniZaPovratak.length;
 
