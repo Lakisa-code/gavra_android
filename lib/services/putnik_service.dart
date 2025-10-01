@@ -440,6 +440,8 @@ class PutnikService {
               'broj_putovanja': lastAction.oldData['broj_putovanja'],
               'poslednje_putovanje':
                   lastAction.oldData['poslednje_putovanje'], // ✅ ISPRAVKA
+              'pokupljen': false, // ✅ RESETUJ pokupljen flag za mesecne putnike
+              'vreme_pokupljenja': null, // ✅ RESETUJ vreme pokupljanja
             }).eq('id', lastAction.putnikId);
           } else {
             await supabase.from(tabela).update({
@@ -452,14 +454,17 @@ class PutnikService {
         case 'payment':
           if (tabela == 'mesecni_putnici') {
             await supabase.from(tabela).update({
-              // 'iznos': null // lastAction.oldData['iznos'] // UKLONJEN, // UKLONJEN - kolona ne postoji
-              // 'datum_placanja': lastAction.oldData['datum_placanja'], // UKLONJEN - kolona ne postoji
+              'cena': null, // ✅ RESETUJ cenu za mesecne putnike
+              'vreme_placanja': null, // ✅ RESETUJ vreme placanja
+              'vozac': lastAction.oldData['vozac'], // ✅ RESETUJ vozaca
+              'naplata_vozac': null, // ✅ RESETUJ naplatu vozaca
             }).eq('id', lastAction.putnikId);
           } else {
             await supabase.from(tabela).update({
               'placeno': false,
               'iznos_placanja': null,
               'vreme_placanja': null,
+              'status': lastAction.oldData['status'], // ✅ RESETUJ status
             }).eq('id', lastAction.putnikId);
           }
           return 'Poništeno plaćanje';
@@ -1260,7 +1265,7 @@ class PutnikService {
         .eq('tip_putnika', 'dnevni')
         .eq('adresa_polaska', grad) // koristimo adresa_polaska umesto grad
         .eq('vreme_polaska', vreme)
-        .neq('status', 'otkazano') as List<dynamic>?;
+        .neq('status', 'otkazan') as List<dynamic>?;
 
     if (data == null) return [];
     return data.map((e) => Putnik.fromMap(e)).toList();
@@ -1277,7 +1282,7 @@ class PutnikService {
           .select()
           .eq('tip_putnika', 'dnevni')
           .gte('created_at', fourWeeksAgo.toIso8601String())
-          .neq('status', 'otkazano') as List<dynamic>?;
+          .neq('status', 'otkazan') as List<dynamic>?;
 
       if (data == null || data.isEmpty) {
         return {
@@ -1717,7 +1722,7 @@ class PutnikService {
           .from('putovanja_istorija')
           .select('*')
           .eq('putnik_ime', putnikIme)
-          .eq('status', 'otkazano')
+          .eq('status', 'otkazan')
           .order('created_at', ascending: false) as List<dynamic>;
 
       return otkazi.cast<Map<String, dynamic>>();
