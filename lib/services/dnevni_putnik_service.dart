@@ -15,9 +15,7 @@ class DnevniPutnikService {
     final response = await _supabase
         .from('dnevni_putnici')
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''')
         .eq('datum_putovanja', datumString)
         .eq('obrisan', false)
@@ -29,9 +27,7 @@ class DnevniPutnikService {
   /// Dohvata dnevnog putnika po ID-u
   Future<DnevniPutnik?> getDnevniPutnikById(String id) async {
     final response = await _supabase.from('dnevni_putnici').select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').eq('id', id).single();
 
     return DnevniPutnik.fromMap(response);
@@ -41,9 +37,7 @@ class DnevniPutnikService {
   Future<DnevniPutnik> createDnevniPutnik(DnevniPutnik putnik) async {
     final response =
         await _supabase.from('dnevni_putnici').insert(putnik.toMap()).select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').single();
 
     return DnevniPutnik.fromMap(response);
@@ -59,9 +53,7 @@ class DnevniPutnikService {
         .update(updates)
         .eq('id', id)
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').single();
 
     return DnevniPutnik.fromMap(response);
@@ -107,9 +99,7 @@ class DnevniPutnikService {
     var queryBuilder = _supabase
         .from('dnevni_putnici')
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''')
         .eq('obrisan', false)
         .or('ime.ilike.%$query%,prezime.ilike.%$query%,broj_telefona.ilike.%$query%');
@@ -131,9 +121,7 @@ class DnevniPutnikService {
     final response = await _supabase
         .from('dnevni_putnici')
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''')
         .eq('ruta_id', rutaId)
         .eq('datum_putovanja', datumString)

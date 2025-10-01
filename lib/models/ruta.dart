@@ -5,7 +5,7 @@ class Ruta {
   final String id;
   final String naziv;
   final String polazak;
-  final String destinacija;
+  final String dolazak;
   final String? opis;
   final double? udaljenostKm;
   final Duration? prosecnoVreme;
@@ -17,7 +17,7 @@ class Ruta {
     String? id,
     required this.naziv,
     required this.polazak,
-    required this.destinacija,
+    required this.dolazak,
     this.opis,
     this.udaljenostKm,
     this.prosecnoVreme,
@@ -33,7 +33,7 @@ class Ruta {
       id: map['id'] as String,
       naziv: map['naziv'] as String,
       polazak: map['polazak'] as String,
-      destinacija: map['destinacija'] as String,
+      dolazak: map['dolazak'] as String,
       opis: map['opis'] as String?,
       udaljenostKm: (map['udaljenost_km'] as num?)?.toDouble(),
       prosecnoVreme: map['prosecno_vreme'] != null
@@ -50,7 +50,7 @@ class Ruta {
       'id': id,
       'naziv': naziv,
       'polazak': polazak,
-      'destinacija': destinacija,
+      'dolazak': dolazak,
       'opis': opis,
       'udaljenost_km': udaljenostKm,
       'prosecno_vreme': prosecnoVreme?.inSeconds,
@@ -60,5 +60,5 @@ class Ruta {
     };
   }
 
-  String get rutaOpis => '$polazak → $destinacija';
+  String get rutaOpis => '$polazak → $dolazak';
 }

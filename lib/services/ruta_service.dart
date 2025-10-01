@@ -63,7 +63,7 @@ class RutaService {
         .from('rute')
         .select()
         .eq('aktivan', true)
-        .or('naziv.ilike.%$query%,polazak.ilike.%$query%,destinacija.ilike.%$query%')
+        .or('naziv.ilike.%$query%,polazak.ilike.%$query%,dolazak.ilike.%$query%')
         .order('naziv');
 
     return response.map((json) => Ruta.fromMap(json)).toList();
@@ -76,7 +76,7 @@ class RutaService {
         .select()
         .eq('aktivan', true)
         .eq('polazak', polazak)
-        .eq('destinacija', destinacija)
+        .eq('dolazak', destinacija)
         .order('naziv');
 
     return response.map((json) => Ruta.fromMap(json)).toList();

@@ -980,39 +980,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Use centralized RealtimeService combined Putnik stream filtered by date/grad/vreme
-    final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
+    // Use centralized RealtimeService combined Putnik stream
     return StreamBuilder<List<Putnik>>(
-      stream: RealtimeService.instance.streamKombinovaniPutnici(
-        isoDate: targetDateIso,
-        grad: _selectedGrad,
-        vreme: _selectedVreme,
-      ),
-      initialData: [], // Dodano da se ne čeka loading kada se menja filter
+      stream: RealtimeService.instance.combinedPutniciStream,
+      initialData: [],
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            snapshot.data == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
         final allPutnici = snapshot.data ?? [];
 
-        // Debug log za praćenje broja putnika
-        dlog(
-            '🔍 DEBUG: HomeScreen build() - ukupno putnika: ${allPutnici.length}');
-        dlog(
-            '📊 [HOME SCREEN] Filter: $_selectedDay, $_selectedVreme, $_selectedGrad'); // ✅ KORISTI SELEKTOVANI DAN
-
-        // --- Use shared SlotUtils to compute per-slot counts for selected day (date-aware) ---
+        // Get target date for filtering
         final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
-        final slotCounts =
-            SlotUtils.computeSlotCountsForDate(allPutnici, targetDateIso);
-        final Map<String, int> brojPutnikaBC =
-            Map<String, int>.from(slotCounts['BC'] ?? {});
-        final Map<String, int> brojPutnikaVS =
-            Map<String, int>.from(slotCounts['VS'] ?? {});
 
-        // --- Stari filter za prikaz samo selektovanog slota ---
-        final sviPutnici = allPutnici.where((putnik) {
+        // Client-side filtering by date, grad, vreme, status
+        Iterable<Putnik> filtered = allPutnici;
+        final targetDayAbbr = SlotUtils.isoDateToDayAbbr(targetDateIso);
+        filtered = filtered.where((p) =>
+            (p.datum != null && p.datum == targetDateIso) ||
+            (p.datum == null &&
+                GradAdresaValidator.normalizeString(p.dan).contains(
+                    GradAdresaValidator.normalizeString(targetDayAbbr))));
+        filtered = filtered.where((p) =>
+            GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad));
+        filtered = filtered.where((p) =>
+            GradAdresaValidator.normalizeTime(p.polazak) ==
+            GradAdresaValidator.normalizeTime(_selectedVreme));
+        // Additional filters for display
+        filtered = filtered.where((putnik) {
           final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
           final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
           final imaGrad = putnik.grad.toString().trim().isNotEmpty;
@@ -1032,11 +1029,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               odgovarajuciDan &&
               odgovarajuciGrad &&
               normalizedStatus != 'obrisan';
-          if (prikazi) {
-            dlog('✅ PUTNIK PRIKAZAN: ${putnik.ime}');
-          }
           return prikazi;
-        }).toList();
+        });
+        final sviPutnici = filtered.toList();
 
         // DEDUPLIKACIJA PO COMPOSITE KLJUČU: id + polazak + dan
         final Map<String, Putnik> uniquePutnici = {};
@@ -1046,15 +1041,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
         final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
-        // 🔍 DEBUG: Koliko putnika prolazi glavni filter
+        // Debug log za praćenje broja putnika
         dlog(
-            '🔍 DEBUG: Nakon glavnog filtra - sviPutnici.length: ${sviPutnici.length}');
-        if (sviPutnici.isNotEmpty) {
-          dlog('🔍 DEBUG: Putnici koji su prošli filter:');
-          for (final p in sviPutnici) {
-            dlog('  - ${p.ime} (status: ${p.status})');
-          }
-        }
+            '🔍 DEBUG: HomeScreen build() - ukupno putnika: ${allPutnici.length}');
+        dlog(
+            '📊 [HOME SCREEN] Filter: $_selectedDay, $_selectedVreme, $_selectedGrad'); // ✅ KORISTI SELEKTOVANI DAN
+
+        // --- Use shared SlotUtils to compute per-slot counts for selected day (date-aware) ---
+        final slotCounts =
+            SlotUtils.computeSlotCountsForDate(allPutnici, targetDateIso);
+        final Map<String, int> brojPutnikaBC =
+            Map<String, int>.from(slotCounts['BC'] ?? {});
+        final Map<String, int> brojPutnikaVS =
+            Map<String, int>.from(slotCounts['VS'] ?? {});
 
         // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
         List<Putnik> sortiraniPutnici(List<Putnik> lista) {
@@ -1108,7 +1107,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // 🔍 DEBUG: Koliko putnika je nakon sortiranja
         dlog(
             '🔍 DEBUG: Nakon sortiranja - putniciZaPrikaz.length: ${putniciZaPrikaz.length}');
-        dlog('🔍 DEBUG: sviPutnici.length: ${sviPutnici.length}');
+        dlog('🔍 DEBUG: Filtrirani putnici: ${sviPutniciBezDuplikata.length}');
         if (putniciZaPrikaz.isNotEmpty) {
           dlog('🔍 DEBUG: Prvi putnik: ${putniciZaPrikaz.first.ime}');
         }

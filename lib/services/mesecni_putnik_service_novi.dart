@@ -11,9 +11,7 @@ class MesecniPutnikService {
   /// Dohvata sve mesečne putnike
   Future<List<MesecniPutnik>> getAllMesecniPutnici() async {
     final response = await _supabase.from('mesecni_putnici').select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').eq('obrisan', false).order('ime');
 
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
@@ -22,9 +20,7 @@ class MesecniPutnikService {
   /// Dohvata aktivne mesečne putnike
   Future<List<MesecniPutnik>> getAktivniMesecniPutnici() async {
     final response = await _supabase.from('mesecni_putnici').select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').eq('aktivan', true).eq('obrisan', false).order('ime');
 
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
@@ -33,9 +29,7 @@ class MesecniPutnikService {
   /// Dohvata mesečnog putnika po ID-u
   Future<MesecniPutnik?> getMesecniPutnikById(String id) async {
     final response = await _supabase.from('mesecni_putnici').select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').eq('id', id).single();
 
     return MesecniPutnik.fromMap(response);
@@ -47,9 +41,7 @@ class MesecniPutnikService {
         .from('mesecni_putnici')
         .insert(putnik.toMap())
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').single();
 
     return MesecniPutnik.fromMap(response);
@@ -65,9 +57,7 @@ class MesecniPutnikService {
         .update(updates)
         .eq('id', id)
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''').single();
 
     return MesecniPutnik.fromMap(response);
@@ -102,9 +92,7 @@ class MesecniPutnikService {
     final response = await _supabase
         .from('mesecni_putnici')
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''')
         .eq('obrisan', false)
         .or('ime.ilike.%$query%,prezime.ilike.%$query%,broj_telefona.ilike.%$query%')
@@ -118,9 +106,7 @@ class MesecniPutnikService {
     final response = await _supabase
         .from('mesecni_putnici')
         .select('''
-          *,
-          adrese!inner(ulica, broj, grad),
-          rute!inner(naziv, polazak, destinacija)
+          *
         ''')
         .eq('ruta_id', rutaId)
         .eq('aktivan', true)

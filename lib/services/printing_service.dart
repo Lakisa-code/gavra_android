@@ -375,7 +375,7 @@ class PrintingService {
             _buildTableCell('#', isHeader: true),
             _buildTableCell('IME', isHeader: true),
             _buildTableCell('POLAZAK', isHeader: true),
-            _buildTableCell('DESTINACIJA', isHeader: true),
+            _buildTableCell('DOLAZAK', isHeader: true),
             _buildTableCell('STATUS', isHeader: true),
           ],
         ),
