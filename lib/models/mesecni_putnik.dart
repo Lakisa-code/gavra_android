@@ -261,6 +261,35 @@ class MesecniPutnik {
           ? ukupnaCenaMeseca
           : null; // Mapiranje za kompatibilnost - prioritet ima cena kolona
 
+  bool? get mesecnaKarta => true; // Mesečni putnici uvek imaju mesečnu kartu
+
+  DateTime? get vremeDodavanja => createdAt; // Mapiranje za kompatibilnost
+
+  bool get jeOtkazan => !aktivan; // Mesečni putnik je otkazan ako nije aktivan
+
+  String get ime => putnikIme; // Mapiranje za kompatibilnost sa Putnik modelom
+
+  bool get jePokupljen => pokupljen; // Mapiranje za kompatibilnost
+
+  String? get dan => null; // Mesečni putnici nemaju specifičan dan
+
+  String? get grad => null; // Mesečni putnici nemaju specifičan grad
+
+  String? get polazak => null; // Mesečni putnici imaju više polazaka
+
+  bool get placeno => jePlacen; // Mapiranje za kompatibilnost
+
+  String get tipPutnika =>
+      'mesecni'; // Mesečni putnici uvek imaju tip 'mesecni'
+
+  String? get adresaPolaska => null; // Mesečni putnici imaju više adresa
+
+  String? get adresaDolaska =>
+      null; // Mesečni putnici nemaju specifičnu adresu dolaska
+
+  DateTime? get vremePolaska =>
+      null; // Mesečni putnici imaju više vremena polaska
+
   // 🚗 HELPER METODE ZA DRIVER TRACKING
   String? get naplatioVozac =>
       jePlacen ? vozac : null; // Ko je naplatio (ako je plaćeno)
