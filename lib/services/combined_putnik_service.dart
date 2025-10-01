@@ -3,6 +3,7 @@ import 'dnevni_putnik_service.dart';
 import 'mesecni_putnik_service_novi.dart';
 import 'adresa_service.dart';
 import 'ruta_service.dart';
+import 'realtime_service.dart';
 import 'package:logger/logger.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/logging.dart';
@@ -22,13 +23,12 @@ class CombinedPutnikService {
     String? grad,
     String? vreme,
   }) {
-    // Za sada vraćamo stream sa jednom vrednošću
-    // TODO: Implementirati pravi realtime stream
-    return Stream.fromFuture(getKombinovaniPutnici(
+    // 🆕 Koristi RealtimeService za realtime stream
+    return RealtimeService.instance.streamKombinovaniPutnici(
       isoDate: isoDate,
       grad: grad,
       vreme: vreme,
-    ));
+    );
   }
 
   /// Dohvata kombinovane putnike za dati datum

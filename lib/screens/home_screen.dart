@@ -241,9 +241,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Use centralized RealtimeService to avoid duplicate Supabase subscriptions
     _realtimeSubscription?.cancel();
 
+    // 🆕 Koristi dnevni_putnici umesto putovanja_istorija
     _realtimeSubscription =
-        RealtimeService.instance.subscribe('putovanja_istorija', (data) {
-      dlog('🔄 Real-time update detected in putovanja_istorija');
+        RealtimeService.instance.subscribe('dnevni_putnici', (data) {
+      dlog('🔄 Real-time update detected in dnevni_putnici');
       // Stream will update StreamBuilder via service layers
     });
   }

@@ -134,8 +134,8 @@ class RealtimeService {
     });
     */
 
-    // putovanja_istorija
-    _putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
+    // 🆕 dnevni_putnici (umesto putovanja_istorija)
+    _putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in data) {
@@ -147,17 +147,17 @@ class RealtimeService {
         try {
           final sample = rows
               .take(5)
-              .map((r) => r['id']?.toString() ?? r.toString())
+              .map((r) => r['ime'] ?? r['id']?.toString() ?? r.toString())
               .toList();
           dlog(
-              '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample ids: $sample');
+              '🔔 [REALTIME] dnevni_putnici rows: ${rows.length}; sample: $sample');
         } catch (_) {}
         if (!_putovanjaController.isClosed) {
           _putovanjaController.add(rows);
         }
         _emitCombinedPutnici();
       } catch (e) {
-        // ignore
+        dlog('❌ [REALTIME] Error processing dnevni_putnici: $e');
       }
     });
 
@@ -224,29 +224,69 @@ class RealtimeService {
   void _emitCombinedPutnici() {
     try {
       final combined = <Putnik>[];
-      // Convert putovanja rows
+
+      // 🆕 Convert dnevni_putnici rows (umesto putovanja_istorija)
       for (final r in _lastPutovanjaRows) {
         try {
-          combined.add(Putnik.fromMap(r));
+          // 🔄 Za dnevne putnike, kreiraj Putnik objekat direktno
+          final putnik = Putnik(
+            id: r['id'] ?? '',
+            ime: r['ime'] ?? '',
+            polazak: r['polazak'] ?? '',
+            grad: r['grad'] ?? '',
+            dan: r['dan'] ?? '',
+            adresa: r['adresa'] ?? '',
+            datum: r['datum']?.toString(),
+            status: r['status'] ?? '',
+            obrisan: r['obrisan'] == true,
+            mesecnaKarta: false, // dnevni putnici nemaju mesečnu kartu
+            iznosPlacanja: (r['iznos_placanja'] as num?)?.toDouble(),
+            vremePokupljenja: r['vreme_pokupljenja'] != null
+                ? DateTime.tryParse(r['vreme_pokupljenja'].toString())
+                : null,
+            brojTelefona: r['broj_telefona']?.toString(),
+          );
+          combined.add(putnik);
         } catch (e) {
-          dlog('❌ Error converting putovanja row: $e, data: $r');
+          dlog('❌ Error converting dnevni_putnici row: $e, data: $r');
         }
       }
+
       // Convert mesecni rows - support both old and new schemas
       for (final Map<String, dynamic> map in _lastMesecniRows) {
         try {
-          // New normalized schema: has 'ime' and 'prezime' and 'polasci_po_danu'
-          if (map.containsKey('ime') && map.containsKey('prezime')) {
+          // 🆕 Normalizovana šema: ima 'ime', 'prezime' i 'polasci_po_danu'
+          if (map.containsKey('polasci_po_danu') &&
+              map['polasci_po_danu'] is List) {
             try {
-              final putnici = Putnik.fromMesecniPutniciMultiple(map);
-              combined.addAll(putnici);
+              final polasci = map['polasci_po_danu'] as List;
+              for (final polazak in polasci) {
+                if (polazak is Map) {
+                  final putnik = Putnik(
+                    id: '${map['id']}_${polazak['dan']}_${polazak['vreme']}',
+                    ime: '${map['ime'] ?? ''} ${map['prezime'] ?? ''}'.trim(),
+                    polazak: polazak['vreme'] ?? '',
+                    grad: map['adresa_polaska'] ?? '',
+                    dan: polazak['dan'] ?? '',
+                    adresa: map['adresa_polaska'] ?? '',
+                    datum: null, // mesečni putnici nemaju fiksni datum
+                    status: map['aktivan'] == true ? '' : 'neaktivan',
+                    obrisan: map['obrisan'] == true,
+                    mesecnaKarta: true,
+                    iznosPlacanja: (map['cena'] as num?)?.toDouble(),
+                    vremePokupljenja: null, // mesečni putnici se ne pokupljaju
+                    brojTelefona: map['broj_telefona']?.toString(),
+                  );
+                  combined.add(putnik);
+                }
+              }
               continue;
             } catch (inner) {
               dlog('❌ Error converting new-mesecni row: $inner, data: $map');
             }
           }
 
-          // Fallback: try legacy Putnik.fromMap for older schema
+          // Fallback: pokušaj legacy konverziju za staru šemu
           try {
             combined.add(Putnik.fromMap(map));
           } catch (legacyErr) {
@@ -396,8 +436,7 @@ class RealtimeService {
     });
     */
 
-    final putovanjaSub =
-        tableStream('putovanja_istorija').listen((dynamic data) {
+    final putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in data) {
@@ -451,31 +490,35 @@ class RealtimeService {
   /// and emit the latest combined set.
   Future<void> refreshNow() async {
     try {
-      final putovanja = await SupabaseSafe.select('putovanja_istorija');
-      // ✅ ISPRAVLJENO: Dodaj filtere za aktivne i neobrisane mesečne putnike
-      final mesecni = await Supabase.instance.client
+      // 🆕 KORISTI NORMALIZOVANU ŠEMU: dnevni_putnici i mesecni_putnici
+      final dnevniPutnici = await SupabaseSafe.select('dnevni_putnici');
+      final mesecniPutnici = await Supabase.instance.client
           .from('mesecni_putnici')
           .select()
           .eq('aktivan', true)
           .eq('obrisan', false);
 
-      _lastPutovanjaRows = (putovanja is List)
-          ? putovanja.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+      // 🔄 Ažuriraj interne varijable da koriste nove tabele
+      _lastPutovanjaRows = (dnevniPutnici is List)
+          ? dnevniPutnici
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList()
           : [];
-      _lastMesecniRows =
-          mesecni.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      _lastMesecniRows = mesecniPutnici
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
 
       try {
-        final pSample = _lastPutovanjaRows
+        final dSample = _lastPutovanjaRows
             .take(5)
-            .map((r) => r['id']?.toString() ?? r.toString())
+            .map((r) => r['ime'] ?? r['id']?.toString() ?? r.toString())
             .toList();
         final mSample = _lastMesecniRows
             .take(5)
-            .map((r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString())
+            .map((r) => r['ime'] ?? r['putnik_ime'] ?? r['id'] ?? r.toString())
             .toList();
         dlog(
-            '🔄 [REFRESH NOW] fetched putovanja: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: putovanja=$pSample, mesecni=$mSample');
+            '🔄 [REFRESH NOW] fetched dnevni: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: dnevni=$dSample, mesecni=$mSample');
       } catch (_) {}
       _emitCombinedPutnici();
     } catch (e) {
