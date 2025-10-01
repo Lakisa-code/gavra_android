@@ -54,6 +54,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  integration_test:
+    sdk: flutter
+  golden_toolkit: ^0.15.0
   app_links: ^3.5.1
 
 flutter:

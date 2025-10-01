@@ -91,13 +91,14 @@ class MesecniPutnik {
     });
     return MesecniPutnik(
       id: map['id'] as String,
-      putnikIme: map['putnik_ime'] as String,
+      putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String,
       tip: map['tip'] as String,
       tipSkole: map['tip_skole'] as String?,
       brojTelefona: map['broj_telefona'] as String?,
       polasciPoDanu: polasciPoDanu,
-      adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
-      adresaVrsac: map['adresa_vrsac'] as String?,
+      adresaBelaCrkva:
+          null, // Address fields removed - now using UUID references
+      adresaVrsac: null, // Address fields removed - now using UUID references
       // legacy columns removed; rely on polasci_po_danu and helpers
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'fiksan',
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
@@ -109,8 +110,8 @@ class MesecniPutnik {
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjiPutovanje: map['poslednje_putovanje'] != null
-          ? DateTime.parse(map['poslednje_putovanje'] as String)
+      poslednjiPutovanje: map['poslednji_putovanje'] != null
+          ? DateTime.parse(map['poslednji_putovanje'] as String)
           : null,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -120,7 +121,7 @@ class MesecniPutnik {
           : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
-      vozac: map['naplata_vozac'] as String?,
+      vozac: map['vozac_id'] as String?,
       pokupljen: false,
       vremePokupljenja: null,
       statistics: (map['statistics'] != null && map['statistics'] is Map)
@@ -141,8 +142,7 @@ class MesecniPutnik {
       'tip_skole': tipSkole,
       'broj_telefona': brojTelefona,
       'polasci_po_danu': polasciPoDanuForDb,
-      'adresa_bela_crkva': adresaBelaCrkva,
-      'adresa_vrsac': adresaVrsac,
+      // Address fields removed - now using UUID references: adresa_polaska_id, adresa_dolaska_id
       // legacy fields removed - keep canonical `polasci_po_danu`
       'tip_prikazivanja': tipPrikazivanja,
       'radni_dani': radniDani,
@@ -154,13 +154,13 @@ class MesecniPutnik {
       'cena': cena ?? ukupnaCenaMeseca,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'poslednje_putovanje':
+      'poslednji_putovanje':
           poslednjiPutovanje?.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
-      'vozac': vozac,
+      'vozac_id': vozac,
       // Ensure statistics is populated: if empty, try to build from known fields
       'statistics': (statistics.isNotEmpty)
           ? statistics

@@ -1,11 +1,20 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
+import '../supabase_client.dart';
 import '../utils/logging.dart';
 import 'realtime_service.dart';
 
 class MesecniPutnikService {
   static final _supabase = Supabase.instance.client;
+
+  // Admin client with service role for operations that bypass RLS
+  static final _supabaseAdmin = SupabaseClient(
+    supabaseUrl,
+    supabaseServiceRoleKey,
+    headers: {'Authorization': 'Bearer $supabaseServiceRoleKey'},
+  );
+
   // Fields to request from mesecni_putnici when selecting explicitly
   static const String _mesecniFields = '*,'
       'polasci_po_danu';
@@ -86,50 +95,16 @@ class MesecniPutnikService {
   // 🔍 DOBIJ sve mesečne putnike
   static Future<List<MesecniPutnik>> getAllMesecniPutnici() async {
     try {
-      // Zamenjeno: umesto direktnog čitanja iz mesecni_putnici,
-      // dohvatamo današnje "zakupljeno" iz putovanja_istorija kako ste zahtevali.
-      final danas = DateTime.now().toIso8601String().split('T')[0];
       final response = await _supabase
-          .from('putovanja_istorija')
-          .select()
-          .eq('datum', danas)
-          .eq('status', 'zakupljeno')
-          .order('vreme_polaska');
+          .from('mesecni_putnici')
+          .select(_mesecniFields)
+          .order('putnik_ime');
 
-      // Mapiraj rezultate u MesecniPutnik ako polja postoje, inače preskoči
-      final List<MesecniPutnik> mapped = [];
-      for (final row in response) {
-        try {
-          final map = Map<String, dynamic>.from(row as Map);
-          // Ako red sadrži mesecni_putnik_id, pokušaj da dobijemo mesecnog putnika
-          if (map['mesecni_putnik_id'] != null) {
-            final mp =
-                await getMesecniPutnikById(map['mesecni_putnik_id'].toString());
-            if (mp != null) {
-              mapped.add(mp);
-              continue;
-            }
-          }
-
-          // Ako nema povezanog mesecnog putnika, pokušamo osnovni map u MesecniPutnik
-          // koristeći polja koja se poklapaju (ime → putnikIme)
-          final tentative = MesecniPutnik.fromMap({
-            'ime': map['ime'] ?? '',
-            'adresa_bela_crkva': map['adresa_polaska'] ?? '',
-            'adresa_vrsac': map['adresa_polaska'] ?? '',
-            'id': map['mesecni_putnik_id'] ?? map['id']?.toString(),
-            // ostatak polja ostavljamo na default u fromMap
-          });
-          mapped.add(tentative);
-        } catch (rowErr) {
-          dlog('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
-        }
-      }
-
-      return mapped;
+      return response
+          .map<MesecniPutnik>((json) => MesecniPutnik.fromMap(json))
+          .toList();
     } catch (e) {
-      dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
+      dlog('❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju svih: $e');
       return [];
     }
   }
@@ -171,6 +146,29 @@ class MesecniPutnikService {
     } catch (e) {
       dlog(
           '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih (zakupljeno danas): $e');
+      return [];
+    }
+  }
+
+  // 🔍 NOVO: Jednostavna metoda za dohvatanje svih aktivnih mesečnih putnika direktno iz tabele
+  static Future<List<MesecniPutnik>> getAllAktivniMesecniPutnici() async {
+    try {
+      final response = await _supabase
+          .from('mesecni_putnici')
+          .select(_mesecniFields)
+          .eq('aktivan', true)
+          .eq('obrisan', false);
+
+      final putnici = (response as List<dynamic>)
+          .map((json) => MesecniPutnik.fromMap(json))
+          .toList();
+
+      dlog(
+          '✅ [MESECNI PUTNIK SERVICE] Dobijeno ${putnici.length} aktivnih mesečnih putnika');
+      return putnici;
+    } catch (e) {
+      dlog(
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju svih aktivnih: $e');
       return [];
     }
   }
@@ -256,7 +254,7 @@ class MesecniPutnikService {
           '🔄 [MESECNI PUTNIK SERVICE] Pokušavam dodavanje: ${putnik.putnikIme}');
       dlog('📊 [DEBUG] Podaci: ${putnik.toMap()}');
 
-      final response = await _supabase
+      final response = await _supabaseAdmin
           .from('mesecni_putnici')
           .insert(putnik.toMap())
           .select()

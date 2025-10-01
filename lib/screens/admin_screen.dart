@@ -960,7 +960,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   style: TextStyle(
                                     color: Colors.green[900],
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 22,
+                                    fontSize: 18,
                                   ),
                                 ),
                               ],

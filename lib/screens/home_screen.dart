@@ -1544,18 +1544,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     });
                   },
                 ),
-          // floatingActionButton: kDebugMode ? FloatingActionButton(
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) => const SupabaseAnalysisWidget(),
-          //       ),
-          //     );
-          //   },
-          //   backgroundColor: Colors.orange,
-          //   child: const Icon(Icons.analytics),
-          // ) : null,
         );
       }, // Zatvaranje StreamBuilder builder funkcije
     ); // Zatvaranje StreamBuilder widgeta

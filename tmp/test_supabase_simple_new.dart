@@ -60,7 +60,8 @@ void main() async {
           e.toString().contains('insufficient_privilege')) {
         print('✅ RLS politika: INSERT blokiran bez autentifikacije - SIGURNO');
       } else {
-        print('⚠️ RLS politika: Neočekivana greška - $e');
+        print(
+            '⚠️ RLS politika: Neočekivana greška - ${e.toString().split('\n')[0]}');
       }
     }
 
@@ -135,7 +136,8 @@ void main() async {
       for (final passenger in testPassengers) {
         try {
           await supabase.from('mesecni_putnici').upsert(passenger);
-          print('✅ Passenger ${passenger['ime']} inserted/updated successfully');
+          print(
+              '✅ Passenger ${passenger['ime']} inserted/updated successfully');
         } catch (e) {
           print('❌ Failed to insert passenger ${passenger['ime']}: $e');
         }
@@ -146,8 +148,8 @@ void main() async {
       print('❌ Test passengers insertion failed: $e');
     }
 
-    print('\n≡ƒÄë Testiranje zavr┼íeno!');
+    print('\n🎉 Testiranje završeno!');
   } catch (e) {
-    print('Γ¥î Op┼íta gre┼íka: ');
+    print('❌ Opšta greška: $e');
   }
 }

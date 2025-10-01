@@ -34,7 +34,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late final Stream<String> _debouncedSearchStream;
 
   // 🔄 OPTIMIZACIJA: Connection resilience
-  late final StreamSubscription? _connectionSubscription;
+  StreamSubscription? _connectionSubscription;
   bool _isConnected = true;
 
   // Promenljive za dodavanje/editovanje putnika
@@ -158,6 +158,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     // Connection monitoring (placeholder - možete proširiti)
     _isConnected = true;
+    _connectionSubscription = null; // Initialize to null for now
   }
 
   @override
