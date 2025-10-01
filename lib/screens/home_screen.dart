@@ -983,6 +983,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
 
         final allPutnici = snapshot.data ?? [];
+        dlog('📊 Received ${allPutnici.length} putnici from stream');
 
         // Get target date for filtering
         final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
@@ -1110,8 +1111,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // je prikaz svuda 0.
         int getPutnikCount(String grad, String vreme) {
           try {
-            if (grad == 'Bela Crkva') return brojPutnikaBC[vreme] ?? 0;
-            if (grad == 'Vršac') return brojPutnikaVS[vreme] ?? 0;
+            final count = grad == 'Bela Crkva'
+                ? brojPutnikaBC[vreme] ?? 0
+                : brojPutnikaVS[vreme] ?? 0;
+            dlog('👥 getPutnikCount $grad $vreme = $count');
+            return count;
           } catch (e, st) {
             dlog('getPutnikCount error: $e\n$st');
           }

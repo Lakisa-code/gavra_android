@@ -62,8 +62,13 @@ class RealtimeService {
   StreamSubscription<dynamic> subscribe(
       String table, void Function(dynamic) onData,
       {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    void loggedOnData(dynamic data) {
+      dlog('🔄 Realtime event for $table: ${data?.length ?? 0} records');
+      onData(data);
+    }
+
     final stream = tableStream(table);
-    return stream.listen(onData,
+    return stream.listen(loggedOnData,
         onError: onError, onDone: onDone, cancelOnError: cancelOnError);
   }
 
@@ -179,20 +184,25 @@ class RealtimeService {
       for (final r in _lastPutovanjaRows) {
         try {
           combined.add(Putnik.fromMap(r));
-        } catch (_) {}
+        } catch (e) {
+          dlog('❌ Error converting putovanja row: $e, data: $r');
+        }
       }
       // Convert mesecni rows
       for (final r in _lastMesecniRows) {
         try {
           combined.add(Putnik.fromMap(r));
-        } catch (_) {}
+        } catch (e) {
+          dlog('❌ Error converting mesecni row: $e, data: $r');
+        }
       }
 
+      dlog('📊 Emitting ${combined.length} combined putnici');
       if (!_combinedPutniciController.isClosed) {
         _combinedPutniciController.add(combined);
       }
     } catch (e) {
-      // ignore
+      dlog('❌ Error in _emitCombinedPutnici: $e');
     }
   }
 
@@ -208,22 +218,41 @@ class RealtimeService {
       Iterable<Putnik> filtered = list;
       if (isoDate != null) {
         final targetDayAbbr = SlotUtils.isoDateToDayAbbr(isoDate);
-        filtered = filtered.where((p) =>
-            (p.datum != null && p.datum == isoDate) ||
-            (p.datum == null &&
-                GradAdresaValidator.normalizeString(p.dan).contains(
-                    GradAdresaValidator.normalizeString(targetDayAbbr))));
+        dlog(
+            '🔍 Filtering by isoDate: $isoDate, targetDayAbbr: $targetDayAbbr');
+        filtered = filtered.where((p) {
+          final matches = (p.datum != null && p.datum == isoDate) ||
+              (p.datum == null &&
+                  GradAdresaValidator.normalizeString(p.dan ?? '').contains(
+                      GradAdresaValidator.normalizeString(targetDayAbbr)));
+          if (!matches)
+            dlog('❌ Filtered out: ${p.ime}, dan: ${p.dan}, datum: ${p.datum}');
+          return matches;
+        });
       }
       if (grad != null) {
-        filtered = filtered.where(
-            (p) => GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad));
+        dlog('🔍 Filtering by grad: $grad');
+        filtered = filtered.where((p) {
+          final matches =
+              GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
+          if (!matches)
+            dlog('❌ Filtered out by grad: ${p.ime}, grad: ${p.grad}');
+          return matches;
+        });
       }
       if (vreme != null) {
-        filtered = filtered.where((p) =>
-            GradAdresaValidator.normalizeTime(p.polazak) ==
-            GradAdresaValidator.normalizeTime(vreme));
+        dlog('🔍 Filtering by vreme: $vreme');
+        filtered = filtered.where((p) {
+          final matches = GradAdresaValidator.normalizeTime(p.polazak) ==
+              GradAdresaValidator.normalizeTime(vreme);
+          if (!matches)
+            dlog('❌ Filtered out by vreme: ${p.ime}, polazak: ${p.polazak}');
+          return matches;
+        });
       }
-      return filtered.toList();
+      final result = filtered.toList();
+      dlog('✅ Filtered result: ${result.length} putnici');
+      return result;
     });
   }
 
