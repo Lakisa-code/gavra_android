@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../screens/danas_screen.dart';
-import '../screens/mesecni_putnici_screen.dart';
 import 'dart:convert';
 
 class NotificationNavigationService {
@@ -117,21 +116,12 @@ class NotificationNavigationService {
     Map<String, dynamic> putnikData,
     bool mesecnaKarta,
   ) {
-    if (mesecnaKarta) {
-      // Navigate to monthly passengers screen
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const MesecniPutniciScreen(),
-        ),
-      );
-    } else {
-      // Navigate to today's screen for regular passengers
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const DanasScreen(),
-        ),
-      );
-    }
+    // Always navigate to today's screen for all notification types
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const DanasScreen(),
+      ),
+    );
   }
 
   /// Show error dialog

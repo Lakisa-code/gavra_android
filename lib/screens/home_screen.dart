@@ -988,6 +988,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         grad: _selectedGrad,
         vreme: _selectedVreme,
       ),
+      initialData: [], // Dodano da se ne čeka loading kada se menja filter
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

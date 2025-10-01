@@ -17,8 +17,6 @@ class RealtimeService {
   static final RealtimeService instance = RealtimeService._internal();
 
   // Raw controllers for commonly used tables
-  final StreamController<List<Map<String, dynamic>>> _dailyCheckinsController =
-      StreamController<List<Map<String, dynamic>>>.broadcast();
   final StreamController<List<Map<String, dynamic>>> _putovanjaController =
       StreamController<List<Map<String, dynamic>>>.broadcast();
 
@@ -26,25 +24,19 @@ class RealtimeService {
   final StreamController<List<Putnik>> _combinedPutniciController =
       StreamController<List<Putnik>>.broadcast();
 
-  Stream<List<Map<String, dynamic>>> get dailyCheckinsStream =>
-      _dailyCheckinsController.stream;
-
   Stream<List<Map<String, dynamic>>> get putovanjaStream =>
       _putovanjaController.stream;
 
   Stream<List<Putnik>> get combinedPutniciStream =>
       _combinedPutniciController.stream;
 
-  StreamSubscription<dynamic>? _dailySub;
   StreamSubscription<dynamic>? _putovanjaSub;
 
   // Keep last known rows so we can emit combined payloads
-  List<Map<String, dynamic>> _lastDailyRows = [];
   List<Map<String, dynamic>> _lastPutovanjaRows = [];
 
   // Parametric subscriptions: per-filter controllers and state
   final Map<String, StreamController<List<Putnik>>> _paramControllers = {};
-  final Map<String, List<Map<String, dynamic>>> _paramLastDaily = {};
   final Map<String, List<Map<String, dynamic>>> _paramLastPutovanja = {};
   final Map<String, List<StreamSubscription<dynamic>>> _paramSubscriptions = {};
 
@@ -74,16 +66,16 @@ class RealtimeService {
   }
 
   Future<void> unsubscribeAll() async {
+    // _dailySub je komentarisana
+    /*
     try {
       await _dailySub?.cancel();
     } catch (_) {}
+    */
     try {
       await _putovanjaSub?.cancel();
     } catch (_) {}
     // Clear controllers
-    if (!_dailyCheckinsController.isClosed) {
-      _dailyCheckinsController.add([]);
-    }
     if (!_putovanjaController.isClosed) {
       _putovanjaController.add([]);
     }
@@ -96,7 +88,9 @@ class RealtimeService {
   /// If `vozac` is provided, daily_checkins events will be filtered by driver
   /// in the handler before adding to the controller.
   void startForDriver(String? vozac) {
-    // daily_checkins
+    // daily_checkins - tabela možda ne postoji, preskoči za sada
+    // TODO: Omogući kada se tabela kreira u Supabase
+    /*
     _dailySub = tableStream('daily_checkins').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
@@ -116,6 +110,7 @@ class RealtimeService {
         // ignore parsing errors
       }
     });
+    */
 
     // putovanja_istorija
     _putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
@@ -139,10 +134,13 @@ class RealtimeService {
 
   /// Stop any centralized subscriptions started with [startForDriver]
   Future<void> stopForDriver() async {
+    // _dailySub je komentarisana jer se ne kreira
+    /*
     try {
       await _dailySub?.cancel();
       _dailySub = null;
     } catch (_) {}
+    */
     try {
       await _putovanjaSub?.cancel();
       _putovanjaSub = null;
@@ -154,12 +152,6 @@ class RealtimeService {
       final combined = <Putnik>[];
       // Convert putovanja rows
       for (final r in _lastPutovanjaRows) {
-        try {
-          combined.add(Putnik.fromMap(r));
-        } catch (_) {}
-      }
-      // Convert monthly rows as they appear in mesecni_putnici (if any present in daily rows)
-      for (final r in _lastDailyRows) {
         try {
           combined.add(Putnik.fromMap(r));
         } catch (_) {}
@@ -219,7 +211,6 @@ class RealtimeService {
 
     final controller = StreamController<List<Putnik>>.broadcast();
     _paramControllers[key] = controller;
-    _paramLastDaily[key] = [];
     _paramLastPutovanja[key] = [];
 
     // Helper to emit combined for this key
@@ -231,16 +222,13 @@ class RealtimeService {
             combined.add(Putnik.fromMap(r));
           } catch (_) {}
         }
-        for (final r in _paramLastDaily[key] ?? []) {
-          try {
-            combined.add(Putnik.fromMap(r));
-          } catch (_) {}
-        }
         if (!controller.isClosed) controller.add(combined);
       } catch (_) {}
     }
 
-    // Subscribe to daily_checkins and putovanja_istorija; filter incoming rows
+    // Subscribe to putovanja_istorija; daily_checkins je komentarisana jer tabela ne postoji
+    // TODO: Dodati daily_checkins kada se tabela kreira
+    /*
     final dailySub = tableStream('daily_checkins').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
@@ -275,6 +263,7 @@ class RealtimeService {
         emitForKey();
       } catch (_) {}
     });
+    */
 
     final putovanjaSub =
         tableStream('putovanja_istorija').listen((dynamic data) {
@@ -311,7 +300,7 @@ class RealtimeService {
       } catch (_) {}
     });
 
-    _paramSubscriptions[key] = [dailySub, putovanjaSub];
+    _paramSubscriptions[key] = [putovanjaSub];
 
     controller.onCancel = () async {
       try {
@@ -321,7 +310,6 @@ class RealtimeService {
       } catch (_) {}
       _paramSubscriptions.remove(key);
       _paramControllers.remove(key);
-      _paramLastDaily.remove(key);
       _paramLastPutovanja.remove(key);
     };
 
@@ -333,13 +321,9 @@ class RealtimeService {
   Future<void> refreshNow() async {
     try {
       final putovanja = await SupabaseSafe.select('putovanja_istorija');
-      final daily = await SupabaseSafe.select('daily_checkins');
 
       _lastPutovanjaRows = (putovanja is List)
           ? putovanja.map((e) => Map<String, dynamic>.from(e as Map)).toList()
-          : [];
-      _lastDailyRows = (daily is List)
-          ? daily.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : [];
       _emitCombinedPutnici();
     } catch (e) {

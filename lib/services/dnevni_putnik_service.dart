@@ -3,7 +3,10 @@ import '../models/dnevni_putnik.dart';
 
 /// Servis za upravljanje dnevnim putnicima
 class DnevniPutnikService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  DnevniPutnikService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
 
   /// Dohvata sve dnevne putnike za dati datum
   Future<List<DnevniPutnik>> getDnevniPutniciZaDatum(DateTime datum) async {

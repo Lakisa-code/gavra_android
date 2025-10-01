@@ -47,6 +47,8 @@ dependencies:
   crypto: ^3.0.3
   graphql: ^5.1.2
   graphql_flutter: ^5.1.2
+  uuid: ^4.4.0
+  supabase: ^2.0.8
 
 dev_dependencies:
   flutter_test:

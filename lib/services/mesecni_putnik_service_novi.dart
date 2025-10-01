@@ -3,7 +3,10 @@ import '../models/mesecni_putnik_novi.dart';
 
 /// Servis za upravljanje mesečnim putnicima (normalizovana šema)
 class MesecniPutnikService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  MesecniPutnikService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
 
   /// Dohvata sve mesečne putnike
   Future<List<MesecniPutnik>> getAllMesecniPutnici() async {

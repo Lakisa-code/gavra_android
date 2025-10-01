@@ -21,6 +21,8 @@ import 'services/realtime_notification_service.dart';
 import 'services/sms_service.dart';
 import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
+import 'services/realtime_notification_counter_service.dart';
+import 'services/firebase_service.dart';
 import 'supabase_client.dart';
 import 'services/realtime_service.dart';
 
@@ -50,13 +52,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     // Ignore duplicate-init or platform-specific errors in background isolate
   }
   _logger.i('📬 Background message received: ${message.notification?.title}');
-  // Pozovi LocalNotificationService da obradi poruku
-  await LocalNotificationService.showRealtimeNotification(
-    title: message.notification?.title ?? 'Gavra Notification',
-    body: message.notification?.body ?? 'Nova poruka',
-    payload: message.data['type'] ?? 'firebase_background',
-    playCustomSound: true,
-  );
+  // Pozovi background-safe helper da prika6e lokalnu notifikaciju iz background isolate
+  try {
+    await LocalNotificationService.showNotificationFromBackground(
+      title: message.notification?.title ?? 'Gavra Notification',
+      body: message.notification?.body ?? 'Nova poruka',
+      payload: message.data['type'] ?? 'firebase_background',
+    );
+  } catch (e) {
+    _logger.w('⚠️ Failed to show background notification: $e');
+  }
 }
 
 void main() async {
@@ -66,21 +71,60 @@ void main() async {
   // 🚀 CACHE UKLONJEN - koristi direktne Supabase pozive
   _logger.i('🔄 Cache removed - using direct Supabase calls');
 
-  // OneSignal initialization
-  OneSignal.initialize('4fd57af1-568a-45e0-a737-3b3918c4e92a');
-  OneSignal.User.pushSubscription.addObserver((state) {
-    _logger.i('🔔 OneSignal player ID: ${state.current.id}');
-  });
+  // OneSignal initialization (legacy API)
+  try {
+    OneSignal.initialize('4fd57af1-568a-45e0-a737-3b3918c4e92a');
+    OneSignal.User.pushSubscription.addObserver((state) {
+      try {
+        _logger.i('\ud83d\udd14 OneSignal player ID: ${state.current.id}');
+      } catch (_) {}
+    });
+  } catch (e) {
+    _logger.w('\u26a0\ufe0f OneSignal initialization failed: $e');
+  }
 
   // Firebase initialization - ENABLED for multi-channel notifications
   try {
     _logger.i('🔄 Initializing Firebase...');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 15)); // Povećan timeout
+    // Check if Firebase is already initialized
+    final alreadyInitialized = Firebase.apps.isNotEmpty;
+    if (!alreadyInitialized) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 15)); // Povećan timeout
+    }
 
     // Registruj background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // Log current FCM token for debugging and handle cold-start message
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      _logger.i('\ud83d\udce1 FCM token: $fcmToken');
+    } catch (e) {
+      _logger.w('\u26a0\ufe0f Failed to get FCM token: $e');
+    }
+
+    try {
+      final initialMessage =
+          await FirebaseMessaging.instance.getInitialMessage();
+      await RealtimeNotificationService.handleInitialMessage(initialMessage);
+    } catch (e) {
+      _logger.w('\u26a0\ufe0f Error handling initial FCM message: $e');
+    }
+
+    // Initialize notification counter service and FCM listeners
+    try {
+      RealtimeNotificationCounterService.initialize();
+    } catch (e) {
+      _logger.w('⚠️ RealtimeNotificationCounterService init failed: $e');
+    }
+
+    try {
+      FirebaseService.setupFCMListeners();
+    } catch (e) {
+      _logger.w('⚠️ FirebaseService.setupFCMListeners failed: $e');
+    }
 
     _logger.i('✅ Firebase initialized with background handler');
   } catch (e) {
@@ -164,6 +208,9 @@ class _MyAppState extends State<MyApp> {
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
+        // Podesi URL servera koji forwarduje OneSignal pozive (postavi svoj URL ovde)
+        RealtimeNotificationService.setOneSignalServerUrl(
+            'http://localhost:3000/api/onesignal/notify');
         if (mounted) {
           RealtimeNotificationService.listenForForegroundNotifications(context);
         }

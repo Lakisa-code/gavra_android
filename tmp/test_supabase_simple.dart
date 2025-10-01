@@ -1,5 +1,7 @@
 import 'package:supabase/supabase.dart';
 
+// ignore_for_file: avoid_print
+
 void main() async {
   // Koristimo iste kredencijale kao u supabase_client.dart
   const supabaseUrl = 'https://gjtabtwudbrmfeyjiicu.supabase.co';
@@ -78,7 +80,7 @@ void main() async {
           .subscribe();
 
       print('✅ Realtime kanal pretplaćen');
-      await Future.delayed(Duration(seconds: 2)); // Čekamo malo za test
+      await Future.delayed(const Duration(seconds: 2)); // Čekamo malo za test
       await supabase.removeChannel(channel);
       print('✅ Realtime kanal odjavljen');
     } catch (e) {

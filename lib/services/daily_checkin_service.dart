@@ -35,22 +35,9 @@ class DailyCheckInService {
       dlog('⚠️ RealtimeService.startForDriver failed: $e');
     }
 
-    // Return a subscription to the centralized dailyCheckinsStream so caller
-    // can cancel their local listener when needed.
-    return RealtimeService.instance.dailyCheckinsStream.listen((rows) {
-      try {
-        for (final row in rows) {
-          if (row['vozac'] == vozac) {
-            final kusur = (row['kusur_iznos'] ?? 0).toDouble();
-            if (!_sitanNovacController.isClosed) {
-              _sitanNovacController.add(kusur);
-            }
-          }
-        }
-      } catch (e) {
-        dlog('⚠️ Realtime daily_checkins parsing error (central): $e');
-      }
-    });
+    // Return a dummy subscription since daily_checkins functionality is removed
+    // ignore: prefer_const_constructors
+    return Stream.empty().listen((_) {});
   }
 
   /// Zaustavi centralizovane realtime pretplate za vozača
@@ -64,27 +51,8 @@ class DailyCheckInService {
 
   /// Pokušaj prvo pročitati vrednost iz Supabase; fallback na SharedPreferences
   static Future<double?> getTodayAmountRemote(String vozac) async {
-    try {
-      final supabase = Supabase.instance.client;
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      final res = await supabase
-          .from('daily_checkins')
-          .select('kusur_iznos')
-          .eq('vozac', vozac)
-          .eq('datum', today)
-          .maybeSingle();
-
-      if (res is Map<String, dynamic> && res['kusur_iznos'] != null) {
-        final val = res['kusur_iznos'];
-        if (val is num) return val.toDouble();
-        if (val is String) return double.tryParse(val) ?? 0.0;
-      }
-    } catch (e) {
-      dlog('⚠️ getTodayAmountRemote failed: $e');
-    }
-
-    // fallback na lokalno
-    return getTodayAmount(vozac);
+    // Daily checkins functionality removed - return 0.0
+    return 0.0;
   }
 
   /// Proveri da li je vozač već uradio check-in danas

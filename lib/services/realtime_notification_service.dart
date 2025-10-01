@@ -8,12 +8,18 @@ import 'notification_navigation_service.dart';
 import 'package:logger/logger.dart';
 
 class RealtimeNotificationService {
-  /// OneSignal REST API endpoint
-  static const String _oneSignalApiUrl =
-      'https://onesignal.com/api/v1/notifications';
-
-  /// TODO: Unesi svoj OneSignal REST API ključ ovde
-  static const String _oneSignalRestApiKey = 'dymepwhpkubkfxhqhc4mlh2x7';
+  /// IMPORTANT: Do NOT store your OneSignal REST API key in the client app.
+  ///
+  /// This client no longer contains the OneSignal REST API key. Instead,
+  /// configure a server endpoint that holds the REST API key securely and
+  /// sends notifications on behalf of the app. If you have such a server,
+  /// set its URL below (e.g. 'https://example.com/api/notify') and the client
+  /// will forward notification requests to your server.
+  // Runtime-configurable server URL that forwards OneSignal requests.
+  // Set this from your app startup (or remote config) to point to your server.
+  static String _oneSignalServerUrl = '';
+  // Example server included at: tools/onesignal_server_example
+  // Set environment variables on the server: ONE_SIGNAL_REST_KEY and ONE_SIGNAL_APP_ID
 
   /// Pošalji OneSignal notifikaciju putem REST API-ja
   static Future<void> sendOneSignalNotification({
@@ -23,33 +29,60 @@ class RealtimeNotificationService {
     String? segment, // Ili segment (npr. "All")
     Map<String, dynamic>? data,
   }) async {
-    if (_oneSignalRestApiKey.isEmpty) {
+    // Don't send REST requests directly from the client that contain the
+    // OneSignal REST API key. Instead, forward the request to your server
+    // which will perform the authenticated call to OneSignal.
+    if (_oneSignalServerUrl.isEmpty ||
+        _oneSignalServerUrl.contains('your-server.example.com')) {
       _logger.w(
-          '❗ OneSignal REST API ključ nije postavljen. Notifikacija nije poslata.');
+          '\u2757 OneSignal server URL not configured or is placeholder. Client will not send OneSignal REST requests.\n'
+          'Set RealtimeNotificationService._oneSignalServerUrl to your actual server endpoint that forwards notifications to OneSignal.');
       return;
     }
+
     try {
       final payload = {
-        'app_id': '4fd57af1-568a-45e0-a737-3b3918c4e92a',
-        'headings': {'en': title},
-        'contents': {'en': body},
-        if (playerId != null) 'include_player_ids': [playerId],
-        if (segment != null) 'included_segments': [segment],
+        'title': title,
+        'body': body,
+        if (playerId != null) 'playerId': playerId,
+        if (segment != null) 'segment': segment,
         if (data != null) 'data': data,
       };
-      final req = await HttpClient().postUrl(Uri.parse(_oneSignalApiUrl));
+
+      final uri = Uri.parse(_oneSignalServerUrl);
+      final req = await HttpClient().postUrl(uri);
       req.headers.set('Content-Type', 'application/json');
-      req.headers.set('Authorization', 'Basic $_oneSignalRestApiKey');
       req.add(utf8.encode(jsonEncode(payload)));
       final httpResponse = await req.close();
       final responseBody = await utf8.decoder.bind(httpResponse).join();
-      if (httpResponse.statusCode == 200) {
-        _logger.i('✅ OneSignal notifikacija poslata: $responseBody');
+      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+        _logger.i('\u2705 Forwarded notification to server: $responseBody');
       } else {
-        _logger.e('❌ Greška pri slanju OneSignal notifikacije: $responseBody');
+        _logger.e(
+            '\u274c Server returned error while forwarding OneSignal notification: $responseBody');
       }
     } catch (e) {
-      _logger.e('❌ Exception pri slanju OneSignal notifikacije: $e');
+      _logger.e(
+          '\u274c Exception while forwarding OneSignal notification to server: $e');
+    }
+  }
+
+  /// Set the server URL used to forward OneSignal notification requests.
+  /// Example: RealtimeNotificationService.setOneSignalServerUrl('https://example.com/api/notify');
+  static void setOneSignalServerUrl(String url) {
+    _oneSignalServerUrl = url;
+    _logger.i('🔧 OneSignal server URL set to: $_oneSignalServerUrl');
+  }
+
+  /// Public helper to handle an initial/cold-start RemoteMessage (from getInitialMessage)
+  static Future<void> handleInitialMessage(RemoteMessage? message) async {
+    if (message == null) return;
+    try {
+      _logger.i(
+          '🔔 Handling initial Firebase message: ${message.notification?.title}');
+      await _handleFirebaseNotificationTap(message);
+    } catch (e) {
+      _logger.w('⚠️ Error handling initial Firebase message: $e');
     }
   }
 

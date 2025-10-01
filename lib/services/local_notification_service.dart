@@ -130,6 +130,56 @@ class LocalNotificationService {
     }
   }
 
+  /// Background-safe helper to show a local notification from a background isolate
+  /// This creates a fresh FlutterLocalNotificationsPlugin instance and shows a
+  /// basic notification. Avoids UI and audio playback (audio not supported in background isolate).
+  static Future<void> showNotificationFromBackground({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    try {
+      final FlutterLocalNotificationsPlugin plugin =
+          FlutterLocalNotificationsPlugin();
+
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
+        android: initializationSettingsAndroid,
+      );
+
+      await plugin.initialize(initializationSettings);
+
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        'gavra_realtime_channel',
+        'Gavra Realtime Notifikacije',
+        channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: false,
+        enableVibration: true,
+        showWhen: true,
+      );
+
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidDetails,
+      );
+
+      await plugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        platformChannelSpecifics,
+        payload: payload,
+      );
+    } catch (e) {
+      // Can't do much in background isolate; swallow errors
+    }
+  }
+
   /// Handle notification tap - navigate to passenger with filters
   static Future<void> _handleNotificationTap(
       NotificationResponse response) async {

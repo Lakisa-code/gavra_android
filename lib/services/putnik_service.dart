@@ -9,6 +9,7 @@ import 'realtime_notification_service.dart';
 import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_service.dart';
 import 'supabase_safe.dart';
+import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 
 // Use centralized debug logger `dlog`.
 
@@ -923,10 +924,10 @@ class PutnikService {
         fallback: null);
 
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
-    final _undoResponse = response == null
+    final undoResponse = response == null
         ? <String, dynamic>{}
         : Map<String, dynamic>.from(response as Map);
-    _addToUndoStack('delete', id, _undoResponse);
+    _addToUndoStack('delete', id, undoResponse);
 
     // ✅ KONZISTENTNO BRISANJE - obe tabele imaju obrisan kolonu
     await supabase.from(tabela).update({
@@ -974,8 +975,8 @@ class PutnikService {
         '🔍 DEBUG oznaciPokupljen - putnik.ime=${putnik.ime}, mesecnaKarta=${putnik.mesecnaKarta}');
 
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
-    final _undoPickup = Map<String, dynamic>.from(response as Map);
-    _addToUndoStack('pickup', id, _undoPickup);
+    final undoPickup = Map<String, dynamic>.from(response as Map);
+    _addToUndoStack('pickup', id, undoPickup);
 
     if (tabela == 'mesecni_putnici') {
       // Za mesečne putnike ažuriraj SVE potrebne kolone za pokupljanje
@@ -1082,10 +1083,10 @@ class PutnikService {
     dlog('✅ [OZNACI PLACENO] Podaci: $payerName');
 
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
-    final _undoPayment = response == null
+    final undoPayment = response == null
         ? <String, dynamic>{}
         : Map<String, dynamic>.from(response as Map);
-    _addToUndoStack('payment', id, _undoPayment);
+    _addToUndoStack('payment', id, undoPayment);
 
     dlog('🔄 [OZNACI PLACENO] Ažuriram plaćanje...');
     if (tabela == 'mesecni_putnici') {
@@ -1161,7 +1162,7 @@ class PutnikService {
         // Kreiraj zapis otkazivanja za današnji dan
         await SupabaseSafe.run(
             () => supabase.from('putovanja_istorija').upsert({
-                  'putnik_ime': response['putnik_ime'],
+                  'putnik_ime': respMap['putnik_ime'],
                   'datum': danas,
                   'vreme_polaska':
                       polazak, // ✅ ISPRAVKA: koristi 'vreme_polaska' umesto 'polazak'
@@ -1458,10 +1459,10 @@ class PutnikService {
         fallback: null);
 
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
-    final _undoOdsustvo = response == null
+    final undoOdsustvo = response == null
         ? <String, dynamic>{}
         : Map<String, dynamic>.from(response as Map);
-    _addToUndoStack('odsustvo', id, _undoOdsustvo);
+    _addToUndoStack('odsustvo', id, undoOdsustvo);
 
     if (tabela == 'mesecni_putnici') {
       // ✅ JEDNOSTAVNO - samo setuj status na bolovanje/godisnji

@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ignore_for_file: avoid_print
+
 // Supabase konfiguracija
 const String supabaseUrl = 'https://gjtabtwudbrmfeyjiicu.supabase.co';
 const String supabaseAnonKey =
@@ -75,7 +77,7 @@ void main() async {
     });
 
     // Sačekaj malo za realtime
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 2));
     subscription.cancel();
     print('✅ Realtime pretplata radi');
   } catch (e) {

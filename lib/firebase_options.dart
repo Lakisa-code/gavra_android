@@ -51,10 +51,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'dummy-api-key',
-    appId: '1:123456789:android:dummyappid',
-    messagingSenderId: '123456789',
-    projectId: 'dummy-project-id',
-    storageBucket: 'dummy-project-id.appspot.com',
+    apiKey: 'AIzaSyCJBzCgsh9VkiUS_4xAPaiQlpkffX03FeA',
+    appId: '1:208019335309:android:7cc39b9efd6e3869109ac4',
+    messagingSenderId: '208019335309',
+    projectId: 'gavra-notif-20250920162521',
+    storageBucket: 'gavra-notif-20250920162521.firebasestorage.app',
   );
 }

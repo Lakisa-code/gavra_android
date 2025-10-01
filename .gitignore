@@ -63,3 +63,9 @@ macos/flutter/ephemeral/
 android/.gradle/
 android/app/build/
 android/build/
+
+# Secrets and local env files
+.env
+**/.env
+service-account.json
+**/service-account.json

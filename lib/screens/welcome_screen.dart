@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../utils/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:math';
 import '../services/local_notification_service.dart';
+import '../services/realtime_notification_service.dart';
 import '../services/password_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
@@ -130,8 +132,37 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     // Inicijalizacija lokalnih notifikacija
     WidgetsBinding.instance.addPostFrameCallback((_) {
       LocalNotificationService.initialize(context);
+      // Ensure runtime notification permission on Android 13+
+      _ensureNotificationPermissions();
       _checkAutoLogin(); // VRAĆEN _checkAutoLogin() - auto-login BEZ pesme
     });
+  }
+
+  Future<void> _ensureNotificationPermissions() async {
+    try {
+      // On Android request POST_NOTIFICATIONS runtime permission (API 33+)
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        final status = await Permission.notification.status;
+        if (!status.isGranted) {
+          final result = await Permission.notification.request();
+          dlog(
+              '🔔 Android notification permission result: ${result.isGranted}');
+        } else {
+          dlog('🔔 Android notification permission already granted');
+        }
+      }
+
+      // Also request Firebase/iOS style permissions via RealtimeNotificationService
+      try {
+        final granted =
+            await RealtimeNotificationService.requestNotificationPermissions();
+        dlog('🔔 RealtimeNotificationService permission result: $granted');
+      } catch (e) {
+        dlog('⚠️ Error requesting RealtimeNotificationService permissions: $e');
+      }
+    } catch (e) {
+      dlog('⚠️ Error during notification permission flow: $e');
+    }
   }
 
   // 🔄 AUTO-LOGIN BEZ PESME - Proveri da li je vozač već logovan

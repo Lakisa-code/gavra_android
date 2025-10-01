@@ -1,16 +1,14 @@
 import '../models/putnik.dart';
-import '../models/dnevni_putnik.dart';
-import '../models/mesecni_putnik_novi.dart';
-import '../models/adresa.dart';
-import '../models/ruta.dart';
 import 'dnevni_putnik_service.dart';
 import 'mesecni_putnik_service_novi.dart';
 import 'adresa_service.dart';
 import 'ruta_service.dart';
+import 'package:logger/logger.dart';
 
 /// Kombinovani servis za putnike - koristi normalizovanu šemu ali pruža
 /// kompatibilan interfejs sa starim PutnikService-om
 class CombinedPutnikService {
+  final Logger _logger = Logger();
   final DnevniPutnikService _dnevniService = DnevniPutnikService();
   final MesecniPutnikService _mesecniService = MesecniPutnikService();
   final AdresaService _adresaService = AdresaService();
@@ -102,7 +100,7 @@ class CombinedPutnikService {
       String novoVreme, String grad, String currentDriver) async {
     // TODO: Implementirati reset logiku za normalizovanu šemu
     // Za sada samo logujemo
-    print(
+    _logger.i(
         '🔄 RESET POKUPLJENJA - novo vreme: $novoVreme, grad: $grad, vozač: $currentDriver');
   }
 
@@ -117,6 +115,6 @@ class CombinedPutnikService {
   Future<void> dodajPutnika(Putnik putnik) async {
     // TODO: Implementirati dodavanje u normalizovanu šemu
     // Za sada samo logujemo
-    print('🚀 DODAJ PUTNIKA: ${putnik.ime}');
+    _logger.i('🚀 DODAJ PUTNIKA: ${putnik.ime}');
   }
 }

@@ -3,7 +3,10 @@ import '../models/gps_lokacija.dart';
 
 /// Servis za upravljanje GPS lokacijama vozila
 class GPSLokacijaService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  GPSLokacijaService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
 
   /// Snima novu GPS lokaciju vozila
   Future<GPSLokacija> snimiLokaciju(GPSLokacija lokacija) async {

@@ -1,5 +1,7 @@
 import 'package:supabase/supabase.dart';
 
+// ignore_for_file: avoid_print
+
 void main() async {
   // Koristimo iste kredencijale kao u supabase_client.dart
   const supabaseUrl = 'https://gjtabtwudbrmfeyjiicu.supabase.co';
@@ -26,7 +28,7 @@ void main() async {
     print('\n📋 Test 1: Provera tabela...');
     for (final table in tables) {
       try {
-        final response = await supabase.from(table).select().limit(1);
+        await supabase.from(table).select().limit(1);
         print('✅ Tabela $table: Postoji (SELECT radi)');
       } catch (e) {
         print('❌ Tabela $table: Greška - $e');
@@ -105,7 +107,7 @@ void main() async {
 
       print('✅ Realtime kanal pretplaćen');
 
-      await Future.delayed(Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 2));
       await supabase.removeChannel(channel);
       print('✅ Realtime kanal odjavljen');
     } catch (e) {
