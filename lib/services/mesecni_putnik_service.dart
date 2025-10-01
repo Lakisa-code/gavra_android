@@ -31,11 +31,13 @@ class MesecniPutnikService {
               '📊 [MESECNI PUTNIK STREAM] Dobio ${listRaw.length} putnika iz baze');
           final allPutnici =
               listRaw.map((json) => MesecniPutnik.fromMap(json)).toList();
-          final filteredPutnici =
-              allPutnici.where((putnik) => !putnik.obrisan).toList();
+          // ✅ ISPRAVLJENO: filtriraj i po aktivan statusu, ne samo obrisan
+          final filteredPutnici = allPutnici
+              .where((putnik) => !putnik.obrisan && putnik.aktivan)
+              .toList();
 
           dlog(
-              '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon uklanjanja obrisanih');
+              '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon filtriranja (aktivan && !obrisan)');
           for (final putnik in allPutnici) {
             final status = putnik.obrisan
                 ? 'OBRISAN'

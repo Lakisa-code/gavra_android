@@ -90,9 +90,9 @@ class MesecniPutnik {
       if (list.isNotEmpty) polasciPoDanu[day] = list;
     });
     return MesecniPutnik(
-      id: map['id'] as String,
-      putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String,
-      tip: map['tip'] as String,
+      id: map['id'] as String? ?? '',
+      putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
+      tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
       brojTelefona: map['broj_telefona'] as String?,
       polasciPoDanu: polasciPoDanu,
@@ -104,8 +104,12 @@ class MesecniPutnik {
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
       aktivan: MesecniHelpers.isActiveFromMap(map),
       status: map['status'] as String? ?? 'radi',
-      datumPocetkaMeseca: DateTime.parse(map['datum_pocetka_meseca'] as String),
-      datumKrajaMeseca: DateTime.parse(map['datum_kraja_meseca'] as String),
+      datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
+          ? DateTime.parse(map['datum_pocetka_meseca'] as String)
+          : DateTime.now(),
+      datumKrajaMeseca: map['datum_kraja_meseca'] != null
+          ? DateTime.parse(map['datum_kraja_meseca'] as String)
+          : DateTime.now(),
       ukupnaCenaMeseca: (map['cena'] as num?)?.toDouble() ?? 0.0,
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
@@ -113,8 +117,12 @@ class MesecniPutnik {
       poslednjiPutovanje: map['poslednji_putovanje'] != null
           ? DateTime.parse(map['poslednji_putovanje'] as String)
           : null,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : DateTime.now(),
       obrisan: !(MesecniHelpers.isActiveFromMap(map)),
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String)

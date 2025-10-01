@@ -2,21 +2,28 @@
 /// Ograničava aplikaciju na opštine Bela Crkva i Vršac
 class GradAdresaValidator {
   /// 🔍 JEDNOSTAVNO GRAD POREĐENJE - samo 2 glavna grada
-  /// ✅ LOGIKA: Bela Crkva ili Vršac - sve ostalo se ignoriše
+  /// ✅ LOGIKA: Bela Crkva ili Vršac - filtrira po gradu putnika
   static bool isGradMatch(
       String? putnikGrad, String? putnikAdresa, String selectedGrad) {
     final normalizedSelectedGrad = normalizeString(selectedGrad);
+    final normalizedPutnikGrad = normalizeString(putnikGrad);
 
-    // 🎯 JEDNOSTAVNA LOGIKA - samo 2 glavna grada
+    // 🎯 LOGIKA: Uporedi grad putnika sa selektovanim gradom
     final selectedBelaCrkva = normalizedSelectedGrad.contains('bela');
     final selectedVrsac = normalizedSelectedGrad.contains('vrsac');
 
-    // ✅ AKO JE SELEKTOVAN BILO KOJI OD 2 GLAVNA GRADA, PRIKAŽI SVE PUTNIKE
-    if (selectedBelaCrkva || selectedVrsac) {
-      return true; // Prikaži sve putnike bez obzira na njihov grad
+    final putnikBelaCrkva = normalizedPutnikGrad.contains('bela');
+    final putnikVrsac = normalizedPutnikGrad.contains('vrsac');
+
+    // ✅ PROVERI DA LI SE GRAD PUTNIKA POKLAPA SA SELEKTOVANIM GRADOM
+    if (selectedBelaCrkva && putnikBelaCrkva) {
+      return true; // Putnik je iz Bele Crkve i selektovana je Bela Crkva
+    }
+    if (selectedVrsac && putnikVrsac) {
+      return true; // Putnik je iz Vršca i selektovan je Vršac
     }
 
-    return false; // Fallback - trebalo bi da se nikad ne desi
+    return false; // Gradovi se ne poklapaju
   }
 
   /// 🏘️ NASELJA I ADRESE OPŠTINE BELA CRKVA

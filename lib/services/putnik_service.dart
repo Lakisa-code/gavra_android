@@ -89,9 +89,12 @@ class PutnikService {
         danKratica ??= _getDayAbbreviationFromName(_getTodayName());
 
         // Query mesecni_putnici using server-side LIKE on radni_dani to reduce result size
+        // ✅ DODATO: filtriraj samo aktivne i neobrisane mesečne putnike
         final mesecni = await supabase
             .from('mesecni_putnici')
             .select(mesecniFields)
+            .eq('aktivan', true)
+            .eq('obrisan', false)
             .like('radni_dani', '%$danKratica%');
 
         for (final m in mesecni) {
@@ -102,8 +105,8 @@ class PutnikService {
             final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
             final normVremeFilter =
                 vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
-            if (grad != null &&
-                !GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad)) {
+            // ✅ ISPRAVLJENO: Za mesečne putnike koristi direktno poređenje grada
+            if (grad != null && p.grad != grad) {
               continue;
             }
             if (normVremeFilter != null && normVreme != normVremeFilter) {
@@ -310,7 +313,9 @@ class PutnikService {
       final mesecniResponse = await supabase
           .from('mesecni_putnici')
           .select(mesecniFields)
-          // UKLONJEN FILTER za aktivan - sada prikazuje SVE putnike (aktivne i otkazane)
+          // ✅ DODATO: filtriraj samo aktivne i neobrisane mesečne putnike
+          .eq('aktivan', true)
+          .eq('obrisan', false)
           .like('radni_dani', '%$danKratica%')
           .order('created_at', ascending: false);
 

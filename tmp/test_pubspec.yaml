@@ -1,9 +1,0 @@
-name: supabase_test
-description: Simple Supabase connection test
-
-environment:
-  sdk: ">=3.0.0 <4.0.0"
-
-dependencies:
-  supabase: ^2.4.1
-  http: ^1.2.1

@@ -37,6 +37,12 @@ class RealtimeService {
   List<Map<String, dynamic>> _lastPutovanjaRows = [];
   List<Map<String, dynamic>> _lastMesecniRows = [];
 
+  // Expose read-only copies for debugging
+  List<Map<String, dynamic>> get lastPutovanjaRows =>
+      List.unmodifiable(_lastPutovanjaRows);
+  List<Map<String, dynamic>> get lastMesecniRows =>
+      List.unmodifiable(_lastMesecniRows);
+
   // Parametric subscriptions: per-filter controllers and state
   final Map<String, StreamController<List<Putnik>>> _paramControllers = {};
   final Map<String, List<Map<String, dynamic>>> _paramLastPutovanja = {};
@@ -50,7 +56,13 @@ class RealtimeService {
   Stream<dynamic> tableStream(String table) {
     final client = Supabase.instance.client;
     try {
-      return client.from(table).stream(primaryKey: ['id']);
+      dlog('🔌 [REALTIME SERVICE] Creating stream for table: $table');
+      final stream = client.from(table).stream(primaryKey: ['id']);
+      return stream.map((data) {
+        dlog(
+            '🔔 [REALTIME SERVICE] Stream event for $table: ${(data as List?)?.length ?? 0} rows');
+        return data;
+      });
     } catch (e) {
       dlog('❌ [REALTIME SERVICE] Failed to create stream for $table: $e');
       // Return an empty list stream so callers can subscribe safely.
@@ -132,6 +144,14 @@ class RealtimeService {
           }
         }
         _lastPutovanjaRows = rows;
+        try {
+          final sample = rows
+              .take(5)
+              .map((r) => r['id']?.toString() ?? r.toString())
+              .toList();
+          dlog(
+              '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample ids: $sample');
+        } catch (_) {}
         if (!_putovanjaController.isClosed) {
           _putovanjaController.add(rows);
         }
@@ -151,6 +171,15 @@ class RealtimeService {
           }
         }
         _lastMesecniRows = rows;
+        try {
+          final sample = rows
+              .take(5)
+              .map(
+                  (r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString())
+              .toList();
+          dlog(
+              '🔔 [REALTIME] mesecni_putnici rows: ${rows.length}; sample: $sample');
+        } catch (_) {}
         _emitCombinedPutnici();
       } catch (e) {
         // ignore
@@ -203,16 +232,40 @@ class RealtimeService {
           dlog('❌ Error converting putovanja row: $e, data: $r');
         }
       }
-      // Convert mesecni rows
-      for (final r in _lastMesecniRows) {
+      // Convert mesecni rows - support both old and new schemas
+      for (final Map<String, dynamic> map in _lastMesecniRows) {
         try {
-          combined.add(Putnik.fromMap(r));
+          // New normalized schema: has 'ime' and 'prezime' and 'polasci_po_danu'
+          if (map.containsKey('ime') && map.containsKey('prezime')) {
+            try {
+              final putnici = Putnik.fromMesecniPutniciMultiple(map);
+              combined.addAll(putnici);
+              continue;
+            } catch (inner) {
+              dlog('❌ Error converting new-mesecni row: $inner, data: $map');
+            }
+          }
+
+          // Fallback: try legacy Putnik.fromMap for older schema
+          try {
+            combined.add(Putnik.fromMap(map));
+          } catch (legacyErr) {
+            dlog(
+                '❌ Error converting mesecni row (legacy): $legacyErr, data: $map');
+          }
         } catch (e) {
-          dlog('❌ Error converting mesecni row: $e, data: $r');
+          dlog('❌ Error converting mesecni row: $e, data: $map');
         }
       }
 
       dlog('📊 Emitting ${combined.length} combined putnici');
+      try {
+        final sample = combined
+            .take(10)
+            .map((p) => '${p.ime}@${p.polazak}@${p.grad}')
+            .toList();
+        dlog('📋 Combined sample: $sample');
+      } catch (_) {}
       if (!_combinedPutniciController.isClosed) {
         _combinedPutniciController.add(combined);
       }
@@ -238,7 +291,7 @@ class RealtimeService {
         filtered = filtered.where((p) {
           final matches = (p.datum != null && p.datum == isoDate) ||
               (p.datum == null &&
-                  GradAdresaValidator.normalizeString(p.dan ?? '').contains(
+                  GradAdresaValidator.normalizeString(p.dan).contains(
                       GradAdresaValidator.normalizeString(targetDayAbbr)));
           if (!matches) {
             dlog('❌ Filtered out: ${p.ime}, dan: ${p.dan}, datum: ${p.datum}');
@@ -399,17 +452,34 @@ class RealtimeService {
   Future<void> refreshNow() async {
     try {
       final putovanja = await SupabaseSafe.select('putovanja_istorija');
-      final mesecni = await SupabaseSafe.select('mesecni_putnici');
+      // ✅ ISPRAVLJENO: Dodaj filtere za aktivne i neobrisane mesečne putnike
+      final mesecni = await Supabase.instance.client
+          .from('mesecni_putnici')
+          .select()
+          .eq('aktivan', true)
+          .eq('obrisan', false);
 
       _lastPutovanjaRows = (putovanja is List)
           ? putovanja.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : [];
-      _lastMesecniRows = (mesecni is List)
-          ? mesecni.map((e) => Map<String, dynamic>.from(e as Map)).toList()
-          : [];
+      _lastMesecniRows =
+          mesecni.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+      try {
+        final pSample = _lastPutovanjaRows
+            .take(5)
+            .map((r) => r['id']?.toString() ?? r.toString())
+            .toList();
+        final mSample = _lastMesecniRows
+            .take(5)
+            .map((r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString())
+            .toList();
+        dlog(
+            '🔄 [REFRESH NOW] fetched putovanja: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: putovanja=$pSample, mesecni=$mSample');
+      } catch (_) {}
       _emitCombinedPutnici();
     } catch (e) {
-      // ignore
+      dlog('❌ [REFRESH NOW] Error: $e');
     }
   }
 }

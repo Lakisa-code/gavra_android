@@ -1146,6 +1146,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // (totalFilteredCount removed)
 
         return Scaffold(
+          floatingActionButton: FloatingActionButton(
+            mini: true,
+            onPressed: () async {
+              final putovanja = RealtimeService.instance.lastPutovanjaRows;
+              final mesecni = RealtimeService.instance.lastMesecniRows;
+              await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Realtime debug'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('putovanja_istorija (first 10):'),
+                        Text(putovanja
+                            .take(10)
+                            .map((e) => e.toString())
+                            .join('\n')),
+                        const SizedBox(height: 12),
+                        const Text('mesecni_putnici (first 10):'),
+                        Text(mesecni
+                            .take(10)
+                            .map((e) => e.toString())
+                            .join('\n')),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Close')),
+                  ],
+                ),
+              );
+            },
+            child: const Icon(Icons.bug_report),
+          ),
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(
                 95), // Povećano sa 80 na 95 zbog sezonskog indikatora

@@ -494,10 +494,10 @@ class Putnik {
   static String? _determineAdresaFromMesecni(Map<String, dynamic> map) {
     if (map['adresa_bela_crkva'] != null &&
         map['adresa_bela_crkva'].toString().isNotEmpty) {
-      return map['adresa_bela_crkva'] as String;
+      return map['adresa_bela_crkva'] as String?;
     } else if (map['adresa_vrsac'] != null &&
         map['adresa_vrsac'].toString().isNotEmpty) {
-      return map['adresa_vrsac'] as String;
+      return map['adresa_vrsac'] as String?;
     }
     return null;
   }

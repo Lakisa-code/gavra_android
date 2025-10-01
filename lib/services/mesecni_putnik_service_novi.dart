@@ -145,13 +145,38 @@ class MesecniPutnikService {
 
   /// Stream za realtime ažuriranja mesečnih putnika
   Stream<List<MesecniPutnik>> get mesecniPutniciStream {
-    return _supabase
-        .from('mesecni_putnici')
-        .stream(primaryKey: ['id'])
-        .order('putnik_ime')
-        .map((data) => data
-            .where((putnik) => putnik['obrisan'] == false)
-            .map((json) => MesecniPutnik.fromMap(json))
-            .toList());
+    try {
+      return _supabase
+          .from('mesecni_putnici')
+          .stream(primaryKey: ['id'])
+          .order('putnik_ime')
+          .map((data) {
+            try {
+              final listRaw = data as List<dynamic>;
+              final filtered = listRaw.where((row) {
+                try {
+                  final map = row as Map<String, dynamic>;
+                  // consider absent 'obrisan' as false (not deleted)
+                  return !(map['obrisan'] == true);
+                } catch (_) {
+                  return true;
+                }
+              }).toList();
+
+              return filtered
+                  .map((json) =>
+                      MesecniPutnik.fromMap(Map<String, dynamic>.from(json)))
+                  .toList();
+            } catch (e) {
+              return <MesecniPutnik>[];
+            }
+          })
+          .handleError((err) {
+            return <MesecniPutnik>[];
+          });
+    } catch (e) {
+      // fallback to a one-time fetch if stream creation fails
+      return getAktivniMesecniPutnici().asStream();
+    }
   }
 }
