@@ -31,9 +31,11 @@ class RealtimeService {
       _combinedPutniciController.stream;
 
   StreamSubscription<dynamic>? _putovanjaSub;
+  StreamSubscription<dynamic>? _mesecniSub;
 
   // Keep last known rows so we can emit combined payloads
   List<Map<String, dynamic>> _lastPutovanjaRows = [];
+  List<Map<String, dynamic>> _lastMesecniRows = [];
 
   // Parametric subscriptions: per-filter controllers and state
   final Map<String, StreamController<List<Putnik>>> _paramControllers = {};
@@ -74,6 +76,9 @@ class RealtimeService {
     */
     try {
       await _putovanjaSub?.cancel();
+    } catch (_) {}
+    try {
+      await _mesecniSub?.cancel();
     } catch (_) {}
     // Clear controllers
     if (!_putovanjaController.isClosed) {
@@ -130,6 +135,22 @@ class RealtimeService {
         // ignore
       }
     });
+
+    // mesecni_putnici
+    _mesecniSub = tableStream('mesecni_putnici').listen((dynamic data) {
+      try {
+        final rows = <Map<String, dynamic>>[];
+        for (final r in data) {
+          if (r is Map) {
+            rows.add(Map<String, dynamic>.from(r));
+          }
+        }
+        _lastMesecniRows = rows;
+        _emitCombinedPutnici();
+      } catch (e) {
+        // ignore
+      }
+    });
   }
 
   /// Stop any centralized subscriptions started with [startForDriver]
@@ -145,6 +166,10 @@ class RealtimeService {
       await _putovanjaSub?.cancel();
       _putovanjaSub = null;
     } catch (_) {}
+    try {
+      await _mesecniSub?.cancel();
+      _mesecniSub = null;
+    } catch (_) {}
   }
 
   void _emitCombinedPutnici() {
@@ -152,6 +177,12 @@ class RealtimeService {
       final combined = <Putnik>[];
       // Convert putovanja rows
       for (final r in _lastPutovanjaRows) {
+        try {
+          combined.add(Putnik.fromMap(r));
+        } catch (_) {}
+      }
+      // Convert mesecni rows
+      for (final r in _lastMesecniRows) {
         try {
           combined.add(Putnik.fromMap(r));
         } catch (_) {}

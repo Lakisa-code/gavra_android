@@ -71,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Real-time subscription variables
   StreamSubscription? _realtimeSubscription;
-  StreamSubscription? _mesecniSubscription;
 
   final List<String> _dani = [
     'Ponedeljak',
@@ -241,17 +240,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _setupRealtimeListener() {
     // Use centralized RealtimeService to avoid duplicate Supabase subscriptions
     _realtimeSubscription?.cancel();
-    _mesecniSubscription?.cancel();
 
     _realtimeSubscription =
         RealtimeService.instance.subscribe('putovanja_istorija', (data) {
       dlog('🔄 Real-time update detected in putovanja_istorija');
-      // Stream will update StreamBuilder via service layers
-    });
-
-    _mesecniSubscription =
-        RealtimeService.instance.subscribe('mesecni_putnici', (data) {
-      dlog('🔄 Real-time update detected in mesecni_putnici');
       // Stream will update StreamBuilder via service layers
     });
   }
@@ -1557,7 +1549,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Cleanup real-time subscriptions
     _realtimeSubscription?.cancel();
-    _mesecniSubscription?.cancel();
 
     // CACHE UKLONJEN - nema više cache listener-a
 
