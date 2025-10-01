@@ -112,9 +112,9 @@ class MesecniPutnikService {
           }
 
           // Ako nema povezanog mesecnog putnika, pokušamo osnovni map u MesecniPutnik
-          // koristeći polja koja se poklapaju (putnik_ime → putnikIme)
+          // koristeći polja koja se poklapaju (ime → putnikIme)
           final tentative = MesecniPutnik.fromMap({
-            'putnik_ime': map['putnik_ime'] ?? map['ime'] ?? '',
+            'ime': map['ime'] ?? '',
             'adresa_bela_crkva': map['adresa_polaska'] ?? '',
             'adresa_vrsac': map['adresa_polaska'] ?? '',
             'id': map['mesecni_putnik_id'] ?? map['id']?.toString(),
@@ -156,7 +156,7 @@ class MesecniPutnikService {
 
           // Fallback: create tentative MesecniPutnik from available fields
           final tentative = MesecniPutnik.fromMap({
-            'putnik_ime': map['putnik_ime'] ?? map['ime'] ?? '',
+            'ime': map['ime'] ?? '',
             'adresa_bela_crkva': map['adresa_polaska'] ?? '',
             'adresa_vrsac': map['adresa_polaska'] ?? '',
             'id': map['mesecni_putnik_id'] ?? map['id']?.toString(),
@@ -236,7 +236,7 @@ class MesecniPutnikService {
       final response = await _supabase
           .from('mesecni_putnici')
           .select(_mesecniFields)
-          .ilike('putnik_ime', '%$ime%')
+          .ilike('ime', '%$ime%')
           .order('putnik_ime');
 
       return response
@@ -704,7 +704,7 @@ class MesecniPutnikService {
           '🔍 [DEBUG] Pronađeno ${mesecniPutnici.length} aktivnih mesečnih putnika');
       for (final putnik in mesecniPutnici) {
         dlog(
-            '🔍 [DEBUG] Putnik: ${putnik['putnik_ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}');
+            '🔍 [DEBUG] Putnik: ${putnik['ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}');
       }
 
       int kreirano = 0;
@@ -740,7 +740,7 @@ class MesecniPutnikService {
             if (postojeciBC.isEmpty) {
               await _supabase.from('putovanja_istorija').insert({
                 'datum': datumStr,
-                'putnik_ime': mesecniPutnik.putnikIme,
+                'ime': mesecniPutnik.putnikIme,
                 'tip_putnika': 'mesecni',
                 'mesecni_putnik_id': mesecniPutnik.id,
                 'vreme_polaska': vremeBelaCrkva,
@@ -775,7 +775,7 @@ class MesecniPutnikService {
             if (postojeciVS.isEmpty) {
               await _supabase.from('putovanja_istorija').insert({
                 'datum': datumStr,
-                'putnik_ime': mesecniPutnik.putnikIme,
+                'ime': mesecniPutnik.putnikIme,
                 'tip_putnika': 'mesecni',
                 'mesecni_putnik_id': mesecniPutnik.id,
                 'vreme_polaska': vremeVrsac,
@@ -901,11 +901,10 @@ class MesecniPutnikService {
       // 4. Računaj upisane za povratak (POPODNE)
       final upisaniZaPovratak = await _supabase
           .from('putovanja_istorija')
-          .select('putnik_ime')
+          .select('ime')
           .eq('datum', datumStr)
           .eq('tip_putnika', 'mesecni')
-          .inFilter(
-              'putnik_ime', djaciDanas.map((d) => d['putnik_ime']).toList())
+          .inFilter('ime', djaciDanas.map((d) => d['ime']).toList())
           .gte('vreme_polaska', '14:00') // Popodnevni termini
           .neq('status', 'otkazan'); // Nisu otkazali
 

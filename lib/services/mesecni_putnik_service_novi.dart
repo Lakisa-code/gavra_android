@@ -12,7 +12,7 @@ class MesecniPutnikService {
   Future<List<MesecniPutnik>> getAllMesecniPutnici() async {
     final response = await _supabase.from('mesecni_putnici').select('''
           *
-        ''').eq('obrisan', false).order('ime');
+        ''').eq('obrisan', false).order('putnik_ime');
 
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
   }
@@ -21,7 +21,7 @@ class MesecniPutnikService {
   Future<List<MesecniPutnik>> getAktivniMesecniPutnici() async {
     final response = await _supabase.from('mesecni_putnici').select('''
           *
-        ''').eq('aktivan', true).eq('obrisan', false).order('ime');
+        ''').eq('aktivan', true).eq('obrisan', false).order('putnik_ime');
 
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
   }
@@ -96,7 +96,7 @@ class MesecniPutnikService {
         ''')
         .eq('obrisan', false)
         .or('ime.ilike.%$query%,prezime.ilike.%$query%,broj_telefona.ilike.%$query%')
-        .order('ime');
+        .order('putnik_ime');
 
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
   }
@@ -111,7 +111,7 @@ class MesecniPutnikService {
         .eq('ruta_id', rutaId)
         .eq('aktivan', true)
         .eq('obrisan', false)
-        .order('ime');
+        .order('putnik_ime');
 
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
   }
@@ -148,7 +148,7 @@ class MesecniPutnikService {
     return _supabase
         .from('mesecni_putnici')
         .stream(primaryKey: ['id'])
-        .order('ime')
+        .order('putnik_ime')
         .map((data) => data
             .where((putnik) => putnik['obrisan'] == false)
             .map((json) => MesecniPutnik.fromMap(json))
