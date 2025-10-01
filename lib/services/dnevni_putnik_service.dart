@@ -12,14 +12,9 @@ class DnevniPutnikService {
   Future<List<DnevniPutnik>> getDnevniPutniciZaDatum(DateTime datum) async {
     final datumString = datum.toIso8601String().split('T')[0];
 
-    final response = await _supabase
-        .from('dnevni_putnici')
-        .select('''
+    final response = await _supabase.from('dnevni_putnici').select('''
           *
-        ''')
-        .eq('datum_putovanja', datumString)
-        .eq('obrisan', false)
-        .order('vreme_polaska');
+        ''').eq('datum', datumString).eq('obrisan', false).order('polazak');
 
     return response.map((json) => DnevniPutnik.fromMap(json)).toList();
   }
@@ -106,10 +101,10 @@ class DnevniPutnikService {
 
     if (datum != null) {
       final datumString = datum.toIso8601String().split('T')[0];
-      queryBuilder = queryBuilder.eq('datum_putovanja', datumString);
+      queryBuilder = queryBuilder.eq('datum', datumString);
     }
 
-    final response = await queryBuilder.order('vreme_polaska');
+    final response = await queryBuilder.order('polazak');
     return response.map((json) => DnevniPutnik.fromMap(json)).toList();
   }
 
@@ -124,9 +119,9 @@ class DnevniPutnikService {
           *
         ''')
         .eq('ruta_id', rutaId)
-        .eq('datum_putovanja', datumString)
+        .eq('datum', datumString)
         .eq('obrisan', false)
-        .order('vreme_polaska');
+        .order('polazak');
 
     return response.map((json) => DnevniPutnik.fromMap(json)).toList();
   }
@@ -138,11 +133,10 @@ class DnevniPutnikService {
     return _supabase
         .from('dnevni_putnici')
         .stream(primaryKey: ['id'])
-        .order('vreme_polaska')
+        .order('polazak')
         .map((data) => data
             .where((putnik) =>
-                putnik['datum_putovanja'] == datumString &&
-                putnik['obrisan'] == false)
+                putnik['datum'] == datumString && putnik['obrisan'] == false)
             .map((json) => DnevniPutnik.fromMap(json))
             .toList());
   }

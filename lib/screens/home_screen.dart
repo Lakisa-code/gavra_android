@@ -983,7 +983,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Use centralized RealtimeService combined Putnik stream
     return StreamBuilder<List<Putnik>>(
       stream: RealtimeService.instance.combinedPutniciStream,
-      initialData: [],
+      initialData: const [],
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             snapshot.data == null) {

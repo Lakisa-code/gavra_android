@@ -34,8 +34,7 @@ class GpsService {
         }
         final first = response.first;
         if (first is Map<String, dynamic>) {
-          final idVal = first['id'];
-          return idVal == null ? null : idVal.toString();
+          return first['id']?.toString();
         }
         _logger
             .w('⚠️ Neočekivan format reda iz Supabase: ${first.runtimeType}');
@@ -44,8 +43,7 @@ class GpsService {
 
       // If SDK returned a Map (single row), handle that as well
       if (response is Map<String, dynamic>) {
-        final idVal = response['id'];
-        return idVal == null ? null : idVal.toString();
+        return response['id']?.toString();
       }
 
       _logger.w(
