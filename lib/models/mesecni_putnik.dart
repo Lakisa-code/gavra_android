@@ -102,9 +102,8 @@ class MesecniPutnik {
       brojTelefonaOca: map['broj_telefona_oca'] as String?,
       brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       polasciPoDanu: polasciPoDanu,
-      adresaBelaCrkva:
-          null, // Address fields removed - now using UUID references
-      adresaVrsac: null, // Address fields removed - now using UUID references
+      adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
+      adresaVrsac: map['adresa_vrsac'] as String?,
       // legacy columns removed; rely on polasci_po_danu and helpers
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'fiksan',
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
@@ -158,8 +157,9 @@ class MesecniPutnik {
       'broj_telefona_oca': brojTelefonaOca,
       'broj_telefona_majke': brojTelefonaMajke,
       'polasci_po_danu': polasciPoDanuForDb,
-      // Address fields removed - now using UUID references: adresa_polaska_id, adresa_dolaska_id
-      // legacy fields removed - keep canonical `polasci_po_danu`
+      'adresa_bela_crkva': adresaBelaCrkva,
+      'adresa_vrsac': adresaVrsac,
+      // TODO: Future implementation with UUID references: adresa_polaska_id, adresa_dolaska_id
       'tip_prikazivanja': tipPrikazivanja,
       'radni_dani': radniDani,
       'aktivan': aktivan,
