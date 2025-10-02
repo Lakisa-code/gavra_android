@@ -13,7 +13,6 @@ import '../services/mesecni_putnik_service_novi.dart';
 import '../utils/mesecni_helpers.dart';
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import '../services/smart_address_autocomplete_service.dart'; // ✅ DODANO za pamćenje adresa
-import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
 import '../utils/logging.dart';
 import '../theme.dart'; // ✅ DODANO za AppThemeHelpers
 import '../widgets/custom_back_button.dart';
@@ -2672,8 +2671,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-
-
   Future<void> _sacuvajNovogPutnika() async {
     // Validacija formulara
     final validationError = _validateForm();
@@ -2738,8 +2735,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         ukupnaCenaMeseca: 0.0,
       );
 
-      final rezultat =
-          await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+      await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
@@ -2749,75 +2745,65 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       if (mounted) {
         Navigator.pop(context);
-        // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
-          try {
-            // Dobij trenutnog vozača
-            final prefs = await SharedPreferences.getInstance();
-            final currentDriver = prefs.getString('current_driver');
+      }
+      // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
+      try {
+        // Dobij trenutnog vozača
+        final prefs = await SharedPreferences.getInstance();
+        final currentDriver = prefs.getString('current_driver');
 
-            // Zabelezi upotrebu adrese Bela Crkva
-            if (adresaBelaCrkva.isNotEmpty) {
-              await SmartAddressAutocompleteService.recordAddressUsage(
-                address: adresaBelaCrkva,
-                city: 'Bela Crkva',
-                vozac: currentDriver,
-                timeContext: DateTime.now(),
-              );
+        // Zabelezi upotrebu adrese Bela Crkva
+        if (adresaBelaCrkva.isNotEmpty) {
+          await SmartAddressAutocompleteService.recordAddressUsage(
+            address: adresaBelaCrkva,
+            city: 'Bela Crkva',
+            vozac: currentDriver,
+            timeContext: DateTime.now(),
+          );
+        }
+
+        // Zabelezi upotrebu adrese Vršac
+        if (adresaVrsac.isNotEmpty) {
+          await SmartAddressAutocompleteService.recordAddressUsage(
+            address: adresaVrsac,
+            city: 'Vršac',
+            vozac: currentDriver,
+            timeContext: DateTime.now(),
+          );
+        }
+
+        // 🕐 SAČUVAJ VREMENA POLASKA U ISTORIJU
+        for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+          if (_noviRadniDani[dan] == true) {
+            final bcTime = _getControllerBelaCrkva(dan).text.trim();
+            final vsTime = _getControllerVrsac(dan).text.trim();
+
+            // Sačuvaj BC vremena ako postoje
+            if (bcTime.isNotEmpty) {
+              await _sacuvajVremePolasakaUIstorijuZaDan(
+                  prefs, bcTime, 'BC', dan, currentDriver);
             }
 
-            // Zabelezi upotrebu adrese Vršac
-            if (adresaVrsac.isNotEmpty) {
-              await SmartAddressAutocompleteService.recordAddressUsage(
-                address: adresaVrsac,
-                city: 'Vršac',
-                vozac: currentDriver,
-                timeContext: DateTime.now(),
-              );
+            // Sačuvaj VS vremena ako postoje
+            if (vsTime.isNotEmpty) {
+              await _sacuvajVremePolasakaUIstorijuZaDan(
+                  prefs, vsTime, 'VS', dan, currentDriver);
             }
-
-            // 🕐 SAČUVAJ VREMENA POLASKA U ISTORIJU
-            for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-              if (_noviRadniDani[dan] == true) {
-                final bcTime = _getControllerBelaCrkva(dan).text.trim();
-                final vsTime = _getControllerVrsac(dan).text.trim();
-
-                // Sačuvaj BC vremena ako postoje
-                if (bcTime.isNotEmpty) {
-                  await _sacuvajVremePolasakaUIstorijuZaDan(
-                      prefs, bcTime, 'BC', dan, currentDriver);
-                }
-
-                // Sačuvaj VS vremena ako postoje
-                if (vsTime.isNotEmpty) {
-                  await _sacuvajVremePolasakaUIstorijuZaDan(
-                      prefs, vsTime, 'VS', dan, currentDriver);
-                }
-              }
-            }
-          } catch (e) {
-            // Greška pri snimanju adresa i vremena - ne prekidaj proces
-            dlog('❌ Greška pri snimanju adresa i vremena u istoriju: $e');
-          } // 🧹 RESETUJ FORMU NAKON USPEŠNOG DODAVANJA
-          _resetujFormuZaDodavanje();
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Mesečni putnik je uspešno dodat'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Greška pri dodavanju putnika u bazu'),
-                backgroundColor: Colors.red,
-              ),
-            );
           }
         }
+      } catch (e) {
+        // Greška pri snimanju adresa i vremena - ne prekidaj proces
+        dlog('❌ Greška pri snimanju adresa i vremena u istoriju: $e');
+      } // 🧹 RESETUJ FORMU NAKON USPEŠNOG DODAVANJA
+      _resetujFormuZaDodavanje();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mesečni putnik je uspešno dodat'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

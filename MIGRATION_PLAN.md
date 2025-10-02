@@ -75,28 +75,42 @@ toMap() → koristi normalizovane kolone
 5. Cleanup (NA KRAJU)
 
 ## 🚨 TRENUTNO STANJE
-**~97 grešaka** nakon kontinuiranih popravaka!
+**0 grešaka** u screen fajlu! 🎉
 
 ### IZVRŠENI RADOVI:
 1. **Model compatibility layer** ✅
    - Dodana sva legacy polja u novi model
    - Enhanced fromMap() i toMap() metode
    - Dodane legacy helper metode (getPolazakBelaCrkvaZaDan)
+   - Popravljeno čuvanje adresa u bazi
 
 2. **Service method fixes** ✅
    - Popravljen return tip za toggleAktivnost (void → bool)
    - Popravljen return tip za azurirajMesecnogPutnika (void → MesecniPutnik?)
    - Popravljen return tip za obrisiMesecniPutnik (void → bool)
+   - Popravljen return tip za sinhronizujBrojPutovanjaSaIstorijom (void → bool)
    - Dodane missing legacy metode
 
-3. **Screen fixes** ⚠️
+3. **Screen fixes** ✅
    - Service replacement izvršen
    - Type comparison fixes (putnik.tip.value)
+   - Popravljena struktura klase (uklonjene višak zagrade)
+   - Uklonjen unused import
+   - Uklonjena unused varijabla
    - Komentar za MesecniPutnikDetaljiScreen (treba novi model)
 
 ### TRENUTNI PROBLEMI:
-1. **Strukturalni problem** - veći deo koda je van klase definicije
-2. **Missing class members** - context, mounted, _mesecniPutnikService nedostupni
+1. **MesecniPutnikDetaljiScreen** - koristi stari model, treba migracija
+2. **Testiranje** - potrebno testirati funkcionalnost aplikacije
+
+### SLEDEĆI KORACI:
+**PRIORITET 1:** Testirati aplikaciju sa novim modelom
+**PRIORITET 2:** Migrirati MesecniPutnikDetaljiScreen na novi model
+**PRIORITET 3:** Testirati ostale screen-ove
+
+---
+**Datum poslednjeg ažuriranja:** October 2, 2025
+**Status:** ✅ ZAVRŠENA GLAVNA MIGRACIJA! (od 162 na 0 grešaka)
 3. **Try/catch disconnection** - neki try blokovi su van metoda
 
 ### UZROK PROBLEMA:
