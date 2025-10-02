@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
+import '../theme.dart'; // Za theme boje
 
 class PutovanjaIstorijaScreen extends StatefulWidget {
   const PutovanjaIstorijaScreen({Key? key}) : super(key: key);
@@ -140,20 +141,22 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error, size: 64, color: Colors.red.shade400),
+                        Icon(Icons.error,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.dangerPrimary),
                         const SizedBox(height: 16),
                         Text(
                           'Greška pri učitavanju putovanja',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.red.shade600,
+                            color: Theme.of(context).colorScheme.dangerPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           snapshot.error.toString(),
                           style: TextStyle(
-                            color: Colors.red.shade400,
+                            color: Theme.of(context).colorScheme.dangerPrimary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -403,12 +406,13 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               children: [
                 if (putovanje.cena > 0) ...[
                   Icon(Icons.monetization_on,
-                      size: 16, color: Colors.green.shade600),
+                      size: 16,
+                      color: Theme.of(context).colorScheme.successPrimary),
                   const SizedBox(width: 4),
                   Text(
                     '${putovanje.cena.toStringAsFixed(0)} RSD',
                     style: TextStyle(
-                      color: Colors.green.shade700,
+                      color: Theme.of(context).colorScheme.successPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -448,21 +452,21 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isMesecni
-            ? Colors.blue.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+            : Theme.of(context).colorScheme.warningPrimary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isMesecni
-              ? Colors.blue.withOpacity(0.3)
-              : Colors.orange.withOpacity(0.3),
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+              : Theme.of(context).colorScheme.warningPrimary.withOpacity(0.3),
         ),
       ),
       child: Text(
         isMesecni ? 'MESEČNI' : 'DNEVNI',
         style: TextStyle(
           color: isMesecni
-              ? Colors.blue.withOpacity(0.8)
-              : Colors.orange.withOpacity(0.8),
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.8)
+              : Theme.of(context).colorScheme.warningPrimary.withOpacity(0.8),
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),

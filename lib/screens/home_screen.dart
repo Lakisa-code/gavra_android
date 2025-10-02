@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart' show globalThemeToggler; // Za theme toggle
+import '../theme.dart'; // Za theme boje
 import '../models/putnik.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
@@ -324,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: Colors.red.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.dangerPrimary.withOpacity(0.5),
             width: 2,
           ),
         ),
@@ -412,12 +413,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .successPrimary
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_add,
-                  color: Colors.green,
+                  color: Theme.of(context).colorScheme.successPrimary,
                   size: 24,
                 ),
               ),
@@ -440,15 +444,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blue.shade50, Colors.blue.shade100],
+                      colors: [
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.shade200, width: 1.5),
+                    border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.3),
+                        width: 1.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -459,12 +474,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade100,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           Icons.schedule,
-                          color: Colors.blue.shade700,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 20,
                         ),
                       ),
@@ -484,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               '$_selectedVreme - $_selectedGrad ($_selectedDay)',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
+                                color: Theme.of(context).colorScheme.primary,
                                 fontSize: 14,
                               ),
                             ),
@@ -524,8 +542,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          prefixIcon:
-                              Icon(Icons.person, color: Colors.blue.shade600),
+                          prefixIcon: Icon(Icons.person,
+                              color: Theme.of(context).colorScheme.primary),
                         ),
                         items: dozvoljenaImena
                             .map((ime) => DropdownMenuItem(
@@ -575,9 +593,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .successPrimary
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .successPrimary
+                              .withOpacity(0.3)),
                     ),
                     child: Row(
                       children: [
@@ -587,7 +612,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           child: Text(
                             '✅ Adresa će biti korišćena za optimizaciju Google Maps rute!',
                             style: TextStyle(
-                              color: Colors.green[700],
+                              color:
+                                  Theme.of(context).colorScheme.successPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -601,9 +627,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .warningPrimary
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                      border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .warningPrimary
+                              .withOpacity(0.3)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,21 +699,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.05),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.05),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                      border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.2)),
                     ),
                     child: Row(
                       children: [
                         Icon(Icons.info_outline,
-                            size: 16, color: Colors.blue.shade700),
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Putnik će biti dodat za: $_selectedVreme - $_selectedGrad',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.blue.shade700,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),

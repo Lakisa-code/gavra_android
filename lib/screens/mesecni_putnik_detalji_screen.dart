@@ -4,6 +4,7 @@ import '../models/mesecni_putnik.dart';
 import '../services/putnik_service.dart';
 // foundation import not needed; using centralized logger
 import '../utils/logging.dart';
+import '../theme.dart'; // Za theme boje
 
 class MesecniPutnikDetaljiScreen extends StatefulWidget {
   final MesecniPutnik putnik;
@@ -150,12 +151,16 @@ class _MesecniPutnikDetaljiScreenState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.indigo.shade50, Colors.blue.shade50],
+          colors: [
+            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            Theme.of(context).colorScheme.primary.withOpacity(0.05),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.indigo.shade200),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +227,7 @@ class _MesecniPutnikDetaljiScreenState
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.blue.shade100,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Column(
@@ -232,7 +237,7 @@ class _MesecniPutnikDetaljiScreenState
                     'Radni dani: ${_formatRadniDani(widget.putnik.radniDani)}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.blue.shade800,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -285,7 +290,7 @@ class _MesecniPutnikDetaljiScreenState
             '${daniMapa[dan]}: ${vremena.join(', ')}',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.blue.shade700,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         );
@@ -625,13 +630,13 @@ class _MesecniPutnikDetaljiScreenState
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: tipPlacanja == 'mesecna_karta'
-              ? Colors.blue.shade100
-              : Colors.green.shade100,
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+              : Theme.of(context).colorScheme.successPrimary.withOpacity(0.2),
           child: Icon(
             tipPlacanja == 'mesecna_karta' ? Icons.credit_card : Icons.payments,
             color: tipPlacanja == 'mesecna_karta'
-                ? Colors.blue.shade700
-                : Colors.green.shade700,
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.successPrimary,
           ),
         ),
         title: Text(
@@ -699,7 +704,7 @@ class _MesecniPutnikDetaljiScreenState
           Icon(
             Icons.directions_bus,
             size: 16,
-            color: Colors.green.shade600,
+            color: Theme.of(context).colorScheme.successPrimary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -724,7 +729,7 @@ class _MesecniPutnikDetaljiScreenState
           Icon(
             Icons.cancel,
             size: 16,
-            color: Colors.orange.shade600,
+            color: Theme.of(context).colorScheme.warningPrimary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -766,10 +771,13 @@ class _MesecniPutnikDetaljiScreenState
         final dan = index + 1;
         final aktivnost = daniSaAktivnoscu[dan];
 
-        Color boja = Colors.grey.shade200;
-        if (aktivnost == 'voznja') boja = Colors.green.shade200;
-        if (aktivnost == 'otkaz') boja = Colors.orange.shade200;
-        if (aktivnost == 'oba') boja = Colors.blue.shade200;
+        Color boja = Theme.of(context).colorScheme.surfaceContainerHighest;
+        if (aktivnost == 'voznja')
+          boja = Theme.of(context).colorScheme.successPrimary.withOpacity(0.2);
+        if (aktivnost == 'otkaz')
+          boja = Theme.of(context).colorScheme.warningPrimary.withOpacity(0.2);
+        if (aktivnost == 'oba')
+          boja = Theme.of(context).colorScheme.primary.withOpacity(0.2);
 
         return Container(
           width: 30,
