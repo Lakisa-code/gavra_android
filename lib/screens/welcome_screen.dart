@@ -14,6 +14,7 @@ import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import 'home_screen.dart';
 import 'change_password_screen.dart';
 import 'daily_checkin_screen.dart';
+import 'phone_login_screen.dart'; // DODATO za SMS authentication
 import '../main.dart' show globalThemeRefresher; // DODATO za tema refresh
 
 class WelcomeScreen extends StatefulWidget {
@@ -649,6 +650,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   const EdgeInsets.symmetric(vertical: 20.0),
                               child: _buildSvetlanaButton(),
                             ),
+
+                            // SMS Authentication dugme
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 16.0),
+                              child: _buildSMSAuthButton(),
+                            ),
                           ],
                         ),
                       ),
@@ -987,6 +995,111 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (!mounted) return;
       _showErrorDialog('Pogrešna šifra!', 'Molimo pokušajte ponovo.');
     }
+  }
+
+  // 📱 SMS AUTHENTICATION BUTTON
+  Widget _buildSMSAuthButton() {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.85,
+        height: 65,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.green.withOpacity(0.8),
+              Colors.teal.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.green.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PhoneLoginScreen(),
+              ),
+            );
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.sms_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SMS Prijava',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  Text(
+                    'Prijavite se brojem telefona',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
