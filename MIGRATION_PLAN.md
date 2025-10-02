@@ -75,25 +75,41 @@ toMap() → koristi normalizovane kolone
 5. Cleanup (NA KRAJU)
 
 ## 🚨 TRENUTNO STANJE
-**162 greške** nakon prvog koraka migracije!
+**~97 grešaka** nakon kontinuiranih popravaka!
 
-### GLAVNI PROBLEMI:
-1. **Model incompatibilnost** - novi model nema iste properties kao stari:
-   - `putnikIme` → `ime` + `prezime`
-   - `adresaBelaCrkva`/`adresaVrsac` → `adresaId` 
-   - `status`, `cena`, `radniDani` - nedostaju u novom modelu
-   - `getPolazakBelaCrkvaZaDan()` - metoda ne postoji
+### IZVRŠENI RADOVI:
+1. **Model compatibility layer** ✅
+   - Dodana sva legacy polja u novi model
+   - Enhanced fromMap() i toMap() metode
+   - Dodane legacy helper metode (getPolazakBelaCrkvaZaDan)
 
-2. **Kreiranje novih putnika** - constructor ima različite required parametre
+2. **Service method fixes** ✅
+   - Popravljen return tip za toggleAktivnost (void → bool)
+   - Popravljen return tip za azurirajMesecnogPutnika (void → MesecniPutnik?)
+   - Popravljen return tip za obrisiMesecniPutnik (void → bool)
+   - Dodane missing legacy metode
+
+3. **Screen fixes** ⚠️
+   - Service replacement izvršen
+   - Type comparison fixes (putnik.tip.value)
+   - Komentar za MesecniPutnikDetaljiScreen (treba novi model)
+
+### TRENUTNI PROBLEMI:
+1. **Strukturalni problem** - veći deo koda je van klase definicije
+2. **Missing class members** - context, mounted, _mesecniPutnikService nedostupni
+3. **Try/catch disconnection** - neki try blokovi su van metoda
+
+### UZROK PROBLEMA:
+Brisanje nepotrebne metode je verovatno uklonilo ključnu zatvorenu zagradu, što je dovelo do strukturalnog kvarenja klase.
 
 ### SLEDEĆI KORACI:
-**OPCIJA 1:** Dodati nedostajuće properties u novi model
-**OPCIJA 2:** Kompletan refaktoring UI-ja za novi model
-**OPCIJA 3:** Zadržati stari model i dodati samo UUID adrese
+**PRIORITET 1:** Popraviti strukturalne probleme u screen fajlu
+**PRIORITET 2:** Testirati funkcionalnost aplikacije
+**PRIORITET 3:** Kompletirati ostatak migracije
 
 ---
 **Datum kreiranja:** October 2, 2025
-**Status:** ✅ U TOKU - ZNAČAJAN NAPREDAK!
-- **SA 162 GREŠKE NA 34** - model migracija uspešna!
-- Dodana sva legacy polja za kompatibilnost
-- Preostale greške su uglavnom tip comparisons i method calls
+**Status:** ⚠️ U TOKU - STRUKTURALNI PROBLEM!
+- **Napredak:** Model i service layer funkcionalni
+- **Problem:** Screen fajl ima ozbiljan strukturalni kvar
+- **Rešenje:** Potrebno je pažljivo vratiti strukturu klase
