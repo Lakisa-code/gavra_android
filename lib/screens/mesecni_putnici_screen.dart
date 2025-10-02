@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,6 +12,7 @@ import '../utils/filter_and_sort_putnici.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../utils/mesecni_helpers.dart';
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
+import '../services/smart_address_autocomplete_service.dart'; // ✅ DODANO za pamćenje adresa
 import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
 import '../utils/logging.dart';
 import '../theme.dart'; // ✅ DODANO za AppThemeHelpers
@@ -1960,7 +1962,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       child: IconButton(
                         icon: const Icon(Icons.close,
                             size: 18, color: Colors.red),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          // 🧹 RESETUJ FORMU KADA SE ZATVORI DIJALOG
+                          _resetujFormuZaDodavanje();
+                          Navigator.pop(context);
+                        },
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
                       ),
@@ -2530,7 +2536,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+                        // 🧹 RESETUJ FORMU KADA SE ODUSTANE OD DODAVANJA
+                        _resetujFormuZaDodavanje();
+                        Navigator.pop(context);
+                      },
                       style: TextButton.styleFrom(
                         foregroundColor: Theme.of(context)
                             .colorScheme
@@ -2566,6 +2576,122 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         ),
       ),
     );
+  }
+
+  /// 🧹 RESETUJ FORMU ZA DODAVANJE MESEČNOG PUTNIKA
+  void _resetujFormuZaDodavanje() {
+    setState(() {
+      // Resetuj osnovne varijable
+      _novoIme = '';
+      _noviTip = 'radnik';
+      _novaTipSkole = '';
+      _noviBrojTelefona = '';
+      _noviBrojTelefonaOca = '';
+      _noviBrojTelefonaMajke = '';
+      _novaAdresaBelaCrkva = '';
+      _novaAdresaVrsac = '';
+
+      // Očisti sve text controller-e
+      _imeController.clear();
+      _tipSkoleController.clear();
+      _brojTelefonaController.clear();
+      _brojTelefonaOcaController.clear();
+      _brojTelefonaMajkeController.clear();
+      _adresaBelaCrkvaController.clear();
+      _adresaVrsacController.clear();
+
+      // Očisti controller-e za vremena polaska
+      _polazakBcPonController.clear();
+      _polazakBcUtoController.clear();
+      _polazakBcSreController.clear();
+      _polazakBcCetController.clear();
+      _polazakBcPetController.clear();
+      _polazakVsPonController.clear();
+      _polazakVsUtoController.clear();
+      _polazakVsSreController.clear();
+      _polazakVsCetController.clear();
+      _polazakVsPetController.clear();
+
+      // Resetuj radne dane na standardnu radnu nedelju
+      _noviRadniDani = {
+        'pon': true,
+        'uto': true,
+        'sre': true,
+        'cet': true,
+        'pet': true,
+      };
+    });
+  }
+
+  /// 🕐 SAČUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETE
+  Future<void> _sacuvajVremePolasakaUIstorijuZaDan(
+    SharedPreferences prefs,
+    String vreme,
+    String smer, // 'BC' ili 'VS'
+    String dan,
+    String? vozac,
+  ) async {
+    try {
+      // Normalizuj vreme
+      final normalizedTime = MesecniHelpers.normalizeTime(vreme);
+      if (normalizedTime == null) return;
+
+      // Kreiraj ključ za čuvanje vremena
+      final key = 'time_history_${smer}_${dan}_${vozac ?? 'global'}';
+
+      // Učitaj postojeće vremena
+      final existingTimesJson = prefs.getString(key) ?? '{}';
+      final existingTimes = Map<String, int>.from(
+          json.decode(existingTimesJson) as Map<String, dynamic>);
+
+      // Povećaj broj korišćenja za ovo vreme
+      existingTimes[normalizedTime] = (existingTimes[normalizedTime] ?? 0) + 1;
+
+      // Ograniči na maksimalno 20 vremena po ključu da ne zauzima previše prostora
+      if (existingTimes.length > 20) {
+        // Sortiraj po frekvenciji i zadržar samo top 20
+        final sortedEntries = existingTimes.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        existingTimes.clear();
+        for (int i = 0; i < 20 && i < sortedEntries.length; i++) {
+          existingTimes[sortedEntries[i].key] = sortedEntries[i].value;
+        }
+      }
+
+      // Sačuvaj nazad u SharedPreferences
+      await prefs.setString(key, json.encode(existingTimes));
+
+      dlog(
+          '💾 Sačuvano vreme $normalizedTime za $smer $dan (vozač: ${vozac ?? 'global'})');
+    } catch (e) {
+      dlog('❌ Greška pri čuvanju vremena polaska: $e');
+    }
+  }
+
+  /// 🕐 DOBIJ POPULARNA VREMENA POLASKA ZA AUTOCOMPLETE
+  Future<List<String>> _getPopularnaVremenaZaDan(
+    String smer, // 'BC' ili 'VS'
+    String dan,
+    String? vozac,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'time_history_${smer}_${dan}_${vozac ?? 'global'}';
+
+      final timesJson = prefs.getString(key) ?? '{}';
+      final times =
+          Map<String, int>.from(json.decode(timesJson) as Map<String, dynamic>);
+
+      // Sortiraj po frekvenciji korišćenja
+      final sortedTimes = times.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      // Vrati samo vremena, sortirana po popularnosti
+      return sortedTimes.map((e) => e.key).take(10).toList();
+    } catch (e) {
+      dlog('❌ Greška pri učitavanju popularnih vremena: $e');
+      return [];
+    }
   }
 
   Future<void> _sacuvajNovogPutnika() async {
@@ -2639,19 +2765,74 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       if (mounted) {
         Navigator.pop(context);
         if (rezultat != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Mesečni putnik je uspešno dodat'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
+          try {
+            // Dobij trenutnog vozača
+            final prefs = await SharedPreferences.getInstance();
+            final currentDriver = prefs.getString('current_driver');
+
+            // Zabelezi upotrebu adrese Bela Crkva
+            if (adresaBelaCrkva.isNotEmpty) {
+              await SmartAddressAutocompleteService.recordAddressUsage(
+                address: adresaBelaCrkva,
+                city: 'Bela Crkva',
+                vozac: currentDriver,
+                timeContext: DateTime.now(),
+              );
+            }
+
+            // Zabelezi upotrebu adrese Vršac
+            if (adresaVrsac.isNotEmpty) {
+              await SmartAddressAutocompleteService.recordAddressUsage(
+                address: adresaVrsac,
+                city: 'Vršac',
+                vozac: currentDriver,
+                timeContext: DateTime.now(),
+              );
+            }
+
+            // 🕐 SAČUVAJ VREMENA POLASKA U ISTORIJU
+            for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+              if (_noviRadniDani[dan] == true) {
+                final bcTime = _getControllerBelaCrkva(dan).text.trim();
+                final vsTime = _getControllerVrsac(dan).text.trim();
+
+                // Sačuvaj BC vremena ako postoje
+                if (bcTime.isNotEmpty) {
+                  await _sacuvajVremePolasakaUIstorijuZaDan(
+                      prefs, bcTime, 'BC', dan, currentDriver);
+                }
+
+                // Sačuvaj VS vremena ako postoje
+                if (vsTime.isNotEmpty) {
+                  await _sacuvajVremePolasakaUIstorijuZaDan(
+                      prefs, vsTime, 'VS', dan, currentDriver);
+                }
+              }
+            }
+          } catch (e) {
+            // Greška pri snimanju adresa i vremena - ne prekidaj proces
+            dlog('❌ Greška pri snimanju adresa i vremena u istoriju: $e');
+          } // 🧹 RESETUJ FORMU NAKON USPEŠNOG DODAVANJA
+          _resetujFormuZaDodavanje();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Mesečni putnik je uspešno dodat'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Greška pri dodavanju putnika u bazu'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Greška pri dodavanju putnika u bazu'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
