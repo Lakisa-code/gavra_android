@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/password_service.dart';
 import '../widgets/custom_back_button.dart';
+import '../theme.dart'; // DODANO za theme extensions
 
 class ChangePasswordScreen extends StatefulWidget {
   final String driverName;
@@ -68,7 +69,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -78,7 +79,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: Theme.of(context).colorScheme.successPrimary,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -313,19 +314,24 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info, color: Colors.blue[700]),
+                    Icon(Icons.info,
+                        color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Šifra se čuva bezbedno na vašem uređaju. Zapamtite novu šifru!',
                         style: TextStyle(
-                          color: Colors.blue[700],
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 12,
                         ),
                       ),

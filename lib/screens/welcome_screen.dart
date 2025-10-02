@@ -11,6 +11,7 @@ import '../services/password_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../services/permission_service.dart'; // DODATO za zahtevanje dozvola
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
+import '../theme.dart'; // DODATO za theme extensions
 import 'home_screen.dart';
 import 'change_password_screen.dart';
 import 'daily_checkin_screen.dart';
@@ -452,8 +453,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 );
               },
-              child: const Text('Promeni šifru',
-                  style: TextStyle(color: Colors.orange)),
+              child: Text('Promeni šifru',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.studentPrimary)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -486,13 +488,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: Colors.red.withOpacity(0.5),
+              color:
+                  Theme.of(context).colorScheme.dangerPrimary.withOpacity(0.5),
               width: 2,
             ),
           ),
           title: Column(
             children: [
-              const Icon(Icons.error, color: Colors.red, size: 40),
+              Icon(Icons.error,
+                  color: Theme.of(context).colorScheme.dangerPrimary, size: 40),
               const SizedBox(height: 12),
               Text(
                 title,
@@ -516,7 +520,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1007,8 +1011,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.green.withOpacity(0.8),
-              Colors.teal.withOpacity(0.8),
+              Theme.of(context).colorScheme.successPrimary.withOpacity(0.8),
+              Theme.of(context).colorScheme.workerPrimary.withOpacity(0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -1016,13 +1020,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.3),
+              color:
+                  Theme.of(context).colorScheme.successPrimary.withOpacity(0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
           ],
           border: Border.all(
-            color: Colors.green.withOpacity(0.5),
+            color:
+                Theme.of(context).colorScheme.successPrimary.withOpacity(0.5),
             width: 2,
           ),
         ),

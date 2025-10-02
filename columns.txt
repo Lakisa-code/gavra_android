@@ -1,0 +1,127 @@
+ public       | adrese             | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | adrese             | ulica                | character varying        | NO          | 
+ public       | adrese             | broj                 | character varying        | YES         | 
+ public       | adrese             | grad                 | character varying        | NO          | 
+ public       | adrese             | postanski_broj       | character varying        | YES         | 
+ public       | adrese             | koordinate           | point                    | YES         | 
+ public       | adrese             | created_at           | timestamp with time zone | YES         | now()
+ public       | dnevni_putnici     | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | dnevni_putnici     | ime                  | character varying        | NO          | 
+ public       | dnevni_putnici     | polazak              | character varying        | NO          | 
+ public       | dnevni_putnici     | pokupljen            | boolean                  | YES         | false
+ public       | dnevni_putnici     | vreme_dodavanja      | timestamp with time zone | YES         | now()
+ public       | dnevni_putnici     | mesecna_karta        | boolean                  | YES         | false
+ public       | dnevni_putnici     | dan                  | character varying        | NO          | 
+ public       | dnevni_putnici     | status               | character varying        | YES         | 
+ public       | dnevni_putnici     | status_vreme         | timestamp with time zone | YES         | 
+ public       | dnevni_putnici     | vreme_pokupljenja    | timestamp with time zone | YES         | 
+ public       | dnevni_putnici     | vreme_placanja       | timestamp with time zone | YES         | 
+ public       | dnevni_putnici     | placeno              | boolean                  | YES         | false
+ public       | dnevni_putnici     | iznos_placanja       | numeric                  | YES         | 
+ public       | dnevni_putnici     | naplatio_vozac_id    | uuid                     | YES         | 
+ public       | dnevni_putnici     | pokupio_vozac_id     | uuid                     | YES         | 
+ public       | dnevni_putnici     | dodao_vozac_id       | uuid                     | YES         | 
+ public       | dnevni_putnici     | vozac_id             | uuid                     | YES         | 
+ public       | dnevni_putnici     | grad                 | character varying        | NO          | 
+ public       | dnevni_putnici     | otkazao_vozac_id     | uuid                     | YES         | 
+ public       | dnevni_putnici     | vreme_otkazivanja    | timestamp with time zone | YES         | 
+ public       | dnevni_putnici     | adresa               | text                     | YES         | 
+ public       | dnevni_putnici     | obrisan              | boolean                  | YES         | false
+ public       | dnevni_putnici     | priority             | integer                  | YES         | 
+ public       | dnevni_putnici     | broj_telefona        | character varying        | YES         | 
+ public       | dnevni_putnici     | datum                | date                     | NO          | 
+ public       | dnevni_putnici     | ruta_id              | uuid                     | YES         | 
+ public       | dnevni_putnici     | vozilo_id            | uuid                     | YES         | 
+ public       | dnevni_putnici     | adresa_id            | uuid                     | YES         | 
+ public       | dnevni_putnici     | created_at           | timestamp with time zone | YES         | now()
+ public       | dnevni_putnici     | updated_at           | timestamp with time zone | YES         | now()
+ public       | gps_lokacije       | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | gps_lokacije       | vozac_id             | uuid                     | YES         | 
+ public       | gps_lokacije       | vozilo_id            | uuid                     | YES         | 
+ public       | gps_lokacije       | latitude             | numeric                  | NO          | 
+ public       | gps_lokacije       | longitude            | numeric                  | NO          | 
+ public       | gps_lokacije       | brzina               | numeric                  | YES         | 
+ public       | gps_lokacije       | pravac               | numeric                  | YES         | 
+ public       | gps_lokacije       | tacnost              | numeric                  | YES         | 
+ public       | gps_lokacije       | vreme                | timestamp with time zone | YES         | now()
+ public       | mesecni_putnici    | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | mesecni_putnici    | putnik_ime           | character varying        | NO          | 
+ public       | mesecni_putnici    | tip                  | character varying        | NO          | 
+ public       | mesecni_putnici    | tip_skole            | character varying        | YES         | 
+ public       | mesecni_putnici    | broj_telefona        | character varying        | YES         | 
+ public       | mesecni_putnici    | polasci_po_danu      | jsonb                    | NO          | 
+ public       | mesecni_putnici    | tip_prikazivanja     | character varying        | YES         | 'standard'::character varying
+ public       | mesecni_putnici    | radni_dani           | character varying        | YES         | 
+ public       | mesecni_putnici    | aktivan              | boolean                  | YES         | true
+ public       | mesecni_putnici    | status               | character varying        | YES         | 'aktivan'::character varying
+ public       | mesecni_putnici    | datum_pocetka_meseca | date                     | NO          | 
+ public       | mesecni_putnici    | datum_kraja_meseca   | date                     | NO          | 
+ public       | mesecni_putnici    | ukupna_cena_meseca   | numeric                  | YES         | 
+ public       | mesecni_putnici    | cena                 | numeric                  | YES         | 
+ public       | mesecni_putnici    | broj_putovanja       | integer                  | YES         | 0
+ public       | mesecni_putnici    | broj_otkazivanja     | integer                  | YES         | 0
+ public       | mesecni_putnici    | poslednji_putovanje  | timestamp with time zone | YES         | 
+ public       | mesecni_putnici    | vreme_placanja       | timestamp with time zone | YES         | 
+ public       | mesecni_putnici    | placeni_mesec        | integer                  | YES         | 
+ public       | mesecni_putnici    | placena_godina       | integer                  | YES         | 
+ public       | mesecni_putnici    | vozac_id             | uuid                     | YES         | 
+ public       | mesecni_putnici    | pokupljen            | boolean                  | YES         | false
+ public       | mesecni_putnici    | vreme_pokupljenja    | timestamp with time zone | YES         | 
+ public       | mesecni_putnici    | statistics           | jsonb                    | YES         | '{}'::jsonb
+ public       | mesecni_putnici    | ruta_id              | uuid                     | YES         | 
+ public       | mesecni_putnici    | vozilo_id            | uuid                     | YES         | 
+ public       | mesecni_putnici    | adresa_polaska_id    | uuid                     | YES         | 
+ public       | mesecni_putnici    | adresa_dolaska_id    | uuid                     | YES         | 
+ public       | mesecni_putnici    | obrisan              | boolean                  | YES         | false
+ public       | mesecni_putnici    | created_at           | timestamp with time zone | YES         | now()
+ public       | mesecni_putnici    | updated_at           | timestamp with time zone | YES         | now()
+ public       | mesecni_putnici    | broj_telefona_oca    | character varying        | YES         | 
+ public       | mesecni_putnici    | broj_telefona_majke  | character varying        | YES         | 
+ public       | putovanja_istorija | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | putovanja_istorija | mesecni_putnik_id    | uuid                     | YES         | 
+ public       | putovanja_istorija | tip_putnika          | character varying        | NO          | 
+ public       | putovanja_istorija | datum                | date                     | NO          | 
+ public       | putovanja_istorija | vreme_polaska        | time without time zone   | NO          | 
+ public       | putovanja_istorija | vreme_akcije         | timestamp with time zone | YES         | 
+ public       | putovanja_istorija | status               | character varying        | NO          | 'nije_se_pojavio'::character varying
+ public       | putovanja_istorija | putnik_ime           | character varying        | NO          | 
+ public       | putovanja_istorija | broj_telefona        | character varying        | YES         | 
+ public       | putovanja_istorija | cena                 | numeric                  | YES         | 0.0
+ public       | putovanja_istorija | dan                  | character varying        | YES         | 
+ public       | putovanja_istorija | grad                 | character varying        | YES         | 
+ public       | putovanja_istorija | obrisan              | boolean                  | YES         | false
+ public       | putovanja_istorija | pokupljen            | boolean                  | YES         | false
+ public       | putovanja_istorija | vozac_id             | uuid                     | YES         | 
+ public       | putovanja_istorija | vreme_placanja       | timestamp with time zone | YES         | 
+ public       | putovanja_istorija | vreme_pokupljenja    | timestamp with time zone | YES         | 
+ public       | putovanja_istorija | ruta_id              | uuid                     | YES         | 
+ public       | putovanja_istorija | vozilo_id            | uuid                     | YES         | 
+ public       | putovanja_istorija | adresa_id            | uuid                     | YES         | 
+ public       | putovanja_istorija | created_at           | timestamp with time zone | YES         | now()
+ public       | putovanja_istorija | updated_at           | timestamp with time zone | YES         | now()
+ public       | rute               | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | rute               | naziv                | character varying        | NO          | 
+ public       | rute               | polazak              | character varying        | NO          | 
+ public       | rute               | dolazak              | character varying        | NO          | 
+ public       | rute               | udaljenost_km        | numeric                  | YES         | 
+ public       | rute               | prosecno_vreme_min   | integer                  | YES         | 
+ public       | rute               | aktivan              | boolean                  | YES         | true
+ public       | rute               | created_at           | timestamp with time zone | YES         | now()
+ public       | rute               | updated_at           | timestamp with time zone | YES         | now()
+ public       | vozaci             | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | vozaci             | ime                  | character varying        | NO          | 
+ public       | vozaci             | broj_telefona        | character varying        | YES         | 
+ public       | vozaci             | email                | character varying        | YES         | 
+ public       | vozaci             | aktivan              | boolean                  | YES         | true
+ public       | vozaci             | boja                 | character varying        | YES         | 
+ public       | vozaci             | created_at           | timestamp with time zone | YES         | now()
+ public       | vozaci             | updated_at           | timestamp with time zone | YES         | now()
+ public       | vozila             | id                   | uuid                     | NO          | gen_random_uuid()
+ public       | vozila             | registarski_broj     | character varying        | NO          | 
+ public       | vozila             | marka                | character varying        | YES         | 
+ public       | vozila             | model                | character varying        | YES         | 
+ public       | vozila             | broj_sedista         | integer                  | YES         | 
+ public       | vozila             | aktivan              | boolean                  | YES         | true
+ public       | vozila             | created_at           | timestamp with time zone | YES         | now()
+ public       | vozila             | updated_at           | timestamp with time zone | YES         | now()
+

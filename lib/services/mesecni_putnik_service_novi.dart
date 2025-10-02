@@ -79,6 +79,55 @@ class MesecniPutnikService {
     }).eq('id', id);
   }
 
+  /// Toggle aktivnost mesečnog putnika
+  Future<void> toggleAktivnost(String id, bool aktivnost) async {
+    await _supabase.from('mesecni_putnici').update({
+      'aktivan': aktivnost,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', id);
+  }
+
+  /// Ažurira mesečnog putnika (legacy metoda name)
+  Future<void> azurirajMesecnogPutnika(MesecniPutnik putnik) async {
+    await updateMesecniPutnik(putnik.id, putnik.toMap());
+  }
+
+  /// Dodaje novog mesečnog putnika (legacy metoda name)
+  Future<MesecniPutnik> dodajMesecnogPutnika(MesecniPutnik putnik) async {
+    return await createMesecniPutnik(putnik);
+  }
+
+  /// Kreira dnevna putovanja iz mesečnih (placeholder - treba implementirati)
+  Future<void> kreirajDnevnaPutovanjaIzMesecnih(
+      MesecniPutnik putnik, DateTime datum) async {
+    // TODO: Implementirati kreiranje dnevnih putovanja iz mesečnog putnika
+    // Ova metoda treba da kreira zapise u putovanja_istorija tabeli
+    print('TODO: Implementirati kreirajDnevnaPutovanjaIzMesecnih');
+  }
+
+  /// Sinhronizacija broja putovanja sa istorijom (placeholder)
+  Future<void> sinhronizujBrojPutovanjaSaIstorijom(String id) async {
+    // TODO: Implementirati sinhronizaciju sa putovanja_istorija tabelom
+    print('TODO: Implementirati sinhronizujBrojPutovanjaSaIstorijom');
+  }
+
+  /// Ažurira plaćanje za mesec (placeholder)
+  Future<bool> azurirajPlacanjeZaMesec(String putnikId, double iznos,
+      String vozacId, DateTime pocetakMeseca, DateTime krajMeseca) async {
+    try {
+      await updateMesecniPutnik(putnikId, {
+        'vreme_placanja': DateTime.now().toIso8601String(),
+        'naplatio_vozac_id': vozacId,
+        'cena': iznos,
+        'placeni_mesec': pocetakMeseca.month,
+        'placena_godina': pocetakMeseca.year,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Briše mesečnog putnika (soft delete)
   Future<void> obrisiMesecniPutnik(String id) async {
     await _supabase.from('mesecni_putnici').update({

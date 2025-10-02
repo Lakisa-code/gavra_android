@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import '../utils/mesecni_helpers.dart';
 import 'realtime_notification_service.dart';
-import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
+import 'mesecni_putnik_service_novi.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_service.dart';
 import 'supabase_safe.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa

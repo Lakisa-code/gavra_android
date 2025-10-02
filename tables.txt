@@ -1,0 +1,9 @@
+ public       | adrese
+ public       | dnevni_putnici
+ public       | gps_lokacije
+ public       | mesecni_putnici
+ public       | putovanja_istorija
+ public       | rute
+ public       | vozaci
+ public       | vozila
+

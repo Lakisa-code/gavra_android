@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/daily_checkin_service.dart';
 import '../utils/vozac_boja.dart';
 import '../utils/logging.dart';
+import '../theme.dart'; // DODANO za theme extensions
 
 class DailyCheckInScreen extends StatefulWidget {
   final String vozac;
@@ -105,7 +106,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                 Text('Dobro jutro ${widget.vozac}! Uspešno zabeleženo.'),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.successPrimary,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -132,7 +133,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -478,17 +479,27 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                 _buildStatistikaRow(
                     '💰 Ukupan pazar',
                     '${popis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
-                    Colors.green),
-                _buildStatistikaRow('👥 Dodati putnici',
-                    '${popis['dodatiPutnici'] ?? 0}', Colors.blue),
-                _buildStatistikaRow('✅ Pokupljeni putnici',
-                    '${popis['pokupljeniPutnici'] ?? 0}', Colors.green),
-                _buildStatistikaRow('💳 Naplaćeni putnici',
-                    '${popis['naplaceniPutnici'] ?? 0}', Colors.teal),
-                _buildStatistikaRow('❌ Otkazani putnici',
-                    '${popis['otkazaniPutnici'] ?? 0}', Colors.red),
-                _buildStatistikaRow('💸 Dugovi',
-                    '${popis['dugoviPutnici'] ?? 0}', Colors.orange),
+                    Theme.of(context).colorScheme.successPrimary),
+                _buildStatistikaRow(
+                    '👥 Dodati putnici',
+                    '${popis['dodatiPutnici'] ?? 0}',
+                    Theme.of(context).colorScheme.primary),
+                _buildStatistikaRow(
+                    '✅ Pokupljeni putnici',
+                    '${popis['pokupljeniPutnici'] ?? 0}',
+                    Theme.of(context).colorScheme.successPrimary),
+                _buildStatistikaRow(
+                    '💳 Naplaćeni putnici',
+                    '${popis['naplaceniPutnici'] ?? 0}',
+                    Theme.of(context).colorScheme.workerPrimary),
+                _buildStatistikaRow(
+                    '❌ Otkazani putnici',
+                    '${popis['otkazaniPutnici'] ?? 0}',
+                    Theme.of(context).colorScheme.dangerPrimary),
+                _buildStatistikaRow(
+                    '💸 Dugovi',
+                    '${popis['dugoviPutnici'] ?? 0}',
+                    Theme.of(context).colorScheme.studentPrimary),
                 _buildStatistikaRow('🎫 Mesečne karte',
                     '${popis['mesecneKarte'] ?? 0}', Colors.purple),
                 _buildStatistikaRow(
@@ -557,7 +568,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.auto_awesome, color: Colors.orange, size: 24),
+            Icon(Icons.auto_awesome,
+                color: Theme.of(context).colorScheme.studentPrimary, size: 24),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -565,7 +577,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade800,
+                  color: Theme.of(context).colorScheme.studentPrimary,
                 ),
               ),
             ),
@@ -587,21 +599,32 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .studentPrimary
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.shade200),
+                        border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .studentPrimary
+                                .withOpacity(0.3)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline,
-                              color: Colors.orange, size: 20),
+                          Icon(Icons.info_outline,
+                              color:
+                                  Theme.of(context).colorScheme.studentPrimary,
+                              size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Pošto niste uradili ručni popis juče, aplikacija je automatski generisala popis.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.orange.shade800,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .studentPrimary,
                               ),
                             ),
                           ),
@@ -614,17 +637,22 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .studentPrimary
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange, width: 2),
+                        border: Border.all(
+                            color: Theme.of(context).colorScheme.studentPrimary,
+                            width: 2),
                       ),
                       child: Center(
                         child: Text(
                           '🤖 AUTOMATSKI VOZAČ: ${widget.vozac}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange,
+                            color: Theme.of(context).colorScheme.studentPrimary,
                           ),
                         ),
                       ),
@@ -635,23 +663,23 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     _buildStatistikaRow(
                         '💰 Ukupan pazar',
                         '${automatskiPopis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
-                        Colors.green),
+                        Theme.of(context).colorScheme.successPrimary),
                     _buildStatistikaRow(
                         '👥 Dodati putnici',
                         '${automatskiPopis['dodatiPutnici'] ?? 0}',
-                        Colors.blue),
+                        Theme.of(context).colorScheme.primary),
                     _buildStatistikaRow(
                         '✅ Pokupljeni putnici',
                         '${automatskiPopis['pokupljeniPutnici'] ?? 0}',
-                        Colors.green),
+                        Theme.of(context).colorScheme.successPrimary),
                     _buildStatistikaRow(
                         '💳 Naplaćeni putnici',
                         '${automatskiPopis['naplaceniPutnici'] ?? 0}',
-                        Colors.teal),
+                        Theme.of(context).colorScheme.workerPrimary),
                     _buildStatistikaRow(
                         '❌ Otkazani putnici',
                         '${automatskiPopis['otkazaniPutnici'] ?? 0}',
-                        Colors.red),
+                        Theme.of(context).colorScheme.dangerPrimary),
                     _buildStatistikaRow(
                         '� Dugovi',
                         '${automatskiPopis['dugoviPutnici'] ?? 0}',

@@ -11,6 +11,7 @@ import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../widgets/pazar_po_vozacima_widget.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
+import '../theme.dart'; // DODANO za theme extensions
 
 import '../utils/logging.dart';
 
@@ -92,7 +93,8 @@ class _StatistikaScreenState extends State<StatistikaScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.dangerPrimary),
             child: const Text('DA, RESETUJ',
                 style: TextStyle(color: Colors.white)),
           ),
@@ -126,18 +128,18 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       if (uspeh) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('✅ Kilometraža je uspešno resetovana na 0'),
-              backgroundColor: Colors.green,
+              backgroundColor: Theme.of(context).colorScheme.successPrimary,
             ),
           );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('❌ Greška pri resetovanju kilometraže'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
             ),
           );
         }
@@ -148,7 +150,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
           ),
         );
       }
@@ -431,7 +433,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: _resetujKilometrazu,
         tooltip: 'Resetuj kilometražu',
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
         child: const Icon(Icons.delete_forever, color: Colors.white),
       ),
     );
@@ -516,7 +518,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error, size: 48, color: Colors.red),
+                    Icon(Icons.error,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.dangerPrimary),
                     const SizedBox(height: 16),
                     Text('Greška: ${pazarSnapshot.error}'),
                     ElevatedButton(
@@ -630,23 +634,38 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                             ],
                           ),
                           const SizedBox(height: 12),
-                          _buildStatRow('Dodati putnici', stats['dodati'],
-                              Icons.add_circle, Colors.blue),
-                          _buildStatRow('Otkazani', stats['otkazani'],
-                              Icons.cancel, Colors.red),
-                          _buildStatRow('Naplaćeni', stats['naplaceni'],
-                              Icons.payment, Colors.green),
-                          _buildStatRow('Pokupljeni', stats['pokupljeni'],
-                              Icons.check_circle, Colors.orange),
-                          _buildStatRow('Dugovi', stats['dugovi'],
-                              Icons.warning, Colors.redAccent),
+                          _buildStatRow(
+                              'Dodati putnici',
+                              stats['dodati'],
+                              Icons.add_circle,
+                              Theme.of(context).colorScheme.primary),
+                          _buildStatRow(
+                              'Otkazani',
+                              stats['otkazani'],
+                              Icons.cancel,
+                              Theme.of(context).colorScheme.dangerPrimary),
+                          _buildStatRow(
+                              'Naplaćeni',
+                              stats['naplaceni'],
+                              Icons.payment,
+                              Theme.of(context).colorScheme.successPrimary),
+                          _buildStatRow(
+                              'Pokupljeni',
+                              stats['pokupljeni'],
+                              Icons.check_circle,
+                              Theme.of(context).colorScheme.studentPrimary),
+                          _buildStatRow(
+                              'Dugovi',
+                              stats['dugovi'],
+                              Icons.warning,
+                              Theme.of(context).colorScheme.dangerPrimary),
                           _buildStatRow('Mesečne karte', stats['mesecneKarte'],
                               Icons.card_membership, Colors.purple),
                           _buildStatRow(
                               'Kilometraža',
                               '${(stats['kilometraza'] ?? 0.0).toStringAsFixed(1)} km',
                               Icons.route,
-                              Colors.teal),
+                              Theme.of(context).colorScheme.workerPrimary),
                           const Divider(color: Colors.white24),
                           _buildStatRow(
                               'Ukupno pazar',

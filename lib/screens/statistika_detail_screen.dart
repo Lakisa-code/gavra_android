@@ -5,6 +5,7 @@ import '../models/putnik.dart';
 import '../services/statistika_service.dart';
 import '../services/putnik_service.dart'; // 🔄 DODANO za realtime
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
+import '../theme.dart'; // DODANO za theme extensions
 import '../widgets/custom_back_button.dart';
 
 class StatistikaDetailScreen extends StatefulWidget {
@@ -128,7 +129,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today, color: Colors.blue),
+                  Icon(Icons.calendar_today,
+                      color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(

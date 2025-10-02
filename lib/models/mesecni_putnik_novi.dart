@@ -65,6 +65,24 @@ class MesecniPutnik {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Kompatibilnost sa starim modelom
+  final String? brojTelefonaOca;
+  final String? brojTelefonaMajke;
+  final String? adresaBelaCrkva;
+  final String? adresaVrsac;
+  final String status;
+  final String radniDani;
+  final String tipPrikazivanja;
+  final DateTime datumPocetkaMeseca;
+  final DateTime datumKrajaMeseca;
+  final double? cena;
+  final double ukupnaCenaMeseca;
+  final int? placeniMesec;
+  final int? placenaGodina;
+  final String? vozac;
+  final bool pokupljen;
+  final DateTime? vremePokupljenja;
+
   MesecniPutnik({
     String? id,
     required this.ime,
@@ -88,9 +106,29 @@ class MesecniPutnik {
     this.obrisan = false,
     DateTime? createdAt,
     DateTime? updatedAt,
+    // Kompatibilnost sa starim modelom
+    this.brojTelefonaOca,
+    this.brojTelefonaMajke,
+    this.adresaBelaCrkva,
+    this.adresaVrsac,
+    this.status = 'aktivan',
+    this.radniDani = 'pon,uto,sre,cet,pet',
+    this.tipPrikazivanja = 'standard',
+    DateTime? datumPocetkaMeseca,
+    DateTime? datumKrajaMeseca,
+    this.cena,
+    double? ukupnaCenaMeseca,
+    this.placeniMesec,
+    this.placenaGodina,
+    this.vozac,
+    this.pokupljen = false,
+    this.vremePokupljenja,
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        updatedAt = updatedAt ?? DateTime.now(),
+        datumPocetkaMeseca = datumPocetkaMeseca ?? datumPocetka,
+        datumKrajaMeseca = datumKrajaMeseca ?? datumKraja,
+        ukupnaCenaMeseca = ukupnaCenaMeseca ?? cenaMesecneKarte;
 
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
     return MesecniPutnik(
@@ -123,6 +161,29 @@ class MesecniPutnik {
       obrisan: map['obrisan'] as bool? ?? false,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+      // Kompatibilnost sa starim modelom
+      brojTelefonaOca: map['broj_telefona_oca'] as String?,
+      brojTelefonaMajke: map['broj_telefona_majke'] as String?,
+      adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
+      adresaVrsac: map['adresa_vrsac'] as String?,
+      status: map['status'] as String? ?? 'aktivan',
+      radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
+      tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
+      datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
+          ? DateTime.parse(map['datum_pocetka_meseca'] as String)
+          : null,
+      datumKrajaMeseca: map['datum_kraja_meseca'] != null
+          ? DateTime.parse(map['datum_kraja_meseca'] as String)
+          : null,
+      cena: (map['cena'] as num?)?.toDouble(),
+      ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble(),
+      placeniMesec: map['placeni_mesec'] as int?,
+      placenaGodina: map['placena_godina'] as int?,
+      vozac: map['vozac_id'] as String?,
+      pokupljen: map['pokupljen'] as bool? ?? false,
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null,
     );
   }
 
@@ -150,12 +211,138 @@ class MesecniPutnik {
       'obrisan': obrisan,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      // Kompatibilnost sa starim modelom
+      'broj_telefona_oca': brojTelefonaOca,
+      'broj_telefona_majke': brojTelefonaMajke,
+      'adresa_bela_crkva': adresaBelaCrkva,
+      'adresa_vrsac': adresaVrsac,
+      'status': status,
+      'radni_dani': radniDani,
+      'tip_prikazivanja': tipPrikazivanja,
+      'datum_pocetka_meseca':
+          datumPocetkaMeseca.toIso8601String().split('T')[0],
+      'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
+      'cena': cena,
+      'ukupna_cena_meseca': ukupnaCenaMeseca,
+      'placeni_mesec': placeniMesec,
+      'placena_godina': placenaGodina,
+      'vozac_id': vozac,
+      'pokupljen': pokupljen,
+      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
     };
   }
 
   String get punoIme => '$ime $prezime';
 
+  // Kompatibilnost sa starim modelom
+  String get putnikIme => '$ime $prezime';
+
   bool get jePlacen => vremePlacanja != null;
+
+  /// Polazak za Belu Crkvu za dati dan
+  String? getPolazakBelaCrkvaZaDan(String dan) {
+    final polasci = polasciPoDanu[dan] ?? [];
+    for (final polazak in polasci) {
+      if (polazak.toUpperCase().contains('BC')) {
+        return polazak.replaceAll(' BC', '').trim();
+      }
+    }
+    return null;
+  }
+
+  /// Polazak za Vršac za dati dan
+  String? getPolazakVrsacZaDan(String dan) {
+    final polasci = polasciPoDanu[dan] ?? [];
+    for (final polazak in polasci) {
+      if (polazak.toUpperCase().contains('VS')) {
+        return polazak.replaceAll(' VS', '').trim();
+      }
+    }
+    return null;
+  }
+
+  /// copyWith metoda za kreiranje kopije sa izmenjenim poljima
+  MesecniPutnik copyWith({
+    String? id,
+    String? ime,
+    String? prezime,
+    String? brojTelefona,
+    MesecniPutnikTip? tip,
+    String? tipSkole,
+    String? adresaId,
+    String? rutaId,
+    Map<String, List<String>>? polasciPoDanu,
+    double? cenaMesecneKarte,
+    DateTime? datumPocetka,
+    DateTime? datumKraja,
+    bool? aktivan,
+    String? napomena,
+    DateTime? vremePlacanja,
+    String? naplatioVozacId,
+    DateTime? poslednjePutovanje,
+    int? brojPutovanja,
+    int? brojOtkazivanja,
+    bool? obrisan,
+    // Legacy polja
+    String? brojTelefonaOca,
+    String? brojTelefonaMajke,
+    String? adresaBelaCrkva,
+    String? adresaVrsac,
+    String? status,
+    String? radniDani,
+    String? tipPrikazivanja,
+    DateTime? datumPocetkaMeseca,
+    DateTime? datumKrajaMeseca,
+    double? cena,
+    double? ukupnaCenaMeseca,
+    int? placeniMesec,
+    int? placenaGodina,
+    String? vozac,
+    bool? pokupljen,
+    DateTime? vremePokupljenja,
+  }) {
+    return MesecniPutnik(
+      id: id ?? this.id,
+      ime: ime ?? this.ime,
+      prezime: prezime ?? this.prezime,
+      brojTelefona: brojTelefona ?? this.brojTelefona,
+      tip: tip ?? this.tip,
+      tipSkole: tipSkole ?? this.tipSkole,
+      adresaId: adresaId ?? this.adresaId,
+      rutaId: rutaId ?? this.rutaId,
+      polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
+      cenaMesecneKarte: cenaMesecneKarte ?? this.cenaMesecneKarte,
+      datumPocetka: datumPocetka ?? this.datumPocetka,
+      datumKraja: datumKraja ?? this.datumKraja,
+      aktivan: aktivan ?? this.aktivan,
+      napomena: napomena ?? this.napomena,
+      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
+      naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
+      poslednjePutovanje: poslednjePutovanje ?? this.poslednjePutovanje,
+      brojPutovanja: brojPutovanja ?? this.brojPutovanja,
+      brojOtkazivanja: brojOtkazivanja ?? this.brojOtkazivanja,
+      obrisan: obrisan ?? this.obrisan,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+      // Legacy polja
+      brojTelefonaOca: brojTelefonaOca ?? this.brojTelefonaOca,
+      brojTelefonaMajke: brojTelefonaMajke ?? this.brojTelefonaMajke,
+      adresaBelaCrkva: adresaBelaCrkva ?? this.adresaBelaCrkva,
+      adresaVrsac: adresaVrsac ?? this.adresaVrsac,
+      status: status ?? this.status,
+      radniDani: radniDani ?? this.radniDani,
+      tipPrikazivanja: tipPrikazivanja ?? this.tipPrikazivanja,
+      datumPocetkaMeseca: datumPocetkaMeseca ?? this.datumPocetkaMeseca,
+      datumKrajaMeseca: datumKrajaMeseca ?? this.datumKrajaMeseca,
+      cena: cena ?? this.cena,
+      ukupnaCenaMeseca: ukupnaCenaMeseca ?? this.ukupnaCenaMeseca,
+      placeniMesec: placeniMesec ?? this.placeniMesec,
+      placenaGodina: placenaGodina ?? this.placenaGodina,
+      vozac: vozac ?? this.vozac,
+      pokupljen: pokupljen ?? this.pokupljen,
+      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
+    );
+  }
 
   /// Lista svih vremena polaska za dati dan
   List<String> getPolasciZaDan(String dan) {

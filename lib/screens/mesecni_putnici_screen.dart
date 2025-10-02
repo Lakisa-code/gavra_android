@@ -7,9 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/mesecni_putnik_novi.dart';
 import '../utils/filter_and_sort_putnici.dart';
-import '../services/mesecni_putnik_service.dart';
+import '../services/mesecni_putnik_service_novi.dart';
 import '../utils/mesecni_helpers.dart';
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import '../services/smart_address_autocomplete_service.dart'; // ✅ DODANO za pamćenje adresa
@@ -31,6 +31,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // Supabase klijent
   final SupabaseClient supabase = Supabase.instance.client;
+
+  // Novi servis instance
+  final MesecniPutnikService _mesecniPutnikService = MesecniPutnikService();
 
   // 🔄 OPTIMIZACIJA: Debounced search stream i filter stream
   late final BehaviorSubject<String> _searchSubject;
@@ -278,13 +281,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         right: 0,
                         top: 0,
                         child: StreamBuilder<List<MesecniPutnik>>(
-                          stream: MesecniPutnikService.streamMesecniPutnici(),
+                          stream: _mesecniPutnikService.mesecniPutniciStream,
                           builder: (context, snapshot) {
                             if (!snapshot.hasData)
                               return const SizedBox.shrink();
                             final brojRadnika = snapshot.data!
                                 .where((p) =>
-                                    p.tip == 'radnik' &&
+                                    p.tip.value == 'radnik' &&
                                     p.aktivan &&
                                     !p.obrisan &&
                                     p.status != 'bolovanje' &&
@@ -353,13 +356,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         right: 0,
                         top: 0,
                         child: StreamBuilder<List<MesecniPutnik>>(
-                          stream: MesecniPutnikService.streamMesecniPutnici(),
+                          stream: _mesecniPutnikService.mesecniPutniciStream,
                           builder: (context, snapshot) {
                             if (!snapshot.hasData)
                               return const SizedBox.shrink();
                             final brojUcenika = snapshot.data!
                                 .where((p) =>
-                                    p.tip == 'ucenik' &&
+                                    p.tip.value == 'ucenik' &&
                                     p.aktivan &&
                                     !p.obrisan &&
                                     p.status != 'bolovanje' &&
@@ -515,7 +518,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           Expanded(
             child: StreamBuilder<List<MesecniPutnik>>(
               stream: Rx.combineLatest3(
-                MesecniPutnikService.streamMesecniPutnici(),
+                _mesecniPutnikService.mesecniPutniciStream,
                 _debouncedSearchStream,
                 _filterSubject.stream,
                 (List<MesecniPutnik> putnici, String searchTerm,
@@ -545,7 +548,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             'broj_putovanja': p.brojPutovanja,
                             'broj_otkazivanja': p.brojOtkazivanja,
                             'poslednje_putovanje':
-                                p.poslednjiPutovanje?.toIso8601String(),
+                                p.poslednjePutovanje?.toIso8601String(),
                             'created_at': p.createdAt.toIso8601String(),
                             'updated_at': p.updatedAt.toIso8601String(),
                             'obrisan': p.obrisan,
@@ -797,19 +800,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          putnik.tip == 'radnik'
+                          putnik.tip.value == 'radnik'
                               ? Icons.engineering
                               : Icons.school,
                           size: 16,
-                          color: putnik.tip == 'radnik'
+                          color: putnik.tip.value == 'radnik'
                               ? Colors.blue.shade600
                               : Colors.green.shade600,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          putnik.tip.toUpperCase(),
+                          putnik.tip.value.toUpperCase(),
                           style: TextStyle(
-                            color: putnik.tip == 'radnik'
+                            color: putnik.tip.value == 'radnik'
                                 ? Colors.blue.shade700
                                 : Colors.green.shade700,
                             fontWeight: FontWeight.w600,
@@ -1196,7 +1199,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _toggleAktivnost(MesecniPutnik putnik) async {
     final success =
-        await MesecniPutnikService.toggleAktivnost(putnik.id, !putnik.aktivan);
+        await _mesecniPutnikService.toggleAktivnost(putnik.id, !putnik.aktivan);
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1221,7 +1224,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     // Postavi vrednosti za edit
     setState(() {
       _novoIme = putnik.putnikIme;
-      _noviTip = putnik.tip;
+      _noviTip = putnik.tip.value;
       _novaTipSkole = putnik.tipSkole ?? '';
       _noviBrojTelefona = putnik.brojTelefona ?? '';
       _novaAdresaBelaCrkva = putnik.adresaBelaCrkva ?? '';
@@ -1762,20 +1765,21 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
       }
       final editovanPutnik = originalPutnik.copyWith(
-        putnikIme: ime,
-        tip: _noviTip,
+        ime: ime.split(' ').first,
+        prezime:
+            ime.split(' ').length > 1 ? ime.split(' ').skip(1).join(' ') : '',
+        tip: MesecniPutnikTipExtension.fromString(_noviTip),
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
         polasciPoDanu: polasciPoDanu,
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         radniDani: _getRadniDaniString(),
-        updatedAt: DateTime.now(),
       );
       // Log and await the update result so we can surface errors to the user
 
       final updated =
-          await MesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
+          await _mesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
 
       if (updated == null) {
         // Update failed - show error and don't pop the dialog so user can retry
@@ -1792,8 +1796,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
-        await MesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            danaUnapred: 1);
+        await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
+            editovanPutnik, DateTime.now().add(Duration(days: 1)));
       } catch (_) {}
       // Očisti mape izmena nakon uspešnog čuvanja
       setState(() {
@@ -2731,16 +2735,23 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
       }
       final noviPutnik = MesecniPutnik(
-        id: '',
-        putnikIme: ime,
-        tip: _noviTip,
+        ime: ime.split(' ').first,
+        prezime:
+            ime.split(' ').length > 1 ? ime.split(' ').skip(1).join(' ') : '',
+        tip: MesecniPutnikTipExtension.fromString(_noviTip),
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
+        adresaId: 'temp-uuid', // TODO: Implementirati kreiranje adrese
+        rutaId: 'temp-uuid', // TODO: Implementirati rutu
+        polasciPoDanu: polasciPoDanu,
+        cenaMesecneKarte: 0.0,
+        datumPocetka: DateTime(DateTime.now().year, DateTime.now().month, 1),
+        datumKraja: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
+        // Legacy polja za kompatibilnost
         brojTelefonaOca:
             _noviBrojTelefonaOca.isEmpty ? null : _noviBrojTelefonaOca,
         brojTelefonaMajke:
             _noviBrojTelefonaMajke.isEmpty ? null : _noviBrojTelefonaMajke,
-        polasciPoDanu: polasciPoDanu,
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         radniDani: _getRadniDaniString(),
@@ -2749,17 +2760,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         datumKrajaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
         ukupnaCenaMeseca: 0.0,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
       );
 
       final rezultat =
-          await MesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+          await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
-        await MesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            danaUnapred: 1);
+        await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
+            noviPutnik, DateTime.now().add(Duration(days: 1)));
       } catch (_) {}
 
       if (mounted) {
@@ -2909,7 +2918,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     if (potvrda == true && mounted) {
       try {
         final success =
-            await MesecniPutnikService.obrisiMesecnogPutnika(putnik.id);
+            await _mesecniPutnikService.obrisiMesecniPutnik(putnik.id);
 
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2945,9 +2954,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _sinhronizujStatistike(String putnikId) async {
     try {
-      final success =
-          await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
-              putnikId);
+      final success = await _mesecniPutnikService
+          .sinhronizujBrojPutovanjaSaIstorijom(putnikId);
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -3614,7 +3622,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               const SizedBox(height: 8),
               _buildStatRow('👤 Ime:', putnik.putnikIme),
               _buildStatRow('📅 Radni dani:', putnik.radniDani),
-              _buildStatRow('📊 Tip putnika:', putnik.tip),
+              _buildStatRow('📊 Tip putnika:', putnik.tip.value),
               if (putnik.tipSkole != null)
                 _buildStatRow('🎓 Tip škole:', putnik.tipSkole!),
               if (putnik.brojTelefona != null)
@@ -3916,7 +3924,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // �📅 Konvertuj string meseca u datume
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
 
-      final uspeh = await MesecniPutnikService.azurirajPlacanjeZaMesec(
+      final uspeh = await _mesecniPutnikService.azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
         currentDriver, // Koristi trenutnog vozača umesto hardkodovanog
@@ -4716,7 +4724,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   /// � EXPORT PUTNIKA U CSV
   Future<void> _exportPutnici() async {
     try {
-      final putnici = await MesecniPutnikService.streamMesecniPutnici().first;
+      final putnici = await _mesecniPutnikService.mesecniPutniciStream.first;
 
       if (putnici.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
