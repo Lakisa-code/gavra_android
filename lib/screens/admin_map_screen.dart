@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/putnik_service.dart';
 import '../models/putnik.dart';
-// foundation import not needed; material.dart provides kDebugMode
 import '../utils/logging.dart';
 
 // Model za GPS lokacije vozača
@@ -29,9 +28,6 @@ class GpsLokacija {
   });
 
   factory GpsLokacija.fromMap(Map<String, dynamic> map) {
-    // Debug: ispišimo šta imamo u map-u
-    dlog('🗺️ GPS Lokacija mapa: ${map.keys.toList()}');
-
     return GpsLokacija(
       id: map['id'] as int,
       name: map['name'] as String? ?? 'Nepoznato',

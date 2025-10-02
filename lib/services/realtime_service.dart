@@ -37,7 +37,7 @@ class RealtimeService {
   List<Map<String, dynamic>> _lastPutovanjaRows = [];
   List<Map<String, dynamic>> _lastMesecniRows = [];
 
-  // Expose read-only copies for debugging
+  // Expose read-only copies
   List<Map<String, dynamic>> get lastPutovanjaRows =>
       List.unmodifiable(_lastPutovanjaRows);
   List<Map<String, dynamic>> get lastMesecniRows =>

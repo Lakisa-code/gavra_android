@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/geocoding_service.dart';
 
 void main() {
   group('Debug test', () {

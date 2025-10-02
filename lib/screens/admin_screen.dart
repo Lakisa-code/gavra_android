@@ -19,7 +19,6 @@ import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'statistika_screen.dart'; // DODANO za statistike
 
-// foundation import not needed; material.dart provides kDebugMode
 import '../utils/logging.dart';
 
 class AdminScreen extends StatefulWidget {

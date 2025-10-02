@@ -11,8 +11,6 @@ import 'realtime_service.dart';
 import 'supabase_safe.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 
-// Use centralized debug logger `dlog`.
-
 // 🔄 UNDO STACK - Stack za čuvanje poslednih akcija
 class UndoAction {
   final String

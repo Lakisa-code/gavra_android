@@ -302,7 +302,7 @@ class PermissionService {
     }
   }
 
-  /// 🔔 STATUS SVIH DOZVOLA (za debug)
+  /// 🔔 STATUS SVIH DOZVOLA
   static Future<Map<String, bool>> getPermissionStatus() async {
     return {
       'location': await _isLocationPermissionGranted(),

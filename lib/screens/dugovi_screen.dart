@@ -104,7 +104,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
             return bTime.compareTo(aTime); // najnoviji prvo
           });
-          // Debug ispisi uklonjeni
           if (duznici.isEmpty) {
             return const Center(
               child: Column(

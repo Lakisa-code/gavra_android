@@ -29,9 +29,9 @@ class StatistikaService {
     return DateTime(dateTime.year, dateTime.month, dateTime.day);
   }
 
-  // 📊 DEBUG LOGOVANJE - OGRANIČENO
+  // 📊 LOGOVANJE - OGRANIČENO
   static void _debugLog(String message) {
-    // Debug logovi uklonjeni za čišćenje koda
+    // Logovi uklonjeni za čišćenje koda
   }
 
   /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi se svuda!
@@ -107,10 +107,6 @@ class StatistikaService {
         '🔍 _calculateSimplePazarSync za $vozac: ${kombinovaniPutnici.length} putnika');
 
     for (final putnik in kombinovaniPutnici) {
-      // Debug za svaki putnik
-      _debugLog(
-          '🔍 Putnik: ${putnik.ime}, mesecnaKarta: ${putnik.mesecnaKarta}, naplatioVozac: ${putnik.naplatioVozac}, iznos: ${putnik.iznosPlacanja}, vremePlacanja: ${putnik.vremePlacanja}');
-
       if (_jePazarValjan(putnik) &&
           putnik.naplatioVozac == vozac &&
           putnik.vremePlacanja != null &&
@@ -230,13 +226,6 @@ class StatistikaService {
         final rezultat = _calculateKombinovanPazarSync(
             putnici, mesecniPutnici, fromDate, toDate);
 
-        // Debug output
-        final ukupanPazar = rezultat.entries
-            .where((entry) => !entry.key.startsWith('_'))
-            .fold<double>(0.0, (sum, entry) => sum + entry.value);
-
-        _debugLog('🔄 PAZAR REZULTAT: ${ukupanPazar.toStringAsFixed(0)} RSD');
-
         return rezultat;
       },
     );
@@ -327,11 +316,6 @@ class StatistikaService {
       final ukupnoVozac = pazarObicni[vozac]! + pazarMesecne[vozac]!;
       rezultat[vozac] = ukupnoVozac;
       ukupno += ukupnoVozac;
-
-      // 📊 DEBUG LOGOVANJE PO VOZAČIMA
-      if (ukupnoVozac > 0) {
-        _debugLog('💰 VOZAČ $vozac: ${ukupnoVozac.toStringAsFixed(0)} RSD');
-      }
     }
 
     // Dodaj ukupan pazar
@@ -339,8 +323,6 @@ class StatistikaService {
     rezultat['_ukupno_obicni'] = pazarObicni.values.fold(0.0, (a, b) => a + b);
     rezultat['_ukupno_mesecni'] =
         pazarMesecne.values.fold(0.0, (a, b) => a + b);
-
-    _debugLog('🏆 UKUPAN PAZAR DANAS: ${ukupno.toStringAsFixed(0)} RSD');
 
     return rezultat;
   }
@@ -671,19 +653,6 @@ class StatistikaService {
     // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE
     await _dodajKilometrazu(vozaciStats, normalizedFrom, normalizedTo);
 
-    // Debug prikaz rezultata
-    double ukupanPazar = 0;
-    for (final vozac in sviVozaci) {
-      final stats = vozaciStats[vozac]!;
-      ukupanPazar += stats['ukupnoPazar'];
-      if (stats['ukupnoPazar'] > 0 || stats['dodati'] > 0) {
-        _debugLog(
-            '$vozac: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD | putnici: ${stats['naplaceni']}, mesečne: ${stats['mesecneKarte']}');
-      }
-    }
-    _debugLog(
-        '🔥 DETALJNE STATISTIKE UKUPAN PAZAR: ${ukupanPazar.toStringAsFixed(0)} RSD (${DateFormat('dd.MM.yyyy').format(from)} - ${DateFormat('dd.MM.yyyy').format(to)})');
-
     return vozaciStats;
   }
 
@@ -909,19 +878,7 @@ class StatistikaService {
 
     _debugLog('Procesuirano $brojValidnihPutnika validnih putnika');
 
-    // Debug prikaz rezultata
-    double ukupno = 0.0;
-    for (final vozac in sviVozaci) {
-      final vozacPazar = pazar[vozac] ?? 0.0;
-      if (vozacPazar > 0) {
-        _debugLog('$vozac: ${vozacPazar.toStringAsFixed(0)} RSD');
-        ukupno += vozacPazar;
-      }
-    }
-
-    _debugLog('UKUPAN PAZAR (samo putnici): ${ukupno.toStringAsFixed(0)} RSD');
-
-    return {...pazar, '_ukupno': ukupno};
+    return {...pazar, '_ukupno': pazar.values.fold(0.0, (a, b) => a + b)};
   }
 
   /// Vraca mapu: {imeVozaca: sumaPazara} i ukupno, za dati period - STANDARDIZOVANO FILTRIRANJE

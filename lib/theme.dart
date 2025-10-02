@@ -51,7 +51,37 @@ const ColorScheme svetlanaPinkColorScheme = ColorScheme(
   onError: Colors.white,
 );
 
-// 🎯 Main Flutter Bank Theme
+// � Custom Color Extensions for App-Specific Colors
+extension AppColors on ColorScheme {
+  // 🧑‍🎓 Student Colors
+  Color get studentPrimary => const Color(0xFFFF9800); // Orange
+  Color get studentSecondary => const Color(0xFFFFA726);
+  Color get studentContainer => const Color(0xFFFFF3E0);
+  Color get onStudentContainer => const Color(0xFFE65100);
+
+  // 💼 Worker Colors
+  Color get workerPrimary => const Color(0xFF009688); // Teal
+  Color get workerSecondary => const Color(0xFF26A69A);
+  Color get workerContainer => const Color(0xFFE0F2F1);
+  Color get onWorkerContainer => const Color(0xFF004D40);
+
+  // ✅ Success Colors
+  Color get successPrimary => const Color(0xFF4CAF50);
+  Color get successContainer => const Color(0xFFE8F5E8);
+  Color get onSuccessContainer => const Color(0xFF2E7D32);
+
+  // ⚠️ Warning Colors
+  Color get warningPrimary => const Color(0xFFFF9800);
+  Color get warningContainer => const Color(0xFFFFF3E0);
+  Color get onWarningContainer => const Color(0xFFE65100);
+
+  // 🔴 Danger Colors
+  Color get dangerPrimary => const Color(0xFFEF5350);
+  Color get dangerContainer => const Color(0xFFFFEBEE);
+  Color get onDangerContainer => const Color(0xFFC62828);
+}
+
+// �🎯 Main Flutter Bank Theme
 final ThemeData flutterBankTheme = ThemeData(
   colorScheme: flutterBankColorScheme,
   useMaterial3: true,
@@ -466,7 +496,68 @@ class SvetlanaPinkStyles {
   );
 }
 
-// 🎭 THEME SELECTOR - bira temu na osnovu vozača
+// � DYNAMIC THEME HELPERS for Popups
+class AppThemeHelpers {
+  /// Vraća boju na osnovu tipa putnika (učenik/radnik)
+  static Color getTypeColor(String tip, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return tip == 'ucenik'
+        ? colorScheme.studentPrimary
+        : colorScheme.workerPrimary;
+  }
+
+  /// Vraća kontejner boju na osnovu tipa putnika
+  static Color getTypeContainerColor(String tip, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return tip == 'ucenik'
+        ? colorScheme.studentContainer
+        : colorScheme.workerContainer;
+  }
+
+  /// Vraća on-container boju na osnovu tipa putnika
+  static Color getTypeOnContainerColor(String tip, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return tip == 'ucenik'
+        ? colorScheme.onStudentContainer
+        : colorScheme.onWorkerContainer;
+  }
+
+  /// Vraća gradijent na osnovu tipa putnika
+  static LinearGradient getTypeGradient(String tip, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (tip == 'ucenik') {
+      return LinearGradient(
+        colors: [
+          colorScheme.studentContainer,
+          colorScheme.studentSecondary.withOpacity(0.3)
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    } else {
+      return LinearGradient(
+        colors: [
+          colorScheme.workerContainer,
+          colorScheme.workerSecondary.withOpacity(0.3)
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+    }
+  }
+
+  /// Vraća ikonu na osnovu tipa putnika
+  static IconData getTypeIcon(String tip) {
+    return tip == 'ucenik' ? Icons.school : Icons.business;
+  }
+
+  /// Vraća emoji na osnovu tipa putnika
+  static String getTypeEmoji(String tip) {
+    return tip == 'ucenik' ? '🏫' : '🏢';
+  }
+}
+
+// �🎭 THEME SELECTOR - bira temu na osnovu vozača
 class ThemeSelector {
   /// Vraća odgovarajuću temu na osnovu imena vozača
   static ThemeData getThemeForDriver(String? driverName) {

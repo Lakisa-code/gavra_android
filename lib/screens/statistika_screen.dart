@@ -444,9 +444,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     DateTime now = DateTime.now();
     DateTime from, to;
 
-    // 🔍 DEBUG: Log current state
-    dlog(
-        '🔍 [CALCULATE PERIOD] _period = $_period, _selectedYear = $_selectedYear');
+    // Izračunavanje perioda
 
     if (_period == 'nedelja') {
       // ✅ KORISTI UTILS FUNKCIJU ZA VIKEND LOGIKU
@@ -472,20 +470,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     } else if (_period == 'mesec') {
       from = DateTime(now.year, now.month, 1);
       to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-
-      // 🔍 DEBUG: Prikazi mesečni period
-      dlog(
-          '📅 [MESEČNA STATISTIKA] Period: ${from.toString().split(' ')[0]} - ${to.toString().split(' ')[0]}');
-      dlog('📅 [MESEČNA STATISTIKA] Mesec: ${now.month}/${now.year}');
     } else {
       // 🔧 FIX: Koristi selektovanu godinu umesto now.year
       from = DateTime(_selectedYear, 1, 1);
       to = DateTime(_selectedYear, 12, 31, 23, 59, 59);
     }
-
-    // 🔍 DEBUG: Log final calculated dates
-    dlog(
-        '🔍 [CALCULATE PERIOD] Final dates: ${from.toString()} to ${to.toString()}');
 
     return {'from': from, 'to': to};
   }

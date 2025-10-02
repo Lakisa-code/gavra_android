@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// foundation import not needed; material.dart provides kDebugMode
 import '../services/daily_checkin_service.dart';
 import '../utils/vozac_boja.dart';
 import '../utils/logging.dart';

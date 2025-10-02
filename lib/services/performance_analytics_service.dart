@@ -13,8 +13,6 @@ import '../utils/logging.dart';
 class PerformanceAnalyticsService {
   static final Logger _logger = Logger();
 
-  // Use centralized debug logger
-
   // 📊 METRICS COLLECTORS
   static final Map<String, PerformanceMetric> _metrics = {};
   static final Map<String, List<DataPoint>> _timeSeries = {};

@@ -16,8 +16,6 @@ import 'change_password_screen.dart';
 import 'daily_checkin_screen.dart';
 import '../main.dart' show globalThemeRefresher; // DODATO za tema refresh
 
-// Uses centralized debug logger `dlog` from `lib/utils/logging.dart`.
-
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 

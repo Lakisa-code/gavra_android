@@ -6,6 +6,8 @@ class MesecniPutnik {
   final String tip;
   final String? tipSkole;
   final String? brojTelefona;
+  final String? brojTelefonaOca;
+  final String? brojTelefonaMajke;
 
   /// Nova struktura: mapa dan -> lista polazaka (npr. {"pon": ["6 VS", "13 BC"]})
   final Map<String, List<String>> polasciPoDanu;
@@ -48,6 +50,8 @@ class MesecniPutnik {
     required this.tip,
     this.tipSkole,
     this.brojTelefona,
+    this.brojTelefonaOca,
+    this.brojTelefonaMajke,
     required this.polasciPoDanu,
     this.adresaBelaCrkva,
     this.adresaVrsac,
@@ -95,6 +99,8 @@ class MesecniPutnik {
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
       brojTelefona: map['broj_telefona'] as String?,
+      brojTelefonaOca: map['broj_telefona_oca'] as String?,
+      brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       polasciPoDanu: polasciPoDanu,
       adresaBelaCrkva:
           null, // Address fields removed - now using UUID references
@@ -149,6 +155,8 @@ class MesecniPutnik {
       'tip': tip,
       'tip_skole': tipSkole,
       'broj_telefona': brojTelefona,
+      'broj_telefona_oca': brojTelefonaOca,
+      'broj_telefona_majke': brojTelefonaMajke,
       'polasci_po_danu': polasciPoDanuForDb,
       // Address fields removed - now using UUID references: adresa_polaska_id, adresa_dolaska_id
       // legacy fields removed - keep canonical `polasci_po_danu`
@@ -191,6 +199,8 @@ class MesecniPutnik {
     String? tip,
     String? tipSkole,
     String? brojTelefona,
+    String? brojTelefonaOca,
+    String? brojTelefonaMajke,
     Map<String, List<String>>? polasciPoDanu,
     String? adresaBelaCrkva,
     String? adresaVrsac,
@@ -220,6 +230,8 @@ class MesecniPutnik {
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
       brojTelefona: brojTelefona ?? this.brojTelefona,
+      brojTelefonaOca: brojTelefonaOca ?? this.brojTelefonaOca,
+      brojTelefonaMajke: brojTelefonaMajke ?? this.brojTelefonaMajke,
       polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
       adresaBelaCrkva: adresaBelaCrkva ?? this.adresaBelaCrkva,
       adresaVrsac: adresaVrsac ?? this.adresaVrsac,

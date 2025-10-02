@@ -8,8 +8,6 @@ import '../utils/logging.dart';
 class ConnectionResilienceService {
   static final _supabase = Supabase.instance.client;
 
-  // Use centralized debug logger
-
   // Stream kontroleri
   static final StreamController<bool> _connectionStateController =
       StreamController<bool>.broadcast();

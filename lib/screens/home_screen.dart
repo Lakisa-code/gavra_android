@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// foundation import removed; material.dart includes kDebugMode
 
 import '../main.dart' show globalThemeToggler; // Za theme toggle
 import '../models/putnik.dart';
@@ -36,8 +35,6 @@ import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
 import 'welcome_screen.dart';
-
-// Using centralized debug logger from utils
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -205,7 +202,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // First request notification permissions
         RealtimeNotificationService.requestNotificationPermissions()
             .then((hasPermissions) {
-
           RealtimeNotificationService.initialize().then((_) {
             // Subscribe to Firebase topics for this driver
             RealtimeNotificationService.subscribeToDriverTopics(driver);
@@ -218,12 +214,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeCurrentDriver() async {
     final driver = await FirebaseService.getCurrentDriver();
     setState(() {
-      // Osiguraj da _currentDriver uvek ima validnu vrednost
+      // Inicijalizacija driver-a
       _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
     });
-
-    // Debug log za praćenje driver initialization
-    dlog('🔍 DEBUG: Current driver initialized: $_currentDriver');
   }
 
   Future<void> _initializeRealtimeService() async {
@@ -414,34 +407,93 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
-          title: const Text('Dodaj Putnika'),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.person_add,
+                  color: Colors.green,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Dodaj Putnika',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Prikaz aktivnog vremena i grada
-                Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
+                // Prikaz aktivnog vremena i grada - ulepšano
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade50, Colors.blue.shade100],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.schedule, color: Colors.blue[700], size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Dodaje se za: $_selectedVreme - $_selectedGrad ($_selectedDay)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[700],
-                            ),
-                          ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
-                    )),
+                        child: Icon(
+                          Icons.schedule,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dodaje se za:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            Text(
+                              '$_selectedVreme - $_selectedGrad ($_selectedDay)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // ✅ IZBOR IMENA - drugačiji UI za mesečne i obične putnike
@@ -643,205 +695,226 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade600,
+              ),
               child: const Text('Otkaži'),
             ),
-            HapticElevatedButton(
-              hapticType: HapticType.success,
-              onPressed: _isAddingPutnik
-                  ? null
-                  : () async {
-                      if (imeController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('❌ Ime putnika je obavezno'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // 🚫 VALIDACIJA GRADA
-                      if (GradAdresaValidator.isCityBlocked(_selectedGrad)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                '❌ Grad "$_selectedGrad" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // 🏘️ VALIDACIJA ADRESE
-                      final adresa = adresaController.text.trim();
-                      if (adresa.isNotEmpty &&
-                          !GradAdresaValidator.validateAdresaForCity(
-                              adresa, _selectedGrad)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                '❌ Adresa "$adresa" nije validna za grad "$_selectedGrad". Dozvoljene su samo adrese iz Bele Crkve i Vršca.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
-                      if (mesecnaKarta &&
-                          !dozvoljenaImena
-                              .contains(imeController.text.trim())) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                    '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                SizedBox(height: 4),
-                                Text(
-                                    'Možete dodati samo POSTOJEĆE mesečne putnike.'),
-                                SizedBox(height: 4),
-                                Text('Za NOVE mesečne putnike idite na:'),
-                                SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Icon(Icons.arrow_forward,
-                                        size: 16, color: Colors.white),
-                                    SizedBox(width: 4),
-                                    Text('Meni → Mesečni putnici',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            backgroundColor: Colors.red,
-                            duration: Duration(seconds: 5),
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text('❌ Greška: Nije odabrano vreme polaska'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      try {
-                        // STRIKTNA VALIDACIJA VOZAČA
-                        if (!VozacBoja.isValidDriver(_currentDriver)) {
-                          if (!mounted) return;
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              child: HapticElevatedButton(
+                hapticType: HapticType.success,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _isAddingPutnik
+                    ? null
+                    : () async {
+                        if (imeController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'NEPOZNAT VOZAČ! Morate biti ulogovani kao jedan od: ${VozacBoja.validDrivers.join(", ")}'),
+                            const SnackBar(
+                              content: Text('❌ Ime putnika je obavezno'),
                               backgroundColor: Colors.red,
                             ),
                           );
                           return;
                         }
 
-                        // POKAZI LOADING STATE
-                        setState(() {
-                          _isAddingPutnik = true;
-                        });
-
-                        dlog('🔥 [HOME SCREEN] Kreiram putnik objekat...');
-
-                        // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
-                        dlog(
-                            '🕐 [HOME SCREEN] Koristi selektovano vreme: $_selectedVreme');
-
-                        final putnik = Putnik(
-                          ime: imeController.text.trim(),
-                          polazak: _selectedVreme,
-                          grad: _selectedGrad,
-                          dan: _getDayAbbreviation(_selectedDay),
-                          mesecnaKarta: mesecnaKarta,
-                          vremeDodavanja: DateTime.now(),
-                          dodaoVozac: _currentDriver,
-                          adresa: adresaController.text.trim().isEmpty
-                              ? null
-                              : adresaController.text.trim(),
-                        );
-
-                        dlog('🔥 [HOME SCREEN] Pozivam dodajPutnika...');
-                        await _putnikService.dodajPutnika(putnik);
-                        dlog(
-                            '🔥 [HOME SCREEN] dodajPutnika završen, refreshujem listu...');
-
-                        // ✅ FORSIRANA REFRESH LISTE
-                        await _loadPutnici();
-                        dlog('🔥 [HOME SCREEN] Lista putnika refreshovana');
-
-                        if (!mounted) return;
-
-                        setState(() {
-                          _isAddingPutnik = false;
-                        });
-                        dlog('🔥 [HOME SCREEN] Loading state isključen');
-
-                        if (mounted) {
-                          dlog('🔥 [HOME SCREEN] Zatvarám dialog...');
-                          // ignore: use_build_context_synchronously
-                          Navigator.pop(context);
-                          // ignore: use_build_context_synchronously
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Putnik je uspešno dodat'),
-                              backgroundColor: Colors.green,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          dlog('🔥 [HOME SCREEN] SUCCESS snackbar prikazan');
-                        }
-                      } catch (e) {
-                        dlog(
-                            '💥 [HOME SCREEN] GREŠKA pri dodavanju putnika: $e');
-                        setState(() {
-                          _isAddingPutnik = false;
-                        });
-
-                        if (!mounted) return;
-
-                        if (mounted) {
-                          // ignore: use_build_context_synchronously
+                        // 🚫 VALIDACIJA GRADA
+                        if (GradAdresaValidator.isCityBlocked(_selectedGrad)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('❌ Greška pri dodavanju: $e'),
+                              content: Text(
+                                  '❌ Grad "$_selectedGrad" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.'),
                               backgroundColor: Colors.red,
                             ),
                           );
+                          return;
                         }
-                      }
-                    },
-              child: _isAddingPutnik
-                  ? const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+
+                        // 🏘️ VALIDACIJA ADRESE
+                        final adresa = adresaController.text.trim();
+                        if (adresa.isNotEmpty &&
+                            !GradAdresaValidator.validateAdresaForCity(
+                                adresa, _selectedGrad)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  '❌ Adresa "$adresa" nije validna za grad "$_selectedGrad". Dozvoljene su samo adrese iz Bele Crkve i Vršca.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
+                        if (mesecnaKarta &&
+                            !dozvoljenaImena
+                                .contains(imeController.text.trim())) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(height: 4),
+                                  Text(
+                                      'Možete dodati samo POSTOJEĆE mesečne putnike.'),
+                                  SizedBox(height: 4),
+                                  Text('Za NOVE mesečne putnike idite na:'),
+                                  SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.arrow_forward,
+                                          size: 16, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text('Meni → Mesečni putnici',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 5),
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('❌ Greška: Nije odabrano vreme polaska'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
+                        try {
+                          // STRIKTNA VALIDACIJA VOZAČA
+                          if (!VozacBoja.isValidDriver(_currentDriver)) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'NEPOZNAT VOZAČ! Morate biti ulogovani kao jedan od: ${VozacBoja.validDrivers.join(", ")}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+
+                          // POKAZI LOADING STATE
+                          setState(() {
+                            _isAddingPutnik = true;
+                          });
+
+                          dlog('🔥 [HOME SCREEN] Kreiram putnik objekat...');
+
+                          // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
+                          dlog(
+                              '🕐 [HOME SCREEN] Koristi selektovano vreme: $_selectedVreme');
+
+                          final putnik = Putnik(
+                            ime: imeController.text.trim(),
+                            polazak: _selectedVreme,
+                            grad: _selectedGrad,
+                            dan: _getDayAbbreviation(_selectedDay),
+                            mesecnaKarta: mesecnaKarta,
+                            vremeDodavanja: DateTime.now(),
+                            dodaoVozac: _currentDriver,
+                            adresa: adresaController.text.trim().isEmpty
+                                ? null
+                                : adresaController.text.trim(),
+                          );
+
+                          dlog('🔥 [HOME SCREEN] Pozivam dodajPutnika...');
+                          await _putnikService.dodajPutnika(putnik);
+                          dlog(
+                              '🔥 [HOME SCREEN] dodajPutnika završen, refreshujem listu...');
+
+                          // ✅ FORSIRANA REFRESH LISTE
+                          await _loadPutnici();
+                          dlog('🔥 [HOME SCREEN] Lista putnika refreshovana');
+
+                          if (!mounted) return;
+
+                          setState(() {
+                            _isAddingPutnik = false;
+                          });
+                          dlog('🔥 [HOME SCREEN] Loading state isključen');
+
+                          if (mounted) {
+                            dlog('🔥 [HOME SCREEN] Zatvarám dialog...');
+                            // ignore: use_build_context_synchronously
+                            Navigator.pop(context);
+                            // ignore: use_build_context_synchronously
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Putnik je uspešno dodat'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            dlog('🔥 [HOME SCREEN] SUCCESS snackbar prikazan');
+                          }
+                        } catch (e) {
+                          dlog(
+                              '💥 [HOME SCREEN] GREŠKA pri dodavanju putnika: $e');
+                          setState(() {
+                            _isAddingPutnik = false;
+                          });
+
+                          if (!mounted) return;
+
+                          if (mounted) {
+                            // ignore: use_build_context_synchronously
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ Greška pri dodavanju: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: _isAddingPutnik
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 8),
-                        Text('Dodaje...'),
-                      ],
-                    )
-                  : const Text('Dodaj'),
+                          SizedBox(width: 8),
+                          Text('Dodaje...'),
+                        ],
+                      )
+                    : const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 18),
+                          SizedBox(width: 4),
+                          Text('Dodaj'),
+                        ],
+                      ),
+              ),
             ),
           ],
         ),
@@ -1034,13 +1107,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
         final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
-        // Debug log za praćenje broja putnika
-        dlog(
-            '🔍 DEBUG: HomeScreen build() - ukupno putnika: ${allPutnici.length}');
-        dlog(
-            '📊 [HOME SCREEN] Filter: $_selectedDay, $_selectedVreme, $_selectedGrad'); // ✅ KORISTI SELEKTOVANI DAN
-
-        // --- Use shared SlotUtils to compute per-slot counts for selected day (date-aware) ---
+        // Filtriranje putnika
         final slotCounts =
             SlotUtils.computeSlotCountsForDate(allPutnici, targetDateIso);
         final Map<String, int> brojPutnikaBC =
@@ -1097,13 +1164,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
 
-        // 🔍 DEBUG: Koliko putnika je nakon sortiranja
-        dlog(
-            '🔍 DEBUG: Nakon sortiranja - putniciZaPrikaz.length: ${putniciZaPrikaz.length}');
-        dlog('🔍 DEBUG: Filtrirani putnici: ${sviPutniciBezDuplikata.length}');
-        if (putniciZaPrikaz.isNotEmpty) {
-          dlog('🔍 DEBUG: Prvi putnik: ${putniciZaPrikaz.first.ime}');
-        }
+        // Sortiranje putnika
 
         // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
         // Koristimo prekompjutovane mape `brojPutnikaBC` i `brojPutnikaVS`
@@ -1390,7 +1451,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // UVEK PRIKAŽI DUGME ZA DODAVANJE PUTNIKA - DEBUG
+                    // Dugmad za akcije
                     Expanded(
                       flex: 1,
                       child: _HomeScreenButton(

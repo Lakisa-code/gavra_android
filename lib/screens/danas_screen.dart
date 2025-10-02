@@ -1307,14 +1307,7 @@ class _DanasScreenState extends State<DanasScreen> {
       _isLoading = true; // ✅ POKRENI LOADING
     });
 
-    // 🔍 DEBUG - ispišemo trenutne filter vrednosti
-    dlog(
-        '🎯 [OPTIMIZUJ] TRENUTNI FILTERI: grad="$_selectedGrad", vreme="$_selectedVreme"');
-    dlog('🎯 [OPTIMIZUJ] Ukupno putnika za analizu: ${putnici.length}');
-
-    // 🔍 DEBUG - ispišemo sva dostupna vremena polaska
-    final dostupnaVremena = putnici.map((p) => p.polazak).toSet().toList();
-    dlog('🎯 [OPTIMIZUJ] Dostupna vremena polaska: $dostupnaVremena');
+    // Optimizacija rute
 
     // 🎯 SAMO REORDER PUTNIKA - bez otvaranja mape
     final filtriraniPutnici = putnici.where((p) {
@@ -1334,10 +1327,6 @@ class _DanasScreenState extends State<DanasScreen> {
           normalizedStatus != 'godišnji' &&
           normalizedStatus != 'obrisan');
       final hasAddress = p.adresa != null && p.adresa!.isNotEmpty;
-
-      // 🔍 DEBUG LOG za optimizaciju
-      dlog(
-          '🎯 [OPTIMIZUJ] Putnik: ${p.ime}, grad: "${p.grad}" vs "$_selectedGrad", vreme: "${p.polazak}" vs "$_selectedVreme", status: "$normalizedStatus", adresa: "${p.adresa}", gradMatch: $gradMatch, vremeMatch: $vremeMatch, danMatch: $danMatch, statusOk: $statusOk, hasAddress: $hasAddress');
 
       return vremeMatch && gradMatch && danMatch && statusOk && hasAddress;
     }).toList();
@@ -1561,10 +1550,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 final sviPutnici = snapshot.data ?? [];
                 final danasnjiDan = _getTodayForDatabase();
 
-                dlog(
-                    '🕐 [DANAS SCREEN] Filter: $danasnjiDan, $_selectedVreme, $_selectedGrad'); // ✅ DEBUG
-
-                // 🔄 REAL-TIME FILTRIRANJE - kombinuj sa vremenskim filterom poslednje nedelje
+                // Real-time filtriranje
                 final oneWeekAgo =
                     DateTime.now().subtract(const Duration(days: 7));
 
@@ -1690,8 +1676,6 @@ class _DanasScreenState extends State<DanasScreen> {
                 dlog(
                     '🎯 [PAZAR LOGIKA] Danas: ${today.weekday} (${_getDayName(today.weekday)})');
                 dlog('🎯 [PAZAR LOGIKA] Target datum: $targetDate');
-
-                if (kDebugMode) {}
 
                 return StreamBuilder<double>(
                   stream: StatistikaService.streamPazarZaVozaca(

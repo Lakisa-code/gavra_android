@@ -37,79 +37,71 @@ class CombinedPutnikService {
     String? grad,
     String? vreme,
   }) async {
-    final date = isoDate != null ? DateTime.parse(isoDate) : DateTime.now();
-
-    // Dohvati dnevne putnike
-    final dnevniPutnici = await _dnevniService.getDnevniPutniciZaDatum(date);
-
-    // Debug: log dnevniPutnici count and sample
     try {
-      final sampleDnevni = dnevniPutnici.take(5).map((d) => d.ime).toList();
-      dlog(
-          '🔍 [COMBINED] fetched ${dnevniPutnici.length} dnevni putnici; sample: $sampleDnevni');
-    } catch (_) {}
+      final date = isoDate != null ? DateTime.parse(isoDate) : DateTime.now();
 
-    // Dohvati mesečne putnike
-    final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
+      // Dohvati dnevne putnike
+      final dnevniPutnici = await _dnevniService.getDnevniPutniciZaDatum(date);
 
-    // Debug: log mesecniPutnici count and sample
-    try {
-      final sampleMesecni =
-          mesecniPutnici.take(5).map((m) => m.punoIme).toList();
-      dlog(
-          '🔍 [COMBINED] fetched ${mesecniPutnici.length} mesecni putnici; sample: $sampleMesecni');
-    } catch (_) {}
+      // Dohvati mesečne putnike
+      final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
 
-    // Konvertuj u Putnik objekte
-    final List<Putnik> result = [];
+      // Konvertuj u Putnik objekte
+      final List<Putnik> result = [];
 
-    // Konvertuj dnevne putnike
-    for (final dnevniPutnik in dnevniPutnici) {
-      final adresa = await _adresaService.getAdresaById(dnevniPutnik.adresaId);
-      final ruta = await _rutaService.getRutaById(dnevniPutnik.rutaId);
-      if (adresa != null && ruta != null) {
-        result.add(dnevniPutnik.toPutnik(adresa, ruta));
-      }
-    }
-
-    // Konvertuj mesečne putnike za dati dan
-    final dan = _getDayAbbreviation(date.weekday);
-    for (final mesecniPutnik in mesecniPutnici) {
-      final adresa = await _adresaService.getAdresaById(mesecniPutnik.adresaId);
-      final ruta = await _rutaService.getRutaById(mesecniPutnik.rutaId);
-      if (adresa != null && ruta != null) {
-        result.addAll(mesecniPutnik.toPutnikList(dan, adresa, ruta));
-      }
-    }
-
-    // Filtriraj po gradu i vremenu koristeći normalizaciju (vrijeme/grad)
-    final filtered = result.where((putnik) {
-      if (grad != null) {
-        if (!GradAdresaValidator.isGradMatch(
-            putnik.grad, putnik.adresa, grad)) {
-          return false;
+      // Konvertuj dnevne putnike
+      for (final dnevniPutnik in dnevniPutnici) {
+        final adresa =
+            await _adresaService.getAdresaById(dnevniPutnik.adresaId);
+        final ruta = await _rutaService.getRutaById(dnevniPutnik.rutaId);
+        if (adresa != null && ruta != null) {
+          result.add(dnevniPutnik.toPutnik(adresa, ruta));
         }
       }
-      if (vreme != null) {
-        // Normalize both times before comparison (handles 05:00 vs 5:00, seconds, etc.)
-        if (GradAdresaValidator.normalizeTime(putnik.polazak) !=
-            GradAdresaValidator.normalizeTime(vreme)) {
-          return false;
+
+      // Konvertuj mesečne putnike za dati dan
+      final dan = _getDayAbbreviation(date.weekday);
+      for (final mesecniPutnik in mesecniPutnici) {
+        final adresa =
+            await _adresaService.getAdresaById(mesecniPutnik.adresaId);
+        final ruta = await _rutaService.getRutaById(mesecniPutnik.rutaId);
+        if (adresa != null && ruta != null) {
+          result.addAll(mesecniPutnik.toPutnikList(dan, adresa, ruta));
         }
       }
-      return true;
-    }).toList();
 
-    try {
-      final sampleFiltered = filtered
-          .take(10)
-          .map((p) => '${p.ime}@${p.polazak}@${p.grad}')
-          .toList();
-      dlog(
-          '🔎 [COMBINED] after filtering (grad=$grad, vreme=$vreme): ${filtered.length} -> sample: $sampleFiltered');
-    } catch (_) {}
+      // Filtriraj po gradu i vremenu koristeći normalizaciju (vrijeme/grad)
+      final filtered = result.where((putnik) {
+        if (grad != null) {
+          if (!GradAdresaValidator.isGradMatch(
+              putnik.grad, putnik.adresa, grad)) {
+            return false;
+          }
+        }
+        if (vreme != null) {
+          // Normalize both times before comparison (handles 05:00 vs 5:00, seconds, etc.)
+          if (GradAdresaValidator.normalizeTime(putnik.polazak) !=
+              GradAdresaValidator.normalizeTime(vreme)) {
+            return false;
+          }
+        }
+        return true;
+      }).toList();
 
-    return filtered;
+      try {
+        final sampleFiltered = filtered
+            .take(10)
+            .map((p) => '${p.ime}@${p.polazak}@${p.grad}')
+            .toList();
+        dlog(
+            '🔎 [COMBINED] after filtering (grad=$grad, vreme=$vreme): ${filtered.length} -> sample: $sampleFiltered');
+      } catch (_) {}
+
+      return filtered;
+    } catch (e) {
+      _logger.e('Error in getKombinovaniPutnici: $e');
+      return [];
+    }
   }
 
   /// Konvertuje broj dana u nedelji u skraćenicu
@@ -132,15 +124,6 @@ class CombinedPutnikService {
       default:
         return 'pon';
     }
-  }
-
-  /// Resetuje pokupljenja na novo vreme polaska (za kompatibilnost)
-  Future<void> resetPokupljenjaNaPolazak(
-      String novoVreme, String grad, String currentDriver) async {
-    // TODO: Implementirati reset logiku za normalizovanu šemu
-    // Za sada samo logujemo
-    _logger.i(
-        '🔄 RESET POKUPLJENJA - novo vreme: $novoVreme, grad: $grad, vozač: $currentDriver');
   }
 
   /// Dohvata sve putnike iz obe tabele (za kompatibilnost)
@@ -243,5 +226,17 @@ class CombinedPutnikService {
     // TODO: Implementirati dodavanje u normalizovanu šemu
     // Za sada samo logujemo
     _logger.i('🚀 DODAJ PUTNIKA: ${putnik.ime}');
+  }
+
+  /// Resetuje pokupljenja za nova vremena polaska (za kompatibilnost sa starim interfejsom)
+  Future<void> resetPokupljenjaNaPolazak(
+      String novoVreme, String grad, String currentDriver) async {
+    try {
+      _logger.i(
+          '🔄 RESET POKUPLJENJA - novo vreme: $novoVreme, grad: $grad, vozač: $currentDriver');
+      // TODO: Implementirati logiku za reset pokupljenja u normalizovanoj šemi
+    } catch (e) {
+      _logger.e('❌ Error in resetPokupljenjaNaPolazak: $e');
+    }
   }
 }

@@ -351,7 +351,7 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         _currentDriver = driver;
       });
-      // 💖 Log koja tema se koristi za debug
+      // 💖 Tema se koristi
       if (driver?.toLowerCase() == 'svetlana') {
         // Pink theme activated
       } else {

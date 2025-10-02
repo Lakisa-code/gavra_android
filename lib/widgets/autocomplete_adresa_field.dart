@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/adrese_service.dart';
-import '../services/location_service.dart';
 
 class AutocompleteAdresaField extends StatefulWidget {
   final TextEditingController controller;
@@ -120,94 +119,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
     }
   }
 
-  /// Dobija trenutnu GPS lokaciju i postavlja je kao adresu
-  Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final address = await LocationService.getCurrentAddress();
-      if (address != null) {
-        widget.controller.text = address;
-
-        // Dodaj pronađenu adresu u lokalnu listu
-        await AdreseService.dodajAdresu(widget.grad, address);
-
-        // Ukloni overlay i fokus
-        _removeOverlay();
-        _focusNode.unfocus();
-
-        // Pokaži poruku uspešnosti
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.location_on, color: Colors.white, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Trenutna lokacija: $address',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.green[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      } else {
-        // Pokaži poruku greške
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.location_off, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'Nije moguće dobiti trenutnu lokaciju',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.orange[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      // Pokaži poruku greške
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text(
-                  'Greška kod dobijanja lokacije',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red[600],
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
+  // _getCurrentLocation metoda uklonjena pošto se više ne koristi
 
   @override
   void dispose() {
@@ -517,31 +429,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
           },
         ),
         // GPS dugme za trenutnu lokaciju
-        const SizedBox(height: 8),
-        ElevatedButton.icon(
-          onPressed: _isLoading ? null : _getCurrentLocation,
-          icon: Icon(
-            Icons.my_location,
-            size: 16,
-            color: _isLoading ? Colors.grey : Colors.blue[700],
-          ),
-          label: Text(
-            'Trenutna lokacija',
-            style: TextStyle(
-              fontSize: 12,
-              color: _isLoading ? Colors.grey : Colors.blue[700],
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue[50],
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: Colors.blue[200]!),
-            ),
-          ),
-        ),
+        // Uklonjen 'Trenutna lokacija' dugme po korisnikovom zahtevu
         // Info widget
         const SizedBox(height: 8),
         Container(
