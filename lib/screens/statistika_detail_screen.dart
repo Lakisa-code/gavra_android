@@ -5,6 +5,7 @@ import '../models/putnik.dart';
 import '../services/statistika_service.dart';
 import '../services/putnik_service.dart'; // 🔄 DODANO za realtime
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
+import '../widgets/custom_back_button.dart';
 
 class StatistikaDetailScreen extends StatefulWidget {
   const StatistikaDetailScreen({Key? key}) : super(key: key);
@@ -76,6 +77,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: const GradientBackButton(),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,

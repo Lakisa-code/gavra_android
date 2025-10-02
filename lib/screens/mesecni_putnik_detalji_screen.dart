@@ -5,6 +5,7 @@ import '../services/putnik_service.dart';
 // foundation import not needed; using centralized logger
 import '../utils/logging.dart';
 import '../theme.dart'; // Za theme boje
+import '../widgets/custom_back_button.dart';
 
 class MesecniPutnikDetaljiScreen extends StatefulWidget {
   final MesecniPutnik putnik;
@@ -61,6 +62,8 @@ class _MesecniPutnikDetaljiScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const GradientBackButton(),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,

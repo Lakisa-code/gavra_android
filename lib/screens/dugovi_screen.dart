@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/putnik.dart';
 import '../widgets/putnik_list.dart';
 import '../services/putnik_service.dart';
+import '../widgets/custom_back_button.dart';
 
 class DugoviScreen extends StatefulWidget {
   final String? currentDriver;
@@ -25,6 +26,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: const GradientBackButton(),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
@@ -56,7 +59,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
             ],
           ),
         ),
-        leading: const Icon(Icons.warning_amber_rounded, color: Colors.white),
         title: const Text(
           'Dužnici',
           style: TextStyle(

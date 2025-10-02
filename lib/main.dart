@@ -88,8 +88,9 @@ void main() async {
   // Firebase initialization - PRILAGOĐENO za GBox/Huawei
   try {
     final shouldOptimize = await GBoxDetector.shouldOptimizeFirebase();
-    final timeout =
-        shouldOptimize ? Duration(seconds: 10) : Duration(seconds: 20);
+    final timeout = shouldOptimize
+        ? const Duration(seconds: 10)
+        : const Duration(seconds: 20);
 
     // Check if Firebase is already initialized
     final alreadyInitialized = Firebase.apps.isNotEmpty;

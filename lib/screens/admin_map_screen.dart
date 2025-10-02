@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/putnik_service.dart';
 import '../models/putnik.dart';
 import '../utils/logging.dart';
+import '../widgets/custom_back_button.dart';
 
 // Model za GPS lokacije vozača
 class GpsLokacija {
@@ -203,7 +204,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('GPS lokacije trenutno nisu dostupne'),
+            content: const Text('GPS lokacije trenutno nisu dostupne'),
             backgroundColor: Colors.orange,
             action: SnackBarAction(
               label: 'Pokušaj ponovo',
@@ -380,10 +381,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
+                  const GradientBackButton(),
                   Expanded(
                     child: Text(
                       '🗺️ Admin GPS Mapa',

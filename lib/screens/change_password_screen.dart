@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/password_service.dart';
+import '../widgets/custom_back_button.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   final String driverName;
@@ -88,6 +89,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: const GradientBackButton(),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
@@ -119,7 +122,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ],
           ),
         ),
-        leading: const Icon(Icons.lock, color: Colors.white),
         title: Text(
           'Promeni šifru - ${widget.driverName}',
           style: const TextStyle(

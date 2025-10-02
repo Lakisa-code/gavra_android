@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
+import '../widgets/custom_back_button.dart';
 import '../theme.dart'; // Za theme boje
 
 class PutovanjaIstorijaScreen extends StatefulWidget {
@@ -26,6 +27,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: const GradientBackButton(),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/geocoding_stats_service.dart';
+import '../widgets/custom_back_button.dart';
 
 class GeocodingAdminScreen extends StatefulWidget {
   const GeocodingAdminScreen({Key? key}) : super(key: key);
@@ -155,10 +156,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                  const GradientBackButton(),
                   const SizedBox(width: 8),
                   Icon(
                     Icons.settings,

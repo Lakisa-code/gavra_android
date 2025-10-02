@@ -14,6 +14,7 @@ import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi rea
 import 'mesecni_putnik_detalji_screen.dart'; // ✅ DODANO za statistike
 import '../utils/logging.dart';
 import '../theme.dart'; // ✅ DODANO za AppThemeHelpers
+import '../widgets/custom_back_button.dart';
 
 class MesecniPutniciScreen extends StatefulWidget {
   const MesecniPutniciScreen({Key? key}) : super(key: key);
@@ -233,10 +234,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
+                  const GradientBackButton(),
                   Expanded(
                     child: Text(
                       'Mesečni Putnici',

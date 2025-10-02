@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/custom_back_button.dart';
 
 class DatabaseCheckScreen extends StatefulWidget {
   const DatabaseCheckScreen({super.key});
@@ -59,6 +60,8 @@ class _DatabaseCheckScreenState extends State<DatabaseCheckScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const CustomBackButton(color: Colors.black),
+        automaticallyImplyLeading: false,
         title: const Text('Provera Supabase tabela'),
       ),
       body: isLoading
