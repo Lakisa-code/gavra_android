@@ -65,8 +65,6 @@ class _PutnikCardState extends State<PutnikCard> {
     super.didUpdateWidget(oldWidget);
     // ✅ KLJUČNO: Ažuriraj _putnik kada se promeni widget.putnik iz StreamBuilder-a
     if (widget.putnik != oldWidget.putnik) {
-      debugPrint(
-          '🔄 [WIDGET UPDATE] ${widget.putnik.ime}: ažuriram _putnik - jeOtkazan: ${oldWidget.putnik.jeOtkazan} → ${widget.putnik.jeOtkazan}');
       _putnik = widget.putnik;
     }
   }
@@ -77,17 +75,12 @@ class _PutnikCardState extends State<PutnikCard> {
   }
 
   Future<void> _handlePokupljen() async {
-    debugPrint(
-        '🔍 DEBUG _handlePokupljen POČETAK - ${_putnik.ime}: ID=${_putnik.id}, mesecnaKarta=${_putnik.mesecnaKarta}');
-
     if (_putnik.vremePokupljenja == null &&
         widget.showActions &&
         !_putnik.jeOtkazan) {
       try {
         // PROVERI DA LI JE ID NULL
         if (_putnik.id == null) {
-          debugPrint(
-              '❌ ERROR _handlePokupljen - ${_putnik.ime}: ID je null! Ne mogu da pozovem oznaciPokupljen');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -117,48 +110,24 @@ class _PutnikCardState extends State<PutnikCard> {
         // 📳 Haptic feedback za uspešnu akciju
         HapticService.success();
 
-        debugPrint(
-            '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: pozivam oznaciPokupljen sa ID=${_putnik.id}, vozač=${widget.currentDriver}');
-
         try {
-          debugPrint(
-              '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: POČETAK oznaciPokupljen poziva...');
-
           await PutnikService()
               .oznaciPokupljen(_putnik.id!, widget.currentDriver!);
-
-          debugPrint(
-              '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: oznaciPokupljen ZAVRŠEN USPEŠNO');
 
           // � FORSIRAJ UI REFRESH NA PARENT WIDGET
           if (mounted && widget.onChanged != null) {
             widget.onChanged!();
-            debugPrint(
-                '🔄 [UI REFRESH] Pozvan onChanged callback za refresh parent widget-a');
           }
-
-          // �🔍 DEBUG: Loguj pokušaj ažuriranja
-          debugPrint(
-              '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: pokušavam da dohvatim ažuriranog putnika iz baze');
 
           // 🆕 DODAJ KRATKU PAUZU pre dohvatanja (da se baza ažurira)
           await Future.delayed(const Duration(milliseconds: 500));
 
-          // 🆕 KORISTI PUTNIK SERVICE da dohvati ažuriranog putnika
           final updatedPutnik =
               await PutnikService().getPutnikFromAnyTable(_putnik.id!);
           if (updatedPutnik != null) {
-            debugPrint(
-                '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: dohvaćen ažurirani putnik sa vremePokupljenja=${updatedPutnik.vremePokupljenja}');
-
-            // 🔥 FORSIRAJ UI AŽURIRANJE
-            if (mounted) {
-              setState(() {
-                _putnik = updatedPutnik;
-              });
-              debugPrint(
-                  '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: setState() pozvan, UI treba biti ažuriran');
-            }
+            setState(() {
+              _putnik = updatedPutnik;
+            });
 
             // 🎉 PRIKAZ USPEŠNE PORUKE
             if (mounted) {
@@ -171,22 +140,14 @@ class _PutnikCardState extends State<PutnikCard> {
               );
             }
           } else {
-            debugPrint(
-                '❌ ERROR _handlePokupljen - ${_putnik.ime}: nije dohvaćen ažurirani putnik iz baze!');
-
             // 🔥 IPAK FORSIRAJ UI AŽURIRANJE - POKUŠAJ JEDNOSTAVAN REFRESH
             if (mounted) {
-              debugPrint(
-                  '🔍 DEBUG _handlePokupljen - ${_putnik.ime}: forsiran refresh putem setState()');
               setState(() {
                 // Jednostavno forsiranje rebuild-a widgeta
               });
             }
           }
         } catch (e) {
-          debugPrint(
-              '❌ ERROR _handlePokupljen - ${_putnik.ime}: greška u oznaciPokupljen: $e');
-
           // 🚨 PRIKAZ GREŠKE KORISNIKU
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -240,19 +201,13 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Brži admin reset sa triple tap
   void _handleTap() {
-    debugPrint(
-        '🔍 DEBUG _handleTap - ${_putnik.ime}: currentDriver="${widget.currentDriver}", canReset=${_canResetCard()}');
-
     // Samo za admin (Bojan i Svetlana) na kartice koje mogu da se resetuju
     if (!['Bojan', 'Svetlana'].contains(widget.currentDriver) ||
         !_canResetCard()) {
-      debugPrint(
-          '❌ TAP BLOCKED - ${_putnik.ime}: niet admin ili ne može reset');
       return;
     }
 
     _tapCount++;
-    debugPrint('👆 TAP $_tapCount/3 - ${_putnik.ime}');
 
     // Resetuj timer za tap sequence
     _tapTimer?.cancel();
@@ -262,7 +217,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
     // Triple tap = instant reset
     if (_tapCount >= 3) {
-      debugPrint('⚡ TRIPLE TAP RESET - ${_putnik.ime}: pokrećem reset!');
       _tapCount = 0;
       _tapTimer?.cancel();
       _handleResetCard();
@@ -283,22 +237,14 @@ class _PutnikCardState extends State<PutnikCard> {
   bool _canResetCard() {
     final canReset =
         _putnik.jePokupljen || _putnik.jePlacen || _putnik.jeOtkazan;
-    debugPrint(
-        '🔍 DEBUG _canResetCard - ${_putnik.ime}: jePokupljen=${_putnik.jePokupljen}, jePlacen=${_putnik.jePlacen}, jeOtkazan=${_putnik.jeOtkazan} => canReset=$canReset');
     return canReset;
   }
 
   // Resetuje karticu u početno (belo) stanje
   Future<void> _handleResetCard() async {
     try {
-      debugPrint(
-          '🔄 RESET CARD START - ${_putnik.ime}: pozivam resetPutnikCard');
-
       await PutnikService()
           .resetPutnikCard(_putnik.ime, widget.currentDriver ?? '');
-
-      debugPrint(
-          '✅ RESET CARD SUCCESS - ${_putnik.ime}: reset u service završen');
 
       // Malo sačekaj da se baza updateuje
       await Future.delayed(const Duration(milliseconds: 500));
@@ -306,14 +252,10 @@ class _PutnikCardState extends State<PutnikCard> {
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
       if (updatedPutnik != null && mounted) {
-        debugPrint(
-            '🔄 RESET CARD REFRESH - ${_putnik.ime}: dobio ažurirane podatke iz baze');
         setState(() {
           _putnik = updatedPutnik;
         });
       } else {
-        debugPrint(
-            '❌ RESET CARD REFRESH FAILED - ${_putnik.ime}: nema ažuriranih podataka');
         // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
         setState(() {
           _putnik = Putnik(
@@ -343,8 +285,6 @@ class _PutnikCardState extends State<PutnikCard> {
             brojTelefona: _putnik.brojTelefona,
           );
         });
-        debugPrint(
-            '🔧 RESET CARD FALLBACK - ${_putnik.ime}: lokalni reset primenjen');
       }
 
       if (mounted) {
@@ -357,7 +297,6 @@ class _PutnikCardState extends State<PutnikCard> {
         );
       }
     } catch (e) {
-      debugPrint('❌ RESET CARD ERROR - ${_putnik.ime}: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -918,9 +857,6 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       // Pozovi odgovarajući service za plaćanje
-      debugPrint(
-          '💰 [PLAĆANJE] POČETAK plaćanja za putnika ID: ${_putnik.id}, ime: ${_putnik.ime}, iznos: $iznos');
-
       if (isMesecni && mesec != null) {
         // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
         final mesecniPutnik =
@@ -942,9 +878,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
       if (mounted) {
         setState(() {});
-        debugPrint(
-            '✅ [PLAĆANJE] ZAVRŠENO plaćanje - UI ažuriran pomoću setState()');
-
         // Prikaži success poruku
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1042,16 +975,11 @@ class _PutnikCardState extends State<PutnikCard> {
   Future<void> _postaviOdsustvo(String status) async {
     try {
       // Pozovi service za postavljanje statusa
-      debugPrint(
-          '🏖️ [ODSUSTVO] POČETAK postavljanja $status za putnika ID: ${_putnik.id}, ime: ${_putnik.ime}');
       await PutnikService().oznaciBolovanjeGodisnji(
           _putnik.id!, status, widget.currentDriver ?? '');
 
       if (mounted) {
         setState(() {});
-        debugPrint(
-            '✅ [ODSUSTVO] ZAVRŠENO postavljanje $status - UI ažuriran pomoću setState()');
-
         final String statusLabel =
             status == 'godisnji' ? 'godišnji odmor' : 'bolovanje';
         final String emoji = status == 'godisnji' ? '🏖️' : '🤒';
@@ -1255,25 +1183,8 @@ class _PutnikCardState extends State<PutnikCard> {
 
   @override
   Widget build(BuildContext context) {
-    // � [BUILD DEBUG] Precrta kartica
-    debugPrint(
-        '🏗️ [BUILD] Precrta kartica za: ${_putnik.ime}, jeOtkazan=${_putnik.jeOtkazan}, status=${_putnik.status}');
-
-    // �🔍 DEBUG: Proverava uslove za prikazivanje X ikone
-    debugPrint(
-        '🔍 [X IKONA DEBUG] ${_putnik.ime}: jeOtkazan=${_putnik.jeOtkazan}, mesecnaKarta=${_putnik.mesecnaKarta}, vremePokupljenja=${_putnik.vremePokupljenja}, iznosPlacanja=${_putnik.iznosPlacanja}');
-
-    final bool canShowXButton = !_putnik.jeOtkazan &&
-        (_putnik.mesecnaKarta == true ||
-            (_putnik.vremePokupljenja == null &&
-                (_putnik.iznosPlacanja == null || _putnik.iznosPlacanja == 0)));
-    debugPrint('🔍 [X IKONA] ${_putnik.ime}: canShowXButton=$canShowXButton');
-
-    // 🔍 DEBUG: Dodaj debug ispis za pokupljene putnike
-    if (_putnik.ime == 'Ljilla') {
-      debugPrint(
-          '🔍 DEBUG PutnikCard - ${_putnik.ime}: vremePokupljenja=${_putnik.vremePokupljenja}, jePokupljen=${_putnik.jePokupljen}');
-    }
+    // Proverava uslove za prikazivanje X ikone
+    if (_putnik.ime == 'Ljilla') {}
 
     // Uklonjen warning za nekorišćenu promenljivu driverColor
     final bool isSelected =
@@ -1307,15 +1218,9 @@ class _PutnikCardState extends State<PutnikCard> {
     final bool isAdmin = isBojan || isSvetlana; // Full admin prava
     final bool isBrudaOrBilevski = driver == 'Bruda' || driver == 'Bilevski';
 
-    // 🔍 DEBUG LOG za Radošević problem (prošireno)
     if (_putnik.ime.toLowerCase().contains('rado') ||
         _putnik.ime.toLowerCase().contains('radoš') ||
-        _putnik.ime.toLowerCase().contains('radosev')) {
-      debugPrint(
-          '🔍 RADOŠEVIĆ DEBUG: driver=$driver, isAdmin=$isAdmin, isBrudaOrBilevski=$isBrudaOrBilevski, showActions=${widget.showActions}');
-      debugPrint(
-          '🔍 RADOŠEVIĆ DEBUG: mesecnaKarta=${_putnik.mesecnaKarta}, jeOtkazan=${_putnik.jeOtkazan}, jePlacen=${_putnik.jePlacen}');
-    }
+        _putnik.ime.toLowerCase().contains('radosev')) {}
 
     return GestureDetector(
       onTap: _handleTap, // Triple tap za brži admin reset
@@ -1957,9 +1862,6 @@ class _PutnikCardState extends State<PutnikCard> {
                           style: TextStyle(
                             fontSize: 13,
                             color: () {
-                              // Debug log za praćenje dodaoVozac vrednosti
-                              debugPrint(
-                                  '🔍 DEBUG PutnikCard - ${_putnik.ime}: dodaoVozac = "${_putnik.dodaoVozac}", vremeDodavanja = ${_putnik.vremeDodavanja}');
                               return VozacBoja.get(_putnik.dodaoVozac);
                             }(),
                             fontWeight: FontWeight.w500,
@@ -2036,10 +1938,7 @@ class _PutnikCardState extends State<PutnikCard> {
                     if (_putnik.vremePokupljenja != null)
                       Text(
                         () {
-                          // 🔍 DEBUG: Ispis stvarnog vremena
                           final vreme = _putnik.vremePokupljenja!;
-                          debugPrint(
-                              '🔍 DEBUG vremePokupljenja formatting - ${_putnik.ime}: vreme=$vreme, hour=${vreme.hour}, minute=${vreme.minute}');
                           return 'Pokupljen ${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
                         }(),
                         style: TextStyle(
@@ -2063,8 +1962,6 @@ class _PutnikCardState extends State<PutnikCard> {
                     if (_putnik.ime.toLowerCase().contains('ljil') ||
                         _putnik.ime.toLowerCase().contains('rado'))
                       () {
-                        debugPrint(
-                            '🔍 [PLAĆENO DEBUG] ${_putnik.ime}: iznosPlacanja=${_putnik.iznosPlacanja}, naplatioVozac=${_putnik.naplatioVozac}, placeno=${_putnik.placeno}, jePlacen=${_putnik.jePlacen}');
                         return const SizedBox.shrink();
                       }(),
                   ],
@@ -2325,7 +2222,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // 🚫 OTKAZIVANJE - izdvojeno u funkciju
   Future<void> _handleOtkazivanje() async {
-    debugPrint('🔍 [OTKAZIVANJE] KLIKNUTO X DUGME za putnika: ${_putnik.ime}');
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2346,11 +2242,6 @@ class _PutnikCardState extends State<PutnikCard> {
     );
 
     if (confirm == true) {
-      debugPrint(
-          '🔥 [X BUTTON] POČETAK otkazivanja putnika ID: ${_putnik.id}, ime: ${_putnik.ime} (vozač: ${widget.currentDriver})');
-      debugPrint(
-          '📊 [X BUTTON] PRE OTKAZIVANJA: jeOtkazan=${_putnik.jeOtkazan}, status=${_putnik.status}');
-
       try {
         await PutnikService().otkaziPutnika(
           _putnik.id!,
@@ -2359,17 +2250,11 @@ class _PutnikCardState extends State<PutnikCard> {
           selectedGrad: widget.selectedGrad,
         );
 
-        debugPrint('✅ [X BUTTON] ZAVRŠENO otkazivanje putnika - ažuriram UI');
-        debugPrint(
-            '📊 [X BUTTON] POSLE OTKAZIVANJA: jeOtkazan=${_putnik.jeOtkazan}, status=${_putnik.status}');
-
         if (mounted) {
           setState(() {});
-          debugPrint(
-              '🔄 [X BUTTON] setState() pozvan - UI trebalo bi da se osvežava');
         }
       } catch (e) {
-        debugPrint('❌ [X BUTTON] GREŠKA pri otkazivanju: $e');
+        // Greška pri otkazivanju putnika - ignorisana
       }
     }
   }
@@ -2396,13 +2281,9 @@ class _PutnikCardState extends State<PutnikCard> {
     );
 
     if (confirm == true) {
-      debugPrint(
-          '🗑️ [BRISANJE] POČETAK brisanja putnika ID: ${_putnik.id}, ime: ${_putnik.ime} (admin: ${widget.currentDriver})');
       await PutnikService().obrisiPutnika(_putnik.id!);
       if (mounted) {
         setState(() {});
-        debugPrint(
-            '✅ [BRISANJE] ZAVRŠENO brisanje - UI ažuriran pomoću setState()');
       }
     }
   }

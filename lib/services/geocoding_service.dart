@@ -13,6 +13,13 @@ class GeocodingService {
   // Pronađi koordinate za adresu - SA CACHE OPTIMIZACIJOM
   static Future<String?> getKoordinateZaAdresu(
       String grad, String adresa) async {
+    // 🚫 PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vršac)
+    if (_isCityBlocked(grad)) {
+      _logger
+          .w('🚫 Geocoding blokiran za grad: $grad (samo BC/Vršac dozvoljeni)');
+      return null;
+    }
+
     final cacheKey = CacheKeys.geocoding('${grad}_$adresa');
 
     // 1. Prvo proveri memory cache (najbrži)
@@ -147,5 +154,22 @@ class GeocodingService {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// 🚫 PROVERI DA LI JE GRAD VAN DOZVOLJENE RELACIJE
+  static bool _isCityBlocked(String grad) {
+    final normalizedGrad = grad.toLowerCase().trim();
+
+    // ✅ DOZVOLJENI GRADOVI: SAMO Bela Crkva i Vršac opštine
+    final allowedCities = [
+      // VRŠAC OPŠTINA
+      'vrsac', 'vršac', 'straza', 'straža', 'vojvodinci', 'potporanj', 'oresac',
+      'orešac',
+      // BELA CRKVA OPŠTINA
+      'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
+      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva'
+    ];
+    return !allowedCities.any((allowed) =>
+        normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad));
   }
 }

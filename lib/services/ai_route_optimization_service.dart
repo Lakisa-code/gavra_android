@@ -31,7 +31,41 @@ class AIRouteOptimizationService {
   static const String _weatherApiUrl =
       'https://api.openweathermap.org/data/2.5/weather';
 
-  /// 🚀 MAIN OPTIMIZATION FUNCTION - AI-powered route planning
+  /// � HELPER - proveri da li je putnik u servisnoj oblasti
+  static bool _isPassengerInServiceArea(Putnik putnik) {
+    final grad = putnik.grad.toLowerCase().trim();
+    final adresa = putnik.adresa?.toLowerCase().trim() ?? '';
+
+    // Normalizuj srpske karaktere
+    final normalizedGrad = grad
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
+    final normalizedAdresa = adresa
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
+
+    // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
+    final serviceAreaCities = [
+      // VRŠAC OPŠTINA
+      'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
+      // BELA CRKVA OPŠTINA
+      'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
+      'kruscica', 'kusic', 'crvena crkva'
+    ]; // Proveri grad ili adresu
+    return serviceAreaCities.any((city) =>
+        normalizedGrad.contains(city) ||
+        city.contains(normalizedGrad) ||
+        normalizedAdresa.contains(city) ||
+        city.contains(normalizedAdresa));
+  }
+
+  /// �🚀 MAIN OPTIMIZATION FUNCTION - AI-powered route planning
   static Future<OptimizedRoute> optimizeRoute({
     required List<Putnik> passengers,
     required Position startLocation,
@@ -44,15 +78,25 @@ class AIRouteOptimizationService {
     bool considerTimeWindows = true,
     int maxCalculationTime = 30, // seconds
   }) async {
+    // 🚫 FILTER PUTNICI: samo oni iz BC/Vršac oblasti
+    final validPassengers = passengers
+        .where((putnik) => _isPassengerInServiceArea(putnik))
+        .toList();
+
+    if (validPassengers.length != passengers.length) {
+      _logger.w(
+          '⚠️ Filtrisano ${passengers.length - validPassengers.length} putnika van BC/Vršac oblasti');
+    }
+
     final startTime = DateTime.now();
     _logger.i(
-        '🚀 Starting AI route optimization with ${passengers.length} passengers');
+        '🚀 Starting AI route optimization with ${validPassengers.length} valid passengers');
 
     try {
       // 1. 📍 GEOCODE ALL ADDRESSES - parallel processing
-      final addressCoordinates = await _batchGeocodeAddresses(passengers);
+      final addressCoordinates = await _batchGeocodeAddresses(validPassengers);
       if (addressCoordinates.isEmpty) {
-        return OptimizedRoute.fallback(passengers);
+        return OptimizedRoute.fallback(validPassengers);
       }
 
       // 2. 🌦️ GATHER EXTERNAL DATA (parallel)

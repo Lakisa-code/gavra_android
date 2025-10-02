@@ -7,6 +7,7 @@ import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 
 import '../services/realtime_notification_service.dart';
+import '../services/realtime_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/date_utils.dart'
     as app_date_utils; // DODANO: Centralna vikend logika
@@ -51,7 +52,7 @@ class _AdminScreenState extends State<AdminScreen> {
       LocalNotificationService.initialize(context);
       RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (e) {
-      // Error handling for notification services
+      dlog('⚠️ Admin screen notification init error: $e');
     }
 
     FirebaseService.getCurrentDriver().then((driver) {
@@ -59,7 +60,26 @@ class _AdminScreenState extends State<AdminScreen> {
         RealtimeNotificationService.initialize();
       }
     }).catchError((e) {
-      // Error handling for getCurrentDriver
+      dlog('⚠️ Admin screen getCurrentDriver error: $e');
+    });
+
+    // Osiguraj da je RealtimeService pokrenut
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      dlog('🔄 Admin screen - proveravam RealtimeService status');
+      try {
+        // Forsiraj refresh RealtimeService
+        await RealtimeService.instance.refreshNow();
+        dlog('✅ Admin screen - RealtimeService refresh završen');
+
+        // Pokreni refresh da osiguramo podatke
+        _putnikService.getAllPutniciFromBothTables().then((data) {
+          dlog('✅ Admin screen - dobio ${data.length} putnika');
+        }).catchError((e) {
+          dlog('❌ Admin screen - greška pri dobijanju putnika: $e');
+        });
+      } catch (e) {
+        dlog('❌ Admin screen - inicijalizacija greška: $e');
+      }
     });
   }
 
@@ -444,23 +464,45 @@ class _AdminScreenState extends State<AdminScreen> {
           ),
         ),
       ),
-      body: StreamBuilder<List<Putnik>>(
-        stream: _putnikService.streamKombinovaniPutniciFiltered(),
+      body: FutureBuilder<List<Putnik>>(
+        future: _putnikService.getAllPutniciFromBothTables().timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            dlog('⏰ Admin screen timeout nakon 8s - vraćam praznu listu');
+            return <Putnik>[];
+          },
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            dlog('🔄 Admin screen učitava podatke...');
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Učitavanje admin panela...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  const Text('Učitavanje admin panela...'),
+                  const SizedBox(height: 8),
+                  const Text('Molimo sačekajte...',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {}); // Force refresh
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Osveži sada'),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ],
               ),
             );
           }
-
           if (snapshot.hasError) {
+            dlog('❌ Admin screen greška: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

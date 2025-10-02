@@ -85,13 +85,17 @@ class CombinedPutnikService {
     // Filtriraj po gradu i vremenu koristeći normalizaciju (vrijeme/grad)
     final filtered = result.where((putnik) {
       if (grad != null) {
-        if (!GradAdresaValidator.isGradMatch(putnik.grad, putnik.adresa, grad))
+        if (!GradAdresaValidator.isGradMatch(
+            putnik.grad, putnik.adresa, grad)) {
           return false;
+        }
       }
       if (vreme != null) {
         // Normalize both times before comparison (handles 05:00 vs 5:00, seconds, etc.)
         if (GradAdresaValidator.normalizeTime(putnik.polazak) !=
-            GradAdresaValidator.normalizeTime(vreme)) return false;
+            GradAdresaValidator.normalizeTime(vreme)) {
+          return false;
+        }
       }
       return true;
     }).toList();

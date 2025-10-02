@@ -1,7 +1,6 @@
 import '../models/putnik.dart';
 import '../models/mesecni_putnik.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
-import 'package:flutter/foundation.dart'; // Za debug logovanje
 import 'putnik_service.dart'; // 🔄 DODANO za real-time streams
 import 'mesecni_putnik_service.dart'; // 🔄 DODANO za mesečne putnike
 import 'dart:async';
@@ -33,9 +32,7 @@ class StatistikaService {
   // 📊 DEBUG LOGOVANJE - OGRANIČENO
   static void _debugLog(String message) {
     // UKLJUČUJEMO DEBUG LOGOVE ZA MESEČNE STATISTIKE!
-    if (kDebugMode) {
-      debugPrint('💰 [STATISTIKA] $message');
-    }
+    // Debug logovi uklonjeni za čišćenje koda
   }
 
   /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi se svuda!

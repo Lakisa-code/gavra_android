@@ -36,6 +36,13 @@ class SmartAddressAutocompleteService {
     bool enableContextualSuggestions = true,
     bool enablePredictiveSuggestions = true,
   }) async {
+    // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac dozvoljeni
+    if (_isCityOutsideServiceArea(currentCity)) {
+      _logger.w(
+          '🚫 Autocomplete blokiran za $currentCity - van BC/Vršac relacije');
+      return [];
+    }
+
     if (query.isEmpty) {
       return enablePredictiveSuggestions
           ? await _getPredictiveSuggestions(
@@ -674,6 +681,29 @@ class SmartAddressAutocompleteService {
 
   static Future<void> _updateMLWeights() async {
     // Implementation would update ML weights based on performance
+  }
+
+  /// 🚫 HELPER - proveri da li je grad van servisne oblasti
+  static bool _isCityOutsideServiceArea(String city) {
+    final normalizedCity = city
+        .toLowerCase()
+        .trim()
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
+
+    // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
+    final serviceAreaCities = [
+      // VRŠAC OPŠTINA
+      'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
+      // BELA CRKVA OPŠTINA
+      'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
+      'kruscica', 'kusic', 'crvena crkva'
+    ];
+    return !serviceAreaCities.any((allowed) =>
+        normalizedCity.contains(allowed) || allowed.contains(normalizedCity));
   }
 }
 

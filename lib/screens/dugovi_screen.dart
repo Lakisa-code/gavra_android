@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../models/putnik.dart';
 import '../widgets/putnik_list.dart';
 import '../services/putnik_service.dart';
@@ -80,25 +79,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final danas = DateTime.now();
-          final danasString =
-              "${danas.day.toString().padLeft(2, '0')}.${danas.month.toString().padLeft(2, '0')}.${danas.year}";
-
-          void debugLog(Object? message) {
-            if (kDebugMode) debugPrint(message?.toString());
-          }
-
-          debugLog('🔍 DUGOVI DEBUG: Tražim dužnike za datum: $danasString');
-          debugLog(
-              '🔍 DUGOVI DEBUG: Ukupno putnika u stream-u: ${snapshot.data!.length}');
-
-          // Ispišimo sve putnike za debug
-          for (final p in snapshot.data!) {
-            if (p.ime.contains('TESTDODAO') || p.ime.contains('KURAPAL')) {
-              debugLog(
-                  '🔍 DUGOVI DEBUG: ${p.ime} - dan: "${p.dan}", jePokupljen: ${p.jePokupljen}, iznosPlacanja: ${p.iznosPlacanja}, mesecnaKarta: ${p.mesecnaKarta}, status: "${p.status}"');
-            }
-          }
+          // Pronađi dužnike
 
           // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - SVI DUŽNICI
           final duznici = snapshot.data!
@@ -123,10 +104,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
             return bTime.compareTo(aTime); // najnoviji prvo
           });
-          debugLog('🔍 DUGOVI DEBUG: Pronađeno dužnika: ${duznici.length}');
-          for (final d in duznici) {
-            debugLog('🔍 DUGOVI DEBUG: Dužnik: ${d.ime}');
-          }
+          // Debug ispisi uklonjeni
           if (duznici.isEmpty) {
             return const Center(
               child: Column(

@@ -19,12 +19,11 @@ class AdvancedGeocodingService {
     'mapbox_free': 'https://api.mapbox.com/geocoding/v5/mapbox.places',
   };
 
-  // 🎯 SERBIAN CITY ALIASES - lokalizacija
+  // 🎯 SERBIAN CITY ALIASES - samo Bela Crkva i Vršac opštine
   static const Map<String, List<String>> _cityAliases = {
-    'Bela Crkva': ['BC', 'Bela', 'Белa Цркбa', 'bela crkva', 'BELA CRKVA'],
-    'Vršac': ['Vrsac', 'VS', 'Врщац', 'vrsac', 'VRSAC'],
-    'Novi Sad': ['NS', 'Нови Сад', 'novi sad', 'NOVI SAD'],
-    'Beograd': ['BG', 'Belgrade', 'Београд', 'beograd', 'BEOGRAD'],
+    'Bela Crkva': ['BC', 'Bela', 'Бела Црква', 'bela crkva', 'BELA CRKVA'],
+    'Vršac': ['Vrsac', 'VS', 'Вршац', 'vrsac', 'VRSAC'],
+    // 🚫 OSTALI GRADOVI SU UKLONJENI - samo BC-Vršac relacija
   };
 
   // 🤖 AI FUZZY MATCHING - auto-ispravka grešaka
@@ -46,6 +45,13 @@ class AdvancedGeocodingService {
     bool enableAutoCorrection = true,
     int maxRetries = 3,
   }) async {
+    // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac opštine dozvoljene
+    if (_isCityOutsideServiceArea(grad)) {
+      _logger.w(
+          '🚫 Advanced geocoding blokiran za $grad - van servisne oblasti BC/Vršac');
+      return null;
+    }
+
     try {
       // 1. 🧹 PREPROCESSING - čišćenje i normalizacija
       final processedGrad = _preprocessCity(grad);
@@ -207,7 +213,8 @@ class AdvancedGeocodingService {
   static Future<GeocodeResult?> _searchNominatim(
       String grad, String adresa, bool fuzzy) async {
     const timeout = Duration(seconds: 8);
-    final query = '$adresa, $grad, Serbia';
+    // 🎯 OGRANIČI QUERY na Bela Crkva/Vršac oblast
+    final query = '$adresa, $grad, Južno-banatski okrug, Serbia';
 
     final url = '${_providers['nominatim']}?'
         'q=${Uri.encodeComponent(query)}&'
@@ -215,7 +222,9 @@ class AdvancedGeocodingService {
         'addressdetails=1&'
         'limit=3&'
         'accept-language=sr,en&'
-        'countrycodes=rs';
+        'countrycodes=rs&'
+        'bounded=1&'
+        'viewbox=20.8,44.7,21.8,45.2'; // Bounding box za BC/Vršac region
 
     final response = await http.get(
       Uri.parse(url),
@@ -580,4 +589,27 @@ class GeocodeResult {
   @override
   String toString() =>
       '$formattedAddress (${confidence.toStringAsFixed(1)}% via $provider)';
+}
+
+/// 🚫 HELPER FUNKCIJA - proveri da li je grad van servisne oblasti
+bool _isCityOutsideServiceArea(String grad) {
+  final normalizedGrad = grad
+      .toLowerCase()
+      .trim()
+      .replaceAll('š', 's')
+      .replaceAll('đ', 'd')
+      .replaceAll('č', 'c')
+      .replaceAll('ć', 'c')
+      .replaceAll('ž', 'z');
+
+  // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
+  final serviceAreaCities = [
+    // VRŠAC OPŠTINA
+    'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
+    // BELA CRKVA OPŠTINA
+    'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
+    'kruscica', 'kusic', 'crvena crkva'
+  ];
+  return !serviceAreaCities.any(
+      (city) => normalizedGrad.contains(city) || city.contains(normalizedGrad));
 }

@@ -1147,43 +1147,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // (totalFilteredCount removed)
 
         return Scaffold(
-          floatingActionButton: FloatingActionButton(
-            mini: true,
-            onPressed: () async {
-              final putovanja = RealtimeService.instance.lastPutovanjaRows;
-              final mesecni = RealtimeService.instance.lastMesecniRows;
-              await showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Realtime debug'),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('putovanja_istorija (first 10):'),
-                        Text(putovanja
-                            .take(10)
-                            .map((e) => e.toString())
-                            .join('\n')),
-                        const SizedBox(height: 12),
-                        const Text('mesecni_putnici (first 10):'),
-                        Text(mesecni
-                            .take(10)
-                            .map((e) => e.toString())
-                            .join('\n')),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Close')),
-                  ],
-                ),
-              );
-            },
-            child: const Icon(Icons.bug_report),
-          ),
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(
                 95), // Povećano sa 80 na 95 zbog sezonskog indikatora
@@ -1311,29 +1274,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 child: const Center(
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.palette,
-                                          size: 14,
-                                          color: Colors.white,
-                                        ),
-                                        SizedBox(height: 1),
-                                        Text(
-                                          'Tema',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 26,
-                                            color: Colors.white,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 1,
-                                        ),
-                                      ],
+                                    child: Text(
+                                      'Tema',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 26,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
                                     ),
                                   ),
                                 ),

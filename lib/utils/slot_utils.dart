@@ -1,5 +1,4 @@
 import '../models/putnik.dart';
-import 'package:flutter/foundation.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/text_utils.dart';
 
@@ -67,7 +66,7 @@ class SlotUtils {
           brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
         }
       } catch (e) {
-        if (kDebugMode) print('SlotUtils compute error: $e');
+        // Greška u compute funkciji - ignorisana u produkciji
       }
     }
 
@@ -121,7 +120,7 @@ class SlotUtils {
           brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
         }
       } catch (e) {
-        if (kDebugMode) print('SlotUtils computeDate error: $e');
+        // Greška u computeDate funkciji - ignorisana u produkciji
       }
     }
 

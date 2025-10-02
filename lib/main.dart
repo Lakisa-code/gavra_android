@@ -25,6 +25,8 @@ import 'services/realtime_notification_counter_service.dart';
 import 'services/firebase_service.dart';
 import 'supabase_client.dart';
 import 'services/realtime_service.dart';
+import 'config/app_config.dart';
+import 'utils/gbox_detector.dart';
 
 final _logger = Logger();
 
@@ -51,7 +53,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   } catch (e) {
     // Ignore duplicate-init or platform-specific errors in background isolate
   }
-  _logger.i('📬 Background message received: ${message.notification?.title}');
   // Pozovi background-safe helper da prika6e lokalnu notifikaciju iz background isolate
   try {
     await LocalNotificationService.showNotificationFromBackground(
@@ -66,44 +67,40 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _logger.i('🔄 Starting app...');
+
+  // 🔧 Detect GBox environment for Huawei devices
+  await GBoxDetector.configureForEnvironment();
 
   // 🚀 CACHE UKLONJEN - koristi direktne Supabase pozive
-  _logger.i('🔄 Cache removed - using direct Supabase calls');
 
   // OneSignal initialization (legacy API)
   try {
-    OneSignal.initialize('4fd57af1-568a-45e0-a737-3b3918c4e92a');
+    OneSignal.initialize(AppConfig.oneSignalAppId);
     OneSignal.User.pushSubscription.addObserver((state) {
       try {
-        _logger.i('\ud83d\udd14 OneSignal player ID: ${state.current.id}');
+        // OneSignal player ID logged
       } catch (_) {}
     });
   } catch (e) {
     _logger.w('\u26a0\ufe0f OneSignal initialization failed: $e');
   }
 
-  // Firebase initialization - ENABLED for multi-channel notifications
+  // Firebase initialization - PRILAGOĐENO za GBox/Huawei
   try {
-    _logger.i('🔄 Initializing Firebase...');
+    final shouldOptimize = await GBoxDetector.shouldOptimizeFirebase();
+    final timeout =
+        shouldOptimize ? Duration(seconds: 10) : Duration(seconds: 20);
+
     // Check if Firebase is already initialized
     final alreadyInitialized = Firebase.apps.isNotEmpty;
     if (!alreadyInitialized) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(const Duration(seconds: 15)); // Povećan timeout
+      ).timeout(timeout);
     }
 
     // Registruj background message handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Log current FCM token for debugging and handle cold-start message
-    try {
-      final fcmToken = await FirebaseMessaging.instance.getToken();
-      _logger.i('\ud83d\udce1 FCM token: $fcmToken');
-    } catch (e) {
-      _logger.w('\u26a0\ufe0f Failed to get FCM token: $e');
-    }
 
     try {
       final initialMessage =
@@ -125,20 +122,16 @@ void main() async {
     } catch (e) {
       _logger.w('⚠️ FirebaseService.setupFCMListeners failed: $e');
     }
-
-    _logger.i('✅ Firebase initialized with background handler');
   } catch (e) {
     _logger.e('❌ Firebase initialization failed: $e');
     // Nastavi bez Firebase ako ne može - aplikacija neće da krahira
   }
 
   try {
-    _logger.i('🔄 Initializing Supabase...');
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     ).timeout(const Duration(seconds: 10));
-    _logger.i('✅ Supabase initialized');
   } catch (e) {
     _logger.e('❌ Supabase initialization failed: $e');
     // Continue without Supabase if it fails
@@ -153,7 +146,6 @@ void main() async {
   ValueNotifier<GraphQLClient> client =
       ValueNotifier(GraphQLClient(link: link, cache: GraphQLCache()));
 
-  _logger.i('� Starting app with professional CI/CD automation...');
   runApp(GraphQLProvider(client: client, child: const MyApp()));
 }
 
@@ -194,17 +186,12 @@ class _MyAppState extends State<MyApp> {
 
       // INICIJALIZUJ NOTIFIKACIJE SEKVENCIJALNO da izbegneš konflikte
       try {
-        _logger.i('� Initializing notification system...');
-
         // 1. Prvo inicijalizuj lokalne notifikacije (bez permission zahteva)
         await LocalNotificationService.initialize(context);
 
         // 2. Zatim zatraži permissions jednom kroz Firebase sistem
-        _logger.i('🔔 Requesting notification permissions...');
-        final hasPermissions =
-            await RealtimeNotificationService.requestNotificationPermissions()
-                .timeout(const Duration(seconds: 15));
-        _logger.i('🔔 Notification permissions result: $hasPermissions');
+        await RealtimeNotificationService.requestNotificationPermissions()
+            .timeout(const Duration(seconds: 15));
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
@@ -217,34 +204,37 @@ class _MyAppState extends State<MyApp> {
 
         // 4. Pretplati se na topike na osnovu vozača
         final vozacId = await getCurrentDriver();
-        _logger.i('🔄 Pronađen vozač iz SharedPreferences: $vozacId');
+
+        // Pokreni centralizovane realtime pretplate
+        try {
+          RealtimeService.instance.startForDriver(vozacId);
+
+          // Forsiraj početno učitavanje podataka
+          await RealtimeService.instance.refreshNow();
+        } catch (e) {
+          _logger.w('⚠️ RealtimeService.startForDriver failed: $e');
+          // Pokušaj da pokreneš bez vozača kao fallback
+          try {
+            RealtimeService.instance.startForDriver(null);
+            await RealtimeService.instance.refreshNow();
+          } catch (fallbackError) {
+            _logger.e('❌ RealtimeService fallback failed: $fallbackError');
+          }
+        }
 
         if (vozacId != null && vozacId.isNotEmpty) {
-          _logger.i('✅ Inicijalizujem notifikacije za vozača: $vozacId');
           await RealtimeNotificationService.subscribeToDriverTopics(vozacId);
-          // Pokreni centralizovane realtime pretplate za ovog vozača
-          try {
-            RealtimeService.instance.startForDriver(vozacId);
-            _logger.i('✅ RealtimeService started for driver: $vozacId');
-          } catch (e) {
-            _logger.w('⚠️ RealtimeService.startForDriver failed: $e');
-          }
         } else {
           _logger.w('⚠️ Nema logovanog vozača - notifikacije neće raditi');
           await RealtimeNotificationService.subscribeToDriverTopics(null);
         }
-
-        _logger.i('✅ Notification system initialized successfully');
       } catch (e) {
         _logger.w('⚠️ Notification system error: $e');
         // Continue without notifications if they fail
       }
 
       // 📱 POKRETANJE SMS SERVISA za automatsko slanje poruka
-      _logger.i('📱 Pokretanje SMS servisa...');
       SMSService.startAutomaticSMSService();
-      _logger.i(
-          '✅ SMS servis pokrenut - šalje poruke predzadnjeg dana u mesecu u 20:00');
     });
 
     _startPeriodicGpsSending();
@@ -259,7 +249,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _requestPermissionsWhenReady() async {
-    _logger.i('🔄 Permissions will be requested when first screen is ready...');
     // ⚠️ Permissions se sada pozivaju iz WelcomeScreen ili HomeScreen umesto odavde
     // jer ovaj context nije unutar MaterialApp strukture i izaziva MaterialLocalizations grešku
   }
@@ -298,7 +287,6 @@ class _MyAppState extends State<MyApp> {
 
     // 📱 ZAUSTAVITI SMS SERVIS
     SMSService.stopAutomaticSMSService();
-    _logger.i('🛑 SMS servis zaustavljen');
 
     // Stop centralized realtime subscriptions
     try {
@@ -312,32 +300,23 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initializeApp() async {
     try {
-      _logger.i('🔄 Initializing app...');
-
       // Kratka pauza da se UI prikaže
       await Future.delayed(const Duration(milliseconds: 500));
 
       // 🚀 CACHE JE UKLONJEN - koristi direktne Supabase pozive
-      _logger.i('🔄 Cache removed - using direct Supabase calls');
 
       // 🔐 INICIJALNI SETUP DOZVOLA se pomerio u didChangeDependencies()
       // da se izvrši kada je MaterialApp potpuno spreman
-      _logger.i(
-          '🔄 Permissions setup will be handled when MaterialApp is ready...');
 
       // 🔄 RESETUJ KARTICE MESEČNIH PUTNIKA SVAKI PETAK
       try {
-        _logger.i('🔄 Checking weekly card reset...');
         // PutnikStatistike servis je uklonjen - placeholder
         // final putnikStatistike = PutnikStatistike();
         // await putnikStatistike.proveriIResetujKartice();
-        _logger.i('✅ Weekly card reset check completed (placeholder)');
       } catch (e) {
         _logger.w('⚠️ Weekly card reset failed: $e');
         // Ne prekidaj inicijalizaciju aplikacije zbog greške u resetovanju
       }
-
-      _logger.i('✅ App initialized successfully');
 
       // Schema test removed to prevent startup crashes
       // await _testSchemaStructure();
@@ -374,10 +353,9 @@ class _MyAppState extends State<MyApp> {
       });
       // 💖 Log koja tema se koristi za debug
       if (driver?.toLowerCase() == 'svetlana') {
-        _logger.d('💖 SVETLANA PINK THEME aktivirana!');
+        // Pink theme activated
       } else {
-        _logger
-            .d('🎨 Default blue theme aktivirana za: ${driver ?? "unknown"}');
+        // Default blue theme activated
       }
     }
   }
@@ -393,7 +371,6 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         _nocniRezim = newTheme;
       });
-      _logger.d('🎨 Theme toggled to: ${newTheme ? "dark" : "light"}');
     }
   }
 
@@ -402,9 +379,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    _logger.d(
-        '🎨 Building MyApp... initialized: $_isInitialized, error: $_initError, nocniRezim: $_nocniRezim');
-
     return MaterialApp(
       title: 'Gavra 013',
       debugShowCheckedModeBanner: false,

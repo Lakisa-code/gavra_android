@@ -11,14 +11,43 @@ class RouteOptimizationService {
   // 🎯 DOZVOLJENI GRADOVI za navigaciju - samo Bela Crkva i Vršac
   static const List<String> _dozvoljeninGradovi = ['Bela Crkva', 'Vršac'];
 
-  /// 🎯 Filtriraj putnike samo za dozvoljene gradove (Bela Crkva i Vršac)
+  /// 🎯 Filtriraj putnike samo za dozvoljene gradovi (Bela Crkva i Vršac opštine)
   static List<Putnik> filterByAllowedCities(List<Putnik> putnici) {
-    return putnici
-        .where((p) =>
-            p.adresa != null &&
-            p.adresa!.isNotEmpty &&
-            _dozvoljeninGradovi.any((grad) => p.adresa!.contains(grad)))
-        .toList();
+    return putnici.where((p) => _isPassengerInServiceArea(p)).toList();
+  }
+
+  /// 🚫 HELPER - proveri da li je putnik u BC/Vršac servisnoj oblasti
+  static bool _isPassengerInServiceArea(Putnik putnik) {
+    final grad = putnik.grad.toLowerCase().trim();
+    final adresa = putnik.adresa?.toLowerCase().trim() ?? '';
+
+    // Normalizuj srpske karaktere
+    final normalizedGrad = grad
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
+    final normalizedAdresa = adresa
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
+
+    // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
+    final serviceAreaCities = [
+      // VRŠAC OPŠTINA
+      'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
+      // BELA CRKVA OPŠTINA
+      'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
+      'kruscica', 'kusic', 'crvena crkva'
+    ]; // Proveri grad ili adresu da li su u servisnoj oblasti
+    return serviceAreaCities.any((city) =>
+        normalizedGrad.contains(city) ||
+        city.contains(normalizedGrad) ||
+        normalizedAdresa.contains(city) ||
+        city.contains(normalizedAdresa));
   }
 
   /// 🗺️ NOVA FUNKCIJA: Prava geografska optimizacija na osnovu GPS lokacije vozača

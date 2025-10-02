@@ -281,9 +281,24 @@ class MesecniPutnikService {
       MesecniPutnik putnik) async {
     try {
       final dataToSend = putnik.toMap();
+      dlog('🔧 [DEBUG] Ažuriranje putnika sa ID: ${putnik.id}');
       dlog('🔧 [DEBUG] Podaci koji se šalju u bazu:');
       dlog('  - polasci_po_danu: ${dataToSend['polasci_po_danu']}');
       dlog('  - svi podaci: $dataToSend');
+
+      // Prvo proverim da li putnik postoji
+      final existingCheck = await _supabase
+          .from('mesecni_putnici')
+          .select('id')
+          .eq('id', putnik.id)
+          .maybeSingle();
+
+      if (existingCheck == null) {
+        dlog(
+            '❌ [MESECNI PUTNIK SERVICE] Putnik sa ID ${putnik.id} ne postoji u bazi');
+        return null;
+      }
+
       final response = await _supabase
           .from('mesecni_putnici')
           .update(dataToSend)

@@ -29,15 +29,47 @@ class GpsLokacija {
   });
 
   factory GpsLokacija.fromMap(Map<String, dynamic> map) {
+    // Debug: ispišimo šta imamo u map-u
+    dlog('🗺️ GPS Lokacija mapa: ${map.keys.toList()}');
+
     return GpsLokacija(
       id: map['id'] as int,
-      name: map['name'] as String,
-      lat: (map['lat'] as num).toDouble(),
-      lng: (map['lng'] as num).toDouble(),
-      timestamp: DateTime.parse(map['timestamp'] as String),
+      name: map['name'] as String? ?? 'Nepoznato',
+      lat: (map['lat'] as num?)?.toDouble() ??
+          (map['latitude'] as num?)?.toDouble() ??
+          0.0,
+      lng: (map['lng'] as num?)?.toDouble() ??
+          (map['longitude'] as num?)?.toDouble() ??
+          0.0,
+      timestamp: _parseTimestamp(map),
       color: map['color'] as String? ?? 'blue',
       vehicleType: map['vehicle_type'] as String? ?? 'car',
     );
+  }
+
+  static DateTime _parseTimestamp(Map<String, dynamic> map) {
+    // Pokušaj različite nazive timestamp kolona
+    final timestampKeys = [
+      'created_at',
+      'timestamp',
+      'time',
+      'datetime',
+      'updated_at'
+    ];
+
+    for (final key in timestampKeys) {
+      final value = map[key];
+      if (value != null) {
+        try {
+          return DateTime.parse(value.toString());
+        } catch (e) {
+          dlog('⚠️ Greška parsiranja timestamp-a za $key: $e');
+        }
+      }
+    }
+
+    dlog('⚠️ Nijedan timestamp key nije pronađen, koristim trenutno vreme');
+    return DateTime.now();
   }
 }
 
@@ -57,6 +89,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   bool _showDrivers = true;
   bool _showPassengers = false;
   List<Marker> _markers = [];
+  DateTime? _lastGpsLoad;
+  DateTime? _lastPutniciLoad;
+  static const cacheDuration = Duration(seconds: 30);
 
   // Početna pozicija - Bela Crkva/Vršac region
   static const LatLng _initialCenter = LatLng(44.9, 21.4);
@@ -70,11 +105,18 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   }
 
   Future<void> _loadPutnici() async {
+    // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
+    if (_lastPutniciLoad != null &&
+        DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
+      return;
+    }
+
     try {
       final putnikService = PutnikService();
       final putnici = await putnikService.getAllPutniciFromBothTables();
       setState(() {
         _putnici = putnici;
+        _lastPutniciLoad = DateTime.now();
       });
       _updateMarkers();
     } catch (e) {
@@ -111,23 +153,40 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   }
 
   Future<void> _loadGpsLokacije() async {
+    // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
+    if (_lastGpsLoad != null &&
+        DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
+      return;
+    }
+
     try {
       setState(() {
         _isLoading = true;
       });
 
+      // Prvo pokušaj da dobiješ strukturu tabele
       final response = await Supabase.instance.client
           .from('gps_lokacije')
           .select()
-          .order('timestamp', ascending: false)
-          .limit(1000);
+          .limit(10); // Uzmi samo 10 da vidimo strukturu
 
-      final gpsLokacije = (response as List<dynamic>)
-          .map((json) => GpsLokacija.fromMap(json))
-          .toList();
+      dlog('🗺️ GPS Response: ${response.length} lokacija dobijeno');
+
+      final gpsLokacije = <GpsLokacija>[];
+      for (final json in response as List<dynamic>) {
+        try {
+          gpsLokacije.add(GpsLokacija.fromMap(json as Map<String, dynamic>));
+        } catch (e) {
+          dlog('⚠️ Greška parsiranja GPS lokacije: $e');
+          dlog('📍 JSON: $json');
+        }
+      }
+
+      dlog('✅ Uspešno parsiran ${gpsLokacije.length} GPS lokacija');
 
       setState(() {
         _gpsLokacije = gpsLokacije;
+        _lastGpsLoad = DateTime.now();
         _updateMarkers();
         _isLoading = false;
       });
@@ -138,15 +197,22 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         _fitAllMarkers();
       }
     } catch (e) {
+      dlog('❌ Greška učitavanja GPS lokacija: $e');
+
       setState(() {
+        _gpsLokacije = []; // Postavi praznu listu
         _isLoading = false;
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Greška pri učitavanju GPS lokacija: $e'),
-            backgroundColor: Colors.red,
+            content: Text('GPS lokacije trenutno nisu dostupne'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Pokušaj ponovo',
+              onPressed: () => _loadGpsLokacije(),
+            ),
           ),
         );
       }
@@ -284,60 +350,118 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '🗺️ Admin GPS Mapa (OpenStreetMap)',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(25),
+              bottomRight: Radius.circular(25),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '🗺️ Admin GPS Mapa',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            offset: const Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black.withOpacity(0.3),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // 🚗 Vozači toggle
+                  IconButton(
+                    icon: Icon(
+                      _showDrivers
+                          ? Icons.directions_car
+                          : Icons.directions_car_outlined,
+                      color: _showDrivers ? Colors.white : Colors.white54,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showDrivers = !_showDrivers;
+                      });
+                      _updateMarkers();
+                    },
+                    tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
+                  ),
+                  // 👥 Putnici toggle
+                  IconButton(
+                    icon: Icon(
+                      _showPassengers ? Icons.people : Icons.people_outline,
+                      color: _showPassengers ? Colors.white : Colors.white54,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showPassengers = !_showPassengers;
+                      });
+                      _updateMarkers();
+                    },
+                    tooltip:
+                        _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
+                  ),
+                  // 🔄 Refresh dugme
+                  TextButton(
+                    onPressed: () {
+                      _loadGpsLokacije();
+                      _loadPutnici();
+                    },
+                    child: const Text(
+                      'Osveži',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  // 🗺️ Zoom out dugme
+                  IconButton(
+                    icon: const Icon(Icons.zoom_out_map, color: Colors.white),
+                    onPressed: _fitAllMarkers,
+                    tooltip: 'Prikaži sve vozače',
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-        backgroundColor: const Color(0xFF1976D2),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          // 🚗 Vozači toggle
-          IconButton(
-            icon: Icon(
-              _showDrivers
-                  ? Icons.directions_car
-                  : Icons.directions_car_outlined,
-              color: _showDrivers ? Colors.white : Colors.white54,
-            ),
-            onPressed: () {
-              setState(() {
-                _showDrivers = !_showDrivers;
-              });
-              _updateMarkers();
-            },
-            tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
-          ),
-          // 👥 Putnici toggle
-          IconButton(
-            icon: Icon(
-              _showPassengers ? Icons.people : Icons.people_outline,
-              color: _showPassengers ? Colors.white : Colors.white54,
-            ),
-            onPressed: () {
-              setState(() {
-                _showPassengers = !_showPassengers;
-              });
-              _updateMarkers();
-            },
-            tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
-          ),
-          // 🔄 Refresh dugme
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              _loadGpsLokacije();
-              _loadPutnici();
-            },
-            tooltip: 'Osveži GPS podatke',
-          ),
-          // 🗺️ Zoom out dugme
-          IconButton(
-            icon: const Icon(Icons.zoom_out_map, color: Colors.white),
-            onPressed: _fitAllMarkers,
-            tooltip: 'Prikaži sve vozače',
-          ),
-        ],
       ),
       body: Stack(
         children: [
