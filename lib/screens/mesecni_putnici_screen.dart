@@ -2672,31 +2672,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  /// 🕐 DOBIJ POPULARNA VREMENA POLASKA ZA AUTOCOMPLETE
-  Future<List<String>> _getPopularnaVremenaZaDan(
-    String smer, // 'BC' ili 'VS'
-    String dan,
-    String? vozac,
-  ) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'time_history_${smer}_${dan}_${vozac ?? 'global'}';
 
-      final timesJson = prefs.getString(key) ?? '{}';
-      final times =
-          Map<String, int>.from(json.decode(timesJson) as Map<String, dynamic>);
-
-      // Sortiraj po frekvenciji korišćenja
-      final sortedTimes = times.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-
-      // Vrati samo vremena, sortirana po popularnosti
-      return sortedTimes.map((e) => e.key).take(10).toList();
-    } catch (e) {
-      dlog('❌ Greška pri učitavanju popularnih vremena: $e');
-      return [];
-    }
-  }
 
   Future<void> _sacuvajNovogPutnika() async {
     // Validacija formulara
@@ -2773,8 +2749,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       if (mounted) {
         Navigator.pop(context);
-        if (rezultat != null) {
-          // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
+        // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
           try {
             // Dobij trenutnog vozača
             final prefs = await SharedPreferences.getInstance();
@@ -4129,13 +4104,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     return months[month];
   }
 
-  // 📅 STATIC HELPER FUNKCIJE - za korišćenje iz drugih widgeta
-  static String _getCurrentMonthYearStatic() {
+  // 📅 HELPER FUNKCIJE - za korišćenje iz drugih widgeta
+  String _getCurrentMonthYearStatic() {
     final now = DateTime.now();
     return '${_getMonthNameStatic(now.month)} ${now.year}';
   }
 
-  static List<String> _getMonthOptionsStatic() {
+  List<String> _getMonthOptionsStatic() {
     final now = DateTime.now();
     List<String> options = [];
 
@@ -4148,7 +4123,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     return options;
   }
 
-  static String _getMonthNameStatic(int month) {
+  String _getMonthNameStatic(int month) {
     const months = [
       '',
       'Januar',
@@ -4168,7 +4143,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 💰 STATIC PROVERI DA LI JE MESEC PLAĆEN
-  static bool _isMonthPaidStatic(String monthYear, MesecniPutnik putnik) {
+  bool _isMonthPaidStatic(String monthYear, MesecniPutnik putnik) {
     if (putnik.vremePlacanja == null ||
         putnik.cena == null ||
         putnik.cena! <= 0) {
@@ -4209,7 +4184,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 📅 STATIC HELPER: DOBIJ BROJ MESECA IZ IMENA
-  static int _getMonthNumberStatic(String monthName) {
+  int _getMonthNumberStatic(String monthName) {
     const months = [
       '', // 0 - ne postoji
       'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
@@ -4713,12 +4688,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
   void _prikaziDetaljeStatistike(MesecniPutnik putnik) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MesecniPutnikDetaljiScreen(putnik: putnik),
+    // TODO: Update MesecniPutnikDetaljiScreen to use new model
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Detalji statistike - uskoro dostupno'),
+        backgroundColor: Colors.orange,
       ),
     );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => MesecniPutnikDetaljiScreen(putnik: putnik),
+    //   ),
+    // );
   }
 
   /// � EXPORT PUTNIKA U CSV

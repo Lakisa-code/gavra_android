@@ -80,16 +80,25 @@ class MesecniPutnikService {
   }
 
   /// Toggle aktivnost mesečnog putnika
-  Future<void> toggleAktivnost(String id, bool aktivnost) async {
-    await _supabase.from('mesecni_putnici').update({
-      'aktivan': aktivnost,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', id);
+  Future<bool> toggleAktivnost(String id, bool aktivnost) async {
+    try {
+      await _supabase.from('mesecni_putnici').update({
+        'aktivan': aktivnost,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Ažurira mesečnog putnika (legacy metoda name)
-  Future<void> azurirajMesecnogPutnika(MesecniPutnik putnik) async {
-    await updateMesecniPutnik(putnik.id, putnik.toMap());
+  Future<MesecniPutnik?> azurirajMesecnogPutnika(MesecniPutnik putnik) async {
+    try {
+      return await updateMesecniPutnik(putnik.id, putnik.toMap());
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Dodaje novog mesečnog putnika (legacy metoda name)
@@ -106,9 +115,10 @@ class MesecniPutnikService {
   }
 
   /// Sinhronizacija broja putovanja sa istorijom (placeholder)
-  Future<void> sinhronizujBrojPutovanjaSaIstorijom(String id) async {
+  Future<bool> sinhronizujBrojPutovanjaSaIstorijom(String id) async {
     // TODO: Implementirati sinhronizaciju sa putovanja_istorija tabelom
     print('TODO: Implementirati sinhronizujBrojPutovanjaSaIstorijom');
+    return true; // placeholder success
   }
 
   /// Ažurira plaćanje za mesec (placeholder)
@@ -129,11 +139,16 @@ class MesecniPutnikService {
   }
 
   /// Briše mesečnog putnika (soft delete)
-  Future<void> obrisiMesecniPutnik(String id) async {
-    await _supabase.from('mesecni_putnici').update({
-      'obrisan': true,
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', id);
+  Future<bool> obrisiMesecniPutnik(String id) async {
+    try {
+      await _supabase.from('mesecni_putnici').update({
+        'obrisan': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Traži mesečne putnike po imenu, prezimenu ili broju telefona
