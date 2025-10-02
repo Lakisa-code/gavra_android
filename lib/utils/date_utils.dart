@@ -1,8 +1,3 @@
-import 'package:intl/intl.dart';
-
-// Local debug helper: prints only in debug mode
-import '../utils/logging.dart';
-
 /// 🎯 JEDINSTVENA VIKEND LOGIKA ZA SVE SCREEN-OVE
 ///
 /// Ova klasa sadrži centralnu logiku za rukovanje vikend datumima
@@ -28,13 +23,9 @@ class DateUtils {
       final daysUntilMonday = 8 - today.weekday;
       final targetDate = today.add(Duration(days: daysUntilMonday));
 
-      dlog(
-          '🎯 [WEEKEND TARGET] Vikend - ciljan datum: ${DateFormat('dd.MM.yyyy').format(targetDate)}');
       return targetDate;
     } else {
       // Radni dan: koristi današnji datum
-      dlog(
-          '🎯 [WEEKDAY TARGET] Radni dan - ciljan datum: ${DateFormat('dd.MM.yyyy').format(today)}');
       return today;
     }
   }
@@ -83,12 +74,10 @@ class DateUtils {
 
     // Ako je vikend (subota/nedelja), vraćamo ponedeljak
     if (isWeekend(today)) {
-      dlog('🎯 [ADMIN DROPDOWN] Vikend - vraćam Ponedeljak');
       return 'Ponedeljak';
     }
 
     final todayName = dayNames[today.weekday - 1];
-    dlog('🎯 [ADMIN DROPDOWN] Radni dan - vraćam $todayName');
     return todayName;
   }
 
@@ -100,10 +89,5 @@ class DateUtils {
       'from': DateTime(date.year, date.month, date.day),
       'to': DateTime(date.year, date.month, date.day, 23, 59, 59),
     };
-  }
-
-  /// 🎯 DEBUG HELPER: Za formatiranje debug ispisa
-  static String formatDateForDebug(DateTime date) {
-    return DateFormat('dd.MM.yyyy HH:mm').format(date);
   }
 }

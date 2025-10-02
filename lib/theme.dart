@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// Local debug helper: prints only in debug mode
-// Use centralized debug logger
-import '../utils/logging.dart';
-
 // 🎨 Flutter Bank Inspired Theme - Based on the beautiful design from the image
 const ColorScheme flutterBankColorScheme = ColorScheme(
   brightness: Brightness.light,
@@ -478,14 +474,5 @@ class ThemeSelector {
       return svetlanaPinkTheme; // 💖 Pink tema za Svetlanu!
     }
     return flutterBankTheme; // 🎨 Default plava tema za sve ostale
-  }
-
-  /// Debug funkcija za testiranje tema
-  static void logSelectedTheme(String? driverName) {
-    if (driverName?.toLowerCase() == 'svetlana') {
-      dlog('💖 SVETLANA PINK THEME aktivirana!');
-    } else {
-      dlog('🎨 Default blue theme aktivirana za: ${driverName ?? "unknown"}');
-    }
   }
 }

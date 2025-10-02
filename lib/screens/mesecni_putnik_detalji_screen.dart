@@ -217,7 +217,7 @@ class _MesecniPutnikDetaljiScreenState
 
           const SizedBox(height: 12),
 
-          // Radni dani
+          // Radni dani i vremena
           if (widget.putnik.radniDani.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -225,12 +225,20 @@ class _MesecniPutnikDetaljiScreenState
                 color: Colors.blue.shade100,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
-                'Radni dani: ${_formatRadniDani(widget.putnik.radniDani)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue.shade800,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Radni dani: ${_formatRadniDani(widget.putnik.radniDani)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade800,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ..._buildVremenaPolaska(),
+                ],
               ),
             ),
         ],
@@ -249,6 +257,42 @@ class _MesecniPutnikDetaljiScreenState
 
     final dani = radniDani.split(',');
     return dani.map((dan) => daniMapa[dan] ?? dan).join(', ');
+  }
+
+  List<Widget> _buildVremenaPolaska() {
+    final daniMapa = {
+      'pon': 'Pon',
+      'uto': 'Uto',
+      'sre': 'Sre',
+      'cet': 'Čet',
+      'pet': 'Pet',
+    };
+
+    final dani = widget.putnik.radniDani.split(',');
+    List<Widget> vremenaWidgets = [];
+
+    for (String dan in dani) {
+      final vremeBc = widget.putnik.getPolazakBelaCrkvaZaDan(dan);
+      final vremeVs = widget.putnik.getPolazakVrsacZaDan(dan);
+
+      if (vremeBc != null || vremeVs != null) {
+        List<String> vremena = [];
+        if (vremeBc != null) vremena.add('BC: $vremeBc');
+        if (vremeVs != null) vremena.add('VS: $vremeVs');
+
+        vremenaWidgets.add(
+          Text(
+            '${daniMapa[dan]}: ${vremena.join(', ')}',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.blue.shade700,
+            ),
+          ),
+        );
+      }
+    }
+
+    return vremenaWidgets;
   }
 
   Widget _buildNedeljniTab() {

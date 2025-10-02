@@ -9,6 +9,7 @@ import '../services/local_notification_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/password_service.dart';
 import '../services/daily_checkin_service.dart';
+import '../services/permission_service.dart'; // DODATO za zahtevanje dozvola
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import 'home_screen.dart';
 import 'change_password_screen.dart';
@@ -180,6 +181,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         globalThemeRefresher!();
       }
 
+      // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (auto-login)
+      await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+
       // 🌅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
       final today = DateTime.now();
 
@@ -294,6 +298,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       // Šifra je tačna, nastavi sa login-om
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('current_driver', driverName);
+
+      // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
+      await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 🎨 OSVEZI TEMU ZA NOVOG VOZAČA
       if (globalThemeRefresher != null) {

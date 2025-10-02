@@ -49,7 +49,6 @@ class FirebaseService {
       final messaging = FirebaseMessaging.instance;
       return await messaging.getToken();
     } catch (e) {
-      // print('Error getting FCM token: $e'); // Removed for production
       return null;
     }
   }
@@ -57,12 +56,7 @@ class FirebaseService {
   /// Postavlja FCM listener
   static void setupFCMListeners() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // print('Got a message whilst in the foreground!'); // Removed for production
-      // print('Message data: ${message.data}'); // Removed for production
-
-      if (message.notification != null) {
-        // print('Message also contained a notification: ${message.notification}'); // Removed for production
-      }
+      if (message.notification != null) {}
     });
   }
 }

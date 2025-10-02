@@ -608,14 +608,6 @@ class _AdminScreenState extends State<AdminScreen> {
           streamFrom = dateRange['from']!;
           streamTo = dateRange['to']!;
 
-          // 🔍 DEBUG: Prikaži koje datume koristi Admin screen
-          dlog(
-              '🔍 [ADMIN SCREEN] Koristi datum: ${app_date_utils.DateUtils.formatDateForDebug(targetDate).split(' ')[0]}');
-          dlog(
-              '🔍 [ADMIN SCREEN] streamFrom: ${app_date_utils.DateUtils.formatDateForDebug(streamFrom)}');
-          dlog(
-              '🔍 [ADMIN SCREEN] streamTo: ${app_date_utils.DateUtils.formatDateForDebug(streamTo)}');
-
           return StreamBuilder<Map<String, double>>(
             stream: StatistikaService.streamPazarSvihVozaca(
               from: streamFrom,

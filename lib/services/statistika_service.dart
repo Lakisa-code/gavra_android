@@ -31,23 +31,17 @@ class StatistikaService {
 
   // 📊 DEBUG LOGOVANJE - OGRANIČENO
   static void _debugLog(String message) {
-    // UKLJUČUJEMO DEBUG LOGOVE ZA MESEČNE STATISTIKE!
     // Debug logovi uklonjeni za čišćenje koda
   }
 
   /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi se svuda!
-  static bool _jePazarValjan(Putnik putnik, {bool logDetails = false}) {
+  static bool _jePazarValjan(Putnik putnik) {
     // Osnovni uslovi za validno računanje pazara
     final imaIznos = putnik.iznosPlacanja != null && putnik.iznosPlacanja! > 0;
     final imaVozaca =
         putnik.naplatioVozac != null && putnik.naplatioVozac!.isNotEmpty;
     final nijeOtkazan = !putnik.jeOtkazan;
     final isValid = imaIznos && imaVozaca && nijeOtkazan;
-
-    if (logDetails) {
-      _debugLog(
-          'Validacija putnika ${putnik.ime}: iznos=$imaIznos, vozac=$imaVozaca, otkazan=${!nijeOtkazan} => valid=$isValid');
-    }
 
     return isValid;
   }

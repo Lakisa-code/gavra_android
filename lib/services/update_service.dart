@@ -167,12 +167,6 @@ class UpdateService {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       String currentVersion = packageInfo.version;
 
-      dlog('🔍 Trenutna verzija: $currentVersion');
-      dlog('📱 Build number: ${packageInfo.buildNumber}');
-      dlog('📦 Package name: ${packageInfo.packageName}');
-      dlog(
-          '🏗️ Build mode: ${packageInfo.buildSignature.isEmpty ? "RELEASE" : "DEBUG"}');
-
       // GitHub API poziv
       final response = await http.get(
         Uri.parse(githubApiUrl),

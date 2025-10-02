@@ -1958,12 +1958,6 @@ class _PutnikCardState extends State<PutnikCard> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    // 🔍 DEBUG LOG za Ljilju i Radošević
-                    if (_putnik.ime.toLowerCase().contains('ljil') ||
-                        _putnik.ime.toLowerCase().contains('rado'))
-                      () {
-                        return const SizedBox.shrink();
-                      }(),
                   ],
                 ),
               ),

@@ -205,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // First request notification permissions
         RealtimeNotificationService.requestNotificationPermissions()
             .then((hasPermissions) {
-          // print('🔔 HomeScreen notification permissions result: $hasPermissions'); // Debug - remove in production
 
           RealtimeNotificationService.initialize().then((_) {
             // Subscribe to Firebase topics for this driver
