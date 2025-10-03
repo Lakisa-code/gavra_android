@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -252,47 +253,65 @@ class RealtimeService {
         }
       }
 
-      // Convert mesecni rows - support both old and new schemas
+      // Convert mesecni rows - use current MesecniPutnik model structure
       for (final Map<String, dynamic> map in _lastMesecniRows) {
         try {
-          // 🆕 Normalizovana šema: ima 'ime', 'prezime' i 'polasci_po_danu'
-          if (map.containsKey('polasci_po_danu') &&
-              map['polasci_po_danu'] is List) {
-            try {
-              final polasci = map['polasci_po_danu'] as List;
-              for (final polazak in polasci) {
-                if (polazak is Map) {
-                  final putnik = Putnik(
-                    id: '${map['id']}_${polazak['dan']}_${polazak['vreme']}',
-                    ime: '${map['ime'] ?? ''} ${map['prezime'] ?? ''}'.trim(),
-                    polazak: polazak['vreme'] ?? '',
-                    grad: map['adresa_polaska'] ?? '',
-                    dan: polazak['dan'] ?? '',
-                    adresa: map['adresa_polaska'] ?? '',
-                    datum: null, // mesečni putnici nemaju fiksni datum
-                    status: map['aktivan'] == true ? '' : 'neaktivan',
-                    obrisan: map['obrisan'] == true,
-                    mesecnaKarta: true,
-                    iznosPlacanja: (map['cena'] as num?)?.toDouble(),
-                    vremePokupljenja: null, // mesečni putnici se ne pokupljaju
-                    brojTelefona: map['broj_telefona']?.toString(),
-                  );
-                  combined.add(putnik);
+          // 🔄 Koristi MesecniPutnik.fromMap da parsira mesečne putnike
+          // PROBLEM: MesecniPutnik ima drukčiju strukturu od Putnik objekta
+          // Za sada, direktno kreiraj Putnik objekat iz mesecni_putnici tabele
+
+          // Parsiranje polasci_po_danu (Map<String, List<String>>)
+          final polasciPoDanu = map['polasci_po_danu'];
+          if (polasciPoDanu != null) {
+            Map<String, dynamic> polasciMap = {};
+            if (polasciPoDanu is String) {
+              // Ako je string, parsira JSON
+              try {
+                polasciMap =
+                    Map<String, dynamic>.from(jsonDecode(polasciPoDanu));
+              } catch (_) {}
+            } else if (polasciPoDanu is Map) {
+              polasciMap = Map<String, dynamic>.from(polasciPoDanu);
+            }
+
+            // Kreiraj Putnik objekat za svaki dan i vreme polaska
+            polasciMap.forEach((dan, polasci) {
+              if (polasci is List) {
+                for (final polazak in polasci) {
+                  if (polazak is String) {
+                    // Parsiranje formata "07:30 BC" ili "14:00 VS"
+                    final parts = polazak.split(' ');
+                    final vreme = parts.isNotEmpty ? parts[0] : polazak;
+                    final grad = parts.length > 1
+                        ? (parts[1] == 'BC' ? 'Bela Crkva' : 'Vršac')
+                        : '';
+
+                    final putnik = Putnik(
+                      id: '${map['id']}_${dan}_${vreme}',
+                      ime: map['putnik_ime']?.toString() ?? '',
+                      polazak: vreme,
+                      grad: grad,
+                      dan: dan,
+                      adresa: grad,
+                      datum: null, // mesečni putnici nemaju fiksni datum
+                      status: map['aktivan'] == true ? '' : 'neaktivan',
+                      obrisan: map['obrisan'] == true,
+                      mesecnaKarta: true,
+                      iznosPlacanja: (map['cena'] as num?)?.toDouble(),
+                      vremePokupljenja:
+                          null, // mesečni putnici se ne pokupljaju
+                      brojTelefona: map['broj_telefona']?.toString(),
+                    );
+                    combined.add(putnik);
+                  }
                 }
               }
-              continue;
-            } catch (inner) {
-              dlog('❌ Error converting new-mesecni row: $inner, data: $map');
-            }
+            });
+            continue;
           }
 
-          // Fallback: pokušaj legacy konverziju za staru šemu
-          try {
-            combined.add(Putnik.fromMap(map));
-          } catch (legacyErr) {
-            dlog(
-                '❌ Error converting mesecni row (legacy): $legacyErr, data: $map');
-          }
+          // Fallback: ako nema polasci_po_danu, ignoriši
+          dlog('⚠️ Mesečni putnik ${map['id']} nema polasci_po_danu polje');
         } catch (e) {
           dlog('❌ Error converting mesecni row: $e, data: $map');
         }

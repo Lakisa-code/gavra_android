@@ -1,0 +1,12 @@
+1 scrcpy
+2 proveri danas screen implementaciju funkcije ikone
+3 Grupno SMS-ovanje - pošalji roditeljima svih učenika odjednom
+4 dodaj sms registraciju i potrvdu za Bojan bruda Svetlana bilevski
+
+
+- dodavanjem mesecnog putnika aplikacija ne pamti unesena vremena i adrese 
+
+- pamcenje i predlozi najcessce koriscenih dresa
+
+- proveri logiku implementaciju i funkcije za mapiranje
+

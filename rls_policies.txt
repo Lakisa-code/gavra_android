@@ -1,6 +1,7 @@
  public     | adrese             | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
  public     | dnevni_putnici     | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
  public     | gps_lokacije       | Allow anon insert                              | PERMISSIVE | {public} | INSERT |                                       | true
+ public     | mesecni_putnici    | Allow all operations for authenticated users   | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
  public     | mesecni_putnici    | Allow anon read mesecni_putnici                | PERMISSIVE | {anon}   | SELECT | true                                  | 
  public     | mesecni_putnici    | Allow authenticated insert on mesecni_putnici  | PERMISSIVE | {public} | INSERT |                                       | (auth.role() = 'authenticated'::text)
  public     | mesecni_putnici    | Allow authenticated read on mesecni_putnici    | PERMISSIVE | {public} | SELECT | (auth.role() = 'authenticated'::text) | 
