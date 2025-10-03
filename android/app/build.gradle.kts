@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 33  // Updated for geolocator_android compatibility
+    compileSdk = 36  // Updated for plugin compatibility (requires SDK 34+)
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -27,7 +27,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion  // Fixed to specific version
-        targetSdk = 33  // Fixed for geolocator compatibility
+        targetSdk = 36  // Updated for plugin compatibility
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
