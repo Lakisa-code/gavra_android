@@ -4,7 +4,7 @@ class TimeValidator {
   // Dozvoljeni time format patterns
   static final List<RegExp> _flexibleTimePatterns = [
     RegExp(r'^([0-1]?[0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$'), // HH:MM:SS
-    RegExp(r'^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$'), // HH:MM
+    RegExp(r'^([0-1]?[0-9]|2[0-3]):([0-5]?[0-9])$'), // HH:MM (flexible minutes)
     RegExp(r'^([0-1]?[0-9]|2[0-3])$'), // HH
   ];
 
@@ -54,14 +54,14 @@ class TimeValidator {
         // Validate ranges
         if (hour > 23 || minute > 59) continue;
 
-        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+        return '${hour}:${minute.toString().padLeft(2, '0')}';
       }
     }
 
     // Try parsing single number as hour
     final hourOnly = int.tryParse(cleaned);
     if (hourOnly != null && hourOnly >= 0 && hourOnly <= 23) {
-      return '${hourOnly.toString().padLeft(2, '0')}:00';
+      return '${hourOnly}:00';
     }
 
     return null; // Invalid format
