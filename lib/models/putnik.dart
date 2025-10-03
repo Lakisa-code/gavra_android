@@ -347,7 +347,7 @@ class Putnik {
         grad: 'Bela Crkva',
         otkazaoVozac: null,
         vremeOtkazivanja: null,
-        adresa: 'Normalizovana adresa', // Legacy field removed
+        adresa: map['adresa_bela_crkva'] as String? ?? 'Bela Crkva',
         obrisan: obrisan,
         brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
       ));
@@ -394,7 +394,7 @@ class Putnik {
         grad: 'Vršac',
         otkazaoVozac: null,
         vremeOtkazivanja: null,
-        adresa: 'Normalizovana adresa', // Legacy field removed
+        adresa: map['adresa_vrsac'] as String? ?? 'Vršac',
         obrisan: obrisan,
         brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
       ));
@@ -486,8 +486,12 @@ class Putnik {
   }
 
   static String? _determineAdresaFromMesecni(Map<String, dynamic> map) {
-    // Use normalized schema instead of legacy fields
-    return 'Normalizovana adresa';
+    // Koristi stvarne adrese iz mesečnih putnika
+    final adresaBC = map['adresa_bela_crkva'] as String?;
+    final adresaVS = map['adresa_vrsac'] as String?;
+
+    // Vrati prvu dostupnu adresu ili fallback
+    return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
   }
 
   static String _determineDanFromDatum(String? datum) {

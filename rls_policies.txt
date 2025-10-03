@@ -1,16 +1,5 @@
- public     | adrese             | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
- public     | dnevni_putnici     | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
- public     | gps_lokacije       | Allow anon insert                              | PERMISSIVE | {public} | INSERT |                                       | true
- public     | mesecni_putnici    | Allow all operations for authenticated users   | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
- public     | mesecni_putnici    | Allow anon read mesecni_putnici                | PERMISSIVE | {anon}   | SELECT | true                                  | 
- public     | mesecni_putnici    | Allow authenticated insert on mesecni_putnici  | PERMISSIVE | {public} | INSERT |                                       | (auth.role() = 'authenticated'::text)
- public     | mesecni_putnici    | Allow authenticated read on mesecni_putnici    | PERMISSIVE | {public} | SELECT | (auth.role() = 'authenticated'::text) | 
- public     | mesecni_putnici    | Allow authenticated update on mesecni_putnici  | PERMISSIVE | {public} | UPDATE | (auth.role() = 'authenticated'::text) | 
- public     | mesecni_putnici    | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
- public     | putovanja_istorija | Allow authenticated read on putovanja_istorija | PERMISSIVE | {public} | SELECT | (auth.role() = 'authenticated'::text) | 
- public     | putovanja_istorija | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
- public     | rute               | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
- public     | vozaci             | Allow anon insert                              | PERMISSIVE | {public} | INSERT |                                       | true
- public     | vozaci             | Allow anon select                              | PERMISSIVE | {public} | SELECT | true                                  | 
- public     | vozila             | Enable all operations for authenticated users  | PERMISSIVE | {public} | ALL    | (auth.role() = 'authenticated'::text) | 
+ public     | dnevni_putnici     | dev_allow_all_dnevni   | PERMISSIVE | {anon,authenticated} | ALL | true | true
+ public     | mesecni_putnici    | dev_allow_all_mesecni  | PERMISSIVE | {anon,authenticated} | ALL | true | true
+ public     | putovanja_istorija | dev_allow_all_istorija | PERMISSIVE | {anon,authenticated} | ALL | true | true
+ public     | vozaci             | dev_allow_all_vozaci   | PERMISSIVE | {anon,authenticated} | ALL | true | true
 

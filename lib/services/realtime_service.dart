@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -260,58 +260,19 @@ class RealtimeService {
           // PROBLEM: MesecniPutnik ima drukčiju strukturu od Putnik objekta
           // Za sada, direktno kreiraj Putnik objekat iz mesecni_putnici tabele
 
-          // Parsiranje polasci_po_danu (Map<String, List<String>>)
-          final polasciPoDanu = map['polasci_po_danu'];
-          if (polasciPoDanu != null) {
-            Map<String, dynamic> polasciMap = {};
-            if (polasciPoDanu is String) {
-              // Ako je string, parsira JSON
-              try {
-                polasciMap =
-                    Map<String, dynamic>.from(jsonDecode(polasciPoDanu));
-              } catch (_) {}
-            } else if (polasciPoDanu is Map) {
-              polasciMap = Map<String, dynamic>.from(polasciPoDanu);
+          // ✅ ISPRAVKA: Koristi Putnik.fromMesecniPutniciMultipleForDay za sve dane
+          final radniDani = (map['radni_dani'] as String? ?? '').split(',');
+
+          for (final dan in radniDani) {
+            if (dan.trim().isEmpty) continue;
+
+            final putniciZaDan =
+                Putnik.fromMesecniPutniciMultipleForDay(map, dan.trim());
+            for (final putnik in putniciZaDan) {
+              combined.add(putnik);
             }
-
-            // Kreiraj Putnik objekat za svaki dan i vreme polaska
-            polasciMap.forEach((dan, polasci) {
-              if (polasci is List) {
-                for (final polazak in polasci) {
-                  if (polazak is String) {
-                    // Parsiranje formata "07:30 BC" ili "14:00 VS"
-                    final parts = polazak.split(' ');
-                    final vreme = parts.isNotEmpty ? parts[0] : polazak;
-                    final grad = parts.length > 1
-                        ? (parts[1] == 'BC' ? 'Bela Crkva' : 'Vršac')
-                        : '';
-
-                    final putnik = Putnik(
-                      id: '${map['id']}_${dan}_$vreme',
-                      ime: map['putnik_ime']?.toString() ?? '',
-                      polazak: vreme,
-                      grad: grad,
-                      dan: dan,
-                      adresa: grad,
-                      datum: null, // mesečni putnici nemaju fiksni datum
-                      status: map['aktivan'] == true ? '' : 'neaktivan',
-                      obrisan: map['obrisan'] == true,
-                      mesecnaKarta: true,
-                      iznosPlacanja: (map['cena'] as num?)?.toDouble(),
-                      vremePokupljenja:
-                          null, // mesečni putnici se ne pokupljaju
-                      brojTelefona: map['broj_telefona']?.toString(),
-                    );
-                    combined.add(putnik);
-                  }
-                }
-              }
-            });
-            continue;
           }
-
-          // Fallback: ako nema polasci_po_danu, ignoriši
-          dlog('⚠️ Mesečni putnik ${map['id']} nema polasci_po_danu polje');
+          continue;
         } catch (e) {
           dlog('❌ Error converting mesecni row: $e, data: $map');
         }
@@ -345,38 +306,29 @@ class RealtimeService {
       Iterable<Putnik> filtered = list;
       if (isoDate != null) {
         final targetDayAbbr = SlotUtils.isoDateToDayAbbr(isoDate);
-        dlog(
-            '🔍 Filtering by isoDate: $isoDate, targetDayAbbr: $targetDayAbbr');
+
         filtered = filtered.where((p) {
           final matches = (p.datum != null && p.datum == isoDate) ||
               (p.datum == null &&
                   GradAdresaValidator.normalizeString(p.dan).contains(
                       GradAdresaValidator.normalizeString(targetDayAbbr)));
-          if (!matches) {
-            dlog('❌ Filtered out: ${p.ime}, dan: ${p.dan}, datum: ${p.datum}');
-          }
+
           return matches;
         });
       }
       if (grad != null) {
-        dlog('🔍 Filtering by grad: $grad');
         filtered = filtered.where((p) {
           final matches =
               GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
-          if (!matches) {
-            dlog('❌ Filtered out by grad: ${p.ime}, grad: ${p.grad}');
-          }
+
           return matches;
         });
       }
       if (vreme != null) {
-        dlog('🔍 Filtering by vreme: $vreme');
         filtered = filtered.where((p) {
           final matches = GradAdresaValidator.normalizeTime(p.polazak) ==
               GradAdresaValidator.normalizeTime(vreme);
-          if (!matches) {
-            dlog('❌ Filtered out by vreme: ${p.ime}, polazak: ${p.polazak}');
-          }
+
           return matches;
         });
       }

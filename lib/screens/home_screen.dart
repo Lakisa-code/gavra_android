@@ -34,6 +34,7 @@ import '../utils/slot_utils.dart';
 import '../widgets/putnik_card.dart';
 import '../utils/logging.dart';
 import '../widgets/shimmer_widgets.dart';
+
 import 'admin_screen.dart';
 import 'danas_screen.dart';
 import 'welcome_screen.dart';
@@ -118,15 +119,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Convert selected full day name (Ponedeljak) into ISO date string for target week
   String _getTargetDateIsoFromSelectedDay(String fullDay) {
-    // Reuse existing helper from Putnik via a date calculation in this file
     final now = DateTime.now();
-    final dayNames = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
-    final dayNamesLower = ['pon', 'uto', 'sre', 'čet', 'pet', 'sub', 'ned'];
-    int targetDayIndex = dayNames.indexOf(fullDay);
-    if (targetDayIndex == -1) {
-      targetDayIndex = dayNamesLower.indexOf(fullDay.toLowerCase());
-    }
-    if (targetDayIndex == -1) return now.toIso8601String().split('T')[0];
+
+    // Map full day names to indices
+    final dayNamesMap = {
+      'Ponedeljak': 0, 'ponedeljak': 0,
+      'Utorak': 1, 'utorak': 1,
+      'Sreda': 2, 'sreda': 2,
+      'Četvrtak': 3, 'četvrtak': 3,
+      'Petak': 4, 'petak': 4,
+      'Subota': 5, 'subota': 5,
+      'Nedelja': 6, 'nedelja': 6,
+      // Short forms too
+      'Pon': 0, 'pon': 0,
+      'Uto': 1, 'uto': 1,
+      'Sre': 2, 'sre': 2,
+      'Čet': 3, 'čet': 3,
+      'Pet': 4, 'pet': 4,
+      'Sub': 5, 'sub': 5,
+      'Ned': 6, 'ned': 6,
+    };
+
+    int? targetDayIndex = dayNamesMap[fullDay];
+    if (targetDayIndex == null) return now.toIso8601String().split('T')[0];
+
     final currentDayIndex = now.weekday - 1;
     int daysToAdd = targetDayIndex >= currentDayIndex
         ? targetDayIndex - currentDayIndex
@@ -238,7 +254,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 🆕 Koristi dnevni_putnici umesto putovanja_istorija
     _realtimeSubscription =
         RealtimeService.instance.subscribe('dnevni_putnici', (data) {
-      dlog('🔄 Real-time update detected in dnevni_putnici');
       // Stream will update StreamBuilder via service layers
     });
   }
@@ -280,7 +295,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return await _putnikService.getAllPutniciFromBothTables(
           targetDay: _selectedDay);
     } catch (e) {
-      dlog('🔥 Greška pri učitavanju putnika: $e');
       return [];
     }
   }
@@ -864,11 +878,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             _isAddingPutnik = true;
                           });
 
-                          dlog('🔥 [HOME SCREEN] Kreiram putnik objekat...');
-
                           // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
-                          dlog(
-                              '🕐 [HOME SCREEN] Koristi selektovano vreme: $_selectedVreme');
 
                           final putnik = Putnik(
                             ime: imeController.text.trim(),
@@ -885,12 +895,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                           dlog('🔥 [HOME SCREEN] Pozivam dodajPutnika...');
                           await _putnikService.dodajPutnika(putnik);
-                          dlog(
-                              '🔥 [HOME SCREEN] dodajPutnika završen, refreshujem listu...');
-
                           // ✅ FORSIRANA REFRESH LISTE
                           await _loadPutnici();
-                          dlog('🔥 [HOME SCREEN] Lista putnika refreshovana');
 
                           if (!mounted) return;
 
@@ -900,7 +906,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           dlog('🔥 [HOME SCREEN] Loading state isključen');
 
                           if (mounted) {
-                            dlog('🔥 [HOME SCREEN] Zatvarám dialog...');
                             // ignore: use_build_context_synchronously
                             Navigator.pop(context);
                             // ignore: use_build_context_synchronously
@@ -911,11 +916,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 duration: Duration(seconds: 2),
                               ),
                             );
-                            dlog('🔥 [HOME SCREEN] SUCCESS snackbar prikazan');
                           }
                         } catch (e) {
-                          dlog(
-                              '💥 [HOME SCREEN] GREŠKA pri dodavanju putnika: $e');
                           setState(() {
                             _isAddingPutnik = false;
                           });
@@ -1088,9 +1090,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // Use centralized RealtimeService combined Putnik stream
+    // 🎯 KORISTI SVE PUTNICE za ispravno računanje brojača
     return StreamBuilder<List<Putnik>>(
-      stream: RealtimeService.instance.combinedPutniciStream,
+      stream: _putnikService.streamKombinovaniPutniciFiltered(
+        isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+        // Ne prosleđujemo grad i vreme - trebaju nam SVI putnici za brojač
+      ),
       initialData: const [],
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
@@ -1099,24 +1104,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
 
         final allPutnici = snapshot.data ?? [];
-        dlog('📊 Received ${allPutnici.length} putnici from stream');
 
-        // Get target date for filtering
+        // Get target day abbreviation for additional filtering
         final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
-
-        // Client-side filtering by date, grad, vreme, status
-        Iterable<Putnik> filtered = allPutnici;
         final targetDayAbbr = SlotUtils.isoDateToDayAbbr(targetDateIso);
-        filtered = filtered.where((p) =>
-            (p.datum != null && p.datum == targetDateIso) ||
-            (p.datum == null &&
-                GradAdresaValidator.normalizeString(p.dan).contains(
-                    GradAdresaValidator.normalizeString(targetDayAbbr))));
-        filtered = filtered.where((p) =>
-            GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad));
-        filtered = filtered.where((p) =>
-            GradAdresaValidator.normalizeTime(p.polazak) ==
-            GradAdresaValidator.normalizeTime(_selectedVreme));
+
+        // Additional client-side filtering like danas_screen
+        Iterable<Putnik> filtered = allPutnici.where((p) {
+          // Dan u nedelji filter za mesečne putnike
+          final dayMatch = p.datum != null
+              ? p.datum == targetDateIso
+              : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+
+          // Vremski filter - samo poslednja nedelja za dnevne putnike
+          bool timeMatch = true;
+          if (p.mesecnaKarta != true && p.vremeDodavanja != null) {
+            final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+            timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
+          }
+
+          return dayMatch && timeMatch;
+        });
         // Additional filters for display
         filtered = filtered.where((putnik) {
           final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
@@ -1150,9 +1158,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
         final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
-        // Filtriranje putnika
+        // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN
+        // Brojač pokazuje ukupan broj putnika po slotovima za ceo dan
+        // NEZAVISAN od trenutno selektovanog grada/vremena
         final slotCounts =
-            SlotUtils.computeSlotCountsForDate(allPutnici, targetDateIso);
+            SlotUtils.computeSlotCountsForDayAbbr(allPutnici, targetDayAbbr);
         final Map<String, int> brojPutnikaBC =
             Map<String, int>.from(slotCounts['BC'] ?? {});
         final Map<String, int> brojPutnikaVS =
@@ -1218,11 +1228,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final count = grad == 'Bela Crkva'
                 ? brojPutnikaBC[vreme] ?? 0
                 : brojPutnikaVS[vreme] ?? 0;
-            dlog('👥 getPutnikCount $grad $vreme = $count');
             return count;
-          } catch (e, st) {
-            dlog('getPutnikCount error: $e\n$st');
-          }
+          } catch (e) {}
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {

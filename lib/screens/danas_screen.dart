@@ -58,9 +58,9 @@ class _DanasScreenState extends State<DanasScreen> {
   final Set<String> _resettingSlots = {};
   Timer? _resetDebounceTimer;
 
-  // ✅ KORISTI UTILS FUNKCIJU UMESTO DUPLIRANE LOGIKE
+  // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM (ne prebacuje na ponedeljak)
   DateTime _getTargetDateForWeekend(DateTime today) {
-    return app_date_utils.DateUtils.getWeekendTargetDate(today);
+    return today; // Vraća trenutni datum bez obzira na vikend
   }
 
   Widget _buildPopisButton() {
@@ -1058,13 +1058,8 @@ class _DanasScreenState extends State<DanasScreen> {
     ]; // Koristi iste kratice kao Home screen
     final todayName = dayNames[now.weekday - 1];
 
-    // ✅ PAMETNA LOGIKA - vikendom prebaci na Ponedeljak jer ne vozite
-    if (todayName == 'sub' || todayName == 'ned') {
-      dlog('🔄 [DANAS SCREEN] Vikend je - prebacujem na Ponedeljak');
-      return 'pon';
-    }
-
-    dlog('🗓️ [DANAS SCREEN] Današnji dan: $todayName');
+    // 🎯 DANAS SCREEN PRIKAZUJE SAMO TRENUTNI DAN - ne prebacuje na Ponedeljak
+    dlog('🗓️ [DANAS SCREEN] Današnji dan (bez prebacivanja): $todayName');
     return todayName;
   }
 
