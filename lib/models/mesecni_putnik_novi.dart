@@ -5,9 +5,13 @@ class MesecniPutnik {
   final String id;
   final String putnikIme; // kombinovano ime i prezime
   final String? brojTelefona;
+  final String? brojTelefonaOca; // dodatni telefon oca
+  final String? brojTelefonaMajke; // dodatni telefon majke
   final String tip; // direktno string umesto enum-a
   final String? tipSkole;
   final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
+  final String? adresaBelaCrkva; // adresa u Beloj Crkvi
+  final String? adresaVrsac; // adresa u Vršcu
   final String radniDani;
   final DateTime datumPocetkaMeseca;
   final DateTime datumKrajaMeseca;
@@ -32,9 +36,13 @@ class MesecniPutnik {
     required this.id,
     required this.putnikIme,
     this.brojTelefona,
+    this.brojTelefonaOca,
+    this.brojTelefonaMajke,
     required this.tip,
     this.tipSkole,
     required this.polasciPoDanu,
+    this.adresaBelaCrkva,
+    this.adresaVrsac,
     this.radniDani = 'pon,uto,sre,cet,pet',
     required this.datumPocetkaMeseca,
     required this.datumKrajaMeseca,
@@ -72,9 +80,13 @@ class MesecniPutnik {
       id: map['id'] as String? ?? '',
       putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
       brojTelefona: map['broj_telefona'] as String?,
+      brojTelefonaOca: map['broj_telefona_oca'] as String?,
+      brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
       polasciPoDanu: polasciPoDanu,
+      adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
+      adresaVrsac: map['adresa_vrsac'] as String?,
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
       datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
           ? DateTime.parse(map['datum_pocetka_meseca'] as String)
@@ -136,9 +148,13 @@ class MesecniPutnik {
     Map<String, dynamic> result = {
       'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
+      'broj_telefona_oca': brojTelefonaOca,
+      'broj_telefona_majke': brojTelefonaMajke,
       'tip': tip,
       'tip_skole': tipSkole,
       'polasci_po_danu': normalizedPolasci,
+      'adresa_bela_crkva': adresaBelaCrkva,
+      'adresa_vrsac': adresaVrsac,
       'radni_dani': radniDani,
       'datum_pocetka_meseca':
           datumPocetkaMeseca.toIso8601String().split('T')[0],
@@ -170,12 +186,6 @@ class MesecniPutnik {
   }
 
   String get punoIme => putnikIme;
-
-  // Legacy compatibility getters
-  String? get brojTelefonaOca => brojTelefona; // Fallback to single phone field
-  String? get brojTelefonaMajke => null; // Legacy field no longer used
-  String? get adresaBelaCrkva => null; // Legacy field - use normalized schema
-  String? get adresaVrsac => null; // Legacy field - use normalized schema
 
   bool get jePlacen => vremePlacanja != null;
 

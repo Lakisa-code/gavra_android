@@ -1,0 +1,18 @@
+napravi faj i prepisi ga ovako identicno
+
+ime fajla - GAVRA CHAMPION
+
+SVI ZADACI: (zavrsene chekiraj)
+1 prelazak na nove servise supabase
+2 realtime putnici u aplikaciji filtrirani po danima vremenima gradovima trenutno selektovanim
+3 optimizacija
+4 pamcenje i predlozi najcessce koriscenih dresa
+5 logika za registraciju
+6 konzistentnost 
+7 notifikacije (realtime/zvucne/popup/lock creen/foreground)
+8 update logika implementacija bez objavljivanja na google play
+9 konzistentnost statistike (Dnevni putnici/mesecni putnici/vozaci/pazari Dnevni nedelni itd...pokupljeni kilometraza itd)
+10 implementacija tema (plava/pink/dark)
+
+
+TRENUTNI ZADATAK!! ne preuzimaj nista dok ne kazem

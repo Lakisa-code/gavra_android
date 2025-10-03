@@ -2649,6 +2649,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final ime = _imeController.text.trim();
     final tipSkole = _tipSkoleController.text.trim();
     final brojTelefona = _brojTelefonaController.text.trim();
+    final brojTelefonaOca = _brojTelefonaOcaController.text.trim();
+    final brojTelefonaMajke = _brojTelefonaMajkeController.text.trim();
+    final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
+    final adresaVrsac = _adresaVrsacController.text.trim();
 
     try {
       // Pripremi mapu polazaka po danima (JSON)
@@ -2671,7 +2675,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         tip: _noviTip, // Direktno string bez extension-a
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
+        brojTelefonaOca: brojTelefonaOca.isEmpty ? null : brojTelefonaOca,
+        brojTelefonaMajke: brojTelefonaMajke.isEmpty ? null : brojTelefonaMajke,
         polasciPoDanu: polasciPoDanu,
+        adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
+        adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         radniDani: _getRadniDaniString(),
         datumPocetkaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month, 1),

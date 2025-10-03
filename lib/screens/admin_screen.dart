@@ -17,6 +17,7 @@ import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
+import 'debug_mesecni_putnici_screen.dart'; // DODANO za debug mesečnih putnika
 import 'statistika_screen.dart'; // DODANO za statistike
 
 import '../utils/logging.dart';
