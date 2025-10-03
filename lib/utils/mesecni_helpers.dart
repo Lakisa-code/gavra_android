@@ -175,7 +175,7 @@ class MesecniHelpers {
     try {
       final trips = m['broj_putovanja'] ?? m['brojPutovanja'] ?? 0;
       final cancelled = m['broj_otkazivanja'] ?? m['brojOtkazivanja'] ?? 0;
-      final last = m['poslednje_putovanje'] ?? m['poslednjePutovanje'];
+      final last = m['poslednji_putovanje'] ?? m['poslednjePutovanje'];
       out['trips_total'] =
           (trips is num) ? trips : int.tryParse(trips?.toString() ?? '0') ?? 0;
       out['trips_cancelled'] = (cancelled is num)

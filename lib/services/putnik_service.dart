@@ -441,8 +441,8 @@ class PutnikService {
           if (tabela == 'mesecni_putnici') {
             await supabase.from(tabela).update({
               'broj_putovanja': lastAction.oldData['broj_putovanja'],
-              'poslednje_putovanje':
-                  lastAction.oldData['poslednje_putovanje'], // ✅ ISPRAVKA
+              'poslednji_putovanje':
+                  lastAction.oldData['poslednji_putovanje'], // ✅ ISPRAVKA
               'pokupljen': false, // ✅ RESETUJ pokupljen flag za mesecne putnike
               'vreme_pokupljenja': null, // ✅ RESETUJ vreme pokupljanja
             }).eq('id', lastAction.putnikId);
@@ -994,7 +994,7 @@ class PutnikService {
           '🔍 DEBUG oznaciPokupljen - ažuriram mesečnog putnika sa now=$now (ISO: ${now.toIso8601String()})');
 
       await supabase.from(tabela).update({
-        'poslednje_putovanje': now.toIso8601String(), // ✅ TIMESTAMP pokupljanja
+        'poslednji_putovanje': now.toIso8601String(), // ✅ TIMESTAMP pokupljanja
         'vreme_pokupljenja':
             now.toIso8601String(), // ✅ DODATO za konzistentnost
         'pokupljen': true, // ✅ BOOLEAN flag
@@ -1515,7 +1515,7 @@ class PutnikService {
           await supabase.from('mesecni_putnici').update({
             'aktivan': true, // ✅ KRITIČNO: VRATI na aktivan (jeOtkazan = false)
             'status': 'radi', // ✅ VRATI na radi
-            'poslednje_putovanje': null, // ✅ UKLONI pokupljanje
+            'poslednji_putovanje': null, // ✅ UKLONI pokupljanje
             'vreme_pokupljenja': null, // ✅ UKLONI timestamp pokupljanja
             'vreme_placanja': null, // ✅ UKLONI timestamp plaćanja
             'pokupljen': false, // ✅ VRATI na false
@@ -1605,14 +1605,14 @@ class PutnikService {
       try {
         final mesecniPutnici = await supabase
             .from('mesecni_putnici')
-            .select('id, putnik_ime, polasci_po_danu, poslednje_putovanje')
+            .select('id, putnik_ime, polasci_po_danu, poslednji_putovanje')
             .eq('aktivan', true)
-            .not('poslednje_putovanje', 'is', null);
+            .not('poslednji_putovanje', 'is', null);
 
         for (final putnik in mesecniPutnici) {
           final ime = putnik['putnik_ime'] as String;
           final vremePokupljenja =
-              DateTime.tryParse(putnik['poslednje_putovanje'] as String);
+              DateTime.tryParse(putnik['poslednji_putovanje'] as String);
 
           if (vremePokupljenja == null) continue;
 
@@ -1642,7 +1642,7 @@ class PutnikService {
                 '🔄 RESETUJEM $ime - pokupljen u $pokupljenSati:XX, novo vreme polaska $novoVreme (razlika: ${razlika}h)');
 
             await supabase.from('mesecni_putnici').update({
-              'poslednje_putovanje': null,
+              'poslednji_putovanje': null,
               'updated_at': DateTime.now().toIso8601String(),
             }).eq('id', putnik['id']);
 

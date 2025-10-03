@@ -94,8 +94,8 @@ class MesecniPutnik {
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjePutovanje: map['poslednje_putovanje'] != null
-          ? DateTime.parse(map['poslednje_putovanje'] as String)
+      poslednjePutovanje: map['poslednji_putovanje'] != null
+          ? DateTime.parse(map['poslednji_putovanje'] as String)
           : null,
       obrisan: map['obrisan'] as bool? ?? false,
       vremePlacanja: map['vreme_placanja'] != null
@@ -152,7 +152,7 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'poslednje_putovanje': poslednjePutovanje?.toIso8601String(),
+      'poslednji_putovanje': poslednjePutovanje?.toIso8601String(),
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,

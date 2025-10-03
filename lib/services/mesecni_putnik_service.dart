@@ -422,7 +422,7 @@ class MesecniPutnikService {
     try {
       await _supabase.from('mesecni_putnici').update({
         'broj_putovanja': noviBroj,
-        'poslednje_putovanje': DateTime.now().toIso8601String().split('T')[0],
+        'poslednji_putovanje': DateTime.now().toIso8601String().split('T')[0],
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 

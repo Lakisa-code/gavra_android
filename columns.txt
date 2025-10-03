@@ -61,7 +61,7 @@
  public       | mesecni_putnici    | cena                 | numeric                  | YES         | 
  public       | mesecni_putnici    | broj_putovanja       | integer                  | YES         | 0
  public       | mesecni_putnici    | broj_otkazivanja     | integer                  | YES         | 0
- public       | mesecni_putnici    | poslednji_putovanje  | timestamp with time zone | YES         | 
+ public       | mesecni_putnici    | poslednje_putovanje  | timestamp with time zone | YES         | 
  public       | mesecni_putnici    | vreme_placanja       | timestamp with time zone | YES         | 
  public       | mesecni_putnici    | placeni_mesec        | integer                  | YES         | 
  public       | mesecni_putnici    | placena_godina       | integer                  | YES         | 

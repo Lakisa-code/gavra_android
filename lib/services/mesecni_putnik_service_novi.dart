@@ -279,7 +279,7 @@ class MesecniPutnikServiceNovi {
 
     await updateMesecniPutnik(id, {
       'broj_putovanja': noviBroj,
-      'poslednje_putovanje': DateTime.now().toIso8601String(),
+      'poslednji_putovanje': DateTime.now().toIso8601String(),
     });
   }
 
