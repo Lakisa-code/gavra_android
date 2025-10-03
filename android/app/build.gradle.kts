@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 36  // Updated for geolocator_android compatibility
+    compileSdk = 33  // Updated for geolocator_android compatibility
     ndkVersion = "27.0.12077973"
 
     compileOptions {
