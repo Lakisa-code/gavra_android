@@ -70,7 +70,7 @@ void main() {
         print('');
       }
 
-      if (response.length > 0) {
+      if (response.isNotEmpty) {
         print('✅ Found ${response.length} monthly passengers in database');
       } else {
         print('ℹ️ No monthly passengers found in database - this is OK for empty database');
