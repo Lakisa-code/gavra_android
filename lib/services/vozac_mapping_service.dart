@@ -2,18 +2,12 @@ import '../utils/logging.dart';
 
 /// Servis za mapiranje imena vozača u UUID-ove i obrnuto
 class VozacMappingService {
-  /// Mapiranje imena vozača u UUID-ove
+  /// Mapiranje imena vozača u UUID-ove - STVARNI VOZAČI APLIKACIJE
   static const Map<String, String> _vozacNameToUuid = {
-    'Gavra': '11111111-1111-1111-1111-111111111111',
-    'Jovica': '22222222-2222-2222-2222-222222222222',
-    'Bojan': '33333333-3333-3333-3333-333333333333',
-    'Stefan': '44444444-4444-4444-4444-444444444444',
-    'Milan': '55555555-5555-5555-5555-555555555555',
-    'Marko': '66666666-6666-6666-6666-666666666666',
-    'Nikola': '77777777-7777-7777-7777-777777777777',
-    'Petar': '88888888-8888-8888-8888-888888888888',
-    'Aleksandar': '99999999-9999-9999-9999-999999999999',
-    'Miloš': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'Bilevski': '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f',
+    'Bruda': '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f', 
+    'Bojan': '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e',
+    'Svetlana': '5b379394-084e-1c7d-76bf-fc193a5b6c7d',
   };
 
   /// Obrnuto mapiranje UUID-ova u imena vozača
