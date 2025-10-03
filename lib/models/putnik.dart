@@ -177,8 +177,8 @@ class Putnik {
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
       statusVreme: map['updated_at'] as String?,
-      vremePokupljenja: map['poslednji_putovanje'] != null
-          ? DateTime.parse(map['poslednji_putovanje']).toLocal()
+      vremePokupljenja: map['poslednje_putovanje'] != null
+          ? DateTime.parse(map['poslednje_putovanje']).toLocal()
           : (map['vreme_pokupljenja'] != null
               ? DateTime.parse(map['vreme_pokupljenja']).toLocal()
               : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
@@ -544,8 +544,10 @@ class Putnik {
           iznosPlacanja ?? 0.0, // možda treba cena umesto ovoga
       'broj_putovanja': 0, // ✅ NOVA KOLONA - default 0
       'broj_otkazivanja': 0, // ✅ NOVA KOLONA - default 0
-      'poslednji_putovanje':
+      'poslednje_putovanje':
           vremePokupljenja?.toIso8601String(), // ✅ TIMESTAMP format
+      // UUID validacija za vozac_id
+      'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       // Ne uključujemo 'obrisan' kolonu za putovanja_istorija tabelu
       'created_at': vremeDodavanja?.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),

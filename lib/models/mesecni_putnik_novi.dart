@@ -23,7 +23,7 @@ class MesecniPutnik {
   final DateTime? poslednjePutovanje;
   final bool obrisan;
   final DateTime? vremePlacanja;
-  final String? placeniMesec;
+  final int? placeniMesec;
   final int? placenaGodina;
   final String? vozac;
   final Map<String, dynamic> statistics;
@@ -94,16 +94,16 @@ class MesecniPutnik {
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjePutovanje: map['poslednji_putovanje'] != null
-          ? DateTime.parse(map['poslednji_putovanje'] as String)
+      poslednjePutovanje: map['poslednje_putovanje'] != null
+          ? DateTime.parse(map['poslednje_putovanje'] as String)
           : null,
       obrisan: map['obrisan'] as bool? ?? false,
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String)
           : null,
-      placeniMesec: map['placeni_mesec'] as String?,
+      placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
-      vozac: map['vozac'] as String?,
+      vozac: map['vozac_id'] as String?,
       statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
     );
   }
@@ -133,8 +133,7 @@ class MesecniPutnik {
       'last_trip': poslednjePutovanje?.toIso8601String(),
     });
 
-    return {
-      'id': id,
+    Map<String, dynamic> result = {
       'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
       'tip': tip,
@@ -152,14 +151,22 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'poslednji_putovanje': poslednjePutovanje?.toIso8601String(),
+      'poslednje_putovanje': poslednjePutovanje?.toIso8601String(),
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
       'placena_godina': placenaGodina,
-      'vozac': vozac,
+      'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       'statistics': stats,
     };
+
+    // ✅ Dodaj id samo ako nije prazan (za UPDATE operacije)
+    // Za INSERT operacije, ostavi id da baza generiše UUID
+    if (id.isNotEmpty) {
+      result['id'] = id;
+    }
+
+    return result;
   }
 
   String get punoIme => putnikIme;
@@ -213,7 +220,7 @@ class MesecniPutnik {
     double? ukupnaCenaMeseca,
     double? cena,
     DateTime? vremePlacanja,
-    String? placeniMesec,
+    int? placeniMesec,
     int? placenaGodina,
     String? vozac,
     int? brojPutovanja,

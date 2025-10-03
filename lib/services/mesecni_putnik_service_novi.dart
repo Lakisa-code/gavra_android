@@ -127,7 +127,9 @@ class MesecniPutnikServiceNovi {
   Future<void> oznaciKaoPlacen(String id, String vozacId) async {
     await updateMesecniPutnik(id, {
       'vreme_placanja': DateTime.now().toIso8601String(),
-      'naplatio_vozac_id': vozacId,
+      'vozac_id': (vozacId.isEmpty)
+          ? null
+          : vozacId, // koristi postojeću vozac_id kolonu
     });
   }
 
@@ -214,15 +216,33 @@ class MesecniPutnikServiceNovi {
   Future<bool> azurirajPlacanjeZaMesec(String putnikId, double iznos,
       String vozacId, DateTime pocetakMeseca, DateTime krajMeseca) async {
     try {
+      // Validacija vozac_id - ako nije validan UUID, postavi na null
+      String? validVozacId;
+      if (vozacId.isNotEmpty) {
+        // Proverava da li je vozacId validan UUID format
+        final uuidRegex = RegExp(
+            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+            caseSensitive: false);
+        if (uuidRegex.hasMatch(vozacId)) {
+          validVozacId = vozacId;
+        } else {
+          // Ako je ime vozača, mapiramo ga na null za sada
+          print('Vozač "$vozacId" nije UUID format, postavljam na null');
+          validVozacId = null;
+        }
+      }
+
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
-        'naplatio_vozac_id': vozacId,
+        'vozac_id': validVozacId,
         'cena': iznos,
         'placeni_mesec': pocetakMeseca.month,
         'placena_godina': pocetakMeseca.year,
+        'ukupna_cena_meseca': iznos,
       });
       return true;
     } catch (e) {
+      print('Greška u azurirajPlacanjeZaMesec: $e');
       return false;
     }
   }
@@ -279,7 +299,7 @@ class MesecniPutnikServiceNovi {
 
     await updateMesecniPutnik(id, {
       'broj_putovanja': noviBroj,
-      'poslednji_putovanje': DateTime.now().toIso8601String(),
+      'poslednje_putovanje': DateTime.now().toIso8601String(),
     });
   }
 

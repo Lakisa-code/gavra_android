@@ -12,10 +12,10 @@ import '../utils/logging.dart';
 /// kompatibilan interfejs sa starim PutnikService-om
 class CombinedPutnikService {
   final Logger _logger = Logger();
-  final DnevniPutnikService _dnevniService = DnevniPutnikService();
-  final MesecniPutnikServiceNovi _mesecniService = MesecniPutnikServiceNovi();
-  final AdresaService _adresaService = AdresaService();
-  final RutaService _rutaService = RutaService();
+  // final DnevniPutnikService _dnevniService = DnevniPutnikService(); // Unused
+  // final MesecniPutnikServiceNovi _mesecniService = MesecniPutnikServiceNovi(); // Unused
+  // final AdresaService _adresaService = AdresaService(); // Unused
+  // final RutaService _rutaService = RutaService(); // Unused
 
   /// Stream kombinovanih putnika filtriranih po parametrima
   Stream<List<Putnik>> streamKombinovaniPutniciFiltered({

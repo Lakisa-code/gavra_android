@@ -360,7 +360,9 @@ class MesecniPutnikService {
     try {
       await _supabase.from('mesecni_putnici').update({
         'pokupljen': true, // ✅ ISPRAVNO - kolona postoji
-        'vozac': vozac, // ✅ ISPRAVNO - kolona 'vozac' postoji u tabeli
+        'vozac_id': (vozac.isEmpty)
+            ? null
+            : vozac, // ✅ ISPRAVNO - kolona 'vozac_id' postoji u tabeli
         'vreme_pokupljenja':
             DateTime.now().toIso8601String(), // ✅ ISPRAVNO - sa malim e!
         'updated_at': DateTime.now().toIso8601String()
@@ -382,7 +384,9 @@ class MesecniPutnikService {
       await _supabase.from('mesecni_putnici').update({
         'pokupljen': false,
         'vreme_pokupljenja': null, // ✅ ISPRAVNO - sa malim e!
-        'vozac': vozac, // ✅ ISPRAVNO - kolona 'vozac' postoji u tabeli
+        'vozac_id': (vozac.isEmpty)
+            ? null
+            : vozac, // ✅ ISPRAVNO - kolona 'vozac_id' postoji u tabeli
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 
@@ -402,7 +406,9 @@ class MesecniPutnikService {
     try {
       await _supabase.from('mesecni_putnici').update({
         'cena': iznos, // ✅ NOVA KOLONA - koristi novu cena kolonu
-        'vozac': vozac, // ✅ ISPRAVNO - kolona 'vozac' postoji u tabeli
+        'vozac_id': (vozac.isEmpty)
+            ? null
+            : vozac, // ✅ ISPRAVNO - kolona 'vozac_id' postoji u tabeli
         'vreme_placanja':
             DateTime.now().toIso8601String(), // ✅ NOVO - timestamp plaćanja
         'updated_at': DateTime.now().toIso8601String()
@@ -422,7 +428,7 @@ class MesecniPutnikService {
     try {
       await _supabase.from('mesecni_putnici').update({
         'broj_putovanja': noviBroj,
-        'poslednji_putovanje': DateTime.now().toIso8601String().split('T')[0],
+        'poslednje_putovanje': DateTime.now().toIso8601String().split('T')[0],
         'updated_at': DateTime.now().toIso8601String()
       }).eq('id', id);
 

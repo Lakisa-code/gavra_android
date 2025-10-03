@@ -2665,7 +2665,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
       }
       final noviPutnik = MesecniPutnik(
-        id: '', // Biće generisan od strane baze
+        id: '', // Biće generisan od strane baze - OK jer toMap() će podesiti UUID
         putnikIme: ime, // Celo ime u jednom polju
         tip: _noviTip, // Direktno string bez extension-a
         tipSkole: tipSkole.isEmpty ? null : tipSkole,

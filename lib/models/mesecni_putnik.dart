@@ -119,8 +119,8 @@ class MesecniPutnik {
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjiPutovanje: map['poslednji_putovanje'] != null
-          ? DateTime.parse(map['poslednji_putovanje'] as String)
+      poslednjiPutovanje: map['poslednje_putovanje'] != null
+          ? DateTime.parse(map['poslednje_putovanje'] as String)
           : null,
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
@@ -175,13 +175,13 @@ class MesecniPutnik {
       'ukupna_cena_meseca': ukupnaCenaMeseca, // Legacy podrška
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'poslednji_putovanje':
+      'poslednje_putovanje':
           poslednjiPutovanje?.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
-      'vozac_id': vozac,
+      'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       // Ensure statistics is populated: if empty, try to build from known fields
       'statistics': (statistics.isNotEmpty)
           ? statistics
