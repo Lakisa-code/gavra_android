@@ -365,18 +365,18 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
           width: 1,
         ),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: const [
           Row(
-            children: [
-              const Icon(
+            children: const [
+              Icon(
                 Icons.info_outline,
                 color: Colors.orange,
                 size: 20,
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Instrukcije',
                 style: TextStyle(
                   color: Colors.orange,
@@ -386,8 +386,8 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             '1. Provjerite vaše SMS poruke\n'
             '2. Otvorite SMS od Gavra Bus aplikacije\n'
             '3. Kopirajte 6-cifreni kod\n'

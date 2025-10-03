@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/utils/vozac_boja.dart';
+import 'package:gavra_android/utils/vozac_boja.dart';
 
 /// Test konzistentnosti boja vozača između welcome_screen.dart i admin_map_screen.dart
 void main() {

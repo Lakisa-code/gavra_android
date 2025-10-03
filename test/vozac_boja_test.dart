@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/utils/vozac_boja.dart';
-import '../lib/services/vozac_mapping_service.dart';
+import 'package:gavra_android/utils/vozac_boja.dart';
+import 'package:gavra_android/services/vozac_mapping_service.dart';
 
 /// Test konzistentnosti boja vozača između svih servisa i ekrana
 void main() {
@@ -65,7 +65,7 @@ void main() {
 
       test('BILEVSKI - boja', () {
         final boja = VozacBoja.get('Bilevski');
-        expect(boja, Color(0xFFFF9800)); // narandžasta
+        expect(boja, const Color(0xFFFF9800)); // narandžasta
         expect(boja, isNot(Colors.transparent));
         expect(VozacBoja.isValidDriver('Bilevski'), true);
         print('✅ BILEVSKI: Boja = ${boja.toString()}');
@@ -73,7 +73,7 @@ void main() {
 
       test('BRUDA - boja', () {
         final boja = VozacBoja.get('Bruda');
-        expect(boja, Color(0xFF7C4DFF)); // ljubičasta
+        expect(boja, const Color(0xFF7C4DFF)); // ljubičasta
         expect(boja, isNot(Colors.transparent));
         expect(VozacBoja.isValidDriver('Bruda'), true);
         print('✅ BRUDA: Boja = ${boja.toString()}');
@@ -81,7 +81,7 @@ void main() {
 
       test('BOJAN - boja', () {
         final boja = VozacBoja.get('Bojan');
-        expect(boja, Color(0xFF00E5FF)); // svetla cyan plava
+        expect(boja, const Color(0xFF00E5FF)); // svetla cyan plava
         expect(boja, isNot(Colors.transparent));
         expect(VozacBoja.isValidDriver('Bojan'), true);
         print('✅ BOJAN: Boja = ${boja.toString()}');
@@ -89,7 +89,7 @@ void main() {
 
       test('SVETLANA - boja', () {
         final boja = VozacBoja.get('Svetlana');
-        expect(boja, Color(0xFFFF1493)); // deep pink
+        expect(boja, const Color(0xFFFF1493)); // deep pink
         expect(boja, isNot(Colors.transparent));
         expect(VozacBoja.isValidDriver('Svetlana'), true);
         print('✅ SVETLANA: Boja = ${boja.toString()}');

@@ -285,8 +285,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         child: StreamBuilder<List<MesecniPutnik>>(
                           stream: _mesecniPutnikService.mesecniPutniciStream,
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData)
+                            if (!snapshot.hasData) {
                               return const SizedBox.shrink();
+                            }
                             final brojRadnika = snapshot.data!
                                 .where((p) =>
                                     p.tip == 'radnik' &&
@@ -360,8 +361,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         child: StreamBuilder<List<MesecniPutnik>>(
                           stream: _mesecniPutnikService.mesecniPutniciStream,
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData)
+                            if (!snapshot.hasData) {
                               return const SizedBox.shrink();
+                            }
                             final brojUcenika = snapshot.data!
                                 .where((p) =>
                                     p.tip == 'ucenik' &&
@@ -1531,10 +1533,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             TextField(
                               onChanged: (value) =>
                                   _noviBrojTelefonaMajke = value,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Broj telefona majke',
                                 hintText: '065/789-012',
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 prefixIcon:
                                     Icon(Icons.woman, color: Colors.pink),
                                 fillColor: Colors.white,
@@ -1755,7 +1757,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
         await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            editovanPutnik, DateTime.now().add(Duration(days: 1)));
+            editovanPutnik, DateTime.now().add(const Duration(days: 1)));
       } catch (_) {}
       // Očisti mape izmena nakon uspešnog čuvanja
       setState(() {
@@ -2383,6 +2385,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                           };
                                         });
                                       },
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
                                       child: Text(
                                         'Svi',
                                         style: TextStyle(
@@ -2391,13 +2400,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                               .colorScheme
                                               .primary,
                                         ),
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
                                     ),
                                     TextButton(
@@ -2412,19 +2414,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                           };
                                         });
                                       },
-                                      child: Text(
-                                        'Nijedan',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.red,
-                                        ),
-                                      ),
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 4),
                                         minimumSize: Size.zero,
                                         tapTargetSize:
                                             MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: const Text(
+                                        'Nijedan',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.red,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -2714,7 +2716,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
         await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            dodatiPutnik, DateTime.now().add(Duration(days: 1)));
+            dodatiPutnik, DateTime.now().add(const Duration(days: 1)));
         print(
             '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}');
       } catch (e) {
@@ -2933,12 +2935,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // Helper funkcija za brojanje kontakata
   int _prebrojKontakte(MesecniPutnik putnik) {
     int brojKontakata = 0;
-    if (putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty)
+    if (putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty) {
       brojKontakata++;
-    if (putnik.brojTelefonaOca != null && putnik.brojTelefonaOca!.isNotEmpty)
+    }
+    if (putnik.brojTelefonaOca != null && putnik.brojTelefonaOca!.isNotEmpty) {
       brojKontakata++;
+    }
     if (putnik.brojTelefonaMajke != null &&
-        putnik.brojTelefonaMajke!.isNotEmpty) brojKontakata++;
+        putnik.brojTelefonaMajke!.isNotEmpty) {
+      brojKontakata++;
+    }
     return brojKontakata;
   }
 
@@ -4580,6 +4586,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final putnici = await _mesecniPutnikService.mesecniPutniciStream.first;
 
       if (putnici.isEmpty) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Nema putnika za export')),
         );
@@ -4619,6 +4626,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       // Snimanje fajla - implementacija u toku
       // Za sada samo prikaži CSV sadržaj u dialog-u
+      // ignore: use_build_context_synchronously
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -4638,6 +4646,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         ),
       );
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Greška pri exportu: $e')),
       );

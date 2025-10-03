@@ -47,7 +47,7 @@ void main() {
       expect(map2['vozac_id'], isNull);
 
       // Test 3: Validan UUID
-      final validUuid = '550e8400-e29b-41d4-a716-446655440000';
+      const validUuid = '550e8400-e29b-41d4-a716-446655440000';
       final putnik3 = MesecniPutnik(
         id: '123e4567-e89b-12d3-a456-426614174002',
         putnikIme: 'Test 3 - Valid UUID',

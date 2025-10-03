@@ -20,7 +20,7 @@ void main() {
     );
 
     final map = mp.toMap();
-    expect(map['polasci_po_danu']['pon']['bc'], '6:00');
+    expect(map['polasci_po_danu']['pon']['bc'], '06:00');
     expect(map['polasci_po_danu']['pon']['vs'], '14:00');
     expect(map['statistics']['trips_total'], 0);
   });

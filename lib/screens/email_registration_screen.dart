@@ -445,6 +445,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         dlog('✅ Registracija uspješna, prelazim na verifikaciju');
 
         // Idi na email verifikaciju
+        // ignore: use_build_context_synchronously
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/geocoding_service.dart';
-import '../lib/services/advanced_geocoding_service.dart';
-import '../lib/services/smart_address_autocomplete_service.dart';
+import 'package:gavra_android/services/geocoding_service.dart';
+import 'package:gavra_android/services/advanced_geocoding_service.dart';
+import 'package:gavra_android/services/smart_address_autocomplete_service.dart';
 
 void main() {
   group('Geographic Restrictions Tests', () {

@@ -129,7 +129,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ Kilometraža je uspešno resetovana na 0'),
+              content: const Text('✅ Kilometraža je uspešno resetovana na 0'),
               backgroundColor: Theme.of(context).colorScheme.successPrimary,
             ),
           );
@@ -138,7 +138,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Greška pri resetovanju kilometraže'),
+              content: const Text('❌ Greška pri resetovanju kilometraže'),
               backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
             ),
           );

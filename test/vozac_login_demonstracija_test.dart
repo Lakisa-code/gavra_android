@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/password_service.dart';
-import '../lib/utils/vozac_boja.dart';
-import '../lib/services/vozac_mapping_service.dart';
+import 'package:gavra_android/services/password_service.dart';
+import 'package:gavra_android/utils/vozac_boja.dart';
+import 'package:gavra_android/services/vozac_mapping_service.dart';
 
 /// Test demonstracija kako se vozači loguju u aplikaciju
 void main() {
@@ -63,7 +63,7 @@ void main() {
 
         expect(sifra, '2222');
         expect(uuid, '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f');
-        expect(boja, Color(0xFFFF9800));
+        expect(boja, const Color(0xFFFF9800));
       });
 
       test('2️⃣ Bruda login proces', () async {
@@ -86,7 +86,7 @@ void main() {
 
         expect(sifra, '1111');
         expect(uuid, '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f');
-        expect(boja, Color(0xFF7C4DFF));
+        expect(boja, const Color(0xFF7C4DFF));
       });
 
       test('3️⃣ Bojan login proces', () async {
@@ -109,7 +109,7 @@ void main() {
 
         expect(sifra, '1919');
         expect(uuid, '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e');
-        expect(boja, Color(0xFF00E5FF));
+        expect(boja, const Color(0xFF00E5FF));
       });
 
       test('4️⃣ Svetlana login proces (specijalni)', () async {
@@ -134,7 +134,7 @@ void main() {
 
         expect(sifra, '0013');
         expect(uuid, '5b379394-084e-1c7d-76bf-fc193a5b6c7d');
-        expect(boja, Color(0xFFFF1493));
+        expect(boja, const Color(0xFFFF1493));
       });
     });
 

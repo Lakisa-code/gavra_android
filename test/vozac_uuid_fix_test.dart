@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/vozac_mapping_service.dart';
+import 'package:gavra_android/services/vozac_mapping_service.dart';
 
 /// Test za validaciju da li su vozači pravilno mapirani u bazi
 void main() {

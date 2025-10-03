@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/vozac_mapping_service.dart';
-import '../lib/services/password_service.dart';
+import 'package:gavra_android/services/vozac_mapping_service.dart';
+import 'package:gavra_android/services/password_service.dart';
 
 /// Test integracijska provjera za svakog vozača posebno 
 /// da odgovara stvarnim podacima iz welcome_screen.dart i password_service.dart

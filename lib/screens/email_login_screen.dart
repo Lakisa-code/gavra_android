@@ -390,15 +390,17 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
         if (needsCheckIn) {
           // Idi na daily check-in
+          // ignore: use_build_context_synchronously
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (context) => DailyCheckInScreen(
                 vozac: driverName,
                 onCompleted: () {
+                  // ignore: use_build_context_synchronously
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
                   );
                 },
               ),
@@ -406,10 +408,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           );
         } else {
           // Idi direktno na home screen
+          // ignore: use_build_context_synchronously
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomeScreen(),
+              builder: (context) => const HomeScreen(),
             ),
           );
         }

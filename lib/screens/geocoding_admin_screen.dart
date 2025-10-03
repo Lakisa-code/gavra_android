@@ -158,23 +158,23 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                 children: [
                   const GradientBackButton(),
                   const SizedBox(width: 8),
-                  Icon(
+                  const Icon(
                     Icons.settings,
                     color: Colors.white,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Geocoding Admin',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: 0.5,
-                        shadows: const [
+                        shadows: [
                           Shadow(
-                            offset: Offset(1, 1),
+                            offset: const Offset(1, 1),
                             blurRadius: 3,
                             color: Colors.black54,
                           ),

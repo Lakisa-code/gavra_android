@@ -184,6 +184,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       }
 
       // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (auto-login)
+      // ignore: use_build_context_synchronously
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 🌅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
@@ -290,6 +291,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       
       if (shouldRegister) {
         // Idi na SMS registraciju
+        // ignore: use_build_context_synchronously
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -323,6 +325,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await prefs.setString('current_driver', driverName);
 
       // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
+      // ignore: use_build_context_synchronously
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 🎨 OSVEZI TEMU ZA NOVOG VOZAČA
@@ -517,11 +520,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               width: 2,
             ),
           ),
-          title: Column(
-            children: [
-              const Icon(Icons.app_registration_rounded,
+          title: const Column(
+            children: const [
+              Icon(Icons.app_registration_rounded,
                   color: Colors.orange, size: 40),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 'SMS Registracija Obavezna',
                 style: const TextStyle(

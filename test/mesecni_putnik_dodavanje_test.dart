@@ -5,10 +5,10 @@ void main() {
   group('Test dodavanje mesečnih putnika', () {
     test('Test konstrukcije MesecniPutnik modela - REPRODUKUJE PROBLEM', () {
       // Simuliramo podatke iz forme kao što ih šalje _sacuvajNovogPutnika()
-      final ime = 'Marko Petrović';
-      final tipSkole = 'osnovna';
-      final brojTelefona = '+381641234567';
-      final noviTip = 'ucenik';
+      const ime = 'Marko Petrović';
+      const tipSkole = 'osnovna';
+      const brojTelefona = '+381641234567';
+      const noviTip = 'ucenik';
 
       final Map<String, List<String>> polasciPoDanu = {
         'pon': ['07:30 BC', '14:00 VS'],
@@ -54,10 +54,10 @@ void main() {
 
     test('Test ispravnog kreiranja MesecniPutnik modela', () {
       // ISPRAVAN PRISTUP - kako treba da bude
-      final ime = 'Marko Petrović';
-      final tipSkole = 'osnovna';
-      final brojTelefona = '+381641234567';
-      final noviTip = 'ucenik';
+      const ime = 'Marko Petrović';
+      const tipSkole = 'osnovna';
+      const brojTelefona = '+381641234567';
+      const noviTip = 'ucenik';
 
       final Map<String, List<String>> polasciPoDanu = {
         'pon': ['07:30 BC', '14:00 VS'],

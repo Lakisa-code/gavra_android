@@ -5,11 +5,11 @@ void main() {
   group('Test ISPRAVNOG dodavanja mesečnih putnika', () {
     test('Test konstrukcije sa svim potrebnim parametrima', () {
       // Simuliramo podatke kako ih sada šalje ispravljena _sacuvajNovogPutnika()
-      final ime = 'Marko Petrović';
-      final tipSkole = 'osnovna';
-      final brojTelefona = '+381641234567';
-      final noviTip = 'ucenik';
-      final radniDani = 'pon,uto,sre,cet,pet';
+      const ime = 'Marko Petrović';
+      const tipSkole = 'osnovna';
+      const brojTelefona = '+381641234567';
+      const noviTip = 'ucenik';
+      const radniDani = 'pon,uto,sre,cet,pet';
 
       final Map<String, List<String>> polasciPoDanu = {
         'pon': ['07:30 BC', '14:00 VS'],

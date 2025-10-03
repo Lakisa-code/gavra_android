@@ -428,6 +428,7 @@ class _VozacSMSRegistracijaScreenState extends State<VozacSMSRegistracijaScreen>
         dlog('✅ SMS registracija uspešna, prelazim na SMS verifikaciju');
 
         // Idi na SMS verifikaciju
+        // ignore: use_build_context_synchronously
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

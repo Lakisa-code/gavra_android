@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/models/mesecni_putnik_novi.dart';
+import 'package:gavra_android/models/mesecni_putnik_novi.dart';
 
 void main() {
   group('MesecniPutnik Model Tests', () {
@@ -29,7 +29,7 @@ void main() {
     });
 
     test('UUID handling - valid vozac_id test', () {
-      final validUuid = '550e8400-e29b-41d4-a716-446655440000';
+      const validUuid = '550e8400-e29b-41d4-a716-446655440000';
 
       final putnik = MesecniPutnik(
         id: '123e4567-e89b-12d3-a456-426614174000',

@@ -158,7 +158,9 @@ class StatistikaService {
 
       ukupnoMesecne = mesecniPutnici.fold<double>(
           0.0, (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0));
-    } catch (e) {}
+    } catch (e) {
+      // ignore: empty_catches
+    }
 
     final ukupno = ukupnoObicni + ukupnoMesecne;
     return ukupno;
@@ -394,7 +396,9 @@ class StatistikaService {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // ignore: empty_catches
+    }
 
     // 3. SABERI UKUPNO I KREIRAJ FINALNI MAP
     final Map<String, double> ukupnoPazar = {};
@@ -706,7 +710,9 @@ class StatistikaService {
         vozaciStats[vozac]!['kilometraza'] =
             0.0; // Default vrednost za real-time
       }
-    } catch (e) {}
+    } catch (e) {
+      // ignore: empty_catches
+    }
 
     return vozaciStats;
   }
@@ -853,7 +859,9 @@ class StatistikaService {
             .not('vreme_placanja', 'is', null)
             .gte('vreme_placanja', fromDate.toIso8601String())
             .lte('vreme_placanja', toDate.toIso8601String());
-      } catch (e) {}
+      } catch (e) {
+        // ignore: empty_catches
+      }
       return true;
     } catch (e) {
       return false;
