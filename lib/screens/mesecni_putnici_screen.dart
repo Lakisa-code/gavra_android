@@ -10,13 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mesecni_putnik_novi.dart';
 import '../utils/filter_and_sort_putnici.dart';
 import '../services/mesecni_putnik_service_novi.dart';
-import '../services/realtime_service.dart'; // ✅ DODANO za stream sync
+import '../services/realtime_service.dart';
 import '../utils/mesecni_helpers.dart';
-import '../utils/time_validator.dart'; // ✅ DODANO - standardized time validation
-import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
-import '../services/smart_address_autocomplete_service.dart'; // ✅ DODANO za pamćenje adresa
+import '../utils/time_validator.dart';
+import '../services/real_time_statistika_service.dart';
+import '../services/smart_address_autocomplete_service.dart';
 import '../utils/logging.dart';
-import '../theme.dart'; // ✅ DODANO za AppThemeHelpers
+import '../theme.dart';
 import '../widgets/custom_back_button.dart';
 
 class MesecniPutniciScreen extends StatefulWidget {
@@ -46,7 +46,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   StreamSubscription? _connectionSubscription;
   bool _isConnected = true;
 
-  // Promenljive za dodavanje/editovanje putnika
+  // Form controllers
   String _novoIme = '';
   String _noviTip = 'radnik';
   String _novaTipSkole = '';
@@ -56,7 +56,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   String _novaAdresaBelaCrkva = '';
   String _novaAdresaVrsac = '';
 
-  // 📅 RADNI DANI - checkbox state
+  // Working days state
   Map<String, bool> _noviRadniDani = {
     'pon': true,
     'uto': true,
@@ -65,22 +65,21 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'pet': true,
   };
 
-  // ⏰ VREMENA POLASKA PO DANIMA - TextEditingController za svaki dan
-  // Bela Crkva
+  // Departure times controllers - Bela Crkva
   final TextEditingController _polazakBcPonController = TextEditingController();
   final TextEditingController _polazakBcUtoController = TextEditingController();
   final TextEditingController _polazakBcSreController = TextEditingController();
   final TextEditingController _polazakBcCetController = TextEditingController();
   final TextEditingController _polazakBcPetController = TextEditingController();
 
-  // Vršac
+  // Departure times controllers - Vršac
   final TextEditingController _polazakVsPonController = TextEditingController();
   final TextEditingController _polazakVsUtoController = TextEditingController();
   final TextEditingController _polazakVsSreController = TextEditingController();
   final TextEditingController _polazakVsCetController = TextEditingController();
   final TextEditingController _polazakVsPetController = TextEditingController();
 
-  // Stare Map strukture - zadržavamo za kompatibilnost
+  // Legacy map structures
   final Map<String, String> _novaVremenaBC = {
     'pon': '',
     'uto': '',
@@ -97,7 +96,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'pet': '',
   };
 
-  // Helper metod za konverziju radnih dana u string
+  // Convert working days to string
   String _getRadniDaniString() {
     final List<String> odabraniDani = [];
     _noviRadniDani.forEach((dan, selected) {
@@ -108,7 +107,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     return odabraniDani.join(',');
   }
 
-  // Helper metod za parsiranje radnih dana iz string-a
+  // Parse working days from string
   void _setRadniDaniFromString(String radniDaniStr) {
     final daniList = radniDaniStr.split(',');
     _noviRadniDani = {
@@ -120,7 +119,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     };
   }
 
-  // TextEditingController-i za edit dialog
+  // Edit dialog controllers
   late TextEditingController _imeController;
   late TextEditingController _tipSkoleController;
   late TextEditingController _brojTelefonaController;
@@ -129,7 +128,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late TextEditingController _adresaBelaCrkvaController;
   late TextEditingController _adresaVrsacController;
 
-  // Controller-i za vremena polaska
+  // Departure time controllers
   final Map<String, TextEditingController> _vremenaBcControllers = {};
   final Map<String, TextEditingController> _vremenaVsControllers = {};
 
@@ -418,7 +417,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           _exportPutnici();
                           break;
                         case 'import':
-                          // Import functionality placeholder
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text(
@@ -979,7 +977,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   // 📊 DUGME ZA DETALJE
                   Expanded(
                     child: _buildCompactActionButton(
-                      onPressed: () => _prikaziDetaljeStatistike(putnik),
+                      onPressed: () => _prikaziDetaljneStatistike(putnik),
                       icon: Icons.analytics_outlined,
                       label: 'Detalji',
                       color: Colors.blue,
@@ -3308,8 +3306,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
   Future<void> _prikaziDetaljneStatistike(MesecniPutnik putnik) async {
-    String selectedPeriod =
-        _getCurrentMonthYearStatic(); // Default: trenutni mesec
+    String selectedPeriod = _getCurrentMonthYear();
 
     showDialog(
       context: context,
@@ -3350,11 +3347,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           isExpanded: true,
                           icon: Icon(Icons.arrow_drop_down,
                               color: Colors.blue.shade600),
-                          items: _getMonthOptionsStatic()
+                          items: _getMonthOptions()
                               .map<DropdownMenuItem<String>>((String value) {
                             // Proveri da li je mesec plaćen
-                            final bool isPlacen =
-                                _isMonthPaidStatic(value, putnik);
+                            final bool isPlacen = _isMonthPaid(value, putnik);
 
                             return DropdownMenuItem<String>(
                               value: value,
@@ -3542,7 +3538,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       periodIcon = Icons.history;
     } else {
       // Meseci - uzmi zelenu boju ako je plaćen
-      final bool isPlacen = _isMonthPaidStatic(period, putnik);
+      final bool isPlacen = _isMonthPaid(period, putnik);
       periodColor = isPlacen ? Colors.green : Colors.orange;
       periodIcon = Icons.calendar_today;
     }
@@ -3717,7 +3713,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           final year = int.tryParse(parts[1]);
 
           if (year != null) {
-            final monthNumber = _getMonthNumberStatic(monthName);
+            final monthNumber = _getMonthNumber(monthName);
             if (monthNumber > 0) {
               return await _getStatistikeZaMesec(putnikId, monthNumber, year);
             }
@@ -4079,100 +4075,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     return months[month];
   }
 
-  // 📅 HELPER FUNKCIJE - za korišćenje iz drugih widgeta
-  String _getCurrentMonthYearStatic() {
-    final now = DateTime.now();
-    return '${_getMonthNameStatic(now.month)} ${now.year}';
-  }
 
-  List<String> _getMonthOptionsStatic() {
-    final now = DateTime.now();
-    List<String> options = [];
-
-    // Dodaj svih 12 meseci trenutne godine
-    for (int month = 1; month <= 12; month++) {
-      final monthYear = '${_getMonthNameStatic(month)} ${now.year}';
-      options.add(monthYear);
-    }
-
-    return options;
-  }
-
-  String _getMonthNameStatic(int month) {
-    const months = [
-      '',
-      'Januar',
-      'Februar',
-      'Mart',
-      'April',
-      'Maj',
-      'Jun',
-      'Jul',
-      'Avgust',
-      'Septembar',
-      'Oktobar',
-      'Novembar',
-      'Decembar'
-    ];
-    return months[month];
-  }
-
-  // 💰 STATIC PROVERI DA LI JE MESEC PLAĆEN
-  bool _isMonthPaidStatic(String monthYear, MesecniPutnik putnik) {
-    if (putnik.vremePlacanja == null ||
-        putnik.cena == null ||
-        putnik.cena! <= 0) {
-      return false;
-    }
-
-    // Ako imamo precizne podatke o plaćenom mesecu, koristi ih
-    if (putnik.placeniMesec != null && putnik.placenaGodina != null) {
-      // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
-      final parts = monthYear.split(' ');
-      if (parts.length != 2) return false;
-
-      final monthName = parts[0];
-      final year = int.tryParse(parts[1]);
-      if (year == null) return false;
-
-      final monthNumber = _getMonthNumberStatic(monthName);
-      if (monthNumber == 0) return false;
-
-      // Proveri da li se plaćeni mesec i godina poklapaju
-      return putnik.placeniMesec == monthNumber && putnik.placenaGodina == year;
-    }
-
-    // Fallback na staru logiku (za postojeće podatke)
-    final parts = monthYear.split(' ');
-    if (parts.length != 2) return false;
-
-    final monthName = parts[0];
-    final year = int.tryParse(parts[1]);
-    if (year == null) return false;
-
-    final monthNumber = _getMonthNumberStatic(monthName);
-    if (monthNumber == 0) return false;
-
-    // Proveri da li se vreme plaćanja poklapaju sa ovim mesecom
-    final paymentDate = putnik.vremePlacanja!;
-    return paymentDate.year == year && paymentDate.month == monthNumber;
-  }
-
-  // 📅 STATIC HELPER: DOBIJ BROJ MESECA IZ IMENA
-  int _getMonthNumberStatic(String monthName) {
-    const months = [
-      '', // 0 - ne postoji
-      'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-      'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
-    ];
-
-    for (int i = 1; i < months.length; i++) {
-      if (months[i] == monthName) {
-        return i;
-      }
-    }
-    return 0; // Ne postoji
-  }
 
   // 📊 DOBIJ MESEČNE STATISTIKE ZA SEPTEMBAR 2025
   Future<Map<String, dynamic>> _getMesecneStatistike(String putnikId) async {
@@ -4646,22 +4549,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  /// 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
-  void _prikaziDetaljeStatistike(MesecniPutnik putnik) {
-    // Note: MesecniPutnikDetaljiScreen will be updated to use new model in next iteration
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Detalji statistike - uskoro dostupno'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => MesecniPutnikDetaljiScreen(putnik: putnik),
-    //   ),
-    // );
-  }
+
 
   /// � EXPORT PUTNIKA U CSV
   Future<void> _exportPutnici() async {
