@@ -2423,7 +2423,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       ),
                                       child: const Text(
                                         'Nijedan',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 10,
                                           color: Colors.red,
                                         ),
@@ -4626,25 +4626,26 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       // Snimanje fajla - implementacija u toku
       // Za sada samo prikaži CSV sadržaj u dialog-u
-      // ignore: use_build_context_synchronously
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Export CSV'),
-          content: SingleChildScrollView(
-            child: SelectableText(
-              csvData.toString(),
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Export CSV'),
+            content: SingleChildScrollView(
+              child: SelectableText(
+                csvData.toString(),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Zatvori'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Zatvori'),
-            ),
-          ],
-        ),
-      );
+        );
+      }
     } catch (e) {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(

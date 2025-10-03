@@ -291,13 +291,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       
       if (shouldRegister) {
         // Idi na SMS registraciju
-        // ignore: use_build_context_synchronously
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VozacSMSRegistracijaScreen(vozacIme: driverName),
-          ),
-        );
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VozacSMSRegistracijaScreen(vozacIme: driverName),
+            ),
+          );
+        }
       }
       return;
     }
@@ -521,13 +522,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ),
           ),
           title: const Column(
-            children: const [
+            children: [
               Icon(Icons.app_registration_rounded,
                   color: Colors.orange, size: 40),
               SizedBox(height: 12),
               Text(
                 'SMS Registracija Obavezna',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

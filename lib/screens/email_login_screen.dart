@@ -390,31 +390,34 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
         if (needsCheckIn) {
           // Idi na daily check-in
-          // ignore: use_build_context_synchronously
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DailyCheckInScreen(
-                vozac: driverName,
-                onCompleted: () {
-                  // ignore: use_build_context_synchronously
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                },
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DailyCheckInScreen(
+                  vozac: driverName,
+                  onCompleted: () {
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
-          );
+            );
+          }
         } else {
           // Idi direktno na home screen
-          // ignore: use_build_context_synchronously
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const HomeScreen(),
-            ),
-          );
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ),
+            );
+          }
         }
       } else {
         _showErrorDialog('Neuspješna prijava',

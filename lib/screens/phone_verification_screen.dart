@@ -367,9 +367,9 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Row(
-            children: const [
+            children: [
               Icon(
                 Icons.info_outline,
                 color: Colors.orange,

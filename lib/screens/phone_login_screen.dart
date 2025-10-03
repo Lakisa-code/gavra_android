@@ -455,30 +455,33 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen>
         if (!hasCheckedIn) {
           // Pošalji na daily check-in screen
           dlog('🌅 SMS LOGIN: $driverName mora da uradi check-in');
-          // ignore: use_build_context_synchronously
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DailyCheckInScreen(
-                vozac: driverName,
-                onCompleted: () {
-                  // ignore: use_build_context_synchronously
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                },
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DailyCheckInScreen(
+                  vozac: driverName,
+                  onCompleted: () {
+                    if (mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                      );
+                    }
+                  },
+                ),
               ),
-            ),
-          );
+            );
+          }
         } else {
           // Direktno na home screen
           dlog('✅ SMS LOGIN: $driverName već uradio check-in danas');
-          // ignore: use_build_context_synchronously
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          }
         }
       } else {
         _showErrorDialog(

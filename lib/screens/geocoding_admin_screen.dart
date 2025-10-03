@@ -167,14 +167,14 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                   const Expanded(
                     child: Text(
                       'Geocoding Admin',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: 0.5,
                         shadows: [
                           Shadow(
-                            offset: const Offset(1, 1),
+                            offset: Offset(1, 1),
                             blurRadius: 3,
                             color: Colors.black54,
                           ),

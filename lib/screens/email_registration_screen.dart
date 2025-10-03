@@ -445,16 +445,17 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         dlog('✅ Registracija uspješna, prelazim na verifikaciju');
 
         // Idi na email verifikaciju
-        // ignore: use_build_context_synchronously
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EmailVerificationScreen(
-              email: email,
-              driverName: driverName,
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EmailVerificationScreen(
+                email: email,
+                driverName: driverName,
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else {
         _showErrorDialog('Neuspješna registracija',
             'Provjerite podatke i pokušajte ponovo.');

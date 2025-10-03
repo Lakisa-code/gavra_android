@@ -287,7 +287,7 @@ class RealtimeService {
                         : '';
 
                     final putnik = Putnik(
-                      id: map['id'].toString() + '_' + dan + '_' + vreme,
+                      id: '${map['id']}_${dan}_$vreme',
                       ime: map['putnik_ime']?.toString() ?? '',
                       polazak: vreme,
                       grad: grad,

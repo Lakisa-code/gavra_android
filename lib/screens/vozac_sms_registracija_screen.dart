@@ -428,17 +428,18 @@ class _VozacSMSRegistracijaScreenState extends State<VozacSMSRegistracijaScreen>
         dlog('✅ SMS registracija uspešna, prelazim na SMS verifikaciju');
 
         // Idi na SMS verifikaciju
-        // ignore: use_build_context_synchronously
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PhoneVerificationScreen(
-              phoneNumber: phoneNumber,
-              driverName: widget.vozacIme,
-              isInitialRegistration: true, // Označava da je ovo prva registracija
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PhoneVerificationScreen(
+                phoneNumber: phoneNumber,
+                driverName: widget.vozacIme,
+                isInitialRegistration: true, // Označava da je ovo prva registracija
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else {
         _showErrorDialog('Neuspešna registracija',
             'Pokušajte ponovo ili kontaktirajte administratora.');
