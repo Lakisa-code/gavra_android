@@ -10,9 +10,9 @@ void main() {
 
     final res = MesecniHelpers.normalizePolasciForSend(raw);
 
-    expect(res['pon']!['bc'], '6:00');
+    expect(res['pon']!['bc'], '06:00'); // Updated to match standardized format
     expect(res['pon']!['vs'], '14:00');
-    expect(res['uto']!['bc'], '6:00');
+    expect(res['uto']!['bc'], '06:00'); // Updated to match standardized format
     expect(res['uto']!['vs'], isNull);
   });
 

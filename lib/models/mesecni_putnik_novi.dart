@@ -1,243 +1,179 @@
-import 'package:uuid/uuid.dart';
-import 'putnik.dart';
-import 'adresa.dart';
-import 'ruta.dart';
+import '../utils/mesecni_helpers.dart';
 
-/// Tip mesečnih putnika
-enum MesecniPutnikTip {
-  ucenik,
-  penzioner,
-  zaposlen,
-  drugi,
-}
-
-extension MesecniPutnikTipExtension on MesecniPutnikTip {
-  String get value {
-    switch (this) {
-      case MesecniPutnikTip.ucenik:
-        return 'ucenik';
-      case MesecniPutnikTip.penzioner:
-        return 'penzioner';
-      case MesecniPutnikTip.zaposlen:
-        return 'zaposlen';
-      case MesecniPutnikTip.drugi:
-        return 'drugi';
-    }
-  }
-
-  static MesecniPutnikTip fromString(String tip) {
-    switch (tip.toLowerCase()) {
-      case 'ucenik':
-        return MesecniPutnikTip.ucenik;
-      case 'penzioner':
-        return MesecniPutnikTip.penzioner;
-      case 'zaposlen':
-        return MesecniPutnikTip.zaposlen;
-      case 'drugi':
-      default:
-        return MesecniPutnikTip.drugi;
-    }
-  }
-}
-
-/// Model za mesečne putnike (normalizovana šema)
+/// Model za mesečne putnike - ažurirana verzija
 class MesecniPutnik {
   final String id;
-  final String ime;
-  final String prezime;
+  final String putnikIme; // kombinovano ime i prezime
   final String? brojTelefona;
-  final MesecniPutnikTip tip;
+  final String tip; // direktno string umesto enum-a
   final String? tipSkole;
-  final String adresaId;
-  final String rutaId;
   final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
-  final double cenaMesecneKarte;
-  final DateTime datumPocetka;
-  final DateTime datumKraja;
-  final bool aktivan;
-  final String? napomena;
-  final DateTime? vremePlacanja;
-  final String? naplatioVozacId;
-  final DateTime? poslednjePutovanje;
-  final int brojPutovanja;
-  final int brojOtkazivanja;
-  final bool obrisan;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  // Kompatibilnost sa starim modelom
-  final String? brojTelefonaOca;
-  final String? brojTelefonaMajke;
-  final String? adresaBelaCrkva;
-  final String? adresaVrsac;
-  final String status;
   final String radniDani;
-  final String tipPrikazivanja;
   final DateTime datumPocetkaMeseca;
   final DateTime datumKrajaMeseca;
-  final double? cena;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool aktivan;
+  final String status;
+  // Ostali fields za kompatibilnost
   final double ukupnaCenaMeseca;
-  final int? placeniMesec;
+  final double? cena;
+  final int brojPutovanja;
+  final int brojOtkazivanja;
+  final DateTime? poslednjePutovanje;
+  final bool obrisan;
+  final DateTime? vremePlacanja;
+  final String? placeniMesec;
   final int? placenaGodina;
   final String? vozac;
-  final bool pokupljen;
-  final DateTime? vremePokupljenja;
+  final Map<String, dynamic> statistics;
 
   MesecniPutnik({
-    String? id,
-    required this.ime,
-    required this.prezime,
+    required this.id,
+    required this.putnikIme,
     this.brojTelefona,
     required this.tip,
     this.tipSkole,
-    required this.adresaId,
-    required this.rutaId,
     required this.polasciPoDanu,
-    required this.cenaMesecneKarte,
-    required this.datumPocetka,
-    required this.datumKraja,
+    this.radniDani = 'pon,uto,sre,cet,pet',
+    required this.datumPocetkaMeseca,
+    required this.datumKrajaMeseca,
+    required this.createdAt,
+    required this.updatedAt,
     this.aktivan = true,
-    this.napomena,
-    this.vremePlacanja,
-    this.naplatioVozacId,
-    this.poslednjePutovanje,
+    this.status = 'aktivan',
+    this.ukupnaCenaMeseca = 0.0,
+    this.cena,
     this.brojPutovanja = 0,
     this.brojOtkazivanja = 0,
+    this.poslednjePutovanje,
     this.obrisan = false,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    // Kompatibilnost sa starim modelom
-    this.brojTelefonaOca,
-    this.brojTelefonaMajke,
-    this.adresaBelaCrkva,
-    this.adresaVrsac,
-    this.status = 'aktivan',
-    this.radniDani = 'pon,uto,sre,cet,pet',
-    this.tipPrikazivanja = 'standard',
-    DateTime? datumPocetkaMeseca,
-    DateTime? datumKrajaMeseca,
-    this.cena,
-    double? ukupnaCenaMeseca,
+    this.vremePlacanja,
     this.placeniMesec,
     this.placenaGodina,
     this.vozac,
-    this.pokupljen = false,
-    this.vremePokupljenja,
-  })  : id = id ?? const Uuid().v4(),
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now(),
-        datumPocetkaMeseca = datumPocetkaMeseca ?? datumPocetka,
-        datumKrajaMeseca = datumKrajaMeseca ?? datumKraja,
-        ukupnaCenaMeseca = ukupnaCenaMeseca ?? cenaMesecneKarte;
+    this.statistics = const {},
+  });
 
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
+    // Parse polasciPoDanu using helper
+    Map<String, List<String>> polasciPoDanu = {};
+    final parsed = MesecniHelpers.parsePolasciPoDanu(map['polasci_po_danu']);
+    parsed.forEach((day, inner) {
+      final List<String> list = [];
+      final bc = inner['bc'];
+      final vs = inner['vs'];
+      if (bc != null && bc.isNotEmpty) list.add('$bc BC');
+      if (vs != null && vs.isNotEmpty) list.add('$vs VS');
+      if (list.isNotEmpty) polasciPoDanu[day] = list;
+    });
+
     return MesecniPutnik(
-      id: map['id'] as String,
-      ime: map['ime'] as String,
-      prezime: map['prezime'] as String,
+      id: map['id'] as String? ?? '',
+      putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
       brojTelefona: map['broj_telefona'] as String?,
-      tip: MesecniPutnikTipExtension.fromString(
-          map['tip'] as String? ?? 'drugi'),
+      tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
-      adresaId: map['adresa_id'] as String,
-      rutaId: map['ruta_id'] as String,
-      polasciPoDanu: Map<String, List<String>>.from(
-          (map['polasci_po_danu'] as Map<String, dynamic>? ?? {}).map(
-              (key, value) => MapEntry(key, List<String>.from(value as List)))),
-      cenaMesecneKarte: (map['cena_mesecne_karte'] as num).toDouble(),
-      datumPocetka: DateTime.parse(map['datum_pocetka'] as String),
-      datumKraja: DateTime.parse(map['datum_kraja'] as String),
+      polasciPoDanu: polasciPoDanu,
+      radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
+      datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
+          ? DateTime.parse(map['datum_pocetka_meseca'] as String)
+          : DateTime(DateTime.now().year, DateTime.now().month, 1),
+      datumKrajaMeseca: map['datum_kraja_meseca'] != null
+          ? DateTime.parse(map['datum_kraja_meseca'] as String)
+          : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
-      napomena: map['napomena'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
-      naplatioVozacId: map['naplatio_vozac_id'] as String?,
+      status: map['status'] as String? ?? 'aktivan',
+      ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble() ?? 0.0,
+      cena: (map['cena'] as num?)?.toDouble(),
+      brojPutovanja: map['broj_putovanja'] as int? ?? 0,
+      brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
       poslednjePutovanje: map['poslednje_putovanje'] != null
           ? DateTime.parse(map['poslednje_putovanje'] as String)
           : null,
-      brojPutovanja: map['broj_putovanja'] as int? ?? 0,
-      brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
       obrisan: map['obrisan'] as bool? ?? false,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
-      // Kompatibilnost sa starim modelom
-      brojTelefonaOca: map['broj_telefona_oca'] as String?,
-      brojTelefonaMajke: map['broj_telefona_majke'] as String?,
-      adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
-      adresaVrsac: map['adresa_vrsac'] as String?,
-      status: map['status'] as String? ?? 'aktivan',
-      radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
-      tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
-      datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
-          ? DateTime.parse(map['datum_pocetka_meseca'] as String)
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'] as String)
           : null,
-      datumKrajaMeseca: map['datum_kraja_meseca'] != null
-          ? DateTime.parse(map['datum_kraja_meseca'] as String)
-          : null,
-      cena: (map['cena'] as num?)?.toDouble(),
-      ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble(),
-      placeniMesec: map['placeni_mesec'] as int?,
+      placeniMesec: map['placeni_mesec'] as String?,
       placenaGodina: map['placena_godina'] as int?,
-      vozac: map['vozac_id'] as String?,
-      pokupljen: map['pokupljen'] as bool? ?? false,
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null,
+      vozac: map['vozac'] as String?,
+      statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
     );
   }
 
   Map<String, dynamic> toMap() {
+    // Build normalized polasci_po_danu structure
+    final Map<String, Map<String, String?>> normalizedPolasci = {};
+    polasciPoDanu.forEach((day, times) {
+      String? bc;
+      String? vs;
+      for (final time in times) {
+        final normalized = MesecniHelpers.normalizeTime(time.split(' ')[0]);
+        if (time.contains('BC')) {
+          bc = normalized;
+        } else if (time.contains('VS')) {
+          vs = normalized;
+        }
+      }
+      normalizedPolasci[day] = {'bc': bc, 'vs': vs};
+    });
+
+    // Build statistics
+    Map<String, dynamic> stats = Map.from(statistics);
+    stats.addAll({
+      'trips_total': brojPutovanja,
+      'cancellations_total': brojOtkazivanja,
+      'last_trip': poslednjePutovanje?.toIso8601String(),
+    });
+
     return {
       'id': id,
-      'ime': ime,
-      'prezime': prezime,
+      'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
-      'tip': tip.value,
+      'tip': tip,
       'tip_skole': tipSkole,
-      'adresa_id': adresaId,
-      'ruta_id': rutaId,
-      'polasci_po_danu': polasciPoDanu,
-      'cena_mesecne_karte': cenaMesecneKarte,
-      'datum_pocetka': datumPocetka.toIso8601String().split('T')[0],
-      'datum_kraja': datumKraja.toIso8601String().split('T')[0],
-      'aktivan': aktivan,
-      'napomena': napomena,
-      'vreme_placanja': vremePlacanja?.toIso8601String(),
-      'naplatio_vozac_id': naplatioVozacId,
-      'poslednje_putovanje': poslednjePutovanje?.toIso8601String(),
-      'broj_putovanja': brojPutovanja,
-      'broj_otkazivanja': brojOtkazivanja,
-      'obrisan': obrisan,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
-      // Kompatibilnost sa starim modelom
-      'broj_telefona_oca': brojTelefonaOca,
-      'broj_telefona_majke': brojTelefonaMajke,
-      'adresa_bela_crkva': adresaBelaCrkva,
-      'adresa_vrsac': adresaVrsac,
-      'status': status,
+      'polasci_po_danu': normalizedPolasci,
       'radni_dani': radniDani,
-      'tip_prikazivanja': tipPrikazivanja,
       'datum_pocetka_meseca':
           datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
-      'cena': cena,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'aktivan': aktivan,
+      'status': status,
       'ukupna_cena_meseca': ukupnaCenaMeseca,
+      'cena': cena,
+      'broj_putovanja': brojPutovanja,
+      'broj_otkazivanja': brojOtkazivanja,
+      'poslednje_putovanje': poslednjePutovanje?.toIso8601String(),
+      'obrisan': obrisan,
+      'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
       'placena_godina': placenaGodina,
-      'vozac_id': vozac,
-      'pokupljen': pokupljen,
-      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
+      'vozac': vozac,
+      'statistics': stats,
     };
   }
 
-  String get punoIme => '$ime $prezime';
+  String get punoIme => putnikIme;
 
-  // Kompatibilnost sa starim modelom
-  String get putnikIme => '$ime $prezime';
+  // Legacy compatibility getters
+  String? get brojTelefonaOca => brojTelefona; // Fallback to single phone field
+  String? get brojTelefonaMajke => null; // Legacy field no longer used
+  String? get adresaBelaCrkva => null; // Legacy field - use normalized schema
+  String? get adresaVrsac => null; // Legacy field - use normalized schema
 
   bool get jePlacen => vremePlacanja != null;
+
+  /// Iznos plaćanja - kompatibilnost sa statistika_service
+  double? get iznosPlacanja => cena ?? ukupnaCenaMeseca;
 
   /// Polazak za Belu Crkvu za dati dan
   String? getPolazakBelaCrkvaZaDan(String dan) {
@@ -264,83 +200,53 @@ class MesecniPutnik {
   /// copyWith metoda za kreiranje kopije sa izmenjenim poljima
   MesecniPutnik copyWith({
     String? id,
-    String? ime,
-    String? prezime,
+    String? putnikIme,
     String? brojTelefona,
-    MesecniPutnikTip? tip,
+    String? tip,
     String? tipSkole,
-    String? adresaId,
-    String? rutaId,
     Map<String, List<String>>? polasciPoDanu,
-    double? cenaMesecneKarte,
-    DateTime? datumPocetka,
-    DateTime? datumKraja,
-    bool? aktivan,
-    String? napomena,
-    DateTime? vremePlacanja,
-    String? naplatioVozacId,
-    DateTime? poslednjePutovanje,
-    int? brojPutovanja,
-    int? brojOtkazivanja,
-    bool? obrisan,
-    // Legacy polja
-    String? brojTelefonaOca,
-    String? brojTelefonaMajke,
-    String? adresaBelaCrkva,
-    String? adresaVrsac,
-    String? status,
     String? radniDani,
-    String? tipPrikazivanja,
     DateTime? datumPocetkaMeseca,
     DateTime? datumKrajaMeseca,
-    double? cena,
+    bool? aktivan,
+    String? status,
     double? ukupnaCenaMeseca,
-    int? placeniMesec,
+    double? cena,
+    DateTime? vremePlacanja,
+    String? placeniMesec,
     int? placenaGodina,
     String? vozac,
-    bool? pokupljen,
-    DateTime? vremePokupljenja,
+    int? brojPutovanja,
+    int? brojOtkazivanja,
+    DateTime? poslednjePutovanje,
+    bool? obrisan,
+    Map<String, dynamic>? statistics,
   }) {
     return MesecniPutnik(
       id: id ?? this.id,
-      ime: ime ?? this.ime,
-      prezime: prezime ?? this.prezime,
+      putnikIme: putnikIme ?? this.putnikIme,
       brojTelefona: brojTelefona ?? this.brojTelefona,
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
-      adresaId: adresaId ?? this.adresaId,
-      rutaId: rutaId ?? this.rutaId,
       polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
-      cenaMesecneKarte: cenaMesecneKarte ?? this.cenaMesecneKarte,
-      datumPocetka: datumPocetka ?? this.datumPocetka,
-      datumKraja: datumKraja ?? this.datumKraja,
-      aktivan: aktivan ?? this.aktivan,
-      napomena: napomena ?? this.napomena,
-      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
-      naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
-      poslednjePutovanje: poslednjePutovanje ?? this.poslednjePutovanje,
-      brojPutovanja: brojPutovanja ?? this.brojPutovanja,
-      brojOtkazivanja: brojOtkazivanja ?? this.brojOtkazivanja,
-      obrisan: obrisan ?? this.obrisan,
-      createdAt: createdAt,
-      updatedAt: DateTime.now(),
-      // Legacy polja
-      brojTelefonaOca: brojTelefonaOca ?? this.brojTelefonaOca,
-      brojTelefonaMajke: brojTelefonaMajke ?? this.brojTelefonaMajke,
-      adresaBelaCrkva: adresaBelaCrkva ?? this.adresaBelaCrkva,
-      adresaVrsac: adresaVrsac ?? this.adresaVrsac,
-      status: status ?? this.status,
       radniDani: radniDani ?? this.radniDani,
-      tipPrikazivanja: tipPrikazivanja ?? this.tipPrikazivanja,
       datumPocetkaMeseca: datumPocetkaMeseca ?? this.datumPocetkaMeseca,
       datumKrajaMeseca: datumKrajaMeseca ?? this.datumKrajaMeseca,
-      cena: cena ?? this.cena,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+      aktivan: aktivan ?? this.aktivan,
+      status: status ?? this.status,
       ukupnaCenaMeseca: ukupnaCenaMeseca ?? this.ukupnaCenaMeseca,
+      cena: cena ?? this.cena,
+      brojPutovanja: brojPutovanja ?? this.brojPutovanja,
+      brojOtkazivanja: brojOtkazivanja ?? this.brojOtkazivanja,
+      poslednjePutovanje: poslednjePutovanje ?? this.poslednjePutovanje,
+      obrisan: obrisan ?? this.obrisan,
+      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       placeniMesec: placeniMesec ?? this.placeniMesec,
       placenaGodina: placenaGodina ?? this.placenaGodina,
       vozac: vozac ?? this.vozac,
-      pokupljen: pokupljen ?? this.pokupljen,
-      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
+      statistics: statistics ?? this.statistics,
     );
   }
 
@@ -367,36 +273,8 @@ class MesecniPutnik {
     }
   }
 
-  /// Konvertuje MesecniPutnik u listu legacy Putnik objekata za dati dan
-  List<Putnik> toPutnikList(String targetDan, Adresa adresa, Ruta ruta) {
-    final List<Putnik> putnici = [];
-    final vremena = polasciPoDanu[targetDan] ?? [];
-
-    for (final vreme in vremena) {
-      putnici.add(Putnik(
-        id: id,
-        ime: '$ime $prezime',
-        polazak: vreme,
-        pokupljen: false, // TODO: Implementirati kada se doda status po polasku
-        vremeDodavanja: DateTime.now(), // TODO: Koristiti createdAt
-        mesecnaKarta: true,
-        dan: targetDan,
-        status: aktivan ? 'radi' : 'neaktivan',
-        vremePokupljenja:
-            null, // TODO: Implementirati kada se doda vreme po polasku
-        vremePlacanja:
-            null, // TODO: Implementirati kada se doda vreme po polasku
-        placeno: false, // TODO: Implementirati kada se doda status po polasku
-        iznosPlacanja:
-            null, // TODO: Implementirati kada se doda cena po polasku
-        vozac: null, // TODO: Dodati kada se implementira veza sa vozacima
-        grad: adresa.grad,
-        adresa: '${adresa.ulica} ${adresa.broj}',
-        obrisan: !aktivan,
-        brojTelefona: brojTelefona,
-      ));
-    }
-
-    return putnici;
+  @override
+  String toString() {
+    return 'MesecniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan)';
   }
 }

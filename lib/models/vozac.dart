@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 class Vozac {
   final String id;
   final String ime;
-  final String prezime;
   final String? brojTelefona;
   final String? email;
   final bool aktivan;
@@ -14,7 +13,6 @@ class Vozac {
   Vozac({
     String? id,
     required this.ime,
-    required this.prezime,
     this.brojTelefona,
     this.email,
     this.aktivan = true,
@@ -28,7 +26,6 @@ class Vozac {
     return Vozac(
       id: map['id'] as String,
       ime: map['ime'] as String,
-      prezime: map['prezime'] as String,
       brojTelefona: map['broj_telefona'] as String?,
       email: map['email'] as String?,
       aktivan: map['aktivan'] as bool? ?? true,
@@ -41,7 +38,6 @@ class Vozac {
     return {
       'id': id,
       'ime': ime,
-      'prezime': prezime,
       'broj_telefona': brojTelefona,
       'email': email,
       'aktivan': aktivan,
@@ -50,5 +46,5 @@ class Vozac {
     };
   }
 
-  String get punoIme => '$ime $prezime';
+  String get punoIme => ime;
 }

@@ -1,0 +1,2 @@
+-- Empty migration file to sync with remote
+-- This migration was already applied on remote

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/mesecni_putnik.dart';
-import '../services/putnik_service.dart';
+import '../models/mesecni_putnik_novi.dart';
+import '../services/mesecni_putnik_service_novi.dart';
 // foundation import not needed; using centralized logger
 import '../utils/logging.dart';
 import '../theme.dart'; // Za theme boje
@@ -27,9 +27,12 @@ class _MesecniPutnikDetaljiScreenState
   List<Map<String, dynamic>> _svaPlacanja = [];
   bool _loading = true;
 
+  late final MesecniPutnikServiceNovi _service;
+
   @override
   void initState() {
     super.initState();
+    _service = MesecniPutnikServiceNovi();
     _ucitajSveDetalje();
   }
 
@@ -38,17 +41,17 @@ class _MesecniPutnikDetaljiScreenState
 
     try {
       // Učitaj sva ukrcavanja
-      _svaUkrcavanja = await PutnikService.dohvatiUkrcavanjaZaPutnika(
+      _svaUkrcavanja = await _service.dohvatiUkrcavanjaZaPutnika(
         widget.putnik.putnikIme,
       );
 
       // Učitaj sve otkaze
-      _sviOtkazi = await PutnikService.dohvatiOtkazeZaPutnika(
+      _sviOtkazi = await _service.dohvatiOtkazeZaPutnika(
         widget.putnik.putnikIme,
       );
 
       // Učitaj sva plaćanja
-      _svaPlacanja = await PutnikService.dohvatiPlacanjaZaPutnika(
+      _svaPlacanja = await _service.dohvatiPlacanjaZaPutnika(
         widget.putnik.putnikIme,
       );
     } catch (e) {
@@ -775,12 +778,15 @@ class _MesecniPutnikDetaljiScreenState
         final aktivnost = daniSaAktivnoscu[dan];
 
         Color boja = Theme.of(context).colorScheme.surfaceContainerHighest;
-        if (aktivnost == 'voznja')
+        if (aktivnost == 'voznja') {
           boja = Theme.of(context).colorScheme.successPrimary.withOpacity(0.2);
-        if (aktivnost == 'otkaz')
+        }
+        if (aktivnost == 'otkaz') {
           boja = Theme.of(context).colorScheme.warningPrimary.withOpacity(0.2);
-        if (aktivnost == 'oba')
+        }
+        if (aktivnost == 'oba') {
           boja = Theme.of(context).colorScheme.primary.withOpacity(0.2);
+        }
 
         return Container(
           width: 30,

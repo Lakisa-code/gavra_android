@@ -9,13 +9,13 @@ void main() {
       // Test gradovi
       final testGradovi = ['Potporanj', 'Orešac', 'Vraćev Gaj'];
 
-      print('\n🧪 FINALNI TEST GRADOVA 🧪');
-      print('=' * 40);
+      // Debug output removed
+      // Debug output removed
 
       for (final grad in testGradovi) {
         final result = !service._isCityBlocked(grad);
         final status = result ? '✅ DOZVOLJEN' : '❌ BLOKIRAN';
-        print('$grad: $status');
+        // Debug output removed
       }
 
       // Verifikacija da su svi gradovi dozvoljeni
@@ -24,7 +24,7 @@ void main() {
         expect(isBlocked, false, reason: 'Grad $grad treba da bude dozvoljen');
       }
 
-      print('\n🎉 SVI GRADOVI SU USPEŠNO DOZVOLJENI! 🎉');
+      // Debug output removed
     });
   });
 }

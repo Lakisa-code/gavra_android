@@ -1,62 +1,12 @@
 import 'dart:convert';
+import 'time_validator.dart';
 
 enum MesecniStatus { active, canceled, vacation, unknown }
 
 class MesecniHelpers {
-  // Normalize time: "06:00:00" -> "6:00", "14:05:00" -> "14:05", "6:0" -> "6:00"
+  // Normalize time using standardized TimeValidator
   static String? normalizeTime(String? raw) {
-    if (raw == null) return null;
-    raw = raw.trim();
-    if (raw.isEmpty) return null;
-
-    try {
-      // Remove timezone or extra trailing tokens (keep first token and AM/PM if present)
-      var token = raw.split(RegExp(r"\s+"))[0];
-      // But if AM/PM exists separated by space (e.g. "6:00 pm"), capture whole string
-      // Normalize common separators (e.g. 06:00:00+00, 06:00:00.000Z)
-      token = token.replaceAll(RegExp(r"Z$"), '');
-      token = token.split(RegExp(r"[+\-]"))[0];
-
-      // Try to match with optional seconds and optional AM/PM suffix (with optional space)
-      final timeRe = RegExp(
-          r'^(\d{1,2}):(\d{1,2})(?::\d{1,2}(?:\.\d+)?)?\s*([aApP][mM])?$');
-      // Dart raw string doesn't need escaped end-anchor; use '$' directly
-      var m = timeRe.firstMatch(token);
-      // If not matched against full raw (covers cases like "6:00 pm"), try token + possible suffix
-      if (m == null) {
-        // Try to capture if AM/PM is separate token, e.g. "6:00 pm"
-        final parts = raw.split(RegExp(r"\s+"));
-        if (parts.length >= 2 &&
-            RegExp(r'^[aApP][mM]\$').hasMatch(parts.last)) {
-          final joined =
-              '${parts.sublist(0, parts.length - 1).join(' ')}${parts.last}';
-          m = timeRe.firstMatch(joined);
-        } else {
-          m = timeRe.firstMatch(token);
-        }
-      }
-
-      if (m == null) return raw; // leave as-is if unexpected format
-
-      var hour = int.parse(m.group(1)!);
-      var min = int.parse(m.group(2)!);
-      final ampm = m.group(3);
-
-      if (ampm != null) {
-        final a = ampm.toLowerCase();
-        if (a == 'am') {
-          if (hour == 12) hour = 0; // 12:00 AM -> 0:00
-        } else if (a == 'pm') {
-          if (hour < 12) hour += 12; // 1:00 PM -> 13:00
-        }
-      }
-
-      final minStr = min.toString().padLeft(2, '0');
-      final hourStr = hour.toString();
-      return '$hourStr:$minStr';
-    } catch (_) {
-      return raw;
-    }
+    return TimeValidator.normalizeTimeFormat(raw);
   }
 
   // Parse polasci_po_danu which may be a JSON string or Map.

@@ -171,9 +171,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
               position: _slideAnimation,
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                     // Jutarnja ikona - mekša i toplija
                     Container(
                       width: 120,
@@ -381,6 +382,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),

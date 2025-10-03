@@ -6,8 +6,8 @@ void main() {
     test('Testira dozvoljene i blokirane gradove', () {
       final service = GeocodingService();
 
-      print('\n🌍 KOMPLETNI TEST GEOGRAFSKIH OGRANIČENJA 🌍');
-      print('=' * 50);
+      // Debug output removed
+      // Debug output removed
 
       // Dozvoljeni gradovi (BC/Vršac opštine)
       final dozvoljeni = [
@@ -31,25 +31,25 @@ void main() {
         'Subotica'
       ];
 
-      print('\n✅ DOZVOLJENI GRADOVI:');
-      print('-' * 25);
+      // Debug output removed
+      // Debug output removed
       for (final grad in dozvoljeni) {
         final isBlocked = service._isCityBlocked(grad);
         final status = isBlocked ? '❌ GREŠKA - BLOKIRAN' : '✅ DOZVOLJEN';
-        print('$grad: $status');
+        // Debug output removed
         expect(isBlocked, false, reason: 'Grad $grad mora biti dozvoljen');
       }
 
-      print('\n🚫 BLOKIRANI GRADOVI:');
-      print('-' * 25);
+      // Debug output removed
+      // Debug output removed
       for (final grad in blokirani) {
         final isBlocked = service._isCityBlocked(grad);
         final status = isBlocked ? '✅ BLOKIRAN' : '❌ GREŠKA - DOZVOLJEN';
-        print('$grad: $status');
+        // Debug output removed
         expect(isBlocked, true, reason: 'Grad $grad mora biti blokiran');
       }
 
-      print('\n🎯 GEOGRAFSKA OGRANIČENJA FUNKCIONIŠU SAVRŠENO! 🎯');
+      // Debug output removed
     });
   });
 }

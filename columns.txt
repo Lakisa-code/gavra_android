@@ -35,6 +35,7 @@
  public       | dnevni_putnici     | adresa_id            | uuid                     | YES         | 
  public       | dnevni_putnici     | created_at           | timestamp with time zone | YES         | now()
  public       | dnevni_putnici     | updated_at           | timestamp with time zone | YES         | now()
+ public       | dnevni_putnici     | broj_mesta           | integer                  | YES         | 1
  public       | gps_lokacije       | id                   | uuid                     | NO          | gen_random_uuid()
  public       | gps_lokacije       | vozac_id             | uuid                     | YES         | 
  public       | gps_lokacije       | vozilo_id            | uuid                     | YES         | 
@@ -77,6 +78,13 @@
  public       | mesecni_putnici    | updated_at           | timestamp with time zone | YES         | now()
  public       | mesecni_putnici    | broj_telefona_oca    | character varying        | YES         | 
  public       | mesecni_putnici    | broj_telefona_majke  | character varying        | YES         | 
+ public       | mesecni_putnici    | adresa_bela_crkva    | text                     | YES         | 
+ public       | mesecni_putnici    | adresa_vrsac         | text                     | YES         | 
+ public       | mesecni_putnici    | ime                  | character varying        | YES         | 
+ public       | mesecni_putnici    | prezime              | character varying        | YES         | 
+ public       | mesecni_putnici    | datum_pocetka        | date                     | YES         | 
+ public       | mesecni_putnici    | datum_kraja          | date                     | YES         | 
+ public       | mesecni_putnici    | cena_mesecne_karte   | numeric                  | YES         | 
  public       | putovanja_istorija | id                   | uuid                     | NO          | gen_random_uuid()
  public       | putovanja_istorija | mesecni_putnik_id    | uuid                     | YES         | 
  public       | putovanja_istorija | tip_putnika          | character varying        | NO          | 

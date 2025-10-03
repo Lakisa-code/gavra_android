@@ -4,20 +4,20 @@ import '../lib/services/geocoding_service.dart';
 void main() {
   group('Nova mesta test', () {
     test('Potporanj i Orešac dozovljeni', () async {
-      print('Testing Potporanj...');
+      // Debug output removed
       final potporanjResult =
           await GeocodingService.getKoordinateZaAdresu('Potporanj', 'Glavna 1');
       print(
           'Potporanj result: ${potporanjResult != null ? "✅ ALLOWED" : "❌ BLOCKED"}');
 
-      print('Testing Orešac...');
+      // Debug output removed
       final oresacResult =
           await GeocodingService.getKoordinateZaAdresu('Orešac', 'Glavna 1');
       print(
           'Orešac result: ${oresacResult != null ? "✅ ALLOWED" : "❌ BLOCKED"}');
 
       // Također test i Vraćev Gaj problem
-      print('Testing Vraćev Gaj...');
+      // Debug output removed
       final vracevResult = await GeocodingService.getKoordinateZaAdresu(
           'Vraćev Gaj', 'Glavna 1');
       print(

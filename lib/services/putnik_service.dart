@@ -699,7 +699,8 @@ class PutnikService {
 
       // 3. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
       try {
-        final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
+        final zakupljenoRows =
+            await MesecniPutnikServiceNovi.getZakupljenoDanas();
         if (zakupljenoRows.isNotEmpty) {
           dlog(
               '📊 [STREAM] Dobio ${zakupljenoRows.length} zakupljeno zapisa za danas');
@@ -1006,7 +1007,7 @@ class PutnikService {
 
       // 🔄 AUTOMATSKA SINHRONIZACIJA - ažuriraj brojPutovanja iz istorije
       try {
-        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(id);
+        await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(id);
         dlog(
             '✅ AUTOMATSKI SINHRONIZOVAN brojPutovanja za mesečnog putnika: $id');
       } catch (e) {
@@ -1035,7 +1036,7 @@ class PutnikService {
       try {
         dlog(
             '📊 [AUTO SYNC PICKUP] Sinhronizujem broj putovanja za mesečnog putnika ID: ${response['mesecni_putnik_id']}');
-        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+        await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
             response['mesecni_putnik_id']);
         dlog('✅ [AUTO SYNC PICKUP] Broj putovanja automatski ažuriran');
       } catch (syncError) {
@@ -1239,7 +1240,7 @@ class PutnikService {
         try {
           dlog(
               '📊 [AUTO SYNC] Sinhronizujem broj otkazivanja za mesečnog putnika ID: ${respMap['mesecni_putnik_id']}');
-          await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
+          await MesecniPutnikServiceNovi.sinhronizujBrojOtkazivanjaSaIstorijom(
               respMap['mesecni_putnik_id']);
           dlog('✅ [AUTO SYNC] Broj otkazivanja automatski ažuriran');
         } catch (syncError) {
@@ -1528,14 +1529,14 @@ class PutnikService {
             dlog(
                 '📊 [RESET SYNC] Sinhronizujem broj otkazivanja za: $imePutnika');
             final putnikId = mesecniResponse['id'] as String;
-            await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
-                putnikId);
+            await MesecniPutnikServiceNovi
+                .sinhronizujBrojOtkazivanjaSaIstorijom(putnikId);
             dlog('✅ [RESET SYNC] Broj otkazivanja sinhronizovan nakon reset-a');
 
             // 📊 TAKOĐE sinhronizuj broj putovanja (NOVO!)
             dlog(
                 '📊 [RESET SYNC] Sinhronizujem broj putovanja za: $imePutnika');
-            await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+            await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
                 putnikId);
             dlog('✅ [RESET SYNC] Broj putovanja sinhronizovan nakon reset-a');
           } catch (syncError) {

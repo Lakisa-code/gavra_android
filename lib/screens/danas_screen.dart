@@ -5,11 +5,12 @@ import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreetMap
 import '../models/putnik.dart';
+
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
 import '../services/daily_checkin_service.dart'; // 🌅 DODANO za sitan novac
 import '../services/firebase_service.dart';
-import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
+import '../services/mesecni_putnik_service_novi.dart'; // 🎓 DODANO za đačke statistike
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_notification_service.dart';
@@ -18,8 +19,7 @@ import '../utils/date_utils.dart'
     as app_date_utils; // DODANO: Centralna vikend logika
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
-import '../services/putnik_service.dart'; // 🆕 DODANO za nove metode
-import '../services/combined_putnik_service.dart'; // 🆕 NOVI kombinovani servis
+import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_service.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/putnik_list.dart';
@@ -53,7 +53,8 @@ class DanasScreen extends StatefulWidget {
 
 class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
-  final _putnikService = CombinedPutnikService(); // 🆕 NOVI kombinovani servis
+  final _putnikService =
+      PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final Set<String> _resettingSlots = {};
   Timer? _resetDebounceTimer;
 
@@ -104,7 +105,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
       // Direktno dohvati mesečne putnike iz baze da imamo pristup tip informaciji
       final sviMesecniPutnici =
-          await MesecniPutnikService.getAktivniMesecniPutnici();
+          await MesecniPutnikServiceNovi().getAktivniMesecniPutnici();
 
       // Filtriraj samo učenike za današnji dan
       final djaci = sviMesecniPutnici.where((mp) {

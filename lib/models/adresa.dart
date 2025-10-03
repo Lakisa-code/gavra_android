@@ -7,12 +7,12 @@ class Adresa {
   final String? broj;
   final String grad;
   final String? postanskiBroj;
-  final double? latitude;
-  final double? longitude;
-  final String? napomena;
-  final bool aktivan;
+  final String? koordinate; // PostgreSQL POINT kao string "(lat,lng)"
   final DateTime createdAt;
-  final DateTime updatedAt;
+
+  // Virtuelna polja za latitude/longitude iz POINT koordinata
+  double? get latitude => _parseLatitudeFromPoint();
+  double? get longitude => _parseLongitudeFromPoint();
 
   Adresa({
     String? id,
@@ -20,15 +20,10 @@ class Adresa {
     this.broj,
     required this.grad,
     this.postanskiBroj,
-    this.latitude,
-    this.longitude,
-    this.napomena,
-    this.aktivan = true,
+    this.koordinate,
     DateTime? createdAt,
-    DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+        createdAt = createdAt ?? DateTime.now();
 
   factory Adresa.fromMap(Map<String, dynamic> map) {
     return Adresa(
@@ -37,12 +32,8 @@ class Adresa {
       broj: map['broj'] as String?,
       grad: map['grad'] as String,
       postanskiBroj: map['postanski_broj'] as String?,
-      latitude: (map['latitude'] as num?)?.toDouble(),
-      longitude: (map['longitude'] as num?)?.toDouble(),
-      napomena: map['napomena'] as String?,
-      aktivan: map['aktivan'] as bool? ?? true,
+      koordinate: map['koordinate'] as String?, // PostgreSQL POINT as string
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 
@@ -53,12 +44,8 @@ class Adresa {
       'broj': broj,
       'grad': grad,
       'postanski_broj': postanskiBroj,
-      'latitude': latitude,
-      'longitude': longitude,
-      'napomena': napomena,
-      'aktivan': aktivan,
+      'koordinate': koordinate, // PostgreSQL POINT as string
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -68,5 +55,65 @@ class Adresa {
     delovi.add(grad);
     if (postanskiBroj != null) delovi.add(postanskiBroj!);
     return delovi.join(', ');
+  }
+
+  /// Parse latitude from PostgreSQL POINT string format "(lat,lng)"
+  double? _parseLatitudeFromPoint() {
+    if (koordinate == null) return null;
+    try {
+      // PostgreSQL POINT format: "(latitude,longitude)"
+      final clean = koordinate!.replaceAll(RegExp(r'[()]'), '');
+      final parts = clean.split(',');
+      if (parts.length == 2) {
+        return double.parse(parts[0].trim());
+      }
+    } catch (e) {
+      // Handle parsing errors gracefully
+    }
+    return null;
+  }
+
+  /// Parse longitude from PostgreSQL POINT string format "(lat,lng)"
+  double? _parseLongitudeFromPoint() {
+    if (koordinate == null) return null;
+    try {
+      // PostgreSQL POINT format: "(latitude,longitude)"
+      final clean = koordinate!.replaceAll(RegExp(r'[()]'), '');
+      final parts = clean.split(',');
+      if (parts.length == 2) {
+        return double.parse(parts[1].trim());
+      }
+    } catch (e) {
+      // Handle parsing errors gracefully
+    }
+    return null;
+  }
+
+  /// Create POINT string from latitude and longitude
+  static String? createPointString(double? lat, double? lng) {
+    if (lat == null || lng == null) return null;
+    return '($lat,$lng)';
+  }
+
+  /// Factory constructor with separate lat/lng that creates POINT
+  factory Adresa.withCoordinates({
+    String? id,
+    required String ulica,
+    String? broj,
+    required String grad,
+    String? postanskiBroj,
+    double? latitude,
+    double? longitude,
+    DateTime? createdAt,
+  }) {
+    return Adresa(
+      id: id,
+      ulica: ulica,
+      broj: broj,
+      grad: grad,
+      postanskiBroj: postanskiBroj,
+      koordinate: createPointString(latitude, longitude),
+      createdAt: createdAt,
+    );
   }
 }

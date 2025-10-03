@@ -62,7 +62,7 @@ void main() {
       // Test sa adresom iz Vršca - treba da prođe
       final vrsacResult = await AdvancedGeocodingService.getAdvancedCoordinates(
           grad: 'Vršac', adresa: 'Trg pobede 5');
-      print('Vršac result: ${vrsacResult != null ? "✅ ALLOWED" : "❌ BLOCKED"}');
+      // Debug output removed
 
       // Test sa adresom iz Beograda - treba da bude blokiran
       final beogradResult =
@@ -77,7 +77,7 @@ void main() {
       final belaCrkvaSuggestions =
           await SmartAddressAutocompleteService.getSmartSuggestions(
               currentCity: 'Bela Crkva', query: 'glavna');
-      print('Bela Crkva suggestions: ${belaCrkvaSuggestions.length} found');
+      // Debug output removed
 
       // Test sa upitom za zabranjeni grad
       final beogradSuggestions =
@@ -112,8 +112,8 @@ void main() {
 
       print(
           'Testing route optimization with ${testPassengers.length} passengers');
-      print('Expected: Only Marko (BC) and Ana (Vršac) should be included');
-      print('Expected: Petar (Belgrade) should be filtered out');
+      // Debug output removed
+      // Debug output removed
     });
   });
 }

@@ -10,9 +10,10 @@ import '../models/putnik.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/mesecni_putnik_service.dart';
+import '../services/mesecni_putnik_service_novi.dart';
+
 import '../services/printing_service.dart';
-import '../services/combined_putnik_service.dart'; // 🆕 NOVI kombinovani servis
+import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 // import '../services/update_service.dart'; // 🔄 Uklonjeno: Update sistem
@@ -45,8 +46,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  final CombinedPutnikService _putnikService =
-      CombinedPutnikService(); // 🆕 NOVI kombinovani servis
+  final PutnikService _putnikService =
+      PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final SupabaseClient supabase = Supabase.instance.client;
 
   bool _isLoading = true;
@@ -396,7 +397,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     bool manuelnoOznaceno = false; // 🔧 NOVO: prati da li je manuelno označeno
 
     // Povuci dozvoljena imena iz mesecni_putnici tabele
-    final lista = await MesecniPutnikService.getAllMesecniPutnici();
+    final serviceInstance = MesecniPutnikServiceNovi();
+    final lista = await serviceInstance.getAllMesecniPutnici();
     final dozvoljenaImena = lista
         .where((putnik) => !putnik.obrisan && putnik.aktivan)
         .map((putnik) => putnik.putnikIme)

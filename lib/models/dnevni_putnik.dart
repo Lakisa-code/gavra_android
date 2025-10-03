@@ -50,7 +50,6 @@ extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
 class DnevniPutnik {
   final String id;
   final String ime;
-  final String prezime;
   final String? brojTelefona;
   final String adresaId;
   final String rutaId;
@@ -72,7 +71,6 @@ class DnevniPutnik {
   DnevniPutnik({
     String? id,
     required this.ime,
-    required this.prezime,
     this.brojTelefona,
     required this.adresaId,
     required this.rutaId,
@@ -98,7 +96,6 @@ class DnevniPutnik {
     return DnevniPutnik(
       id: map['id'] as String,
       ime: map['ime'] as String,
-      prezime: map['prezime'] as String,
       brojTelefona: map['broj_telefona'] as String?,
       adresaId: map['adresa_id'] as String,
       rutaId: map['ruta_id'] as String,
@@ -128,7 +125,6 @@ class DnevniPutnik {
     return {
       'id': id,
       'ime': ime,
-      'prezime': prezime,
       'broj_telefona': brojTelefona,
       'adresa_id': adresaId,
       'ruta_id': rutaId,
@@ -149,7 +145,7 @@ class DnevniPutnik {
     };
   }
 
-  String get punoIme => '$ime $prezime';
+  String get punoIme => ime;
 
   bool get jePokupljen =>
       status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
@@ -189,7 +185,8 @@ class DnevniPutnik {
       naplatioVozac: naplatioVozacId,
       pokupioVozac: pokupioVozacId,
       dodaoVozac: dodaoVozacId,
-      vozac: null, // TODO: Dodati kada se implementira veza sa vozacima
+      vozac:
+          null, // Driver linking will be implemented with enhanced driver management
       grad: adresa.grad,
       adresa: '${adresa.ulica} ${adresa.broj}',
       obrisan: obrisan,

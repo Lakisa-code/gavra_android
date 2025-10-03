@@ -131,14 +131,8 @@ class MesecniPutnikService {
             }
           }
 
-          // Fallback: create tentative MesecniPutnik from available fields
-          final tentative = MesecniPutnik.fromMap({
-            'ime': map['ime'] ?? '',
-            'adresa_bela_crkva': map['adresa_polaska'] ?? '',
-            'adresa_vrsac': map['adresa_polaska'] ?? '',
-            'id': map['mesecni_putnik_id'] ?? map['id']?.toString(),
-          });
-          mapped.add(tentative);
+          // Skip invalid records since we removed legacy compatibility
+          continue;
         } catch (rowErr) {
           dlog('⚠️ [MESECNI PUTNIK SERVICE] Preskacem red: $rowErr');
         }

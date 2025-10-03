@@ -8,7 +8,7 @@ void main() {
 
       for (final grad in testGradovi) {
         final normalizedGrad = grad.toLowerCase().trim();
-        print('$grad -> normalized: "$normalizedGrad"');
+        // Debug output removed
 
         final allowedCities = [
           'vrsac',
@@ -34,18 +34,18 @@ void main() {
         for (final allowed in allowedCities) {
           if (normalizedGrad.contains(allowed) ||
               allowed.contains(normalizedGrad)) {
-            print('  ✅ Match found with: "$allowed"');
+            // Debug output removed
             found = true;
             break;
           }
         }
 
         if (!found) {
-          print('  ❌ No match found');
+          // Debug output removed
           // Pokušaj da nađem najsličniju
           for (final allowed in allowedCities) {
             if (allowed.contains(normalizedGrad.substring(0, 3))) {
-              print('    Similar: "$allowed"');
+              // Debug output removed
             }
           }
         }

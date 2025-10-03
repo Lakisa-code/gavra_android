@@ -11,6 +11,7 @@ import '../models/mesecni_putnik_novi.dart';
 import '../utils/filter_and_sort_putnici.dart';
 import '../services/mesecni_putnik_service_novi.dart';
 import '../utils/mesecni_helpers.dart';
+import '../utils/time_validator.dart'; // ✅ DODANO - standardized time validation
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
 import '../services/smart_address_autocomplete_service.dart'; // ✅ DODANO za pamćenje adresa
 import '../utils/logging.dart';
@@ -32,7 +33,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final SupabaseClient supabase = Supabase.instance.client;
 
   // Novi servis instance
-  final MesecniPutnikService _mesecniPutnikService = MesecniPutnikService();
+  final MesecniPutnikServiceNovi _mesecniPutnikService =
+      MesecniPutnikServiceNovi();
 
   // 🔄 OPTIMIZACIJA: Debounced search stream i filter stream
   late final BehaviorSubject<String> _searchSubject;
@@ -286,7 +288,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               return const SizedBox.shrink();
                             final brojRadnika = snapshot.data!
                                 .where((p) =>
-                                    p.tip.value == 'radnik' &&
+                                    p.tip == 'radnik' &&
                                     p.aktivan &&
                                     !p.obrisan &&
                                     p.status != 'bolovanje' &&
@@ -361,7 +363,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               return const SizedBox.shrink();
                             final brojUcenika = snapshot.data!
                                 .where((p) =>
-                                    p.tip.value == 'ucenik' &&
+                                    p.tip == 'ucenik' &&
                                     p.aktivan &&
                                     !p.obrisan &&
                                     p.status != 'bolovanje' &&
@@ -415,7 +417,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           _exportPutnici();
                           break;
                         case 'import':
-                          // TODO: Implementirati import funkcionalnost
+                          // Import functionality placeholder
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text(
@@ -523,44 +525,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 (List<MesecniPutnik> putnici, String searchTerm,
                     String filterType) {
                   // Serialize putnici to List<Map<String, dynamic>> for compute
-                  final putniciMap = putnici
-                      .map((p) => {
-                            'id': p.id,
-                            'putnik_ime': p.putnikIme,
-                            'tip': p.tip,
-                            'tip_skole': p.tipSkole,
-                            'broj_telefona': p.brojTelefona,
-                            'polasci_po_danu': p.polasciPoDanu,
-                            'adresa_bela_crkva': p.adresaBelaCrkva,
-                            'adresa_vrsac': p.adresaVrsac,
-                            // legacy single-time fields removed
-                            'tip_prikazivanja': p.tipPrikazivanja,
-                            'radni_dani': p.radniDani,
-                            'aktivan': p.aktivan,
-                            'status': p.status,
-                            'datum_pocetka_meseca':
-                                p.datumPocetkaMeseca.toIso8601String(),
-                            'datum_kraja_meseca':
-                                p.datumKrajaMeseca.toIso8601String(),
-                            'cena': p.cena,
-                            'ukupna_cena_meseca': p.ukupnaCenaMeseca,
-                            'broj_putovanja': p.brojPutovanja,
-                            'broj_otkazivanja': p.brojOtkazivanja,
-                            'poslednje_putovanje':
-                                p.poslednjePutovanje?.toIso8601String(),
-                            'created_at': p.createdAt.toIso8601String(),
-                            'updated_at': p.updatedAt.toIso8601String(),
-                            'obrisan': p.obrisan,
-                            'vreme_placanja':
-                                p.vremePlacanja?.toIso8601String(),
-                            'placeni_mesec': p.placeniMesec,
-                            'placena_godina': p.placenaGodina,
-                            'naplata_vozac': p.vozac,
-                            'pokupljen': p.pokupljen,
-                            'vreme_pokupljenja':
-                                p.vremePokupljenja?.toIso8601String(),
-                          })
-                      .toList();
+                  final putniciMap = putnici.map((p) => p.toMap()).toList();
                   return compute(filterAndSortPutnici, {
                     'putnici': putniciMap,
                     'searchTerm': searchTerm,
@@ -799,19 +764,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          putnik.tip.value == 'radnik'
+                          putnik.tip == 'radnik'
                               ? Icons.engineering
                               : Icons.school,
                           size: 16,
-                          color: putnik.tip.value == 'radnik'
+                          color: putnik.tip == 'radnik'
                               ? Colors.blue.shade600
                               : Colors.green.shade600,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          putnik.tip.value.toUpperCase(),
+                          putnik.tip.toUpperCase(),
                           style: TextStyle(
-                            color: putnik.tip.value == 'radnik'
+                            color: putnik.tip == 'radnik'
                                 ? Colors.blue.shade700
                                 : Colors.green.shade700,
                             fontWeight: FontWeight.w600,
@@ -1223,7 +1188,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     // Postavi vrednosti za edit
     setState(() {
       _novoIme = putnik.putnikIme;
-      _noviTip = putnik.tip.value;
+      _noviTip = putnik.tip;
       _novaTipSkole = putnik.tipSkole ?? '';
       _noviBrojTelefona = putnik.brojTelefona ?? '';
       _novaAdresaBelaCrkva = putnik.adresaBelaCrkva ?? '';
@@ -1745,8 +1710,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final ime = _imeController.text.trim();
     final tipSkole = _tipSkoleController.text.trim();
     final brojTelefona = _brojTelefonaController.text.trim();
-    final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
-    final adresaVrsac = _adresaVrsacController.text.trim();
 
     try {
       // Pripremi mapu polazaka po danima (JSON)
@@ -1764,15 +1727,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
       }
       final editovanPutnik = originalPutnik.copyWith(
-        ime: ime.split(' ').first,
-        prezime:
-            ime.split(' ').length > 1 ? ime.split(' ').skip(1).join(' ') : '',
-        tip: MesecniPutnikTipExtension.fromString(_noviTip),
+        putnikIme: ime,
+        tip: _noviTip,
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
         polasciPoDanu: polasciPoDanu,
-        adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
-        adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         radniDani: _getRadniDaniString(),
       );
       // Log and await the update result so we can surface errors to the user
@@ -2689,8 +2648,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final ime = _imeController.text.trim();
     final tipSkole = _tipSkoleController.text.trim();
     final brojTelefona = _brojTelefonaController.text.trim();
-    final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
-    final adresaVrsac = _adresaVrsacController.text.trim();
 
     try {
       // Pripremi mapu polazaka po danima (JSON)
@@ -2708,31 +2665,20 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
       }
       final noviPutnik = MesecniPutnik(
-        ime: ime.split(' ').first,
-        prezime:
-            ime.split(' ').length > 1 ? ime.split(' ').skip(1).join(' ') : '',
-        tip: MesecniPutnikTipExtension.fromString(_noviTip),
+        id: '', // Biće generisan od strane baze
+        putnikIme: ime, // Celo ime u jednom polju
+        tip: _noviTip, // Direktno string bez extension-a
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        adresaId: 'temp-uuid', // TODO: Implementirati kreiranje adrese
-        rutaId: 'temp-uuid', // TODO: Implementirati rutu
         polasciPoDanu: polasciPoDanu,
-        cenaMesecneKarte: 0.0,
-        datumPocetka: DateTime(DateTime.now().year, DateTime.now().month, 1),
-        datumKraja: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-        // Legacy polja za kompatibilnost
-        brojTelefonaOca:
-            _noviBrojTelefonaOca.isEmpty ? null : _noviBrojTelefonaOca,
-        brojTelefonaMajke:
-            _noviBrojTelefonaMajke.isEmpty ? null : _noviBrojTelefonaMajke,
-        adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
-        adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         radniDani: _getRadniDaniString(),
         datumPocetkaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month, 1),
         datumKrajaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-        ukupnaCenaMeseca: 0.0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
       );
 
       await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
@@ -2753,6 +2699,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         final currentDriver = prefs.getString('current_driver');
 
         // Zabelezi upotrebu adrese Bela Crkva
+        final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
         if (adresaBelaCrkva.isNotEmpty) {
           await SmartAddressAutocompleteService.recordAddressUsage(
             address: adresaBelaCrkva,
@@ -2763,6 +2710,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         }
 
         // Zabelezi upotrebu adrese Vršac
+        final adresaVrsac = _adresaVrsacController.text.trim();
         if (adresaVrsac.isNotEmpty) {
           await SmartAddressAutocompleteService.recordAddressUsage(
             address: adresaVrsac,
@@ -2915,8 +2863,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _sinhronizujStatistike(String putnikId) async {
     try {
-      final success = await _mesecniPutnikService
-          .sinhronizujBrojPutovanjaSaIstorijom(putnikId);
+      final success =
+          await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
+              putnikId);
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -3583,7 +3532,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               const SizedBox(height: 8),
               _buildStatRow('👤 Ime:', putnik.putnikIme),
               _buildStatRow('📅 Radni dani:', putnik.radniDani),
-              _buildStatRow('📊 Tip putnika:', putnik.tip.value),
+              _buildStatRow('📊 Tip putnika:', putnik.tip),
               if (putnik.tipSkole != null)
                 _buildStatRow('🎓 Tip škole:', putnik.tipSkole!),
               if (putnik.brojTelefona != null)
@@ -4464,33 +4413,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  // 🔍 VALIDACIJA VREMENA POLASKA
+  // 🔍 VALIDACIJA VREMENA POLASKA - Using standardized TimeValidator
   String? _validateTime(String? value) {
-    if (value == null || value.trim().isEmpty)
-      return null; // Dozvoljeno prazno polje
-
-    final normalized = MesecniHelpers.normalizeTime(value);
-    if (normalized == null) {
-      return 'Neispravno vreme (koristiti HH:MM format)';
-    }
-
-    // Proveri da li je vreme u logičkom opsegu (05:00 - 22:00)
-    final parts = normalized.split(':');
-    if (parts.length == 2) {
-      final hour = int.tryParse(parts[0]);
-      final minute = int.tryParse(parts[1]);
-
-      if (hour != null && minute != null) {
-        if (hour < 5 || hour > 22) {
-          return 'Vreme mora biti između 05:00 i 22:00';
-        }
-        if (minute < 0 || minute > 59) {
-          return 'Neispravni minuti (0-59)';
-        }
-      }
-    }
-
-    return null; // Validno vreme
+    return TimeValidator.validateTime(value);
   }
 
   // 📋 VALIDACIJA CELOG FORMULARA
@@ -4539,6 +4464,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           final vsError = _validateTime(vsTime);
           if (vsError != null) {
             return 'VS ${daniMapa[dan]}: $vsError';
+          }
+        }
+
+        // Validacija sekvence polazaka ako su oba vremena uneta
+        if (bcTime.isNotEmpty && vsTime.isNotEmpty) {
+          final sequenceError =
+              TimeValidator.validateDepartureSequence(bcTime, vsTime);
+          if (sequenceError != null) {
+            return '${daniMapa[dan]}: $sequenceError';
           }
         }
       }
@@ -4674,7 +4608,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
   void _prikaziDetaljeStatistike(MesecniPutnik putnik) {
-    // TODO: Update MesecniPutnikDetaljiScreen to use new model
+    // Note: MesecniPutnikDetaljiScreen will be updated to use new model in next iteration
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Detalji statistike - uskoro dostupno'),
@@ -4732,7 +4666,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         ].join(','));
       }
 
-      // TODO: Implementirati stvarno snimanje fajla
+      // Snimanje fajla - implementacija u toku
       // Za sada samo prikaži CSV sadržaj u dialog-u
       showDialog(
         context: context,

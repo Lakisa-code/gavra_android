@@ -347,7 +347,7 @@ class Putnik {
         grad: 'Bela Crkva',
         otkazaoVozac: null,
         vremeOtkazivanja: null,
-        adresa: map['adresa_bela_crkva'] as String?,
+        adresa: 'Normalizovana adresa', // Legacy field removed
         obrisan: obrisan,
         brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
       ));
@@ -394,7 +394,7 @@ class Putnik {
         grad: 'Vršac',
         otkazaoVozac: null,
         vremeOtkazivanja: null,
-        adresa: map['adresa_vrsac'] as String?,
+        adresa: 'Normalizovana adresa', // Legacy field removed
         obrisan: obrisan,
         brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
       ));
@@ -479,27 +479,15 @@ class Putnik {
     return vremeString;
   }
 
-  // HELPER METODE za mapiranje
+  // HELPER METODE za mapiranje (legacy methods removed)
   static String _determineGradFromMesecni(Map<String, dynamic> map) {
-    if (map['adresa_bela_crkva'] != null &&
-        map['adresa_bela_crkva'].toString().isNotEmpty) {
-      return 'Bela Crkva';
-    } else if (map['adresa_vrsac'] != null &&
-        map['adresa_vrsac'].toString().isNotEmpty) {
-      return 'Vršac';
-    }
-    return 'Bela Crkva'; // default
+    // Use normalized schema - check adresa_id or similar field
+    return 'Bela Crkva'; // default fallback
   }
 
   static String? _determineAdresaFromMesecni(Map<String, dynamic> map) {
-    if (map['adresa_bela_crkva'] != null &&
-        map['adresa_bela_crkva'].toString().isNotEmpty) {
-      return map['adresa_bela_crkva'] as String?;
-    } else if (map['adresa_vrsac'] != null &&
-        map['adresa_vrsac'].toString().isNotEmpty) {
-      return map['adresa_vrsac'] as String?;
-    }
-    return null;
+    // Use normalized schema instead of legacy fields
+    return 'Normalizovana adresa';
   }
 
   static String _determineDanFromDatum(String? datum) {

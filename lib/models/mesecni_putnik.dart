@@ -159,7 +159,11 @@ class MesecniPutnik {
       'polasci_po_danu': polasciPoDanuForDb,
       'adresa_bela_crkva': adresaBelaCrkva,
       'adresa_vrsac': adresaVrsac,
-      // TODO: Future implementation with UUID references: adresa_polaska_id, adresa_dolaska_id
+      // UUID references for normalized address schema
+      'adresa_polaska_id':
+          null, // Will be implemented when address normalization is complete
+      'adresa_dolaska_id':
+          null, // Will be implemented when address normalization is complete
       'tip_prikazivanja': tipPrikazivanja,
       'radni_dani': radniDani,
       'aktivan': aktivan,
@@ -167,7 +171,8 @@ class MesecniPutnik {
       'datum_pocetka_meseca':
           datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
-      'cena': cena ?? ukupnaCenaMeseca,
+      'cena': cena ?? ukupnaCenaMeseca, // Glavna cena kolona
+      'ukupna_cena_meseca': ukupnaCenaMeseca, // Legacy podrška
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
       'poslednji_putovanje':

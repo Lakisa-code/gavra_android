@@ -51,37 +51,5 @@ List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
 
 // Helper za serijalizaciju MesecniPutnik u Map
 Map<String, dynamic> _mesecniPutnikToMap(MesecniPutnik p) {
-  // Ovdje možeš koristiti toMap() ako postoji, ili ručno mapirati polja
-  // Za sada koristimo samo polja potrebna za prikaz
-  return {
-    'id': p.id,
-    'putnik_ime': p.putnikIme,
-    'tip': p.tip,
-    'tip_skole': p.tipSkole,
-    'broj_telefona': p.brojTelefona,
-    'polasci_po_danu': p.polasciPoDanu,
-    'adresa_bela_crkva': p.adresaBelaCrkva,
-    'adresa_vrsac': p.adresaVrsac,
-    // legacy single-time fields removed
-    'tip_prikazivanja': p.tipPrikazivanja,
-    'radni_dani': p.radniDani,
-    'aktivan': p.aktivan,
-    'status': p.status,
-    'datum_pocetka_meseca': p.datumPocetkaMeseca.toIso8601String(),
-    'datum_kraja_meseca': p.datumKrajaMeseca.toIso8601String(),
-    'cena': p.cena,
-    'ukupna_cena_meseca': p.ukupnaCenaMeseca,
-    'broj_putovanja': p.brojPutovanja,
-    'broj_otkazivanja': p.brojOtkazivanja,
-    'poslednje_putovanje': p.poslednjiPutovanje?.toIso8601String(),
-    'created_at': p.createdAt.toIso8601String(),
-    'updated_at': p.updatedAt.toIso8601String(),
-    'obrisan': p.obrisan,
-    'vreme_placanja': p.vremePlacanja?.toIso8601String(),
-    'placeni_mesec': p.placeniMesec,
-    'placena_godina': p.placenaGodina,
-    'naplata_vozac': p.vozac,
-    'pokupljen': p.pokupljen,
-    'vreme_pokupljenja': p.vremePokupljenja?.toIso8601String(),
-  };
+  return p.toMap();
 }

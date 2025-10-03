@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
-import '../models/mesecni_putnik.dart';
+import '../models/mesecni_putnik_novi.dart' as novi_model;
 import '../services/geocoding_service.dart';
 import '../services/haptic_service.dart';
-import '../services/mesecni_putnik_service.dart';
+import '../services/mesecni_putnik_service_novi.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../utils/vozac_boja.dart';
@@ -464,7 +464,7 @@ class _PutnikCardState extends State<PutnikCard> {
   Future<void> _handleMesecniPayment() async {
     // Prvo dohvati mesečnog putnika iz baze po imenu (ne po ID!)
     final mesecniPutnik =
-        await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
+        await MesecniPutnikServiceNovi.getMesecniPutnikByIme(_putnik.ime);
 
     if (mesecniPutnik == null) {
       if (mounted) {
@@ -490,11 +490,11 @@ class _PutnikCardState extends State<PutnikCard> {
     int brojOtkazivanja = 0;
     try {
       brojPutovanja =
-          await MesecniPutnikService.izracunajBrojPutovanjaIzIstorije(
+          await MesecniPutnikServiceNovi.izracunajBrojPutovanjaIzIstorije(
               _putnik.id!);
       // ✅ NOVA LOGIKA - računaj otkazivanja iz stvarne istorije
       brojOtkazivanja =
-          await MesecniPutnikService.izracunajBrojOtkazivanjaIzIstorije(
+          await MesecniPutnikServiceNovi.izracunajBrojOtkazivanjaIzIstorije(
               _putnik.id!);
     } catch (e) {
       // Fallback na podatke iz modela
@@ -860,7 +860,7 @@ class _PutnikCardState extends State<PutnikCard> {
       if (isMesecni && mesec != null) {
         // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
         final mesecniPutnik =
-            await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
+            await MesecniPutnikServiceNovi.getMesecniPutnikByIme(_putnik.ime);
         if (mesecniPutnik != null) {
           // Koristi static funkciju kao u mesecni_putnici_screen.dart
           await _sacuvajPlacanjeStatic(
@@ -1975,7 +1975,8 @@ class _PutnikCardState extends State<PutnikCard> {
   }
 
   // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u mesecni_putnici_screen.dart
-  bool _isMonthPaidStatic(String monthYear, MesecniPutnik? mesecniPutnik) {
+  bool _isMonthPaidStatic(
+      String monthYear, novi_model.MesecniPutnik? mesecniPutnik) {
     if (mesecniPutnik == null) return false;
 
     if (mesecniPutnik.vremePlacanja == null ||
@@ -2087,7 +2088,7 @@ class _PutnikCardState extends State<PutnikCard> {
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
-      final uspeh = await MesecniPutnikService.azurirajPlacanjeZaMesec(
+      final uspeh = await MesecniPutnikServiceNovi().azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
         vozacIme,

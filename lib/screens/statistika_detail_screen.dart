@@ -5,7 +5,7 @@ import '../models/putnik.dart';
 import '../services/statistika_service.dart';
 import '../services/putnik_service.dart'; // 🔄 DODANO za realtime
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
-import '../theme.dart'; // DODANO za theme extensions
+
 import '../widgets/custom_back_button.dart';
 
 class StatistikaDetailScreen extends StatefulWidget {

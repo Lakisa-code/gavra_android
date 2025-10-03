@@ -4,9 +4,9 @@ import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
-import '../models/mesecni_putnik.dart';
+import '../models/mesecni_putnik_novi.dart';
 import 'putnik_service.dart';
-import 'mesecni_putnik_service.dart';
+import 'mesecni_putnik_service_novi.dart';
 import 'statistika_service.dart';
 import 'realtime_service.dart';
 import 'supabase_safe.dart';
@@ -35,7 +35,7 @@ class RealTimeStatistikaService {
 
       _kombinovaniStream = CombineLatestStream.combine2(
         PutnikService().streamKombinovaniPutniciFiltered(),
-        MesecniPutnikService.streamAktivniMesecniPutnici(),
+        MesecniPutnikServiceNovi.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
           return [putnici, mesecni];
         },

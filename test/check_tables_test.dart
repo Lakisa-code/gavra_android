@@ -31,10 +31,10 @@ void main() {
         final response = await supabase.from(tableName).select('*').limit(1);
 
         if (response.isNotEmpty) {
-          print('✅ $tableName - postoji');
+          // Debug output removed
           existingTables++;
         } else {
-          print('⚠️ $tableName - postoji ali je prazan');
+          // Debug output removed
           existingTables++;
         }
       } catch (e) {

@@ -13,7 +13,7 @@ import '../utils/logging.dart';
 class CombinedPutnikService {
   final Logger _logger = Logger();
   final DnevniPutnikService _dnevniService = DnevniPutnikService();
-  final MesecniPutnikService _mesecniService = MesecniPutnikService();
+  final MesecniPutnikServiceNovi _mesecniService = MesecniPutnikServiceNovi();
   final AdresaService _adresaService = AdresaService();
   final RutaService _rutaService = RutaService();
 
@@ -38,37 +38,37 @@ class CombinedPutnikService {
     String? vreme,
   }) async {
     try {
-      final date = isoDate != null ? DateTime.parse(isoDate) : DateTime.now();
+      // final date = isoDate != null ? DateTime.parse(isoDate) : DateTime.now();
 
-      // Dohvati dnevne putnike
-      final dnevniPutnici = await _dnevniService.getDnevniPutniciZaDatum(date);
+      // TODO: Dohvati dnevne putnike - PRIVREMENO ONEMOGUĆENO
+      // final dnevniPutnici = await _dnevniService.getDnevniPutniciZaDatum(date);
 
-      // Dohvati mesečne putnike
-      final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
+      // TODO: Dohvati mesečne putnike - PRIVREMENO ONEMOGUĆENO
+      // final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
 
       // Konvertuj u Putnik objekte
       final List<Putnik> result = [];
 
-      // Konvertuj dnevne putnike
-      for (final dnevniPutnik in dnevniPutnici) {
-        final adresa =
-            await _adresaService.getAdresaById(dnevniPutnik.adresaId);
-        final ruta = await _rutaService.getRutaById(dnevniPutnik.rutaId);
-        if (adresa != null && ruta != null) {
-          result.add(dnevniPutnik.toPutnik(adresa, ruta));
-        }
-      }
+      // TODO: Konvertuj dnevne putnike - PRIVREMENO ONEMOGUĆENO
+      // for (final dnevniPutnik in dnevniPutnici) {
+      //   // PROBLEM: dnevniPutnik nema adresaId, rutaId ili toPutnik metodu
+      //   // final adresa = await _adresaService.getAdresaById(dnevniPutnik.adresaId);
+      //   // final ruta = await _rutaService.getRutaById(dnevniPutnik.rutaId);
+      //   // if (adresa != null && ruta != null) {
+      //   //   result.add(dnevniPutnik.toPutnik(adresa, ruta));
+      //   // }
+      // }
 
-      // Konvertuj mesečne putnike za dati dan
-      final dan = _getDayAbbreviation(date.weekday);
-      for (final mesecniPutnik in mesecniPutnici) {
-        final adresa =
-            await _adresaService.getAdresaById(mesecniPutnik.adresaId);
-        final ruta = await _rutaService.getRutaById(mesecniPutnik.rutaId);
-        if (adresa != null && ruta != null) {
-          result.addAll(mesecniPutnik.toPutnikList(dan, adresa, ruta));
-        }
-      }
+      // TODO: Konvertuj mesečne putnike za dati dan - PRIVREMENO ONEMOGUĆENO
+      // final dan = _getDayAbbreviation(date.weekday);
+      // for (final mesecniPutnik in mesecniPutnici) {
+      //   // PROBLEM: mesecniPutnik nema adresaId, rutaId ili toPutnikList metodu
+      //   // final adresa = await _adresaService.getAdresaById(mesecniPutnik.adresaId);
+      //   // final ruta = await _rutaService.getRutaById(mesecniPutnik.rutaId);
+      //   // if (adresa != null && ruta != null) {
+      //   //   result.addAll(mesecniPutnik.toPutnikList(dan, adresa, ruta));
+      //   // }
+      // }
 
       // Filtriraj po gradu i vremenu koristeći normalizaciju (vrijeme/grad)
       final filtered = result.where((putnik) {
@@ -128,62 +128,18 @@ class CombinedPutnikService {
 
   /// Dohvata sve putnike iz obe tabele (za kompatibilnost)
   Future<List<Putnik>> getAllPutniciFromBothTables({String? targetDay}) async {
-    // TODO: Implementirati dohvatanje iz normalizovane šeme
-    // Za sada vraćamo praznu listu
+    // TODO: Implementirati dohvatanje iz normalizovane šeme - PRIVREMENO ONEMOGUĆENO
+    // PROBLEM: Ni dnevni ni mesečni modeli nemaju potrebna polja i metode
     try {
-      // Determine target date from provided full day name (e.g., "Ponedeljak")
-      DateTime now = DateTime.now();
-      DateTime targetDate = now;
-      if (targetDay != null && targetDay.isNotEmpty) {
-        final dayNames = [
-          'ponedeljak',
-          'utorak',
-          'sreda',
-          'četvrtak',
-          'petak',
-          'subota',
-          'nedelja'
-        ];
-        final idx = dayNames.indexOf(targetDay.toLowerCase());
-        if (idx != -1) {
-          final targetDayIndex = idx; // 0-based where 0 == ponedeljak
-          final currentDayIndex = now.weekday - 1; // 0-based
-          int daysToAdd = targetDayIndex >= currentDayIndex
-              ? targetDayIndex - currentDayIndex
-              : (7 - currentDayIndex) + targetDayIndex;
-          targetDate = now.add(Duration(days: daysToAdd));
-        }
-      }
+      dlog(
+          '⚠️ getAllPutniciFromBothTables: Metoda privremeno onemogućena - model refactoring u toku');
+      return [];
 
-      // Fetch daily passengers for the computed date
-      final dnevniPutnici =
-          await _dnevniService.getDnevniPutniciZaDatum(targetDate);
-
-      // Fetch monthly passengers
-      final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
-
-      final List<Putnik> combined = [];
-
-      // Convert daily putnici
-      for (final dnevni in dnevniPutnici) {
-        final adresa = await _adresaService.getAdresaById(dnevni.adresaId);
-        final ruta = await _rutaService.getRutaById(dnevni.rutaId);
-        if (adresa != null && ruta != null) {
-          combined.add(dnevni.toPutnik(adresa, ruta));
-        }
-      }
-
-      // Convert monthly putnici for the day abbreviation
-      final dayAbbrev = _abbrevFromFullName(targetDay ?? '');
-      for (final mes in mesecniPutnici) {
-        final adresa = await _adresaService.getAdresaById(mes.adresaId);
-        final ruta = await _rutaService.getRutaById(mes.rutaId);
-        if (adresa != null && ruta != null) {
-          combined.addAll(mes.toPutnikList(dayAbbrev, adresa, ruta));
-        }
-      }
-
-      return combined;
+      // TODO: Implement kada se kompletira refactoring modela
+      // final DateTime targetDate = ...
+      // final dnevniPutnici = await _dnevniService.getDnevniPutniciZaDatum(targetDate);
+      // final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
+      // ... convert to Putnik list
     } catch (e) {
       dlog('❌ Error in getAllPutniciFromBothTables: $e');
       return [];

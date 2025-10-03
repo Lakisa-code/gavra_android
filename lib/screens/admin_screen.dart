@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/combined_putnik_service.dart'; // 🆕 NOVI kombinovani servis
+import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 
 import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // DODANO za kusur kocke
@@ -30,8 +30,8 @@ class AdminScreen extends StatefulWidget {
 
 class _AdminScreenState extends State<AdminScreen> {
   String? _currentDriver;
-  final CombinedPutnikService _putnikService =
-      CombinedPutnikService(); // 🆕 NOVI kombinovani servis
+  final PutnikService _putnikService =
+      PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 
   //
   // Statistika pazara
