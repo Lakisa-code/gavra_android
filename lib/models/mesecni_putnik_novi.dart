@@ -1,4 +1,5 @@
 import '../utils/mesecni_helpers.dart';
+import '../services/vozac_mapping_service.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
 class MesecniPutnik {
@@ -62,6 +63,11 @@ class MesecniPutnik {
     this.vozac,
     this.statistics = const {},
   });
+
+  /// Dobij ime vozača iz UUID-a sa fallback na 'Nepoznat'
+  String get vozacIme {
+    return VozacMappingService.getVozacImeWithFallback(vozac);
+  }
 
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
     // Parse polasciPoDanu using helper

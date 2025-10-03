@@ -212,24 +212,14 @@ class MesecniPutnikServiceNovi {
     }
   }
 
-  /// Ažurira plaćanje za mesec (placeholder)
+  /// Ažurira plaćanje za mesec (vozacId je UUID)
   Future<bool> azurirajPlacanjeZaMesec(String putnikId, double iznos,
       String vozacId, DateTime pocetakMeseca, DateTime krajMeseca) async {
     try {
-      // Validacija vozac_id - ako nije validan UUID, postavi na null
+      // vozacId je već UUID koji dolazi iz _getCurrentDriverUuid()
       String? validVozacId;
-      if (vozacId.isNotEmpty) {
-        // Proverava da li je vozacId validan UUID format
-        final uuidRegex = RegExp(
-            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-            caseSensitive: false);
-        if (uuidRegex.hasMatch(vozacId)) {
-          validVozacId = vozacId;
-        } else {
-          // Ako je ime vozača, mapiramo ga na null za sada
-          print('Vozač "$vozacId" nije UUID format, postavljam na null');
-          validVozacId = null;
-        }
+      if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
+        validVozacId = vozacId;
       }
 
       await updateMesecniPutnik(putnikId, {

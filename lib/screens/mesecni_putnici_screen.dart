@@ -18,6 +18,7 @@ import '../services/smart_address_autocomplete_service.dart';
 import '../utils/logging.dart';
 import '../theme.dart';
 import '../widgets/custom_back_button.dart';
+import '../services/vozac_mapping_service.dart';
 
 class MesecniPutniciScreen extends StatefulWidget {
   const MesecniPutniciScreen({Key? key}) : super(key: key);
@@ -2653,6 +2654,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final adresaVrsac = _adresaVrsacController.text.trim();
 
     try {
+      // Dobij trenutnog vozača kao UUID
+      final currentDriverUuid = await _getCurrentDriverUuid();
+      
       // Pripremi mapu polazaka po danima (JSON)
       final Map<String, List<String>> polasciPoDanu = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -2685,6 +2689,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        vozac: currentDriverUuid.isNotEmpty ? currentDriverUuid : null,
         // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
       );
 
@@ -2732,9 +2737,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       }
       // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
       try {
-        // Dobij trenutnog vozača
+        // Dobij trenutnog vozača kao UUID
         final prefs = await SharedPreferences.getInstance();
-        final currentDriver = prefs.getString('current_driver');
+        final currentDriverUuid = await _getCurrentDriverUuid();
+        final currentDriverName = await _getCurrentDriver();
 
         // Zabelezi upotrebu adrese Bela Crkva
         final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
@@ -2742,7 +2748,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           await SmartAddressAutocompleteService.recordAddressUsage(
             address: adresaBelaCrkva,
             city: 'Bela Crkva',
-            vozac: currentDriver,
+            vozac: currentDriverName,
             timeContext: DateTime.now(),
           );
         }
@@ -2753,7 +2759,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           await SmartAddressAutocompleteService.recordAddressUsage(
             address: adresaVrsac,
             city: 'Vršac',
-            vozac: currentDriver,
+            vozac: currentDriverName,
             timeContext: DateTime.now(),
           );
         }
@@ -2767,13 +2773,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             // Sačuvaj BC vremena ako postoje
             if (bcTime.isNotEmpty) {
               await _sacuvajVremePolasakaUIstorijuZaDan(
-                  prefs, bcTime, 'BC', dan, currentDriver);
+                  prefs, bcTime, 'BC', dan, currentDriverName);
             }
 
             // Sačuvaj VS vremena ako postoje
             if (vsTime.isNotEmpty) {
               await _sacuvajVremePolasakaUIstorijuZaDan(
-                  prefs, vsTime, 'VS', dan, currentDriver);
+                  prefs, vsTime, 'VS', dan, currentDriverName);
             }
           }
         }
@@ -3104,14 +3110,32 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     return '${datum.day}.${datum.month}.${datum.year}';
   }
 
-  // � DOBIJANJE TRENUTNOG VOZAČA
-  Future<String> _getCurrentDriver() async {
+  // � DOBIJANJE TRENUTNOG VOZAČA (kao UUID)
+  Future<String> _getCurrentDriverUuid() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('current_driver') ?? 'Nepoznat vozač';
+      final driverName = prefs.getString('current_driver');
+      if (driverName != null && driverName.isNotEmpty) {
+        // Ako je već UUID, vrati direktno
+        if (VozacMappingService.isValidVozacUuid(driverName)) {
+          return driverName;
+        }
+        // Inače konvertuj ime u UUID
+        final uuid = VozacMappingService.getVozacUuid(driverName);
+        if (uuid != null) {
+          return uuid;
+        }
+      }
+      return ''; // Vraća prazan string ako nije poznat
     } catch (e) {
-      return 'Nepoznat vozač';
+      return '';
     }
+  }
+
+  // Čuva legacy funkciju za kompatibilnost
+  Future<String> _getCurrentDriver() async {
+    final uuid = await _getCurrentDriverUuid();
+    return VozacMappingService.getVozacImeWithFallback(uuid);
   }
 
   // �💰 PRIKAZ DIJALOGA ZA PLAĆANJE
@@ -3610,7 +3634,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   putnik.vremePlacanja != null
                       ? _formatDatum(putnik.vremePlacanja!)
                       : 'Nije plaćeno'),
-              _buildStatRow('🚗 Vozač (naplata):', putnik.vozac ?? 'Nepoznat'),
+              _buildStatRow('🚗 Vozač (naplata):', putnik.vozacIme),
             ],
           ),
         ),
@@ -3864,8 +3888,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   Future<void> _sacuvajPlacanje(
       String putnikId, double iznos, String mesec) async {
     try {
-      // � Učitaj trenutnog vozača
-      final currentDriver = await _getCurrentDriver();
+      // � Učitaj trenutnog vozača kao UUID
+      final currentDriverUuid = await _getCurrentDriverUuid();
 
       // �📅 Konvertuj string meseca u datume
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
@@ -3873,7 +3897,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final uspeh = await _mesecniPutnikService.azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
-        currentDriver, // Koristi trenutnog vozača umesto hardkodovanog
+        currentDriverUuid, // Koristi UUID trenutnog vozača
         datumi['pocetakMeseca'] as DateTime,
         datumi['krajMeseca'] as DateTime,
       );
