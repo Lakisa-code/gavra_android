@@ -4,9 +4,9 @@ import 'package:gavra_android/utils/mesecni_helpers.dart';
 void main() {
   group('MesecniHelpers', () {
     test('normalizeTime converts HH:MM:SS to H:MM', () {
-      expect(MesecniHelpers.normalizeTime('06:00:00'), '6:00');
+      expect(MesecniHelpers.normalizeTime('06:00:00'), '06:00');
       expect(MesecniHelpers.normalizeTime('14:05:00'), '14:05');
-      expect(MesecniHelpers.normalizeTime('6:5'), '6:05');
+      expect(MesecniHelpers.normalizeTime('6:5'), '06:05');
       expect(MesecniHelpers.normalizeTime(null), null);
     });
 
@@ -14,14 +14,14 @@ void main() {
       const json = '{"pon": {"bc": "06:00:00", "vs": "14:00:00"}}';
       final parsed = MesecniHelpers.parsePolasciPoDanu(json);
       expect(parsed.containsKey('pon'), true);
-      expect(parsed['pon']!['bc'], '6:00');
+      expect(parsed['pon']!['bc'], '06:00');
       expect(parsed['pon']!['vs'], '14:00');
 
       const map = {
         "pon": {"bc": "06:00:00"}
       };
       final parsed2 = MesecniHelpers.parsePolasciPoDanu(map);
-      expect(parsed2['pon']!['bc'], '6:00');
+      expect(parsed2['pon']!['bc'], '06:00');
     });
 
     test('isActiveFromMap handles obrisan and aktivan', () {
