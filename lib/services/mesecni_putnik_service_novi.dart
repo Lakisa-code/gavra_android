@@ -441,8 +441,14 @@ class MesecniPutnikServiceNovi {
               final filtered = listRaw.where((row) {
                 try {
                   final map = row as Map<String, dynamic>;
-                  // consider absent 'obrisan' as false (not deleted)
-                  return !(map['obrisan'] == true);
+                  // ✅ ISPRAVLJENO: Filtriraj i po aktivan statusu i po obrisan statusu
+                  final aktivan =
+                      map['aktivan'] ?? true; // default true ako nema vrednost
+                  final obrisan = map['obrisan'] ??
+                      false; // default false ako nema vrednost
+                  print(
+                      '🔍 MESECNI STREAM DEBUG: ${map['putnik_ime']} - aktivan: $aktivan, obrisan: $obrisan');
+                  return aktivan && !obrisan;
                 } catch (_) {
                   return true;
                 }

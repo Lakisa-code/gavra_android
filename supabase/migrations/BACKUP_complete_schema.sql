@@ -128,11 +128,6 @@ CREATE TABLE public.mesecni_putnici (
     
     -- NEW NAME FIELDS
     ime character varying,
-    prezime character varying,
-    
-    -- NEW DATE FIELDS (alternative naming)
-    datum_pocetka date,
-    datum_kraja date,
     
     PRIMARY KEY (id)
 );
@@ -149,7 +144,6 @@ CREATE TABLE public.dnevni_putnici (
     mesecna_karta boolean DEFAULT false,
     dan character varying NOT NULL,
     status character varying,
-    status_vreme timestamp with time zone,
     vreme_pokupljenja timestamp with time zone,
     vreme_placanja timestamp with time zone,
     placeno boolean DEFAULT false,

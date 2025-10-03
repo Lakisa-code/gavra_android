@@ -13,7 +13,6 @@
  public       | dnevni_putnici     | mesecna_karta        | boolean                  | YES         | false
  public       | dnevni_putnici     | dan                  | character varying        | NO          | 
  public       | dnevni_putnici     | status               | character varying        | YES         | 
- public       | dnevni_putnici     | status_vreme         | timestamp with time zone | YES         | 
  public       | dnevni_putnici     | vreme_pokupljenja    | timestamp with time zone | YES         | 
  public       | dnevni_putnici     | vreme_placanja       | timestamp with time zone | YES         | 
  public       | dnevni_putnici     | placeno              | boolean                  | YES         | false
@@ -81,10 +80,6 @@
  public       | mesecni_putnici    | adresa_bela_crkva    | text                     | YES         | 
  public       | mesecni_putnici    | adresa_vrsac         | text                     | YES         | 
  public       | mesecni_putnici    | ime                  | character varying        | YES         | 
- public       | mesecni_putnici    | prezime              | character varying        | YES         | 
- public       | mesecni_putnici    | datum_pocetka        | date                     | YES         | 
- public       | mesecni_putnici    | datum_kraja          | date                     | YES         | 
- public       | mesecni_putnici    | cena_mesecne_karte   | numeric                  | YES         | 
  public       | putovanja_istorija | id                   | uuid                     | NO          | gen_random_uuid()
  public       | putovanja_istorija | mesecni_putnik_id    | uuid                     | YES         | 
  public       | putovanja_istorija | tip_putnika          | character varying        | NO          | 

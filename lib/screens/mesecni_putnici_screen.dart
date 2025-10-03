@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/mesecni_putnik_novi.dart';
 import '../utils/filter_and_sort_putnici.dart';
 import '../services/mesecni_putnik_service_novi.dart';
+import '../services/realtime_service.dart'; // ✅ DODANO za stream sync
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart'; // ✅ DODANO - standardized time validation
 import '../services/real_time_statistika_service.dart'; // ✅ DODANO - novi real-time servis
@@ -2681,16 +2682,47 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
       );
 
-      await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+      print('🔄 DODAVANJE MESECNOG PUTNIKA: ${noviPutnik.putnikIme}');
+      print('   - aktivan: ${noviPutnik.aktivan}');
+      print('   - obrisan: ${noviPutnik.obrisan}');
+      print('   - tip: ${noviPutnik.tip}');
+
+      final dodatiPutnik =
+          await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+      print(
+          '✅ USPEŠNO DODAT PUTNIK: ${dodatiPutnik.id} - ${dodatiPutnik.putnikIme}');
+
+      // 🔄 KRITIČNO: Refresh RealtimeService da se promene propagiraju kroz sve servise
+      try {
+        await RealtimeService.instance.refreshNow();
+        print('🔄 FORSIRAJ REFRESH RealtimeService');
+      } catch (e) {
+        print('⚠️ GREŠKA pri refresh-u RealtimeService: $e');
+      }
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
         await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            noviPutnik, DateTime.now().add(Duration(days: 1)));
-      } catch (_) {}
+            dodatiPutnik, DateTime.now().add(Duration(days: 1)));
+        print(
+            '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}');
+      } catch (e) {
+        print('❌ GREŠKA pri kreiranju dnevnih putovanja: $e');
+      }
 
+      // ✅ DODATO: Forsiraj refresh state-a da se novi putnik odmah prikaže
       if (mounted) {
+        setState(() {});
         Navigator.pop(context);
+
+        // Prikaži uspešnu poruku
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Uspešno dodat putnik: ${dodatiPutnik.putnikIme}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
       // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
       try {
