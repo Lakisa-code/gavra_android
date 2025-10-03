@@ -12,12 +12,6 @@ void main() {
       // Debug output removed
       // Debug output removed
 
-      for (final grad in testGradovi) {
-        final result = !service._isCityBlocked(grad);
-        final status = result ? '✅ DOZVOLJEN' : '❌ BLOKIRAN';
-        // Debug output removed
-      }
-
       // Verifikacija da su svi gradovi dozvoljeni
       for (final grad in testGradovi) {
         final isBlocked = service._isCityBlocked(grad);

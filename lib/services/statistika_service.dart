@@ -292,15 +292,12 @@ class StatistikaService {
       }
 
       // Računaj pazar za sve vozače
-      int ukupnoPutnika = 0;
-      int validniPutnici = 0;
 
       // 🔧 GRUPIRANJE MESEČNIH PUTNIKA PO IMENU da se ne dupljiraju
       final Map<String, Putnik> mesecniPutniciGrupisani = {};
       final List<Putnik> ostalic = [];
 
       for (final putnik in putnici) {
-        ukupnoPutnika++;
 
         if (putnik.mesecnaKarta == true) {
           // Za mesečne putnike, grupisi po imenu (samo prvi valjan putnik)
@@ -326,7 +323,6 @@ class StatistikaService {
             putnik.naplatioVozac !=
                 null && // ✅ DODATO: proveri da naplatioVozac nije null
             _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          validniPutnici++;
           final vozac = putnik.naplatioVozac!;
           final iznos = putnik.iznosPlacanja!;
 
@@ -365,21 +361,18 @@ class StatistikaService {
     }
 
     // 1. SABERI OBIČNI PAZAR iz putnici tabele
-    int brojObicnihPutnika = 0;
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           final vozac = putnik.naplatioVozac!;
           if (pazarObicni.containsKey(vozac)) {
             pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
-            brojObicnihPutnika++;
           }
         } else {}
       }
     }
 
     // 2. SABERI MESEČNE KARTE - STVARNI PODACI
-    int brojMesecnihKarata = 0;
     try {
       // Učitaj sve mesečne putnike
       final mesecniPutnici =
@@ -397,7 +390,6 @@ class StatistikaService {
             if (pazarMesecne.containsKey(vozac)) {
               pazarMesecne[vozac] =
                   pazarMesecne[vozac]! + putnik.iznosPlacanja!;
-              brojMesecnihKarata++;
             }
           }
         }
@@ -450,14 +442,11 @@ class StatistikaService {
       };
     }
 
-    int ukupnoProcessiranihPutnika = 0;
-
     for (final putnik in putnici) {
       // Proverava da li je putnik u datom periodu (po vremenu dodavanja)
       if (putnik.vremeDodavanja != null &&
           _jeUVremenskomOpsegu(
               putnik.vremeDodavanja, normalizedFrom, normalizedTo)) {
-        ukupnoProcessiranihPutnika++;
 
         // 1. DODATI PUTNICI - ko je DODAO
         final dodaoVozac = putnik.dodaoVozac ?? 'Nepoznat';
@@ -513,8 +502,6 @@ class StatistikaService {
     }
 
     // 🆕 DODAJ MESEČNE PUTNICE - KORISTI STVARNE PODATKE (GRUPE PO ID)
-    int ukupnoMesecnihKarata = 0;
-
     // 💡 GRUPIRAJ MESEČNE PUTNIKE PO ID - jedan mesečni putnik može imati više polazaka,
     // ali treba se računati samo jednom u statistike
     final Map<String, MesecniPutnik> uniqueMesecniPutnici = {};
@@ -540,7 +527,6 @@ class StatistikaService {
                 (putnik.iznosPlacanja ?? 0.0);
             vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
                 (putnik.iznosPlacanja ?? 0.0);
-            ukupnoMesecnihKarata++;
           }
         }
       }
@@ -603,7 +589,6 @@ class StatistikaService {
     }
 
     // PROCESUIRAJ OBIČNE PUTNIKE
-    int ukupnoProcessiranihPutnika = 0;
     for (final putnik in putnici) {
       if (putnik.vremeDodavanja != null) {
         if (_jeUVremenskomOpsegu(
@@ -611,7 +596,6 @@ class StatistikaService {
           final dodaoVozac = putnik.dodaoVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(dodaoVozac)) {
             vozaciStats[dodaoVozac]!['dodati']++;
-            ukupnoProcessiranihPutnika++;
           }
         }
       }
@@ -674,7 +658,6 @@ class StatistikaService {
     }
 
     // 🆕 DODAJ MESEČNE KARTE - KORISTI STVARNE PODATKE (SINHRONO) SA GRUPIRANJEM
-    int ukupnoMesecnihKarata = 0;
 
     // 🎫 GRUPIRANJE MESEČNIH PUTNIKA PO IMENU (isto kao u streamPazarSvihVozaca)
     final Map<String, MesecniPutnik> grupisaniMesecniPutnici = {};
@@ -712,7 +695,6 @@ class StatistikaService {
             (putnik.iznosPlacanja ?? 0.0);
         vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
             (putnik.iznosPlacanja ?? 0.0);
-        ukupnoMesecnihKarata++;
       }
     }
 
@@ -738,13 +720,11 @@ class StatistikaService {
     }
 
     // SABERI PAZAR SAMO IZ PUTNIKA
-    int brojValidnihPutnika = 0;
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik)) {
         final vozac = putnik.naplatioVozac!;
         if (pazar.containsKey(vozac)) {
           pazar[vozac] = pazar[vozac]! + putnik.iznosPlacanja!;
-          brojValidnihPutnika++;
         }
       }
     }
@@ -805,7 +785,6 @@ class StatistikaService {
       if (lokacije.length < 2) return 0.0;
 
       double ukupno = 0;
-      int validnePozicije = 0;
       double maksimalnaDistancaPoSegmentu = 5.0; // 5km max po segmentu
 
       for (int i = 1; i < lokacije.length; i++) {
@@ -819,7 +798,6 @@ class StatistikaService {
         // ✅ PAMETAN FILTER: preskoči nerealne distanca (npr. GPS greške)
         if (distanca <= maksimalnaDistancaPoSegmentu && distanca > 0.001) {
           ukupno += distanca;
-          validnePozicije++;
         } else if (distanca > maksimalnaDistancaPoSegmentu) {}
       }
       return ukupno;
@@ -859,14 +837,13 @@ class StatistikaService {
       final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
       final supabase = Supabase.instance.client;
-      num ukupnoObrisano = 0;
 
       // 1. RESETUJ OBIČNE PUTNIKE - (upit ka tabeli 'putnici' uklonjen po zahtevu)
       // Ova sekcija je prazna jer tabela 'putnici' više nije u upotrebi.
 
       // 2. RESETUJ MESEČNE KARTE - postavi cena na 0 i obriši vreme_placanja
       try {
-        final mesecniResult = await supabase
+        await supabase
             .from('mesecni_putnici')
             .update({
               'cena': 0.0,
@@ -876,7 +853,6 @@ class StatistikaService {
             .not('vreme_placanja', 'is', null)
             .gte('vreme_placanja', fromDate.toIso8601String())
             .lte('vreme_placanja', toDate.toIso8601String());
-        ukupnoObrisano += (mesecniResult?.length ?? 0);
       } catch (e) {}
       return true;
     } catch (e) {
@@ -898,16 +874,12 @@ class StatistikaService {
     DateTime? from,
     DateTime? to,
   }) async {
-    int uspesnoResetovano = 0;
-    int ukupnoVozaca = sviVozaci.length;
     List<String> neuspesniVozaci = [];
 
     for (String vozac in sviVozaci) {
       try {
         bool uspeh = await resetujPazarZaVozaca(vozac, from: from, to: to);
-        if (uspeh) {
-          uspesnoResetovano++;
-        } else {
+        if (!uspeh) {
           neuspesniVozaci.add(vozac);
         }
       } catch (e) {

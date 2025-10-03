@@ -35,7 +35,6 @@ void main() {
       // Debug output removed
       for (final grad in dozvoljeni) {
         final isBlocked = service._isCityBlocked(grad);
-        final status = isBlocked ? '❌ GREŠKA - BLOKIRAN' : '✅ DOZVOLJEN';
         // Debug output removed
         expect(isBlocked, false, reason: 'Grad $grad mora biti dozvoljen');
       }
@@ -44,7 +43,6 @@ void main() {
       // Debug output removed
       for (final grad in blokirani) {
         final isBlocked = service._isCityBlocked(grad);
-        final status = isBlocked ? '✅ BLOKIRAN' : '❌ GREŠKA - DOZVOLJEN';
         // Debug output removed
         expect(isBlocked, true, reason: 'Grad $grad mora biti blokiran');
       }

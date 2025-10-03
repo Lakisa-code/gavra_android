@@ -1,11 +1,8 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 void main() async {
   print('=== TEST PRAVOG SUPABASE POZIVA ===');
 
   try {
     // Simulacija realnog poziva na bazu
-    final supabase = Supabase.instance.client;
 
     // Testiram da li možda direktno slanje praznog stringa ne radi
     print('Test 1: Simulacija INSERT sa praznim vozac_id');

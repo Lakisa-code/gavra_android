@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gavra_android/models/mesecni_putnik.dart';
-import 'package:gavra_android/services/mesecni_putnik_service_novi.dart';
 
 void main() {
   group('Debug mesečni putnici', () {

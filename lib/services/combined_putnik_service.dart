@@ -1,8 +1,4 @@
 import '../models/putnik.dart';
-import 'dnevni_putnik_service.dart';
-import 'mesecni_putnik_service_novi.dart';
-import 'adresa_service.dart';
-import 'ruta_service.dart';
 import 'realtime_service.dart';
 import 'package:logger/logger.dart';
 import '../utils/grad_adresa_validator.dart';
@@ -104,28 +100,6 @@ class CombinedPutnikService {
     }
   }
 
-  /// Konvertuje broj dana u nedelji u skraćenicu
-  String _getDayAbbreviation(int weekday) {
-    switch (weekday) {
-      case 1:
-        return 'pon';
-      case 2:
-        return 'uto';
-      case 3:
-        return 'sre';
-      case 4:
-        return 'cet';
-      case 5:
-        return 'pet';
-      case 6:
-        return 'sub';
-      case 7:
-        return 'ned';
-      default:
-        return 'pon';
-    }
-  }
-
   /// Dohvata sve putnike iz obe tabele (za kompatibilnost)
   Future<List<Putnik>> getAllPutniciFromBothTables({String? targetDay}) async {
     // TODO: Implementirati dohvatanje iz normalizovane šeme - PRIVREMENO ONEMOGUĆENO
@@ -143,37 +117,6 @@ class CombinedPutnikService {
     } catch (e) {
       dlog('❌ Error in getAllPutniciFromBothTables: $e');
       return [];
-    }
-  }
-
-  /// Map full day name (e.g., "Ponedeljak") to short abbreviation used by model
-  String _abbrevFromFullName(String fullDay) {
-    switch (fullDay.toLowerCase()) {
-      case 'ponedeljak':
-      case 'pon':
-        return 'pon';
-      case 'utorak':
-      case 'uto':
-        return 'uto';
-      case 'sreda':
-      case 'sre':
-        return 'sre';
-      case 'četvrtak':
-      case 'cet':
-      case 'čet':
-        return 'cet';
-      case 'petak':
-      case 'pet':
-        return 'pet';
-      case 'subota':
-      case 'sub':
-        return 'sub';
-      case 'nedelja':
-      case 'ned':
-        return 'ned';
-      default:
-        // Fallback to 'pon' so toPutnikList can handle it; callers should pass valid day
-        return 'pon';
     }
   }
 

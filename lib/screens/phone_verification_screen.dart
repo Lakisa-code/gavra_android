@@ -9,11 +9,13 @@ import 'phone_login_screen.dart';
 class PhoneVerificationScreen extends StatefulWidget {
   final String driverName;
   final String phoneNumber;
+  final bool isInitialRegistration; // Nova opcija za prvu registraciju
 
   const PhoneVerificationScreen({
     Key? key,
     required this.driverName,
     required this.phoneNumber,
+    this.isInitialRegistration = false, // Default false za postojeće pozive
   }) : super(key: key);
 
   @override
@@ -560,30 +562,49 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen>
     });
 
     try {
-      final success = await PhoneAuthService.confirmSMSVerification(
-        widget.phoneNumber,
-        _smsCodeController.text,
-      );
+      bool success;
+      
+      if (widget.isInitialRegistration) {
+        // Koristi novu metodu za završetak registracije
+        success = await PhoneAuthService.completePhoneRegistration(_smsCodeController.text);
+      } else {
+        // Koristi postojeću metodu za verifikaciju
+        success = await PhoneAuthService.confirmSMSVerification(
+          widget.phoneNumber,
+          _smsCodeController.text,
+        );
+      }
 
       if (success) {
         dlog('✅ SMS uspješno potvrđen za vozača ${widget.driverName}');
 
         if (!mounted) return;
 
-        // Prikaži poruku o uspjehu
-        await _showSuccessDialog(
-          'Broj potvrđen!',
-          'Vaš broj telefona je uspješno potvrđen. Sada se možete prijaviti.',
-        );
+        if (widget.isInitialRegistration) {
+          // Prva registracija - idi direktno na WelcomeScreen
+          await _showSuccessDialog(
+            'Registracija završena!',
+            'SMS registracija je uspešno završena. Sada možete koristiti aplikaciju.',
+          );
 
-        // Prebaci na login screen
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const PhoneLoginScreen(),
-          ),
-        );
+          if (!mounted) return;
+          // Vrati se na WelcomeScreen i zatvori sve prethodne stranice
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else {
+          // Obična verifikacija - idi na login screen
+          await _showSuccessDialog(
+            'Broj potvrđen!',
+            'Vaš broj telefona je uspješno potvrđen. Sada se možete prijaviti.',
+          );
+
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PhoneLoginScreen(),
+            ),
+          );
+        }
       } else {
         _showErrorDialog('Greška pri potvrdi',
             'Neispravni SMS kod. Molimo pokušajte ponovo.');

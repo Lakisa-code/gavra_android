@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logging.dart';
+import 'vozac_registracija_service.dart';
 
 class PhoneAuthService {
   static final _supabase = Supabase.instance.client;
@@ -10,45 +11,7 @@ class PhoneAuthService {
     'Bojan': '+381641162560',
     'Bruda': '+381641202844',
     'Svetlana': '+381658464160',
-    'Bilevski': '+381638466418',
   };
-
-  /// 📱 REGISTRUJ VOZAČA SA BROJEM TELEFONA
-  static Future<bool> registerDriverWithPhone(
-      String driverName, String phoneNumber, String password) async {
-    try {
-      dlog('📱 Registrujem vozača $driverName sa brojem: $phoneNumber');
-
-      // Provjeri da li je broj telefona valjan za ovog vozača
-      if (_driverPhones[driverName] != phoneNumber) {
-        dlog(
-            '❌ Broj telefona $phoneNumber nije dozvoljen za vozača $driverName');
-        return false;
-      }
-
-      final AuthResponse response = await _supabase.auth
-          .signUp(phone: phoneNumber, password: password, data: {
-        'driver_name': driverName,
-        'role': 'driver',
-        'registered_at': DateTime.now().toIso8601String(),
-      });
-
-      if (response.user != null) {
-        dlog('✅ Vozač $driverName uspješno registrovan. Čeka se SMS potvrda.');
-
-        // Sačuvaj podatke lokalno
-        await _saveDriverPhoneData(driverName, phoneNumber);
-
-        return true;
-      } else {
-        dlog('❌ Registracija neuspješna za $driverName');
-        return false;
-      }
-    } catch (e) {
-      dlog('❌ Greška pri registraciji vozača $driverName: $e');
-      return false;
-    }
-  }
 
   /// 📨 POTVRDI SMS KOD
   static Future<bool> confirmSMSVerification(
@@ -150,7 +113,19 @@ class PhoneAuthService {
     }
   }
 
-  /// 🔑 RESETUJ ŠIFRU PREKO SMS-a
+  /// � POŠALJI SMS KOD
+  static Future<bool> sendSMSCode(String phoneNumber) async {
+    try {
+      await _supabase.auth.signInWithOtp(phone: phoneNumber);
+      dlog('✅ SMS kod poslan na: $phoneNumber');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri slanju SMS koda: $e');
+      return false;
+    }
+  }
+
+  /// �🔑 RESETUJ ŠIFRU PREKO SMS-a
   static Future<bool> resetPasswordViaSMS(String phoneNumber) async {
     try {
       // Koristimo signInWithOtp za reset - šaljemo novi kod
@@ -203,7 +178,16 @@ class PhoneAuthService {
     return _driverPhones[driverName];
   }
 
-  /// 📜 DOHVATI SVE VOZAČE KOJI MOGU DA SE REGISTRUJU
+  /// � FORMATIRAJ BROJ TELEFONA
+  static String formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber.startsWith('+')) {
+      return phoneNumber;
+    } else {
+      return '+381$phoneNumber';
+    }
+  }
+
+  /// �📜 DOHVATI SVE VOZAČE KOJI MOGU DA SE REGISTRUJU
   static List<String> getAllDriversForRegistration() {
     return _driverPhones.keys.toList();
   }
@@ -213,6 +197,89 @@ class PhoneAuthService {
     // Provjeri da li je u formatu +381XXXXXXXXX
     final phoneRegex = RegExp(r'^\+381[0-9]{8,9}$');
     return phoneRegex.hasMatch(phoneNumber);
+  }
+
+  /// 📱 REGISTRUJ VOZAČA SA TELEFONOM/SMS
+  static Future<bool> registerDriverWithPhone(String driverName, String phoneNumber, String password) async {
+    try {
+      dlog('📱 Registrujem vozača $driverName sa telefonom: $phoneNumber');
+
+      // Proveri da li je broj telefona valjan za ovog vozača
+      final expectedPhone = getDriverPhone(driverName);
+      if (expectedPhone == null || expectedPhone != phoneNumber) {
+        dlog('❌ Nevaljan broj telefona za vozač $driverName');
+        return false;
+      }
+
+      // Pošalji SMS kod
+      final codeSent = await sendSMSCode(phoneNumber);
+      if (!codeSent) {
+        dlog('❌ Slanje SMS koda neuspešno');
+        return false;
+      }
+
+      // Sačuvaj podatke za registraciju (čeka SMS verifikaciju)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_registration_driver', driverName);
+      await prefs.setString('pending_registration_phone', phoneNumber);
+      await prefs.setString('pending_registration_password', password);
+      await prefs.setBool('is_pending_registration', true);
+      
+      dlog('✅ SMS registracija u toku za $driverName, čeka se verifikacija');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri registraciji vozača $driverName sa telefonom: $e');
+    }
+    return false;
+  }
+
+  /// 📱 ZAVRŠI SMS REGISTRACIJU NAKON VERIFIKACIJE
+  static Future<bool> completePhoneRegistration(String smsCode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final driverName = prefs.getString('pending_registration_driver');
+      final phoneNumber = prefs.getString('pending_registration_phone');
+      final password = prefs.getString('pending_registration_password');
+
+      if (driverName == null || phoneNumber == null || password == null) {
+        dlog('❌ Nedostaju podaci za završetak registracije');
+        return false;
+      }
+
+      // Verifikuj SMS kod putem Supabase
+      final AuthResponse response = await _supabase.auth.verifyOTP(
+        phone: phoneNumber,
+        token: smsCode,
+        type: OtpType.sms,
+      );
+      
+      if (response.user == null) {
+        dlog('❌ Nevaljan SMS kod');
+        return false;
+      }
+
+      // Registracija uspešna - sačuvaj konačne podatke
+      await prefs.setString('registered_driver', driverName);
+      await prefs.setString('driver_phone', phoneNumber);
+      await prefs.setBool('is_driver_registered', true);
+      await prefs.setBool('is_phone_verified', true);
+      await prefs.setString('vozac_ime', driverName);
+
+      // Označi vozača kao registrovanog u VozacRegistracijaService
+      await VozacRegistracijaService.oznaciVozacaKaoRegistrovanog(driverName);
+
+      // Ukloni privremene podatke
+      await prefs.remove('pending_registration_driver');
+      await prefs.remove('pending_registration_phone');
+      await prefs.remove('pending_registration_password');
+      await prefs.setBool('is_pending_registration', false);
+
+      dlog('✅ SMS registracija završena uspešno za vozač: $driverName');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri završetku SMS registracije: $e');
+    }
+    return false;
   }
 
   /// � REGISTRUJ VOZAČA SA EMAIL-OM
@@ -376,18 +443,6 @@ class PhoneAuthService {
   }
 
   // PRIVATNE HELPER METODE
-
-  static Future<void> _saveDriverPhoneData(
-      String driverName, String phoneNumber) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('driver_phone_$driverName', phoneNumber);
-      await prefs.setBool('phone_confirmed_$driverName', false);
-      dlog('✅ Sačuvani podaci o broju za vozača: $driverName');
-    } catch (e) {
-      dlog('❌ Greška pri čuvanju podataka o broju: $e');
-    }
-  }
 
   static Future<void> _updateSMSConfirmationStatus(
       String phoneNumber, bool confirmed) async {

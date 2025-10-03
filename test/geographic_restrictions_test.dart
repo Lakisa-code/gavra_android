@@ -60,7 +60,7 @@ void main() {
           'Bela Crkva result: ${belaCrkvaResult != null ? "✅ ALLOWED" : "❌ BLOCKED"}');
 
       // Test sa adresom iz Vršca - treba da prođe
-      final vrsacResult = await AdvancedGeocodingService.getAdvancedCoordinates(
+      await AdvancedGeocodingService.getAdvancedCoordinates(
           grad: 'Vršac', adresa: 'Trg pobede 5');
       // Debug output removed
 
@@ -74,8 +74,7 @@ void main() {
 
     test('SmartAddressAutocompleteService filters suggestions', () async {
       // Test sa upitom za Belu Crkvu
-      final belaCrkvaSuggestions =
-          await SmartAddressAutocompleteService.getSmartSuggestions(
+      await SmartAddressAutocompleteService.getSmartSuggestions(
               currentCity: 'Bela Crkva', query: 'glavna');
       // Debug output removed
 

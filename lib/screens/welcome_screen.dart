@@ -10,12 +10,14 @@ import '../services/realtime_notification_service.dart';
 import '../services/password_service.dart';
 import '../services/daily_checkin_service.dart';
 import '../services/permission_service.dart'; // DODATO za zahtevanje dozvola
+import '../services/vozac_registracija_service.dart'; // DODATO za SMS registraciju vozača
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import '../theme.dart'; // DODATO za theme extensions
 import 'home_screen.dart';
 import 'change_password_screen.dart';
 import 'daily_checkin_screen.dart';
 import 'phone_login_screen.dart'; // DODATO za SMS authentication
+import 'vozac_sms_registracija_screen.dart'; // DODATO za obaveznu SMS registraciju
 import '../main.dart' show globalThemeRefresher; // DODATO za tema refresh
 
 class WelcomeScreen extends StatefulWidget {
@@ -277,6 +279,27 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       return;
     }
 
+    // 📱 PROVERI DA LI JE VOZAČ SMS-REGISTROVAN - OBAVEZNO!
+    final isRegistrovan = await VozacRegistracijaService.isVozacRegistrovan(driverName);
+    if (!isRegistrovan) {
+      dlog('❌ Vozač $driverName nije SMS-registrovan, preusmeravam na registraciju');
+      if (!mounted) return;
+      
+      // Prikaži dialog o obaveznoj registraciji
+      final shouldRegister = await _showRegistrationRequiredDialog(driverName);
+      
+      if (shouldRegister) {
+        // Idi na SMS registraciju
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VozacSMSRegistracijaScreen(vozacIme: driverName),
+          ),
+        );
+      }
+      return;
+    }
+
     // Dohvati šifru iz PasswordService-a
     final correctPassword = await PasswordService.getPassword(driverName);
 
@@ -477,6 +500,66 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         );
       },
     );
+  }
+
+  // Dialog za obaveznu SMS registraciju vozála
+  Future<bool> _showRegistrationRequiredDialog(String driverName) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: Colors.orange.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          title: Column(
+            children: [
+              const Icon(Icons.app_registration_rounded,
+                  color: Colors.orange, size: 40),
+              const SizedBox(height: 12),
+              Text(
+                'SMS Registracija Obavezna',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          content: Text(
+            'Pozdrav $driverName!\n\nPre prvog korišćenja aplikacije, potrebno je da se registrujete putem SMS verifikacije sa vašim brojem telefona.\n\nOva registracija je obavezna radi sigurnosti.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 16,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Možda kasnije', 
+                style: TextStyle(color: Colors.grey.shade400)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Registruj se'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
   }
 
   void _showErrorDialog(String title, String message) {

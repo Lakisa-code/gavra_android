@@ -2739,7 +2739,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       try {
         // Dobij trenutnog vozača kao UUID
         final prefs = await SharedPreferences.getInstance();
-        final currentDriverUuid = await _getCurrentDriverUuid();
         final currentDriverName = await _getCurrentDriver();
 
         // Zabelezi upotrebu adrese Bela Crkva

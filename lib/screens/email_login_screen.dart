@@ -3,7 +3,6 @@ import '../services/phone_auth_service.dart';
 import '../utils/logging.dart';
 import 'home_screen.dart';
 import 'email_registration_screen.dart';
-import 'email_verification_screen.dart';
 import 'daily_checkin_screen.dart';
 import '../services/daily_checkin_service.dart';
 
@@ -387,14 +386,22 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         dlog('✅ Uspješna prijava vozača: $driverName');
 
         // Provjeri daily check-in
-        final needsCheckIn = await DailyCheckinService.needsDailyCheckin(driverName);
+        final needsCheckIn = !await DailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Idi na daily check-in
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => DailyCheckinScreen(driverName: driverName),
+              builder: (context) => DailyCheckInScreen(
+                vozac: driverName,
+                onCompleted: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                  );
+                },
+              ),
             ),
           );
         } else {
@@ -402,7 +409,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomeScreen(driverName: driverName),
+              builder: (context) => HomeScreen(),
             ),
           );
         }

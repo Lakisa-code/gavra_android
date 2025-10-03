@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/supabase_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   test('Check vozac_id values in database', () async {
     try {
+      final supabase = Supabase.instance.client;
       // Povuci sve mesečne putnike direktno iz baze
       final response = await supabase
           .from('mesecni_putnici')
