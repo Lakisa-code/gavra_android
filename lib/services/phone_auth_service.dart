@@ -215,21 +215,164 @@ class PhoneAuthService {
     return phoneRegex.hasMatch(phoneNumber);
   }
 
-  /// 📱 FORMATIRAJ BROJ TELEFONA (dodaj +381 ako treba)
-  static String formatPhoneNumber(String phoneNumber) {
-    // Ukloni sve razmake i crtice
-    phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-]'), '');
+  /// � REGISTRUJ VOZAČA SA EMAIL-OM
+  static Future<bool> registerDriverWithEmail(
+      String driverName, String email, String password) async {
+    try {
+      dlog('📧 Registrujem vozača $driverName sa email-om: $email');
 
-    // Ako počinje sa 0, zamijeni sa +381
-    if (phoneNumber.startsWith('0')) {
-      phoneNumber = '+381${phoneNumber.substring(1)}';
-    }
-    // Ako ne počinje sa +, dodaj +381
-    else if (!phoneNumber.startsWith('+')) {
-      phoneNumber = '+381$phoneNumber';
-    }
+      final AuthResponse response = await _supabase.auth
+          .signUp(email: email, password: password, data: {
+        'driver_name': driverName,
+        'role': 'driver',
+        'auth_type': 'email',
+        'registered_at': DateTime.now().toIso8601String(),
+      });
 
-    return phoneNumber;
+      if (response.user != null) {
+        dlog('✅ Vozač $driverName uspješno registrovan sa email-om. Čeka se email potvrda.');
+
+        // Sačuvaj podatke lokalno
+        await _saveDriverEmailData(driverName, email);
+
+        return true;
+      } else {
+        dlog('❌ Registracija neuspješna za $driverName');
+        return false;
+      }
+    } catch (e) {
+      dlog('❌ Greška pri registraciji vozača $driverName sa email-om: $e');
+      return false;
+    }
+  }
+
+  /// 📧 POTVRDI EMAIL VERIFIKACIJU
+  static Future<bool> confirmEmailVerification(
+      String email, String emailCode) async {
+    try {
+      dlog('📧 Potvrđujem email: $email sa kodom: $emailCode');
+
+      final AuthResponse response = await _supabase.auth.verifyOTP(
+        type: OtpType.email,
+        token: emailCode,
+        email: email,
+      );
+
+      if (response.user != null && response.user!.emailConfirmedAt != null) {
+        dlog('✅ Email uspješno potvrđen za: $email');
+
+        // Ažuriraj lokalne podatke
+        await _updateEmailConfirmationStatus(email, true);
+
+        return true;
+      } else {
+        dlog('❌ Email potvrda neuspješna za: $email');
+        return false;
+      }
+    } catch (e) {
+      dlog('❌ Greška pri potvrdi email-a: $e');
+      return false;
+    }
+  }
+
+  /// 🔐 PRIJAVI SE SA EMAIL-OM I ŠIFROM
+  static Future<String?> signInWithEmail(
+      String email, String password) async {
+    try {
+      dlog('🔐 Prijavljivanje sa email-om: $email');
+
+      final AuthResponse response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        // Provjeri da li je email potvrđen
+        if (response.user!.emailConfirmedAt == null) {
+          dlog('⚠️ Email nije potvrđen za: $email');
+          return null;
+        }
+
+        // Izvuci ime vozača iz metapodataka
+        final driverName =
+            response.user!.userMetadata?['driver_name'] as String?;
+
+        if (driverName != null) {
+          dlog('✅ Uspješna prijava vozača: $driverName sa email-om');
+
+          // Sačuvaj trenutnu sesiju
+          await _saveCurrentEmailSession(driverName, email);
+
+          return driverName;
+        } else {
+          dlog('❌ Nije pronađeno ime vozača u metapodacima');
+          return null;
+        }
+      } else {
+        dlog('❌ Neuspješna prijava za email: $email');
+        return null;
+      }
+    } catch (e) {
+      dlog('❌ Greška pri prijavi sa email-om: $e');
+      return null;
+    }
+  }
+
+  /// 📧 POŠALJI PONOVO EMAIL KOD
+  static Future<bool> resendEmailCode(String email) async {
+    try {
+      await _supabase.auth.resend(
+        type: OtpType.email,
+        email: email,
+      );
+      dlog('✅ Email kod ponovno poslan na: $email');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri slanju email koda: $e');
+      return false;
+    }
+  }
+
+  /// 🔑 RESETUJ ŠIFRU PREKO EMAIL-a
+  static Future<bool> resetPasswordViaEmail(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+      dlog('✅ Email za reset šifre poslan na: $email');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri slanju email-a za reset šifre: $e');
+      return false;
+    }
+  }
+
+  /// ✅ PROVJERI DA LI JE VOZAČ REGISTROVAN I POTVRĐEN SA EMAIL-OM
+  static Future<bool> isDriverEmailRegisteredAndConfirmed(
+      String driverName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isConfirmed = prefs.getBool('email_confirmed_$driverName') ?? false;
+      return isConfirmed;
+    } catch (e) {
+      dlog('❌ Greška pri provjeri registracije email-a: $e');
+      return false;
+    }
+  }
+
+  /// 📧 DOHVATI EMAIL ZA VOZAČA
+  static Future<String?> getDriverEmail(String driverName) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('driver_email_$driverName');
+    } catch (e) {
+      dlog('❌ Greška pri dohvatanju email-a vozača: $e');
+      return null;
+    }
+  }
+
+  /// 📧 VALIDIRAJ FORMAT EMAIL-A
+  static bool isValidEmailFormat(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
   }
 
   // PRIVATNE HELPER METODE
@@ -289,6 +432,56 @@ class PhoneAuthService {
       dlog('✅ Obrisana trenutna sesija');
     } catch (e) {
       dlog('❌ Greška pri brisanju trenutne sesije: $e');
+    }
+  }
+
+  // EMAIL AUTH HELPER METODE
+
+  static Future<void> _saveDriverEmailData(
+      String driverName, String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('driver_email_$driverName', email);
+      await prefs.setBool('email_confirmed_$driverName', false);
+      dlog('✅ Sačuvani podaci o email-u za vozača: $driverName');
+    } catch (e) {
+      dlog('❌ Greška pri čuvanju podataka o email-u: $e');
+    }
+  }
+
+  static Future<void> _updateEmailConfirmationStatus(
+      String email, bool confirmed) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Pronađi vozača po email-u
+      String? driverName;
+      for (final entry in _driverPhones.entries) {
+        final driverEmail = prefs.getString('driver_email_${entry.key}');
+        if (driverEmail == email) {
+          driverName = entry.key;
+          break;
+        }
+      }
+
+      if (driverName != null) {
+        await prefs.setBool('email_confirmed_$driverName', confirmed);
+        dlog('✅ Ažuriran status email potvrde za vozača: $driverName');
+      }
+    } catch (e) {
+      dlog('❌ Greška pri ažuriranju statusa email potvrde: $e');
+    }
+  }
+
+  static Future<void> _saveCurrentEmailSession(
+      String driverName, String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_session_driver', driverName);
+      await prefs.setString('current_session_email', email);
+      dlog('✅ Sačuvana trenutna email sesija za vozača: $driverName');
+    } catch (e) {
+      dlog('❌ Greška pri čuvanju trenutne email sesije: $e');
     }
   }
 }
