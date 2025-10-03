@@ -201,7 +201,7 @@ void main() {
         'aktivan': true,
       };
 
-      final putnici = Putnik.fromMesecniPutniciMultiple(mesecniData);
+      final putnici = Putnik.fromMesecniPutniciMultipleForDay(mesecniData, 'pon');
 
       expect(putnici.isNotEmpty, true);
       expect(putnici.first.ime, 'Stefan Mitrović');

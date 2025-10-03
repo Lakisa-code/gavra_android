@@ -54,14 +54,14 @@ class TimeValidator {
         // Validate ranges
         if (hour > 23 || minute > 59) continue;
 
-        return '$hour:${minute.toString().padLeft(2, '0')}';
+        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
       }
     }
 
     // Try parsing single number as hour
     final hourOnly = int.tryParse(cleaned);
     if (hourOnly != null && hourOnly >= 0 && hourOnly <= 23) {
-      return '$hourOnly:00';
+      return '${hourOnly.toString().padLeft(2, '0')}:00';
     }
 
     return null; // Invalid format

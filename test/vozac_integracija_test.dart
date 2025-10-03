@@ -1,10 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gavra_android/services/vozac_mapping_service.dart';
 import 'package:gavra_android/services/password_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Test integracijska provjera za svakog vozača posebno 
 /// da odgovara stvarnim podacima iz welcome_screen.dart i password_service.dart
 void main() {
+  setUpAll(() async {
+    // Mock SharedPreferences for testing
+    SharedPreferences.setMockInitialValues({});
+  });
   group('🔧 Integracija sa stvarnim aplikacijskim podacima', () {
     
     test('🔍 Provjera da svi vozači iz PasswordService postoje u VozacMapping', () {
