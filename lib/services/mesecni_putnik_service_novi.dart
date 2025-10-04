@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/mesecni_putnik_novi.dart';
+import 'vozac_mapping_service.dart';
 
 /// Servis za upravljanje mesečnim putnicima (normalizovana šema)
 class MesecniPutnikServiceNovi {
@@ -216,11 +217,30 @@ class MesecniPutnikServiceNovi {
   Future<bool> azurirajPlacanjeZaMesec(String putnikId, double iznos,
       String vozacId, DateTime pocetakMeseca, DateTime krajMeseca) async {
     try {
-      // vozacId je već UUID koji dolazi iz _getCurrentDriverUuid()
+      print('🔍 [AZURIRAJ PLACANJE] Input vozacId: $vozacId');
+      
+      // Validacija UUID-a pre slanja u bazu
       String? validVozacId;
       if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
-        validVozacId = vozacId;
+        // Provjeri da li je već valid UUID
+        if (_isValidUuid(vozacId)) {
+          validVozacId = vozacId;
+          print('✅ [AZURIRAJ PLACANJE] Valid UUID: $validVozacId'); 
+        } else {
+          // Ako nije UUID, pokušaj konverziju (fallback)
+          print('⚠️ [AZURIRAJ PLACANJE] Not a UUID, attempting conversion from: $vozacId');
+          final converted = VozacMappingService.getVozacUuid(vozacId);
+          if (converted != null) {
+            validVozacId = converted;
+            print('✅ [AZURIRAJ PLACANJE] Converted to UUID: $validVozacId');
+          } else {
+            print('❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null');
+            validVozacId = null;
+          }
+        }
       }
+
+      print('🔍 [AZURIRAJ PLACANJE] Final vozac_id: $validVozacId');
 
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
@@ -235,6 +255,11 @@ class MesecniPutnikServiceNovi {
       print('Greška u azurirajPlacanjeZaMesec: $e');
       return false;
     }
+  }
+  
+  /// Helper funkcija za validaciju UUID formata
+  bool _isValidUuid(String str) {
+    return RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(str);
   }
 
   /// Briše mesečnog putnika (soft delete)

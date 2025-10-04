@@ -1211,7 +1211,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ? brojPutnikaBC[vreme] ?? 0
                 : brojPutnikaVS[vreme] ?? 0;
             return count;
-          } catch (e) {}
+          } catch (e) {
+            // Log error and continue to fallback
+            dlog(
+                '⚠️ [GET PUTNIK COUNT] Greška pri računanju broja putnika: $e');
+          }
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {
