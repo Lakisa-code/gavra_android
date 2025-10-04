@@ -10,7 +10,6 @@ services:
       - POSTGRES_WORK_MEM=4MB
       - POSTGRES_MAINTENANCE_WORK_MEM=64MB
       - POSTGRES_MAX_CONNECTIONS=50
-      - POSTGRES_CHECKPOINT_SEGMENTS=8
       - POSTGRES_WAL_BUFFERS=8MB
     command: >
       postgres 
@@ -19,7 +18,6 @@ services:
       -c work_mem=4MB
       -c maintenance_work_mem=64MB
       -c max_connections=50
-      -c checkpoint_segments=8
       -c wal_buffers=8MB
       -c max_wal_size=512MB
       -c min_wal_size=128MB

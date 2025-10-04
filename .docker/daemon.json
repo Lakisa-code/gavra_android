@@ -1,11 +1,9 @@
-# Docker daemon optimizacija za Gavra aplikaciju
 {
   "log-driver": "json-file",
   "log-opts": {
     "max-size": "10m",
     "max-file": "3"
   },
-  "storage-driver": "overlayfs",
   "max-concurrent-downloads": 3,
   "max-concurrent-uploads": 3,
   "default-shm-size": "64M",
@@ -19,15 +17,6 @@
   "userland-proxy": false,
   "experimental": false,
   "live-restore": true,
-  "iptables": true,
-  "ip-forward": true,
-  "ip-masq": true,
-  "ipv6": false,
-  "fixed-cidr": "172.17.0.0/16",
-  "default-gateway": "172.17.0.1",
-  "bridge": "docker0",
-  "data-root": "C:\\ProgramData\\Docker",
-  "exec-opts": ["native.cgroupdriver=cgroupfs"],
   "registry-mirrors": [],
   "insecure-registries": [],
   "debug": false
