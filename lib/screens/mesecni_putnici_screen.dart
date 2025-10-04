@@ -1238,28 +1238,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       return AlertDialog(
         title: Row(
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: Container(
-                key: ValueKey(_noviTip),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppThemeHelpers.getTypeColor(_noviTip, context)
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  _noviTip == 'ucenik' ? Icons.school : Icons.business,
-                  color: AppThemeHelpers.getTypeColor(_noviTip, context),
-                  size: 24,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
+            Icon(Icons.edit, color: Colors.blue.shade600),
+            const SizedBox(width: 8),
             const Expanded(
               child: Text(
                 'Uredi mesečnog putnika',
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(fontSize: 16),
               ),
             ),
           ],
@@ -1267,343 +1251,413 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 🎯 OSNOVNE INFORMACIJE - Sekcija
               Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  onChanged: (value) => _novoIme = value,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: '👤 Ime putnika *',
-                    border: OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue, width: 2),
-                    ),
-                    prefixIcon: Icon(Icons.person, color: Colors.blue),
-                    fillColor: Colors.white,
-                    filled: true,
-                  ),
-                  controller: _imeController,
-                ),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _noviTip,
-                decoration: InputDecoration(
-                  labelText: 'Tip putnika',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: Icon(
-                    _noviTip == 'ucenik' ? Icons.school : Icons.business,
-                    color: AppThemeHelpers.getTypeColor(_noviTip, context),
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'radnik',
-                    child: Row(
-                      children: [
-                        Icon(Icons.business, color: Colors.teal, size: 20),
-                        SizedBox(width: 8),
-                        Text('Radnik'),
-                      ],
-                    ),
-                  ),
-                  DropdownMenuItem(
-                    value: 'ucenik',
-                    child: Row(
-                      children: [
-                        Icon(Icons.school, color: Colors.orange, size: 20),
-                        SizedBox(width: 8),
-                        Text('Učenik'),
-                      ],
-                    ),
-                  ),
-                ],
-                onChanged: (value) => setState(() => _noviTip = value!),
-              ),
-              const SizedBox(height: 8),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppThemeHelpers.getTypeColor(_noviTip, context)
-                          .withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  onChanged: (value) => _novaTipSkole = value,
-                  decoration: InputDecoration(
-                    labelText: _noviTip == 'ucenik'
-                        ? '🏫 Škola'
-                        : '🏢 Ustanova/Radno mesto',
-                    hintText: _noviTip == 'ucenik'
-                        ? 'npr. Gimnazija "Bora Stanković"'
-                        : 'npr. Hemofarm, Opština Vršac...',
-                    border: const OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: AppThemeHelpers.getTypeColor(_noviTip, context),
-                        width: 2,
-                      ),
-                    ),
-                    prefixIcon: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        _noviTip == 'ucenik' ? Icons.school : Icons.business,
-                        key: ValueKey(_noviTip),
-                        color: AppThemeHelpers.getTypeColor(_noviTip, context),
-                      ),
-                    ),
-                    fillColor: Colors.white,
-                    filled: true,
-                  ),
-                  controller: _tipSkoleController,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppThemeHelpers.getTypeColor(_noviTip, context)
-                          .withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    labelText: _noviTip == 'ucenik'
-                        ? '📱 Broj telefona učenika'
-                        : '📞 Broj telefona',
-                    hintText: '064/123-456',
-                    border: const OutlineInputBorder(),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: AppThemeHelpers.getTypeColor(_noviTip, context),
-                        width: 2,
-                      ),
-                    ),
-                    prefixIcon: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        Icons.phone,
-                        key: ValueKey('${_noviTip}_phone'),
-                        color: AppThemeHelpers.getTypeColor(_noviTip, context),
-                      ),
-                    ),
-                    fillColor: Colors.white,
-                    filled: true,
-                  ),
-                  keyboardType: TextInputType.phone,
-                  controller: _brojTelefonaController,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // 👨‍👩‍👧‍👦 BROJEVI TELEFONA RODITELJA - animirana sekcija za učenike
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return SlideTransition(
-                    position: animation.drive(
-                      Tween(begin: const Offset(0.0, -0.2), end: Offset.zero)
-                          .chain(CurveTween(curve: Curves.easeOutCubic)),
-                    ),
-                    child: FadeTransition(opacity: animation, child: child),
-                  );
-                },
-                child: _noviTip == 'ucenik'
-                    ? Container(
-                        key: const ValueKey('parent_contacts'),
-                        margin: const EdgeInsets.only(top: 8, bottom: 8),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.2),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.3),
-                              width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(Icons.family_restroom,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      size: 20),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Kontakt podaci roditelja',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Brojevi telefona za hitne situacije',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              onChanged: (value) =>
-                                  _noviBrojTelefonaOca = value,
-                              decoration: InputDecoration(
-                                labelText: 'Broj telefona oca',
-                                hintText: '064/123-456',
-                                border: const OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.man,
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                                fillColor: Colors.white,
-                                filled: true,
-                              ),
-                              keyboardType: TextInputType.phone,
-                              controller: _brojTelefonaOcaController,
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              onChanged: (value) =>
-                                  _noviBrojTelefonaMajke = value,
-                              decoration: const InputDecoration(
-                                labelText: 'Broj telefona majke',
-                                hintText: '065/789-012',
-                                border: OutlineInputBorder(),
-                                prefixIcon:
-                                    Icon(Icons.woman, color: Colors.pink),
-                                fillColor: Colors.white,
-                                filled: true,
-                              ),
-                              keyboardType: TextInputType.phone,
-                              controller: _brojTelefonaMajkeController,
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              TextField(
-                onChanged: (value) => _novaAdresaBelaCrkva = value,
-                decoration: const InputDecoration(
-                  labelText: 'Adresa polaska - Bela Crkva',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _adresaBelaCrkvaController,
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: (value) => _novaAdresaVrsac = value,
-                decoration: const InputDecoration(
-                  labelText: 'Adresa polaska - Vršac',
-                  border: OutlineInputBorder(),
-                ),
-                controller: _adresaVrsacController,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
+                  color: AppThemeHelpers.getTypeColor(_noviTip, context)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.3)),
-                  borderRadius: BorderRadius.circular(8),
+                    color: AppThemeHelpers.getTypeColor(_noviTip, context)
+                        .withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppThemeHelpers.getTypeColor(_noviTip, context)
+                          .withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Radni dani u toku nedelje:',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Odaberi radne dane kada putnik koristi prevoz',
+                      '📋 Osnovne informacije',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.6),
+                        fontWeight: FontWeight.bold,
+                        color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                        fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
+                    TextField(
+                      onChanged: (value) => _novoIme = value,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        labelText: '👤 Ime putnika *',
+                        border: const OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color:
+                                AppThemeHelpers.getTypeColor(_noviTip, context),
+                            width: 2,
+                          ),
+                        ),
+                        prefixIcon: Icon(
+                          Icons.person,
+                          color:
+                              AppThemeHelpers.getTypeColor(_noviTip, context),
+                        ),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      controller: _imeController,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _noviTip,
+                      decoration: InputDecoration(
+                        labelText: 'Tip putnika',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            _noviTip == 'ucenik'
+                                ? Icons.school
+                                : Icons.business,
+                            key: ValueKey('${_noviTip}_dropdown'),
+                            color:
+                                AppThemeHelpers.getTypeColor(_noviTip, context),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color:
+                                AppThemeHelpers.getTypeColor(_noviTip, context),
+                            width: 2,
+                          ),
+                        ),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'radnik',
+                          child: Row(
+                            children: [
+                              Icon(Icons.business,
+                                  color: Colors.teal, size: 20),
+                              SizedBox(width: 8),
+                              Text('Radnik'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ucenik',
+                          child: Row(
+                            children: [
+                              Icon(Icons.school,
+                                  color: Colors.orange, size: 20),
+                              SizedBox(width: 8),
+                              Text('Učenik'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) => setState(() => _noviTip = value!),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      onChanged: (value) => _novaTipSkole = value,
+                      decoration: InputDecoration(
+                        labelText: _noviTip == 'ucenik'
+                            ? '🎓 Škola'
+                            : '🏢 Ustanova/Firma',
+                        hintText: _noviTip == 'ucenik'
+                            ? 'npr. Gimnazija "Bora Stanković"'
+                            : 'npr. Hemofarm, Opština Vršac...',
+                        border: const OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color:
+                                AppThemeHelpers.getTypeColor(_noviTip, context),
+                            width: 2,
+                          ),
+                        ),
+                        prefixIcon: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            _noviTip == 'ucenik'
+                                ? Icons.school
+                                : Icons.business,
+                            key: ValueKey(_noviTip),
+                            color:
+                                AppThemeHelpers.getTypeColor(_noviTip, context),
+                          ),
+                        ),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      controller: _tipSkoleController,
+                    ),
+                  ],
+                ),
+              ),
+
+              // 📞 KONTAKT INFORMACIJE - Sekcija
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.blue.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📞 Kontakt informacije',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      decoration: InputDecoration(
+                        labelText: _noviTip == 'ucenik'
+                            ? '📱 Broj telefona učenika'
+                            : '📞 Broj telefona',
+                        hintText: '064/123-456',
+                        border: const OutlineInputBorder(),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.blue, width: 2),
+                        ),
+                        prefixIcon: const Icon(Icons.phone, color: Colors.blue),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      keyboardType: TextInputType.phone,
+                      controller: _brojTelefonaController,
+                    ),
+
+                    // 👨‍👩‍👧‍👦 BROJEVI TELEFONA RODITELJA - animirana sekcija za učenike
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: _noviTip == 'ucenik'
+                          ? Container(
+                              key: const ValueKey('parent_contacts_edit'),
+                              margin: const EdgeInsets.only(top: 16),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.orange.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange.withOpacity(0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: const Icon(
+                                          Icons.family_restroom,
+                                          color: Colors.orange,
+                                          size: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Kontakt podaci roditelja',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.orange[700],
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Za hitne situacije',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.orange[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    onChanged: (value) =>
+                                        _noviBrojTelefonaOca = value,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Broj telefona oca',
+                                      hintText: '064/123-456',
+                                      border: OutlineInputBorder(),
+                                      prefixIcon:
+                                          Icon(Icons.man, color: Colors.blue),
+                                      fillColor: Colors.white,
+                                      filled: true,
+                                    ),
+                                    keyboardType: TextInputType.phone,
+                                    controller: _brojTelefonaOcaController,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    onChanged: (value) =>
+                                        _noviBrojTelefonaMajke = value,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Broj telefona majke',
+                                      hintText: '065/789-012',
+                                      border: OutlineInputBorder(),
+                                      prefixIcon:
+                                          Icon(Icons.woman, color: Colors.pink),
+                                      fillColor: Colors.white,
+                                      filled: true,
+                                    ),
+                                    keyboardType: TextInputType.phone,
+                                    controller: _brojTelefonaMajkeController,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 📍 ADRESE POLASKA - Sekcija
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.green.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📍 Adrese polaska',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green[700],
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      onChanged: (value) => _novaAdresaBelaCrkva = value,
+                      decoration: const InputDecoration(
+                        labelText: '🏠 Adresa polaska - Bela Crkva',
+                        border: OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.green, width: 2),
+                        ),
+                        prefixIcon: Icon(Icons.home, color: Colors.green),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      controller: _adresaBelaCrkvaController,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      onChanged: (value) => _novaAdresaVrsac = value,
+                      decoration: const InputDecoration(
+                        labelText: '🏢 Adresa polaska - Vršac',
+                        border: OutlineInputBorder(),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.green, width: 2),
+                        ),
+                        prefixIcon: Icon(Icons.business, color: Colors.green),
+                        fillColor: Colors.white,
+                        filled: true,
+                      ),
+                      controller: _adresaVrsacController,
+                    ),
+                  ],
+                ),
+              ),
+
+              // 📅 RADNI DANI I VREMENA - Sekcija
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.purple.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '📅 Radni dani i vremena',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple[700],
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Odaberi radne dane kada putnik koristi prevoz:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.purple[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Column(
                       children: [
                         Row(
@@ -1633,12 +1687,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    _buildVremenaPolaskaSekcija(),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // ⏰ VREMENA POLASKA SEKCIJA - dodato u edit dialog
-              _buildVremenaPolaskaSekcija(),
             ],
           ),
         ),
@@ -1950,429 +2003,549 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // 🎯 OSNOVNE INFORMACIJE - Sekcija sa stilom kao statistike
                       Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          onChanged: (value) {
-                            _novoIme = value;
-                            // Sinhronizuj sa controller-om
-                            if (_imeController.text != value) {
-                              _imeController.text = value;
-                            }
-                          },
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            labelText: '👤 Ime putnika *',
-                            border: OutlineInputBorder(),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: Colors.blue, width: 2),
-                            ),
-                            prefixIcon: Icon(Icons.person, color: Colors.blue),
-                            fillColor: Colors.white,
-                            filled: true,
+                          color: AppThemeHelpers.getTypeColor(_noviTip, context)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color:
+                                AppThemeHelpers.getTypeColor(_noviTip, context)
+                                    .withOpacity(0.3),
+                            width: 1.5,
                           ),
-                          controller: _imeController,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _noviTip,
-                        decoration: InputDecoration(
-                          labelText: 'Tip putnika',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              _noviTip == 'ucenik'
-                                  ? Icons.school
-                                  : Icons.business,
-                              key: ValueKey('${_noviTip}_dropdown'),
-                              color: _noviTip == 'ucenik'
-                                  ? Colors.orange
-                                  : Colors.teal,
-                            ),
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'radnik',
-                            child: Row(
-                              children: [
-                                Icon(Icons.business,
-                                    color: Colors.teal, size: 20),
-                                SizedBox(width: 8),
-                                Text('Radnik'),
-                              ],
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'ucenik',
-                            child: Row(
-                              children: [
-                                Icon(Icons.school,
-                                    color: Colors.orange, size: 20),
-                                SizedBox(width: 8),
-                                Text('Učenik'),
-                              ],
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) => setState(() => _noviTip = value!),
-                      ),
-                      const SizedBox(height: 8),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (_noviTip == 'ucenik'
-                                      ? Colors.orange
-                                      : Colors.teal)
-                                  .withOpacity(0.1),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          onChanged: (value) {
-                            _novaTipSkole = value;
-                            // Sinhronizuj sa controller-om
-                            if (_tipSkoleController.text != value) {
-                              _tipSkoleController.text = value;
-                            }
-                          },
-                          decoration: InputDecoration(
-                            labelText: _noviTip == 'ucenik'
-                                ? '🏫 Škola'
-                                : '🏢 Ustanova/Radno mesto',
-                            hintText: _noviTip == 'ucenik'
-                                ? 'npr. Gimnazija "Bora Stanković"'
-                                : 'npr. Hemofarm, Opština Vršac...',
-                            border: const OutlineInputBorder(),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: _noviTip == 'ucenik'
-                                    ? Colors.orange
-                                    : Colors.teal,
-                                width: 2,
-                              ),
-                            ),
-                            prefixIcon: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                _noviTip == 'ucenik'
-                                    ? Icons.school
-                                    : Icons.business,
-                                key: ValueKey(_noviTip),
-                                color: _noviTip == 'ucenik'
-                                    ? Colors.orange
-                                    : Colors.teal,
-                              ),
-                            ),
-                            fillColor: Colors.white,
-                            filled: true,
-                          ),
-                          controller: _tipSkoleController,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
                               color: AppThemeHelpers.getTypeColor(
                                       _noviTip, context)
                                   .withOpacity(0.1),
-                              blurRadius: 4,
+                              blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
-                        ),
-                        child: TextField(
-                          onChanged: (value) {
-                            _noviBrojTelefona = value;
-                            // Sinhronizuj sa controller-om
-                            if (_brojTelefonaController.text != value) {
-                              _brojTelefonaController.text = value;
-                            }
-                          },
-                          decoration: InputDecoration(
-                            labelText: _noviTip == 'ucenik'
-                                ? '📱 Broj telefona učenika'
-                                : '📞 Broj telefona',
-                            hintText: '064/123-456',
-                            border: const OutlineInputBorder(),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: AppThemeHelpers.getTypeColor(
-                                    _noviTip, context),
-                                width: 2,
-                              ),
-                            ),
-                            prefixIcon: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: Icon(
-                                Icons.phone,
-                                key: ValueKey('${_noviTip}_phone_add'),
-                                color: AppThemeHelpers.getTypeColor(
-                                    _noviTip, context),
-                              ),
-                            ),
-                            fillColor: Colors.white,
-                            filled: true,
-                          ),
-                          keyboardType: TextInputType.phone,
-                          controller: _brojTelefonaController,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // 👨‍👩‍👧‍👦 BROJEVI TELEFONA RODITELJA - animirana sekcija za učenike
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                          return SlideTransition(
-                            position: animation.drive(
-                              Tween(
-                                      begin: const Offset(0.0, -0.2),
-                                      end: Offset.zero)
-                                  .chain(
-                                      CurveTween(curve: Curves.easeOutCubic)),
-                            ),
-                            child: FadeTransition(
-                                opacity: animation, child: child),
-                          );
-                        },
-                        child: _noviTip == 'ucenik'
-                            ? Container(
-                                key: const ValueKey('parent_contacts_add'),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.1),
-                                      Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.2)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.3),
-                                      width: 1.5),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withOpacity(0.2),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(Icons.family_restroom,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                              size: 20),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Kontakt podaci roditelja',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Brojevi telefona za hitne situacije',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withOpacity(0.6),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    TextField(
-                                      onChanged: (value) {
-                                        _noviBrojTelefonaOca = value;
-                                        // Sinhronizuj sa controller-om
-                                        if (_brojTelefonaOcaController.text !=
-                                            value) {
-                                          _brojTelefonaOcaController.text =
-                                              value;
-                                        }
-                                      },
-                                      decoration: const InputDecoration(
-                                        labelText: 'Broj telefona oca',
-                                        hintText: '064/123-456',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon:
-                                            Icon(Icons.man, color: Colors.blue),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                      keyboardType: TextInputType.phone,
-                                      controller: _brojTelefonaOcaController,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextField(
-                                      onChanged: (value) {
-                                        _noviBrojTelefonaMajke = value;
-                                        // Sinhronizuj sa controller-om
-                                        if (_brojTelefonaMajkeController.text !=
-                                            value) {
-                                          _brojTelefonaMajkeController.text =
-                                              value;
-                                        }
-                                      },
-                                      decoration: const InputDecoration(
-                                        labelText: 'Broj telefona majke',
-                                        hintText: '065/789-012',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.woman,
-                                            color: Colors.pink),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                      keyboardType: TextInputType.phone,
-                                      controller: _brojTelefonaMajkeController,
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-
-                      TextField(
-                        onChanged: (value) {
-                          _novaAdresaBelaCrkva = value;
-                          // Sinhronizuj sa controller-om
-                          if (_adresaBelaCrkvaController.text != value) {
-                            _adresaBelaCrkvaController.text = value;
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'Adresa polaska - Bela Crkva',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _adresaBelaCrkvaController,
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        onChanged: (value) {
-                          _novaAdresaVrsac = value;
-                          // Sinhronizuj sa controller-om
-                          if (_adresaVrsacController.text != value) {
-                            _adresaVrsacController.text = value;
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'Adresa polaska - Vršac',
-                          border: OutlineInputBorder(),
-                        ),
-                        controller: _adresaVrsacController,
-                      ),
-                      const SizedBox(height: 16),
-                      // 📅 RADNI DANI SEKCIJA
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .outline
-                                  .withOpacity(0.3)),
-                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.calendar_today,
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppThemeHelpers.getTypeColor(
+                                            _noviTip, context)
+                                        .withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: AppThemeHelpers.getTypeColor(
+                                        _noviTip, context),
                                     size: 20,
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Radni dani u nedelji',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '📋 Osnovne informacije',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppThemeHelpers.getTypeColor(
+                                          _noviTip, context),
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              onChanged: (value) {
+                                _novoIme = value;
+                                if (_imeController.text != value) {
+                                  _imeController.text = value;
+                                }
+                              },
+                              textCapitalization: TextCapitalization.words,
+                              decoration: InputDecoration(
+                                labelText: '👤 Ime putnika *',
+                                border: const OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: AppThemeHelpers.getTypeColor(
+                                        _noviTip, context),
+                                    width: 2,
+                                  ),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.person,
+                                  color: AppThemeHelpers.getTypeColor(
+                                      _noviTip, context),
+                                ),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              controller: _imeController,
+                            ),
                             const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              value: _noviTip,
+                              decoration: InputDecoration(
+                                labelText: 'Tip putnika',
+                                border: const OutlineInputBorder(),
+                                prefixIcon: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    _noviTip == 'ucenik'
+                                        ? Icons.school
+                                        : Icons.business,
+                                    key: ValueKey('${_noviTip}_dropdown'),
+                                    color: AppThemeHelpers.getTypeColor(
+                                        _noviTip, context),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: AppThemeHelpers.getTypeColor(
+                                        _noviTip, context),
+                                    width: 2,
+                                  ),
+                                ),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'radnik',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.business,
+                                          color: Colors.teal, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Radnik'),
+                                    ],
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'ucenik',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.school,
+                                          color: Colors.orange, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Učenik'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) =>
+                                  setState(() => _noviTip = value!),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              onChanged: (value) {
+                                _novaTipSkole = value;
+                                if (_tipSkoleController.text != value) {
+                                  _tipSkoleController.text = value;
+                                }
+                              },
+                              decoration: InputDecoration(
+                                labelText: _noviTip == 'ucenik'
+                                    ? '🎓 Škola'
+                                    : '🏢 Ustanova/Firma',
+                                hintText: _noviTip == 'ucenik'
+                                    ? 'npr. Gimnazija "Bora Stanković"'
+                                    : 'npr. Hemofarm, Opština Vršac...',
+                                border: const OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: AppThemeHelpers.getTypeColor(
+                                        _noviTip, context),
+                                    width: 2,
+                                  ),
+                                ),
+                                prefixIcon: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    _noviTip == 'ucenik'
+                                        ? Icons.school
+                                        : Icons.business,
+                                    key: ValueKey(_noviTip),
+                                    color: AppThemeHelpers.getTypeColor(
+                                        _noviTip, context),
+                                  ),
+                                ),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              controller: _tipSkoleController,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // 📞 KONTAKT INFORMACIJE - Sekcija
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.blue.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.phone,
+                                    color: Colors.blue,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '📞 Kontakt informacije',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue[700],
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              onChanged: (value) {
+                                _noviBrojTelefona = value;
+                                if (_brojTelefonaController.text != value) {
+                                  _brojTelefonaController.text = value;
+                                }
+                              },
+                              decoration: InputDecoration(
+                                labelText: _noviTip == 'ucenik'
+                                    ? '📱 Broj telefona učenika'
+                                    : '📞 Broj telefona',
+                                hintText: '064/123-456',
+                                border: const OutlineInputBorder(),
+                                focusedBorder: const OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: Colors.blue, width: 2),
+                                ),
+                                prefixIcon:
+                                    const Icon(Icons.phone, color: Colors.blue),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              keyboardType: TextInputType.phone,
+                              controller: _brojTelefonaController,
+                            ),
+
+                            // 👨‍👩‍👧‍👦 BROJEVI TELEFONA RODITELJA - animirana sekcija za učenike
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: _noviTip == 'ucenik'
+                                  ? Container(
+                                      key:
+                                          const ValueKey('parent_contacts_add'),
+                                      margin: const EdgeInsets.only(top: 16),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.orange.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.orange
+                                                      .withOpacity(0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.family_restroom,
+                                                  color: Colors.orange,
+                                                  size: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Kontakt podaci roditelja',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color:
+                                                            Colors.orange[700],
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      'Za hitne situacije',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color:
+                                                            Colors.orange[600],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          TextField(
+                                            onChanged: (value) {
+                                              _noviBrojTelefonaOca = value;
+                                              if (_brojTelefonaOcaController
+                                                      .text !=
+                                                  value) {
+                                                _brojTelefonaOcaController
+                                                    .text = value;
+                                              }
+                                            },
+                                            decoration: const InputDecoration(
+                                              labelText: 'Broj telefona oca',
+                                              hintText: '064/123-456',
+                                              border: OutlineInputBorder(),
+                                              prefixIcon: Icon(Icons.man,
+                                                  color: Colors.blue),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                            keyboardType: TextInputType.phone,
+                                            controller:
+                                                _brojTelefonaOcaController,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextField(
+                                            onChanged: (value) {
+                                              _noviBrojTelefonaMajke = value;
+                                              if (_brojTelefonaMajkeController
+                                                      .text !=
+                                                  value) {
+                                                _brojTelefonaMajkeController
+                                                    .text = value;
+                                              }
+                                            },
+                                            decoration: const InputDecoration(
+                                              labelText: 'Broj telefona majke',
+                                              hintText: '065/789-012',
+                                              border: OutlineInputBorder(),
+                                              prefixIcon: Icon(Icons.woman,
+                                                  color: Colors.pink),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                            keyboardType: TextInputType.phone,
+                                            controller:
+                                                _brojTelefonaMajkeController,
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // 📍 ADRESE POLASKA - Sekcija
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.green.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.green,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '📍 Adrese polaska',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[700],
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              onChanged: (value) {
+                                _novaAdresaBelaCrkva = value;
+                                if (_adresaBelaCrkvaController.text != value) {
+                                  _adresaBelaCrkvaController.text = value;
+                                }
+                              },
+                              decoration: const InputDecoration(
+                                labelText: '🏠 Adresa polaska - Bela Crkva',
+                                border: OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: Colors.green, width: 2),
+                                ),
+                                prefixIcon:
+                                    Icon(Icons.home, color: Colors.green),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              controller: _adresaBelaCrkvaController,
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              onChanged: (value) {
+                                _novaAdresaVrsac = value;
+                                if (_adresaVrsacController.text != value) {
+                                  _adresaVrsacController.text = value;
+                                }
+                              },
+                              decoration: const InputDecoration(
+                                labelText: '🏢 Adresa polaska - Vršac',
+                                border: OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: Colors.green, width: 2),
+                                ),
+                                prefixIcon:
+                                    Icon(Icons.business, color: Colors.green),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              controller: _adresaVrsacController,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // 📅 RADNI DANI I VREMENA - Sekcija
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.purple.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.purple.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.calendar_today,
+                                    color: Colors.purple,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '📅 Radni dani i vremena',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.purple[700],
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   'Izaberite dane kada putnik radi:',
                                   style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.7),
+                                    color: Colors.purple[600],
                                     fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 Row(
@@ -2401,9 +2574,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         'Svi',
                                         style: TextStyle(
                                           fontSize: 10,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                                          color: Colors.purple[600],
                                         ),
                                       ),
                                     ),
@@ -2438,7 +2609,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
                             Wrap(
                               spacing: 2,
                               runSpacing: 2,
@@ -2450,32 +2621,27 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 _buildRadniDanCheckbox('pet', 'Petak'),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 12),
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withOpacity(0.1),
+                                color: Colors.purple.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.info_outline,
-                                      size: 16,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary),
+                                  Icon(
+                                    Icons.info_outline,
+                                    size: 16,
+                                    color: Colors.purple[600],
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'Primer: Ponedeljak, Sreda, Petak',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                        color: Colors.purple[600],
                                         fontStyle: FontStyle.italic,
                                       ),
                                     ),
@@ -2483,7 +2649,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 ],
                               ),
                             ),
-                            // ⏰ VREMENA POLASKA SEKCIJA - nova logika
                             const SizedBox(height: 16),
                             _buildVremenaPolaskaSekcija(),
                           ],

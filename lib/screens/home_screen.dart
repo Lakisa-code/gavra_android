@@ -315,6 +315,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // _getPutnikCount je uklonjen jer nije korišćen
 
+  // Helper metoda za prikaz redova u sekcijama (kao u statistikama)
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -426,26 +457,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         builder: (context, setStateDialog) => AlertDialog(
           title: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .successPrimary
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.person_add,
-                  color: Theme.of(context).colorScheme.successPrimary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
+              Icon(Icons.person_add, color: Colors.blue.shade600),
+              const SizedBox(width: 8),
               const Expanded(
                 child: Text(
                   'Dodaj Putnika',
-                  style: TextStyle(fontSize: 18),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ],
@@ -453,299 +470,264 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Prikaz aktivnog vremena i grada - ulepšano
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.all(16),
+                // 🎯 INFORMACIJE O RUTI - Sekcija kao u statistikama
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.3),
-                        width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.schedule,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Dodaje se za:',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            Text(
-                              '$_selectedVreme - $_selectedGrad ($_selectedDay)',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ✅ IZBOR IMENA - drugačiji UI za mesečne i obične putnike
-                if (mesecnaKarta)
-                  // DROPDOWN ZA MESEČNE PUTNIKE
-                  Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Izaberite mesečnog putnika:',
+                        '📋 Informacije o ruti',
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                          fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: imeController.text.trim().isEmpty
-                            ? null
-                            : (dozvoljenaImena
-                                    .contains(imeController.text.trim())
-                                ? imeController.text.trim()
-                                : null),
-                        decoration: InputDecoration(
-                          labelText: 'Mesečni putnik',
-                          hintText: 'Izaberite putnika...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          prefixIcon: Icon(Icons.person,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        items: dozvoljenaImena
-                            .map((ime) => DropdownMenuItem(
-                                  value: ime,
-                                  child: Text(ime),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setStateDialog(() {
-                            imeController.text = value ?? '';
-                          });
-                        },
-                      ),
+                      _buildStatRow('🕐 Vreme:', _selectedVreme),
+                      _buildStatRow('🏘️ Grad:', _selectedGrad),
+                      _buildStatRow('📅 Dan:', _selectedDay),
                     ],
-                  )
-                else
-                  // AUTOCOMPLETE ZA OBIČNE PUTNIKE
-                  AutocompleteImeField(
-                    controller: imeController,
-                    mesecnaKarta: mesecnaKarta,
-                    dozvoljenaImena: dozvoljenaImena,
-                    onChanged: (ime) {
-                      // Automatski označi mesečnu kartu ako je pronađen mesečni putnik
-                      final isMesecniPutnik =
-                          dozvoljenaImena.contains(ime.trim());
-                      if (isMesecniPutnik != mesecnaKarta) {
-                        setStateDialog(() {
-                          // 🔧 SAMO ažuriraj checkbox ako NIJE manuelno označeno
-                          if (!manuelnoOznaceno) {
-                            mesecnaKarta = isMesecniPutnik;
-                          }
-                        });
-                      }
-                    },
                   ),
-                const SizedBox(height: 12),
-                // Novo AutocompleteAdresaField - filtrira po gradu!
-                AutocompleteAdresaField(
-                  controller: adresaController,
-                  grad: _selectedGrad,
-                  labelText: 'Adresa (opciono)',
-                  hintText: 'Npr: Glavna 15, Zmaj Jovina 22...',
-                ),
-                // Dodatno obaveštenje
-                if (adresaController.text.trim().isNotEmpty)
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .successPrimary
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .successPrimary
-                              .withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.route, color: Colors.green, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '✅ Adresa će biti korišćena za optimizaciju Google Maps rute!',
-                            style: TextStyle(
-                              color:
-                                  Theme.of(context).colorScheme.successPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (mesecnaKarta)
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .warningPrimary
-                          .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .warningPrimary
-                              .withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline,
-                                color: Colors.orange[700], size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'SAMO POSTOJEĆI MESEČNI PUTNICI',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.orange[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Možete dodati samo imena koja već postoje u mesečnoj listi.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.orange[600],
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Za NOVE mesečne putnike → Meni → Mesečni putnici',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.orange[600],
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                CheckboxListTile(
-                  title: const Text('Mesečna karta'),
-                  subtitle: const Text('Označite ako putnik ima mesečnu kartu'),
-                  value: mesecnaKarta,
-                  onChanged: (value) {
-                    setStateDialog(() {
-                      mesecnaKarta = value ?? false;
-                      manuelnoOznaceno =
-                          true; // 🔧 Označi da je manuelno podešeno
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
                 ),
 
-                // � INFO SEKCIJA ZA MESEČNE PUTNIKE
-                if (mesecnaKarta) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Putnik će biti dodat za: $_selectedVreme - $_selectedGrad',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w500,
+                const SizedBox(height: 16),
+
+                // 👤 PODACI O PUTNIKU - Sekcija
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '👤 Podaci o putniku',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // IZBOR IMENA - drugačiji UI za mesečne i obične putnike
+                      if (mesecnaKarta)
+                        // DROPDOWN ZA MESEČNE PUTNIKE
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Izaberite mesečnog putnika:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.green.shade700,
+                              ),
                             ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: imeController.text.trim().isEmpty
+                                  ? null
+                                  : (dozvoljenaImena
+                                          .contains(imeController.text.trim())
+                                      ? imeController.text.trim()
+                                      : null),
+                              decoration: InputDecoration(
+                                labelText: 'Mesečni putnik',
+                                hintText: 'Izaberite putnika...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.person,
+                                    color: Colors.green),
+                                fillColor: Colors.white,
+                                filled: true,
+                              ),
+                              items: dozvoljenaImena
+                                  .map((ime) => DropdownMenuItem(
+                                        value: ime,
+                                        child: Text(ime),
+                                      ))
+                                  .toList(),
+                              onChanged: (value) {
+                                setStateDialog(() {
+                                  imeController.text = value ?? '';
+                                });
+                              },
+                            ),
+                          ],
+                        )
+                      else
+                        // AUTOCOMPLETE ZA OBIČNE PUTNIKE
+                        AutocompleteImeField(
+                          controller: imeController,
+                          mesecnaKarta: mesecnaKarta,
+                          dozvoljenaImena: dozvoljenaImena,
+                          onChanged: (ime) {
+                            // Automatski označi mesečnu kartu ako je pronađen mesečni putnik
+                            final isMesecniPutnik =
+                                dozvoljenaImena.contains(ime.trim());
+                            if (isMesecniPutnik != mesecnaKarta) {
+                              setStateDialog(() {
+                                // 🔧 SAMO ažuriraj checkbox ako NIJE manuelno označeno
+                                if (!manuelnoOznaceno) {
+                                  mesecnaKarta = isMesecniPutnik;
+                                }
+                              });
+                            }
+                          },
+                        ),
+                      const SizedBox(height: 12),
+
+                      // ADRESA FIELD
+                      AutocompleteAdresaField(
+                        controller: adresaController,
+                        grad: _selectedGrad,
+                        labelText: 'Adresa (opciono)',
+                        hintText: 'Npr: Glavna 15, Zmaj Jovina 22...',
+                      ),
+
+                      // Dodatno obaveštenje o adresi
+                      if (adresaController.text.trim().isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: Colors.green.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.route,
+                                  color: Colors.green, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '✅ Adresa će biti korišćena za optimizaciju rute!',
+                                  style: TextStyle(
+                                    color: Colors.green[700],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
-                ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // 🎫 TIP KARTE - Sekcija
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '🎫 Tip karte',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[700],
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      CheckboxListTile(
+                        title: const Text('Mesečna karta'),
+                        subtitle:
+                            const Text('Označite ako putnik ima mesečnu kartu'),
+                        value: mesecnaKarta,
+                        activeColor: Colors.orange,
+                        onChanged: (value) {
+                          setStateDialog(() {
+                            mesecnaKarta = value ?? false;
+                            manuelnoOznaceno = true;
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+
+                      // UPOZORENJE ZA MESEČNE PUTNIKE
+                      if (mesecnaKarta)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: Colors.orange.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      color: Colors.orange[700], size: 14),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'SAMO POSTOJEĆI MESEČNI PUTNICI',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.orange[700],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Možete dodati samo imena koja već postoje u mesečnoj listi.',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.orange[600],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Za NOVE mesečne putnike → Meni → Mesečni putnici',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.orange[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
