@@ -218,23 +218,25 @@ class MesecniPutnikServiceNovi {
       String vozacId, DateTime pocetakMeseca, DateTime krajMeseca) async {
     try {
       print('🔍 [AZURIRAJ PLACANJE] Input vozacId: $vozacId');
-      
+
       // Validacija UUID-a pre slanja u bazu
       String? validVozacId;
       if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
         // Provjeri da li je već valid UUID
         if (_isValidUuid(vozacId)) {
           validVozacId = vozacId;
-          print('✅ [AZURIRAJ PLACANJE] Valid UUID: $validVozacId'); 
+          print('✅ [AZURIRAJ PLACANJE] Valid UUID: $validVozacId');
         } else {
           // Ako nije UUID, pokušaj konverziju (fallback)
-          print('⚠️ [AZURIRAJ PLACANJE] Not a UUID, attempting conversion from: $vozacId');
+          print(
+              '⚠️ [AZURIRAJ PLACANJE] Not a UUID, attempting conversion from: $vozacId');
           final converted = VozacMappingService.getVozacUuid(vozacId);
           if (converted != null) {
             validVozacId = converted;
             print('✅ [AZURIRAJ PLACANJE] Converted to UUID: $validVozacId');
           } else {
-            print('❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null');
+            print(
+                '❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null');
             validVozacId = null;
           }
         }
@@ -256,10 +258,12 @@ class MesecniPutnikServiceNovi {
       return false;
     }
   }
-  
+
   /// Helper funkcija za validaciju UUID formata
   bool _isValidUuid(String str) {
-    return RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(str);
+    return RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+        .hasMatch(str);
   }
 
   /// Briše mesečnog putnika (soft delete)

@@ -3291,7 +3291,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final prefs = await SharedPreferences.getInstance();
       final driverName = prefs.getString('current_driver');
       dlog('🔍 [GET CURRENT DRIVER UUID] Driver name from prefs: $driverName');
-      
+
       if (driverName != null && driverName.isNotEmpty) {
         // Ako je već UUID, vrati direktno
         if (VozacMappingService.isValidVozacUuid(driverName)) {
@@ -3301,13 +3301,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         // Inače konvertuj ime u UUID
         final uuid = VozacMappingService.getVozacUuid(driverName);
         if (uuid != null && uuid.isNotEmpty) {
-          dlog('✅ [GET CURRENT DRIVER UUID] Converted $driverName to UUID: $uuid');
+          dlog(
+              '✅ [GET CURRENT DRIVER UUID] Converted $driverName to UUID: $uuid');
           return uuid;
         } else {
-          dlog('❌ [GET CURRENT DRIVER UUID] Failed to convert $driverName to UUID');
+          dlog(
+              '❌ [GET CURRENT DRIVER UUID] Failed to convert $driverName to UUID');
         }
       }
-      dlog('⚠️ [GET CURRENT DRIVER UUID] Returning empty string - no valid driver');
+      dlog(
+          '⚠️ [GET CURRENT DRIVER UUID] Returning empty string - no valid driver');
       return ''; // Vraća prazan string ako nije poznat
     } catch (e) {
       dlog('❌ [GET CURRENT DRIVER UUID] Error: $e');
