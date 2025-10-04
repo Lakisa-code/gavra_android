@@ -244,6 +244,27 @@ class MesecniPutnikServiceNovi {
 
       print('🔍 [AZURIRAJ PLACANJE] Final vozac_id: $validVozacId');
 
+      // 1. DODAJ U ISTORIJU PLAĆANJA (putovanja_istorija)
+      final putnik = await getMesecniPutnikById(putnikId);
+      if (putnik != null) {
+        await _supabase.from('putovanja_istorija').insert({
+          'mesecni_putnik_id': putnikId,
+          'putnik_ime': putnik.putnikIme,
+          'tip_putnika': 'mesecna_karta',
+          'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
+          'vreme_polaska': 'mesecno_placanje',
+          'status': 'placeno',
+          'vozac_id': validVozacId,
+          'cena': iznos,
+          'placeni_mesec': pocetakMeseca.month,
+          'placena_godina': pocetakMeseca.year,
+          'napomene':
+              'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
+        });
+        print('✅ [ISTORIJA PLACANJA] Dodano u putovanja_istorija: $iznos din');
+      }
+
+      // 2. AŽURIRAJ MESEČNOG PUTNIKA (za kompatibilnost)
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
         'vozac_id': validVozacId,
@@ -252,6 +273,7 @@ class MesecniPutnikServiceNovi {
         'placena_godina': pocetakMeseca.year,
         'ukupna_cena_meseca': iznos,
       });
+
       return true;
     } catch (e) {
       print('Greška u azurirajPlacanjeZaMesec: $e');
@@ -369,60 +391,83 @@ class MesecniPutnikServiceNovi {
     }
   }
 
-  /// Dohvata sva plaćanja za mesečnog putnika
+  /// Dohvata sva plaćanja za mesečnog putnika iz putovanja_istorija
   Future<List<Map<String, dynamic>>> dohvatiPlacanjaZaPutnika(
       String putnikIme) async {
     try {
       List<Map<String, dynamic>> svaPlacanja = [];
 
-      // 1. REDOVNA PUTOVANJA iz putovanja_istorija
-      final redovnaPlacanja = await _supabase
+      // 1. SVA PLAĆANJA iz putovanja_istorija (i dnevna i mesečna)
+      final placanjaIzIstorije = await _supabase
           .from('putovanja_istorija')
           .select('*')
           .eq('putnik_ime', putnikIme)
           .gt('cena', 0)
           .order('created_at', ascending: false) as List<dynamic>;
 
-      svaPlacanja.addAll(redovnaPlacanja.cast<Map<String, dynamic>>());
-
-      // 2. MESEČNA PLAĆANJA iz mesecni_putnici
-      final mesecnaPlacanja = await _supabase
-          .from('mesecni_putnici')
-          .select(
-              'cena, vreme_placanja, naplata_vozac, placeni_mesec, placena_godina')
-          .eq('putnik_ime', putnikIme)
-          .not('vreme_placanja', 'is', null)
-          .order('vreme_placanja', ascending: false) as List<dynamic>;
-
-      // Konvertuj mesečna plaćanja u isti format kao redovna
-      for (var mesecno in mesecnaPlacanja) {
+      // Konvertuj u standardizovan format
+      for (var placanje in placanjaIzIstorije) {
         svaPlacanja.add({
-          'cena': mesecno['cena'],
-          'created_at': mesecno['vreme_placanja'],
-          'vozac_ime': mesecno['naplata_vozac'], // Za konsistentnost sa UI
+          'cena': placanje['cena'],
+          'created_at': placanje['created_at'],
+          'vozac_ime': await _getVozacImeByUuid(placanje['vozac_id']),
           'putnik_ime': putnikIme,
-          'tip': 'mesecna_karta',
-          'placeniMesec': mesecno['placeni_mesec'],
-          'placenaGodina': mesecno['placena_godina'],
+          'tip': placanje['tip_putnika'] ?? 'dnevni',
+          'placeniMesec': placanje['placeni_mesec'],
+          'placenaGodina': placanje['placena_godina'],
+          'status': placanje['status'],
+          'napomene': placanje['napomene'],
+          'datum_putovanja': placanje['datum_putovanja'],
         });
       }
 
-      // Dodaj vozac_ime i za redovna plaćanja (mapiranje naplata_vozac -> vozac_ime)
-      for (var redovno
-          in svaPlacanja.where((p) => p['tip'] != 'mesecna_karta')) {
-        redovno['vozac_ime'] = redovno['naplata_vozac'];
-      }
+      // FALLBACK: Ako nema plaćanja u istoriji, učitaj iz mesecni_putnici (za postojeće podatke)
+      if (svaPlacanja.isEmpty) {
+        final mesecnaPlacanja = await _supabase
+            .from('mesecni_putnici')
+            .select(
+                'cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina')
+            .eq('putnik_ime', putnikIme)
+            .not('vreme_placanja', 'is', null)
+            .order('vreme_placanja', ascending: false) as List<dynamic>;
 
-      // Sortiraj sve po datumu, najnovije prvo
-      svaPlacanja.sort((a, b) {
-        final dateA = DateTime.parse(a['created_at']);
-        final dateB = DateTime.parse(b['created_at']);
-        return dateB.compareTo(dateA);
-      });
+        // Konvertuj mesečna plaćanja u isti format
+        for (var mesecno in mesecnaPlacanja) {
+          svaPlacanja.add({
+            'cena': mesecno['cena'],
+            'created_at': mesecno['vreme_placanja'],
+            'vozac_ime': await _getVozacImeByUuid(mesecno['vozac_id']),
+            'putnik_ime': putnikIme,
+            'tip': 'mesecna_karta',
+            'placeniMesec': mesecno['placeni_mesec'],
+            'placenaGodina': mesecno['placena_godina'],
+            'status': 'placeno',
+            'napomene': 'Legacy plaćanje iz mesecni_putnici tabele',
+          });
+        }
+      }
 
       return svaPlacanja;
     } catch (e) {
+      print('❌ Greška pri dohvatanju plaćanja: $e');
       return [];
+    }
+  }
+
+  /// Helper funkcija za dobijanje imena vozača iz UUID-a
+  Future<String?> _getVozacImeByUuid(String? vozacUuid) async {
+    if (vozacUuid == null || vozacUuid.isEmpty) return null;
+
+    try {
+      final response = await _supabase
+          .from('vozaci')
+          .select('ime')
+          .eq('id', vozacUuid)
+          .single();
+      return response['ime'] as String?;
+    } catch (e) {
+      // Fallback na mapping service
+      return VozacMappingService.getVozacIme(vozacUuid);
     }
   }
 

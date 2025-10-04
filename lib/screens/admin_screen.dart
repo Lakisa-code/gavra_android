@@ -17,6 +17,7 @@ import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
+import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'statistika_screen.dart'; // DODANO za statistike
 
 import '../utils/logging.dart';
@@ -1067,6 +1068,74 @@ class _AdminScreenState extends State<AdminScreen> {
                                       SizedBox(width: 6),
                                       Icon(
                                         Icons.my_location,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8), // Razmak između dugmadi
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  // 📚 OTVORI ISTORIJU PUTOVANJA
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const PutovanjaIstorijaScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  height: 60,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFF6B35),
+                                        Color(0xFFF7931E)
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: const Color(0xFFF7931E),
+                                        width: 1.2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFFF6B35)
+                                            .withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.history,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'ISTORIJA PUTOVANJA',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6),
+                                      Icon(
+                                        Icons.timeline,
                                         color: Colors.white,
                                         size: 14,
                                       ),

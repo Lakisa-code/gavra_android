@@ -1,0 +1,34 @@
+{
+  "settingsVersion": 38,
+  "memoryMiB": 2048,
+  "cpus": 2,
+  "swapMiB": 1024,
+  "diskSizeMiB": 61440,
+  "vmDiskPath": "C:\\Users\\Bojan\\AppData\\Local\\Docker\\wsl\\disk\\docker_desktop_data\\ext4.vhdx",
+  "useWindowsContainers": false,
+  "dataFolder": "C:\\Users\\Bojan\\AppData\\Local\\Docker\\wsl\\data",
+  "useVPNKit": false,
+  "vpnKitMaxPortIdleTime": "300s",
+  "networkSubnets": [
+    {
+      "subnet": "192.168.65.0/28",
+      "gateway": "192.168.65.1"
+    }
+  ],
+  "hostNetworkingEnabled": false,
+  "wslEngineEnabled": true,
+  "useEnhancedContainerIsolation": false,
+  "useFileSharing": true,
+  "fileSharing": {
+    "directories": [
+      "C:\\Users\\Bojan\\gavra_android"
+    ]
+  },
+  "enableIntegratedTerminal": true,
+  "useCredentialHelper": true,
+  "useDockerDesktopWASM": false,
+  "openUIOnStartupDisabled": true,
+  "checkForUpdates": true,
+  "displayedTutorial": true,
+  "skipUpdateToWSLPrompt": false
+}

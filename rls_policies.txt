@@ -1,5 +1,0 @@
- public     | dnevni_putnici     | dev_allow_all_dnevni   | PERMISSIVE | {anon,authenticated} | ALL | true | true
- public     | mesecni_putnici    | dev_allow_all_mesecni  | PERMISSIVE | {anon,authenticated} | ALL | true | true
- public     | putovanja_istorija | dev_allow_all_istorija | PERMISSIVE | {anon,authenticated} | ALL | true | true
- public     | vozaci             | dev_allow_all_vozaci   | PERMISSIVE | {anon,authenticated} | ALL | true | true
-
