@@ -820,14 +820,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       ),
                     ),
 
-                  // Tip škole (ako postoji)
+                  // Tip škole/ustanova (ako postoji)
                   if (putnik.tipSkole != null)
                     Expanded(
                       flex: 3,
                       child: Row(
                         children: [
-                          Icon(Icons.school_outlined,
-                              size: 16, color: Colors.grey.shade600),
+                          Icon(
+                            putnik.tip == 'ucenik'
+                                ? Icons.school_outlined
+                                : Icons.business_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
@@ -2658,7 +2663,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     try {
       // Dobij trenutnog vozača kao UUID
       final currentDriverUuid = await _getCurrentDriverUuid();
-      
+
       // Pripremi mapu polazaka po danima (JSON)
       final Map<String, List<String>> polasciPoDanu = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -3599,7 +3604,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               _buildStatRow('📅 Radni dani:', putnik.radniDani),
               _buildStatRow('📊 Tip putnika:', putnik.tip),
               if (putnik.tipSkole != null)
-                _buildStatRow('🎓 Tip škole:', putnik.tipSkole!),
+                _buildStatRow(
+                  putnik.tip == 'ucenik' ? '� Škola:' : '�🏢 Ustanova/Firma:',
+                  putnik.tipSkole!,
+                ),
               if (putnik.brojTelefona != null)
                 _buildStatRow('📞 Telefon:', putnik.brojTelefona!),
             ],
@@ -3633,12 +3641,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   '💵 Poslednje plaćanje:',
                   putnik.cena != null && putnik.cena! > 0
                       ? '${putnik.cena!.toStringAsFixed(0)} RSD'
-                      : 'Nije plaćeno'),
+                      : 'Nema podataka o ceni'),
               _buildStatRow(
                   '📅 Datum plaćanja:',
                   putnik.vremePlacanja != null
                       ? _formatDatum(putnik.vremePlacanja!)
-                      : 'Nije plaćeno'),
+                      : 'Nema podataka o datumu'),
               _buildStatRow('🚗 Vozač (naplata):', putnik.vozacIme),
             ],
           ),
@@ -4103,8 +4111,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     ];
     return months[month];
   }
-
-
 
   // 📊 DOBIJ MESEČNE STATISTIKE ZA SEPTEMBAR 2025
   Future<Map<String, dynamic>> _getMesecneStatistike(String putnikId) async {
@@ -4578,8 +4584,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-
-
   /// � EXPORT PUTNIKA U CSV
   Future<void> _exportPutnici() async {
     try {
@@ -4596,7 +4600,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Kreiranje CSV sadržaja
       final csvData = StringBuffer();
       csvData.writeln(
-          'Ime,Tip,Tip Škole,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status,Cena');
+          'Ime,Tip,Škola/Ustanova,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status,Cena');
 
       for (final putnik in putnici) {
         final polasciBc = <String>[];
