@@ -197,9 +197,9 @@ class _MyAppState extends State<MyApp> {
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
-        // Podesi URL servera koji forwarduje OneSignal pozive (postavi svoj URL ovde)
-        RealtimeNotificationService.setOneSignalServerUrl(
-            'http://localhost:3000/api/onesignal/notify');
+        // PRIVREMENO ISKLJUČENO - OneSignal server URL
+        // RealtimeNotificationService.setOneSignalServerUrl(
+        //     'http://localhost:3000/api/onesignal/notify');
         if (mounted) {
           RealtimeNotificationService.listenForForegroundNotifications(context);
         }
