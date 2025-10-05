@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
 import 'home_screen.dart';
 import 'email_registration_screen.dart';
 import 'daily_checkin_screen.dart';
 import '../services/daily_checkin_service.dart';
+import '../main.dart' show globalThemeRefresher;
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({Key? key}) : super(key: key);
@@ -385,6 +387,17 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
       if (driverName != null) {
         dlog('✅ Uspješna prijava vozača: $driverName');
+
+        // 💾 Sačuvaj vozača u SharedPreferences za auto-login
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('current_driver', driverName);
+        dlog('💾 Vozač $driverName sačuvan u SharedPreferences');
+
+        // 🎨 Osveži temu za vozača
+        if (globalThemeRefresher != null) {
+          globalThemeRefresher!();
+          dlog('🎨 Tema osvežena za vozača $driverName');
+        }
 
         // Provjeri daily check-in
         final needsCheckIn =
