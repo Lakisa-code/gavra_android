@@ -171,11 +171,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
           // Register Link
           _buildRegisterLink(),
-
-          const SizedBox(height: 24),
-
-          // Back to Phone Login
-          _buildBackToPhoneLogin(),
         ],
       ),
     );
@@ -352,22 +347,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBackToPhoneLogin() {
-    return TextButton.icon(
-      onPressed: () {
-        Navigator.of(context).pop();
-      },
-      icon: const Icon(Icons.phone_android, color: Colors.green),
-      label: const Text(
-        'Nazad na SMS prijavu',
-        style: TextStyle(
-          color: Colors.green,
-          fontSize: 16,
-        ),
-      ),
     );
   }
 
