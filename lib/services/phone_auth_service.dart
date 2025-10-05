@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logging.dart';
-import 'vozac_registracija_service.dart';
+import '../services/vozac_registracija_service.dart';
 
 class PhoneAuthService {
   static final _supabase = Supabase.instance.client;
@@ -11,31 +11,144 @@ class PhoneAuthService {
     'Bojan': '+381641162560',
     'Bruda': '+381641202844',
     'Svetlana': '+381658464160',
+    'Bilevski': '+381641234567', // Test broj za Bilevskog
   };
 
-  /// 📨 POTVRDI SMS KOD
+  /// Helper funkcija za dobijanje imena vozača po broju telefona
+  static String? _getDriverNameByPhone(String phoneNumber) {
+    for (final entry in _driverPhones.entries) {
+      if (entry.value == phoneNumber) {
+        return entry.key;
+      }
+    }
+    return null;
+  }
+
+  /// 📨 POŠALJI SMS KOD (sa fallback za lokalni development)
+  static Future<bool> sendSMSCode(String phoneNumber) async {
+    try {
+      // LOKALNI DEVELOPMENT - simulacija slanja SMS-a (usklađeno sa config.toml)
+      const Map<String, String> testOTPCodes = {
+        '+381641162560': '123456', // Bojan
+        '+381641202844': '123456', // Bruda
+        '+381658464160': '123456', // Svetlana
+        '+381641234567': '123456', // Bilevski
+      };
+
+      if (testOTPCodes.containsKey(phoneNumber)) {
+        dlog(
+            '✅ DEVELOPMENT: Simuliram SMS kod ${testOTPCodes[phoneNumber]} za: $phoneNumber');
+        // U realnom development-u, ovde bi trebalo prikazati kod u UI
+        return true;
+      }
+
+      // Pokušaj sa pravim Supabase SMS servisom
+      try {
+        await _supabase.auth.signInWithOtp(phone: phoneNumber);
+        dlog('✅ Pravi SMS kod poslan na: $phoneNumber');
+        return true;
+      } catch (e) {
+        dlog('⚠️ Pravi SMS servis nije dostupan: $e');
+        // Fallback na test kodove za poznate brojeve
+        if (testOTPCodes.containsKey(phoneNumber)) {
+          dlog('✅ FALLBACK: Koristim test kod za: $phoneNumber');
+          return true;
+        }
+        throw e;
+      }
+    } catch (e) {
+      dlog('❌ Greška pri slanju SMS koda: $e');
+      return false;
+    }
+  }
+
+  /// 📱 DOBIJ TEST OTP KOD ZA BROJ (za development)
+  static String? getTestOTPCode(String phoneNumber) {
+    const Map<String, String> testOTPCodes = {
+      '+381641162560': '123456', // Bojan
+      '+381641202844': '123456', // Bruda
+      '+381658464160': '123456', // Svetlana
+      '+381641234567': '123456', // Bilevski
+    };
+    return testOTPCodes[phoneNumber];
+  }
+
+  /// 📨 PROVERI DA LI JE POZNATI TEST BROJ (za development UI)
+  static bool isKnownTestNumber(String phoneNumber) {
+    const Map<String, String> testOTPCodes = {
+      '+381641162560': '123456', // Bojan
+      '+381641202844': '123456', // Bruda
+      '+381658464160': '123456', // Svetlana
+      '+381641234567': '123456', // Bilevski
+    };
+    return testOTPCodes.containsKey(phoneNumber);
+  }
+
+  /// 🧪 DOBIJ DEVELOPMENT PORUKU ZA UI
+  static String? getTestCodeMessage(String phoneNumber) {
+    final testCode = getTestOTPCode(phoneNumber);
+    final driverName = _getDriverNameByPhone(phoneNumber);
+
+    if (testCode != null && driverName != null) {
+      return "DEVELOPMENT: Test kod za $driverName je: $testCode";
+    }
+    return null;
+  }
+
+  /// 📨 POTVRDI SMS KOD (sa fallback za lokalni development)
   static Future<bool> confirmSMSVerification(
       String phoneNumber, String smsCode) async {
     try {
       dlog('📨 Potvrđujem broj: $phoneNumber sa SMS kodom: $smsCode');
 
-      final AuthResponse response = await _supabase.auth.verifyOTP(
-        type: OtpType.sms,
-        token: smsCode,
-        phone: phoneNumber,
-      );
+      // LOKALNI DEVELOPMENT FALLBACK - test kodovi (usklađeno sa config.toml)
+      const Map<String, String> testOTPCodes = {
+        '+381641162560': '123456', // Bojan
+        '+381641202844': '123456', // Bruda
+        '+381658464160': '123456', // Svetlana
+        '+381641234567': '123456', // Bilevski
+      };
 
-      if (response.user != null && response.user!.phoneConfirmedAt != null) {
-        dlog('✅ SMS uspješno potvrđen za: $phoneNumber');
+      // Provebi da li je test kod
+      if (testOTPCodes.containsKey(phoneNumber) &&
+          testOTPCodes[phoneNumber] == smsCode) {
+        dlog('✅ Test SMS kod potvrđen za: $phoneNumber');
 
         // Ažuriraj lokalne podatke
         await _updateSMSConfirmationStatus(phoneNumber, true);
 
+        // Registruj vozača kao SMS potvrđenog
+        final driverName = _getDriverNameByPhone(phoneNumber);
+        if (driverName != null) {
+          await VozacRegistracijaService.oznaciVozacaKaoRegistrovanog(
+              driverName);
+        }
+
         return true;
-      } else {
-        dlog('❌ SMS potvrda neuspješna za: $phoneNumber');
-        return false;
       }
+
+      // Pokušaj sa pravim Supabase SMS servisom
+      try {
+        final AuthResponse response = await _supabase.auth.verifyOTP(
+          type: OtpType.sms,
+          token: smsCode,
+          phone: phoneNumber,
+        );
+
+        if (response.user != null && response.user!.phoneConfirmedAt != null) {
+          dlog('✅ Pravi SMS uspješno potvrđen za: $phoneNumber');
+
+          // Ažuriraj lokalne podatke
+          await _updateSMSConfirmationStatus(phoneNumber, true);
+
+          return true;
+        }
+      } catch (e) {
+        dlog('⚠️ Pravi SMS servis nije dostupan: $e');
+      }
+
+      dlog('❌ SMS potvrda neuspješna za: $phoneNumber');
+      return false;
     } catch (e) {
       dlog('❌ Greška pri potvrdi SMS: $e');
       return false;
@@ -98,34 +211,47 @@ class PhoneAuthService {
     }
   }
 
-  /// 📬 POŠALJI PONOVO SMS KOD
+  /// 📬 POŠALJI PONOVO SMS KOD (sa fallback za lokalni development)
   static Future<bool> resendSMSCode(String phoneNumber) async {
     try {
-      await _supabase.auth.resend(
-        type: OtpType.sms,
-        phone: phoneNumber,
-      );
-      dlog('✅ SMS kod ponovno poslan na: $phoneNumber');
-      return true;
+      // LOKALNI DEVELOPMENT - simulacija ponovnog slanja SMS-a
+      const Map<String, String> testOTPCodes = {
+        '+381641162560': '123456', // Bojan
+        '+381641202844': '123456', // Bruda
+        '+381658464160': '123456', // Svetlana
+        '+381641234567': '123456', // Bilevski
+      };
+
+      if (testOTPCodes.containsKey(phoneNumber)) {
+        dlog(
+            '✅ DEVELOPMENT: Simuliram ponovno slanje SMS koda ${testOTPCodes[phoneNumber]} za: $phoneNumber');
+        return true;
+      }
+
+      // Pokušaj sa pravim Supabase SMS servisom
+      try {
+        await _supabase.auth.resend(
+          type: OtpType.sms,
+          phone: phoneNumber,
+        );
+        dlog('✅ Pravi SMS kod ponovno poslan na: $phoneNumber');
+        return true;
+      } catch (e) {
+        dlog('⚠️ Pravi SMS servis nije dostupan: $e');
+        // Fallback na test kodove za poznate brojeve
+        if (testOTPCodes.containsKey(phoneNumber)) {
+          dlog('✅ FALLBACK: Koristim test kod za: $phoneNumber');
+          return true;
+        }
+        throw e;
+      }
     } catch (e) {
       dlog('❌ Greška pri slanju SMS koda: $e');
       return false;
     }
   }
 
-  /// � POŠALJI SMS KOD
-  static Future<bool> sendSMSCode(String phoneNumber) async {
-    try {
-      await _supabase.auth.signInWithOtp(phone: phoneNumber);
-      dlog('✅ SMS kod poslan na: $phoneNumber');
-      return true;
-    } catch (e) {
-      dlog('❌ Greška pri slanju SMS koda: $e');
-      return false;
-    }
-  }
-
-  /// �🔑 RESETUJ ŠIFRU PREKO SMS-a
+  /// 🔑 RESETUJ ŠIFRU PREKO SMS-a
   static Future<bool> resetPasswordViaSMS(String phoneNumber) async {
     try {
       // Koristimo signInWithOtp za reset - šaljemo novi kod
@@ -178,7 +304,7 @@ class PhoneAuthService {
     return _driverPhones[driverName];
   }
 
-  /// � FORMATIRAJ BROJ TELEFONA
+  /// 📱 FORMATIRAJ BROJ TELEFONA
   static String formatPhoneNumber(String phoneNumber) {
     if (phoneNumber.startsWith('+')) {
       return phoneNumber;
@@ -187,7 +313,7 @@ class PhoneAuthService {
     }
   }
 
-  /// �📜 DOHVATI SVE VOZAČE KOJI MOGU DA SE REGISTRUJU
+  /// 📜 DOHVATI SVE VOZAČE KOJI MOGU DA SE REGISTRUJU
   static List<String> getAllDriversForRegistration() {
     return _driverPhones.keys.toList();
   }
@@ -200,7 +326,8 @@ class PhoneAuthService {
   }
 
   /// 📱 REGISTRUJ VOZAČA SA TELEFONOM/SMS
-  static Future<bool> registerDriverWithPhone(String driverName, String phoneNumber, String password) async {
+  static Future<bool> registerDriverWithPhone(
+      String driverName, String phoneNumber, String password) async {
     try {
       dlog('📱 Registrujem vozača $driverName sa telefonom: $phoneNumber');
 
@@ -224,7 +351,7 @@ class PhoneAuthService {
       await prefs.setString('pending_registration_phone', phoneNumber);
       await prefs.setString('pending_registration_password', password);
       await prefs.setBool('is_pending_registration', true);
-      
+
       dlog('✅ SMS registracija u toku za $driverName, čeka se verifikacija');
       return true;
     } catch (e) {
@@ -252,7 +379,7 @@ class PhoneAuthService {
         token: smsCode,
         type: OtpType.sms,
       );
-      
+
       if (response.user == null) {
         dlog('❌ Nevaljan SMS kod');
         return false;
@@ -282,14 +409,14 @@ class PhoneAuthService {
     return false;
   }
 
-  /// � REGISTRUJ VOZAČA SA EMAIL-OM
+  /// 📧 REGISTRUJ VOZAČA SA EMAIL-OM
   static Future<bool> registerDriverWithEmail(
       String driverName, String email, String password) async {
     try {
       dlog('📧 Registrujem vozača $driverName sa email-om: $email');
 
-      final AuthResponse response = await _supabase.auth
-          .signUp(email: email, password: password, data: {
+      final AuthResponse response =
+          await _supabase.auth.signUp(email: email, password: password, data: {
         'driver_name': driverName,
         'role': 'driver',
         'auth_type': 'email',
@@ -297,7 +424,8 @@ class PhoneAuthService {
       });
 
       if (response.user != null) {
-        dlog('✅ Vozač $driverName uspješno registrovan sa email-om. Čeka se email potvrda.');
+        dlog(
+            '✅ Vozač $driverName uspješno registrovan sa email-om. Čeka se email potvrda.');
 
         // Sačuvaj podatke lokalno
         await _saveDriverEmailData(driverName, email);
@@ -343,8 +471,7 @@ class PhoneAuthService {
   }
 
   /// 🔐 PRIJAVI SE SA EMAIL-OM I ŠIFROM
-  static Future<String?> signInWithEmail(
-      String email, String password) async {
+  static Future<String?> signInWithEmail(String email, String password) async {
     try {
       dlog('🔐 Prijavljivanje sa email-om: $email');
 
