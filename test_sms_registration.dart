@@ -3,7 +3,6 @@
 /// Test script za SMS registraciju funkcionalnost
 /// Proverava da li SMS registracija radi kako treba
 
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -15,12 +14,10 @@ void main() {
 
       // Ovde bismo testirali da li PhoneAuthService funkcioniše
       // Za sada samo simuliramo
-      final testResult = true; // Placeholder
+      const testResult = true; // Placeholder
 
       if (testResult) {
         print('✅ SMS servis je dostupan');
-      } else {
-        print('❌ SMS servis nije dostupan');
       }
 
       expect(testResult, isTrue);
@@ -100,15 +97,15 @@ void main() {
       ];
 
       print('📋 SMS registracija koraci:');
-      steps.forEach((step) => print('   • $step'));
+      for (final step in steps) {
+        print('   • $step');
+      }
 
       // Simulacija - u realnom testu bi se testiralo svaki korak
-      final flowValid = true;
+      const flowValid = true;
 
       if (flowValid) {
         print('✅ SMS registracija flow je ispravan');
-      } else {
-        print('❌ Problem u SMS registracija flow-u');
       }
 
       expect(flowValid, isTrue);

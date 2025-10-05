@@ -73,7 +73,6 @@ function Show-WorkflowRuns {
     Write-Host ("-" * 80) -ForegroundColor Gray
     Write-Host "Press Ctrl+C to stop monitoring..." -ForegroundColor Magenta
 }
-}
 
 # Main monitoring loop
 try {
