@@ -55,15 +55,16 @@ class RealtimePriorityService {
   static void _startRealtimeChannels() {
     // 🎯 CRITICAL - INSTANT UPDATES
     _criticalTimer = Timer.periodic(
-        Duration(seconds: _criticalInterval == 0 ? 1 : _criticalInterval),
+        const Duration(
+            seconds: 1), // Koristi 1 sekund umesto uslovnog operatora
         (timer) => _processCriticalUpdates());
 
     // ⚡ MEDIUM - 5 SECOND UPDATES
-    _mediumTimer = Timer.periodic(
-        Duration(seconds: _mediumInterval), (timer) => _processMediumUpdates());
+    _mediumTimer = Timer.periodic(const Duration(seconds: _mediumInterval),
+        (timer) => _processMediumUpdates());
 
     // 🔄 LOW - 30 SECOND UPDATES (FUCK BATTERY OPTIMIZATION!)
-    _lowTimer = Timer.periodic(Duration(seconds: _lowInterval),
+    _lowTimer = Timer.periodic(const Duration(seconds: _lowInterval),
         (timer) => _processLowPriorityUpdates());
 
     dlog('📡 [$_tag] Svi realtime kanali pokrenuti - BEZ BATTERY SRANJA!');
