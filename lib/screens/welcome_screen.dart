@@ -522,6 +522,20 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   style:
                       TextStyle(color: Theme.of(context).colorScheme.primary)),
             ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(null); // Zatvori password dialog
+                // Otvori email login screen
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EmailLoginScreen(),
+                  ),
+                );
+              },
+              child: const Text('Email Prijava',
+                  style: TextStyle(color: Colors.green)),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: driverColor,
@@ -557,9 +571,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16), // Reduced padding
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment:
+                  MainAxisAlignment.start, // Changed from spaceBetween
               mainAxisSize: MainAxisSize.max,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -627,8 +642,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 16), // Reduced from 24
+                const SizedBox(height: 12), // Further reduced from 16
                 Expanded(
+                  flex: 3, // Give more space to driver buttons
                   child: Center(
                     child: SlideTransition(
                       position: _slideAnimation,
@@ -641,7 +657,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 6.0, // Reduced from 8.0
+                                  vertical:
+                                      4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'],
@@ -651,22 +668,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 ),
                               );
                             }),
-
-                            // Email Authentication dugme
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 8.0), // Reduced from 16.0,
-                              child: _buildEmailAuthButton(),
-                            ),
                           ],
                         ),
                       ),
                     ),
                   ),
                 ),
-                // Moderno dugme GAVRA 013 dole - fleksibilno da ne izaziva overflow
-                Flexible(
-                  fit: FlexFit.loose,
+                // Moderno dugme GAVRA 013 dole - compacted
+                Container(
+                  padding: const EdgeInsets.only(top: 8), // Reduced padding
                   child: Center(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -681,8 +691,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
+                            horizontal: 20, // Reduced padding
+                            vertical: 10, // Reduced padding
                           ),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
@@ -711,13 +721,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               Icon(
                                 Icons.directions_bus,
                                 color: Colors.white.withOpacity(0.92),
-                                size: 28,
+                                size: 24, // Reduced size
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 8), // Reduced spacing
                               Text(
                                 'GAVRA 013',
                                 style: TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 24, // Reduced size
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                   letterSpacing: 2,
@@ -739,7 +749,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 16), // Reduced from 28
+                const SizedBox(height: 8), // Reduced from 16
                 // Footer
                 FadeTransition(
                   opacity: _fadeAnimation,
@@ -788,10 +798,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               onTap: () => _loginAsDriver(name),
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.85,
-                height: 80,
+                constraints: const BoxConstraints(
+                  minHeight: 55, // Minimum height
+                  maxHeight: 65, // Maximum height with some flexibility
+                ),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 padding: const EdgeInsets.symmetric(
-                  vertical: 8, // Reduced from 12
+                  vertical: 6, // Further reduced to prevent overflow
                   horizontal: 16,
                 ),
                 decoration: BoxDecoration(
@@ -816,153 +829,69 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     width: 2.0,
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4), // Reduced from 6
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.18),
-                            color.withOpacity(0.25),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.18),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                child: ClipRect(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(
+                            3), // Further reduced to prevent overflow
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withOpacity(0.18),
+                              color.withOpacity(0.25),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
-                      ),
-                      child:
-                          Icon(icon, color: color, size: 20), // Reduced from 22
-                    ),
-                    const SizedBox(height: 2), // Reduced from 4
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        name,
-                        style: TextStyle(
-                          fontSize: 14, // Reduced from 16
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                          letterSpacing: 1.2, // Reduced from 1.5
-                          shadows: [
-                            Shadow(
-                              color: Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.18),
                               blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
+                        child: Icon(icon,
+                            color: color,
+                            size: 18), // Further reduced to prevent overflow
                       ),
-                    ),
-                  ],
+                      const SizedBox(
+                          height: 1), // Further reduced to prevent overflow
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: 13, // Further reduced to prevent overflow
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                            letterSpacing:
+                                1.0, // Further reduced to prevent overflow
+                            shadows: [
+                              Shadow(
+                                color: Colors.white.withOpacity(0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         );
       },
-    );
-  }
-
-  Widget _buildEmailAuthButton() {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.85,
-        height: 65,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.green.shade400,
-              Colors.green.shade600,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.green.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-          border: Border.all(
-            color: Colors.green.withOpacity(0.5),
-            width: 2,
-          ),
-        ),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EmailLoginScreen(),
-              ),
-            );
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.email_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Email Prijava',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  Text(
-                    'Prijavite se putem email-a',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
