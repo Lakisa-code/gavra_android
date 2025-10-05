@@ -54,7 +54,7 @@ class PhoneAuthService {
           dlog('✅ FALLBACK: Koristim test kod za: $phoneNumber');
           return true;
         }
-        throw e;
+        rethrow;
       }
     } catch (e) {
       dlog('❌ Greška pri slanju SMS koda: $e');
@@ -243,7 +243,7 @@ class PhoneAuthService {
           dlog('✅ FALLBACK: Koristim test kod za: $phoneNumber');
           return true;
         }
-        throw e;
+        rethrow;
       }
     } catch (e) {
       dlog('❌ Greška pri slanju SMS koda: $e');
