@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
+import '../utils/vozac_boja.dart';
 import 'email_verification_screen.dart';
 
 class EmailRegistrationScreen extends StatefulWidget {
@@ -182,7 +183,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
   }
 
   Widget _buildDriverSelection() {
-    final drivers = PhoneAuthService.getAllDriversForRegistration();
+    final drivers = VozacBoja.validDrivers;
 
     return DropdownButtonFormField<String>(
       value: _selectedDriver,
