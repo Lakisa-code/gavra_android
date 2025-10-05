@@ -16,7 +16,7 @@ import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
-// import '../services/update_service.dart'; // 🔄 Uklonjeno: Update sistem
+import '../services/update_service.dart'; // 🔄 Vraćeno: Update sistem
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart'
     as app_date_utils; // DODANO: Centralna vikend logika
@@ -212,7 +212,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     LocalNotificationService.initialize(context);
     RealtimeNotificationService.listenForForegroundNotifications(context);
 
-    // 🔄 Automatska provera update-a - UKLONJENO po zahtevu korisnika
+    // 🔄 Pokreni automatski update sistem
+    UpdateService.startBackgroundUpdateCheck();
 
     // Inicijalizuj realtime notifikacije za aktivnog vozača
     FirebaseService.getCurrentDriver().then((driver) {
