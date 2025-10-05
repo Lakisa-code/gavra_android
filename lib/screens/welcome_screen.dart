@@ -462,27 +462,32 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                autofocus: true,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  letterSpacing: 2,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Unesite šifru',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    letterSpacing: 2,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
+                  decoration: InputDecoration(
+                    hintText: 'Unesite šifru',
+                    hintStyle: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
                       color: driverColor.withOpacity(0.5),
                     ),
                   ),
@@ -492,12 +497,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                   filled: true,
                   fillColor: Colors.black.withOpacity(0.3),
-                ),
-                onSubmitted: (value) {
-                  Navigator.of(context).pop(value);
-                },
+                    ),
+                    onSubmitted: (value) {
+                      Navigator.of(context).pop(value);
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
