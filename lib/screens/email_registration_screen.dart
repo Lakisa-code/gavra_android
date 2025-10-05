@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/phone_auth_service.dart';
+import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
 import 'email_verification_screen.dart';
 
@@ -7,7 +7,8 @@ class EmailRegistrationScreen extends StatefulWidget {
   const EmailRegistrationScreen({Key? key}) : super(key: key);
 
   @override
-  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() =>
+      _EmailRegistrationScreenState();
 }
 
 class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
@@ -264,7 +265,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         if (value == null || value.isEmpty) {
           return 'Unesite email adresu';
         }
-        if (!PhoneAuthService.isValidEmailFormat(value)) {
+        if (!EmailAuthService.isValidEmailFormat(value)) {
           return 'Unesite validnu email adresu';
         }
         return null;
@@ -438,7 +439,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
 
       dlog('📧 Registrujem vozača $driverName sa email-om: $email');
 
-      final success = await PhoneAuthService.registerDriverWithEmail(
+      final success = await EmailAuthService.registerDriverWithEmail(
           driverName, email, password);
 
       if (success) {
@@ -462,7 +463,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       }
     } catch (e) {
       dlog('❌ Greška pri registraciji: $e');
-      _showErrorDialog('Greška', 'Došlo je do greške pri registraciji. Pokušajte ponovo.');
+      _showErrorDialog(
+          'Greška', 'Došlo je do greške pri registraciji. Pokušajte ponovo.');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -474,7 +476,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(message,
+            style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

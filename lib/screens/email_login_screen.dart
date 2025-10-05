@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/phone_auth_service.dart';
+import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
 import 'home_screen.dart';
 import 'email_registration_screen.dart';
@@ -213,7 +213,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         if (value == null || value.isEmpty) {
           return 'Unesite email adresu';
         }
-        if (!PhoneAuthService.isValidEmailFormat(value)) {
+        if (!EmailAuthService.isValidEmailFormat(value)) {
           return 'Unesite validnu email adresu';
         }
         return null;
@@ -380,13 +380,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
       dlog('🔐 Pokušavam prijavu sa email-om: $email');
 
-      final driverName = await PhoneAuthService.signInWithEmail(email, password);
+      final driverName =
+          await EmailAuthService.signInWithEmail(email, password);
 
       if (driverName != null) {
         dlog('✅ Uspješna prijava vozača: $driverName');
 
         // Provjeri daily check-in
-        final needsCheckIn = !await DailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn =
+            !await DailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Idi na daily check-in
@@ -400,7 +402,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
                     if (mounted) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const HomeScreen()),
                       );
                     }
                   },
@@ -425,7 +428,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       }
     } catch (e) {
       dlog('❌ Greška pri prijavi: $e');
-      _showErrorDialog('Greška', 'Došlo je do greške pri prijavi. Pokušajte ponovo.');
+      _showErrorDialog(
+          'Greška', 'Došlo je do greške pri prijavi. Pokušajte ponovo.');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -434,7 +438,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
 
-    if (email.isEmpty || !PhoneAuthService.isValidEmailFormat(email)) {
+    if (email.isEmpty || !EmailAuthService.isValidEmailFormat(email)) {
       _showErrorDialog('Nevažeći email',
           'Unesite validnu email adresu da biste resetovali šifru.');
       return;
@@ -443,11 +447,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     setState(() => _isLoading = true);
 
     try {
-      final success = await PhoneAuthService.resetPasswordViaEmail(email);
+      final success = await EmailAuthService.resetPasswordViaEmail(email);
 
       if (success) {
-        _showSuccessDialog('Email poslan',
-            'Provjerite email za link za reset šifre.');
+        _showSuccessDialog(
+            'Email poslan', 'Provjerite email za link za reset šifre.');
       } else {
         _showErrorDialog('Greška', 'Nije moguće poslati email za reset šifre.');
       }
@@ -465,7 +469,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(message,
+            style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -482,7 +487,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(message,
+            style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

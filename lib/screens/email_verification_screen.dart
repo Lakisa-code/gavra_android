@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/phone_auth_service.dart';
+import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
 import 'email_login_screen.dart';
 
@@ -14,7 +14,8 @@ class EmailVerificationScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+  State<EmailVerificationScreen> createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen>
@@ -343,8 +344,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     try {
       dlog('📧 Potvrđujem email ${widget.email} sa kodom: $code');
 
-      final success = await PhoneAuthService.confirmEmailVerification(
-          widget.email, code);
+      final success =
+          await EmailAuthService.confirmEmailVerification(widget.email, code);
 
       if (success) {
         dlog('✅ Email uspješno potvrđen za vozača: ${widget.driverName}');
@@ -364,12 +365,13 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
           },
         );
       } else {
-        _showErrorDialog('Neuspješna verifikacija',
-            'Provjerite kod i pokušajte ponovo.');
+        _showErrorDialog(
+            'Neuspješna verifikacija', 'Provjerite kod i pokušajte ponovo.');
       }
     } catch (e) {
       dlog('❌ Greška pri verifikaciji email-a: $e');
-      _showErrorDialog('Greška', 'Došlo je do greške pri verifikaciji. Pokušajte ponovo.');
+      _showErrorDialog(
+          'Greška', 'Došlo je do greške pri verifikaciji. Pokušajte ponovo.');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -379,11 +381,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     setState(() => _isResendLoading = true);
 
     try {
-      final success = await PhoneAuthService.resendEmailCode(widget.email);
+      final success = await EmailAuthService.resendEmailCode(widget.email);
 
       if (success) {
-        _showSuccessDialog('Kod poslan',
-            'Novi verifikacioni kod je poslan na vaš email.');
+        _showSuccessDialog(
+            'Kod poslan', 'Novi verifikacioni kod je poslan na vaš email.');
       } else {
         _showErrorDialog('Greška', 'Nije moguće poslati novi kod.');
       }
@@ -401,7 +403,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(message,
+            style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -418,7 +421,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message, style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(message,
+            style: TextStyle(color: Colors.white.withOpacity(0.8))),
         actions: [
           TextButton(
             onPressed: onOk ?? () => Navigator.of(context).pop(),

@@ -148,7 +148,7 @@ class RealtimeNotificationService {
   /// Subscribe to Firebase topics for driver-specific notifications
   static Future<void> subscribeToDriverTopics(String? driverId) async {
     if (driverId == null || driverId.isEmpty) {
-      _logger.w('🔔 Driver ID is null, skipping Firebase topic subscription');
+      _logger.i('🔔 Notifikacije će biti aktivirane nakon prijave vozača');
       return;
     }
 

@@ -23,6 +23,7 @@ import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
 import 'services/realtime_notification_counter_service.dart';
 import 'services/firebase_service.dart';
+import 'services/realtime_priority_service.dart';
 import 'supabase_client.dart';
 import 'services/realtime_service.dart';
 import 'config/app_config.dart';
@@ -203,7 +204,11 @@ class _MyAppState extends State<MyApp> {
           RealtimeNotificationService.listenForForegroundNotifications(context);
         }
 
-        // 4. Pretplati se na topike na osnovu vozača
+        // 🚀 4. INICIJALIZUJ REALTIME PRIORITY SERVICE - NAJBITNIJI!
+        // Ovaj servis GARANTUJE da putnik add/cancel stignu ODMAH!
+        await RealtimePriorityService.initialize();
+
+        // 5. Pretplati se na topike na osnovu vozača
         final vozacId = await getCurrentDriver();
 
         // Pokreni centralizovane realtime pretplate
@@ -226,7 +231,7 @@ class _MyAppState extends State<MyApp> {
         if (vozacId != null && vozacId.isNotEmpty) {
           await RealtimeNotificationService.subscribeToDriverTopics(vozacId);
         } else {
-          _logger.w('⚠️ Nema logovanog vozača - notifikacije neće raditi');
+          _logger.i('ℹ️ Čekam prijavu vozača za aktivaciju notifikacija');
           await RealtimeNotificationService.subscribeToDriverTopics(null);
         }
       } catch (e) {

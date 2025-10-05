@@ -1,0 +1,33 @@
+# Alternative SMS configurations
+# Uncomment the one you want to use
+
+# Option 1: Messagebird (EU friendly)
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+template = "Your Gavra verification code is {{ .Code }}"
+max_frequency = "30s"
+provider = "messagebird"
+access_key = "env(MESSAGEBIRD_ACCESS_KEY)"
+originator = "GavraBus"
+
+# Option 2: Vonage/Nexmo
+# [auth.sms]
+# enable_signup = true
+# enable_confirmations = true  
+# template = "Your Gavra verification code is {{ .Code }}"
+# max_frequency = "30s"
+# provider = "vonage"
+# api_key = "env(VONAGE_API_KEY)"
+# api_secret = "env(VONAGE_API_SECRET)"
+# from = "GavraBus"
+
+# Option 3: Custom webhook
+# [auth.sms]
+# enable_signup = true
+# enable_confirmations = true
+# template = "Your Gavra verification code is {{ .Code }}"
+# max_frequency = "30s"
+# provider = "webhook"
+# webhook_url = "https://your-webhook-url.com/send-sms"
+# webhook_secret = "env(SMS_WEBHOOK_SECRET)"

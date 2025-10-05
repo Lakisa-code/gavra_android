@@ -194,10 +194,10 @@ class _AdminScreenState extends State<AdminScreen> {
                       final screenWidth = constraints.maxWidth;
                       const spacing = 4.0; // Razmak između dugmića
                       const totalSpacing =
-                          spacing * 3; // 3 razmaka između 4 dugmeta
+                          spacing * 4; // 4 razmaka između 5 dugmeta
                       final availableWidth = screenWidth - totalSpacing;
                       final buttonWidth =
-                          availableWidth / 4; // Maksimalna širina za svaki
+                          availableWidth / 5; // Maksimalna širina za svaki
 
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
