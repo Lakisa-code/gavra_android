@@ -12,7 +12,7 @@ class EmailAuthService {
 
   /// Registruj vozača sa email-om
   static Future<bool> registerDriverWithEmail(
-      String email, String password, String driverName) async {
+      String driverName, String email, String password) async {
     try {
       dlog('📧 Registrujem vozača $driverName sa email-om: $email');
 
@@ -24,6 +24,14 @@ class EmailAuthService {
 
       if (response.user != null) {
         dlog('✅ Vozač registrovan uspešno');
+        
+        // Proveri da li je email već potvrđen (ako confirmations su disabled)
+        if (response.user!.emailConfirmedAt != null) {
+          dlog('📧 Email je automatski potvrđen - confirmations su disabled');
+        } else {
+          dlog('📧 Email verifikacija potrebna');
+        }
+        
         return true;
       } else {
         dlog('❌ Registracija vozača nije uspela');
@@ -33,6 +41,11 @@ class EmailAuthService {
       dlog('❌ Greška pri registraciji vozača: $e');
       return false;
     }
+  }
+
+  /// Proveri da li je email verifikacija potrebna
+  static bool isEmailVerificationRequired(User? user) {
+    return user != null && user.emailConfirmedAt == null;
   }
 
   /// Prijavi se sa email-om i lozinkom

@@ -3,6 +3,7 @@ import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 import 'email_verification_screen.dart';
+import 'email_login_screen.dart';
 
 class EmailRegistrationScreen extends StatefulWidget {
   const EmailRegistrationScreen({Key? key}) : super(key: key);
@@ -444,19 +445,35 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           driverName, email, password);
 
       if (success) {
-        dlog('✅ Registracija uspješna, prelazim na verifikaciju');
+        dlog('✅ Registracija uspješna');
 
-        // Idi na email verifikaciju
+        // Proveri da li je email verifikacija potrebna
+        final currentUser = EmailAuthService.getCurrentUser();
+        final needsVerification = EmailAuthService.isEmailVerificationRequired(currentUser);
+
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EmailVerificationScreen(
-                email: email,
-                driverName: driverName,
+          if (needsVerification) {
+            dlog('📧 Idem na email verifikaciju');
+            // Idi na email verifikaciju
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EmailVerificationScreen(
+                  email: email,
+                  driverName: driverName,
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            dlog('✅ Email automatski potvrđen, idem na login');
+            // Email je automatski potvrđen, idi direktno na login
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EmailLoginScreen(),
+              ),
+            );
+          }
         }
       } else {
         _showErrorDialog('Neuspješna registracija',
