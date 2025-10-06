@@ -10,28 +10,22 @@ class EmailAuthService {
     return emailRegex.hasMatch(email);
   }
 
-  /// Registruj vozača sa email-om
+  /// Registruj vozača sa email-om (bez email verification)
   static Future<bool> registerDriverWithEmail(
       String driverName, String email, String password) async {
     try {
-      dlog('📧 Registrujem vozača $driverName sa email-om: $email');
+      dlog(
+          '📧 Registrujem vozača $driverName sa email-om: $email (bez verification)');
 
       final AuthResponse response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'driver_name': driverName},
+        emailRedirectTo: "gavra013://auth/callback", // Omogući email verification
       );
 
       if (response.user != null) {
-        dlog('✅ Vozač registrovan uspešno');
-        
-        // Proveri da li je email već potvrđen (ako confirmations su disabled)
-        if (response.user!.emailConfirmedAt != null) {
-          dlog('📧 Email je automatski potvrđen - confirmations su disabled');
-        } else {
-          dlog('📧 Email verifikacija potrebna');
-        }
-        
+        dlog('✅ Vozač registrovan uspešno (bez email verifikacije)');
         return true;
       } else {
         dlog('❌ Registracija vozača nije uspela');
@@ -127,6 +121,24 @@ class EmailAuthService {
       return true;
     } catch (e) {
       dlog('❌ Greška pri resetu lozinke: $e');
+      return false;
+    }
+  }
+
+  /// Pošalji ponovo email za potvrdu
+  static Future<bool> resendEmailConfirmation(String email) async {
+    try {
+      dlog('📧 Šaljem ponovo email za potvrdu na: $email');
+
+      await _supabase.auth.resend(
+        type: OtpType.signup,
+        email: email,
+      );
+
+      dlog('✅ Email za potvrdu poslat ponovo');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri slanju email-a za potvrdu: $e');
       return false;
     }
   }

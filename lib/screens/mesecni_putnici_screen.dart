@@ -17,6 +17,7 @@ import '../services/real_time_statistika_service.dart';
 import '../services/smart_address_autocomplete_service.dart';
 import '../utils/logging.dart';
 import '../theme.dart';
+import '../utils/vozac_boja.dart';
 import '../widgets/custom_back_button.dart';
 import '../services/vozac_mapping_service.dart';
 
@@ -3386,6 +3387,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.green.shade600,
+                                      ),
+                                    ),
+                                  if (putnik.vozac != null &&
+                                      putnik.vozac!.isNotEmpty)
+                                    Text(
+                                      'Naplatio: ${putnik.vozac}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: VozacBoja.get(putnik.vozac),
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                 ],

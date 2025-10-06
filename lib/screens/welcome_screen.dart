@@ -471,32 +471,32 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  autofocus: true,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    letterSpacing: 2,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Unesite šifru',
-                    hintStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                    controller: passwordController,
+                    obscureText: true,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      letterSpacing: 2,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                      color: driverColor.withOpacity(0.5),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: driverColor, width: 2),
-                  ),
-                  filled: true,
-                  fillColor: Colors.black.withOpacity(0.3),
+                    decoration: InputDecoration(
+                      hintText: 'Unesite šifru',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: driverColor.withOpacity(0.5),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: driverColor, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.black.withOpacity(0.3),
                     ),
                     onSubmitted: (value) {
                       Navigator.of(context).pop(value);

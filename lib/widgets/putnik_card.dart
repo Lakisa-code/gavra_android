@@ -74,6 +74,10 @@ class _PutnikCardState extends State<PutnikCard> {
         '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
   }
 
+  String _formatVreme(DateTime vreme) {
+    return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _handlePokupljen() async {
     if (_putnik.vremePokupljenja == null &&
         widget.showActions &&
@@ -1950,13 +1954,29 @@ class _PutnikCardState extends State<PutnikCard> {
                       ),
                     if (_putnik.iznosPlacanja != null &&
                         _putnik.iznosPlacanja! > 0)
-                      Text(
-                        'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: VozacBoja.get(_putnik.naplatioVozac),
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: VozacBoja.get(_putnik.naplatioVozac),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (_putnik.naplatioVozac != null &&
+                              _putnik.naplatioVozac!.isNotEmpty)
+                            Text(
+                              'Naplatio: ${_putnik.naplatioVozac}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: VozacBoja.get(_putnik.naplatioVozac)
+                                    .withOpacity(0.8),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                        ],
                       ),
                   ],
                 ),

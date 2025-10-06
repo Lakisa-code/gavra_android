@@ -434,6 +434,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
 
     setState(() => _isLoading = true);
 
+    // Pokaži loading poruku
+    _showLoadingDialog(
+        'Registracija u toku...', 'Molimo sačekajte dok se vaš nalog kreira.');
+
     try {
       final driverName = _selectedDriver!;
       final email = _emailController.text.trim();
@@ -444,12 +448,19 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       final success = await EmailAuthService.registerDriverWithEmail(
           driverName, email, password);
 
+      // Sakrij loading dialog
+      if (mounted) Navigator.of(context).pop();
+
       if (success) {
         dlog('✅ Registracija uspješna');
 
+        // Pokaži uspešnu poruku
+        await _showSuccessDialog();
+
         // Proveri da li je email verifikacija potrebna
         final currentUser = EmailAuthService.getCurrentUser();
-        final needsVerification = EmailAuthService.isEmailVerificationRequired(currentUser);
+        final needsVerification =
+            EmailAuthService.isEmailVerificationRequired(currentUser);
 
         if (mounted) {
           if (needsVerification) {
@@ -480,6 +491,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             'Provjerite podatke i pokušajte ponovo.');
       }
     } catch (e) {
+      // Sakrij loading dialog ako je otvoren
+      if (mounted) Navigator.of(context).pop();
+
       dlog('❌ Greška pri registraciji: $e');
       _showErrorDialog(
           'Greška', 'Došlo je do greške pri registraciji. Pokušajte ponovo.');
@@ -500,6 +514,95 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('OK', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLoadingDialog(String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        insetPadding: const EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.all(20),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+            maxHeight: MediaQuery.of(context).size.height * 0.3,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSuccessDialog() async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        insetPadding: const EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.all(20),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 24),
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                'Registracija uspešna!',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.8,
+            maxHeight: MediaQuery.of(context).size.height * 0.4,
+          ),
+          child: SingleChildScrollView(
+            child: Text(
+              'Poslali smo vam email sa linkom za potvrdu naloga. Molimo proverite vašu email poštu i kliknite na link da aktivirate nalog.',
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('U redu', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),

@@ -300,7 +300,6 @@ class StatistikaService {
       final List<Putnik> ostalic = [];
 
       for (final putnik in putnici) {
-
         if (putnik.mesecnaKarta == true) {
           // Za mesečne putnike, grupisi po imenu (samo prvi valjan putnik)
           if (!mesecniPutniciGrupisani.containsKey(putnik.ime) &&
@@ -451,7 +450,6 @@ class StatistikaService {
       if (putnik.vremeDodavanja != null &&
           _jeUVremenskomOpsegu(
               putnik.vremeDodavanja, normalizedFrom, normalizedTo)) {
-
         // 1. DODATI PUTNICI - ko je DODAO
         final dodaoVozac = putnik.dodaoVozac ?? 'Nepoznat';
         if (vozaciStats.containsKey(dodaoVozac)) {
@@ -589,6 +587,10 @@ class StatistikaService {
         'pazarObicni': 0.0, // 🆕 PAZAR samo od običnih putnika
         'pazarMesecne': 0.0, // 🆕 PAZAR samo od mesečnih karata
         'kilometraza': 0.0, // 🚗 KILOMETRAŽA za taj dan
+        'detaljiNaplata':
+            <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
+        'poslednjaNaplata': null, // 🆕 Poslednja naplata
+        'prosecanIznos': 0.0, // 🆕 Prosečan iznos naplate
       };
     }
 
@@ -621,13 +623,34 @@ class StatistikaService {
             putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
           final naplatioVozac = putnik.naplatioVozac!;
           if (vozaciStats.containsKey(naplatioVozac)) {
+            final iznos = putnik.iznosPlacanja!;
+
+            // Dodaj detalj naplate
+            final detalj = {
+              'ime': putnik.ime,
+              'iznos': iznos,
+              'vreme': putnik.vremePlacanja!.millisecondsSinceEpoch,
+              'tip': putnik.mesecnaKarta == true ? 'Mesečna' : 'Dnevna',
+            };
+
+            (vozaciStats[naplatioVozac]!['detaljiNaplata']
+                    as List<Map<String, dynamic>>)
+                .add(detalj);
+
+            // Ažuriraj poslednju naplatu
+            if (vozaciStats[naplatioVozac]!['poslednjaNaplata'] == null ||
+                putnik.vremePlacanja!.isAfter(
+                    DateTime.fromMillisecondsSinceEpoch(
+                        vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
+                            as int))) {
+              vozaciStats[naplatioVozac]!['poslednjaNaplata'] = detalj;
+            }
+
             // ❌ MESEČNE KARTE SE NE RAČUNAJU U 'naplaceni' - to je samo za obične putnike
             if (putnik.mesecnaKarta != true) {
               vozaciStats[naplatioVozac]!['naplaceni']++;
-              vozaciStats[naplatioVozac]!['pazarObicni'] +=
-                  putnik.iznosPlacanja!;
-              vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
-                  putnik.iznosPlacanja!;
+              vozaciStats[naplatioVozac]!['pazarObicni'] += iznos;
+              vozaciStats[naplatioVozac]!['ukupnoPazar'] += iznos;
             }
           }
         }
@@ -692,13 +715,35 @@ class StatistikaService {
       final naplatioVozac =
           putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
       if (vozaciStats.containsKey(naplatioVozac)) {
+        final iznos = putnik.iznosPlacanja ?? 0.0;
+
+        // Dodaj detalj naplate za mesečnu kartu
+        if (putnik.vremePlacanja != null) {
+          final detalj = {
+            'ime': putnik.putnikIme,
+            'iznos': iznos,
+            'vreme': putnik.vremePlacanja!.millisecondsSinceEpoch,
+            'tip': 'Mesečna',
+          };
+
+          (vozaciStats[naplatioVozac]!['detaljiNaplata']
+                  as List<Map<String, dynamic>>)
+              .add(detalj);
+
+          // Ažuriraj poslednju naplatu
+          if (vozaciStats[naplatioVozac]!['poslednjaNaplata'] == null ||
+              putnik.vremePlacanja!.isAfter(DateTime.fromMillisecondsSinceEpoch(
+                  vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
+                      as int))) {
+            vozaciStats[naplatioVozac]!['poslednjaNaplata'] = detalj;
+          }
+        }
+
         // ✅ MESEČNE KARTE SE DODAJU I U 'naplaceni' I U 'mesecneKarte'
         vozaciStats[naplatioVozac]!['naplaceni']++; // ✅ DODANO
         vozaciStats[naplatioVozac]!['mesecneKarte']++;
-        vozaciStats[naplatioVozac]!['pazarMesecne'] +=
-            (putnik.iznosPlacanja ?? 0.0);
-        vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
-            (putnik.iznosPlacanja ?? 0.0);
+        vozaciStats[naplatioVozac]!['pazarMesecne'] += iznos;
+        vozaciStats[naplatioVozac]!['ukupnoPazar'] += iznos;
       }
     }
 
@@ -712,6 +757,17 @@ class StatistikaService {
       }
     } catch (e) {
       // ignore: empty_catches
+    }
+
+    // 🧮 KALKULIŠI PROSEČNE IZNOSE ZA SVE VOZAČE
+    for (final vozac in sviVozaci) {
+      final detalji =
+          vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
+      if (detalji.isNotEmpty) {
+        final ukupanIznos =
+            detalji.fold<double>(0.0, (sum, detalj) => sum + detalj['iznos']);
+        vozaciStats[vozac]!['prosecanIznos'] = ukupanIznos / detalji.length;
+      }
     }
 
     return vozaciStats;

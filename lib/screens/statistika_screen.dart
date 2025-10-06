@@ -9,7 +9,7 @@ import '../utils/date_utils.dart'
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
-import '../widgets/pazar_po_vozacima_widget.dart';
+import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
 import '../theme.dart'; // DODANO za theme extensions
 
@@ -550,11 +550,24 @@ class _StatistikaScreenState extends State<StatistikaScreen>
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: PazarPoVozacimaWidget(
-                  vozaciPazar: cistPazarMap,
-                  ukupno: ukupno,
-                  periodLabel: _periodLabel(_period),
-                  vozacBoje: vozacBoje,
+                child: StreamBuilder<Map<String, Map<String, dynamic>>>(
+                  stream: StatistikaService.streamDetaljneStatistikePoVozacima(
+                      from, to),
+                  builder: (context, detaljneSnapshot) {
+                    if (detaljneSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final detaljneStats = detaljneSnapshot.data ?? {};
+
+                    return DetaljanPazarPoVozacimaWidget(
+                      vozaciStatistike: detaljneStats,
+                      ukupno: ukupno,
+                      periodLabel: _periodLabel(_period),
+                      vozacBoje: vozacBoje,
+                    );
+                  },
                 ),
               ),
             );

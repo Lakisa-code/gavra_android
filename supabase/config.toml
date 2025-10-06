@@ -217,11 +217,11 @@ max_frequency = "30s"
 # message_service_sid = "env(TWILIO_MESSAGE_SERVICE_SID)"
 
 # Use pre-defined map of phone number to OTP for testing.
-[auth.sms.test_otp]
-"+381641162560" = "123456"  # Bojan
-"+381641202844" = "654321"  # Bruda
-"+381658464160" = "111111"  # Svetlana
-"+381641234567" = "999999"  # Bilevski# Configure logged in session timeouts.
+# [auth.sms.test_otp]
+# "+381641162560" = "123456"  # Bojan
+# "+381641202844" = "654321"  # Bruda
+# "+381658464160" = "111111"  # Svetlana
+# "+381641234567" = "999999"  # Bilevski# Configure logged in session timeouts.
 # [auth.sessions]
 # Force log out after the specified duration.
 # timebox = "24h"

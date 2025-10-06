@@ -10,11 +10,13 @@ import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:app_links/app_links.dart';
 
 import 'firebase_options.dart';
 // 🤖 GitHub Actions Android workflow for unlimited free APK delivery
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
+import 'screens/email_login_screen.dart';
 import 'services/gps_service.dart';
 import 'services/local_notification_service.dart';
 import 'services/realtime_notification_service.dart';
@@ -133,6 +135,10 @@ void main() async {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+        autoRefreshToken: true,
+      ),
     ).timeout(const Duration(seconds: 10));
   } catch (e) {
     _logger.e('❌ Supabase initialization failed: $e');
@@ -176,6 +182,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _initializeTheme();
     _initializeCurrentDriver(); // Dodano
+    _initializeDeepLinks(); // Dodano za email confirmation
 
     // Postavi globalnu funkciju za theme toggle
     globalThemeToggler = toggleTheme;
@@ -304,6 +311,86 @@ class _MyAppState extends State<MyApp> {
     super.dispose();
   }
 
+  // Dodano za deep link handling
+  void _initializeDeepLinks() {
+    final appLinks = AppLinks();
+
+    // Listen for incoming deep links when app is already running
+    appLinks.uriLinkStream.listen((uri) {
+      _logger.i('📧 Deep link received: $uri');
+      _handleDeepLink(uri);
+    }, onError: (err) {
+      _logger.e('❌ Deep link error: $err');
+    });
+
+    // Check for deep link when app is launched
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final initialUri = await appLinks.getInitialAppLink();
+        if (initialUri != null) {
+          _logger.i('📧 Initial deep link: $initialUri');
+          _handleDeepLink(initialUri);
+        }
+      } catch (e) {
+        _logger.e('❌ Initial deep link error: $e');
+      }
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    _logger.i('🔗 Handling deep link: ${uri.toString()}');
+
+    // Check if it's a Supabase auth callback
+    if (uri.host == 'gjtabtwudbrmfeyjiicu.supabase.co' &&
+        uri.path.contains('/auth/v1/callback')) {
+      // Handle Supabase auth callback
+      Supabase.instance.client.auth.getSessionFromUrl(uri).then((response) {
+        if (response.session?.user != null) {
+          _logger.i('✅ Email verification successful!');
+          // Show success message and navigate
+          _showEmailVerificationSuccess();
+        } else {
+          _logger.e('❌ Email verification failed');
+        }
+      }).catchError((error) {
+        _logger.e('❌ Auth callback error: $error');
+      });
+    }
+  }
+
+  void _showEmailVerificationSuccess() {
+    // Show success dialog
+    showDialog(
+      context: navigatorKey.currentContext!,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 28),
+            const SizedBox(width: 12),
+            const Text('Email potvrđen!',
+                style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          'Vaš email je uspešno potvrđen. Sada se možete prijaviti u aplikaciju.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Navigate to email login screen
+              Navigator.of(context).pushReplacementNamed('/email-login');
+            },
+            child:
+                const Text('Prijaviť se', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _initializeApp() async {
     try {
       // Kratka pauza da se UI prikaže
@@ -395,6 +482,9 @@ class _MyAppState extends State<MyApp> {
       themeMode: _nocniRezim
           ? ThemeMode.dark
           : ThemeMode.light, // 🎨 Dinamičko prebacivanje teme
+      routes: {
+        '/email-login': (context) => const EmailLoginScreen(),
+      },
       home: _buildHome(),
     );
   }
