@@ -198,8 +198,8 @@ class RealtimeRouteTrackingService {
 
         if (trafficData != null) {
           // Analiziraj saobraćajne podatke
-          final duration = trafficData['duration_in_traffic']?['value'] ?? 0;
-          final normalDuration = trafficData['duration']?['value'] ?? 0;
+          final duration = (trafficData['duration_in_traffic']?['value'] as num?) ?? 0;
+          final normalDuration = (trafficData['duration']?['value'] as num?) ?? 0;
 
           // Ako je gužva značajna (više od 20% duže)
           if (duration > normalDuration * 1.2) {
@@ -242,14 +242,14 @@ class RealtimeRouteTrackingService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
 
         if (data['status'] == 'OK' &&
             data['rows'] != null &&
-            data['rows'].isNotEmpty &&
+            (data['rows'] as List).isNotEmpty &&
             data['rows'][0]['elements'] != null &&
-            data['rows'][0]['elements'].isNotEmpty) {
-          return data['rows'][0]['elements'][0];
+            (data['rows'][0]['elements'] as List).isNotEmpty) {
+          return data['rows'][0]['elements'][0] as Map<String, dynamic>;
         }
       }
     } catch (e) {
@@ -282,18 +282,18 @@ class RealtimeRouteTrackingService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
 
         if (data['status'] == 'OK' &&
             data['routes'] != null &&
-            data['routes'].isNotEmpty) {
+            (data['routes'] as List).isNotEmpty) {
           // Vrati optimizovanu rutu kao string
           final route = data['routes'][0];
-          final waypointOrder = route['waypoint_order'] ?? [];
+          final waypointOrder = (route['waypoint_order'] as List<dynamic>?) ?? <dynamic>[];
 
           final optimizedPassengers = <Putnik>[];
           for (final index in waypointOrder) {
-            if (index < passengers.length) {
+            if ((index as int) < passengers.length) {
               optimizedPassengers.add(passengers[index]);
             }
           }
