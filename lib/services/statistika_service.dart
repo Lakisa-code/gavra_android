@@ -764,8 +764,8 @@ class StatistikaService {
       final detalji =
           vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
       if (detalji.isNotEmpty) {
-        final ukupanIznos =
-            detalji.fold<double>(0.0, (sum, detalj) => sum + detalj['iznos']);
+        final ukupanIznos = detalji.fold<double>(
+            0.0, (sum, detalj) => sum + (detalj['iznos'] as num).toDouble());
         vozaciStats[vozac]!['prosecanIznos'] = ukupanIznos / detalji.length;
       }
     }
