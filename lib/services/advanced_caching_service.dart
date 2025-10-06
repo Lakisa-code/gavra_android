@@ -236,7 +236,7 @@ class AdvancedCachingService {
       // Remove from file cache
       if (_level4FileCache != null) {
         final file = File('${_level4FileCache!.path}/${_hashKey(key)}.cache');
-        if (await file.exists()) {
+        if (file.existsSync()) {
           await file.delete();
         }
       }
@@ -245,7 +245,7 @@ class AdvancedCachingService {
       if (_level5NetworkCache != null) {
         final file =
             File('${_level5NetworkCache!.path}/${_hashKey(key)}.cache');
-        if (await file.exists()) {
+        if (file.existsSync()) {
           await file.delete();
         }
       }
@@ -275,12 +275,12 @@ class AdvancedCachingService {
       }
 
       // Clear file caches
-      if (_level4FileCache != null && await _level4FileCache!.exists()) {
+      if (_level4FileCache != null && _level4FileCache!.existsSync()) {
         await _level4FileCache!.delete(recursive: true);
         await _level4FileCache!.create(recursive: true);
       }
 
-      if (_level5NetworkCache != null && await _level5NetworkCache!.exists()) {
+      if (_level5NetworkCache != null && _level5NetworkCache!.existsSync()) {
         await _level5NetworkCache!.delete(recursive: true);
         await _level5NetworkCache!.create(recursive: true);
       }
@@ -382,7 +382,7 @@ class AdvancedCachingService {
       if (_level4FileCache == null) return null;
 
       final file = File('${_level4FileCache!.path}/${_hashKey(key)}.cache');
-      if (await file.exists()) {
+      if (file.existsSync()) {
         final bytes = await file.readAsBytes();
 
         // Check if compressed
@@ -454,7 +454,7 @@ class AdvancedCachingService {
       if (_level5NetworkCache == null) return null;
 
       final file = File('${_level5NetworkCache!.path}/${_hashKey(key)}.cache');
-      if (await file.exists()) {
+      if (file.existsSync()) {
         final bytes = await file.readAsBytes();
 
         // Check if compressed
@@ -541,7 +541,7 @@ class AdvancedCachingService {
     Directory? dir,
     int maxSizeMB,
   ) async {
-    if (dir == null || !await dir.exists()) return;
+    if (dir == null || !dir.existsSync()) return;
 
     try {
       final files =
