@@ -312,7 +312,7 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  /// Prikaži opcije za kontakt (poziv ili SMS)
+  /// Prikaži opcije za kontakt (poziv)
   Future<void> _pozovi() async {
     if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
       showModalBottomSheet(
@@ -340,15 +340,6 @@ class _PutnikCardState extends State<PutnikCard> {
                 onTap: () async {
                   Navigator.pop(context);
                   await _pozoviBroj();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.sms, color: Colors.blue),
-                title: const Text('Pošalji SMS'),
-                subtitle: Text(_putnik.brojTelefona!),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _posaljiSMS();
                 },
               ),
               const SizedBox(height: 10),
@@ -400,51 +391,6 @@ class _PutnikCardState extends State<PutnikCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Greška pri pozivanju: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  /// Pošalji SMS putiku
-  Future<void> _posaljiSMS() async {
-    if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
-      try {
-        // 📱 HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
-        final hasPermission =
-            await PermissionService.ensureSmsPermissionHuawei();
-        if (!hasPermission) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ Dozvola za SMS je potrebna'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-
-        final smsUrl = Uri.parse('sms:${_putnik.brojTelefona}');
-        if (await canLaunchUrl(smsUrl)) {
-          await launchUrl(smsUrl);
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ Nije moguće slanje SMS sa ovog uređaja'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Greška pri slanju SMS: $e'),
               backgroundColor: Colors.red,
             ),
           );

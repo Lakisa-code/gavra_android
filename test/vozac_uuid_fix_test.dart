@@ -4,25 +4,27 @@ import 'package:gavra_android/services/vozac_mapping_service.dart';
 /// Test za validaciju da li su vozači pravilno mapirani u bazi
 void main() {
   group('🔧 VOZAC UUID VALIDACIJA - REŠAVANJE FOREIGN KEY PROBLEMA', () {
-
     test('✅ VOZAC MAPPING SERVICE - UUID VALIDACIJA', () {
       print('\n🔧 VOZAC UUID-ovi iz VozacMappingService:');
       print('=' * 50);
 
       // Validiraj da svi vozači imaju validne UUID-ove
       final vozaci = ['Bilevski', 'Bruda', 'Bojan', 'Svetlana'];
-      
+
       for (final vozac in vozaci) {
         final uuid = VozacMappingService.getVozacUuid(vozac);
         print('🚗 $vozac: $uuid');
-        
+
         expect(uuid, isNotNull, reason: 'UUID za $vozac ne smije biti null');
-        expect(uuid!.length, equals(36), reason: 'UUID mora imati 36 karaktera');
-        expect(uuid.contains('-'), isTrue, reason: 'UUID mora sadržavati crtice');
-        
+        expect(uuid!.length, equals(36),
+            reason: 'UUID mora imati 36 karaktera');
+        expect(uuid.contains('-'), isTrue,
+            reason: 'UUID mora sadržavati crtice');
+
         // Validiraj da je obrnut mapiranje također ispravno
         final imeNazad = VozacMappingService.getVozacIme(uuid);
-        expect(imeNazad, equals(vozac), reason: 'Obrnut mapiranje mora biti ispravan');
+        expect(imeNazad, equals(vozac),
+            reason: 'Obrnut mapiranje mora biti ispravan');
       }
 
       print('\n✅ Svi vozači imaju validne UUID-ove');
@@ -41,7 +43,7 @@ void main() {
       print('\n🔗 Foreign Key Constraint:');
       print('   • mesecni_putnici.vozac_id REFERENCES vozaci(id)');
       print('   • Sada neće više bacati PostgreSQL grešku 23503');
-      
+
       print('\n✅ Problem sa "vozac_id_fkey" constraint riješen!');
     });
 
@@ -68,26 +70,25 @@ void main() {
       print('   4. RLS policy omogućava sve operacije (za development)');
     });
 
-    test('📱 SMS AUTENTIFIKACIJA - GLAVNA METODA ZA VOZAČE', () {
-      print('\n📱 VOZAČI KORISTE SAMO SMS AUTENTIFIKACIJU:');
+    test('� VOZAČ AUTENTIFIKACIJA - SAMO PASSWORD', () {
+      print('\n� VOZAČI KORISTE SAMO PASSWORD AUTENTIFIKACIJU:');
       print('=' * 50);
 
       print('✅ DOSTUPNO VOZAČIMA:');
       print('   • Password dugmad na WelcomeScreen');
-      print('   • SMS prijava dugme (PhoneLoginScreen)');
-      print('   • Brojevi telefona: mapirani po vozaču');
-      print('   • SMS verifikacija za registraciju');
+      print('   • Email/Password prijava');
+      print('   • Vozač specifični email adrese');
       print('   • Auto-login funkcionalnost');
 
       print('\n🚫 UKLONJENO/SAKRIVENO:');
-      print('   • Email prijava dugme - UKLONJENO iz WelcomeScreen');
-      print('   • Email registracija - NEDOSTUPNA vozačima');
+      print('   • SMS autentifikacija - UKLONJENO');
+      print('   • Phone number login - UKLONJENO');
       print('   • Social login - NEDOSTUPAN');
       print('   • Biometric auth - NEDOSTUPAN');
 
       print('\n💡 SIGURNOST:');
-      print('   • Poznati brojevi telefona za sve vozače');
-      print('   • SMS verifikacija kao dodatna sigurnost');
+      print('   • Poznati email adrese za sve vozače');
+      print('   • Password kao glavna sigurnost');
       print('   • Jednostavnost korišćenja tokom vožnje');
 
       expect(VozacMappingService.isValidVozacIme('Bojan'), isTrue);

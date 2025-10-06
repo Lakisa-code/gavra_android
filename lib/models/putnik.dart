@@ -178,12 +178,12 @@ class Putnik {
       status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
       statusVreme: map['updated_at'] as String?,
       vremePokupljenja: map['poslednje_putovanje'] != null
-          ? DateTime.parse(map['poslednje_putovanje']).toLocal()
+          ? DateTime.parse(map['poslednje_putovanje'] as String).toLocal()
           : (map['vreme_pokupljenja'] != null
-              ? DateTime.parse(map['vreme_pokupljenja']).toLocal()
+              ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
               : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
       vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja']).toLocal()
+          ? DateTime.parse(map['vreme_placanja'] as String).toLocal()
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
       placeno: MesecniHelpers.priceIsPaid(map),
       iznosPlacanja: _parseDouble(map['cena']), // koristi cena kolonu

@@ -40,7 +40,8 @@ class TrafficAwareRoutingService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
 
-        if (data['status'] as String == 'OK' && (data['routes'] as List).isNotEmpty) {
+        if (data['status'] as String == 'OK' &&
+            (data['routes'] as List).isNotEmpty) {
           final route = data['routes'][0];
           final leg = route['legs'][0];
 

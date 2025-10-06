@@ -20,7 +20,6 @@ import 'screens/email_login_screen.dart';
 import 'services/gps_service.dart';
 import 'services/local_notification_service.dart';
 import 'services/realtime_notification_service.dart';
-import 'services/sms_service.dart';
 import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
 import 'services/realtime_notification_counter_service.dart';
@@ -245,9 +244,6 @@ class _MyAppState extends State<MyApp> {
         _logger.w('⚠️ Notification system error: $e');
         // Continue without notifications if they fail
       }
-
-      // 📱 POKRETANJE SMS SERVISA za automatsko slanje poruka
-      SMSService.startAutomaticSMSService();
     });
 
     _startPeriodicGpsSending();
@@ -297,9 +293,6 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     // 🧹 CLEANUP SVIH TIMER-A - SPREČAVA MEMORY LEAK
     TimerManager.cancelAllTimers();
-
-    // 📱 ZAUSTAVITI SMS SERVIS
-    SMSService.stopAutomaticSMSService();
 
     // Stop centralized realtime subscriptions
     try {

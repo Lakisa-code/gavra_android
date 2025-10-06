@@ -3156,15 +3156,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           await _pozovi(putnik.brojTelefonaOca!);
         },
       ));
-      opcije.add(ListTile(
-        leading: const Icon(Icons.sms, color: Colors.blue),
-        title: const Text('SMS ocu'),
-        subtitle: Text(putnik.brojTelefonaOca!),
-        onTap: () async {
-          Navigator.pop(context);
-          await _posaljiSMS(putnik.brojTelefonaOca!);
-        },
-      ));
     }
 
     // Majka
@@ -3177,15 +3168,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         onTap: () async {
           Navigator.pop(context);
           await _pozovi(putnik.brojTelefonaMajke!);
-        },
-      ));
-      opcije.add(ListTile(
-        leading: const Icon(Icons.sms, color: Colors.pink),
-        title: const Text('SMS majci'),
-        subtitle: Text(putnik.brojTelefonaMajke!),
-        onTap: () async {
-          Navigator.pop(context);
-          await _posaljiSMS(putnik.brojTelefonaMajke!);
         },
       ));
     }
