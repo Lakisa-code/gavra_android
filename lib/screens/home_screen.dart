@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Putnik> _allPutnici = [];
 
   // Real-time subscription variables
-  StreamSubscription? _realtimeSubscription;
+  StreamSubscription<dynamic>? _realtimeSubscription;
 
   final List<String> _dani = [
     'Ponedeljak',
@@ -348,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _showErrorDialog(String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Greška'),
@@ -431,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // Idi nazad na WelcomeScreen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+        MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
       );
     }
   }
@@ -452,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     if (!mounted) return;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setStateDialog) => AlertDialog(
