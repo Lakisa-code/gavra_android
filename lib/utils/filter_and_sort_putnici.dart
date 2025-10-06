@@ -4,9 +4,9 @@ import '../models/mesecni_putnik.dart';
 // Sada koristi List<Map<String, dynamic>> za kompatibilnost sa compute
 List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
   final List<Map<String, dynamic>> putniciMap =
-      List<Map<String, dynamic>>.from(args['putnici']);
-  final String searchTerm = args['searchTerm'] ?? '';
-  final String filterType = args['filterType'] ?? 'svi';
+      List<Map<String, dynamic>>.from(args['putnici'] as Iterable);
+  final String searchTerm = (args['searchTerm'] as String?) ?? '';
+  final String filterType = (args['filterType'] as String?) ?? 'svi';
 
   // Rekonstruiši MesecniPutnik objekte iz mapa
   final putnici = putniciMap.map((m) => MesecniPutnik.fromMap(m)).toList();
