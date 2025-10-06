@@ -59,7 +59,7 @@ class _AdminScreenState extends State<AdminScreen> {
       if (driver != null && driver.isNotEmpty) {
         RealtimeNotificationService.initialize();
       }
-    }).catchError((e) {
+    }).catchError((Object e) {
       dlog('⚠️ Admin screen getCurrentDriver error: $e');
     });
 
@@ -74,7 +74,7 @@ class _AdminScreenState extends State<AdminScreen> {
         // Pokreni refresh da osiguramo podatke
         _putnikService.getAllPutniciFromBothTables().then((data) {
           dlog('✅ Admin screen - dobio ${data.length} putnika');
-        }).catchError((e) {
+        }).catchError((Object e) {
           dlog('❌ Admin screen - greška pri dobijanju putnika: $e');
         });
       } catch (e) {
@@ -208,7 +208,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             child: InkWell(
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
+                                MaterialPageRoute<void>(
                                   builder: (context) =>
                                       const MesecniPutniciScreen(),
                                 ),
@@ -254,7 +254,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             child: InkWell(
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
+                                MaterialPageRoute<void>(
                                   builder: (context) =>
                                       const StatistikaScreen(),
                                 ),
@@ -300,7 +300,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             child: InkWell(
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
+                                MaterialPageRoute<void>(
                                   builder: (context) =>
                                       const GeocodingAdminScreen(),
                                 ),
@@ -805,7 +805,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
+                            MaterialPageRoute<void>(
                               builder: (context) => DugoviScreen(
                                 // duznici: filteredDuznici,
                                 currentDriver: _currentDriver,
@@ -1015,7 +1015,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
+                                    MaterialPageRoute<void>(
                                       builder: (context) =>
                                           const AdminMapScreen(),
                                     ),
@@ -1083,7 +1083,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   // 📚 OTVORI ISTORIJU PUTOVANJA
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
+                                    MaterialPageRoute<void>(
                                       builder: (context) =>
                                           const PutovanjaIstorijaScreen(),
                                     ),
