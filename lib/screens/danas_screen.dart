@@ -515,7 +515,7 @@ class _DanasScreenState extends State<DanasScreen> {
     final ostale = statistike['slobodno'] ?? 0;
     final ukupno = statistike['ukupno'] ?? 0;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
@@ -771,7 +771,7 @@ class _DanasScreenState extends State<DanasScreen> {
   Future<void> _loadPutnici() async {
     setState(() => _isLoading = true);
     // Osloni se na stream, ali možeš ovde dodati logiku za ručno osvežavanje ako bude potrebno
-    await Future.delayed(const Duration(milliseconds: 100)); // simulacija
+    await Future<void>.delayed(const Duration(milliseconds: 100)); // simulacija
     setState(() => _isLoading = false);
   }
 
@@ -1020,7 +1020,7 @@ class _DanasScreenState extends State<DanasScreen> {
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
   String? _currentDriver; // Dodato za dohvat vozača
-  StreamSubscription? _dailyCheckinSub;
+  StreamSubscription<dynamic>? _dailyCheckinSub;
 
   // Lista polazaka za chipove - LETNJI RASPORED
   final List<String> _sviPolasci = [
@@ -1171,7 +1171,7 @@ class _DanasScreenState extends State<DanasScreen> {
     RealtimeNotificationCounterService.initialize();
 
     // 🛰️ START GPS TRACKING
-    RealtimeGpsService.startTracking().catchError((e) {
+    RealtimeGpsService.startTracking().catchError((Object e) {
       dlog('🚨 GPS tracking failed: $e');
     });
 
@@ -1781,7 +1781,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                     onTap: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(
+                                        MaterialPageRoute<void>(
                                           builder: (context) => DugoviScreen(
                                               currentDriver: _currentDriver),
                                         ),
