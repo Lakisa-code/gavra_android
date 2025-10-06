@@ -312,7 +312,7 @@ class _MyAppState extends State<MyApp> {
     appLinks.uriLinkStream.listen((uri) {
       _logger.i('📧 Deep link received: $uri');
       _handleDeepLink(uri);
-    }, onError: (err) {
+    }, onError: (Object err) {
       _logger.e('❌ Deep link error: $err');
     });
 
@@ -338,13 +338,9 @@ class _MyAppState extends State<MyApp> {
         uri.path.contains('/auth/v1/callback')) {
       // Handle Supabase auth callback
       Supabase.instance.client.auth.getSessionFromUrl(uri).then((response) {
-        if (response.session?.user != null) {
-          _logger.i('✅ Email verification successful!');
-          // Show success message and navigate
-          _showEmailVerificationSuccess();
-        } else {
-          _logger.e('❌ Email verification failed');
-        }
+        _logger.i('✅ Email verification successful!');
+        // Show success message and navigate
+        _showEmailVerificationSuccess();
       }).catchError((Object error) {
         _logger.e('❌ Auth callback error: $error');
       });
@@ -353,7 +349,7 @@ class _MyAppState extends State<MyApp> {
 
   void _showEmailVerificationSuccess() {
     // Show success dialog
-    showDialog(
+    showDialog<void>(
       context: navigatorKey.currentContext!,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
@@ -387,7 +383,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeApp() async {
     try {
       // Kratka pauza da se UI prikaže
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
       // 🚀 CACHE JE UKLONJEN - koristi direktne Supabase pozive
 
