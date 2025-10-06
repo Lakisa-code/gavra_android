@@ -112,7 +112,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         );
 
         // Čekaj malo pa zatvori
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
         widget.onCompleted();
       }
     } catch (e) {
@@ -432,7 +432,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     final vozacColor = VozacBoja.get(widget.vozac);
     final popis = lastReport['popis'] as Map<String, dynamic>;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
@@ -508,7 +508,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     '🛣️ Kilometraža',
                     '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
                     Colors.indigo),
-                if (popis['sitanNovac'] != null && popis['sitanNovac'] > 0)
+                if (popis['sitanNovac'] != null && (popis['sitanNovac'] as num) > 0)
                   _buildStatistikaRow(
                       '🪙 Sitan novac',
                       '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
@@ -560,9 +560,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
   // 🤖 DIALOG ZA AUTOMATSKI GENERISAN POPIS
   void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
-    final datum = DateTime.parse(automatskiPopis['datum']);
+    final datum = DateTime.parse(automatskiPopis['datum'] as String);
     final controller = TextEditingController(
-        text: automatskiPopis['sitanNovac']?.toStringAsFixed(0) ?? '0');
+        text: (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0');
 
     final result = await showDialog<bool>(
       context: context,
@@ -781,7 +781,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     if (result == true) {
       try {
         await _updateAutomatskiPopisSitanNovac(
-            automatskiPopis, automatskiPopis['sitanNovac']);
+            automatskiPopis, automatskiPopis['sitanNovac'] as double);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -839,7 +839,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
   Future<void> _updateAutomatskiPopisSitanNovac(
       Map<String, dynamic> automatskiPopis, double newSitanNovac) async {
     final supabase = Supabase.instance.client;
-    final datum = DateTime.parse(automatskiPopis['datum']);
+    final datum = DateTime.parse(automatskiPopis['datum'] as String);
 
     await supabase.from('daily_reports').upsert({
       'vozac': automatskiPopis['vozac'],
