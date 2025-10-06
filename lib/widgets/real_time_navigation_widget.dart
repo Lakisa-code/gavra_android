@@ -90,9 +90,11 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       };
 
       if (result['optimizedRoute'] != null) {
-        _currentInstructions = result['instructions'] ?? [];
-        _totalDistance = result['totalDistance'] ?? 0.0;
-        _totalDuration = result['totalDuration'] ?? 0.0;
+        _currentInstructions = (result['instructions'] as List<dynamic>?)
+                ?.cast<TurnByTurnInstruction>() ??
+            [];
+        _totalDistance = (result['totalDistance'] as num?)?.toDouble() ?? 0.0;
+        _totalDuration = (result['totalDuration'] as num?)?.toDouble() ?? 0.0;
 
         if (_currentInstructions.isNotEmpty) {
           _activeInstruction = _currentInstructions.first;
@@ -167,8 +169,13 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         final newRoute = updateResult['newRoute'];
         if (newRoute != null && newRoute['optimizedRoute'] != null) {
           setState(() {
-            _currentInstructions = newRoute['instructions'] ?? [];
-            _remainingPassengers = newRoute['optimizedRoute'];
+            _currentInstructions = (newRoute['instructions'] as List<dynamic>?)
+                    ?.cast<TurnByTurnInstruction>() ??
+                [];
+            _remainingPassengers =
+                (newRoute['optimizedRoute'] as List<dynamic>?)
+                        ?.cast<Putnik>() ??
+                    [];
             _currentInstructionIndex = 0;
             _activeInstruction = _currentInstructions.isNotEmpty
                 ? _currentInstructions.first
@@ -185,11 +192,12 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
         if (currentInstruction != null) {
           setState(() {
-            _activeInstruction = currentInstruction;
+            _activeInstruction = currentInstruction as TurnByTurnInstruction?;
           });
 
           // Proveri da li treba preći na sledeću instrukciju
-          if (distanceToNext < 20.0 &&
+          if ((distanceToNext as num?) != null &&
+              (distanceToNext as num) < 20.0 &&
               _currentInstructionIndex < _currentInstructions.length - 1) {
             setState(() {
               _currentInstructionIndex++;
