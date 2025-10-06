@@ -106,7 +106,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
 
     // Pokaži loading
     if (!mounted) return;
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => const AlertDialog(
