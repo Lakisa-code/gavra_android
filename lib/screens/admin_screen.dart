@@ -192,15 +192,15 @@ class _AdminScreenState extends State<AdminScreen> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final screenWidth = constraints.maxWidth;
-                      const spacing = 4.0; // Razmak između dugmića
-                      const totalSpacing =
-                          spacing * 4; // 4 razmaka između 5 dugmeta
-                      final availableWidth = screenWidth - totalSpacing;
-                      final buttonWidth =
-                          availableWidth / 5; // Maksimalna širina za svaki
+                      const spacing = 1.0; // Minimal spacing
+                      const padding = 8.0; // Safety padding
+                      final availableWidth = screenWidth - padding;
+                      final buttonWidth = (availableWidth - (spacing * 4)) /
+                          5; // 5 buttons with 4 spaces
 
                       return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           // MESEČNI PUTNICI - levo
                           SizedBox(
@@ -345,6 +345,60 @@ class _AdminScreenState extends State<AdminScreen> {
                                             fontSize: 12,
                                             color: Colors.white,
                                             letterSpacing: 0.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // ISTORIJA DUGME - četvrto
+                          SizedBox(
+                            width: buttonWidth,
+                            child: InkWell(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (context) =>
+                                      const PutovanjaIstorijaScreen(),
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                height: 28,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.4),
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.history,
+                                          color: Colors.white,
+                                          size: 12,
+                                        ),
+                                        Text(
+                                          'Istorija',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 10,
+                                            color: Colors.white,
                                           ),
                                         ),
                                       ],
@@ -1023,155 +1077,73 @@ class _AdminScreenState extends State<AdminScreen> {
                           ],
                         ),
                       ),
-                      // 🗺️ GPS ADMIN MAPA
-                      Container(
-                        width: double.infinity,
-                        height: 60,
-                        margin: const EdgeInsets.only(top: 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) =>
-                                          const AdminMapScreen(),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  height: 60,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFF00D4FF),
-                                        Color(0xFF0077BE),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: const Color(0xFF0077BE),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF00D4FF)
-                                            .withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.location_on,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'MAPA',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          letterSpacing: 0.8,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Icon(
-                                        Icons.my_location,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                    ],
-                                  ),
+                      // 🗺️ GPS ADMIN MAPA - sada se prostire preko cele širine
+                      GestureDetector(
+                        onTap: () {
+                          // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (context) => const AdminMapScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          height: 60,
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF00D4FF),
+                                Color(0xFF0077BE),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF0077BE),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00D4FF).withOpacity(0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              SizedBox(width: 6),
+                              Text(
+                                'ADMIN MAPA - GPS LOKACIJE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8), // Razmak između dugmadi
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  // 📚 OTVORI ISTORIJU PUTOVANJA
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) =>
-                                          const PutovanjaIstorijaScreen(),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  height: 60,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        Color(0xFFFF6B35),
-                                        Color(0xFFF7931E),
-                                      ],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: const Color(0xFFF7931E),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFFF6B35)
-                                            .withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.history,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'ISTORIJA PUTOVANJA',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          letterSpacing: 0.8,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Icon(
-                                        Icons.timeline,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              SizedBox(width: 6),
+                              Icon(
+                                Icons.my_location,
+                                color: Colors.white,
+                                size: 14,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],

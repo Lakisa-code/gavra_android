@@ -160,16 +160,16 @@ class Putnik {
       ), // ✅ Izvlači dan iz datum_putovanja
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
-      vremePokupljenja: null, // ✅ NEMA U SHEMI - postaviti na null
-      vremePlacanja: null, // ✅ NEMA U SHEMI - postaviti na null
+      // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
+      // vremePlacanja: null, // ✅ NEMA U SHEMI - default je null
       placeno: _parseDouble(map['cena']) > 0,
       iznosPlacanja: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
           ? (map['vozac_id']
               as String?) // ✅ ISPRAVLJENO: koristi vozac_id kolonu
           : null, // ✅ Samo ako je stvarno plaćeno
-      pokupioVozac: null, // ✅ NEMA U SHEMI - postaviti na null
-      dodaoVozac: null, // ✅ NEMA U SHEMI - postaviti na null
+      // pokupioVozac: null, // ✅ NEMA U SHEMI - default je null
+      // dodaoVozac: null, // ✅ NEMA U SHEMI - default je null
       vozac: map['vozac'] as String?, // ✅ KORISTI vozac kolonu
       grad: map['grad'] as String? ??
           map['adresa_polaska'] as String? ??
