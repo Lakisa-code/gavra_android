@@ -124,7 +124,7 @@ class _PutnikCardState extends State<PutnikCard> {
           }
 
           // 🆕 DODAJ KRATKU PAUZU pre dohvatanja (da se baza ažurira)
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future<void>.delayed(const Duration(milliseconds: 500));
 
           final updatedPutnik =
               await PutnikService().getPutnikFromAnyTable(_putnik.id!);
@@ -251,7 +251,7 @@ class _PutnikCardState extends State<PutnikCard> {
           .resetPutnikCard(_putnik.ime, widget.currentDriver ?? '');
 
       // Malo sačekaj da se baza updateuje
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
 
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
@@ -315,7 +315,7 @@ class _PutnikCardState extends State<PutnikCard> {
   /// Prikaži opcije za kontakt (poziv)
   Future<void> _pozovi() async {
     if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
-      showModalBottomSheet(
+      showModalBottomSheet<void>(
         context: context,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1421,7 +1421,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                           _putnik.adresa!.isNotEmpty) ...[
                                         GestureDetector(
                                           onTap: () {
-                                            showDialog(
+                                            showDialog<void>(
                                               context: context,
                                               builder: (context) => AlertDialog(
                                                 title: Row(
@@ -2096,7 +2096,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // 🎯 ADMIN POPUP MENI - jedinstven pristup svim admin funkcijama
   void _showAdminPopup() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
