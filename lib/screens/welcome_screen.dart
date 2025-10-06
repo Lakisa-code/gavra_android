@@ -200,7 +200,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
         );
         return;
       }
@@ -215,14 +215,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         dlog('📅 DAILY CHECK-IN: $savedDriver mora da uradi check-in');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
+          MaterialPageRoute<void>(
             builder: (context) => DailyCheckInScreen(
               vozac: savedDriver,
               onCompleted: () {
                 // Kada završi check-in, idi na HomeScreen
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  MaterialPageRoute<void>(
+                      builder: (context) => const HomeScreen()),
                 );
               },
             ),
@@ -233,7 +234,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         dlog('✓ DAILY CHECK-IN: $savedDriver već uradio check-in danas');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
         );
       }
     }
@@ -293,7 +294,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     // Prikaži dialog za unos šifre
     final enteredPassword = await _showPasswordDialog(
       driverName,
-      driver['color'],
+      driver['color'] as Color,
     );
 
     if (enteredPassword == null) {
@@ -328,7 +329,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
         );
         return;
       }
@@ -343,14 +344,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         dlog('📅 MANUAL LOGIN: $driverName mora da uradi check-in');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
+          MaterialPageRoute<void>(
             builder: (context) => DailyCheckInScreen(
               vozac: driverName,
               onCompleted: () {
                 // Kada završi check-in, idi na HomeScreen
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
                 );
               },
             ),
@@ -361,7 +362,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         dlog('✓ MANUAL LOGIN: $driverName već uradio check-in danas');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
         );
       }
     } else {
@@ -372,7 +373,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   void _showErrorDialog(String title, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -519,7 +520,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 // Otvori change password screen
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  MaterialPageRoute<void>(
                     builder: (context) =>
                         ChangePasswordScreen(driverName: driverName),
                   ),
@@ -535,7 +536,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 // Otvori email login screen
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  MaterialPageRoute<void>(
                     builder: (context) => const EmailLoginScreen(),
                   ),
                 );
@@ -668,9 +669,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
-                                  driver['name'],
-                                  driver['color'],
-                                  driver['icon'],
+                                  driver['name'] as String,
+                                  driver['color'] as Color,
+                                  driver['icon'] as IconData,
                                   index,
                                 ),
                               );
