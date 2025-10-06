@@ -16,6 +16,7 @@ class TurnByTurnInstruction {
   final double? speedLimit; // Ograničenje brzine (km/h)
   final List<String>? landmarks; // Orijentiri blizu instrukcije
 
+  /// Glavni konstruktor
   const TurnByTurnInstruction({
     required this.index,
     required this.text,
@@ -33,32 +34,36 @@ class TurnByTurnInstruction {
 
   /// Factory konstruktor iz OpenRouteService response
   factory TurnByTurnInstruction.fromOpenRoute(
-      Map<String, dynamic> step, int index) {
+    Map<String, dynamic> step,
+    int index,
+  ) {
     return TurnByTurnInstruction(
       index: index,
-      text: step['instruction'] ?? 'Nastavi pravo',
-      distance: (step['distance'] ?? 0.0).toDouble(),
-      duration: (step['duration'] ?? 0.0).toDouble(),
-      maneuver: step['maneuver']?['bearing_after']?.toDouble() ?? 0.0,
+      text: (step['instruction'] as String?) ?? 'Nastavi pravo',
+      distance: (step['distance'] as num?)?.toDouble() ?? 0.0,
+      duration: (step['duration'] as num?)?.toDouble() ?? 0.0,
+      maneuver: (step['maneuver']?['bearing_after'] as num?)?.toDouble() ?? 0.0,
       coordinates: _parseCoordinatesFromStep(step),
-      streetName: step['name'],
-      type: _parseInstructionType(step['type'] ?? 0),
-      speedLimit: step['speed_limit']?.toDouble(),
+      streetName: step['name'] as String?,
+      type: _parseInstructionType((step['type'] as int?) ?? 0),
+      speedLimit: (step['speed_limit'] as num?)?.toDouble(),
     );
   }
 
   /// Factory konstruktor iz Mapbox response
   factory TurnByTurnInstruction.fromMapbox(
-      Map<String, dynamic> step, int index) {
+    Map<String, dynamic> step,
+    int index,
+  ) {
     return TurnByTurnInstruction(
       index: index,
-      text: step['maneuver']?['instruction'] ?? 'Nastavi pravo',
-      distance: (step['distance'] ?? 0.0).toDouble(),
-      duration: (step['duration'] ?? 0.0).toDouble(),
-      maneuver: step['maneuver']?['bearing_after']?.toDouble() ?? 0.0,
+      text: (step['maneuver']?['instruction'] as String?) ?? 'Nastavi pravo',
+      distance: (step['distance'] as num?)?.toDouble() ?? 0.0,
+      duration: (step['duration'] as num?)?.toDouble() ?? 0.0,
+      maneuver: (step['maneuver']?['bearing_after'] as num?)?.toDouble() ?? 0.0,
       coordinates: _parseMapboxCoordinates(step),
-      streetName: step['name'],
-      type: _parseMapboxInstructionType(step['maneuver']?['type']),
+      streetName: step['name'] as String?,
+      type: _parseMapboxInstructionType(step['maneuver']?['type'] as String?),
     );
   }
 
@@ -90,7 +95,6 @@ class TurnByTurnInstruction {
       duration: distance / 13.89, // ~50 km/h prosečna brzina u gradu
       maneuver: bearing,
       coordinates: [startCoord, endCoord],
-      type: InstructionType.straight,
     );
   }
 
@@ -178,10 +182,12 @@ class TurnByTurnInstruction {
       'duration': duration,
       'maneuver': maneuver,
       'coordinates': coordinates
-          .map((pos) => {
-                'latitude': pos.latitude,
-                'longitude': pos.longitude,
-              })
+          .map(
+            (pos) => {
+              'latitude': pos.latitude,
+              'longitude': pos.longitude,
+            },
+          )
           .toList(),
       'waypoint': waypoint,
       'streetName': streetName,
@@ -195,32 +201,34 @@ class TurnByTurnInstruction {
   /// JSON deserijalizacija
   factory TurnByTurnInstruction.fromJson(Map<String, dynamic> json) {
     return TurnByTurnInstruction(
-      index: json['index'] ?? 0,
-      text: json['text'] ?? '',
-      distance: (json['distance'] ?? 0.0).toDouble(),
-      duration: (json['duration'] ?? 0.0).toDouble(),
-      maneuver: (json['maneuver'] ?? 0.0).toDouble(),
+      index: (json['index'] as int?) ?? 0,
+      text: (json['text'] as String?) ?? '',
+      distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+      duration: (json['duration'] as num?)?.toDouble() ?? 0.0,
+      maneuver: (json['maneuver'] as num?)?.toDouble() ?? 0.0,
       coordinates: (json['coordinates'] as List?)
-              ?.map((coord) => Position(
-                    latitude: coord['latitude'],
-                    longitude: coord['longitude'],
-                    timestamp: DateTime.now(),
-                    accuracy: 0,
-                    altitude: 0,
-                    altitudeAccuracy: 0,
-                    heading: 0,
-                    headingAccuracy: 0,
-                    speed: 0,
-                    speedAccuracy: 0,
-                  ))
+              ?.map(
+                (coord) => Position(
+                  latitude: (coord['latitude'] as num).toDouble(),
+                  longitude: (coord['longitude'] as num).toDouble(),
+                  timestamp: DateTime.now(),
+                  accuracy: 0,
+                  altitude: 0,
+                  altitudeAccuracy: 0,
+                  heading: 0,
+                  headingAccuracy: 0,
+                  speed: 0,
+                  speedAccuracy: 0,
+                ),
+              )
               .toList() ??
           [],
-      waypoint: json['waypoint'],
-      streetName: json['streetName'],
-      direction: json['direction'],
-      type: _parseInstructionTypeFromString(json['type']),
-      speedLimit: json['speedLimit']?.toDouble(),
-      landmarks: json['landmarks']?.cast<String>(),
+      waypoint: json['waypoint'] as String?,
+      streetName: json['streetName'] as String?,
+      direction: json['direction'] as String?,
+      type: _parseInstructionTypeFromString(json['type'] as String?),
+      speedLimit: (json['speedLimit'] as num?)?.toDouble(),
+      landmarks: (json['landmarks'] as List?)?.cast<String>(),
     );
   }
 
@@ -238,8 +246,8 @@ class TurnByTurnInstruction {
         final coordinates = step['geometry']['coordinates'] as List;
         return coordinates
             .map((coord) => Position(
-                  latitude: coord[1].toDouble(),
-                  longitude: coord[0].toDouble(),
+                  latitude: (coord[1] as num).toDouble(),
+                  longitude: (coord[0] as num).toDouble(),
                   timestamp: DateTime.now(),
                   accuracy: 0,
                   altitude: 0,
@@ -264,8 +272,8 @@ class TurnByTurnInstruction {
         final coordinates = step['geometry']['coordinates'] as List;
         return coordinates
             .map((coord) => Position(
-                  latitude: coord[1].toDouble(),
-                  longitude: coord[0].toDouble(),
+                  latitude: (coord[1] as num).toDouble(),
+                  longitude: (coord[0] as num).toDouble(),
                   timestamp: DateTime.now(),
                   accuracy: 0,
                   altitude: 0,
