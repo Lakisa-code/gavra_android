@@ -50,7 +50,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         .gte('timestamp', range.start.toIso8601String())
         .lte('timestamp', range.end.toIso8601String());
     final lokacije = (response as List).cast<Map<String, dynamic>>();
-    lokacije.sort((a, b) => a['timestamp'].compareTo(b['timestamp']));
+    lokacije.sort((a, b) => (a['timestamp'] as String).compareTo(b['timestamp'] as String));
     double ukupno = 0;
     for (int i = 1; i < lokacije.length; i++) {
       ukupno += _distanceKm(
