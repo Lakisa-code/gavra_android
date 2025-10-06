@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gavra_android/models/putnik.dart';
 import 'package:gavra_android/widgets/putnik_card.dart';
+import 'test_helpers.dart';
 
 void main() {
   group('PutnikCard Payment Display Tests', () {
@@ -11,24 +11,22 @@ void main() {
       final testPutnik = Putnik(
         id: 'test-id',
         ime: 'Ana Cortan',
-        telefon: '061234567',
-        adresaOd: 'Bela Crkva',
-        adresaDo: 'Vršac',
+        polazak: GavraTestConstants.testAddressFrom,
+        grad: GavraTestConstants.testAddressTo,
+        dan: DateTime.now().toIso8601String().split('T')[0],
         vremeDodavanja: DateTime.now(),
-        status: null,
-        iznosPlacanja: 13800.0,
-        naplatioVozac: 'Svetlana',
+        iznosPlacanja: GavraTestConstants.testAmount,
+        naplatioVozac: GavraTestConstants.testDriverSvetlana,
         vremePlacanja: DateTime(2025, 10, 6, 15, 30),
         mesecnaKarta: false,
+        brojTelefona: GavraTestConstants.testPhoneNumber,
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PutnikCard(
-              putnik: testPutnik,
-              currentDriver: 'Bojan',
-            ),
+        GavraTestHelpers.createTestApp(
+          PutnikCard(
+            putnik: testPutnik,
+            currentDriver: GavraTestConstants.testDriver,
           ),
         ),
       );
@@ -47,24 +45,19 @@ void main() {
       final testPutnik = Putnik(
         id: 'test-id-2',
         ime: 'Marko Petrović',
-        telefon: '061234567',
-        adresaOd: 'Bela Crkva',
-        adresaDo: 'Vršac',
+        polazak: 'Bela Crkva',
+        grad: 'Vršac',
+        dan: DateTime.now().toIso8601String().split('T')[0],
         vremeDodavanja: DateTime.now(),
-        status: null,
-        iznosPlacanja: null,
-        naplatioVozac: null,
-        vremePlacanja: null,
         mesecnaKarta: false,
+        brojTelefona: '061234567',
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PutnikCard(
-              putnik: testPutnik,
-              currentDriver: 'Bojan',
-            ),
+        GavraTestHelpers.createTestApp(
+          PutnikCard(
+            putnik: testPutnik,
+            currentDriver: 'Bojan',
           ),
         ),
       );
@@ -80,24 +73,21 @@ void main() {
       final testPutnik = Putnik(
         id: 'test-id-3',
         ime: 'Milica Nikolić',
-        telefon: '061234567',
-        adresaOd: 'Bela Crkva',
-        adresaDo: 'Vršac',
+        polazak: 'Bela Crkva',
+        grad: 'Vršac',
+        dan: DateTime.now().toIso8601String().split('T')[0],
         vremeDodavanja: DateTime.now(),
-        status: null,
         iznosPlacanja: 800.0,
-        naplatioVozac: null,
         vremePlacanja: DateTime.now(),
         mesecnaKarta: false,
+        brojTelefona: '061234567',
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PutnikCard(
-              putnik: testPutnik,
-              currentDriver: 'Bojan',
-            ),
+        GavraTestHelpers.createTestApp(
+          PutnikCard(
+            putnik: testPutnik,
+            currentDriver: 'Bojan',
           ),
         ),
       );
