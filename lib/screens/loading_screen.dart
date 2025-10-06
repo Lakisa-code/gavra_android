@@ -115,7 +115,7 @@ class LoadingScreen extends StatelessWidget {
                     onPressed: () {
                       // Restartuje app (možeš prilagoditi po potrebi)
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
+                        MaterialPageRoute<void>(
                             builder: (_) => const LoadingScreen()),
                         (route) => false,
                       );
