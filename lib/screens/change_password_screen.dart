@@ -134,7 +134,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           IconButton(
             icon: const Icon(Icons.help_outline, color: Colors.white),
             onPressed: () {
-              showDialog(
+              showDialog<void>(
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Pomoć'),
