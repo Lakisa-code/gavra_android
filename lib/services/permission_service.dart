@@ -250,7 +250,7 @@ class PermissionService {
           if (shouldOpen == true) {
             await Geolocator.openLocationSettings();
             // Sačekaj malo da korisnik uključi GPS
-            await Future.delayed(const Duration(seconds: 2));
+            await Future<void>.delayed(const Duration(seconds: 2));
             serviceEnabled = await Geolocator.isLocationServiceEnabled();
           }
         } else {
