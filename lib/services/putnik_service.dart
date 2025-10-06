@@ -106,7 +106,8 @@ class PutnikService {
           if (ime.toLowerCase().contains('ana') ||
               ime.toLowerCase().contains('cortan')) {
             print(
-                '🔍 [DEBUG] Našao Ana/Cortan: $ime, aktivan: ${m['aktivan']}, obrisan: ${m['obrisan']}');
+              '🔍 [DEBUG] Našao Ana/Cortan: $ime, aktivan: ${m['aktivan']}, obrisan: ${m['obrisan']}',
+            );
           }
 
           // ✅ ISPRAVKA: Generiši putnik objekte za SVE radne dane, ne samo trenutni
@@ -1124,7 +1125,8 @@ class PutnikService {
     // ⚠️ BLAŽU VALIDACIJU VOZAČA - dozvoli fallback umesto greške
     if (!VozacBoja.isValidDriver(naplatioVozac)) {
       dlog(
-          '⚠️ [OZNACI PLACENO] NEVALJAN VOZAČ: $naplatioVozac - koristi se fallback');
+        '⚠️ [OZNACI PLACENO] NEVALJAN VOZAČ: $naplatioVozac - koristi se fallback',
+      );
       // ✅ Umesto da bacamo grešku, koristimo vozača kao jeste
       // Aplikacija će se nositi sa fallback vozačem
     }

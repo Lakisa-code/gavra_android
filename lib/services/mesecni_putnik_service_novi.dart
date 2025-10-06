@@ -274,7 +274,8 @@ class MesecniPutnikServiceNovi {
 
       if (existingPayment.isNotEmpty) {
         print(
-            '⚠️ [DUPLIKAT] Plaćanje za mesec ${pocetakMeseca.month}/${pocetakMeseca.year} već postoji!');
+          '⚠️ [DUPLIKAT] Plaćanje za mesec ${pocetakMeseca.month}/${pocetakMeseca.year} već postoji!',
+        );
         // Ažuriraj postojeći zapis umesto kreiranja novog
         await _supabase.from('putovanja_istorija').update({
           'naplata_vozac': vozacId,

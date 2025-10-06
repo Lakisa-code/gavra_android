@@ -808,14 +808,16 @@ class _PutnikCardState extends State<PutnikCard> {
       print('🔍 [DEBUG PAYMENT] currentDriver: "${widget.currentDriver}"');
       print('🔍 [DEBUG PAYMENT] validDrivers: ${VozacBoja.validDrivers}');
       print(
-          '🔍 [DEBUG PAYMENT] isValidDriver: ${VozacBoja.isValidDriver(widget.currentDriver)}');
+        '🔍 [DEBUG PAYMENT] isValidDriver: ${VozacBoja.isValidDriver(widget.currentDriver)}',
+      );
 
       // ⚠️ BLAŽU VALIDACIJU VOZAČA - dozvoli i null/prazan vozač sa fallback
       String finalDriver = widget.currentDriver ?? 'Nepoznat vozač';
 
       if (!VozacBoja.isValidDriver(widget.currentDriver)) {
         print(
-            '⚠️ [DEBUG PAYMENT] Driver not valid, using fallback: "$finalDriver"');
+          '⚠️ [DEBUG PAYMENT] Driver not valid, using fallback: "$finalDriver"',
+        );
 
         // Umesto da prekidamo plaćanje, koristimo fallback vozača
         if (mounted) {
@@ -849,7 +851,10 @@ class _PutnikCardState extends State<PutnikCard> {
       } else {
         // Za obične putnike koristi postojeći servis
         await PutnikService().oznaciPlaceno(
-            _putnik.id!, iznos, finalDriver); // ✅ Koristi finalDriver
+          _putnik.id!,
+          iznos,
+          finalDriver,
+        ); // ✅ Koristi finalDriver
       }
 
       if (mounted) {
@@ -2097,7 +2102,8 @@ class _PutnikCardState extends State<PutnikCard> {
   }) async {
     try {
       print(
-          '🔍 [DEBUG SAVE PAYMENT] Started - putnikId: $putnikId, iznos: $iznos, mesec: $mesec, vozacIme: "$vozacIme"');
+        '🔍 [DEBUG SAVE PAYMENT] Started - putnikId: $putnikId, iznos: $iznos, mesec: $mesec, vozacIme: "$vozacIme"',
+      );
 
       // Parsiraj izabrani mesec (format: "Septembar 2025")
       final parts = mesec.split(' ');
