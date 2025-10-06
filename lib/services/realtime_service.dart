@@ -139,7 +139,7 @@ class RealtimeService {
     _putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
-        for (final r in data) {
+        for (final r in (data as List<dynamic>)) {
           if (r is Map) {
             rows.add(Map<String, dynamic>.from(r));
           }
@@ -166,7 +166,7 @@ class RealtimeService {
     _mesecniSub = tableStream('mesecni_putnici').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
-        for (final r in data) {
+        for (final r in (data as List<dynamic>)) {
           if (r is Map) {
             rows.add(Map<String, dynamic>.from(r));
           }
@@ -231,14 +231,14 @@ class RealtimeService {
         try {
           // 🔄 Za dnevne putnike, kreiraj Putnik objekat direktno
           final putnik = Putnik(
-            id: r['id'] ?? '',
-            ime: r['ime'] ?? '',
-            polazak: r['polazak'] ?? '',
-            grad: r['grad'] ?? '',
-            dan: r['dan'] ?? '',
-            adresa: r['adresa'] ?? '',
+            id: r['id'] as String? ?? '',
+            ime: r['ime'] as String? ?? '',
+            polazak: r['polazak'] as String? ?? '',
+            grad: r['grad'] as String? ?? '',
+            dan: r['dan'] as String? ?? '',
+            adresa: r['adresa'] as String?,
             datum: r['datum']?.toString(),
-            status: r['status'] ?? '',
+            status: r['status'] as String?,
             obrisan: r['obrisan'] == true,
             mesecnaKarta: false, // dnevni putnici nemaju mesečnu kartu
             iznosPlacanja: (r['iznos_placanja'] as num?)?.toDouble(),
@@ -361,7 +361,7 @@ class RealtimeService {
         final combined = <Putnik>[];
         for (final r in _paramLastPutovanja[key] ?? []) {
           try {
-            combined.add(Putnik.fromMap(r));
+            combined.add(Putnik.fromMap(r as Map<String, dynamic>));
           } catch (_) {}
         }
         if (!controller.isClosed) controller.add(combined);
@@ -410,7 +410,7 @@ class RealtimeService {
     final putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
-        for (final r in data) {
+        for (final r in (data as List<dynamic>)) {
           if (r is Map<String, dynamic>) {
             if (isoDate != null) {
               // match by datum if present, otherwise accept and rely on PutnikService filtering
