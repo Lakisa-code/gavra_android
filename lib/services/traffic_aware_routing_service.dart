@@ -38,9 +38,9 @@ class TrafficAwareRoutingService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
 
-        if (data['status'] == 'OK' && data['routes'].isNotEmpty) {
+        if (data['status'] as String == 'OK' && (data['routes'] as List).isNotEmpty) {
           final route = data['routes'][0];
           final leg = route['legs'][0];
 
@@ -96,7 +96,7 @@ class TrafficAwareRoutingService {
           );
 
           // Dodaj delay između API poziva
-          await Future.delayed(const Duration(milliseconds: 100));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
         }
       }
     }
