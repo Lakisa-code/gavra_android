@@ -94,7 +94,7 @@ class GPSLokacijaService {
   Future<List<GPSLokacija>> getPoslednjeLokacijeSvihVozila() async {
     // Ova query će vratiti poslednju lokaciju za svako vozilo
     final response =
-        await _supabase.rpc('get_poslednje_lokacije_vozila').select();
+        await _supabase.rpc<List<Map<String, dynamic>>>('get_poslednje_lokacije_vozila').select();
 
     return response.map((json) => GPSLokacija.fromMap(json)).toList();
   }
@@ -114,7 +114,7 @@ class GPSLokacijaService {
         .from('gps_lokacije')
         .update({'aktivan': false}).lt('vreme', cutoffDate.toIso8601String());
 
-    return response.length;
+    return (response as List).length;
   }
 
   /// Stream za realtime GPS lokacije vozila
