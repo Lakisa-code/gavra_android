@@ -149,34 +149,27 @@ class Putnik {
       id: map['id'], // ✅ UUID iz putovanja_istorija
       ime: map['putnik_ime'] as String? ?? '',
       polazak: _formatVremePolaska(map['vreme_polaska']?.toString() ?? '6:00'),
-      pokupljen: map['pokupljen'] == true ||
-          map['status'] == 'pokupljen', // ✅ KORISTI pokupljen kolonu ili status
+      pokupljen: map['status'] == 'pokupljen', // ✅ KORISTI samo status kolonu
       vremeDodavanja: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
-      dan: map['dan'] as String? ??
-          _determineDanFromDatum(
-            map['datum'] as String?,
-          ), // ✅ KORISTI dan kolonu direktno
+      dan: _determineDanFromDatum(
+        map['datum_putovanja']
+            as String?, // ✅ ISPRAVKA: koristiti datum_putovanja iz baze
+      ), // ✅ Izvlači dan iz datum_putovanja
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
-      statusVreme: map['updated_at']
-          as String?, // ✅ KORISTI updated_at umesto vreme_akcije
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null, // ✅ KORISTI vreme_pokupljenja kolonu
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null, // ✅ KORISTI vreme_placanja kolonu
+      statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
+      vremePokupljenja: null, // ✅ NEMA U SHEMI - postaviti na null
+      vremePlacanja: null, // ✅ NEMA U SHEMI - postaviti na null
       placeno: _parseDouble(map['cena']) > 0,
       iznosPlacanja: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
-          ? (map['naplata_vozac']
-              as String?) // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+          ? (map['vozac_id']
+              as String?) // ✅ ISPRAVLJENO: koristi vozac_id kolonu
           : null, // ✅ Samo ako je stvarno plaćeno
-      pokupioVozac:
-          map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
-      dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
+      pokupioVozac: null, // ✅ NEMA U SHEMI - postaviti na null
+      dodaoVozac: null, // ✅ NEMA U SHEMI - postaviti na null
       vozac: map['vozac'] as String?, // ✅ KORISTI vozac kolonu
       grad: map['grad'] as String? ??
           map['adresa_polaska'] as String? ??
@@ -633,35 +626,20 @@ class Putnik {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
       'mesecni_putnik_id': mesecnaKarta == true ? id : null,
       'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
-      'datum': _getDateForDay(dan), // koristi izabrani dan umesto dagens datum
-      'dan': dan, // ✅ DODATO NAZAD - dodajemo kolonu dan u tabelu
-      'grad': grad, // ✅ DODATO NAZAD - dodajemo kolonu grad u tabelu
+      'datum_putovanja':
+          _getDateForDay(dan), // ✅ ISPRAVKA: koristiti datum_putovanja
       'vreme_polaska': polazak,
-      'adresa_polaska': adresa ??
-          (grad == 'Bela Crkva'
-              ? 'Bela Crkva centar'
-              : 'Vršac centar'), // ✅ DODAJ DEFAULT ADRESU
       'putnik_ime': ime,
-      'broj_telefona': brojTelefona,
       'cena': iznosPlacanja ?? 0.0,
-      'status': status ?? 'nije_se_pojavio', // ✅ NOVA JEDNOSTAVNA KOLONA
-      'obrisan': obrisan, // ✅ DODATO - soft delete flag
-      'pokupljen': pokupljen ?? false, // ✅ DODATO - da li je pokupljen
-      'vozac': vozac, // ✅ DODATO - vozač koji je dodao/pokupil
-      'dodao_vozac': dodaoVozac, // ✅ NOVA KOLONA - vozač koji je putnika dodao
-      'pokupljanje_vozac':
-          pokupioVozac, // ✅ NOVA KOLONA - vozač koji je pokupljanje izvršio
-      'naplata_vozac':
-          naplatioVozac, // ✅ NOVA KOLONA - vozač koji je naplatu izvršio
-      'otkazao_vozac':
-          otkazaoVozac, // ✅ NOVA KOLONA - vozač koji je otkazivanje izvršio
-      'vreme_placanja':
-          vremePlacanja?.toIso8601String(), // ✅ DODATO - vreme plaćanja
-      'vreme_pokupljenja':
-          vremePokupljenja?.toIso8601String(), // ✅ DODATO - vreme pokupljanja
+      'status': status ?? 'nije_se_pojavio',
+      'obrisan': obrisan,
+      'vozac_id': naplatioVozac, // ✅ ISPRAVKA: koristiti vozac_id
+      'napomene': 'Putovanje dodato ${DateTime.now().toIso8601String()}',
+      'placeni_mesec': null, // ✅ Za dnevne putnike
+      'placena_godina': null, // ✅ Za dnevne putnike
       'created_at':
           vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(), // ✅ NOVA KOLONA
+      'updated_at': DateTime.now().toIso8601String(),
     };
   }
 

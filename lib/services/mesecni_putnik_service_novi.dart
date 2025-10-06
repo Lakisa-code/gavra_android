@@ -290,12 +290,12 @@ class MesecniPutnikServiceNovi {
           await _supabase.from('putovanja_istorija').insert({
             'mesecni_putnik_id': putnikId,
             'putnik_ime': putnik.putnikIme,
-            'tip_putnika': 'mesecna_karta',
+            'tip_putnika':
+                'mesecni', // ✅ ISPRAVKA: koristi 'mesecni' umesto 'mesecna_karta'
             'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
             'vreme_polaska': 'mesecno_placanje',
             'status': 'placeno',
-            'naplata_vozac':
-                vozacId, // ✅ ISPRAVKA: koristi originalnu vrednost vozača
+            'vozac_id': vozacId, // ✅ ISPRAVKA: vozac_id umesto naplata_vozac
             'cena': iznos,
             'placeni_mesec': pocetakMeseca.month,
             'placena_godina': pocetakMeseca.year,
