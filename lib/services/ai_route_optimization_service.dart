@@ -507,7 +507,7 @@ class AIRouteOptimizationService {
     currentRoute.shuffle(random);
     var currentDistance = _calculateRouteDistance(currentRoute, matrix);
 
-    var bestRoute = List.from(currentRoute);
+    var bestRoute = List<int>.from(currentRoute);
     var bestDistance = currentDistance;
 
     // SA parameters

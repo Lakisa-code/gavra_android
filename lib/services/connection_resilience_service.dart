@@ -156,7 +156,7 @@ class ConnectionResilienceService {
         final delay = _baseRetryDelay * attempt;
         dlog(
             '⏳ [CONNECTION RESILIENCE] Čekam ${delay.inSeconds}s pre sledećeg pokušaja...');
-        await Future.delayed(delay);
+        await Future<void>.delayed(delay);
       }
     }
 

@@ -369,11 +369,11 @@ class AdvancedRouteOptimizationService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        if (data['status'] == 'OK' && data['results'].isNotEmpty) {
+        if (data['status'] == 'OK' && (data['results'] as List).isNotEmpty) {
           final location = data['results'][0]['geometry']['location'];
           final position = Position(
-            latitude: location['lat'],
-            longitude: location['lng'],
+            latitude: (location['lat'] as num).toDouble(),
+            longitude: (location['lng'] as num).toDouble(),
             timestamp: DateTime.now(),
             accuracy: 0,
             altitude: 0,

@@ -331,7 +331,7 @@ class AdvancedCachingService {
       final metaJson = _level3Preferences?.getString('cache_meta_$key');
       if (metaJson != null) {
         final meta = json.decode(metaJson);
-        final expiry = DateTime.parse(meta['expiry']);
+        final expiry = DateTime.parse(meta['expiry'] as String);
 
         if (DateTime.now().isBefore(expiry)) {
           final dataJson = _level3Preferences?.getString('cache_$key');
@@ -392,7 +392,7 @@ class AdvancedCachingService {
         final jsonStr = String.fromCharCodes(data);
         final cacheData = json.decode(jsonStr);
 
-        final expiry = DateTime.parse(cacheData['expiry']);
+        final expiry = DateTime.parse(cacheData['expiry'] as String);
         if (DateTime.now().isBefore(expiry)) {
           return cacheData['data'] as T;
         } else {
@@ -459,7 +459,7 @@ class AdvancedCachingService {
         final jsonStr = String.fromCharCodes(data);
         final cacheData = json.decode(jsonStr);
 
-        final expiry = DateTime.parse(cacheData['expiry']);
+        final expiry = DateTime.parse(cacheData['expiry'] as String);
         if (DateTime.now().isBefore(expiry)) {
           return cacheData['data'] as T;
         } else {
@@ -565,7 +565,7 @@ class AdvancedCachingService {
           if (metaJson != null) {
             try {
               final meta = json.decode(metaJson);
-              final expiry = DateTime.parse(meta['expiry']);
+              final expiry = DateTime.parse(meta['expiry'] as String);
               if (DateTime.now().isAfter(expiry)) {
                 final dataKey = key.replaceFirst('cache_meta_', 'cache_');
                 await _level3Preferences!.remove(key);

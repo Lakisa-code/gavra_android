@@ -27,7 +27,7 @@ class DailyCheckInService {
   }
 
   /// Inicijalizuj realtime stream za vozača tako da kocka prati bazu
-  static StreamSubscription initializeRealtimeForDriver(String vozac) {
+  static StreamSubscription<dynamic> initializeRealtimeForDriver(String vozac) {
     // Start centralized realtime subscriptions for this driver
     try {
       RealtimeService.instance.startForDriver(vozac);
@@ -37,7 +37,7 @@ class DailyCheckInService {
 
     // Return a dummy subscription since daily_checkins functionality is removed
     // ignore: prefer_const_constructors
-    return Stream.empty().listen((_) {});
+    return Stream<dynamic>.empty().listen((_) {});
   }
 
   /// Zaustavi centralizovane realtime pretplate za vozača
@@ -220,7 +220,7 @@ class DailyCheckInService {
       final supabase = Supabase.instance.client;
 
       // Pokušaj kreiranje preko RPC ako postoji
-      await supabase.rpc('create_daily_checkins_table_if_not_exists');
+      await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
       dlog('✅ Tabela daily_checkins kreirana preko RPC');
     } catch (e) {
       dlog('⚠️ Ne mogu da kreiram tabelu preko RPC: $e');

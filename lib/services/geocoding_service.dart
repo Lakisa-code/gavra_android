@@ -88,7 +88,8 @@ class GeocodingService {
         ).timeout(timeout);
 
         if (response.statusCode == 200) {
-          final List<dynamic> results = json.decode(response.body);
+          final List<dynamic> results =
+              json.decode(response.body) as List<dynamic>;
 
           if (results.isNotEmpty) {
             final result = results[0];
@@ -102,7 +103,7 @@ class GeocodingService {
       } catch (e) {
         if (attempt < maxRetries) {
           // Kratka pauza pre sledećeg pokušaja
-          await Future.delayed(Duration(milliseconds: 500 * attempt));
+          await Future<void>.delayed(Duration(milliseconds: 500 * attempt));
         }
       }
     }

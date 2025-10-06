@@ -112,14 +112,14 @@ class PerformanceCacheService {
       if (coordJson != null) {
         final coordData = jsonDecode(coordJson);
         final timestamp =
-            DateTime.fromMillisecondsSinceEpoch(coordData['timestamp']);
+            DateTime.fromMillisecondsSinceEpoch(coordData['timestamp'] as int);
 
         // Proveri da li je cache još uvek valjan (24 sata)
         if (DateTime.now().difference(timestamp).inHours <
             _coordinateCacheValidityHours) {
           final position = Position(
-            latitude: coordData['lat'],
-            longitude: coordData['lng'],
+            latitude: (coordData['lat'] as num).toDouble(),
+            longitude: (coordData['lng'] as num).toDouble(),
             timestamp: timestamp,
             accuracy: 0,
             altitude: 0,
