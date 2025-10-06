@@ -23,7 +23,7 @@ class RealTimeStatistikaService {
   RealTimeStatistikaService._internal();
 
   // 🎯 CENTRALIUZOVANI STREAM CACHE
-  final Map<String, Stream> _streamCache = {};
+  final Map<String, Stream<dynamic>> _streamCache = {};
 
   // 🔄 KOMBINOVANI STREAM za sve putnic (dnevne + mesečne)
   Stream<List<dynamic>>? _kombinovaniStream;
@@ -176,7 +176,7 @@ class RealTimeStatistikaService {
       for (final putovanje in putovanja) {
         if (putovanje['status'] == 'pokupljen') {
           ukupnoPutovanja++;
-          ukupanPrihod += (putovanje['cena'] ?? 0.0);
+          ukupanPrihod += (putovanje['cena'] as num? ?? 0.0);
         } else if (putovanje['status'] == 'otkazan') {
           otkazi++;
         }
