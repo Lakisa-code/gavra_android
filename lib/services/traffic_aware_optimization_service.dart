@@ -110,7 +110,7 @@ class TrafficAwareOptimizationService {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
 
         if (data['status'] == 'OK') {
           final trafficMatrix =
@@ -165,13 +165,13 @@ class TrafficAwareOptimizationService {
               trafficInfo['duration_in_traffic'] ?? duration;
 
           // Izračunaj traffic delay faktor
-          final trafficDelay = trafficDuration / duration;
+          final trafficDelay = (trafficDuration as num) / (duration as num);
 
           // Composite score: kombinuje distancu i traffic delay
-          final score = distance * trafficDelay;
+          final score = (distance as num) * trafficDelay;
 
           if (score < bestScore) {
-            bestScore = score;
+            bestScore = score.toDouble();
             nextBest = candidate;
           }
         }
