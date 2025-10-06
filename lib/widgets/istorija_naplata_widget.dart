@@ -82,7 +82,7 @@ class IstorijaHaplataWidget extends StatelessWidget {
                       Expanded(
                         flex: 2,
                         child: Text(
-                          naplata['ime'],
+                          (naplata['ime'] as String?) ?? 'Nepoznato',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -107,7 +107,7 @@ class IstorijaHaplataWidget extends StatelessWidget {
 
                       // Vreme
                       Text(
-                        _formatVreme(naplata['vreme']),
+                        _formatVreme((naplata['vreme'] as int?) ?? 0),
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey[600],

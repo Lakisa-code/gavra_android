@@ -495,11 +495,11 @@ class _PutnikCardState extends State<PutnikCard> {
     try {
       brojPutovanja =
           await MesecniPutnikServiceNovi.izracunajBrojPutovanjaIzIstorije(
-              _putnik.id!);
+              _putnik.id! as String);
       // ✅ NOVA LOGIKA - računaj otkazivanja iz stvarne istorije
       brojOtkazivanja =
           await MesecniPutnikServiceNovi.izracunajBrojOtkazivanjaIzIstorije(
-              _putnik.id!);
+              _putnik.id! as String);
     } catch (e) {
       // Fallback na podatke iz modela
       brojPutovanja = mesecniPutnik.brojPutovanja;
@@ -764,8 +764,8 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (result != null && result['iznos'] != null && mounted) {
       // Koristimo iznos koji je korisnik uneo u dialog
-      await _executePayment(result['iznos'],
-          mesec: result['mesec'], isMesecni: true);
+      await _executePayment(result['iznos'] as double,
+          mesec: result['mesec'] as String?, isMesecni: true);
     }
   }
 

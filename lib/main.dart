@@ -61,7 +61,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await LocalNotificationService.showNotificationFromBackground(
       title: message.notification?.title ?? 'Gavra Notification',
       body: message.notification?.body ?? 'Nova poruka',
-      payload: message.data['type'] ?? 'firebase_background',
+      payload: (message.data['type'] as String?) ?? 'firebase_background',
     );
   } catch (e) {
     _logger.w('⚠️ Failed to show background notification: $e');
@@ -352,7 +352,7 @@ class _MyAppState extends State<MyApp> {
         } else {
           _logger.e('❌ Email verification failed');
         }
-      }).catchError((error) {
+      }).catchError((Object error) {
         _logger.e('❌ Auth callback error: $error');
       });
     }
