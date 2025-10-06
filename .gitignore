@@ -48,6 +48,18 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Temporary documentation files
+*.js
+!tools/**/*.js
+tmp/
+temp/
+
+# Node.js related (not needed for Flutter)
+node_modules/
+package.json
+package-lock.json
+npm-debug.log*
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
