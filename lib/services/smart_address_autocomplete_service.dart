@@ -449,7 +449,7 @@ class SmartAddressAutocompleteService {
     // Recency feature
     if (suggestion.metadata.containsKey('last_used')) {
       try {
-        final lastUsed = DateTime.parse(suggestion.metadata['last_used']);
+        final lastUsed = DateTime.parse(suggestion.metadata['last_used'] as String);
         final daysSince = DateTime.now().difference(lastUsed).inDays;
         features['recency'] = math.max(0, 100 - daysSince * 3).toDouble();
       } catch (e) {
@@ -736,10 +736,10 @@ class AddressSuggestion {
 
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) =>
       AddressSuggestion(
-        address: json['address'],
-        displayText: json['display_text'],
-        score: json['score'].toDouble(),
-        source: json['source'],
-        metadata: json['metadata'] ?? {},
+        address: json['address'] as String,
+        displayText: json['display_text'] as String,
+        score: (json['score'] as num).toDouble(),
+        source: json['source'] as String,
+        metadata: json['metadata'] as Map<String, dynamic>? ?? {},
       );
 }
