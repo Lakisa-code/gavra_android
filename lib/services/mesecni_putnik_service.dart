@@ -29,8 +29,10 @@ class MesecniPutnikService {
           final listRaw = data as List<dynamic>;
           dlog(
               '📊 [MESECNI PUTNIK STREAM] Dobio ${listRaw.length} putnika iz baze');
-          final allPutnici =
-              listRaw.map((json) => MesecniPutnik.fromMap(json)).toList();
+          final allPutnici = listRaw
+              .map(
+                  (json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
+              .toList();
           // ✅ ISPRAVLJENO: filtriraj i po aktivan statusu, ne samo obrisan
           final filteredPutnici = allPutnici
               .where((putnik) => !putnik.obrisan && putnik.aktivan)
@@ -53,7 +55,7 @@ class MesecniPutnikService {
           dlog('❌ [MESECNI PUTNIK SERVICE] Error mapping realtime data: $e');
           return <MesecniPutnik>[];
         }
-      }).handleError((error) {
+      }).handleError((Object error) {
         dlog('❌ [MESECNI PUTNIK SERVICE] Stream error: $error');
         return <MesecniPutnik>[];
       });
@@ -73,7 +75,8 @@ class MesecniPutnikService {
         try {
           final listRaw = data as List<dynamic>;
           final list = listRaw
-              .map((json) => MesecniPutnik.fromMap(json))
+              .map(
+                  (json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
               .where((putnik) => putnik.aktivan && !putnik.obrisan)
               .toList();
           list.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
@@ -83,7 +86,7 @@ class MesecniPutnikService {
               '❌ [MESECNI PUTNIK SERVICE] Error mapping realtime active data: $e');
           return <MesecniPutnik>[];
         }
-      }).handleError((error) {
+      }).handleError((Object error) {
         dlog('❌ [MESECNI PUTNIK SERVICE] Stream error (aktivni): $error');
         return <MesecniPutnik>[];
       });
@@ -156,7 +159,7 @@ class MesecniPutnikService {
           .eq('obrisan', false);
 
       final putnici = (response as List<dynamic>)
-          .map((json) => MesecniPutnik.fromMap(json))
+          .map((json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
           .toList();
 
       dlog(
@@ -826,7 +829,8 @@ class MesecniPutnikService {
               .eq('obrisan', false);
 
           for (final putnikData in sviMesecniPutnici) {
-            await sinhronizujBrojPutovanjaSaIstorijom(putnikData['id']);
+            await sinhronizujBrojPutovanjaSaIstorijom(
+                putnikData['id'] as String);
           }
 
           dlog(

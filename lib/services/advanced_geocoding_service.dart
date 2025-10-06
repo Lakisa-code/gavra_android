@@ -153,7 +153,7 @@ class AdvancedGeocodingService {
 
       // Rate limiting
       if (i < batches.length - 1) {
-        await Future.delayed(delay);
+        await Future<void>.delayed(delay);
       }
     }
 
@@ -235,19 +235,19 @@ class AdvancedGeocodingService {
     ).timeout(timeout);
 
     if (response.statusCode == 200) {
-      final List<dynamic> results = json.decode(response.body);
+      final List<dynamic> results = json.decode(response.body) as List<dynamic>;
       if (results.isNotEmpty) {
         final best = results.first;
-        final confidence =
-            _calculateConfidence(adresa, grad, best, 'nominatim');
+        final confidence = _calculateConfidence(
+            adresa, grad, best as Map<String, dynamic>, 'nominatim');
 
         return GeocodeResult(
-          latitude: double.parse(best['lat']),
-          longitude: double.parse(best['lon']),
-          formattedAddress: best['display_name'],
+          latitude: double.parse(best['lat'] as String),
+          longitude: double.parse(best['lon'] as String),
+          formattedAddress: best['display_name'] as String,
           confidence: confidence,
           provider: 'nominatim',
-          components: _parseNominatimComponents(best),
+          components: _parseNominatimComponents(best as Map<String, dynamic>),
         );
       }
     }
@@ -279,15 +279,17 @@ class AdvancedGeocodingService {
         final coords = best['geometry']['coordinates'];
         final props = best['properties'];
 
-        final confidence = _calculateConfidence(adresa, grad, props, 'photon');
+        final confidence = _calculateConfidence(
+            adresa, grad, props as Map<String, dynamic>, 'photon');
 
         return GeocodeResult(
-          latitude: coords[1].toDouble(),
-          longitude: coords[0].toDouble(),
-          formattedAddress: props['name'] ?? props['label'] ?? '$adresa, $grad',
+          latitude: (coords[1] as num).toDouble(),
+          longitude: (coords[0] as num).toDouble(),
+          formattedAddress:
+              (props['name'] ?? props['label'] ?? '$adresa, $grad') as String,
           confidence: confidence,
           provider: 'photon',
-          components: _parsePhotonComponents(props),
+          components: _parsePhotonComponents(props as Map<String, dynamic>),
         );
       }
     }
@@ -324,15 +326,16 @@ class AdvancedGeocodingService {
         final coords = best['geometry']['coordinates'];
         final props = best['properties'];
 
-        final confidence = _calculateConfidence(adresa, grad, props, 'mapbox');
+        final confidence = _calculateConfidence(
+            adresa, grad, props as Map<String, dynamic>, 'mapbox');
 
         return GeocodeResult(
-          latitude: coords[1].toDouble(),
-          longitude: coords[0].toDouble(),
-          formattedAddress: best['place_name'],
+          latitude: (coords[1] as num).toDouble(),
+          longitude: (coords[0] as num).toDouble(),
+          formattedAddress: best['place_name'] as String,
           confidence: confidence,
           provider: 'mapbox',
-          components: _parseMapboxComponents(best),
+          components: _parseMapboxComponents(best as Map<String, dynamic>),
         );
       }
     }
@@ -497,7 +500,8 @@ class AdvancedGeocodingService {
         maxAge: const Duration(days: 30));
     if (cached != null) {
       try {
-        return GeocodeResult.fromJson(json.decode(cached));
+        return GeocodeResult.fromJson(
+            json.decode(cached) as Map<String, dynamic>);
       } catch (e) {
         return null;
       }
@@ -575,15 +579,15 @@ class GeocodeResult {
       };
 
   factory GeocodeResult.fromJson(Map<String, dynamic> json) => GeocodeResult(
-        latitude: json['latitude'].toDouble(),
-        longitude: json['longitude'].toDouble(),
-        formattedAddress: json['formattedAddress'],
-        confidence: json['confidence'].toDouble(),
-        provider: json['provider'],
-        components: Map<String, String>.from(json['components']),
-        autocorrected: json['autocorrected'] ?? false,
-        originalQuery: json['originalQuery'],
-        timestamp: DateTime.parse(json['timestamp']),
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        formattedAddress: json['formattedAddress'] as String,
+        confidence: (json['confidence'] as num).toDouble(),
+        provider: json['provider'] as String,
+        components: Map<String, String>.from(json['components'] as Map),
+        autocorrected: (json['autocorrected'] ?? false) as bool,
+        originalQuery: json['originalQuery'] as String?,
+        timestamp: DateTime.parse(json['timestamp'] as String),
       );
 
   @override

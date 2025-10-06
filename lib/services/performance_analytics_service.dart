@@ -182,7 +182,7 @@ class PerformanceAnalyticsService {
         avgResponseTime:
             cacheStats.avgResponseTimeMicros / 1000, // Convert to ms
         l1HitRatio: cacheStats.totalRequests > 0
-            ? cacheStats.toJson()['l1_hits'] / cacheStats.totalRequests
+            ? (cacheStats.toJson()['l1_hits'] as num) / cacheStats.totalRequests
             : 0,
       );
 
@@ -241,7 +241,7 @@ class PerformanceAnalyticsService {
 
       // Export metrics
       final metricsToExport = metricNames ?? _metrics.keys.toList();
-      exportData['metrics'] = {};
+      exportData['metrics'] = <String, dynamic>{};
 
       for (final metricName in metricsToExport) {
         if (_metrics.containsKey(metricName)) {
@@ -638,7 +638,8 @@ class PerformanceAnalyticsService {
         if (metricJson != null) {
           try {
             final metricData = json.decode(metricJson);
-            final metric = PerformanceMetric.fromJson(metricData);
+            final metric =
+                PerformanceMetric.fromJson(metricData as Map<String, dynamic>);
             _metrics[metric.name] = metric;
           } catch (e) {
             _logger.w('⚠️ Failed to load metric from $key: $e');
@@ -726,23 +727,24 @@ class PerformanceMetric {
       };
 
   factory PerformanceMetric.fromJson(Map<String, dynamic> json) {
-    final metric = PerformanceMetric(json['name']);
-    final values =
-        (json['values'] as List<dynamic>).map((v) => v.toDouble()).toList();
+    final metric = PerformanceMetric(json['name'] as String);
+    final values = (json['values'] as List<dynamic>)
+        .map((v) => (v as num).toDouble())
+        .toList();
     final timestamps = (json['timestamps'] as List<dynamic>)
-        .map((t) => DateTime.parse(t))
+        .map((t) => DateTime.parse(t as String))
         .toList();
     final metadata = (json['metadata'] as List<dynamic>)
-        .map((m) => Map<String, dynamic>.from(m))
+        .map((m) => Map<String, dynamic>.from(m as Map))
         .toList();
 
     for (int i = 0; i < values.length; i++) {
-      metric._values.add(values[i]);
+      metric._values.add(values[i] as double);
       metric._timestamps.add(timestamps[i]);
       metric._metadata.add(metadata[i]);
     }
 
-    metric._errorCount = json['error_count'] ?? 0;
+    metric._errorCount = (json['error_count'] ?? 0) as int;
     return metric;
   }
 }

@@ -19,7 +19,7 @@ class NotificationNavigationService {
       final mesecnaKarta = putnikData['mesecnaKarta'] ?? false;
 
       // Show a popup with passenger info and navigation options
-      await showDialog(
+      await showDialog<void>(
         context: context,
         barrierDismissible: true,
         builder: (BuildContext context) {
@@ -54,7 +54,7 @@ class NotificationNavigationService {
                       fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                if (putnikDan.isNotEmpty)
+                if ((putnikDan as String).isNotEmpty)
                   Text(
                     '📅 Dan: $putnikDan',
                     style: const TextStyle(fontSize: 14),
@@ -69,7 +69,7 @@ class NotificationNavigationService {
                     '🏘️ Destinacija: ${putnikData['grad']}',
                     style: const TextStyle(fontSize: 14),
                   ),
-                if (mesecnaKarta)
+                if (mesecnaKarta as bool)
                   const Text(
                     '💳 Mesečna karta',
                     style: TextStyle(
@@ -93,7 +93,7 @@ class NotificationNavigationService {
                 onPressed: () {
                   Navigator.of(context).pop();
                   _navigateToAppropriateScreen(
-                      context, type, putnikData, mesecnaKarta);
+                      context, type, putnikData, mesecnaKarta as bool);
                 },
                 child: const Text('Otvori'),
               ),
@@ -122,11 +122,11 @@ class NotificationNavigationService {
     final putnikVreme = putnikData['polazak'] ?? putnikData['vreme'];
 
     Navigator.of(context).push(
-      MaterialPageRoute(
+      MaterialPageRoute<void>(
         builder: (context) => DanasScreen(
-          highlightPutnikIme: putnikIme,
-          filterGrad: putnikGrad,
-          filterVreme: putnikVreme,
+          highlightPutnikIme: putnikIme as String?,
+          filterGrad: putnikGrad as String?,
+          filterVreme: putnikVreme as String?,
         ),
       ),
     );
@@ -134,7 +134,7 @@ class NotificationNavigationService {
 
   /// Show error dialog
   static void _showErrorDialog(BuildContext context, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(

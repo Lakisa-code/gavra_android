@@ -197,24 +197,26 @@ class LocalNotificationService {
         try {
           // Parse the payload JSON
           final Map<String, dynamic> payloadData =
-              jsonDecode(response.payload!);
+              jsonDecode(response.payload!) as Map<String, dynamic>;
 
-          notificationType = payloadData['type'];
+          notificationType = payloadData['type'] as String?;
           final putnikData = payloadData['putnik'];
 
           // Extract passenger name from different possible formats
           if (putnikData is Map<String, dynamic>) {
-            putnikIme = putnikData['ime'] ?? putnikData['name'];
-            putnikGrad = putnikData['grad'];
-            putnikVreme = putnikData['vreme'] ?? putnikData['polazak'];
+            putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
+            putnikGrad = putnikData['grad'] as String?;
+            putnikVreme =
+                (putnikData['vreme'] ?? putnikData['polazak']) as String?;
           } else if (putnikData is String) {
             // Try to parse if it's JSON string
             try {
               final putnikMap = jsonDecode(putnikData);
               if (putnikMap is Map<String, dynamic>) {
-                putnikIme = putnikMap['ime'] ?? putnikMap['name'];
-                putnikGrad = putnikMap['grad'];
-                putnikVreme = putnikMap['vreme'] ?? putnikMap['polazak'];
+                putnikIme = (putnikMap['ime'] ?? putnikMap['name']) as String?;
+                putnikGrad = putnikMap['grad'] as String?;
+                putnikVreme =
+                    (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
               }
             } catch (e) {
               // If not JSON, use as direct string
@@ -228,10 +230,10 @@ class LocalNotificationService {
             try {
               final putnikInfo = await _fetchPutnikFromDatabase(putnikIme);
               if (putnikInfo != null) {
-                putnikGrad = putnikGrad ?? putnikInfo['grad'];
+                putnikGrad = putnikGrad ?? putnikInfo['grad'] as String?;
                 putnikVreme = putnikVreme ??
-                    putnikInfo['polazak'] ??
-                    putnikInfo['vreme_polaska'];
+                    (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska'])
+                        as String?;
               }
             } catch (e) {
               // Ignore database fetch errors - fallback to basic navigation
@@ -245,7 +247,7 @@ class LocalNotificationService {
       // Navigate to dagens screen with filter parameters
       if (context.mounted) {
         Navigator.of(context).push(
-          MaterialPageRoute(
+          MaterialPageRoute<void>(
             builder: (context) => DanasScreen(
               highlightPutnikIme: putnikIme,
               filterGrad: putnikGrad,
@@ -302,7 +304,7 @@ class LocalNotificationService {
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         Navigator.of(context).push(
-          MaterialPageRoute(
+          MaterialPageRoute<void>(
             builder: (context) => const DanasScreen(),
           ),
         );
