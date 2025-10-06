@@ -28,7 +28,7 @@ class VozacBoja {
   static List<String> get validDrivers => boje.keys.toList();
 
   /// Helper za striktnu validaciju vozača sa error handling
-  static bool validateDriver(String? driver, {Function(String)? onError}) {
+  static bool validateDriver(String? driver, {void Function(String)? onError}) {
     final isValid = isValidDriver(driver);
     if (!isValid && onError != null) {
       onError('NEVALJAN VOZAČ! Dozvoljen je samo: ${validDrivers.join(", ")}');

@@ -93,7 +93,7 @@ class NotificationNavigationService {
                 onPressed: () {
                   Navigator.of(context).pop();
                   _navigateToAppropriateScreen(
-                      context, type, putnikData, mesecnaKarta as bool);
+                      context, type, putnikData, mesecnaKarta);
                 },
                 child: const Text('Otvori'),
               ),

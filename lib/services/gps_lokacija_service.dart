@@ -93,8 +93,9 @@ class GPSLokacijaService {
   /// Dohvata poslednje lokacije svih vozila
   Future<List<GPSLokacija>> getPoslednjeLokacijeSvihVozila() async {
     // Ova query će vratiti poslednju lokaciju za svako vozilo
-    final response =
-        await _supabase.rpc<List<Map<String, dynamic>>>('get_poslednje_lokacije_vozila').select();
+    final response = await _supabase
+        .rpc<List<Map<String, dynamic>>>('get_poslednje_lokacije_vozila')
+        .select();
 
     return response.map((json) => GPSLokacija.fromMap(json)).toList();
   }

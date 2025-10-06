@@ -69,8 +69,8 @@ class MesecniPutnikServiceNovi {
                     final map = row as Map<String, dynamic>;
                     return (map['aktivan'] == true) && (map['obrisan'] != true);
                   })
-                  .map((json) =>
-                      MesecniPutnik.fromMap(Map<String, dynamic>.from(json)))
+                  .map((json) => MesecniPutnik.fromMap(
+                      Map<String, dynamic>.from(json as Map)))
                   .toList();
             } catch (e) {
               return <MesecniPutnik>[];
@@ -410,7 +410,8 @@ class MesecniPutnikServiceNovi {
         svaPlacanja.add({
           'cena': placanje['cena'],
           'created_at': placanje['created_at'],
-          'vozac_ime': await _getVozacImeByUuid(placanje['vozac_id']),
+          'vozac_ime':
+              await _getVozacImeByUuid(placanje['vozac_id'] as String?),
           'putnik_ime': putnikIme,
           'tip': placanje['tip_putnika'] ?? 'dnevni',
           'placeniMesec': placanje['placeni_mesec'],
@@ -436,7 +437,8 @@ class MesecniPutnikServiceNovi {
           svaPlacanja.add({
             'cena': mesecno['cena'],
             'created_at': mesecno['vreme_placanja'],
-            'vozac_ime': await _getVozacImeByUuid(mesecno['vozac_id']),
+            'vozac_ime':
+                await _getVozacImeByUuid(mesecno['vozac_id'] as String?),
             'putnik_ime': putnikIme,
             'tip': 'mesecna_karta',
             'placeniMesec': mesecno['placeni_mesec'],
@@ -512,15 +514,15 @@ class MesecniPutnikServiceNovi {
                       false; // default false ako nema vrednost
                   print(
                       '🔍 MESECNI STREAM DEBUG: ${map['putnik_ime']} - aktivan: $aktivan, obrisan: $obrisan');
-                  return aktivan && !obrisan;
+                  return (aktivan as bool) && !(obrisan as bool);
                 } catch (_) {
                   return true;
                 }
               }).toList();
 
               return filtered
-                  .map((json) =>
-                      MesecniPutnik.fromMap(Map<String, dynamic>.from(json)))
+                  .map((json) => MesecniPutnik.fromMap(
+                      Map<String, dynamic>.from(json as Map)))
                   .toList();
             } catch (e) {
               return <MesecniPutnik>[];

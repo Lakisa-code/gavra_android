@@ -69,7 +69,7 @@ class UpdateService {
           return;
         }
 
-        String latestVersion = data['tag_name'].replaceAll('v', '');
+        String latestVersion = (data['tag_name'] as String).replaceAll('v', '');
 
         dlog('🔍 Background: Current: $currentVersion, Latest: $latestVersion');
 
@@ -182,7 +182,7 @@ class UpdateService {
           return false;
         }
 
-        String latestVersion = data['tag_name'].replaceAll('v', '');
+        String latestVersion = (data['tag_name'] as String).replaceAll('v', '');
 
         dlog('🚀 Najnovija verzija na GitHub: $latestVersion');
         dlog('� Raw tag_name: ${data['tag_name']}');
@@ -214,7 +214,7 @@ class UpdateService {
 
         DateTime? publishedAt;
         try {
-          publishedAt = DateTime.parse(data['published_at']);
+          publishedAt = DateTime.parse(data['published_at'] as String);
         } catch (e) {
           dlog('⚠️ Nemože da parsira datum objave');
         }
@@ -244,7 +244,7 @@ class UpdateService {
           }
 
           // Dodatno: Proverava da li je release "nightly" build - ne prikazuj update za nightly
-          String releaseTag = data['tag_name'].toLowerCase();
+          String releaseTag = (data['tag_name'] as String).toLowerCase();
           if (releaseTag.contains('nightly') ||
               releaseTag.contains('beta') ||
               releaseTag.contains('alpha')) {
@@ -281,23 +281,23 @@ class UpdateService {
 
         // Pronađi APK asset u assets listi
         String? apkDownloadUrl;
-        if (data['assets'] != null && data['assets'].isNotEmpty) {
-          for (var asset in data['assets']) {
+        if (data['assets'] != null && (data['assets'] as List).isNotEmpty) {
+          for (var asset in data['assets'] as List) {
             if (asset['name'] != null &&
                 asset['name'].toString().endsWith('.apk')) {
-              apkDownloadUrl = asset['browser_download_url'];
+              apkDownloadUrl = asset['browser_download_url'] as String?;
               break;
             }
           }
         }
 
         // Fallback na GitHub release stranicu ako nema APK
-        apkDownloadUrl ??= data['html_url'];
+        apkDownloadUrl ??= data['html_url'] as String?;
 
         dlog('🔗 Download URL: $apkDownloadUrl');
 
         return {
-          'version': data['tag_name'].replaceAll('v', ''),
+          'version': (data['tag_name'] as String).replaceAll('v', ''),
           'name': data['name'] ?? 'Nova verzija',
           'body': data['body'] ?? 'Poboljšanja i ispravke',
           'downloadUrl': apkDownloadUrl,
@@ -323,7 +323,7 @@ class UpdateService {
     final versionInfo = await getLatestVersionInfo();
     if (versionInfo != null && versionInfo['downloadUrl'] != null) {
       final url = versionInfo['downloadUrl'];
-      if (await canLaunchUrl(Uri.parse(url))) {
+      if (await canLaunchUrl(Uri.parse(url as String))) {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       }
     }
@@ -392,7 +392,7 @@ class UpdateChecker {
 
   static void _showUpdateDialog(
       BuildContext context, Map<String, dynamic>? versionInfo) {
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
@@ -411,11 +411,11 @@ class UpdateChecker {
               Text('Verzija: ${versionInfo['version']}',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text(versionInfo['name'] ?? 'Nova verzija'),
+              Text(versionInfo['name'] as String? ?? 'Nova verzija'),
               const SizedBox(height: 8),
               const Text('Šta je novo:',
                   style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(versionInfo['body'] ?? 'Poboljšanja i ispravke'),
+              Text(versionInfo['body'] as String? ?? 'Poboljšanja i ispravke'),
             ] else ...[
               const Text('Dostupna je nova verzija Gavra Android aplikacije.'),
             ],
@@ -426,7 +426,7 @@ class UpdateChecker {
             onPressed: () {
               // Označi verziju kao preskočenu
               if (versionInfo != null && versionInfo['version'] != null) {
-                UpdateService.skipVersion(versionInfo['version']);
+                UpdateService.skipVersion(versionInfo['version'] as String);
               }
               Navigator.pop(context);
             },
@@ -436,7 +436,8 @@ class UpdateChecker {
             onPressed: () {
               // Označi verziju kao instaliranu
               if (versionInfo != null && versionInfo['version'] != null) {
-                UpdateService.markVersionAsInstalled(versionInfo['version']);
+                UpdateService.markVersionAsInstalled(
+                    versionInfo['version'] as String);
               }
               Navigator.pop(context);
               UpdateService.downloadApk();
@@ -452,7 +453,7 @@ class UpdateChecker {
   /// Manualna provera update-a (za dugme u settings)
   static Future<void> manualUpdateCheck(BuildContext context) async {
     // Pokazuj loading
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => const AlertDialog(
@@ -478,7 +479,7 @@ class UpdateChecker {
       } else {
         // Nema update-a
         if (!context.mounted) return;
-        showDialog(
+        showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Nema update-a ✅'),
@@ -495,7 +496,7 @@ class UpdateChecker {
     } catch (e) {
       Navigator.pop(context); // Zatvori loading
       // Greška
-      showDialog(
+      showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Greška ❌'),

@@ -95,7 +95,8 @@ class SMSService {
           .eq('datum_kraja_meseca', tomorrowStr);
 
       List<Putnik> unpaidPassengers = (response as List)
-          .map((data) => Putnik.fromMesecniPutnici(data))
+          .map(
+              (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>))
           .where((putnik) =>
               putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty)
           .toList();
@@ -109,15 +110,16 @@ class SMSService {
       for (Putnik putnik in unpaidPassengers) {
         try {
           // Dobij statistike putovanja za putnika
-          Map<String, dynamic> stats = await _getPaymentStats(putnik.id!);
+          Map<String, dynamic> stats =
+              await _getPaymentStats(putnik.id as String);
 
           // Kreiraj SMS poruku
           String message = _createReminderSMS(
               putnik.ime,
-              stats['lastPaymentDate'],
-              stats['lastPaymentAmount'],
-              stats['tripsSincePayment'],
-              stats['cancellationsSincePayment']);
+              stats['lastPaymentDate'] as String,
+              stats['lastPaymentAmount'] as int,
+              stats['tripsSincePayment'] as int,
+              stats['cancellationsSincePayment'] as int);
 
           // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
@@ -126,7 +128,7 @@ class SMSService {
           dlog('✅ SMS poslat: ${putnik.ime} (${putnik.brojTelefona})');
 
           // Pauza između SMS-ova (da se izbegne spam)
-          await Future.delayed(const Duration(seconds: 2));
+          await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
           errorCount++;
           dlog('❌ Greška slanja SMS: ${putnik.ime} - $e');
@@ -167,7 +169,8 @@ class SMSService {
           .eq('datum_kraja_meseca', yesterdayStr);
 
       List<Putnik> overduePassengers = (response as List)
-          .map((data) => Putnik.fromMesecniPutnici(data))
+          .map(
+              (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>))
           .where((putnik) =>
               putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty)
           .toList();
@@ -181,15 +184,16 @@ class SMSService {
       for (Putnik putnik in overduePassengers) {
         try {
           // Dobij statistike putovanja za putnika
-          Map<String, dynamic> stats = await _getPaymentStats(putnik.id!);
+          Map<String, dynamic> stats =
+              await _getPaymentStats(putnik.id as String);
 
           // Kreiraj SMS poruku za krajnji rok
           String message = _createOverdueReminderSMS(
               putnik.ime,
-              stats['lastPaymentDate'],
-              stats['lastPaymentAmount'],
-              stats['tripsSincePayment'],
-              stats['cancellationsSincePayment']);
+              stats['lastPaymentDate'] as String,
+              stats['lastPaymentAmount'] as int,
+              stats['tripsSincePayment'] as int,
+              stats['cancellationsSincePayment'] as int);
 
           // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
@@ -199,7 +203,7 @@ class SMSService {
               '✅ Krajnji rok SMS poslat: ${putnik.ime} (${putnik.brojTelefona})');
 
           // Pauza između SMS-ova (da se izbegne spam)
-          await Future.delayed(const Duration(seconds: 2));
+          await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
           errorCount++;
           dlog('❌ Greška slanja krajnji rok SMS: ${putnik.ime} - $e');
@@ -236,8 +240,9 @@ class SMSService {
         };
       }
 
-      String lastPaymentDate = lastPaymentResponse[0]['datum_i_vreme'];
-      int lastPaymentAmount = lastPaymentResponse[0]['iznos_uplate'];
+      String lastPaymentDate =
+          lastPaymentResponse[0]['datum_i_vreme'] as String;
+      int lastPaymentAmount = lastPaymentResponse[0]['iznos_uplate'] as int;
 
       // 2. Putovanja od poslednje uplate
       final tripsResponse = await SupabaseSafe.run(

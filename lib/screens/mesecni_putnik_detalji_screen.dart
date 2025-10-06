@@ -501,13 +501,13 @@ class _MesecniPutnikDetaljiScreenState
     final mesecniOtkazi = <String, int>{};
 
     for (var voznja in voznje) {
-      final datum = DateTime.parse(voznja['created_at']);
+      final datum = DateTime.parse(voznja['created_at'] as String);
       final mesec = DateFormat('MMMM', 'sr').format(datum);
       mesecniPodaci[mesec] = (mesecniPodaci[mesec] ?? 0) + 1;
     }
 
     for (var otkaz in otkazi) {
-      final datum = DateTime.parse(otkaz['created_at']);
+      final datum = DateTime.parse(otkaz['created_at'] as String);
       final mesec = DateFormat('MMMM', 'sr').format(datum);
       mesecniOtkazi[mesec] = (mesecniOtkazi[mesec] ?? 0) + 1;
     }
@@ -615,7 +615,7 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Widget _buildPlacanjeCard(Map<String, dynamic> placanje) {
-    final datum = DateTime.parse(placanje['created_at']);
+    final datum = DateTime.parse(placanje['created_at'] as String);
     final iznos = placanje['cena']?.toDouble() ?? 0.0;
     final vozac = placanje['vozac_ime'] ?? placanje['vozac'] ?? 'Nepoznato';
     final tipPlacanja = placanje['tip'] ?? 'redovno';
@@ -626,7 +626,7 @@ class _MesecniPutnikDetaljiScreenState
     if (tipPlacanja == 'mesecna_karta') {
       final mesec = placanje['placeniMesec'] ?? 0;
       final godina = placanje['placenaGodina'] ?? 0;
-      final mesecNaziv = _getNazivMeseca(mesec);
+      final mesecNaziv = _getNazivMeseca(mesec as int);
       subtitle =
           'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     }
@@ -699,7 +699,7 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Widget _buildVoznjaItem(Map<String, dynamic> voznja) {
-    final datum = DateTime.parse(voznja['created_at']);
+    final datum = DateTime.parse(voznja['created_at'] as String);
     final vozac = voznja['vozac_ime'] ?? 'Nepoznato';
     final relacija = voznja['relacija'] ?? 'Nepoznato';
 
@@ -725,7 +725,7 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Widget _buildOtkazItem(Map<String, dynamic> otkaz) {
-    final datum = DateTime.parse(otkaz['created_at']);
+    final datum = DateTime.parse(otkaz['created_at'] as String);
     final vozac = otkaz['vozac_ime'] ?? 'Nepoznato';
 
     return Padding(
@@ -755,13 +755,13 @@ class _MesecniPutnikDetaljiScreenState
     final daniSaAktivnoscu = <int, String>{};
 
     for (var voznja in voznje) {
-      final datum = DateTime.parse(voznja['created_at']);
+      final datum = DateTime.parse(voznja['created_at'] as String);
       final dan = datum.day;
       daniSaAktivnoscu[dan] = 'voznja';
     }
 
     for (var otkaz in otkazi) {
-      final datum = DateTime.parse(otkaz['created_at']);
+      final datum = DateTime.parse(otkaz['created_at'] as String);
       final dan = datum.day;
       if (daniSaAktivnoscu[dan] == 'voznja') {
         daniSaAktivnoscu[dan] = 'oba';
@@ -815,7 +815,7 @@ class _MesecniPutnikDetaljiScreenState
     final mapa = <String, List<Map<String, dynamic>>>{};
 
     for (var podatak in podaci) {
-      final datum = DateTime.parse(podatak['created_at']);
+      final datum = DateTime.parse(podatak['created_at'] as String);
       final nedelja = _getNedeljaString(datum);
 
       if (!mapa.containsKey(nedelja)) {
@@ -832,7 +832,7 @@ class _MesecniPutnikDetaljiScreenState
     final mapa = <String, List<Map<String, dynamic>>>{};
 
     for (var podatak in podaci) {
-      final datum = DateTime.parse(podatak['created_at']);
+      final datum = DateTime.parse(podatak['created_at'] as String);
       final mesec = DateFormat('MMMM yyyy', 'sr').format(datum);
 
       if (!mapa.containsKey(mesec)) {
@@ -849,7 +849,7 @@ class _MesecniPutnikDetaljiScreenState
     final mapa = <String, List<Map<String, dynamic>>>{};
 
     for (var podatak in podaci) {
-      final datum = DateTime.parse(podatak['created_at']);
+      final datum = DateTime.parse(podatak['created_at'] as String);
       final godina = datum.year.toString();
 
       if (!mapa.containsKey(godina)) {

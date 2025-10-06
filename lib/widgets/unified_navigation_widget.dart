@@ -217,8 +217,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
   }
 
   /// 🗺️ Otvara Google Maps sa TRENUTNIM redosledom (bez dodatne optimizacije)
-  void _openOSMNavigation(
-      BuildContext context, List<Putnik> putnici) async {
+  void _openOSMNavigation(BuildContext context, List<Putnik> putnici) async {
     if (putnici.isEmpty) return;
 
     try {
@@ -239,8 +238,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
       if (putnici.isNotEmpty) {
         final lastPutnik = putnici.last;
         if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
-          final encodedAddress =
-              Uri.encodeComponent('${lastPutnik.adresa}, ${lastPutnik.grad}, Serbia');
+          final encodedAddress = Uri.encodeComponent(
+              '${lastPutnik.adresa}, ${lastPutnik.grad}, Serbia');
           osmUrl += '&to=$encodedAddress';
         }
       }
@@ -286,7 +285,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
   }
 
   void _showNavigationMenu(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(

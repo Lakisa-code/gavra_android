@@ -171,8 +171,9 @@ class Putnik {
       polazak: MesecniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
       pokupljen: map['status'] == null ||
           (map['status'] != 'bolovanje' && map['status'] != 'godisnji'),
-      vremeDodavanja:
-          map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
+      vremeDodavanja: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : null,
       mesecnaKarta: true, // uvek true za mesečne putnike
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
@@ -207,15 +208,16 @@ class Putnik {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
-    final vremeDodavanja =
-        map['created_at'] != null ? DateTime.parse(map['created_at']) : null;
+    final vremeDodavanja = map['created_at'] != null
+        ? DateTime.parse(map['created_at'] as String)
+        : null;
     final vremePokupljenja = map['poslednje_putovanje'] != null
-        ? DateTime.parse(map['poslednje_putovanje'])
+        ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
-            ? DateTime.parse(map['vreme_pokupljenja'])
+            ? DateTime.parse(map['vreme_pokupljenja'] as String)
             : null); // ✅ FALLBACK na vreme_pokupljenja
     final vremePlacanja = map['vreme_placanja'] != null
-        ? DateTime.parse(map['vreme_placanja'])
+        ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
     final iznosPlacanja =
@@ -248,15 +250,16 @@ class Putnik {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
-    final vremeDodavanja =
-        map['created_at'] != null ? DateTime.parse(map['created_at']) : null;
+    final vremeDodavanja = map['created_at'] != null
+        ? DateTime.parse(map['created_at'] as String)
+        : null;
     final vremePokupljenja = map['poslednje_putovanje'] != null
-        ? DateTime.parse(map['poslednje_putovanje'])
+        ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
-            ? DateTime.parse(map['vreme_pokupljenja'])
+            ? DateTime.parse(map['vreme_pokupljenja'] as String)
             : null); // ✅ FALLBACK na vreme_pokupljenja
     final vremePlacanja = map['vreme_placanja'] != null
-        ? DateTime.parse(map['vreme_placanja'])
+        ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
     final iznosPlacanja =
@@ -411,19 +414,21 @@ class Putnik {
       polazak: _formatVremePolaska(map['vreme_polaska']?.toString() ?? '6:00'),
       pokupljen: map['pokupljen'] == true ||
           map['status'] == 'pokupljen', // ✅ KORISTI pokupljen kolonu ili status
-      vremeDodavanja:
-          map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
+      vremeDodavanja: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
       dan: map['dan'] as String? ??
-          _determineDanFromDatum(map['datum']), // ✅ KORISTI dan kolonu direktno
+          _determineDanFromDatum(
+              map['datum'] as String?), // ✅ KORISTI dan kolonu direktno
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at']
           as String?, // ✅ KORISTI updated_at umesto vreme_akcije
       vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'])
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
           : null, // ✅ KORISTI vreme_pokupljenja kolonu
       vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'])
+          ? DateTime.parse(map['vreme_placanja'] as String)
           : null, // ✅ KORISTI vreme_placanja kolonu
       placeno: _parseDouble(map['cena']) > 0,
       iznosPlacanja: _parseDouble(map['cena']),

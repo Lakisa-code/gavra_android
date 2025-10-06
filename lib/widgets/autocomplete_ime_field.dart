@@ -5,7 +5,7 @@ import '../services/imena_service.dart';
 class AutocompleteImeField extends StatefulWidget {
   final TextEditingController controller;
   final String? hintText;
-  final Function(String)? onChanged;
+  final void Function(String)? onChanged;
   final String? Function(String?)? validator;
   final bool enabled;
   final bool mesecnaKarta;

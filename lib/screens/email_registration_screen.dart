@@ -468,7 +468,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             // Idi na email verifikaciju
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<void>(
                 builder: (context) => EmailVerificationScreen(
                   email: email,
                   driverName: driverName,
@@ -480,7 +480,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             // Email je automatski potvrđen, idi direktno na login
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<void>(
                 builder: (context) => const EmailLoginScreen(),
               ),
             );
@@ -503,7 +503,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
   }
 
   void _showErrorDialog(String title, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
@@ -521,7 +521,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
   }
 
   void _showLoadingDialog(String title, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(

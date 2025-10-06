@@ -255,7 +255,7 @@ void main() {
         'vozac_id': 'vozac-uuid-roundtrip',
         'cena': 16000.0,
         'aktivan': true,
-        'statistics': {},
+        'statistics': <String, dynamic>{},
       };
 
       // fromMap -> Model

@@ -5,8 +5,8 @@ class BottomNavBarZimski extends StatefulWidget {
   final List<String> sviPolasci;
   final String selectedGrad;
   final String selectedVreme;
-  final Function(String grad, String vreme) onPolazakChanged;
-  final Function(String grad, String vreme) getPutnikCount;
+  final void Function(String grad, String vreme) onPolazakChanged;
+  final int Function(String grad, String vreme) getPutnikCount;
   final bool Function(String grad, String vreme)? isSlotLoading;
   const BottomNavBarZimski({
     super.key,
@@ -159,8 +159,8 @@ class _PolazakRow extends StatelessWidget {
   final String selectedGrad;
   final String selectedVreme;
   final String grad;
-  final Function(String grad, String vreme) onPolazakChanged;
-  final Function(String grad, String vreme) getPutnikCount;
+  final void Function(String grad, String vreme) onPolazakChanged;
+  final int Function(String grad, String vreme) getPutnikCount;
   final bool Function(String grad, String vreme)? isSlotLoading;
   final double fixedBoxWidth;
   final ScrollController? scrollController;

@@ -198,8 +198,10 @@ class RealtimeRouteTrackingService {
 
         if (trafficData != null) {
           // Analiziraj saobraćajne podatke
-          final duration = (trafficData['duration_in_traffic']?['value'] as num?) ?? 0;
-          final normalDuration = (trafficData['duration']?['value'] as num?) ?? 0;
+          final duration =
+              (trafficData['duration_in_traffic']?['value'] as num?) ?? 0;
+          final normalDuration =
+              (trafficData['duration']?['value'] as num?) ?? 0;
 
           // Ako je gužva značajna (više od 20% duže)
           if (duration > normalDuration * 1.2) {
@@ -289,7 +291,8 @@ class RealtimeRouteTrackingService {
             (data['routes'] as List).isNotEmpty) {
           // Vrati optimizovanu rutu kao string
           final route = data['routes'][0];
-          final waypointOrder = (route['waypoint_order'] as List<dynamic>?) ?? <dynamic>[];
+          final waypointOrder =
+              (route['waypoint_order'] as List<dynamic>?) ?? <dynamic>[];
 
           final optimizedPassengers = <Putnik>[];
           for (final index in waypointOrder) {

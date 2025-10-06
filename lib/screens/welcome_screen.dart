@@ -351,7 +351,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 // Kada završi check-in, idi na HomeScreen
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
+                  MaterialPageRoute<void>(
+                      builder: (context) => const HomeScreen()),
                 );
               },
             ),

@@ -247,7 +247,7 @@ class AdvancedGeocodingService {
           formattedAddress: best['display_name'] as String,
           confidence: confidence,
           provider: 'nominatim',
-          components: _parseNominatimComponents(best as Map<String, dynamic>),
+          components: _parseNominatimComponents(best),
         );
       }
     }
@@ -289,7 +289,7 @@ class AdvancedGeocodingService {
               (props['name'] ?? props['label'] ?? '$adresa, $grad') as String,
           confidence: confidence,
           provider: 'photon',
-          components: _parsePhotonComponents(props as Map<String, dynamic>),
+          components: _parsePhotonComponents(props),
         );
       }
     }

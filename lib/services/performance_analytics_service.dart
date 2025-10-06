@@ -739,7 +739,7 @@ class PerformanceMetric {
         .toList();
 
     for (int i = 0; i < values.length; i++) {
-      metric._values.add(values[i] as double);
+      metric._values.add(values[i]);
       metric._timestamps.add(timestamps[i]);
       metric._metadata.add(metadata[i]);
     }

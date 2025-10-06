@@ -7,7 +7,7 @@ class AutocompleteAdresaField extends StatefulWidget {
   final String grad; // 'Bela Crkva' ili 'Vršac'
   final String? hintText;
   final String? labelText;
-  final Function(String)? onChanged;
+  final void Function(String)? onChanged;
 
   const AutocompleteAdresaField({
     Key? key,

@@ -449,7 +449,8 @@ class SmartAddressAutocompleteService {
     // Recency feature
     if (suggestion.metadata.containsKey('last_used')) {
       try {
-        final lastUsed = DateTime.parse(suggestion.metadata['last_used'] as String);
+        final lastUsed =
+            DateTime.parse(suggestion.metadata['last_used'] as String);
         final daysSince = DateTime.now().difference(lastUsed).inDays;
         features['recency'] = math.max(0, 100 - daysSince * 3).toDouble();
       } catch (e) {

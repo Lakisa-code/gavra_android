@@ -9,8 +9,8 @@ import '../services/smart_navigation_service.dart';
 /// Prikazuje turn-by-turn instrukcije sa real-time GPS praćenjem
 class RealTimeNavigationWidget extends StatefulWidget {
   final List<Putnik> optimizedRoute;
-  final Function(String message)? onStatusUpdate;
-  final Function(List<Putnik> newRoute)? onRouteUpdate;
+  final void Function(String message)? onStatusUpdate;
+  final void Function(List<Putnik> newRoute)? onRouteUpdate;
   final bool showDetailedInstructions;
   final bool enableVoiceInstructions;
 

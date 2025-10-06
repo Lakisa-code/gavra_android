@@ -100,7 +100,8 @@ class PutovanjaIstorijaService {
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json))
+            .map<PutovanjaIstorija>((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -126,7 +127,8 @@ class PutovanjaIstorijaService {
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json))
+            .map<PutovanjaIstorija>((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -155,7 +157,8 @@ class PutovanjaIstorijaService {
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json))
+            .map<PutovanjaIstorija>((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -198,7 +201,8 @@ class PutovanjaIstorijaService {
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json))
+            .map<PutovanjaIstorija>((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -410,7 +414,7 @@ class PutovanjaIstorijaService {
         return q;
       }, fallback: <dynamic>[]);
 
-      final list = response is List ? response : [];
+      final list = response is List ? response : <dynamic>[];
       return list.length;
     } catch (e) {
       dlog(
@@ -444,7 +448,7 @@ class PutovanjaIstorijaService {
         return q;
       }, fallback: <dynamic>[]);
 
-      final list = response is List ? response : [];
+      final list = response is List ? response : <dynamic>[];
       double ukupno = 0.0;
       for (final item in list) {
         ukupno += (item['cena'] as num?)?.toDouble() ?? 0.0;

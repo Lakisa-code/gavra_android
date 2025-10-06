@@ -281,7 +281,8 @@ class RealtimeNotificationService {
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData =
+            jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(

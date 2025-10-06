@@ -98,7 +98,7 @@ class LocationService {
         final data = json.decode(response.body);
 
         // Formatiraj adresu iz Nominatim odgovora
-        final address = _formatAddress(data);
+        final address = _formatAddress(data as Map<String, dynamic>);
         return address;
       }
 
@@ -112,7 +112,8 @@ class LocationService {
   /// Formatira adresu iz Nominatim JSON odgovora
   static String _formatAddress(Map<String, dynamic> data) {
     final address = data['address'] as Map<String, dynamic>?;
-    if (address == null) return data['display_name'] ?? 'Nepoznata lokacija';
+    if (address == null)
+      return (data['display_name'] as String?) ?? 'Nepoznata lokacija';
 
     final components = <String>[];
 
@@ -120,7 +121,7 @@ class LocationService {
     if (address['house_number'] != null && address['road'] != null) {
       components.add('${address['road']} ${address['house_number']}');
     } else if (address['road'] != null) {
-      components.add(address['road']);
+      components.add(address['road'] as String);
     }
 
     // Dodaj grad/naselje
@@ -130,15 +131,15 @@ class LocationService {
         address['municipality'];
     if (place != null) {
       if (components.isNotEmpty) {
-        components.add(place);
+        components.add(place as String);
       } else {
-        components.add(place);
+        components.add(place as String);
       }
     }
 
     return components.isNotEmpty
         ? components.join(', ')
-        : data['display_name'] ?? 'Nepoznata lokacija';
+        : (data['display_name'] as String?) ?? 'Nepoznata lokacija';
   }
 
   /// Dobija trenutnu adresu korisnika (GPS + reverse geocoding)

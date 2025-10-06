@@ -69,7 +69,7 @@ void main() {
         'updated_at': '2024-01-01T10:00:00Z',
         'vozac_id': null, // NULL UUID
         'poslednje_putovanje': '2024-01-15T08:30:00Z',
-        'statistics': {},
+        'statistics': <String, dynamic>{},
       };
 
       // fromMap -> toMap test
@@ -110,7 +110,7 @@ void main() {
       // Validacija da nema prazne stringove za UUID
       expect(map['vozac_id'], isNull);
       expect(map['putnik_ime'], isNotNull);
-      expect(map['statistics'], isA<Map>());
+      expect(map['statistics'], isA<Map<String, dynamic>>());
 
       print('✅ Test 4 PASSED: Error-prone fields handling radi ispravno');
     });

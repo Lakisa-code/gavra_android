@@ -175,214 +175,214 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                    // Jutarnja ikona - mekša i toplija
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            softVozacColor.withOpacity(0.8),
-                            softVozacColor.withOpacity(0.4),
+                      // Jutarnja ikona - mekša i toplija
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              softVozacColor.withOpacity(0.8),
+                              softVozacColor.withOpacity(0.4),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: softVozacColor.withOpacity(0.3),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                            // Dodatni warm glow
+                            BoxShadow(
+                              color: const Color(0xFFFFE0B2).withOpacity(0.2),
+                              blurRadius: 30,
+                              spreadRadius: 10,
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: softVozacColor.withOpacity(0.3),
-                            blurRadius: 20,
-                            spreadRadius: 5,
-                          ),
-                          // Dodatni warm glow
-                          BoxShadow(
-                            color: const Color(0xFFFFE0B2).withOpacity(0.2),
-                            blurRadius: 30,
-                            spreadRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.light_mode_outlined, // Mekša jutarnja ikona
-                        size: 60,
-                        color: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Jutarnji pozdrav
-                    Text(
-                      'Dobro jutro',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w300,
-                        color: Colors.white.withOpacity(0.95),
-                        shadows: [
-                          Shadow(
-                            color: softVozacColor.withOpacity(0.3),
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Text(
-                      widget.vozac,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: softVozacColor,
-                        letterSpacing: 1.2,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Mekše instrukcije
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: softVozacColor.withOpacity(0.4),
-                          width: 1,
+                        child: Icon(
+                          Icons.light_mode_outlined, // Mekša jutarnja ikona
+                          size: 60,
+                          color: Colors.white.withOpacity(0.9),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: softVozacColor,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'Unesite iznos sitnog novca za kusur',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                              ),
+
+                      const SizedBox(height: 32),
+
+                      // Jutarnji pozdrav
+                      Text(
+                        'Dobro jutro',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.white.withOpacity(0.95),
+                          shadows: [
+                            Shadow(
+                              color: softVozacColor.withOpacity(0.3),
+                              blurRadius: 10,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 8),
 
-                    // Input field
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: vozacColor.withOpacity(0.2),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _kusurController,
-                        focusNode: _kusurFocusNode,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
+                      Text(
+                        widget.vozac,
+                        style: TextStyle(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(
-                          hintText: '0',
-                          hintStyle: TextStyle(
-                            color: Colors.white.withOpacity(0.3),
-                            fontSize: 24,
-                          ),
-                          suffixText: 'RSD',
-                          suffixStyle: TextStyle(
-                            color: softVozacColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          filled: true,
-                          fillColor: Colors.black.withOpacity(0.15),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: softVozacColor,
-                              width: 2,
+                          color: softVozacColor,
+                          letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
                             ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 20,
-                          ),
+                          ],
                         ),
-                        onSubmitted: (_) => _submitKusur(),
                       ),
-                    ),
 
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 48),
 
-                    // Submit button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitKusur,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: softVozacColor,
-                          foregroundColor: Colors.white,
-                          elevation: 6,
-                          shadowColor: softVozacColor.withOpacity(0.3),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                      // Mekše instrukcije
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: softVozacColor.withOpacity(0.4),
+                            width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text(
-                                'Potvrdi',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: softVozacColor,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Unesite iznos sitnog novca za kusur',
                                 style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.0,
+                                  color: Colors.white70,
+                                  fontSize: 16,
                                 ),
                               ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 32),
+
+                      // Input field
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: vozacColor.withOpacity(0.2),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _kusurController,
+                          focusNode: _kusurFocusNode,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            hintText: '0',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withOpacity(0.3),
+                              fontSize: 24,
+                            ),
+                            suffixText: 'RSD',
+                            suffixStyle: TextStyle(
+                              color: softVozacColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            filled: true,
+                            fillColor: Colors.black.withOpacity(0.15),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: softVozacColor,
+                                width: 2,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 20,
+                            ),
+                          ),
+                          onSubmitted: (_) => _submitKusur(),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Submit button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitKusur,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: softVozacColor,
+                            foregroundColor: Colors.white,
+                            elevation: 6,
+                            shadowColor: softVozacColor.withOpacity(0.3),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Potvrdi',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ),
           ),
@@ -508,7 +508,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     '🛣️ Kilometraža',
                     '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
                     Colors.indigo),
-                if (popis['sitanNovac'] != null && (popis['sitanNovac'] as num) > 0)
+                if (popis['sitanNovac'] != null &&
+                    (popis['sitanNovac'] as num) > 0)
                   _buildStatistikaRow(
                       '🪙 Sitan novac',
                       '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
@@ -562,7 +563,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
   void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
     final controller = TextEditingController(
-        text: (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0');
+        text:
+            (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0');
 
     final result = await showDialog<bool>(
       context: context,
