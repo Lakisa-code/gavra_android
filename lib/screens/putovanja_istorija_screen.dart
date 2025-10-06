@@ -577,7 +577,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   void _dodajNovoPutovanje() {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Dodaj novo putovanje'),
@@ -703,7 +703,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       _noviTipPutnika = putovanje.tipPutnika;
     });
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Uredi putovanje'),
@@ -821,7 +821,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   void _updateStatus(PutovanjaIstorija putovanje) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Ažuriranje statusa za ${putovanje.putnikIme}'),
