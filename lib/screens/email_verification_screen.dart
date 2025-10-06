@@ -357,7 +357,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
             // Idi na login screen
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<void>(
                 builder: (context) => const EmailLoginScreen(),
               ),
               (route) => false,
@@ -398,7 +398,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
   }
 
   void _showErrorDialog(String title, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
@@ -416,7 +416,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
   }
 
   void _showSuccessDialog(String title, String message, {VoidCallback? onOk}) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
