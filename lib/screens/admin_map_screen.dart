@@ -190,7 +190,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
       // Automatski fokusiraj na sve vozače nakon učitavanja
       if (_markers.isNotEmpty) {
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
         _fitAllMarkers();
       }
     } catch (e) {
