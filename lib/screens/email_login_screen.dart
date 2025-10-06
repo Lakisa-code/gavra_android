@@ -332,7 +332,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<void>(
                 builder: (context) => const EmailRegistrationScreen(),
               ),
             );
@@ -387,14 +387,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           if (mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<void>(
                 builder: (context) => DailyCheckInScreen(
                   vozac: driverName,
                   onCompleted: () {
                     if (mounted) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
+                        MaterialPageRoute<void>(
                             builder: (context) => const HomeScreen()),
                       );
                     }
@@ -408,7 +408,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           if (mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
+              MaterialPageRoute<void>(
                 builder: (context) => const HomeScreen(),
               ),
             );
@@ -456,7 +456,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
   }
 
   void _showErrorDialog(String title, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
@@ -474,7 +474,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
   }
 
   void _showSuccessDialog(String title, String message) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
