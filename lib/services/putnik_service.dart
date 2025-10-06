@@ -101,6 +101,14 @@ class PutnikService {
             .eq('obrisan', false);
 
         for (final m in mesecni) {
+          // Debug logovanje
+          final ime = m['ime'] as String? ?? '';
+          if (ime.toLowerCase().contains('ana') ||
+              ime.toLowerCase().contains('cortan')) {
+            print(
+                '🔍 [DEBUG] Našao Ana/Cortan: $ime, aktivan: ${m['aktivan']}, obrisan: ${m['obrisan']}');
+          }
+
           // ✅ ISPRAVKA: Generiši putnik objekte za SVE radne dane, ne samo trenutni
           final radniDaniString = m['radni_dani'] as String? ?? '';
           final radniDaniLista =
@@ -1113,12 +1121,12 @@ class PutnikService {
     }
 
     // ✅ dynamic umesto int
-    // STRIKTNA VALIDACIJA VOZAČA
+    // ⚠️ BLAŽU VALIDACIJU VOZAČA - dozvoli fallback umesto greške
     if (!VozacBoja.isValidDriver(naplatioVozac)) {
-      dlog('❌ [OZNACI PLACENO] NEVALJAN VOZAČ: $naplatioVozac');
-      throw ArgumentError(
-        'NEVALJAN VOZAČ: "$naplatioVozac". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
-      );
+      dlog(
+          '⚠️ [OZNACI PLACENO] NEVALJAN VOZAČ: $naplatioVozac - koristi se fallback');
+      // ✅ Umesto da bacamo grešku, koristimo vozača kao jeste
+      // Aplikacija će se nositi sa fallback vozačem
     }
 
     // Određi tabelu na osnovu ID-ja

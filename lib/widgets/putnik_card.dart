@@ -805,19 +805,31 @@ class _PutnikCardState extends State<PutnikCard> {
     String? mesec,
   }) async {
     try {
-      // STRIKTNA VALIDACIJA VOZAČA
+      print('🔍 [DEBUG PAYMENT] currentDriver: "${widget.currentDriver}"');
+      print('🔍 [DEBUG PAYMENT] validDrivers: ${VozacBoja.validDrivers}');
+      print(
+          '🔍 [DEBUG PAYMENT] isValidDriver: ${VozacBoja.isValidDriver(widget.currentDriver)}');
+
+      // ⚠️ BLAŽU VALIDACIJU VOZAČA - dozvoli i null/prazan vozač sa fallback
+      String finalDriver = widget.currentDriver ?? 'Nepoznat vozač';
+
       if (!VozacBoja.isValidDriver(widget.currentDriver)) {
+        print(
+            '⚠️ [DEBUG PAYMENT] Driver not valid, using fallback: "$finalDriver"');
+
+        // Umesto da prekidamo plaćanje, koristimo fallback vozača
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}',
+                'UPOZORENJE: Nepoznat vozač! Plaćanje se evidentira kao "$finalDriver"',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
-        return;
+        // ⚠️ Ne prekidamo - nastavljamo sa fallback vozačem
       }
 
       // Pozovi odgovarajući service za plaćanje
@@ -831,13 +843,13 @@ class _PutnikCardState extends State<PutnikCard> {
             putnikId: mesecniPutnik.id,
             iznos: iznos,
             mesec: mesec,
-            vozacIme: widget.currentDriver ?? 'Nepoznat vozač',
+            vozacIme: finalDriver, // ✅ Koristi finalDriver umesto currentDriver
           );
         }
       } else {
         // Za obične putnike koristi postojeći servis
-        await PutnikService()
-            .oznaciPlaceno(_putnik.id!, iznos, widget.currentDriver!);
+        await PutnikService().oznaciPlaceno(
+            _putnik.id!, iznos, finalDriver); // ✅ Koristi finalDriver
       }
 
       if (mounted) {
@@ -2084,6 +2096,9 @@ class _PutnikCardState extends State<PutnikCard> {
     required String vozacIme,
   }) async {
     try {
+      print(
+          '🔍 [DEBUG SAVE PAYMENT] Started - putnikId: $putnikId, iznos: $iznos, mesec: $mesec, vozacIme: "$vozacIme"');
+
       // Parsiraj izabrani mesec (format: "Septembar 2025")
       final parts = mesec.split(' ');
       if (parts.length != 2) {
@@ -2105,6 +2120,8 @@ class _PutnikCardState extends State<PutnikCard> {
       final pocetakMeseca = DateTime(year, monthNumber);
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
+      print('🔍 [DEBUG SAVE PAYMENT] Calling azurirajPlacanjeZaMesec...');
+
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
       final uspeh = await MesecniPutnikServiceNovi().azurirajPlacanjeZaMesec(
         putnikId,
@@ -2113,6 +2130,8 @@ class _PutnikCardState extends State<PutnikCard> {
         pocetakMeseca,
         krajMeseca,
       );
+
+      print('🔍 [DEBUG SAVE PAYMENT] azurirajPlacanjeZaMesec result: $uspeh');
 
       if (uspeh) {
         if (mounted) {
@@ -2136,6 +2155,7 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       }
     } catch (e) {
+      print('❌ [DEBUG SAVE PAYMENT] Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

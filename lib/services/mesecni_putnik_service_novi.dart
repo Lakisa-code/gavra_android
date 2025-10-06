@@ -261,24 +261,48 @@ class MesecniPutnikServiceNovi {
 
       print('🔍 [AZURIRAJ PLACANJE] Final vozac_id: $validVozacId');
 
-      // 1. DODAJ U ISTORIJU PLAĆANJA (putovanja_istorija)
-      final putnik = await getMesecniPutnikById(putnikId);
-      if (putnik != null) {
-        await _supabase.from('putovanja_istorija').insert({
-          'mesecni_putnik_id': putnikId,
-          'putnik_ime': putnik.putnikIme,
-          'tip_putnika': 'mesecna_karta',
-          'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
-          'vreme_polaska': 'mesecno_placanje',
-          'status': 'placeno',
-          'vozac_id': validVozacId,
+      // 1. PROVJERI DA LI JE VEĆ POSTOJI ZAPIS ZA OVAJ MESEC (sprečava duplikate)
+      final existingPayment = await _supabase
+          .from('putovanja_istorija')
+          .select('id')
+          .eq('mesecni_putnik_id', putnikId)
+          .eq('tip_putnika', 'mesecna_karta')
+          .eq('placeni_mesec', pocetakMeseca.month)
+          .eq('placena_godina', pocetakMeseca.year)
+          .eq('status', 'placeno')
+          .limit(1);
+
+      if (existingPayment.isNotEmpty) {
+        print(
+            '⚠️ [DUPLIKAT] Plaćanje za mesec ${pocetakMeseca.month}/${pocetakMeseca.year} već postoji!');
+        // Ažuriraj postojeći zapis umesto kreiranja novog
+        await _supabase.from('putovanja_istorija').update({
+          'naplata_vozac': vozacId,
           'cena': iznos,
-          'placeni_mesec': pocetakMeseca.month,
-          'placena_godina': pocetakMeseca.year,
-          'napomene':
-              'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
-        });
-        print('✅ [ISTORIJA PLACANJA] Dodano u putovanja_istorija: $iznos din');
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', existingPayment.first['id'] as String);
+        print('✅ [AŽURIRANJE] Ažurirani postojeći zapis plaćanja');
+      } else {
+        // 2. DODAJ NOVI ZAPIS U ISTORIJU PLAĆANJA (putovanja_istorija)
+        final putnik = await getMesecniPutnikById(putnikId);
+        if (putnik != null) {
+          await _supabase.from('putovanja_istorija').insert({
+            'mesecni_putnik_id': putnikId,
+            'putnik_ime': putnik.putnikIme,
+            'tip_putnika': 'mesecna_karta',
+            'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
+            'vreme_polaska': 'mesecno_placanje',
+            'status': 'placeno',
+            'naplata_vozac':
+                vozacId, // ✅ ISPRAVKA: koristi originalnu vrednost vozača
+            'cena': iznos,
+            'placeni_mesec': pocetakMeseca.month,
+            'placena_godina': pocetakMeseca.year,
+            'napomene':
+                'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
+          });
+          print('✅ [NOVA ISTORIJA] Dodano u putovanja_istorija: $iznos din');
+        }
       }
 
       // 2. AŽURIRAJ MESEČNOG PUTNIKA (za kompatibilnost)
