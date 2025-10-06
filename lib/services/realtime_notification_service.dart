@@ -106,7 +106,7 @@ class RealtimeNotificationService {
       // Filtriraj notifikacije: samo za današnji dan i za tip "dodat"/"novi_putnik" ili "otkazan"/"otkazan_putnik"
       final data = message.data;
       final type = (data['type'] ?? '').toString().toLowerCase();
-      final datumString = data['datum'] ?? data['date'] ?? '';
+      final datumString = (data['datum'] ?? data['date'] ?? '') as String;
       final danas = DateTime.now();
       bool isToday = false;
       if (datumString.isNotEmpty) {
@@ -128,7 +128,7 @@ class RealtimeNotificationService {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
-          payload: message.data['type'] ?? 'firebase_foreground',
+          payload: (message.data['type'] as String?) ?? 'firebase_foreground',
           playCustomSound: true,
         );
       } else {
@@ -277,15 +277,15 @@ class RealtimeNotificationService {
 
       // Extract notification type and passenger data from Firebase message
       final notificationType = message.data['type'] ?? 'unknown';
-      final putnikDataString = message.data['putnik'];
+      final putnikDataString = message.data['putnik'] as String?;
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString);
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(
-          type: notificationType,
+          type: notificationType as String,
           putnikData: putnikData,
         );
       } else {
