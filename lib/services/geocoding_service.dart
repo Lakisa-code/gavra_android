@@ -12,7 +12,9 @@ class GeocodingService {
 
   // Pronađi koordinate za adresu - SA CACHE OPTIMIZACIJOM
   static Future<String?> getKoordinateZaAdresu(
-      String grad, String adresa) async {
+    String grad,
+    String adresa,
+  ) async {
     // 🚫 PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vršac)
     if (_isCityBlocked(grad)) {
       _logger
@@ -127,8 +129,9 @@ class GeocodingService {
   /// 🧹 CACHE MANAGEMENT - OPTIMIZOVANO
 
   /// Očisti geocoding cache stariji od određenog vremena
-  static Future<void> clearOldCache(
-      {Duration maxAge = const Duration(days: 30)}) async {
+  static Future<void> clearOldCache({
+    Duration maxAge = const Duration(days: 30),
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys().where((key) => key.startsWith(_cachePrefix));
@@ -168,9 +171,11 @@ class GeocodingService {
       'orešac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva'
+      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
-    return !allowedCities.any((allowed) =>
-        normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad));
+    return !allowedCities.any(
+      (allowed) =>
+          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+    );
   }
 }

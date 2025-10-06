@@ -12,16 +12,21 @@ class EmailAuthService {
 
   /// Registruj vozača sa email-om (bez email verification)
   static Future<bool> registerDriverWithEmail(
-      String driverName, String email, String password) async {
+    String driverName,
+    String email,
+    String password,
+  ) async {
     try {
       dlog(
-          '📧 Registrujem vozača $driverName sa email-om: $email (bez verification)');
+        '📧 Registrujem vozača $driverName sa email-om: $email (bez verification)',
+      );
 
       final AuthResponse response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'driver_name': driverName},
-        emailRedirectTo: "gavra013://auth/callback", // Omogući email verification
+        emailRedirectTo:
+            'gavra013://auth/callback', // Omogući email verification
       );
 
       if (response.user != null) {
@@ -69,7 +74,9 @@ class EmailAuthService {
 
   /// Potvrdi email verifikaciju
   static Future<bool> confirmEmailVerification(
-      String email, String code) async {
+    String email,
+    String code,
+  ) async {
     try {
       dlog('✅ Potvrđujem email verifikaciju za: $email');
 

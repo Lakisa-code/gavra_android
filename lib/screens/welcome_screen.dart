@@ -51,7 +51,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           // 🎺 SVETLANINA SPECIJALNA PESMA - "Hiljson Mandela & Miach - Anđeo"
           assetPath = 'assets/svetlana.mp3';
           dlog(
-              '🎺 🎵 SVETLANA LOGIN: Puštam "Hiljson Mandela & Miach - Anđeo" kao dobrodošlicu - CELA PESMA! 🎵 🎺');
+            '🎺 🎵 SVETLANA LOGIN: Puštam "Hiljson Mandela & Miach - Anđeo" kao dobrodošlicu - CELA PESMA! 🎵 🎺',
+          );
           break;
 
         case 'bruda':
@@ -64,7 +65,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           // 🎵 BILEVSKIJEVA SPECIJALNA PESMA
           assetPath = 'assets/bilevski.mp3';
           dlog(
-              '🎵 BILEVSKI LOGIN: Puštam Bilevskijevu specijalnu pesmu - CELA PESMA!');
+            '🎵 BILEVSKI LOGIN: Puštam Bilevskijevu specijalnu pesmu - CELA PESMA!',
+          );
           break;
 
         case 'bojan':
@@ -87,7 +89,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await _globalAudioPlayer!.play();
 
       dlog(
-          '🎵 ✓ Pesma pokrenuta u pozadini za $driverName - neće se prekinuti!');
+        '🎵 ✓ Pesma pokrenuta u pozadini za $driverName - neće se prekinuti!',
+      );
 
       // Postaviti listener da se audio player očisti kad pesma završi
       _globalAudioPlayer!.playerStateStream.listen((state) {
@@ -151,7 +154,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (!status.isGranted) {
           final result = await Permission.notification.request();
           dlog(
-              '🔔 Android notification permission result: ${result.isGranted}');
+            '🔔 Android notification permission result: ${result.isGranted}',
+          );
         } else {
           dlog('🔔 Android notification permission already granted');
         }
@@ -164,7 +168,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         dlog('🔔 RealtimeNotificationService permission result: $granted');
       } catch (e) {
         dlog(
-            '⚠️💥 Error requesting RealtimeNotificationService permissions: $e');
+          '⚠️💥 Error requesting RealtimeNotificationService permissions: $e',
+        );
       }
     } catch (e) {
       dlog('⚠️💥 Error during notification permission flow: $e');
@@ -179,7 +184,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     if (savedDriver != null && savedDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN
       dlog(
-          '🔄 AUTO-LOGIN: $savedDriver je već logovan - proveravam daily check-in');
+        '🔄 AUTO-LOGIN: $savedDriver je već logovan - proveravam daily check-in',
+      );
 
       // 🎨 OSVEŽI TEMU ZA VOZAČA
       if (globalThemeRefresher != null) {
@@ -196,7 +202,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       // 🏖️ PRESKOČI VIKENDE - ne radi se subotom i nedeljom
       if (today.weekday == 6 || today.weekday == 7) {
         dlog(
-            '🏖️ Preskoćem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+          '🏖️ Preskoćem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen',
+        );
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
@@ -223,7 +230,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                      builder: (context) => const HomeScreen()),
+                    builder: (context) => const HomeScreen(),
+                  ),
                 );
               },
             ),
@@ -280,8 +288,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     // STRIKTNA VALIDACIJA VOZAČA
     if (!VozacBoja.isValidDriver(driverName)) {
       if (!mounted) return;
-      _showErrorDialog('NEVALJAN VOZAČ!',
-          'Dozvoljen je samo login za: ${VozacBoja.validDrivers.join(", ")}');
+      _showErrorDialog(
+        'NEVALJAN VOZAČ!',
+        'Dozvoljen je samo login za: ${VozacBoja.validDrivers.join(", ")}',
+      );
       return;
     }
 
@@ -325,7 +335,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       // 🏖️ PRESKOČI VIKENDE - ne radi se subotom i nedeljom
       if (today.weekday == 6 || today.weekday == 7) {
         dlog(
-            '🏖️ Preskoćem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen');
+          '🏖️ Preskoćem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen',
+        );
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
@@ -352,7 +363,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                      builder: (context) => const HomeScreen()),
+                    builder: (context) => const HomeScreen(),
+                  ),
                 );
               },
             ),
@@ -433,7 +445,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   Future<String?> _showPasswordDialog(
-      String driverName, Color driverColor) async {
+    String driverName,
+    Color driverColor,
+  ) async {
     final TextEditingController passwordController = TextEditingController();
 
     return showDialog<String>(
@@ -511,13 +525,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(null);
+                Navigator.of(context).pop();
               },
               child: const Text('Otkaži', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop(null); // Zatvori password dialog
+                Navigator.of(context).pop(); // Zatvori password dialog
                 // Otvori change password screen
                 await Navigator.push(
                   context,
@@ -527,13 +541,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 );
               },
-              child: Text('Promeni šifru',
-                  style:
-                      TextStyle(color: Theme.of(context).colorScheme.primary)),
+              child: Text(
+                'Promeni šifru',
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop(null); // Zatvori password dialog
+                Navigator.of(context).pop(); // Zatvori password dialog
                 // Otvori email login screen
                 await Navigator.push(
                   context,
@@ -542,8 +557,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                 );
               },
-              child: const Text('Email Prijava',
-                  style: TextStyle(color: Colors.green)),
+              child: const Text(
+                'Email Prijava',
+                style: TextStyle(color: Colors.green),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -582,10 +599,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           child: Padding(
             padding: const EdgeInsets.all(16), // Reduced padding
             child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment.start, // Changed from spaceBetween
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Moderni welcome tekst
                 FadeTransition(
@@ -660,7 +673,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       child: SingleChildScrollView(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             ...List.generate(_drivers.length, (index) {
                               final driver = _drivers[index];
@@ -842,11 +854,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(
-                            3), // Further reduced to prevent overflow
+                          3,
+                        ), // Further reduced to prevent overflow
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -865,12 +877,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             ),
                           ],
                         ),
-                        child: Icon(icon,
-                            color: color,
-                            size: 18), // Further reduced to prevent overflow
+                        child: Icon(
+                          icon,
+                          color: color,
+                          size: 18,
+                        ), // Further reduced to prevent overflow
                       ),
                       const SizedBox(
-                          height: 1), // Further reduced to prevent overflow
+                        height: 1,
+                      ), // Further reduced to prevent overflow
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(

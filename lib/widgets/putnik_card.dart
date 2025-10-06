@@ -18,15 +18,7 @@ import '../utils/vozac_boja.dart';
 /// PutnikService koristi nove tabele
 
 class PutnikCard extends StatefulWidget {
-  final Putnik putnik;
-  final bool showActions;
-  final String? currentDriver;
-  final int? redniBroj;
-  final List<String>? bcVremena;
-  final List<String>? vsVremena;
-  final String? selectedVreme; // 🆕 Trenutno selektovano vreme polaska
-  final String? selectedGrad; // 🆕 Trenutno selektovani grad
-  final VoidCallback? onChanged; // 🆕 Callback za UI refresh
+  // 🆕 Callback za UI refresh
 
   const PutnikCard({
     Key? key,
@@ -40,6 +32,15 @@ class PutnikCard extends StatefulWidget {
     this.selectedGrad, // 🆕 Trenutno selektovani grad
     this.onChanged, // 🆕 Callback za UI refresh
   }) : super(key: key);
+  final Putnik putnik;
+  final bool showActions;
+  final String? currentDriver;
+  final int? redniBroj;
+  final List<String>? bcVremena;
+  final List<String>? vsVremena;
+  final String? selectedVreme; // 🆕 Trenutno selektovano vreme polaska
+  final String? selectedGrad; // 🆕 Trenutno selektovani grad
+  final VoidCallback? onChanged;
 
   @override
   State<PutnikCard> createState() => _PutnikCardState();
@@ -89,7 +90,8 @@ class _PutnikCardState extends State<PutnikCard> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                    'Greška: ${_putnik.ime} nema validno ID za pokupljanje'),
+                  'Greška: ${_putnik.ime} nema validno ID za pokupljanje',
+                ),
                 backgroundColor: Colors.red,
               ),
             );
@@ -103,7 +105,8 @@ class _PutnikCardState extends State<PutnikCard> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                    'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}'),
+                  'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}',
+                ),
                 backgroundColor: Colors.red,
               ),
             );
@@ -194,8 +197,8 @@ class _PutnikCardState extends State<PutnikCard> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content:
-                      Text('Putnik označen kao pokupljen (1.5s long press)')),
+                content: Text('Putnik označen kao pokupljen (1.5s long press)'),
+              ),
             );
           }
         }
@@ -271,20 +274,11 @@ class _PutnikCardState extends State<PutnikCard> {
             mesecnaKarta: _putnik.mesecnaKarta,
             dan: _putnik.dan,
             status: _putnik.mesecnaKarta == true ? 'radi' : 'nije_se_pojavio',
-            statusVreme: null,
-            vremePokupljenja: null,
-            vremePlacanja: null,
             placeno: false,
             iznosPlacanja: 0,
-            naplatioVozac: null,
-            pokupioVozac: null,
             dodaoVozac: _putnik.dodaoVozac,
-            vozac: null,
             grad: _putnik.grad,
-            otkazaoVozac: null,
-            vremeOtkazivanja: null,
             adresa: _putnik.adresa,
-            obrisan: false,
             priority: _putnik.priority,
             brojTelefona: _putnik.brojTelefona,
           );
@@ -431,9 +425,12 @@ class _PutnikCardState extends State<PutnikCard> {
 
     // ✅ NOVA LOGIKA - računa za ceo trenutni mesec (1. do 30.)
     final currentDate = DateTime.now();
-    final firstDayOfMonth = DateTime(currentDate.year, currentDate.month, 1);
+    final firstDayOfMonth = DateTime(currentDate.year, currentDate.month);
     final lastDayOfMonth = DateTime(
-        currentDate.year, currentDate.month + 1, 0); // poslednji dan u mesecu
+      currentDate.year,
+      currentDate.month + 1,
+      0,
+    ); // poslednji dan u mesecu
 
     // Broj putovanja za trenutni mesec
     int brojPutovanja = 0;
@@ -441,11 +438,13 @@ class _PutnikCardState extends State<PutnikCard> {
     try {
       brojPutovanja =
           await MesecniPutnikServiceNovi.izracunajBrojPutovanjaIzIstorije(
-              _putnik.id! as String);
+        _putnik.id! as String,
+      );
       // ✅ NOVA LOGIKA - računaj otkazivanja iz stvarne istorije
       brojOtkazivanja =
           await MesecniPutnikServiceNovi.izracunajBrojOtkazivanjaIzIstorije(
-              _putnik.id! as String);
+        _putnik.id! as String,
+      );
     } catch (e) {
       // Fallback na podatke iz modela
       brojPutovanja = mesecniPutnik.brojPutovanja;
@@ -479,7 +478,9 @@ class _PutnikCardState extends State<PutnikCard> {
                   Text(
                     'Putnik: ${_putnik.ime}',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -502,8 +503,11 @@ class _PutnikCardState extends State<PutnikCard> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.analytics,
-                                color: Colors.blue[700], size: 18),
+                            Icon(
+                              Icons.analytics,
+                              color: Colors.blue[700],
+                              size: 18,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -665,8 +669,11 @@ class _PutnikCardState extends State<PutnikCard> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline,
-                            color: Colors.green[700], size: 16),
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.green[700],
+                          size: 16,
+                        ),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
@@ -710,8 +717,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (result != null && result['iznos'] != null && mounted) {
       // Koristimo iznos koji je korisnik uneo u dialog
-      await _executePayment(result['iznos'] as double,
-          mesec: result['mesec'] as String?, isMesecni: true);
+      await _executePayment(
+        result['iznos'] as double,
+        mesec: result['mesec'] as String?,
+        isMesecni: true,
+      );
     }
   }
 
@@ -784,13 +794,16 @@ class _PutnikCardState extends State<PutnikCard> {
     );
 
     if (iznos != null && iznos > 0) {
-      await _executePayment(iznos, isMesecni: false, mesec: null);
+      await _executePayment(iznos, isMesecni: false);
     }
   }
 
   // 🎯 IZVRŠAVANJE PLAĆANJA - zajedničko za oba tipa
-  Future<void> _executePayment(double iznos,
-      {required bool isMesecni, String? mesec}) async {
+  Future<void> _executePayment(
+    double iznos, {
+    required bool isMesecni,
+    String? mesec,
+  }) async {
     try {
       // STRIKTNA VALIDACIJA VOZAČA
       if (!VozacBoja.isValidDriver(widget.currentDriver)) {
@@ -798,7 +811,8 @@ class _PutnikCardState extends State<PutnikCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}'),
+                'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -831,9 +845,11 @@ class _PutnikCardState extends State<PutnikCard> {
         // Prikaži success poruku
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isMesecni
-                ? '✅ Mesečna karta plaćena: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)'
-                : '✅ Putovanje plaćeno: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)'),
+            content: Text(
+              isMesecni
+                  ? '✅ Mesečna karta plaćena: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)'
+                  : '✅ Putovanje plaćeno: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)',
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -926,7 +942,10 @@ class _PutnikCardState extends State<PutnikCard> {
     try {
       // Pozovi service za postavljanje statusa
       await PutnikService().oznaciBolovanjeGodisnji(
-          _putnik.id!, status, widget.currentDriver ?? '');
+        _putnik.id!,
+        status,
+        widget.currentDriver ?? '',
+      );
 
       if (mounted) {
         setState(() {});
@@ -1094,7 +1113,8 @@ class _PutnikCardState extends State<PutnikCard> {
 
       if (!uspesno) {
         throw Exception(
-            'Nijedna navigacijska aplikacija nije dostupna. Poslednja greška: $poslednjaNGreska');
+          'Nijedna navigacijska aplikacija nije dostupna. Poslednja greška: $poslednjaNGreska',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -1149,17 +1169,21 @@ class _PutnikCardState extends State<PutnikCard> {
     // 5. ŽUTE - godišnji/bolovanje (najveći prioritet)
     final Color cardColor = _putnik.jeOdsustvo
         ? const Color(
-            0xFFFFF59D) // 🟡 ŽUTO za odsustvo (godišnji/bolovanje) - NAJVEĆI PRIORITET
+            0xFFFFF59D,
+          ) // 🟡 ŽUTO za odsustvo (godišnji/bolovanje) - NAJVEĆI PRIORITET
         : _putnik.jeOtkazan
             ? const Color(0xFFFFE5E5) // 🔴 CRVENO za otkazane - DRUGI PRIORITET
             : (isSelected
                 ? (isMesecna || isPlaceno
                     ? const Color(
-                        0xFF388E3C) // 🟢 ZELENO za mesečne/plaćene - TREĆI PRIORITET
+                        0xFF388E3C,
+                      ) // 🟢 ZELENO za mesečne/plaćene - TREĆI PRIORITET
                     : const Color(
-                        0xFF7FB3D3)) // 🔵 PLAVO za pokupljene neplaćene - ČETVRTI PRIORITET
+                        0xFF7FB3D3,
+                      )) // 🔵 PLAVO za pokupljene neplaćene - ČETVRTI PRIORITET
                 : Colors.white.withOpacity(
-                    0.96)); // ⚪ BELO za nepokupljene - PETI PRIORITET (default)
+                    0.96,
+                  )); // ⚪ BELO za nepokupljene - PETI PRIORITET (default)
 
     // Prava po vozaču
     final String? driver = widget.currentDriver;
@@ -1186,7 +1210,8 @@ class _PutnikCardState extends State<PutnikCard> {
               ? LinearGradient(
                   colors: [
                     const Color(0xFFFFF59D).withOpacity(
-                        0.85), // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
+                      0.85,
+                    ), // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
                     const Color(0xFFFFF59D),
                   ],
                   begin: Alignment.topLeft,
@@ -1200,9 +1225,11 @@ class _PutnikCardState extends State<PutnikCard> {
                         isSelected
                             ? (isMesecna || isPlaceno
                                 ? const Color(
-                                    0xFF388E3C) // Zelena za mesečne/plaćene
+                                    0xFF388E3C,
+                                  ) // Zelena za mesečne/plaćene
                                 : const Color(
-                                    0xFF7FB3D3)) // Plava za pokupljene neplaćene
+                                    0xFF7FB3D3,
+                                  )) // Plava za pokupljene neplaćene
                             : Colors.white.withOpacity(0.98),
                       ],
                       begin: Alignment.topLeft,
@@ -1213,16 +1240,19 @@ class _PutnikCardState extends State<PutnikCard> {
           border: Border.all(
             color: _putnik.jeOdsustvo
                 ? const Color(0xFFFFC107).withOpacity(
-                    0.6) // 🟡 ŽUTO border za odsustvo - NAJVEĆI PRIORITET
+                    0.6,
+                  ) // 🟡 ŽUTO border za odsustvo - NAJVEĆI PRIORITET
                 : _putnik.jeOtkazan
                     ? Colors.red
                         .withOpacity(0.25) // 🔴 CRVENO border za otkazane
                     : isSelected
                         ? (isMesecna || isPlaceno
                             ? const Color(0xFF388E3C).withOpacity(
-                                0.4) // 🟢 ZELENO border za mesečne/plaćene
+                                0.4,
+                              ) // 🟢 ZELENO border za mesečne/plaćene
                             : const Color(0xFF7FB3D3).withOpacity(
-                                0.4)) // 🔵 PLAVO border za pokupljene neplaćene
+                                0.4,
+                              )) // 🔵 PLAVO border za pokupljene neplaćene
                         : Colors.grey
                             .withOpacity(0.10), // ⚪ BELO border za nepokupljene
             width: 1.2,
@@ -1231,18 +1261,22 @@ class _PutnikCardState extends State<PutnikCard> {
             BoxShadow(
               color: _putnik.jeOdsustvo
                   ? const Color(0xFFFFC107).withOpacity(
-                      0.2) // 🟡 ŽUTO shadow za odsustvo - NAJVEĆI PRIORITET
+                      0.2,
+                    ) // 🟡 ŽUTO shadow za odsustvo - NAJVEĆI PRIORITET
                   : _putnik.jeOtkazan
                       ? Colors.red
                           .withOpacity(0.08) // 🔴 CRVENO shadow za otkazane
                       : isSelected
                           ? (isMesecna || isPlaceno
                               ? const Color(0xFF388E3C).withOpacity(
-                                  0.15) // 🟢 ZELENO shadow za mesečne/plaćene
+                                  0.15,
+                                ) // 🟢 ZELENO shadow za mesečne/plaćene
                               : const Color(0xFF7FB3D3).withOpacity(
-                                  0.15)) // 🔵 PLAVO shadow za pokupljene neplaćene
+                                  0.15,
+                                )) // 🔵 PLAVO shadow za pokupljene neplaćene
                           : Colors.black.withOpacity(
-                              0.07), // ⚪ BELO shadow za nepokupljene
+                              0.07,
+                            ), // ⚪ BELO shadow za nepokupljene
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -1254,8 +1288,6 @@ class _PutnikCardState extends State<PutnikCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   if (widget.redniBroj != null)
                     Padding(
@@ -1275,7 +1307,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                           ? Colors.green[
                                               600] // 🟢 ZELENO za mesečne/plaćene
                                           : const Color(
-                                              0xFF0D47A1) // 🔵 PLAVO za pokupljene neplaćene
+                                              0xFF0D47A1,
+                                            ) // 🔵 PLAVO za pokupljene neplaćene
                                       : Colors.black, // ⚪ BELO za nepokupljene
                         ),
                       ),
@@ -1292,7 +1325,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                     ? Colors.green[
                                         600] // 🟢 ZELENO za mesečne/plaćene
                                     : const Color(
-                                        0xFF0D47A1) // 🔵 PLAVO za pokupljene neplaćene
+                                        0xFF0D47A1,
+                                      ) // 🔵 PLAVO za pokupljene neplaćene
                                 : Colors.black, // ⚪ BELO za nepokupljene
                     size: 20,
                   ),
@@ -1317,7 +1351,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                             ? Colors.green[
                                                 600] // 🟢 ZELENO za mesečne/plaćene
                                             : const Color(
-                                                0xFF0D47A1) // 🔵 PLAVO za pokupljene neplaćene
+                                                0xFF0D47A1,
+                                              ) // 🔵 PLAVO za pokupljene neplaćene
                                         : Colors
                                             .black, // ⚪ BELO za nepokupljene
                             letterSpacing: 0.5,
@@ -1427,8 +1462,9 @@ class _PutnikCardState extends State<PutnikCard> {
                                                 title: Row(
                                                   children: [
                                                     const Icon(
-                                                        Icons.location_on,
-                                                        color: Colors.blue),
+                                                      Icons.location_on,
+                                                      color: Colors.blue,
+                                                    ),
                                                     const SizedBox(width: 8),
                                                     Expanded(
                                                       child: Text(
@@ -1459,7 +1495,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                       width: double.infinity,
                                                       padding:
                                                           const EdgeInsets.all(
-                                                              12),
+                                                        12,
+                                                      ),
                                                       decoration: BoxDecoration(
                                                         color: Colors.blue
                                                             .withOpacity(0.1),
@@ -1467,9 +1504,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                             BorderRadius
                                                                 .circular(8),
                                                         border: Border.all(
-                                                            color: Colors.blue
-                                                                .withOpacity(
-                                                                    0.3)),
+                                                          color: Colors.blue
+                                                              .withOpacity(
+                                                            0.3,
+                                                          ),
+                                                        ),
                                                       ),
                                                       child: Text(
                                                         _putnik.adresa!,
@@ -1497,17 +1536,18 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         if (mounted &&
                                                             context.mounted) {
                                                           ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
+                                                            context,
+                                                          ).showSnackBar(
                                                             const SnackBar(
                                                               content: Text(
-                                                                  '❌ GPS dozvole su potrebne za navigaciju'),
+                                                                '❌ GPS dozvole su potrebne za navigaciju',
+                                                              ),
                                                               backgroundColor:
                                                                   Colors.red,
                                                               duration:
                                                                   Duration(
-                                                                      seconds:
-                                                                          3),
+                                                                seconds: 3,
+                                                              ),
                                                             ),
                                                           );
                                                         }
@@ -1520,8 +1560,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         if (mounted &&
                                                             context.mounted) {
                                                           ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
+                                                            context,
+                                                          ).showSnackBar(
                                                             const SnackBar(
                                                               content: Row(
                                                                 children: [
@@ -1532,22 +1572,26 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                         CircularProgressIndicator(
                                                                       strokeWidth:
                                                                           2,
-                                                                      valueColor: AlwaysStoppedAnimation<
+                                                                      valueColor:
+                                                                          AlwaysStoppedAnimation<
                                                                               Color>(
-                                                                          Colors
-                                                                              .white),
+                                                                        Colors
+                                                                            .white,
+                                                                      ),
                                                                     ),
                                                                   ),
                                                                   SizedBox(
-                                                                      width:
-                                                                          10),
+                                                                    width: 10,
+                                                                  ),
                                                                   Text(
-                                                                      '🗺️ Pripremam navigaciju...'),
+                                                                    '🗺️ Pripremam navigaciju...',
+                                                                  ),
                                                                 ],
                                                               ),
-                                                              duration: Duration(
-                                                                  seconds:
-                                                                      15), // Duži timeout
+                                                              duration:
+                                                                  Duration(
+                                                                seconds: 15,
+                                                              ), // Duži timeout
                                                             ),
                                                           );
                                                         }
@@ -1555,14 +1599,15 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         // Dobij koordinate (hibridno sa retry)
                                                         final koordinate =
                                                             await _getKoordinateZaAdresu(
-                                                                _putnik.grad,
-                                                                _putnik.adresa);
+                                                          _putnik.grad,
+                                                          _putnik.adresa,
+                                                        );
 
                                                         if (mounted &&
                                                             context.mounted) {
                                                           ScaffoldMessenger.of(
-                                                                  context)
-                                                              .hideCurrentSnackBar();
+                                                            context,
+                                                          ).hideCurrentSnackBar();
 
                                                           if (koordinate !=
                                                               null) {
@@ -1572,18 +1617,20 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                 .showSnackBar(
                                                               const SnackBar(
                                                                 content: Text(
-                                                                    '✅ Otvaram navigaciju...'),
+                                                                  '✅ Otvaram navigaciju...',
+                                                                ),
                                                                 backgroundColor:
                                                                     Colors
                                                                         .green,
                                                                 duration:
                                                                     Duration(
-                                                                        seconds:
-                                                                            1),
+                                                                  seconds: 1,
+                                                                ),
                                                               ),
                                                             );
                                                             await _otvoriNavigaciju(
-                                                                koordinate);
+                                                              koordinate,
+                                                            );
                                                           } else {
                                                             // Neuspešno - pokaži detaljniju grešku
                                                             ScaffoldMessenger
@@ -1599,20 +1646,19 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                           .start,
                                                                   children: [
                                                                     const Text(
-                                                                        '❌ Lokacija nije pronađena'),
+                                                                      '❌ Lokacija nije pronađena',
+                                                                    ),
                                                                     Text(
-                                                                        'Adresa: ${_putnik.adresa}'),
+                                                                      'Adresa: ${_putnik.adresa}',
+                                                                    ),
                                                                     const Text(
-                                                                        '💡 Pokušajte ponovo za 10 sekundi'),
+                                                                      '💡 Pokušajte ponovo za 10 sekundi',
+                                                                    ),
                                                                   ],
                                                                 ),
                                                                 backgroundColor:
                                                                     Colors
                                                                         .orange,
-                                                                duration:
-                                                                    const Duration(
-                                                                        seconds:
-                                                                            4),
                                                                 action:
                                                                     SnackBarAction(
                                                                   label:
@@ -1625,9 +1671,9 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                     // Rekurzivno pozovi ponovo
                                                                     Future.delayed(
                                                                         const Duration(
-                                                                            milliseconds:
-                                                                                500),
-                                                                        () {
+                                                                          milliseconds:
+                                                                              500,
+                                                                        ), () {
                                                                       // Pozovi ponovo
                                                                     });
                                                                   },
@@ -1640,30 +1686,33 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         if (mounted &&
                                                             context.mounted) {
                                                           ScaffoldMessenger.of(
-                                                                  context)
-                                                              .hideCurrentSnackBar();
+                                                            context,
+                                                          ).hideCurrentSnackBar();
                                                           ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
+                                                            context,
+                                                          ).showSnackBar(
                                                             SnackBar(
                                                               content: Text(
-                                                                  '💥 Greška: ${e.toString()}'),
+                                                                '💥 Greška: ${e.toString()}',
+                                                              ),
                                                               backgroundColor:
                                                                   Colors.red,
                                                               duration:
                                                                   const Duration(
-                                                                      seconds:
-                                                                          3),
+                                                                seconds: 3,
+                                                              ),
                                                             ),
                                                           );
                                                         }
                                                       }
                                                     },
                                                     icon: const Icon(
-                                                        Icons.navigation,
-                                                        color: Colors.blue),
+                                                      Icons.navigation,
+                                                      color: Colors.blue,
+                                                    ),
                                                     label: const Text(
-                                                        'Navigacija'),
+                                                      'Navigacija',
+                                                    ),
                                                     style: TextButton.styleFrom(
                                                       foregroundColor:
                                                           Colors.blue,
@@ -1698,8 +1747,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                           ),
                                         ),
                                         const SizedBox(
-                                            width:
-                                                0), // Adaptive spacing - uvek 0
+                                          width: 0,
+                                        ), // Adaptive spacing - uvek 0
                                       ],
                                       // 📞 TELEFON IKONA - ako putnik ima telefon
                                       if (_putnik.brojTelefona != null &&
@@ -1799,7 +1848,6 @@ class _PutnikCardState extends State<PutnikCard> {
               Padding(
                 padding: const EdgeInsets.only(top: 6.0),
                 child: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.start,
                   spacing: 16,
                   runSpacing: 2,
                   children: [
@@ -1856,7 +1904,8 @@ class _PutnikCardState extends State<PutnikCard> {
                           if (_putnik.statusVreme != null)
                             Text(
                               _formatVremeDodavanja(
-                                  DateTime.parse(_putnik.statusVreme!)),
+                                DateTime.parse(_putnik.statusVreme!),
+                              ),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: VozacBoja.get(_putnik.otkazaoVozac)
@@ -1893,8 +1942,9 @@ class _PutnikCardState extends State<PutnikCard> {
                         }(),
                         style: TextStyle(
                           fontSize: 13,
-                          color: VozacBoja.get(_putnik.pokupioVozac ??
-                              widget.currentDriver), // ✅ KORISTI pokupioVozac!
+                          color: VozacBoja.get(
+                            _putnik.pokupioVozac ?? widget.currentDriver,
+                          ), // ✅ KORISTI pokupioVozac!
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -1942,7 +1992,9 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u mesecni_putnici_screen.dart
   bool _isMonthPaidStatic(
-      String monthYear, novi_model.MesecniPutnik? mesecniPutnik) {
+    String monthYear,
+    novi_model.MesecniPutnik? mesecniPutnik,
+  ) {
     if (mesecniPutnik == null) return false;
 
     if (mesecniPutnik.vremePlacanja == null ||
@@ -1988,7 +2040,7 @@ class _PutnikCardState extends State<PutnikCard> {
       'Septembar',
       'Oktobar',
       'Novembar',
-      'Decembar'
+      'Decembar',
     ];
     return months[month];
   }
@@ -2050,7 +2102,7 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       // Kreiraj DateTime za početak izabranog meseca
-      final pocetakMeseca = DateTime(year, monthNumber, 1);
+      final pocetakMeseca = DateTime(year, monthNumber);
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
@@ -2067,7 +2119,8 @@ class _PutnikCardState extends State<PutnikCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano'),
+                '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -2188,7 +2241,8 @@ class _PutnikCardState extends State<PutnikCard> {
       builder: (ctx) => AlertDialog(
         title: const Text('Otkazivanje putnika'),
         content: const Text(
-            'Da li ste sigurni da želite da označite ovog putnika kao otkazanog?'),
+          'Da li ste sigurni da želite da označite ovog putnika kao otkazanog?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),

@@ -48,7 +48,8 @@ class AdvancedGeocodingService {
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac opštine dozvoljene
     if (_isCityOutsideServiceArea(grad)) {
       _logger.w(
-          '🚫 Advanced geocoding blokiran za $grad - van servisne oblasti BC/Vršac');
+        '🚫 Advanced geocoding blokiran za $grad - van servisne oblasti BC/Vršac',
+      );
       return null;
     }
 
@@ -132,7 +133,8 @@ class AdvancedGeocodingService {
     for (int i = 0; i < batches.length; i++) {
       final batch = batches[i];
       _logger.i(
-          '📦 Processing batch ${i + 1}/${batches.length} (${batch.length} items)');
+        '📦 Processing batch ${i + 1}/${batches.length} (${batch.length} items)',
+      );
 
       // Paralelno geocoding za batch
       final futures = batch.map((entry) async {
@@ -140,8 +142,10 @@ class AdvancedGeocodingService {
         if (parts.length >= 2) {
           final grad = parts[1].trim();
           final adresa = parts[0].trim();
-          return MapEntry(entry.key,
-              await getAdvancedCoordinates(grad: grad, adresa: adresa));
+          return MapEntry(
+            entry.key,
+            await getAdvancedCoordinates(grad: grad, adresa: adresa),
+          );
         }
         return MapEntry(entry.key, null);
       });
@@ -211,7 +215,10 @@ class AdvancedGeocodingService {
 
   /// 🌍 NOMINATIM SEARCH - enhanced sa fuzzy matching
   static Future<GeocodeResult?> _searchNominatim(
-      String grad, String adresa, bool fuzzy) async {
+    String grad,
+    String adresa,
+    bool fuzzy,
+  ) async {
     const timeout = Duration(seconds: 8);
     // 🎯 OGRANIČI QUERY na Bela Crkva/Vršac oblast
     final query = '$adresa, $grad, Južno-banatski okrug, Serbia';
@@ -239,7 +246,11 @@ class AdvancedGeocodingService {
       if (results.isNotEmpty) {
         final best = results.first;
         final confidence = _calculateConfidence(
-            adresa, grad, best as Map<String, dynamic>, 'nominatim');
+          adresa,
+          grad,
+          best as Map<String, dynamic>,
+          'nominatim',
+        );
 
         return GeocodeResult(
           latitude: double.parse(best['lat'] as String),
@@ -257,7 +268,10 @@ class AdvancedGeocodingService {
 
   /// ⚡ PHOTON SEARCH - ultra-fast European geocoding
   static Future<GeocodeResult?> _searchPhoton(
-      String grad, String adresa, bool fuzzy) async {
+    String grad,
+    String adresa,
+    bool fuzzy,
+  ) async {
     const timeout = Duration(seconds: 5);
     final query = '$adresa $grad';
 
@@ -280,7 +294,11 @@ class AdvancedGeocodingService {
         final props = best['properties'];
 
         final confidence = _calculateConfidence(
-            adresa, grad, props as Map<String, dynamic>, 'photon');
+          adresa,
+          grad,
+          props as Map<String, dynamic>,
+          'photon',
+        );
 
         return GeocodeResult(
           latitude: (coords[1] as num).toDouble(),
@@ -299,10 +317,12 @@ class AdvancedGeocodingService {
 
   /// 🗺️ MAPBOX FREE SEARCH - 100k requests/month besplatno
   static Future<GeocodeResult?> _searchMapboxFree(
-      String grad, String adresa, bool fuzzy) async {
+    String grad,
+    String adresa,
+    bool fuzzy,
+  ) async {
     // NAPOMENA: Dodaj svoj Mapbox free token u environment
-    const mapboxToken =
-        String.fromEnvironment('MAPBOX_TOKEN', defaultValue: '');
+    const mapboxToken = String.fromEnvironment('MAPBOX_TOKEN');
     if (mapboxToken.isEmpty) return null;
 
     const timeout = Duration(seconds: 6);
@@ -327,7 +347,11 @@ class AdvancedGeocodingService {
         final props = best['properties'];
 
         final confidence = _calculateConfidence(
-            adresa, grad, props as Map<String, dynamic>, 'mapbox');
+          adresa,
+          grad,
+          props as Map<String, dynamic>,
+          'mapbox',
+        );
 
         return GeocodeResult(
           latitude: (coords[1] as num).toDouble(),
@@ -345,7 +369,9 @@ class AdvancedGeocodingService {
 
   /// 🤖 AUTO-CORRECTION - pokušava sa čestim greškama
   static Future<GeocodeResult?> _tryAutoCorrection(
-      String grad, String adresa) async {
+    String grad,
+    String adresa,
+  ) async {
     final corrections = [
       adresa
           .replaceAll('č', 'c')
@@ -384,7 +410,11 @@ class AdvancedGeocodingService {
 
   /// 🧮 CALCULATE CONFIDENCE - AI scoring algorithm
   static double _calculateConfidence(
-      String query, String city, Map<String, dynamic> result, String provider) {
+    String query,
+    String city,
+    Map<String, dynamic> result,
+    String provider,
+  ) {
     double score = 50.0; // base score
 
     // Provider reliability
@@ -457,7 +487,8 @@ class AdvancedGeocodingService {
 
   // Helper methods za parsing provider responses
   static Map<String, String> _parseNominatimComponents(
-      Map<String, dynamic> result) {
+    Map<String, dynamic> result,
+  ) {
     final address = result['address'] as Map<String, dynamic>? ?? {};
     return {
       'house_number': address['house_number']?.toString() ?? '',
@@ -468,7 +499,8 @@ class AdvancedGeocodingService {
   }
 
   static Map<String, String> _parsePhotonComponents(
-      Map<String, dynamic> props) {
+    Map<String, dynamic> props,
+  ) {
     return {
       'name': props['name']?.toString() ?? '',
       'street': props['street']?.toString() ?? '',
@@ -478,7 +510,8 @@ class AdvancedGeocodingService {
   }
 
   static Map<String, String> _parseMapboxComponents(
-      Map<String, dynamic> feature) {
+    Map<String, dynamic> feature,
+  ) {
     final context = feature['context'] as List<dynamic>? ?? [];
     final components = <String, String>{};
 
@@ -496,12 +529,15 @@ class AdvancedGeocodingService {
 
   /// 💾 CACHE MANAGEMENT
   static Future<GeocodeResult?> _getCachedResult(String key) async {
-    final cached = await CacheService.getFromDisk<String>(_cachePrefix + key,
-        maxAge: const Duration(days: 30));
+    final cached = await CacheService.getFromDisk<String>(
+      _cachePrefix + key,
+      maxAge: const Duration(days: 30),
+    );
     if (cached != null) {
       try {
         return GeocodeResult.fromJson(
-            json.decode(cached) as Map<String, dynamic>);
+          json.decode(cached) as Map<String, dynamic>,
+        );
       } catch (e) {
         return null;
       }
@@ -511,12 +547,16 @@ class AdvancedGeocodingService {
 
   static Future<void> _cacheResult(String key, GeocodeResult result) async {
     await CacheService.saveToDisk(
-        _cachePrefix + key, json.encode(result.toJson()));
+      _cachePrefix + key,
+      json.encode(result.toJson()),
+    );
   }
 
   /// 📦 BATCH UTILITIES
   static List<List<MapEntry<String, String>>> _createBatches(
-      Map<String, String> items, int batchSize) {
+    Map<String, String> items,
+    int batchSize,
+  ) {
     final entries = items.entries.toList();
     final batches = <List<MapEntry<String, String>>>[];
 
@@ -544,16 +584,6 @@ class AdvancedGeocodingService {
 
 /// 📍 GEOCODE RESULT CLASS - napredna struktura rezultata
 class GeocodeResult {
-  final double latitude;
-  final double longitude;
-  final String formattedAddress;
-  final double confidence; // 0-100
-  final String provider;
-  final Map<String, String> components;
-  bool autocorrected;
-  String? originalQuery;
-  DateTime timestamp;
-
   GeocodeResult({
     required this.latitude,
     required this.longitude,
@@ -566,18 +596,6 @@ class GeocodeResult {
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
-  Map<String, dynamic> toJson() => {
-        'latitude': latitude,
-        'longitude': longitude,
-        'formattedAddress': formattedAddress,
-        'confidence': confidence,
-        'provider': provider,
-        'components': components,
-        'autocorrected': autocorrected,
-        'originalQuery': originalQuery,
-        'timestamp': timestamp.toIso8601String(),
-      };
-
   factory GeocodeResult.fromJson(Map<String, dynamic> json) => GeocodeResult(
         latitude: (json['latitude'] as num).toDouble(),
         longitude: (json['longitude'] as num).toDouble(),
@@ -589,6 +607,27 @@ class GeocodeResult {
         originalQuery: json['originalQuery'] as String?,
         timestamp: DateTime.parse(json['timestamp'] as String),
       );
+  final double latitude;
+  final double longitude;
+  final String formattedAddress;
+  final double confidence; // 0-100
+  final String provider;
+  final Map<String, String> components;
+  bool autocorrected;
+  String? originalQuery;
+  DateTime timestamp;
+
+  Map<String, dynamic> toJson() => {
+        'latitude': latitude,
+        'longitude': longitude,
+        'formattedAddress': formattedAddress,
+        'confidence': confidence,
+        'provider': provider,
+        'components': components,
+        'autocorrected': autocorrected,
+        'originalQuery': originalQuery,
+        'timestamp': timestamp.toIso8601String(),
+      };
 
   @override
   String toString() =>
@@ -612,8 +651,9 @@ bool _isCityOutsideServiceArea(String grad) {
     'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
     // BELA CRKVA OPŠTINA
     'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-    'kruscica', 'kusic', 'crvena crkva'
+    'kruscica', 'kusic', 'crvena crkva',
   ];
   return !serviceAreaCities.any(
-      (city) => normalizedGrad.contains(city) || city.contains(normalizedGrad));
+    (city) => normalizedGrad.contains(city) || city.contains(normalizedGrad),
+  );
 }

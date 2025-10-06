@@ -3,10 +3,9 @@ import '../models/dnevni_putnik.dart';
 
 /// Servis za upravljanje dnevnim putnicima
 class DnevniPutnikService {
-  final SupabaseClient _supabase;
-
   DnevniPutnikService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Dohvata sve dnevne putnike za dati datum
   Future<List<DnevniPutnik>> getDnevniPutniciZaDatum(DateTime datum) async {
@@ -40,7 +39,9 @@ class DnevniPutnikService {
 
   /// Ažurira dnevnog putnika
   Future<DnevniPutnik> updateDnevniPutnik(
-      String id, Map<String, dynamic> updates) async {
+    String id,
+    Map<String, dynamic> updates,
+  ) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 
     final response = await _supabase
@@ -89,8 +90,10 @@ class DnevniPutnikService {
   }
 
   /// Traži dnevne putnike po imenu, prezimenu ili broju telefona
-  Future<List<DnevniPutnik>> searchDnevniPutnici(String query,
-      {DateTime? datum}) async {
+  Future<List<DnevniPutnik>> searchDnevniPutnici(
+    String query, {
+    DateTime? datum,
+  }) async {
     var queryBuilder = _supabase
         .from('dnevni_putnici')
         .select('''
@@ -110,7 +113,9 @@ class DnevniPutnikService {
 
   /// Dohvata putnike za datu rutu i datum
   Future<List<DnevniPutnik>> getPutniciZaRutu(
-      String rutaId, DateTime datum) async {
+    String rutaId,
+    DateTime datum,
+  ) async {
     final datumString = datum.toIso8601String().split('T')[0];
 
     final response = await _supabase
@@ -134,10 +139,15 @@ class DnevniPutnikService {
         .from('dnevni_putnici')
         .stream(primaryKey: ['id'])
         .order('polazak')
-        .map((data) => data
-            .where((putnik) =>
-                putnik['datum'] == datumString && putnik['obrisan'] == false)
-            .map((json) => DnevniPutnik.fromMap(json))
-            .toList());
+        .map(
+          (data) => data
+              .where(
+                (putnik) =>
+                    putnik['datum'] == datumString &&
+                    putnik['obrisan'] == false,
+              )
+              .map((json) => DnevniPutnik.fromMap(json))
+              .toList(),
+        );
   }
 }

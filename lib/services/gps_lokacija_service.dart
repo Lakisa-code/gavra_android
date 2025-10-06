@@ -3,10 +3,9 @@ import '../models/gps_lokacija.dart';
 
 /// Servis za upravljanje GPS lokacijama vozila
 class GPSLokacijaService {
-  final SupabaseClient _supabase;
-
   GPSLokacijaService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Snima novu GPS lokaciju vozila
   Future<GPSLokacija> snimiLokaciju(GPSLokacija lokacija) async {
@@ -123,14 +122,18 @@ class GPSLokacijaService {
     return _supabase
         .from('gps_lokacije')
         .stream(primaryKey: ['id'])
-        .order('vreme', ascending: false)
-        .map((data) => data
-            .where((lokacija) =>
-                lokacija['vozilo_id'] == voziloId &&
-                lokacija['aktivan'] == true)
-            .take(10) // Samo poslednjih 10 lokacija
-            .map((json) => GPSLokacija.fromMap(json))
-            .toList());
+        .order('vreme')
+        .map(
+          (data) => data
+              .where(
+                (lokacija) =>
+                    lokacija['vozilo_id'] == voziloId &&
+                    lokacija['aktivan'] == true,
+              )
+              .take(10) // Samo poslednjih 10 lokacija
+              .map((json) => GPSLokacija.fromMap(json))
+              .toList(),
+        );
   }
 
   /// Stream za realtime lokacije svih vozila
@@ -139,7 +142,7 @@ class GPSLokacijaService {
         .from('gps_lokacije')
         .stream(primaryKey: ['id'])
         .eq('aktivan', true)
-        .order('vreme', ascending: false)
+        .order('vreme')
         .map((data) {
           // Grupujemo po vozilu i uzimamo samo poslednju lokaciju po vozilu
           final poVozilu = <String, GPSLokacija>{};

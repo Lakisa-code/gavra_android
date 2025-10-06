@@ -4,6 +4,15 @@ import 'package:flutter/material.dart';
 /// Konzistentno back dugme za sve AppBar-ove u aplikaciji
 /// Sprečava overflow probleme i osigurava konzistentnu navigaciju
 class CustomBackButton extends StatelessWidget {
+  const CustomBackButton({
+    Key? key,
+    this.onPressed,
+    this.color = Colors.white,
+    this.size = 24,
+    this.tooltip = 'Nazad',
+    this.padding,
+  }) : super(key: key);
+
   /// Callback funkcija za back akciju
   final VoidCallback? onPressed;
 
@@ -18,15 +27,6 @@ class CustomBackButton extends StatelessWidget {
 
   /// Padding oko dugmeta
   final EdgeInsetsGeometry? padding;
-
-  const CustomBackButton({
-    Key? key,
-    this.onPressed,
-    this.color = Colors.white,
-    this.size = 24,
-    this.tooltip = 'Nazad',
-    this.padding,
-  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -51,14 +51,13 @@ class CustomBackButton extends StatelessWidget {
 /// 🎨 GRADIENT BACK BUTTON VARIANT
 /// Specijalna varijanta za gradijent AppBar-ove
 class GradientBackButton extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final String? tooltip;
-
   const GradientBackButton({
     Key? key,
     this.onPressed,
     this.tooltip = 'Nazad',
   }) : super(key: key);
+  final VoidCallback? onPressed;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {

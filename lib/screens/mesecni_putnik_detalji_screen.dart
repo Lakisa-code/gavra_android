@@ -8,12 +8,11 @@ import '../theme.dart'; // Za theme boje
 import '../widgets/custom_back_button.dart';
 
 class MesecniPutnikDetaljiScreen extends StatefulWidget {
-  final MesecniPutnik putnik;
-
   const MesecniPutnikDetaljiScreen({
     super.key,
     required this.putnik,
   });
+  final MesecniPutnik putnik;
 
   @override
   State<MesecniPutnikDetaljiScreen> createState() =>
@@ -98,8 +97,10 @@ class _MesecniPutnikDetaljiScreenState
             ],
           ),
         ),
-        title: Text('Detalji - ${widget.putnik.putnikIme}',
-            style: const TextStyle(color: Colors.white)),
+        title: Text(
+          'Detalji - ${widget.putnik.putnikIme}',
+          style: const TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             onPressed: _ucitajSveDetalje,
@@ -125,8 +126,9 @@ class _MesecniPutnikDetaljiScreenState
                       indicatorColor: Colors.indigo,
                       tabs: [
                         Tab(
-                            text: 'Nedeljno',
-                            icon: Icon(Icons.calendar_view_week)),
+                          text: 'Nedeljno',
+                          icon: Icon(Icons.calendar_view_week),
+                        ),
                         Tab(text: 'Mesečno', icon: Icon(Icons.calendar_month)),
                         Tab(text: 'Godišnje', icon: Icon(Icons.calendar_today)),
                         Tab(text: 'Plaćanja', icon: Icon(Icons.payments)),
@@ -166,7 +168,8 @@ class _MesecniPutnikDetaljiScreenState
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,8 +342,11 @@ class _MesecniPutnikDetaljiScreenState
     );
   }
 
-  Widget _buildNedeljaCard(String nedelja, List<Map<String, dynamic>> voznje,
-      List<Map<String, dynamic>> otkazi) {
+  Widget _buildNedeljaCard(
+    String nedelja,
+    List<Map<String, dynamic>> voznje,
+    List<Map<String, dynamic>> otkazi,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -422,8 +428,11 @@ class _MesecniPutnikDetaljiScreenState
     );
   }
 
-  Widget _buildMesecCard(String mesec, List<Map<String, dynamic>> voznje,
-      List<Map<String, dynamic>> otkazi) {
+  Widget _buildMesecCard(
+    String mesec,
+    List<Map<String, dynamic>> voznje,
+    List<Map<String, dynamic>> otkazi,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -494,8 +503,11 @@ class _MesecniPutnikDetaljiScreenState
     );
   }
 
-  Widget _buildGodinaCard(String godina, List<Map<String, dynamic>> voznje,
-      List<Map<String, dynamic>> otkazi) {
+  Widget _buildGodinaCard(
+    String godina,
+    List<Map<String, dynamic>> voznje,
+    List<Map<String, dynamic>> otkazi,
+  ) {
     // Grupisanje po mesecima unutar godine
     final mesecniPodaci = <String, int>{};
     final mesecniOtkazi = <String, int>{};
@@ -674,7 +686,7 @@ class _MesecniPutnikDetaljiScreenState
       'Septembar',
       'Oktobar',
       'Novembar',
-      'Decembar'
+      'Decembar',
     ];
     return mesec > 0 && mesec < meseci.length ? meseci[mesec] : 'Nepoznat';
   }
@@ -750,7 +762,9 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Widget _buildMesecniKalendar(
-      List<Map<String, dynamic>> voznje, List<Map<String, dynamic>> otkazi) {
+    List<Map<String, dynamic>> voznje,
+    List<Map<String, dynamic>> otkazi,
+  ) {
     // Jednostavan kalendar koji pokazuje dane kada je bilo aktivnosti
     final daniSaAktivnoscu = <int, String>{};
 
@@ -811,7 +825,8 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Map<String, List<Map<String, dynamic>>> _grupisiPoNedeljama(
-      List<Map<String, dynamic>> podaci) {
+    List<Map<String, dynamic>> podaci,
+  ) {
     final mapa = <String, List<Map<String, dynamic>>>{};
 
     for (var podatak in podaci) {
@@ -828,7 +843,8 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Map<String, List<Map<String, dynamic>>> _grupisiPoMesecima(
-      List<Map<String, dynamic>> podaci) {
+    List<Map<String, dynamic>> podaci,
+  ) {
     final mapa = <String, List<Map<String, dynamic>>>{};
 
     for (var podatak in podaci) {
@@ -845,7 +861,8 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Map<String, List<Map<String, dynamic>>> _grupisiPoGodinama(
-      List<Map<String, dynamic>> podaci) {
+    List<Map<String, dynamic>> podaci,
+  ) {
     final mapa = <String, List<Map<String, dynamic>>>{};
 
     for (var podatak in podaci) {

@@ -22,7 +22,7 @@ void main() {
         'Jasenovo',
         'Kruščica',
         'Kusić',
-        'Crvena Crkva'
+        'Crvena Crkva',
       ]; // Testovi za zabranjene gradove (trebalo bi da budu blokirani)
       const blockedCities = [
         'Novi Sad',
@@ -34,7 +34,7 @@ void main() {
         'Pančevo',
         'Subotica',
         'Kikinda',
-        'Kovin'
+        'Kovin',
       ];
 
       // Test dozvoljenih gradova
@@ -54,35 +54,48 @@ void main() {
       // Test sa adresom iz Bele Crkve - treba da prođe
       final belaCrkvaResult =
           await AdvancedGeocodingService.getAdvancedCoordinates(
-              grad: 'Bela Crkva', adresa: 'Glavna ulica 10');
+        grad: 'Bela Crkva',
+        adresa: 'Glavna ulica 10',
+      );
       print(
-          'Bela Crkva result: ${belaCrkvaResult != null ? "✅ ALLOWED" : "❌ BLOCKED"}');
+        'Bela Crkva result: ${belaCrkvaResult != null ? "✅ ALLOWED" : "❌ BLOCKED"}',
+      );
 
       // Test sa adresom iz Vršca - treba da prođe
       await AdvancedGeocodingService.getAdvancedCoordinates(
-          grad: 'Vršac', adresa: 'Trg pobede 5');
+        grad: 'Vršac',
+        adresa: 'Trg pobede 5',
+      );
       // Debug output removed
 
       // Test sa adresom iz Beograda - treba da bude blokiran
       final beogradResult =
           await AdvancedGeocodingService.getAdvancedCoordinates(
-              grad: 'Beograd', adresa: 'Knez Mihailova 12');
+        grad: 'Beograd',
+        adresa: 'Knez Mihailova 12',
+      );
       print(
-          'Belgrade result: ${beogradResult == null ? "✅ BLOCKED" : "❌ NOT BLOCKED"}');
+        'Belgrade result: ${beogradResult == null ? "✅ BLOCKED" : "❌ NOT BLOCKED"}',
+      );
     });
 
     test('SmartAddressAutocompleteService filters suggestions', () async {
       // Test sa upitom za Belu Crkvu
       await SmartAddressAutocompleteService.getSmartSuggestions(
-              currentCity: 'Bela Crkva', query: 'glavna');
+        currentCity: 'Bela Crkva',
+        query: 'glavna',
+      );
       // Debug output removed
 
       // Test sa upitom za zabranjeni grad
       final beogradSuggestions =
           await SmartAddressAutocompleteService.getSmartSuggestions(
-              currentCity: 'Beograd', query: 'knez');
+        currentCity: 'Beograd',
+        query: 'knez',
+      );
       print(
-          'Belgrade suggestions: ${beogradSuggestions.length} found (should be 0)');
+        'Belgrade suggestions: ${beogradSuggestions.length} found (should be 0)',
+      );
     });
 
     test('Route optimization services filter passengers', () async {
@@ -92,24 +105,25 @@ void main() {
           'ime': 'Marko',
           'grad': 'Bela Crkva',
           'adresa': 'Glavna 1',
-          'koordinate': '44.898611,21.420833'
+          'koordinate': '44.898611,21.420833',
         },
         {
           'ime': 'Ana',
           'grad': 'Vršac',
           'adresa': 'Trg pobede 1',
-          'koordinate': '45.116667,21.3'
+          'koordinate': '45.116667,21.3',
         },
         {
           'ime': 'Petar',
           'grad': 'Beograd',
           'adresa': 'Knez Mihailova 1',
-          'koordinate': '44.816667,20.466667'
+          'koordinate': '44.816667,20.466667',
         }
       ];
 
       print(
-          'Testing route optimization with ${testPassengers.length} passengers');
+        'Testing route optimization with ${testPassengers.length} passengers',
+      );
       // Debug output removed
       // Debug output removed
     });
@@ -128,9 +142,11 @@ extension GeocodingServiceTest on GeocodingService {
       'orešac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva'
+      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
-    return !allowedCities.any((allowed) =>
-        normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad));
+    return !allowedCities.any(
+      (allowed) =>
+          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+    );
   }
 }

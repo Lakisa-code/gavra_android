@@ -58,7 +58,7 @@ class GavraTestHelpers {
       'radni_dani': 'pon,uto,sre,cet,pet',
       'datum_pocetka_meseca': DateTime.now().toIso8601String(),
       'datum_kraja_meseca':
-          DateTime.now().add(Duration(days: 30)).toIso8601String(),
+          DateTime.now().add(const Duration(days: 30)).toIso8601String(),
       'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };

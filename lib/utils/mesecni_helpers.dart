@@ -37,7 +37,7 @@ class MesecniHelpers {
             val['vs'] ?? val['vrsac'] ?? val['polazak_vs'] ?? val['vs_time'];
         out[dayKey] = {
           'bc': normalizeTime(bc?.toString()),
-          'vs': normalizeTime(vs?.toString())
+          'vs': normalizeTime(vs?.toString()),
         };
       } else if (val is String) {
         out[dayKey] = {'bc': normalizeTime(val), 'vs': null};
@@ -49,7 +49,10 @@ class MesecniHelpers {
   // Get polazak for a day and place (place 'bc' or 'vs').
   // rawMap is the DB row map with either polasci_po_danu or per-day columns polazak_bc_pon etc.
   static String? getPolazakForDay(
-      Map<String, dynamic> rawMap, String dayKratica, String place) {
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
     final parsed = parsePolasciPoDanu(rawMap['polasci_po_danu']);
     final pday = parsed[dayKratica];
     if (pday != null) {
@@ -124,7 +127,7 @@ class MesecniHelpers {
       'godisnji_odmor': MesecniStatus.vacation,
       'aktivan': MesecniStatus.active,
       'active': MesecniStatus.active,
-      'placeno': MesecniStatus.active
+      'placeno': MesecniStatus.active,
     };
     for (final k in map.keys) {
       if (s.contains(k)) return map[k]!;
@@ -191,7 +194,8 @@ class MesecniHelpers {
   // Normalize polasci map into canonical structure for sending to DB.
   // Accepts either Map or JSON string; returns Map<String, Map<String,String?>>
   static Map<String, Map<String, String?>> normalizePolasciForSend(
-      dynamic raw) {
+    dynamic raw,
+  ) {
     // Support client-side shape Map<String, List<String>> (e.g. {'pon': ['6:00 BC','14:00 VS']})
     if (raw is Map) {
       final hasListValues = raw.values.any((v) => v is List);
@@ -205,7 +209,7 @@ class MesecniHelpers {
               if (entry == null) continue;
               final s = entry.toString().trim();
               if (s.isEmpty) continue;
-              final parts = s.split(RegExp(r"\s+"));
+              final parts = s.split(RegExp(r'\s+'));
               final valPart = parts[0];
               final suffix = parts.length > 1 ? parts[1].toLowerCase() : '';
               if (suffix.startsWith('bc')) {

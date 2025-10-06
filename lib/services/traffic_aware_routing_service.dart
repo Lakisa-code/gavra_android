@@ -279,7 +279,9 @@ class TrafficAwareRoutingService {
 
   /// 🚦 Računaj nivo saobraćaja
   static TrafficLevel _calculateTrafficLevel(
-      int normalDuration, int trafficDuration) {
+    int normalDuration,
+    int trafficDuration,
+  ) {
     final ratio = trafficDuration / normalDuration;
 
     if (ratio >= 2.0) return TrafficLevel.heavy;
@@ -316,11 +318,7 @@ class TrafficAwareRoutingService {
 
 /// 📊 Traffic podaci za rutu
 class TrafficData {
-  final int normalDurationSeconds;
-  final int trafficDurationSeconds;
-  final int distanceMeters;
-  final TrafficLevel trafficLevel;
-  final String route; // Polyline za prikaz na mapi
+  // Polyline za prikaz na mapi
 
   TrafficData({
     required this.normalDurationSeconds,
@@ -329,6 +327,11 @@ class TrafficData {
     required this.trafficLevel,
     required this.route,
   });
+  final int normalDurationSeconds;
+  final int trafficDurationSeconds;
+  final int distanceMeters;
+  final TrafficLevel trafficLevel;
+  final String route;
 
   /// ⏱️ Procenat dodatnog vremena zbog saobraćaja
   double get trafficDelayPercentage =>

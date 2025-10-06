@@ -41,8 +41,10 @@ class AdvancedRouteOptimizationService {
     if (aktivniPutnici.length <= 1) return aktivniPutnici;
 
     // 2. Proveri cache uz Performance Cache Service
-    final cacheKey = PerformanceCacheService.generateRouteKey(aktivniPutnici,
-        driverPosition: driverPosition);
+    final cacheKey = PerformanceCacheService.generateRouteKey(
+      aktivniPutnici,
+      driverPosition: driverPosition,
+    );
     final cachedRoute = PerformanceCacheService.getCachedRoute(cacheKey);
     if (cachedRoute != null) {
       return cachedRoute;
@@ -202,9 +204,11 @@ class AdvancedRouteOptimizationService {
     for (int gen = 0; gen < generations; gen++) {
       // Evaluacija fitness-a
       final fitness = population
-          .map((route) =>
-              1.0 /
-              (_calculateTotalDistance([start], route, coordinates) + 1.0))
+          .map(
+            (route) =>
+                1.0 /
+                (_calculateTotalDistance([start], route, coordinates) + 1.0),
+          )
           .toList();
 
       // Selekcija najboljih 50%
@@ -239,8 +243,11 @@ class AdvancedRouteOptimizationService {
 
     // 3. Vrati najbolje rešenje i optimizuj ga sa 2-Opt
     final fitness = population
-        .map((route) =>
-            1.0 / (_calculateTotalDistance([start], route, coordinates) + 1.0))
+        .map(
+          (route) =>
+              1.0 /
+              (_calculateTotalDistance([start], route, coordinates) + 1.0),
+        )
         .toList();
 
     final bestIndex = fitness.indexWhere((f) => f == fitness.reduce(math.max));
@@ -306,11 +313,13 @@ class AdvancedRouteOptimizationService {
 
   static List<Putnik> _filterActivePutnici(List<Putnik> putnici) {
     return putnici
-        .where((p) =>
-            p.status != 'otkazan' &&
-            p.status != 'Otkazano' &&
-            p.adresa != null &&
-            p.adresa!.isNotEmpty)
+        .where(
+          (p) =>
+              p.status != 'otkazan' &&
+              p.status != 'Otkazano' &&
+              p.adresa != null &&
+              p.adresa!.isNotEmpty,
+        )
         .toList();
   }
 
@@ -332,7 +341,8 @@ class AdvancedRouteOptimizationService {
   }
 
   static Future<Map<Putnik, Position>> _batchGeocode(
-      List<Putnik> putnici) async {
+    List<Putnik> putnici,
+  ) async {
     final Map<Putnik, Position> coordinates = {};
 
     // Parallel geocoding for better performance
@@ -478,7 +488,12 @@ class AdvancedRouteOptimizationService {
       final hour = int.parse(parts[0]);
       final minute = int.parse(parts[1]);
       return DateTime(
-          baseDate.year, baseDate.month, baseDate.day, hour, minute);
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        hour,
+        minute,
+      );
     } catch (e) {
       return baseDate;
     }

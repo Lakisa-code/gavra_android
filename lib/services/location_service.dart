@@ -52,7 +52,8 @@ class LocationService {
       );
 
       _logger.i(
-          '📍 Trenutna pozicija: ${position.latitude}, ${position.longitude}');
+        '📍 Trenutna pozicija: ${position.latitude}, ${position.longitude}',
+      );
       return position;
     } catch (e) {
       _logger.e('❌ Greška dobijanja pozicije: $e');
@@ -112,8 +113,9 @@ class LocationService {
   /// Formatira adresu iz Nominatim JSON odgovora
   static String _formatAddress(Map<String, dynamic> data) {
     final address = data['address'] as Map<String, dynamic>?;
-    if (address == null)
+    if (address == null) {
       return (data['display_name'] as String?) ?? 'Nepoznata lokacija';
+    }
 
     final components = <String>[];
 
@@ -158,7 +160,11 @@ class LocationService {
 
   /// Izračunava distancu između dve koordinate (u metrima)
   static double calculateDistance(
-      double startLat, double startLng, double endLat, double endLng) {
+    double startLat,
+    double startLng,
+    double endLat,
+    double endLng,
+  ) {
     return Geolocator.distanceBetween(startLat, startLng, endLat, endLng);
   }
 }

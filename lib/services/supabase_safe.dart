@@ -23,12 +23,16 @@ class SupabaseSafe {
   }
 
   static Future<dynamic> delete(
-      String table, String column, String value) async {
+    String table,
+    String column,
+    String value,
+  ) async {
     try {
       return await _client.from(table).delete().eq(column, value);
     } on PostgrestException catch (e) {
       dlog(
-          '❌ [SUPABASE SAFE] PostgrestException on delete $table: ${e.message}');
+        '❌ [SUPABASE SAFE] PostgrestException on delete $table: ${e.message}',
+      );
       return <dynamic>[];
     } catch (e) {
       dlog('❌ [SUPABASE SAFE] Error deleting from $table: $e');

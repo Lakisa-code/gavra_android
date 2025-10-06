@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import 'istorija_naplata_widget.dart';
 
 class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
-  final Map<String, Map<String, dynamic>> vozaciStatistike;
-  final double ukupno;
-  final String periodLabel;
-  final Map<String, Color> vozacBoje;
-
   const DetaljanPazarPoVozacimaWidget({
     Key? key,
     required this.vozaciStatistike,
@@ -14,6 +9,10 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
     required this.periodLabel,
     required this.vozacBoje,
   }) : super(key: key);
+  final Map<String, Map<String, dynamic>> vozaciStatistike;
+  final double ukupno;
+  final String periodLabel;
+  final Map<String, Color> vozacBoje;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +20,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
       'Bruda',
       'Bilevski',
       'Bojan',
-      'Svetlana'
+      'Svetlana',
     ];
 
     return Column(
@@ -128,7 +127,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
                       child: _buildStatCard(
                         '💰 Prosek',
                         avgPlacanjeObicno > 0
-                            ? '${avgPlacanjeObicno.toStringAsFixed(0)}'
+                            ? avgPlacanjeObicno.toStringAsFixed(0)
                             : '0',
                         Colors.green,
                       ),
@@ -175,8 +174,11 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.account_balance_wallet,
-                  color: Colors.green[700], size: 24),
+              Icon(
+                Icons.account_balance_wallet,
+                color: Colors.green[700],
+                size: 24,
+              ),
               const SizedBox(width: 10),
               Column(
                 children: [

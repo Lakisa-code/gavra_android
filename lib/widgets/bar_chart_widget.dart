@@ -2,16 +2,15 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class BarChartWidget extends StatelessWidget {
-  final Map<DateTime, int> data;
-  final Color color;
-  final String title;
-
   const BarChartWidget({
     Key? key,
     required this.data,
     this.color = Colors.blue,
     this.title = '',
   }) : super(key: key);
+  final Map<DateTime, int> data;
+  final Color color;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +21,10 @@ class BarChartWidget extends StatelessWidget {
         if (title.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(title,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         AspectRatio(
           aspectRatio: 1.7,
@@ -52,20 +53,22 @@ class BarChartWidget extends StatelessWidget {
                     },
                   ),
                 ),
-                rightTitles:
-                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles:
-                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(),
+                topTitles: const AxisTitles(),
               ),
               borderData: FlBorderData(show: false),
               barGroups: [
                 for (int i = 0; i < sortedKeys.length; i++)
-                  BarChartGroupData(x: i, barRods: [
-                    BarChartRodData(
+                  BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
                         toY: data[sortedKeys[i]]!.toDouble(),
                         color: color,
-                        width: 18),
-                  ])
+                        width: 18,
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

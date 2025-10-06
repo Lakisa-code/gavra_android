@@ -2,16 +2,15 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class PieChartWidget extends StatelessWidget {
-  final Map<String, double> data;
-  final List<Color> colors;
-  final String title;
-
   const PieChartWidget({
     Key? key,
     required this.data,
     required this.colors,
     this.title = '',
   }) : super(key: key);
+  final Map<String, double> data;
+  final List<Color> colors;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +32,10 @@ class PieChartWidget extends StatelessWidget {
         if (title.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(title,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         AspectRatio(
           aspectRatio: 1.3,
@@ -50,9 +51,10 @@ class PieChartWidget extends StatelessWidget {
                         : '${((entries[i].value / total) * 100).toStringAsFixed(1)}%',
                     radius: 50,
                     titleStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
               ],
               sectionsSpace: 2,
@@ -69,7 +71,10 @@ class PieChartWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                      width: 14, height: 14, color: colors[i % colors.length]),
+                    width: 14,
+                    height: 14,
+                    color: colors[i % colors.length],
+                  ),
                   const SizedBox(width: 4),
                   Text(entries[i].key),
                 ],

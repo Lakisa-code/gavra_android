@@ -26,7 +26,9 @@ class PasswordService {
 
     final prefs = await SharedPreferences.getInstance();
     return await prefs.setString(
-        '$_passwordPrefix$driverName', newPassword.trim());
+      '$_passwordPrefix$driverName',
+      newPassword.trim(),
+    );
   }
 
   /// Resetuj šifru na default

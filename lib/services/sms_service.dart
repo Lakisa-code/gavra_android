@@ -76,7 +76,8 @@ class SMSService {
 
       if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
         dlog(
-            '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver');
+          '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver',
+        );
         return;
       }
 
@@ -96,13 +97,17 @@ class SMSService {
 
       List<Putnik> unpaidPassengers = (response as List)
           .map(
-              (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>))
-          .where((putnik) =>
-              putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty)
+            (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>),
+          )
+          .where(
+            (putnik) =>
+                putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
+          )
           .toList();
 
       dlog(
-          '📋 Pronađeno ${unpaidPassengers.length} putnika kojima ističe karta sutra');
+        '📋 Pronađeno ${unpaidPassengers.length} putnika kojima ističe karta sutra',
+      );
 
       int successCount = 0;
       int errorCount = 0;
@@ -115,11 +120,12 @@ class SMSService {
 
           // Kreiraj SMS poruku
           String message = _createReminderSMS(
-              putnik.ime,
-              stats['lastPaymentDate'] as String,
-              stats['lastPaymentAmount'] as int,
-              stats['tripsSincePayment'] as int,
-              stats['cancellationsSincePayment'] as int);
+            putnik.ime,
+            stats['lastPaymentDate'] as String,
+            stats['lastPaymentAmount'] as int,
+            stats['tripsSincePayment'] as int,
+            stats['cancellationsSincePayment'] as int,
+          );
 
           // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
@@ -149,12 +155,14 @@ class SMSService {
 
       if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
         dlog(
-            '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver');
+          '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver',
+        );
         return;
       }
 
       dlog(
-          '📱 Učitavam putnike koji nisu platili za prethodni mesec... (Vozač: $currentDriver)');
+        '📱 Učitavam putnike koji nisu platili za prethodni mesec... (Vozač: $currentDriver)',
+      );
 
       // Učitaj sve mesečne putnike kojima je istekla karta jučer (nisu platili za prethodni mesec)
       DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
@@ -170,13 +178,17 @@ class SMSService {
 
       List<Putnik> overduePassengers = (response as List)
           .map(
-              (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>))
-          .where((putnik) =>
-              putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty)
+            (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>),
+          )
+          .where(
+            (putnik) =>
+                putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
+          )
           .toList();
 
       dlog(
-          '📋 Pronađeno ${overduePassengers.length} putnika koji nisu platili za prethodni mesec');
+        '📋 Pronađeno ${overduePassengers.length} putnika koji nisu platili za prethodni mesec',
+      );
 
       int successCount = 0;
       int errorCount = 0;
@@ -189,18 +201,20 @@ class SMSService {
 
           // Kreiraj SMS poruku za krajnji rok
           String message = _createOverdueReminderSMS(
-              putnik.ime,
-              stats['lastPaymentDate'] as String,
-              stats['lastPaymentAmount'] as int,
-              stats['tripsSincePayment'] as int,
-              stats['cancellationsSincePayment'] as int);
+            putnik.ime,
+            stats['lastPaymentDate'] as String,
+            stats['lastPaymentAmount'] as int,
+            stats['tripsSincePayment'] as int,
+            stats['cancellationsSincePayment'] as int,
+          );
 
           // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
           successCount++;
 
           dlog(
-              '✅ Krajnji rok SMS poslat: ${putnik.ime} (${putnik.brojTelefona})');
+            '✅ Krajnji rok SMS poslat: ${putnik.ime} (${putnik.brojTelefona})',
+          );
 
           // Pauza između SMS-ova (da se izbegne spam)
           await Future<void>.delayed(const Duration(seconds: 2));
@@ -211,7 +225,8 @@ class SMSService {
       }
 
       dlog(
-          '📊 Krajnji rok SMS rezultati: $successCount uspešno, $errorCount greška');
+        '📊 Krajnji rok SMS rezultati: $successCount uspešno, $errorCount greška',
+      );
     } catch (e) {
       dlog('💥 Greška u krajnji rok SMS servisu: $e');
     }
@@ -222,14 +237,15 @@ class SMSService {
     try {
       // 1. Poslednja uplata
       final lastPaymentResponse = await SupabaseSafe.run(
-          () => supabase
-              .from('putovanja_istorija')
-              .select('datum_i_vreme, iznos_uplate')
-              .eq('putnik_id', putnikId)
-              .gt('iznos_uplate', 0)
-              .order('datum_i_vreme', ascending: false)
-              .limit(1),
-          fallback: <dynamic>[]);
+        () => supabase
+            .from('putovanja_istorija')
+            .select('datum_i_vreme, iznos_uplate')
+            .eq('putnik_id', putnikId)
+            .gt('iznos_uplate', 0)
+            .order('datum_i_vreme', ascending: false)
+            .limit(1),
+        fallback: <dynamic>[],
+      );
 
       if (lastPaymentResponse is! List || lastPaymentResponse.isEmpty) {
         return {
@@ -246,12 +262,13 @@ class SMSService {
 
       // 2. Putovanja od poslednje uplate
       final tripsResponse = await SupabaseSafe.run(
-          () => supabase
-              .from('putovanja_istorija')
-              .select('tip_promene')
-              .eq('putnik_id', putnikId)
-              .gte('datum_i_vreme', lastPaymentDate),
-          fallback: <dynamic>[]);
+        () => supabase
+            .from('putovanja_istorija')
+            .select('tip_promene')
+            .eq('putnik_id', putnikId)
+            .gte('datum_i_vreme', lastPaymentDate),
+        fallback: <dynamic>[],
+      );
 
       // Brojanje putovanja i otkazivanja
       int putovanja = 0;
@@ -296,18 +313,18 @@ class SMSService {
     DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
     String nextMonth = _getMonthName(tomorrow.month);
 
-    return "🚌 PODSETNIK 🚌\n\n"
-        "Poštovani $ime,\n"
-        "Obaveštavamo Vas da izmirite obaveze za $nextMonth i da rok ističe sutra.\n\n"
-        "📊 PODACI:\n"
-        "• Poslednja uplata: $datum - $iznos RSD\n"
-        "• Od tada: $putovanja putovanja\n"
-        "• Otkazivanja: $otkazivanja\n\n"
-        "Molimo platiti do kraja dana.\n"
-        "Kontakt: Bojan - Gavra 013\n\n"
-        "Hvala na razumevanju! 🚌\n"
-        "---\n"
-        "Automatska poruka.";
+    return '🚌 PODSETNIK 🚌\n\n'
+        'Poštovani $ime,\n'
+        'Obaveštavamo Vas da izmirite obaveze za $nextMonth i da rok ističe sutra.\n\n'
+        '📊 PODACI:\n'
+        '• Poslednja uplata: $datum - $iznos RSD\n'
+        '• Od tada: $putovanja putovanja\n'
+        '• Otkazivanja: $otkazivanja\n\n'
+        'Molimo platiti do kraja dana.\n'
+        'Kontakt: Bojan - Gavra 013\n\n'
+        'Hvala na razumevanju! 🚌\n'
+        '---\n'
+        'Automatska poruka.';
   }
 
   /// Kreiranje SMS poruke za krajnji rok (prvi dan meseca)
@@ -322,18 +339,18 @@ class SMSService {
     DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
     String previousMonth = _getMonthName(yesterday.month);
 
-    return "⚠️ KRAJNJI ROK ⚠️\n\n"
-        "Poštovani $ime,\n"
-        "Podse​ćamo Vas da niste izmirili obaveze za $previousMonth i da je krajnji rok 5. u ovom mesecu.\n\n"
-        "📊 PODACI:\n"
-        "• Poslednja uplata: $datum - $iznos RSD\n"
-        "• Od tada: $putovanja putovanja\n"
-        "• Otkazivanja: $otkazivanja\n\n"
-        "🚨 UPOZORENJE: Ako se ne plati do 5. u mesecu, automatski ćete biti skinuti sa liste mesečnih putnika.\n\n"
-        "Kontakt: Bojan - Gavra 013\n\n"
-        "Hvala na razumevanju! 🚌\n"
-        "---\n"
-        "Automatska poruka.";
+    return '⚠️ KRAJNJI ROK ⚠️\n\n'
+        'Poštovani $ime,\n'
+        'Podse​ćamo Vas da niste izmirili obaveze za $previousMonth i da je krajnji rok 5. u ovom mesecu.\n\n'
+        '📊 PODACI:\n'
+        '• Poslednja uplata: $datum - $iznos RSD\n'
+        '• Od tada: $putovanja putovanja\n'
+        '• Otkazivanja: $otkazivanja\n\n'
+        '🚨 UPOZORENJE: Ako se ne plati do 5. u mesecu, automatski ćete biti skinuti sa liste mesečnih putnika.\n\n'
+        'Kontakt: Bojan - Gavra 013\n\n'
+        'Hvala na razumevanju! 🚌\n'
+        '---\n'
+        'Automatska poruka.';
   }
 
   /// Dobijanje naziva meseca na srpskom
@@ -350,7 +367,7 @@ class SMSService {
       'Septembar',
       'Oktobar',
       'Novembar',
-      'Decembar'
+      'Decembar',
     ];
     return months[month - 1];
   }
@@ -404,7 +421,7 @@ class SMSService {
       return 'Sledeći SMS: $dateStr u 20:00';
     } else {
       // Sledeći mesec
-      DateTime nextMonth = DateTime(now.year, now.month + 1, 1);
+      DateTime nextMonth = DateTime(now.year, now.month + 1);
       DateTime nextSecondToLast = _getSecondToLastDayOfMonth(nextMonth);
       String nextDateStr = DateFormat('dd.MM.yyyy').format(nextSecondToLast);
       return 'Sledeći SMS: $nextDateStr u 20:00';

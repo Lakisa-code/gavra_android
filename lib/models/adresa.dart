@@ -2,18 +2,6 @@ import 'package:uuid/uuid.dart';
 
 /// Model za adrese
 class Adresa {
-  final String id;
-  final String ulica;
-  final String? broj;
-  final String grad;
-  final String? postanskiBroj;
-  final String? koordinate; // PostgreSQL POINT kao string "(lat,lng)"
-  final DateTime createdAt;
-
-  // Virtuelna polja za latitude/longitude iz POINT koordinata
-  double? get latitude => _parseLatitudeFromPoint();
-  double? get longitude => _parseLongitudeFromPoint();
-
   Adresa({
     String? id,
     required this.ulica,
@@ -36,6 +24,39 @@ class Adresa {
       createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
+
+  /// Factory constructor with separate lat/lng that creates POINT
+  factory Adresa.withCoordinates({
+    String? id,
+    required String ulica,
+    String? broj,
+    required String grad,
+    String? postanskiBroj,
+    double? latitude,
+    double? longitude,
+    DateTime? createdAt,
+  }) {
+    return Adresa(
+      id: id,
+      ulica: ulica,
+      broj: broj,
+      grad: grad,
+      postanskiBroj: postanskiBroj,
+      koordinate: createPointString(latitude, longitude),
+      createdAt: createdAt,
+    );
+  }
+  final String id;
+  final String ulica;
+  final String? broj;
+  final String grad;
+  final String? postanskiBroj;
+  final String? koordinate; // PostgreSQL POINT kao string "(lat,lng)"
+  final DateTime createdAt;
+
+  // Virtuelna polja za latitude/longitude iz POINT koordinata
+  double? get latitude => _parseLatitudeFromPoint();
+  double? get longitude => _parseLongitudeFromPoint();
 
   Map<String, dynamic> toMap() {
     return {
@@ -93,27 +114,5 @@ class Adresa {
   static String? createPointString(double? lat, double? lng) {
     if (lat == null || lng == null) return null;
     return '($lat,$lng)';
-  }
-
-  /// Factory constructor with separate lat/lng that creates POINT
-  factory Adresa.withCoordinates({
-    String? id,
-    required String ulica,
-    String? broj,
-    required String grad,
-    String? postanskiBroj,
-    double? latitude,
-    double? longitude,
-    DateTime? createdAt,
-  }) {
-    return Adresa(
-      id: id,
-      ulica: ulica,
-      broj: broj,
-      grad: grad,
-      postanskiBroj: postanskiBroj,
-      koordinate: createPointString(latitude, longitude),
-      createdAt: createdAt,
-    );
   }
 }

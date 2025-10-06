@@ -66,16 +66,23 @@ class DailyCheckInService {
   }
 
   /// Sačuvaj daily check-in (sitan novac i pazari)
-  static Future<void> saveCheckIn(String vozac, double sitanNovac,
-      {double dnevniPazari = 0.0}) async {
+  static Future<void> saveCheckIn(
+    String vozac,
+    double sitanNovac, {
+    double dnevniPazari = 0.0,
+  }) async {
     final today = DateTime.now();
     final todayKey =
         '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     try {
       // Sačuvaj u Supabase (ako postoji tabela)
-      final savedRow = await _saveToSupabase(vozac, sitanNovac, today,
-          dnevniPazari: dnevniPazari);
+      final savedRow = await _saveToSupabase(
+        vozac,
+        sitanNovac,
+        today,
+        dnevniPazari: dnevniPazari,
+      );
 
       // Ako smo dobili potvrdu sa servera, emituj vrednost iz servera
       if (savedRow != null) {
@@ -89,7 +96,8 @@ class DailyCheckInService {
         }
 
         dlog(
-            '✅ Supabase save successful for $vozac: Kusur=$emitVal RSD, Pazari=$dnevniPazari RSD');
+          '✅ Supabase save successful for $vozac: Kusur=$emitVal RSD, Pazari=$dnevniPazari RSD',
+        );
       }
     } catch (e) {
       // Ako je RLS blokirao ili tabela ne postoji, nastavi sa lokalnim čuvanjem
@@ -112,7 +120,8 @@ class DailyCheckInService {
       }
 
       dlog(
-          '✅ Local save successful for $vozac: Kusur=$sitanNovac RSD, Pazari=$dnevniPazari RSD');
+        '✅ Local save successful for $vozac: Kusur=$sitanNovac RSD, Pazari=$dnevniPazari RSD',
+      );
     } catch (e) {
       // Ovo je ozbiljna greška - lokalno čuvanje mora da radi
       dlog('❌ CRITICAL: Local save failed: $e');
@@ -153,8 +162,11 @@ class DailyCheckInService {
 
   /// Sačuvaj u Supabase tabelu daily_checkins
   static Future<Map<String, dynamic>?> _saveToSupabase(
-      String vozac, double sitanNovac, DateTime datum,
-      {double dnevniPazari = 0.0}) async {
+    String vozac,
+    double sitanNovac,
+    DateTime datum, {
+    double dnevniPazari = 0.0,
+  }) async {
     final supabase = Supabase.instance.client;
 
     try {
@@ -172,7 +184,8 @@ class DailyCheckInService {
           .maybeSingle();
 
       dlog(
-          '✅ Supabase daily_checkins: Uspešno sačuvano za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)');
+        '✅ Supabase daily_checkins: Uspešno sačuvano za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)',
+      );
 
       // Vrati eventualno sačuvani red kako bi pozivalac mogao da koristi potvrđene vrednosti
       if (response is Map<String, dynamic>) return response;
@@ -201,7 +214,8 @@ class DailyCheckInService {
             .maybeSingle();
 
         dlog(
-            '✅ Supabase daily_checkins: Kreirao tabelu i sačuvao za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)');
+          '✅ Supabase daily_checkins: Kreirao tabelu i sačuvao za $vozac (Kusur: $sitanNovac RSD, Pazari: $dnevniPazari RSD)',
+        );
 
         if (response is Map<String, dynamic>) return response;
         return null;
@@ -230,8 +244,10 @@ class DailyCheckInService {
   }
 
   /// Dohvati istoriju check-in-ova za vozača
-  static Future<List<Map<String, dynamic>>> getCheckInHistory(String vozac,
-      {int days = 7}) async {
+  static Future<List<Map<String, dynamic>>> getCheckInHistory(
+    String vozac, {
+    int days = 7,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final List<Map<String, dynamic>> history = [];
 
@@ -274,7 +290,10 @@ class DailyCheckInService {
 
   /// 📊 NOVI: Sačuvaj kompletan dnevni popis
   static Future<void> saveDailyReport(
-      String vozac, DateTime datum, Map<String, dynamic> popisPodaci) async {
+    String vozac,
+    DateTime datum,
+    Map<String, dynamic> popisPodaci,
+  ) async {
     final dateKey =
         '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
 
@@ -291,10 +310,13 @@ class DailyCheckInService {
     final popisJsonString = jsonEncode(popisPodaci);
     await prefs.setString('${dateKey}_popis', popisJsonString);
     await prefs.setString(
-        '${dateKey}_popis_timestamp', datum.toIso8601String());
+      '${dateKey}_popis_timestamp',
+      datum.toIso8601String(),
+    );
 
     dlog(
-        '✅ Dnevni popis sačuvan za $vozac na dan ${datum.day}.${datum.month}.${datum.year}');
+      '✅ Dnevni popis sačuvan za $vozac na dan ${datum.day}.${datum.month}.${datum.year}',
+    );
   }
 
   /// 📊 NOVI: Dohvati poslednji popis za vozača
@@ -351,12 +373,15 @@ class DailyCheckInService {
 
   /// 📊 AUTOMATSKO GENERISANJE POPISA ZA PRETHODNI DAN
   static Future<Map<String, dynamic>?> generateAutomaticReport(
-      String vozac, DateTime targetDate) async {
+    String vozac,
+    DateTime targetDate,
+  ) async {
     try {
       // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
       if (targetDate.weekday == 6 || targetDate.weekday == 7) {
         dlog(
-            '🚫 Preskačem automatski popis za vikend (${targetDate.weekday == 6 ? "Subota" : "Nedelja"}) ${targetDate.day}.${targetDate.month}.${targetDate.year}');
+          '🚫 Preskačem automatski popis za vikend (${targetDate.weekday == 6 ? "Subota" : "Nedelja"}) ${targetDate.day}.${targetDate.month}.${targetDate.year}',
+        );
         return null;
       }
 
@@ -367,7 +392,13 @@ class DailyCheckInService {
       final dayStart =
           DateTime(targetDate.year, targetDate.month, targetDate.day);
       final dayEnd = DateTime(
-          targetDate.year, targetDate.month, targetDate.day, 23, 59, 59);
+        targetDate.year,
+        targetDate.month,
+        targetDate.day,
+        23,
+        59,
+        59,
+      );
 
       // 2. KOMBINOVANI PUTNICI ZA DATUM (iz realtime) - koristimo server-filter
       final isoDate =
@@ -435,7 +466,8 @@ class DailyCheckInService {
         kilometraza =
             await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
         dlog(
-            '🚗 GPS kilometraža za $vozac za ${targetDate.day}.${targetDate.month}: ${kilometraza.toStringAsFixed(1)} km');
+          '🚗 GPS kilometraža za $vozac za ${targetDate.day}.${targetDate.month}: ${kilometraza.toStringAsFixed(1)} km',
+        );
       } catch (e) {
         dlog('⚠️ Greška pri GPS računanju kilometraže: $e');
         kilometraza = 0.0; // Fallback na 0 umesto dummy vrednost
@@ -470,7 +502,10 @@ class DailyCheckInService {
 
   /// 📊 HELPER: Sačuvaj popis u Supabase
   static Future<void> _savePopisToSupabase(
-      String vozac, Map<String, dynamic> popisPodaci, DateTime datum) async {
+    String vozac,
+    Map<String, dynamic> popisPodaci,
+    DateTime datum,
+  ) async {
     final supabase = Supabase.instance.client;
 
     try {

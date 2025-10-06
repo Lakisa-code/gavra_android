@@ -7,14 +7,13 @@ import '../utils/logging.dart';
 import '../theme.dart'; // DODANO za theme extensions
 
 class DailyCheckInScreen extends StatefulWidget {
-  final String vozac;
-  final VoidCallback onCompleted;
-
   const DailyCheckInScreen({
     Key? key,
     required this.vozac,
     required this.onCompleted,
   }) : super(key: key);
+  final String vozac;
+  final VoidCallback onCompleted;
 
   @override
   State<DailyCheckInScreen> createState() => _DailyCheckInScreenState();
@@ -51,18 +50,22 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.elasticOut,
+      ),
+    );
 
     _animationController.forward();
   }
@@ -254,7 +257,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: softVozacColor.withOpacity(0.4),
-                            width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -399,7 +401,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
       // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
       if (yesterday.weekday == 6 || yesterday.weekday == 7) {
         dlog(
-            '🚫 Preskačem automatski popis za vikend (${yesterday.weekday == 6 ? "Subota" : "Nedelja"})');
+          '🚫 Preskačem automatski popis za vikend (${yesterday.weekday == 6 ? "Subota" : "Nedelja"})',
+        );
         return;
       }
 
@@ -414,7 +417,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         // NEMA RUČNOG POPISA - Generiši automatski
         final automatskiPopis =
             await DailyCheckInService.generateAutomaticReport(
-                widget.vozac, yesterday);
+          widget.vozac,
+          yesterday,
+        );
 
         if (automatskiPopis != null && mounted) {
           // Prikaži automatski generisan popis
@@ -434,7 +439,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
     showDialog<void>(
       context: context,
-      barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
@@ -479,41 +483,52 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
                 // Statistike
                 _buildStatistikaRow(
-                    '💰 Ukupan pazar',
-                    '${popis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
-                    Theme.of(context).colorScheme.successPrimary),
+                  '💰 Ukupan pazar',
+                  '${popis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
+                  Theme.of(context).colorScheme.successPrimary,
+                ),
                 _buildStatistikaRow(
-                    '👥 Dodati putnici',
-                    '${popis['dodatiPutnici'] ?? 0}',
-                    Theme.of(context).colorScheme.primary),
+                  '👥 Dodati putnici',
+                  '${popis['dodatiPutnici'] ?? 0}',
+                  Theme.of(context).colorScheme.primary,
+                ),
                 _buildStatistikaRow(
-                    '✅ Pokupljeni putnici',
-                    '${popis['pokupljeniPutnici'] ?? 0}',
-                    Theme.of(context).colorScheme.successPrimary),
+                  '✅ Pokupljeni putnici',
+                  '${popis['pokupljeniPutnici'] ?? 0}',
+                  Theme.of(context).colorScheme.successPrimary,
+                ),
                 _buildStatistikaRow(
-                    '💳 Naplaćeni putnici',
-                    '${popis['naplaceniPutnici'] ?? 0}',
-                    Theme.of(context).colorScheme.workerPrimary),
+                  '💳 Naplaćeni putnici',
+                  '${popis['naplaceniPutnici'] ?? 0}',
+                  Theme.of(context).colorScheme.workerPrimary,
+                ),
                 _buildStatistikaRow(
-                    '❌ Otkazani putnici',
-                    '${popis['otkazaniPutnici'] ?? 0}',
-                    Theme.of(context).colorScheme.dangerPrimary),
+                  '❌ Otkazani putnici',
+                  '${popis['otkazaniPutnici'] ?? 0}',
+                  Theme.of(context).colorScheme.dangerPrimary,
+                ),
                 _buildStatistikaRow(
-                    '💸 Dugovi',
-                    '${popis['dugoviPutnici'] ?? 0}',
-                    Theme.of(context).colorScheme.studentPrimary),
-                _buildStatistikaRow('🎫 Mesečne karte',
-                    '${popis['mesecneKarte'] ?? 0}', Colors.purple),
+                  '💸 Dugovi',
+                  '${popis['dugoviPutnici'] ?? 0}',
+                  Theme.of(context).colorScheme.studentPrimary,
+                ),
                 _buildStatistikaRow(
-                    '🛣️ Kilometraža',
-                    '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
-                    Colors.indigo),
+                  '🎫 Mesečne karte',
+                  '${popis['mesecneKarte'] ?? 0}',
+                  Colors.purple,
+                ),
+                _buildStatistikaRow(
+                  '🛣️ Kilometraža',
+                  '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
+                  Colors.indigo,
+                ),
                 if (popis['sitanNovac'] != null &&
                     (popis['sitanNovac'] as num) > 0)
                   _buildStatistikaRow(
-                      '🪙 Sitan novac',
-                      '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
-                      Colors.amber),
+                    '🪙 Sitan novac',
+                    '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
+                    Colors.amber,
+                  ),
 
                 const SizedBox(height: 16),
 
@@ -563,8 +578,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
   void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
     final controller = TextEditingController(
-        text:
-            (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0');
+      text: (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0',
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -572,8 +587,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.auto_awesome,
-                color: Theme.of(context).colorScheme.studentPrimary, size: 24),
+            Icon(
+              Icons.auto_awesome,
+              color: Theme.of(context).colorScheme.studentPrimary,
+              size: 24,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -609,17 +627,19 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                             .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .studentPrimary
-                                .withOpacity(0.3)),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .studentPrimary
+                              .withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline,
-                              color:
-                                  Theme.of(context).colorScheme.studentPrimary,
-                              size: 20),
+                          Icon(
+                            Icons.info_outline,
+                            color: Theme.of(context).colorScheme.studentPrimary,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -647,8 +667,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                             .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: Theme.of(context).colorScheme.studentPrimary,
-                            width: 2),
+                          color: Theme.of(context).colorScheme.studentPrimary,
+                          width: 2,
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -665,37 +686,45 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
                     // Statistike
                     _buildStatistikaRow(
-                        '💰 Ukupan pazar',
-                        '${automatskiPopis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
-                        Theme.of(context).colorScheme.successPrimary),
+                      '💰 Ukupan pazar',
+                      '${automatskiPopis['ukupanPazar']?.toStringAsFixed(0) ?? 0} din',
+                      Theme.of(context).colorScheme.successPrimary,
+                    ),
                     _buildStatistikaRow(
-                        '👥 Dodati putnici',
-                        '${automatskiPopis['dodatiPutnici'] ?? 0}',
-                        Theme.of(context).colorScheme.primary),
+                      '👥 Dodati putnici',
+                      '${automatskiPopis['dodatiPutnici'] ?? 0}',
+                      Theme.of(context).colorScheme.primary,
+                    ),
                     _buildStatistikaRow(
-                        '✅ Pokupljeni putnici',
-                        '${automatskiPopis['pokupljeniPutnici'] ?? 0}',
-                        Theme.of(context).colorScheme.successPrimary),
+                      '✅ Pokupljeni putnici',
+                      '${automatskiPopis['pokupljeniPutnici'] ?? 0}',
+                      Theme.of(context).colorScheme.successPrimary,
+                    ),
                     _buildStatistikaRow(
-                        '💳 Naplaćeni putnici',
-                        '${automatskiPopis['naplaceniPutnici'] ?? 0}',
-                        Theme.of(context).colorScheme.workerPrimary),
+                      '💳 Naplaćeni putnici',
+                      '${automatskiPopis['naplaceniPutnici'] ?? 0}',
+                      Theme.of(context).colorScheme.workerPrimary,
+                    ),
                     _buildStatistikaRow(
-                        '❌ Otkazani putnici',
-                        '${automatskiPopis['otkazaniPutnici'] ?? 0}',
-                        Theme.of(context).colorScheme.dangerPrimary),
+                      '❌ Otkazani putnici',
+                      '${automatskiPopis['otkazaniPutnici'] ?? 0}',
+                      Theme.of(context).colorScheme.dangerPrimary,
+                    ),
                     _buildStatistikaRow(
-                        '� Dugovi',
-                        '${automatskiPopis['dugoviPutnici'] ?? 0}',
-                        Colors.orange),
+                      '� Dugovi',
+                      '${automatskiPopis['dugoviPutnici'] ?? 0}',
+                      Colors.orange,
+                    ),
                     _buildStatistikaRow(
-                        '📋 Mesečne karte',
-                        '${automatskiPopis['mesecneKarte'] ?? 0}',
-                        Colors.purple),
+                      '📋 Mesečne karte',
+                      '${automatskiPopis['mesecneKarte'] ?? 0}',
+                      Colors.purple,
+                    ),
                     _buildStatistikaRow(
-                        '🚗 Kilometraža',
-                        '${automatskiPopis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
-                        Colors.indigo),
+                      '🚗 Kilometraža',
+                      '${automatskiPopis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
+                      Colors.indigo,
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -713,8 +742,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.monetization_on,
-                                    color: Colors.orange, size: 20),
+                                Icon(
+                                  Icons.monetization_on,
+                                  color: Colors.orange,
+                                  size: 20,
+                                ),
                                 SizedBox(width: 8),
                                 Text(
                                   '🪙 SITAN NOVAC (KUSUR)',
@@ -735,7 +767,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                                 suffixText: 'din',
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -783,7 +817,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     if (result == true) {
       try {
         await _updateAutomatskiPopisSitanNovac(
-            automatskiPopis, automatskiPopis['sitanNovac'] as double);
+          automatskiPopis,
+          automatskiPopis['sitanNovac'] as double,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -839,7 +875,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
   // Ažuriraj sitan novac u automatskom popisu
   Future<void> _updateAutomatskiPopisSitanNovac(
-      Map<String, dynamic> automatskiPopis, double newSitanNovac) async {
+    Map<String, dynamic> automatskiPopis,
+    double newSitanNovac,
+  ) async {
     final supabase = Supabase.instance.client;
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
 

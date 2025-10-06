@@ -1,16 +1,6 @@
 import 'package:flutter/material.dart';
 
 class FilterBar extends StatelessWidget {
-  final List<String> dani;
-  final String selectedDay;
-  final List<String> gradovi;
-  final String selectedGrad;
-  final List<String> vremena;
-  final String selectedVreme;
-  final ValueChanged<String> onDayChanged;
-  final ValueChanged<String> onGradChanged;
-  final ValueChanged<String> onVremeChanged;
-
   const FilterBar({
     Key? key,
     required this.dani,
@@ -23,6 +13,15 @@ class FilterBar extends StatelessWidget {
     required this.onGradChanged,
     required this.onVremeChanged,
   }) : super(key: key);
+  final List<String> dani;
+  final String selectedDay;
+  final List<String> gradovi;
+  final String selectedGrad;
+  final List<String> vremena;
+  final String selectedVreme;
+  final ValueChanged<String> onDayChanged;
+  final ValueChanged<String> onGradChanged;
+  final ValueChanged<String> onVremeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +41,12 @@ class FilterBar extends StatelessWidget {
                     EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
               items: dani
-                  .map((dan) => DropdownMenuItem(
-                        value: dan,
-                        child: Text(dan),
-                      ))
+                  .map(
+                    (dan) => DropdownMenuItem(
+                      value: dan,
+                      child: Text(dan),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value != null) onDayChanged(value);
@@ -65,10 +66,12 @@ class FilterBar extends StatelessWidget {
                     EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
               items: gradovi
-                  .map((grad) => DropdownMenuItem(
-                        value: grad,
-                        child: Text(grad),
-                      ))
+                  .map(
+                    (grad) => DropdownMenuItem(
+                      value: grad,
+                      child: Text(grad),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value != null) onGradChanged(value);
@@ -88,10 +91,12 @@ class FilterBar extends StatelessWidget {
                     EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               ),
               items: vremena
-                  .map((vreme) => DropdownMenuItem(
-                        value: vreme,
-                        child: Text(vreme),
-                      ))
+                  .map(
+                    (vreme) => DropdownMenuItem(
+                      value: vreme,
+                      child: Text(vreme),
+                    ),
+                  )
                   .toList(),
               onChanged: (value) {
                 if (value != null) onVremeChanged(value);

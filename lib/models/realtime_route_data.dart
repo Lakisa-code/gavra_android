@@ -3,18 +3,6 @@ import '../models/putnik.dart';
 
 /// 📊 Model za realtime podatke o ruti
 class RealtimeRouteData {
-  final Position currentPosition;
-  final List<Putnik> currentRoute;
-  final String? optimalRoute;
-  final bool isTrackingActive;
-  final String driverId;
-  final DateTime timestamp;
-
-  // Dodatni podaci za brzinu kretanja
-  final double? currentSpeed;
-  final double? estimatedTimeToNextDestination;
-  final int remainingPassengers;
-
   RealtimeRouteData({
     required this.currentPosition,
     required this.currentRoute,
@@ -27,6 +15,17 @@ class RealtimeRouteData {
   }) : remainingPassengers = currentRoute
             .where((p) => p.vremePokupljenja == null && p.status != 'otkazan')
             .length;
+  final Position currentPosition;
+  final List<Putnik> currentRoute;
+  final String? optimalRoute;
+  final bool isTrackingActive;
+  final String driverId;
+  final DateTime timestamp;
+
+  // Dodatni podaci za brzinu kretanja
+  final double? currentSpeed;
+  final double? estimatedTimeToNextDestination;
+  final int remainingPassengers;
 
   /// 📍 Dobij sledeću destinaciju
   Putnik? get nextDestination {
@@ -63,12 +62,6 @@ class RealtimeRouteData {
 
 /// 🚦 Model za saobraćajne alertе
 class TrafficAlert {
-  final String message;
-  final String severity; // 'low', 'medium', 'high'
-  final String? affectedRoute;
-  final int delayMinutes;
-  final DateTime timestamp;
-
   TrafficAlert({
     required this.message,
     required this.severity,
@@ -76,6 +69,11 @@ class TrafficAlert {
     required this.delayMinutes,
     required this.timestamp,
   });
+  final String message;
+  final String severity; // 'low', 'medium', 'high'
+  final String? affectedRoute;
+  final int delayMinutes;
+  final DateTime timestamp;
 
   /// 🎨 Boja na osnovu ozbiljnosti
   String get severityColor {

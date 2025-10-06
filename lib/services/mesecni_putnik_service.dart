@@ -28,10 +28,12 @@ class MesecniPutnikService {
         try {
           final listRaw = data as List<dynamic>;
           dlog(
-              '📊 [MESECNI PUTNIK STREAM] Dobio ${listRaw.length} putnika iz baze');
+            '📊 [MESECNI PUTNIK STREAM] Dobio ${listRaw.length} putnika iz baze',
+          );
           final allPutnici = listRaw
               .map(
-                  (json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
+                (json) => MesecniPutnik.fromMap(json as Map<String, dynamic>),
+              )
               .toList();
           // ✅ ISPRAVLJENO: filtriraj i po aktivan statusu, ne samo obrisan
           final filteredPutnici = allPutnici
@@ -39,7 +41,8 @@ class MesecniPutnikService {
               .toList();
 
           dlog(
-              '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon filtriranja (aktivan && !obrisan)');
+            '🔍 [MESECNI PUTNIK STREAM] Filtriranje: ${allPutnici.length} ukupno → ${filteredPutnici.length} nakon filtriranja (aktivan && !obrisan)',
+          );
           for (final putnik in allPutnici) {
             final status = putnik.obrisan
                 ? 'OBRISAN'
@@ -76,14 +79,16 @@ class MesecniPutnikService {
           final listRaw = data as List<dynamic>;
           final list = listRaw
               .map(
-                  (json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
+                (json) => MesecniPutnik.fromMap(json as Map<String, dynamic>),
+              )
               .where((putnik) => putnik.aktivan && !putnik.obrisan)
               .toList();
           list.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
           return list;
         } catch (e) {
           dlog(
-              '❌ [MESECNI PUTNIK SERVICE] Error mapping realtime active data: $e');
+            '❌ [MESECNI PUTNIK SERVICE] Error mapping realtime active data: $e',
+          );
           return <MesecniPutnik>[];
         }
       }).handleError((Object error) {
@@ -144,7 +149,8 @@ class MesecniPutnikService {
       return mapped;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih (zakupljeno danas): $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju aktivnih (zakupljeno danas): $e',
+      );
       return [];
     }
   }
@@ -163,11 +169,13 @@ class MesecniPutnikService {
           .toList();
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Dobijeno ${putnici.length} aktivnih mesečnih putnika');
+        '✅ [MESECNI PUTNIK SERVICE] Dobijeno ${putnici.length} aktivnih mesečnih putnika',
+      );
       return putnici;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju svih aktivnih: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju svih aktivnih: $e',
+      );
       return [];
     }
   }
@@ -190,7 +198,8 @@ class MesecniPutnikService {
           .toList();
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri dohvatanju zakupljeno danas: $e',
+      );
       return [];
     }
   }
@@ -247,10 +256,12 @@ class MesecniPutnikService {
 
   // ➕ DODAJ novog mesečnog putnika
   static Future<MesecniPutnik?> dodajMesecnogPutnika(
-      MesecniPutnik putnik) async {
+    MesecniPutnik putnik,
+  ) async {
     try {
       dlog(
-          '🔄 [MESECNI PUTNIK SERVICE] Pokušavam dodavanje: ${putnik.putnikIme}');
+        '🔄 [MESECNI PUTNIK SERVICE] Pokušavam dodavanje: ${putnik.putnikIme}',
+      );
       dlog('📊 [DEBUG] Podaci: ${putnik.toMap()}');
 
       final response = await _supabaseAdmin
@@ -260,13 +271,15 @@ class MesecniPutnikService {
           .single();
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Uspešno dodat mesečni putnik: ${putnik.putnikIme}');
+        '✅ [MESECNI PUTNIK SERVICE] Uspešno dodat mesečni putnik: ${putnik.putnikIme}',
+      );
       dlog('📊 [DEBUG] Response: $response');
 
       return MesecniPutnik.fromMap(response);
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] GREŠKA pri dodavanju putnika: ${putnik.putnikIme}');
+        '❌ [MESECNI PUTNIK SERVICE] GREŠKA pri dodavanju putnika: ${putnik.putnikIme}',
+      );
       dlog('❌ [ERROR DETAILS] $e');
       dlog('📊 [DEBUG] Podaci koji su poslani: ${putnik.toMap()}');
       return null;
@@ -275,7 +288,8 @@ class MesecniPutnikService {
 
   // ✏️ AŽURIRAJ mesečnog putnika
   static Future<MesecniPutnik?> azurirajMesecnogPutnika(
-      MesecniPutnik putnik) async {
+    MesecniPutnik putnik,
+  ) async {
     try {
       final dataToSend = putnik.toMap();
       dlog('🔧 [DEBUG] Ažuriranje putnika sa ID: ${putnik.id}');
@@ -292,7 +306,8 @@ class MesecniPutnikService {
 
       if (existingCheck == null) {
         dlog(
-            '❌ [MESECNI PUTNIK SERVICE] Putnik sa ID ${putnik.id} ne postoji u bazi');
+          '❌ [MESECNI PUTNIK SERVICE] Putnik sa ID ${putnik.id} ne postoji u bazi',
+        );
         return null;
       }
 
@@ -304,14 +319,16 @@ class MesecniPutnikService {
           .single();
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Ažuriran mesečni putnik: ${putnik.putnikIme}');
+        '✅ [MESECNI PUTNIK SERVICE] Ažuriran mesečni putnik: ${putnik.putnikIme}',
+      );
       dlog('📤 [MESECNI PUTNIK SERVICE] Response od Supabase: $response');
 
       try {
         return MesecniPutnik.fromMap(response);
       } catch (parseErr, st) {
         dlog(
-            '❌ [MESECNI PUTNIK SERVICE] Greška pri parsiranju response-a: $parseErr');
+          '❌ [MESECNI PUTNIK SERVICE] Greška pri parsiranju response-a: $parseErr',
+        );
         dlog('❗ StackTrace: $st');
         return null;
       }
@@ -329,7 +346,7 @@ class MesecniPutnikService {
       await _supabase.from('mesecni_putnici').update({
         'obrisan': true,
         'aktivan': false,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog('✅ [MESECNI PUTNIK SERVICE] Soft delete mesečnog putnika: $id');
@@ -346,7 +363,7 @@ class MesecniPutnikService {
     try {
       await _supabase.from('mesecni_putnici').update({
         'aktivan': aktivan,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog('✅ [MESECNI PUTNIK SERVICE] Promenjena aktivnost ($id): $aktivan');
@@ -368,11 +385,12 @@ class MesecniPutnikService {
             : vozac, // ✅ ISPRAVNO - kolona 'vozac_id' postoji u tabeli
         'vreme_pokupljenja':
             DateTime.now().toIso8601String(), // ✅ ISPRAVNO - sa malim e!
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Označen kao pokupljen: $id od strane $vozac');
+        '✅ [MESECNI PUTNIK SERVICE] Označen kao pokupljen: $id od strane $vozac',
+      );
 
       return true;
     } catch (e) {
@@ -390,11 +408,12 @@ class MesecniPutnikService {
         'vozac_id': (vozac.isEmpty)
             ? null
             : vozac, // ✅ ISPRAVNO - kolona 'vozac_id' postoji u tabeli
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Otkazano pokupljanje: $id od strane $vozac');
+        '✅ [MESECNI PUTNIK SERVICE] Otkazano pokupljanje: $id od strane $vozac',
+      );
 
       return true;
     } catch (e) {
@@ -405,7 +424,10 @@ class MesecniPutnikService {
 
   // 💰 OZNAČI PLAĆANJE MESEČNOG PUTNIKA
   static Future<bool> oznaciPlacanje(
-      String id, String vozac, double iznos) async {
+    String id,
+    String vozac,
+    double iznos,
+  ) async {
     try {
       await _supabase.from('mesecni_putnici').update({
         'cena': iznos, // ✅ NOVA KOLONA - koristi novu cena kolonu
@@ -414,10 +436,11 @@ class MesecniPutnikService {
             : vozac, // ✅ ISPRAVNO - kolona 'vozac_id' postoji u tabeli
         'vreme_placanja':
             DateTime.now().toIso8601String(), // ✅ NOVO - timestamp plaćanja
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Označeno plaćanje: $id - $iznos RSD od strane $vozac u ${DateTime.now()}');
+        '✅ [MESECNI PUTNIK SERVICE] Označeno plaćanje: $id - $iznos RSD od strane $vozac u ${DateTime.now()}',
+      );
 
       return true;
     } catch (e) {
@@ -432,23 +455,26 @@ class MesecniPutnikService {
       await _supabase.from('mesecni_putnici').update({
         'broj_putovanja': noviBroj,
         'poslednje_putovanje': DateTime.now().toIso8601String().split('T')[0],
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj putovanja ($id): $noviBroj');
+        '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj putovanja ($id): $noviBroj',
+      );
 
       return true;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja putovanja: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja putovanja: $e',
+      );
       return false;
     }
   }
 
   // 📊 IZRAČUNAJ broj putovanja na osnovu istorije (JEDNO PUTOVANJE PO DANU)
   static Future<int> izracunajBrojPutovanjaIzIstorije(
-      String mesecniPutnikId) async {
+    String mesecniPutnikId,
+  ) async {
     try {
       // Dobij sve JEDINSTVENE DATUME kada je putnik pokupljen
       final response = await _supabase
@@ -468,19 +494,23 @@ class MesecniPutnikService {
       final brojPutovanja = jedinstveniDatumi.length;
 
       dlog(
-          '📊 [MESECNI PUTNIK SERVICE] Broj putovanja iz istorije za $mesecniPutnikId: $brojPutovanja (jedinstveni datumi: ${jedinstveniDatumi.toList()})');
+        '📊 [MESECNI PUTNIK SERVICE] Broj putovanja iz istorije za $mesecniPutnikId: $brojPutovanja (jedinstveni datumi: ${jedinstveniDatumi.toList()})',
+      );
 
       return brojPutovanja;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja iz istorije: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja iz istorije: $e',
+      );
       return 0;
     }
   }
 
   // 📊 IZRAČUNAJ broj putovanja za određeni datum (MAX 1 PO DANU)
   static Future<int> izracunajBrojPutovanjaZaDatum(
-      String mesecniPutnikId, DateTime datum) async {
+    String mesecniPutnikId,
+    DateTime datum,
+  ) async {
     try {
       final datumStr = datum.toIso8601String().split('T')[0];
 
@@ -495,25 +525,30 @@ class MesecniPutnikService {
       final brojPutovanja = response.isNotEmpty ? 1 : 0;
 
       dlog(
-          '📊 [MESECNI PUTNIK SERVICE] Broj putovanja za datum $datumStr: $brojPutovanja (pokupljanja: ${response.length})');
+        '📊 [MESECNI PUTNIK SERVICE] Broj putovanja za datum $datumStr: $brojPutovanja (pokupljanja: ${response.length})',
+      );
 
       return brojPutovanja;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja za datum: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju putovanja za datum: $e',
+      );
       return 0;
     }
   }
 
   // 📊 IZRAČUNAJ broj putovanja za DANAS
   static Future<int> izracunajBrojPutovanjaZaDanas(
-      String mesecniPutnikId) async {
+    String mesecniPutnikId,
+  ) async {
     return await izracunajBrojPutovanjaZaDatum(mesecniPutnikId, DateTime.now());
   }
 
   // 📊 DETALJNO računanje putovanja (odvojeno ujutru/popodne)
   static Future<Map<String, int>> izracunajDetaljnaPutovanjaZaDatum(
-      String mesecniPutnikId, DateTime datum) async {
+    String mesecniPutnikId,
+    DateTime datum,
+  ) async {
     try {
       final datumStr = datum.toIso8601String().split('T')[0];
 
@@ -551,7 +586,8 @@ class MesecniPutnikService {
       }
 
       dlog(
-          '📊 [MESECNI PUTNIK SERVICE] Za datum $datumStr: ujutru=$ujutru, popodne=$popodne, ukupno=$ukupno');
+        '📊 [MESECNI PUTNIK SERVICE] Za datum $datumStr: ujutru=$ujutru, popodne=$popodne, ukupno=$ukupno',
+      );
 
       return {
         'ujutru': ujutru,
@@ -573,23 +609,26 @@ class MesecniPutnikService {
 
       await _supabase.from('mesecni_putnici').update({
         'broj_putovanja': brojIzIstorije,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj putovanja ($id): $brojIzIstorije');
+        '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj putovanja ($id): $brojIzIstorije',
+      );
 
       return true;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja putovanja: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja putovanja: $e',
+      );
       return false;
     }
   }
 
   // 📊 IZRAČUNAJ broj otkazivanja na osnovu istorije (STVARNI BROJ)
   static Future<int> izracunajBrojOtkazivanjaIzIstorije(
-      String mesecniPutnikId) async {
+    String mesecniPutnikId,
+  ) async {
     try {
       // Dobij sve JEDINSTVENE DATUME kada je putnik otkazan
       final response = await _supabase
@@ -609,12 +648,14 @@ class MesecniPutnikService {
       final brojOtkazivanja = jedinstveniDatumi.length;
 
       dlog(
-          '📊 [MESECNI PUTNIK SERVICE] Broj otkazivanja iz istorije za $mesecniPutnikId: $brojOtkazivanja (datumi: ${jedinstveniDatumi.toList()})');
+        '📊 [MESECNI PUTNIK SERVICE] Broj otkazivanja iz istorije za $mesecniPutnikId: $brojOtkazivanja (datumi: ${jedinstveniDatumi.toList()})',
+      );
 
       return brojOtkazivanja;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju otkazivanja iz istorije: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri računanju otkazivanja iz istorije: $e',
+      );
       return 0;
     }
   }
@@ -626,16 +667,18 @@ class MesecniPutnikService {
 
       await _supabase.from('mesecni_putnici').update({
         'broj_otkazivanja': brojIzIstorije,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj otkazivanja ($id): $brojIzIstorije');
+        '✅ [MESECNI PUTNIK SERVICE] Sinhronizovan broj otkazivanja ($id): $brojIzIstorije',
+      );
 
       return true;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja otkazivanja: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji broja otkazivanja: $e',
+      );
       return false;
     }
   }
@@ -645,31 +688,38 @@ class MesecniPutnikService {
     try {
       await _supabase.from('mesecni_putnici').update({
         'broj_otkazivanja': noviBroj,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj otkazivanja ($id): $noviBroj');
+        '✅ [MESECNI PUTNIK SERVICE] Ažuriran broj otkazivanja ($id): $noviBroj',
+      );
 
       return true;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja otkazivanja: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju broja otkazivanja: $e',
+      );
       return false;
     }
   }
 
   // 🏥 UPRAVLJANJE ODSUTNOSTIMA
-  static Future<bool> postaviOdsutnost(String id, String statusOdsutnosti,
-      DateTime? datumPocetka, DateTime? datumKraja) async {
+  static Future<bool> postaviOdsutnost(
+    String id,
+    String statusOdsutnosti,
+    DateTime? datumPocetka,
+    DateTime? datumKraja,
+  ) async {
     try {
       await _supabase.from('mesecni_putnici').update({
         'status': statusOdsutnosti,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Postavljena odsutnost ($id): $statusOdsutnosti');
+        '✅ [MESECNI PUTNIK SERVICE] Postavljena odsutnost ($id): $statusOdsutnosti',
+      );
 
       return true;
     } catch (e) {
@@ -702,13 +752,16 @@ class MesecniPutnikService {
   }
 
   // 🚀 KREIRAJ DNEVNA PUTOVANJA iz mesečnih putnika za celu nedelju/mesec
-  static Future<int> kreirajDnevnaPutovanjaIzMesecnih(
-      {DateTime? datum, int danaUnapred = 30}) async {
+  static Future<int> kreirajDnevnaPutovanjaIzMesecnih({
+    DateTime? datum,
+    int danaUnapred = 30,
+  }) async {
     try {
       final pocetniDatum = datum ?? DateTime.now();
 
       dlog(
-          '🚀 [MESECNI PUTNIK SERVICE] Kreiranje dnevnih putovanja za $danaUnapred dana od ${pocetniDatum.toIso8601String().split('T')[0]}');
+        '🚀 [MESECNI PUTNIK SERVICE] Kreiranje dnevnih putovanja za $danaUnapred dana od ${pocetniDatum.toIso8601String().split('T')[0]}',
+      );
 
       // Dobij sve aktivne mesečne putnike
       final mesecniPutnici = await _supabase
@@ -719,10 +772,12 @@ class MesecniPutnikService {
           .eq('status', 'radi');
 
       dlog(
-          '🔍 [DEBUG] Pronađeno ${mesecniPutnici.length} aktivnih mesečnih putnika');
+        '🔍 [DEBUG] Pronađeno ${mesecniPutnici.length} aktivnih mesečnih putnika',
+      );
       for (final putnik in mesecniPutnici) {
         dlog(
-            '🔍 [DEBUG] Putnik: ${putnik['ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}');
+          '🔍 [DEBUG] Putnik: ${putnik['ime']}, polasci_po_danu: ${putnik['polasci_po_danu']}, radni_dani: ${putnik['radni_dani']}',
+        );
       }
 
       int kreirano = 0;
@@ -775,7 +830,8 @@ class MesecniPutnikService {
               kreirano++;
 
               dlog(
-                  '✅ Kreiran BC putnik: ${mesecniPutnik.putnikIme} $vremeBelaCrkva na $datumStr');
+                '✅ Kreiran BC putnik: ${mesecniPutnik.putnikIme} $vremeBelaCrkva na $datumStr',
+              );
             }
           }
 
@@ -810,14 +866,16 @@ class MesecniPutnikService {
               kreirano++;
 
               dlog(
-                  '✅ Kreiran VS putnik: ${mesecniPutnik.putnikIme} $vremeVrsac na $datumStr');
+                '✅ Kreiran VS putnik: ${mesecniPutnik.putnikIme} $vremeVrsac na $datumStr',
+              );
             }
           }
         }
       }
 
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Kreirano $kreirano novih putovanja za period od $danaUnapred dana');
+        '✅ [MESECNI PUTNIK SERVICE] Kreirano $kreirano novih putovanja za period od $danaUnapred dana',
+      );
 
       // 🔄 SINHRONIZUJ brojPutovanja za sve mesečne putnike koji su imali nova putovanja
       if (kreirano > 0) {
@@ -830,21 +888,25 @@ class MesecniPutnikService {
 
           for (final putnikData in sviMesecniPutnici) {
             await sinhronizujBrojPutovanjaSaIstorijom(
-                putnikData['id'] as String);
+              putnikData['id'] as String,
+            );
           }
 
           dlog(
-              '✅ [MESECNI PUTNIK SERVICE] Sinhronizacija brojPutovanja završena za ${sviMesecniPutnici.length} putnika');
+            '✅ [MESECNI PUTNIK SERVICE] Sinhronizacija brojPutovanja završena za ${sviMesecniPutnici.length} putnika',
+          );
         } catch (e) {
           dlog(
-              '⚠️ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji brojPutovanja: $e');
+            '⚠️ [MESECNI PUTNIK SERVICE] Greška pri sinhronizaciji brojPutovanja: $e',
+          );
         }
       }
 
       return kreirano;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri kreiranju dnevnih putovanja: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri kreiranju dnevnih putovanja: $e',
+      );
       return 0;
     }
   }
@@ -872,15 +934,17 @@ class MesecniPutnikService {
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE MESTA ZA ĐAKE
-  static Future<Map<String, int>> izracunajMestaZaDjake(
-      {DateTime? datum}) async {
+  static Future<Map<String, int>> izracunajMestaZaDjake({
+    DateTime? datum,
+  }) async {
     try {
       final ciljniDatum = datum ?? DateTime.now();
       final datumStr = ciljniDatum.toIso8601String().split('T')[0];
       final danUNedelji = _getDanUNedelji(ciljniDatum.weekday);
 
       dlog(
-          '🎓 [DJACI STATISTIKE] Računam mesta za datum: $datumStr ($danUNedelji)');
+        '🎓 [DJACI STATISTIKE] Računam mesta za datum: $datumStr ($danUNedelji)',
+      );
 
       // 1. Dobij sve aktivne đake (tip = 'ucenik')
       final sviDjaci = await _supabase
@@ -899,7 +963,8 @@ class MesecniPutnikService {
       }).toList();
 
       dlog(
-          '🎓 [DJACI STATISTIKE] Đaci koji rade danas ($danUNedelji): ${djaciDanas.length}');
+        '🎓 [DJACI STATISTIKE] Đaci koji rade danas ($danUNedelji): ${djaciDanas.length}',
+      );
 
       // 3. Računaj upisane za školu (UJUTRU - bez obzira na pokupljanje)
       int upisanoZaSkolu = 0;
@@ -957,13 +1022,16 @@ class MesecniPutnikService {
 
   // 💰 UPRAVLJANJE PLAĆANJEM
   static Future<bool> azurirajPlacanje(
-      String id, double iznos, String vozac) async {
+    String id,
+    double iznos,
+    String vozac,
+  ) async {
     try {
       await _supabase.from('mesecni_putnici').update({
         'cena': iznos,
         'vreme_placanja': DateTime.now().toIso8601String(),
         'naplata_vozac': vozac, // Vozač koji je naplatio
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       dlog('✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje ($id): $iznos din');
@@ -976,8 +1044,13 @@ class MesecniPutnikService {
   }
 
   // 💰 UPRAVLJANJE PLAĆANJEM ZA SPECIFIČAN MESEC
-  static Future<bool> azurirajPlacanjeZaMesec(String id, double iznos,
-      String vozac, DateTime pocetakMeseca, DateTime krajMeseca) async {
+  static Future<bool> azurirajPlacanjeZaMesec(
+    String id,
+    double iznos,
+    String vozac,
+    DateTime pocetakMeseca,
+    DateTime krajMeseca,
+  ) async {
     try {
       // Postavi vreme plaćanja kao trenutni datum/vreme (kada je stvarno plaćeno)
       String vremePlace = DateTime.now().toIso8601String();
@@ -992,14 +1065,16 @@ class MesecniPutnikService {
         'placena_godina': pocetakMeseca.year,
       }).eq('id', id);
 
-      String mesecGodina = "${pocetakMeseca.month}/${pocetakMeseca.year}";
+      String mesecGodina = '${pocetakMeseca.month}/${pocetakMeseca.year}';
       dlog(
-          '✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje za $mesecGodina ($id): $iznos din');
+        '✅ [MESECNI PUTNIK SERVICE] Ažurirano plaćanje za $mesecGodina ($id): $iznos din',
+      );
 
       return true;
     } catch (e) {
       dlog(
-          '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju plaćanja za mesec: $e');
+        '❌ [MESECNI PUTNIK SERVICE] Greška pri ažuriranju plaćanja za mesec: $e',
+      );
       return false;
     }
   }

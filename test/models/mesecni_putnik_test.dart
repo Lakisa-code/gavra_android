@@ -10,9 +10,9 @@ void main() {
         putnikIme: 'Test Putnik',
         tip: 'djak',
         polasciPoDanu: {
-          'pon': ['07:00 BC']
+          'pon': ['07:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2024, 1, 1),
+        datumPocetkaMeseca: DateTime(2024),
         datumKrajaMeseca: DateTime(2024, 1, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -22,8 +22,11 @@ void main() {
       final map = putnik.toMap();
 
       // Test da li je prazan string konvertovan u null
-      expect(map['vozac_id'], isNull,
-          reason: 'Prazan string za vozac_id treba da bude null u bazi');
+      expect(
+        map['vozac_id'],
+        isNull,
+        reason: 'Prazan string za vozac_id treba da bude null u bazi',
+      );
 
       print('✅ Test 1 PASSED: Prazan string vozac_id konvertovan u null');
     });
@@ -36,9 +39,9 @@ void main() {
         putnikIme: 'Test Putnik 2',
         tip: 'djak',
         polasciPoDanu: {
-          'uto': ['08:00 VS']
+          'uto': ['08:00 VS'],
         },
-        datumPocetkaMeseca: DateTime(2024, 1, 1),
+        datumPocetkaMeseca: DateTime(2024),
         datumKrajaMeseca: DateTime(2024, 1, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -48,8 +51,11 @@ void main() {
       final map = putnik.toMap();
 
       // Test da li je validan UUID sačuvan
-      expect(map['vozac_id'], equals(validUuid),
-          reason: 'Validan UUID za vozac_id treba da ostane isti');
+      expect(
+        map['vozac_id'],
+        equals(validUuid),
+        reason: 'Validan UUID za vozac_id treba da ostane isti',
+      );
 
       print('✅ Test 2 PASSED: Validan UUID vozac_id sačuvan ispravno');
     });
@@ -90,7 +96,7 @@ void main() {
         'putnik_ime': 'Test User',
         'tip': 'djak',
         'polasci_po_danu': {
-          'pon': ['07:00 BC']
+          'pon': ['07:00 BC'],
         },
         'datum_pocetka_meseca': '2024-01-01',
         'datum_kraja_meseca': '2024-01-31',
@@ -101,8 +107,11 @@ void main() {
         'statistics': null,
       };
 
-      expect(() => MesecniPutnik.fromMap(testMap), returnsNormally,
-          reason: 'Model treba da rukuje null/empty vrednostima gracefully');
+      expect(
+        () => MesecniPutnik.fromMap(testMap),
+        returnsNormally,
+        reason: 'Model treba da rukuje null/empty vrednostima gracefully',
+      );
 
       final putnik = MesecniPutnik.fromMap(testMap);
       final map = putnik.toMap();
@@ -122,9 +131,9 @@ void main() {
         putnikIme: 'Test Putnik',
         tip: 'djak',
         polasciPoDanu: {
-          'pon': ['07:00 BC']
+          'pon': ['07:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2024, 1, 1),
+        datumPocetkaMeseca: DateTime(2024),
         datumKrajaMeseca: DateTime(2024, 1, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -134,10 +143,16 @@ void main() {
       final map = putnik.toMap();
 
       // Test da se koristi 'poslednje_putovanje' a ne 'poslednji_putovanje'
-      expect(map.containsKey('poslednje_putovanje'), isTrue,
-          reason: 'Map treba da sadrži poslednje_putovanje kolonu');
-      expect(map.containsKey('poslednji_putovanje'), isFalse,
-          reason: 'Map NE treba da sadrži staro ime poslednji_putovanje');
+      expect(
+        map.containsKey('poslednje_putovanje'),
+        isTrue,
+        reason: 'Map treba da sadrži poslednje_putovanje kolonu',
+      );
+      expect(
+        map.containsKey('poslednji_putovanje'),
+        isFalse,
+        reason: 'Map NE treba da sadrži staro ime poslednji_putovanje',
+      );
 
       print('✅ Test 5 PASSED: poslednje_putovanje kolona ispravno imenovana');
     });

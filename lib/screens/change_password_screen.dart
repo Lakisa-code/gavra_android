@@ -4,10 +4,9 @@ import '../widgets/custom_back_button.dart';
 import '../theme.dart'; // DODANO za theme extensions
 
 class ChangePasswordScreen extends StatefulWidget {
-  final String driverName;
-
   const ChangePasswordScreen({Key? key, required this.driverName})
       : super(key: key);
+  final String driverName;
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -48,7 +47,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
       // Promeni šifru
       final success = await PasswordService.setPassword(
-          widget.driverName, _newPasswordController.text.trim());
+        widget.driverName,
+        _newPasswordController.text.trim(),
+      );
 
       if (success) {
         _showSuccess('Šifra je uspešno promenjena!');
@@ -185,11 +186,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           labelText: 'Unesite trenutnu šifru',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_showCurrentPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility),
-                            onPressed: () => setState(() =>
-                                _showCurrentPassword = !_showCurrentPassword),
+                            icon: Icon(
+                              _showCurrentPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () => setState(
+                              () =>
+                                  _showCurrentPassword = !_showCurrentPassword,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -229,11 +234,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           labelText: 'Unesite novu šifru',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_showNewPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility),
+                            icon: Icon(
+                              _showNewPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
                             onPressed: () => setState(
-                                () => _showNewPassword = !_showNewPassword),
+                              () => _showNewPassword = !_showNewPassword,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -254,11 +262,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           labelText: 'Ponovite novu šifru',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_showConfirmPassword
-                                ? Icons.visibility_off
-                                : Icons.visibility),
-                            onPressed: () => setState(() =>
-                                _showConfirmPassword = !_showConfirmPassword),
+                            icon: Icon(
+                              _showConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () => setState(
+                              () =>
+                                  _showConfirmPassword = !_showConfirmPassword,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -317,15 +329,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.3)),
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info,
-                        color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.info,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

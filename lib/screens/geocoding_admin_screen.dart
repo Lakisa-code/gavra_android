@@ -220,26 +220,41 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          _buildStatRow('API pozivi',
-                              '${_stats['api_calls'] ?? 0}', Icons.cloud),
-                          _buildStatRow('Cache hits',
-                              '${_stats['cache_hits'] ?? 0}', Icons.memory),
                           _buildStatRow(
-                              'Ukupno zahteva',
-                              '${_stats['total_requests'] ?? 0}',
-                              Icons.all_inclusive),
-                          _buildStatRow('Cache hit rate',
-                              '${_stats['cache_hit_rate'] ?? 0}%', Icons.speed),
-                          _buildStatRow('Cache entries',
-                              '${_stats['cache_entries'] ?? 0}', Icons.storage),
+                            'API pozivi',
+                            '${_stats['api_calls'] ?? 0}',
+                            Icons.cloud,
+                          ),
                           _buildStatRow(
-                              'Procenjena veličina',
-                              '${_stats['cache_size_estimate'] ?? 'N/A'}',
-                              Icons.folder_open),
+                            'Cache hits',
+                            '${_stats['cache_hits'] ?? 0}',
+                            Icons.memory,
+                          ),
                           _buildStatRow(
-                              'Poslednji reset',
-                              '${_stats['last_reset'] ?? 'Nikad'}',
-                              Icons.refresh),
+                            'Ukupno zahteva',
+                            '${_stats['total_requests'] ?? 0}',
+                            Icons.all_inclusive,
+                          ),
+                          _buildStatRow(
+                            'Cache hit rate',
+                            '${_stats['cache_hit_rate'] ?? 0}%',
+                            Icons.speed,
+                          ),
+                          _buildStatRow(
+                            'Cache entries',
+                            '${_stats['cache_entries'] ?? 0}',
+                            Icons.storage,
+                          ),
+                          _buildStatRow(
+                            'Procenjena veličina',
+                            '${_stats['cache_size_estimate'] ?? 'N/A'}',
+                            Icons.folder_open,
+                          ),
+                          _buildStatRow(
+                            'Poslednji reset',
+                            '${_stats['last_reset'] ?? 'Nikad'}',
+                            Icons.refresh,
+                          ),
                         ],
                       ),
                     ),
@@ -293,7 +308,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                                         ),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 2),
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.blue[100],
                                             borderRadius:
@@ -341,27 +358,34 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                           ),
                           const SizedBox(height: 16),
                           _buildStatRow(
-                              'Ukupno entries',
-                              '${_cacheInfo['total_entries'] ?? 0}',
-                              Icons.folder),
+                            'Ukupno entries',
+                            '${_cacheInfo['total_entries'] ?? 0}',
+                            Icons.folder,
+                          ),
                           _buildStatRow(
-                              'Coordinate entries',
-                              '${_cacheInfo['coordinate_entries'] ?? 0}',
-                              Icons.map),
+                            'Coordinate entries',
+                            '${_cacheInfo['coordinate_entries'] ?? 0}',
+                            Icons.map,
+                          ),
                           _buildStatRow(
-                              'Stats entries',
-                              '${_cacheInfo['stats_entries'] ?? 0}',
-                              Icons.analytics),
+                            'Stats entries',
+                            '${_cacheInfo['stats_entries'] ?? 0}',
+                            Icons.analytics,
+                          ),
                           const SizedBox(height: 16),
                           Row(
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: _clearCache,
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Colors.white),
-                                  label: const Text('Obriši Cache',
-                                      style: TextStyle(color: Colors.white)),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.white,
+                                  ),
+                                  label: const Text(
+                                    'Obriši Cache',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red[600],
                                   ),
@@ -371,10 +395,14 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: _resetStats,
-                                  icon: const Icon(Icons.refresh,
-                                      color: Colors.white),
-                                  label: const Text('Reset Stats',
-                                      style: TextStyle(color: Colors.white)),
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.white,
+                                  ),
+                                  label: const Text(
+                                    'Reset Stats',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.orange[600],
                                   ),

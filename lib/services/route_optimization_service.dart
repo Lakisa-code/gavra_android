@@ -41,13 +41,15 @@ class RouteOptimizationService {
       'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-      'kruscica', 'kusic', 'crvena crkva'
+      'kruscica', 'kusic', 'crvena crkva',
     ]; // Proveri grad ili adresu da li su u servisnoj oblasti
-    return serviceAreaCities.any((city) =>
-        normalizedGrad.contains(city) ||
-        city.contains(normalizedGrad) ||
-        normalizedAdresa.contains(city) ||
-        city.contains(normalizedAdresa));
+    return serviceAreaCities.any(
+      (city) =>
+          normalizedGrad.contains(city) ||
+          city.contains(normalizedGrad) ||
+          normalizedAdresa.contains(city) ||
+          city.contains(normalizedAdresa),
+    );
   }
 
   /// 🗺️ NOVA FUNKCIJA: Prava geografska optimizacija na osnovu GPS lokacije vozača
@@ -61,12 +63,14 @@ class RouteOptimizationService {
     // 🎯 FILTRIRAJ SAMO BELA CRKVA I VRŠAC gradove za navigaciju
     // Filtriraj samo aktivne putnike sa adresama iz dozvoljenih gradova
     final aktivniPutnici = putnici
-        .where((p) =>
-            p.status != 'otkazan' &&
-            p.status != 'Otkazano' &&
-            p.adresa != null &&
-            p.adresa!.isNotEmpty &&
-            _dozvoljeninGradovi.any((grad) => p.adresa!.contains(grad)))
+        .where(
+          (p) =>
+              p.status != 'otkazan' &&
+              p.status != 'Otkazano' &&
+              p.adresa != null &&
+              p.adresa!.isNotEmpty &&
+              _dozvoljeninGradovi.any((grad) => p.adresa!.contains(grad)),
+        )
         .toList();
 
     if (aktivniPutnici.isEmpty) return putnici;
@@ -335,7 +339,7 @@ class RouteOptimizationService {
       '19:00',
       '20:00',
       '21:00',
-      '22:00'
+      '22:00',
     ];
 
     Map<String, List<Putnik>> optimizedRoutes = {};
@@ -403,11 +407,14 @@ class RouteOptimizationService {
     // bez forsiranja alfabetskog redosleda
 
     // Proveri da li su otkazani putnici na kraju
-    final imaAktivnihNaKraju = putnici.any((p) =>
-        (p.status == 'otkazan' || p.status == 'Otkazano') &&
-        putnici.indexOf(p) < putnici.length - 1 &&
-        putnici.sublist(putnici.indexOf(p) + 1).any(
-            (next) => next.status != 'otkazan' && next.status != 'Otkazano'));
+    final imaAktivnihNaKraju = putnici.any(
+      (p) =>
+          (p.status == 'otkazan' || p.status == 'Otkazano') &&
+          putnici.indexOf(p) < putnici.length - 1 &&
+          putnici.sublist(putnici.indexOf(p) + 1).any(
+                (next) => next.status != 'otkazan' && next.status != 'Otkazano',
+              ),
+    );
 
     return !imaAktivnihNaKraju; // True ako otkazani NISU između aktivnih
   }

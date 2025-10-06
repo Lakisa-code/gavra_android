@@ -10,14 +10,6 @@ import '../widgets/custom_back_button.dart';
 
 // Model za GPS lokacije vozača
 class GpsLokacija {
-  final int id;
-  final String name;
-  final double lat;
-  final double lng;
-  final DateTime timestamp;
-  final String color;
-  final String vehicleType;
-
   GpsLokacija({
     required this.id,
     required this.name,
@@ -43,6 +35,13 @@ class GpsLokacija {
       vehicleType: map['vehicle_type'] as String? ?? 'car',
     );
   }
+  final int id;
+  final String name;
+  final double lat;
+  final double lng;
+  final DateTime timestamp;
+  final String color;
+  final String vehicleType;
 
   static DateTime _parseTimestamp(Map<String, dynamic> map) {
     // Pokušaj različite nazive timestamp kolona
@@ -51,7 +50,7 @@ class GpsLokacija {
       'timestamp',
       'time',
       'datetime',
-      'updated_at'
+      'updated_at',
     ];
 
     for (final key in timestampKeys) {
@@ -465,9 +464,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             options: MapOptions(
               initialCenter: _currentPosition != null
                   ? LatLng(
-                      _currentPosition!.latitude, _currentPosition!.longitude)
+                      _currentPosition!.latitude,
+                      _currentPosition!.longitude,
+                    )
                   : _initialCenter,
-              initialZoom: 13.0,
               minZoom: 8.0,
               maxZoom: 18.0,
             ),
@@ -552,7 +552,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1),
+              border: Border.all(color: Colors.white),
             ),
           ),
           const SizedBox(width: 4),

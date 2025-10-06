@@ -9,9 +9,9 @@ void main() {
       tip: 'radnik',
       polasciPoDanu: {
         'pon': ['6:00 BC', '14:00 VS'],
-        'uto': ['6:00 BC']
+        'uto': ['6:00 BC'],
       },
-      datumPocetkaMeseca: DateTime(2025, 9, 1),
+      datumPocetkaMeseca: DateTime(2025, 9),
       datumKrajaMeseca: DateTime(2025, 9, 30),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

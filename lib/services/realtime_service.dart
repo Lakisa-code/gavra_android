@@ -61,7 +61,8 @@ class RealtimeService {
       final stream = client.from(table).stream(primaryKey: ['id']);
       return stream.map((data) {
         dlog(
-            '🔔 [REALTIME SERVICE] Stream event for $table: ${(data as List?)?.length ?? 0} rows');
+          '🔔 [REALTIME SERVICE] Stream event for $table: ${(data as List?)?.length ?? 0} rows',
+        );
         return data;
       });
     } catch (e) {
@@ -73,16 +74,24 @@ class RealtimeService {
 
   /// Pomoćna metoda: pretplati se na tabelu i vrati StreamSubscription.
   StreamSubscription<dynamic> subscribe(
-      String table, void Function(dynamic) onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
+    String table,
+    void Function(dynamic) onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
     void loggedOnData(dynamic data) {
       dlog('🔄 Realtime event for $table: ${data?.length ?? 0} records');
       onData(data);
     }
 
     final stream = tableStream(table);
-    return stream.listen(loggedOnData,
-        onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+    return stream.listen(
+      loggedOnData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
   }
 
   Future<void> unsubscribeAll() async {
@@ -151,7 +160,8 @@ class RealtimeService {
               .map((r) => r['ime'] ?? r['id']?.toString() ?? r.toString())
               .toList();
           dlog(
-              '🔔 [REALTIME] dnevni_putnici rows: ${rows.length}; sample: $sample');
+            '🔔 [REALTIME] dnevni_putnici rows: ${rows.length}; sample: $sample',
+          );
         } catch (_) {}
         if (!_putovanjaController.isClosed) {
           _putovanjaController.add(rows);
@@ -176,10 +186,12 @@ class RealtimeService {
           final sample = rows
               .take(5)
               .map(
-                  (r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString())
+                (r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString(),
+              )
               .toList();
           dlog(
-              '🔔 [REALTIME] mesecni_putnici rows: ${rows.length}; sample: $sample');
+            '🔔 [REALTIME] mesecni_putnici rows: ${rows.length}; sample: $sample',
+          );
         } catch (_) {}
         _emitCombinedPutnici();
       } catch (e) {
@@ -296,8 +308,11 @@ class RealtimeService {
 
   /// Expose a filtered stream for a specific isoDate. This applies client-side filter
   /// currently; later we will parametrize server queries for efficiency.
-  Stream<List<Putnik>> streamKombinovaniPutnici(
-      {String? isoDate, String? grad, String? vreme}) {
+  Stream<List<Putnik>> streamKombinovaniPutnici({
+    String? isoDate,
+    String? grad,
+    String? vreme,
+  }) {
     if (isoDate == null && grad == null && vreme == null) {
       return combinedPutniciStream;
     }
@@ -311,7 +326,8 @@ class RealtimeService {
           final matches = (p.datum != null && p.datum == isoDate) ||
               (p.datum == null &&
                   GradAdresaValidator.normalizeString(p.dan).contains(
-                      GradAdresaValidator.normalizeString(targetDayAbbr)));
+                    GradAdresaValidator.normalizeString(targetDayAbbr),
+                  ));
 
           return matches;
         });
@@ -340,8 +356,11 @@ class RealtimeService {
 
   /// Parametric combined stream: creates per-filter realtime subscriptions
   /// and emits only Putnik lists relevant for the given filter key.
-  Stream<List<Putnik>> streamKombinovaniPutniciParametric(
-      {String? isoDate, String? grad, String? vreme}) {
+  Stream<List<Putnik>> streamKombinovaniPutniciParametric({
+    String? isoDate,
+    String? grad,
+    String? vreme,
+  }) {
     if (isoDate == null && grad == null && vreme == null) {
       return combinedPutniciStream;
     }
@@ -422,7 +441,10 @@ class RealtimeService {
               final putnikGrad = (r['grad'] ?? '').toString();
               final putnikAdresa = (r['adresa'] ?? '').toString();
               if (!GradAdresaValidator.isGradMatch(
-                  putnikGrad, putnikAdresa, grad)) {
+                putnikGrad,
+                putnikAdresa,
+                grad,
+              )) {
                 continue;
               }
             }
@@ -489,7 +511,8 @@ class RealtimeService {
             .map((r) => r['ime'] ?? r['putnik_ime'] ?? r['id'] ?? r.toString())
             .toList();
         dlog(
-            '🔄 [REFRESH NOW] fetched dnevni: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: dnevni=$dSample, mesecni=$mSample');
+          '🔄 [REFRESH NOW] fetched dnevni: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: dnevni=$dSample, mesecni=$mSample',
+        );
       } catch (_) {}
       _emitCombinedPutnici();
     } catch (e) {

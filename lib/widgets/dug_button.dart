@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DugButton extends StatelessWidget {
-  final int brojDuznika;
-  final VoidCallback? onTap;
-  final Color? backgroundColor;
-  final Color? iconColor;
-  final Color? textColor;
-  final bool wide; // novi parametar za prikaz kao kocka
+  // novi parametar za prikaz kao kocka
 
   const DugButton({
     Key? key,
@@ -17,6 +12,12 @@ class DugButton extends StatelessWidget {
     this.textColor,
     this.wide = false,
   }) : super(key: key);
+  final int brojDuznika;
+  final VoidCallback? onTap;
+  final Color? backgroundColor;
+  final Color? iconColor;
+  final Color? textColor;
+  final bool wide;
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +36,11 @@ class DugButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.warning,
-                  color: iconColor ?? Colors.red[700], size: 18),
+              Icon(
+                Icons.warning,
+                color: iconColor ?? Colors.red[700],
+                size: 18,
+              ),
               const SizedBox(height: 2),
               Text(
                 'Dug',
@@ -105,8 +109,11 @@ class DugButton extends StatelessWidget {
               ),
               Row(
                 children: [
-                  Icon(Icons.monetization_on,
-                      color: iconColor ?? Colors.red[700], size: 16),
+                  Icon(
+                    Icons.monetization_on,
+                    color: iconColor ?? Colors.red[700],
+                    size: 16,
+                  ),
                   const SizedBox(width: 2),
                   Text(
                     brojDuznika > 0 ? brojDuznika.toString() : '-',

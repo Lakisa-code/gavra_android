@@ -39,14 +39,19 @@ class SmartAddressAutocompleteService {
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac dozvoljeni
     if (_isCityOutsideServiceArea(currentCity)) {
       _logger.w(
-          '🚫 Autocomplete blokiran za $currentCity - van BC/Vršac relacije');
+        '🚫 Autocomplete blokiran za $currentCity - van BC/Vršac relacije',
+      );
       return [];
     }
 
     if (query.isEmpty) {
       return enablePredictiveSuggestions
           ? await _getPredictiveSuggestions(
-              currentCity, currentVozac, timeContext, locationContext)
+              currentCity,
+              currentVozac,
+              timeContext,
+              locationContext,
+            )
           : [];
     }
 
@@ -116,7 +121,9 @@ class SmartAddressAutocompleteService {
 
   /// 📚 HISTORY-BASED SUGGESTIONS
   static Future<List<AddressSuggestion>> _getHistorySuggestions(
-      String query, String? vozac) async {
+    String query,
+    String? vozac,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final historyKey =
         vozac != null ? '$_historyPrefix$vozac' : '${_historyPrefix}global';
@@ -135,19 +142,23 @@ class SmartAddressAutocompleteService {
         if (address.toLowerCase().contains(query.toLowerCase())) {
           final daysSinceUsed = DateTime.now().difference(lastUsed).inDays;
           final recencyScore = math.max(
-              0, 100 - daysSinceUsed * 2); // Smanjih se za 2 poena po danu
+            0,
+            100 - daysSinceUsed * 2,
+          ); // Smanjih se za 2 poena po danu
 
-          suggestions.add(AddressSuggestion(
-            address: address,
-            displayText: address,
-            score: (frequency * 10 + recencyScore).toDouble(),
-            source: 'history',
-            metadata: {
-              'frequency': frequency,
-              'last_used': lastUsed.toIso8601String(),
-              'recency_score': recencyScore,
-            },
-          ));
+          suggestions.add(
+            AddressSuggestion(
+              address: address,
+              displayText: address,
+              score: (frequency * 10 + recencyScore).toDouble(),
+              source: 'history',
+              metadata: {
+                'frequency': frequency,
+                'last_used': lastUsed.toIso8601String(),
+                'recency_score': recencyScore,
+              },
+            ),
+          );
         }
       }
 
@@ -177,7 +188,10 @@ class SmartAddressAutocompleteService {
     // Location-based suggestions
     if (locationContext != null) {
       final locationSuggestions = await _getLocationBasedSuggestions(
-          query, locationContext, currentCity);
+        query,
+        locationContext,
+        currentCity,
+      );
       suggestions.addAll(locationSuggestions);
     }
 
@@ -192,7 +206,10 @@ class SmartAddressAutocompleteService {
 
   /// ⏰ TIME-BASED SUGGESTIONS
   static Future<List<AddressSuggestion>> _getTimeBasedSuggestions(
-      String query, DateTime timeContext, String? vozac) async {
+    String query,
+    DateTime timeContext,
+    String? vozac,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final hour = timeContext.hour;
     final timeSlot = _getTimeSlot(hour);
@@ -209,16 +226,18 @@ class SmartAddressAutocompleteService {
         final frequency = addressData['frequency'] as int;
 
         if (address.toLowerCase().contains(query.toLowerCase())) {
-          suggestions.add(AddressSuggestion(
-            address: address,
-            displayText: '$address (često u ${_getTimeSlotName(timeSlot)})',
-            score: frequency * 15.0, // Boost za time context
-            source: 'time_context',
-            metadata: {
-              'time_slot': timeSlot,
-              'frequency': frequency,
-            },
-          ));
+          suggestions.add(
+            AddressSuggestion(
+              address: address,
+              displayText: '$address (često u ${_getTimeSlotName(timeSlot)})',
+              score: frequency * 15.0, // Boost za time context
+              source: 'time_context',
+              metadata: {
+                'time_slot': timeSlot,
+                'frequency': frequency,
+              },
+            ),
+          );
         }
       });
 
@@ -230,7 +249,10 @@ class SmartAddressAutocompleteService {
 
   /// 📍 LOCATION-BASED SUGGESTIONS
   static Future<List<AddressSuggestion>> _getLocationBasedSuggestions(
-      String query, Position location, String currentCity) async {
+    String query,
+    Position location,
+    String currentCity,
+  ) async {
     final suggestions = <AddressSuggestion>[];
 
     // Mock nearby suggestions - u production-u koristiti real POI database
@@ -242,21 +264,23 @@ class SmartAddressAutocompleteService {
       'Apoteka',
       'Dom zdravlja',
       'Opština',
-      'Autobuska stanica'
+      'Autobuska stanica',
     ];
 
     for (final place in nearbyPlaces) {
       if (place.toLowerCase().contains(query.toLowerCase())) {
-        suggestions.add(AddressSuggestion(
-          address: '$place, $currentCity',
-          displayText: '$place (u blizini)',
-          score: 50.0,
-          source: 'location_context',
-          metadata: {
-            'poi_type': place.toLowerCase(),
-            'distance_estimate': '< 1km',
-          },
-        ));
+        suggestions.add(
+          AddressSuggestion(
+            address: '$place, $currentCity',
+            displayText: '$place (u blizini)',
+            score: 50.0,
+            source: 'location_context',
+            metadata: {
+              'poi_type': place.toLowerCase(),
+              'distance_estimate': '< 1km',
+            },
+          ),
+        );
       }
     }
 
@@ -265,7 +289,9 @@ class SmartAddressAutocompleteService {
 
   /// 📊 PATTERN MATCHING SUGGESTIONS
   static Future<List<AddressSuggestion>> _getPatternSuggestions(
-      String query, String currentCity) async {
+    String query,
+    String currentCity,
+  ) async {
     final suggestions = <AddressSuggestion>[];
 
     // Street number patterns
@@ -275,13 +301,15 @@ class SmartAddressAutocompleteService {
         for (int i = 1; i <= 10; i++) {
           final suggestedAddress =
               '$baseAddress ${query.trim().replaceAll(RegExp(r'[^\d]'), '')}$i';
-          suggestions.add(AddressSuggestion(
-            address: suggestedAddress,
-            displayText: suggestedAddress,
-            score: 30.0 - i, // Manji score za veće brojeve
-            source: 'pattern_number',
-            metadata: {'pattern_type': 'street_number'},
-          ));
+          suggestions.add(
+            AddressSuggestion(
+              address: suggestedAddress,
+              displayText: suggestedAddress,
+              score: 30.0 - i, // Manji score za veće brojeve
+              source: 'pattern_number',
+              metadata: {'pattern_type': 'street_number'},
+            ),
+          );
         }
       }
     }
@@ -293,19 +321,21 @@ class SmartAddressAutocompleteService {
       'Trg',
       'Svetog',
       'Kralja',
-      'Vojvode'
+      'Vojvode',
     ];
     for (final prefix in commonPrefixes) {
       if (query.toLowerCase().startsWith(prefix.toLowerCase()) ||
           prefix.toLowerCase().startsWith(query.toLowerCase())) {
-        suggestions.add(AddressSuggestion(
-          address:
-              '$prefix ${query.toLowerCase() == prefix.toLowerCase() ? '' : query}',
-          displayText: '$prefix...',
-          score: 25.0,
-          source: 'pattern_prefix',
-          metadata: {'pattern_type': 'street_prefix'},
-        ));
+        suggestions.add(
+          AddressSuggestion(
+            address:
+                '$prefix ${query.toLowerCase() == prefix.toLowerCase() ? '' : query}',
+            displayText: '$prefix...',
+            score: 25.0,
+            source: 'pattern_prefix',
+            metadata: {'pattern_type': 'street_prefix'},
+          ),
+        );
       }
     }
 
@@ -314,14 +344,14 @@ class SmartAddressAutocompleteService {
 
   /// 🌍 GEOCODING API SUGGESTIONS
   static Future<List<AddressSuggestion>> _getGeocodingSuggestions(
-      String query, String currentCity) async {
+    String query,
+    String currentCity,
+  ) async {
     try {
       final geocodeResult =
           await AdvancedGeocodingService.getAdvancedCoordinates(
         grad: currentCity,
         adresa: query,
-        enableFuzzyMatching: true,
-        enableAutoCorrection: true,
       );
 
       if (geocodeResult != null && geocodeResult.confidence > 50) {
@@ -338,7 +368,7 @@ class SmartAddressAutocompleteService {
               'coordinates':
                   '${geocodeResult.latitude},${geocodeResult.longitude}',
             },
-          )
+          ),
         ];
       }
     } catch (e) {
@@ -350,7 +380,9 @@ class SmartAddressAutocompleteService {
 
   /// 🏢 POPULAR PLACES SUGGESTIONS
   static Future<List<AddressSuggestion>> _getPopularPlaces(
-      String query, String currentCity) async {
+    String query,
+    String currentCity,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final popularKey = '$_popularPrefix$currentCity';
     final popularJson = prefs.getString(popularKey) ?? '{}';
@@ -361,13 +393,15 @@ class SmartAddressAutocompleteService {
 
       popularPlaces.forEach((address, count) {
         if (address.toLowerCase().contains(query.toLowerCase())) {
-          suggestions.add(AddressSuggestion(
-            address: address,
-            displayText: '$address (popularno)',
-            score: (count as int) * 5.0,
-            source: 'popular',
-            metadata: {'usage_count': count},
-          ));
+          suggestions.add(
+            AddressSuggestion(
+              address: address,
+              displayText: '$address (popularno)',
+              score: (count as int) * 5.0,
+              source: 'popular',
+              metadata: {'usage_count': count},
+            ),
+          );
         }
       });
 
@@ -379,10 +413,11 @@ class SmartAddressAutocompleteService {
 
   /// 🔮 PREDICTIVE SUGGESTIONS - kada je query prazan
   static Future<List<AddressSuggestion>> _getPredictiveSuggestions(
-      String currentCity,
-      String? vozac,
-      DateTime? timeContext,
-      Position? locationContext) async {
+    String currentCity,
+    String? vozac,
+    DateTime? timeContext,
+    Position? locationContext,
+  ) async {
     final suggestions = <AddressSuggestion>[];
 
     // Recent addresses
@@ -418,7 +453,12 @@ class SmartAddressAutocompleteService {
 
       // Feature extraction and scoring
       final features = await _extractFeatures(
-          suggestion, query, vozac, timeContext, locationContext);
+        suggestion,
+        query,
+        vozac,
+        timeContext,
+        locationContext,
+      );
 
       // Apply neural network weights
       features.forEach((feature, value) {
@@ -483,12 +523,17 @@ class SmartAddressAutocompleteService {
 
   /// 🎯 CALCULATE CONTEXT MATCH
   static double _calculateContextMatch(
-      AddressSuggestion suggestion, String query, DateTime? timeContext) {
+    AddressSuggestion suggestion,
+    String query,
+    DateTime? timeContext,
+  ) {
     double score = 0.0;
 
     // String similarity (Levenshtein distance)
     final similarity = _calculateStringSimilarity(
-        suggestion.address.toLowerCase(), query.toLowerCase());
+      suggestion.address.toLowerCase(),
+      query.toLowerCase(),
+    );
     score += similarity * 50;
 
     // Source bonus
@@ -511,7 +556,9 @@ class SmartAddressAutocompleteService {
 
   /// ⏱️ CALCULATE TIME SIMILARITY
   static double _calculateTimeSimilarity(
-      AddressSuggestion suggestion, DateTime timeContext) {
+    AddressSuggestion suggestion,
+    DateTime timeContext,
+  ) {
     if (!suggestion.metadata.containsKey('time_slot')) return 0.0;
 
     final currentTimeSlot = _getTimeSlot(timeContext.hour);
@@ -593,7 +640,8 @@ class SmartAddressAutocompleteService {
   // HELPER METHODS
 
   static List<AddressSuggestion> _removeDuplicates(
-      List<AddressSuggestion> suggestions) {
+    List<AddressSuggestion> suggestions,
+  ) {
     final seen = <String>{};
     return suggestions.where((suggestion) {
       final key = suggestion.address.toLowerCase();
@@ -625,41 +673,58 @@ class SmartAddressAutocompleteService {
 
   // Mock implementations for additional methods
   static Future<List<AddressSuggestion>> _getRecentAddresses(
-      String? vozac) async {
+    String? vozac,
+  ) async {
     // Implementation would fetch recent addresses from history
     return [];
   }
 
   static Future<List<AddressSuggestion>> _getFrequentAddresses(
-      String? vozac) async {
+    String? vozac,
+  ) async {
     // Implementation would fetch most frequent addresses
     return [];
   }
 
   static Future<List<AddressSuggestion>> _getTimeBasedPredictions(
-      DateTime timeContext, String? vozac) async {
+    DateTime timeContext,
+    String? vozac,
+  ) async {
     // Implementation would predict based on time patterns
     return [];
   }
 
   static Future<List<AddressSuggestion>> _getDayPatternSuggestions(
-      String query, int dayOfWeek, String? vozac) async {
+    String query,
+    int dayOfWeek,
+    String? vozac,
+  ) async {
     // Implementation would fetch day-of-week patterns
     return [];
   }
 
   static Future<void> _learnFromQuery(
-      String query, String city, String? vozac, DateTime? timeContext) async {
+    String query,
+    String city,
+    String? vozac,
+    DateTime? timeContext,
+  ) async {
     // Implementation would update ML patterns from query
   }
 
   static Future<void> _updateAddressHistory(
-      String address, String? vozac) async {
+    String address,
+    String? vozac,
+  ) async {
     // Implementation would update address usage history
   }
 
   static Future<void> _updatePatternData(
-      String address, String city, String? vozac, DateTime? timeContext) async {
+    String address,
+    String city,
+    String? vozac,
+    DateTime? timeContext,
+  ) async {
     // Implementation would update pattern recognition data
   }
 
@@ -668,7 +733,10 @@ class SmartAddressAutocompleteService {
   }
 
   static Future<void> _updateTimeContext(
-      String address, DateTime timeContext, String? vozac) async {
+    String address,
+    DateTime timeContext,
+    String? vozac,
+  ) async {
     // Implementation would update time-based patterns
   }
 
@@ -701,21 +769,17 @@ class SmartAddressAutocompleteService {
       'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-      'kruscica', 'kusic', 'crvena crkva'
+      'kruscica', 'kusic', 'crvena crkva',
     ];
-    return !serviceAreaCities.any((allowed) =>
-        normalizedCity.contains(allowed) || allowed.contains(normalizedCity));
+    return !serviceAreaCities.any(
+      (allowed) =>
+          normalizedCity.contains(allowed) || allowed.contains(normalizedCity),
+    );
   }
 }
 
 /// 💡 ADDRESS SUGGESTION CLASS
 class AddressSuggestion {
-  final String address;
-  final String displayText;
-  double score;
-  final String source;
-  final Map<String, dynamic> metadata;
-
   AddressSuggestion({
     required this.address,
     required this.displayText,
@@ -723,6 +787,20 @@ class AddressSuggestion {
     required this.source,
     this.metadata = const {},
   });
+
+  factory AddressSuggestion.fromJson(Map<String, dynamic> json) =>
+      AddressSuggestion(
+        address: json['address'] as String,
+        displayText: json['display_text'] as String,
+        score: (json['score'] as num).toDouble(),
+        source: json['source'] as String,
+        metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+      );
+  final String address;
+  final String displayText;
+  double score;
+  final String source;
+  final Map<String, dynamic> metadata;
 
   @override
   String toString() => '$displayText (${score.toStringAsFixed(1)} via $source)';
@@ -734,13 +812,4 @@ class AddressSuggestion {
         'source': source,
         'metadata': metadata,
       };
-
-  factory AddressSuggestion.fromJson(Map<String, dynamic> json) =>
-      AddressSuggestion(
-        address: json['address'] as String,
-        displayText: json['display_text'] as String,
-        score: (json['score'] as num).toDouble(),
-        source: json['source'] as String,
-        metadata: json['metadata'] as Map<String, dynamic>? ?? {},
-      );
 }

@@ -16,15 +16,24 @@ void main() {
         print('🚗 $vozac: $uuid');
 
         expect(uuid, isNotNull, reason: 'UUID za $vozac ne smije biti null');
-        expect(uuid!.length, equals(36),
-            reason: 'UUID mora imati 36 karaktera');
-        expect(uuid.contains('-'), isTrue,
-            reason: 'UUID mora sadržavati crtice');
+        expect(
+          uuid!.length,
+          equals(36),
+          reason: 'UUID mora imati 36 karaktera',
+        );
+        expect(
+          uuid.contains('-'),
+          isTrue,
+          reason: 'UUID mora sadržavati crtice',
+        );
 
         // Validiraj da je obrnut mapiranje također ispravno
         final imeNazad = VozacMappingService.getVozacIme(uuid);
-        expect(imeNazad, equals(vozac),
-            reason: 'Obrnut mapiranje mora biti ispravan');
+        expect(
+          imeNazad,
+          equals(vozac),
+          reason: 'Obrnut mapiranje mora biti ispravan',
+        );
       }
 
       print('\n✅ Svi vozači imaju validne UUID-ove');

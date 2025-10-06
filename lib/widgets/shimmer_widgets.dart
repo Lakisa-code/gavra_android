@@ -94,17 +94,18 @@ class ShimmerWidgets {
           const SizedBox(height: 16),
           Row(
             children: List.generate(
-                3,
-                (index) => Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    )),
+              3,
+              (index) => Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

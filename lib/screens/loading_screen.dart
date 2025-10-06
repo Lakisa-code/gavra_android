@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 class LoadingScreen extends StatelessWidget {
-  final String? error;
-
   const LoadingScreen({Key? key, this.error}) : super(key: key);
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +41,11 @@ class LoadingScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(Icons.error,
-                      color: Theme.of(context).colorScheme.error, size: 48),
+                  child: Icon(
+                    Icons.error,
+                    color: Theme.of(context).colorScheme.error,
+                    size: 48,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Text(
@@ -63,16 +65,18 @@ class LoadingScreen extends StatelessWidget {
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .error
-                              .withOpacity(0.2)),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .error
+                            .withOpacity(0.2),
+                      ),
                     ),
                     child: Text(
                       error!,
                       style: TextStyle(
-                          fontSize: 16,
-                          color: Theme.of(context).colorScheme.onSurface),
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -82,7 +86,7 @@ class LoadingScreen extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [
                         Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.primary.withOpacity(0.8)
+                        Theme.of(context).colorScheme.primary.withOpacity(0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -102,7 +106,9 @@ class LoadingScreen extends StatelessWidget {
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                     icon: const Icon(Icons.refresh, color: Colors.white),
                     label: const Text(
@@ -116,7 +122,8 @@ class LoadingScreen extends StatelessWidget {
                       // Restartuje app (možeš prilagoditi po potrebi)
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute<void>(
-                            builder: (_) => const LoadingScreen()),
+                          builder: (_) => const LoadingScreen(),
+                        ),
                         (route) => false,
                       );
                     },
@@ -148,7 +155,8 @@ class LoadingScreen extends StatelessWidget {
             children: [
               CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.primary),
+                  Theme.of(context).colorScheme.primary,
+                ),
                 strokeWidth: 3,
               ),
               const SizedBox(height: 24),

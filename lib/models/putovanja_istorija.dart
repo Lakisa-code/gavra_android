@@ -1,29 +1,4 @@
 class PutovanjaIstorija {
-  final String id;
-  final String? mesecniPutnikId;
-  final String tipPutnika;
-  final DateTime datum;
-  final String vremePolaska;
-  final DateTime? vremeAkcije; // OPCIONO - možda se mapira na vreme_pokupljenja
-  final String adresaPolaska;
-  final String status; // UMESTO statusBelaCrkvaVrsac i statusVrsacBelaCrkva
-  final String? statusBelaCrkvaVrsac; // DEPRECATED - čuva se za kompatibilnost
-  final String? statusVrsacBelaCrkva; // DEPRECATED - čuva se za kompatibilnost
-  final String putnikIme;
-  final String? brojTelefona;
-  final double cena;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  // NOVA POLJA koja postoje u bazi
-  final String? dan;
-  final String? grad;
-  final bool obrisan;
-  final bool pokupljen;
-  final String? vozac;
-  final DateTime? vremePlacanja;
-  final DateTime? vremePokupljenja;
-
   PutovanjaIstorija({
     required this.id,
     this.mesecniPutnikId,
@@ -87,6 +62,30 @@ class PutovanjaIstorija {
           : null,
     );
   }
+  final String id;
+  final String? mesecniPutnikId;
+  final String tipPutnika;
+  final DateTime datum;
+  final String vremePolaska;
+  final DateTime? vremeAkcije; // OPCIONO - možda se mapira na vreme_pokupljenja
+  final String adresaPolaska;
+  final String status; // UMESTO statusBelaCrkvaVrsac i statusVrsacBelaCrkva
+  final String? statusBelaCrkvaVrsac; // DEPRECATED - čuva se za kompatibilnost
+  final String? statusVrsacBelaCrkva; // DEPRECATED - čuva se za kompatibilnost
+  final String putnikIme;
+  final String? brojTelefona;
+  final double cena;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  // NOVA POLJA koja postoje u bazi
+  final String? dan;
+  final String? grad;
+  final bool obrisan;
+  final bool pokupljen;
+  final String? vozac;
+  final DateTime? vremePlacanja;
+  final DateTime? vremePokupljenja;
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {

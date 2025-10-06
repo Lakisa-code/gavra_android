@@ -47,7 +47,10 @@ class TrafficAwareOptimizationService {
 
       // 3. Loguj poboljšanja
       await _logTrafficOptimizationResults(
-          route, optimizedRoute, trafficMatrix);
+        route,
+        optimizedRoute,
+        trafficMatrix,
+      );
 
       return optimizedRoute;
     } catch (e) {
@@ -233,7 +236,9 @@ class TrafficAwareOptimizationService {
 
   /// 🏎️ Traffic cache funkcije
   static String _generateTrafficCacheKey(
-      List<String> locations, DateTime departureTime) {
+    List<String> locations,
+    DateTime departureTime,
+  ) {
     final locationsHash = locations.join('|');
     final timeKey =
         '${departureTime.hour}:${(departureTime.minute ~/ 15) * 15}'; // Round to 15min
@@ -241,7 +246,8 @@ class TrafficAwareOptimizationService {
   }
 
   static Map<String, Map<String, dynamic>>? _getTrafficFromCache(
-      String cacheKey) {
+    String cacheKey,
+  ) {
     final cached = _trafficCache[cacheKey];
     final timestamp = _trafficCacheTimestamps[cacheKey];
 
@@ -260,7 +266,9 @@ class TrafficAwareOptimizationService {
   }
 
   static void _cacheTrafficData(
-      String cacheKey, Map<String, Map<String, dynamic>> data) {
+    String cacheKey,
+    Map<String, Map<String, dynamic>> data,
+  ) {
     _trafficCache[cacheKey] = data;
     _trafficCacheTimestamps[cacheKey] = DateTime.now();
 
@@ -334,7 +342,8 @@ class TrafficAwareOptimizationService {
           if (distance > 5000) {
             // 5km+
             alerts.add(
-                '⚠️ Duži segment između ${route[i].ime} i ${route[i + 1].ime} - možda ima gužve');
+              '⚠️ Duži segment između ${route[i].ime} i ${route[i + 1].ime} - možda ima gužve',
+            );
           }
         }
       }

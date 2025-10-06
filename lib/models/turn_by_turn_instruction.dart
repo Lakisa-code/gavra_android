@@ -3,18 +3,7 @@ import 'package:geolocator/geolocator.dart';
 /// 🧭 MODEL ZA TURN-BY-TURN INSTRUKCIJE
 /// Predstavlja jednu instrukciju u navigaciji (skretanje, nastavi pravo, itd.)
 class TurnByTurnInstruction {
-  final int index; // Redni broj instrukcije
-  final String text; // Tekst instrukcije (npr. "Skreni levo na Glavnu ulicu")
-  final double distance; // Rastojanje do sledeće instrukcije (u metrima)
-  final double duration; // Vreme do sledeće instrukcije (u sekundama)
-  final double maneuver; // Ugao skretanja (u stepenima)
-  final List<Position> coordinates; // Koordinate za ovaj segment rute
-  final String? waypoint; // Ime putnika/destinacije (ako je relevantno)
-  final String? streetName; // Ime ulice
-  final String? direction; // Smer (north, south, east, west)
-  final InstructionType type; // Tip instrukcije
-  final double? speedLimit; // Ograničenje brzine (km/h)
-  final List<String>? landmarks; // Orijentiri blizu instrukcije
+  // Orijentiri blizu instrukcije
 
   /// Glavni konstruktor
   const TurnByTurnInstruction({
@@ -97,6 +86,52 @@ class TurnByTurnInstruction {
       coordinates: [startCoord, endCoord],
     );
   }
+
+  /// JSON deserijalizacija
+  factory TurnByTurnInstruction.fromJson(Map<String, dynamic> json) {
+    return TurnByTurnInstruction(
+      index: (json['index'] as int?) ?? 0,
+      text: (json['text'] as String?) ?? '',
+      distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
+      duration: (json['duration'] as num?)?.toDouble() ?? 0.0,
+      maneuver: (json['maneuver'] as num?)?.toDouble() ?? 0.0,
+      coordinates: (json['coordinates'] as List?)
+              ?.map(
+                (coord) => Position(
+                  latitude: (coord['latitude'] as num).toDouble(),
+                  longitude: (coord['longitude'] as num).toDouble(),
+                  timestamp: DateTime.now(),
+                  accuracy: 0,
+                  altitude: 0,
+                  altitudeAccuracy: 0,
+                  heading: 0,
+                  headingAccuracy: 0,
+                  speed: 0,
+                  speedAccuracy: 0,
+                ),
+              )
+              .toList() ??
+          [],
+      waypoint: json['waypoint'] as String?,
+      streetName: json['streetName'] as String?,
+      direction: json['direction'] as String?,
+      type: _parseInstructionTypeFromString(json['type'] as String?),
+      speedLimit: (json['speedLimit'] as num?)?.toDouble(),
+      landmarks: (json['landmarks'] as List?)?.cast<String>(),
+    );
+  }
+  final int index; // Redni broj instrukcije
+  final String text; // Tekst instrukcije (npr. "Skreni levo na Glavnu ulicu")
+  final double distance; // Rastojanje do sledeće instrukcije (u metrima)
+  final double duration; // Vreme do sledeće instrukcije (u sekundama)
+  final double maneuver; // Ugao skretanja (u stepenima)
+  final List<Position> coordinates; // Koordinate za ovaj segment rute
+  final String? waypoint; // Ime putnika/destinacije (ako je relevantno)
+  final String? streetName; // Ime ulice
+  final String? direction; // Smer (north, south, east, west)
+  final InstructionType type; // Tip instrukcije
+  final double? speedLimit; // Ograničenje brzine (km/h)
+  final List<String>? landmarks;
 
   /// Formatiran prikaz distancije
   String get formattedDistance {
@@ -198,40 +233,6 @@ class TurnByTurnInstruction {
     };
   }
 
-  /// JSON deserijalizacija
-  factory TurnByTurnInstruction.fromJson(Map<String, dynamic> json) {
-    return TurnByTurnInstruction(
-      index: (json['index'] as int?) ?? 0,
-      text: (json['text'] as String?) ?? '',
-      distance: (json['distance'] as num?)?.toDouble() ?? 0.0,
-      duration: (json['duration'] as num?)?.toDouble() ?? 0.0,
-      maneuver: (json['maneuver'] as num?)?.toDouble() ?? 0.0,
-      coordinates: (json['coordinates'] as List?)
-              ?.map(
-                (coord) => Position(
-                  latitude: (coord['latitude'] as num).toDouble(),
-                  longitude: (coord['longitude'] as num).toDouble(),
-                  timestamp: DateTime.now(),
-                  accuracy: 0,
-                  altitude: 0,
-                  altitudeAccuracy: 0,
-                  heading: 0,
-                  headingAccuracy: 0,
-                  speed: 0,
-                  speedAccuracy: 0,
-                ),
-              )
-              .toList() ??
-          [],
-      waypoint: json['waypoint'] as String?,
-      streetName: json['streetName'] as String?,
-      direction: json['direction'] as String?,
-      type: _parseInstructionTypeFromString(json['type'] as String?),
-      speedLimit: (json['speedLimit'] as num?)?.toDouble(),
-      landmarks: (json['landmarks'] as List?)?.cast<String>(),
-    );
-  }
-
   @override
   String toString() {
     return 'TurnByTurnInstruction(index: $index, text: "$text", distance: $formattedDistance, duration: $formattedDuration)';
@@ -245,18 +246,20 @@ class TurnByTurnInstruction {
       if (step['geometry'] != null) {
         final coordinates = step['geometry']['coordinates'] as List;
         return coordinates
-            .map((coord) => Position(
-                  latitude: (coord[1] as num).toDouble(),
-                  longitude: (coord[0] as num).toDouble(),
-                  timestamp: DateTime.now(),
-                  accuracy: 0,
-                  altitude: 0,
-                  altitudeAccuracy: 0,
-                  heading: 0,
-                  headingAccuracy: 0,
-                  speed: 0,
-                  speedAccuracy: 0,
-                ))
+            .map(
+              (coord) => Position(
+                latitude: (coord[1] as num).toDouble(),
+                longitude: (coord[0] as num).toDouble(),
+                timestamp: DateTime.now(),
+                accuracy: 0,
+                altitude: 0,
+                altitudeAccuracy: 0,
+                heading: 0,
+                headingAccuracy: 0,
+                speed: 0,
+                speedAccuracy: 0,
+              ),
+            )
             .toList();
       }
     } catch (e) {
@@ -271,18 +274,20 @@ class TurnByTurnInstruction {
       if (step['geometry'] != null && step['geometry']['coordinates'] != null) {
         final coordinates = step['geometry']['coordinates'] as List;
         return coordinates
-            .map((coord) => Position(
-                  latitude: (coord[1] as num).toDouble(),
-                  longitude: (coord[0] as num).toDouble(),
-                  timestamp: DateTime.now(),
-                  accuracy: 0,
-                  altitude: 0,
-                  altitudeAccuracy: 0,
-                  heading: 0,
-                  headingAccuracy: 0,
-                  speed: 0,
-                  speedAccuracy: 0,
-                ))
+            .map(
+              (coord) => Position(
+                latitude: (coord[1] as num).toDouble(),
+                longitude: (coord[0] as num).toDouble(),
+                timestamp: DateTime.now(),
+                accuracy: 0,
+                altitude: 0,
+                altitudeAccuracy: 0,
+                heading: 0,
+                headingAccuracy: 0,
+                speed: 0,
+                speedAccuracy: 0,
+              ),
+            )
             .toList();
       }
     } catch (e) {

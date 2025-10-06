@@ -24,7 +24,8 @@ class SmartNavigationService {
 
       if (coordinates.isEmpty) {
         return NavigationResult.error(
-            '❌ Nijedan putnik nema validnu adresu za navigaciju');
+          '❌ Nijedan putnik nema validnu adresu za navigaciju',
+        );
       }
 
       // 3. OPTIMIZUJ REDOSLED PUTNIKA
@@ -63,7 +64,10 @@ class SmartNavigationService {
               '🎯 Navigacija pokrenuta sa ${optimizedRoute.length} putnika',
           optimizedPutnici: optimizedRoute,
           totalDistance: await _calculateTotalDistance(
-              currentPosition, optimizedRoute, coordinates),
+            currentPosition,
+            optimizedRoute,
+            coordinates,
+          ),
         );
       } else {
         return NavigationResult.error('❌ Greška pri otvaranju Google Maps');
@@ -97,7 +101,8 @@ class SmartNavigationService {
 
   /// 🗺️ Dobij koordinate za sve putnike
   static Future<Map<Putnik, Position>> _getCoordinatesForPutnici(
-      List<Putnik> putnici) async {
+    List<Putnik> putnici,
+  ) async {
     final Map<Putnik, Position> coordinates = {};
 
     for (final putnik in putnici) {
@@ -110,7 +115,9 @@ class SmartNavigationService {
 
         // Dobij koordinate preko GeocodingService
         final coordsString = await GeocodingService.getKoordinateZaAdresu(
-            putnik.grad, improvedAddress);
+          putnik.grad,
+          improvedAddress,
+        );
 
         if (coordsString != null && coordsString.contains(',')) {
           final parts = coordsString.split(',');
@@ -153,10 +160,16 @@ class SmartNavigationService {
     // Za manje od 8 putnika koristi brute force, inače nearest neighbor
     if (putnici.length <= 8) {
       return await _bruteForceOptimization(
-          startPosition, coordinates, optimizeForTime);
+        startPosition,
+        coordinates,
+        optimizeForTime,
+      );
     } else {
       return await _nearestNeighborOptimization(
-          startPosition, coordinates, optimizeForTime);
+        startPosition,
+        coordinates,
+        optimizeForTime,
+      );
     }
   }
 
@@ -175,7 +188,11 @@ class SmartNavigationService {
 
     for (final route in permutations) {
       final distance = await _calculateRouteDistance(
-          start, route, coordinates, optimizeForTime);
+        start,
+        route,
+        coordinates,
+        optimizeForTime,
+      );
       if (distance < bestDistance) {
         bestDistance = distance;
         bestRoute = List.from(route);
@@ -277,7 +294,8 @@ class SmartNavigationService {
       String osmNavigationUrl = 'https://www.openstreetmap.org/directions?';
 
       // Dodaj početnu poziciju
-      osmNavigationUrl += 'from=${startPosition.latitude}%2C${startPosition.longitude}';
+      osmNavigationUrl +=
+          'from=${startPosition.latitude}%2C${startPosition.longitude}';
 
       // Za OpenStreetMap, koristimo prvi i poslednji destination
       if (optimizedRoute.isNotEmpty) {
@@ -285,8 +303,9 @@ class SmartNavigationService {
         if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
           final improvedAddress =
               _improveAddressForGeocoding(lastPutnik.adresa!, lastPutnik.grad);
-          final encodedAddress =
-              Uri.encodeComponent('$improvedAddress, ${lastPutnik.grad}, Serbia');
+          final encodedAddress = Uri.encodeComponent(
+            '$improvedAddress, ${lastPutnik.grad}, Serbia',
+          );
           osmNavigationUrl += '&to=$encodedAddress';
         }
       }
@@ -300,8 +319,8 @@ class SmartNavigationService {
       if (await canLaunchUrl(uri)) {
         return await launchUrl(
           uri,
-          mode:
-              LaunchMode.externalApplication, // Otvori u navigacionoj aplikaciji
+          mode: LaunchMode
+              .externalApplication, // Otvori u navigacionoj aplikaciji
         );
       } else {
         throw Exception('Ne mogu da otvorim Google Maps');
@@ -367,11 +386,6 @@ class SmartNavigationService {
 
 /// 📊 Rezultat navigacije
 class NavigationResult {
-  final bool success;
-  final String message;
-  final List<Putnik>? optimizedPutnici;
-  final double? totalDistance;
-
   NavigationResult._({
     required this.success,
     required this.message,
@@ -398,4 +412,8 @@ class NavigationResult {
       message: message,
     );
   }
+  final bool success;
+  final String message;
+  final List<Putnik>? optimizedPutnici;
+  final double? totalDistance;
 }

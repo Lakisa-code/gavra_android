@@ -20,7 +20,7 @@ void main() {
       // Get the most recent monthly passengers
       final response = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select()
           .order('created_at', ascending: false)
           .limit(5);
 
@@ -52,7 +52,8 @@ void main() {
       }).toList();
 
       print(
-          '📅 Found ${weekdayPassengers.length} passengers with Monday-Friday schedule');
+        '📅 Found ${weekdayPassengers.length} passengers with Monday-Friday schedule',
+      );
 
       // Check polasci_po_danu structure
       for (final passenger in weekdayPassengers) {
@@ -73,7 +74,9 @@ void main() {
       if (response.isNotEmpty) {
         print('✅ Found ${response.length} monthly passengers in database');
       } else {
-        print('ℹ️ No monthly passengers found in database - this is OK for empty database');
+        print(
+          'ℹ️ No monthly passengers found in database - this is OK for empty database',
+        );
       }
     } catch (e) {
       print('❌ Error querying monthly passengers: $e');

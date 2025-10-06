@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
 class SmoothPageRoute<T> extends PageRouteBuilder<T> {
-  final Widget child;
-  final Duration duration;
-
   SmoothPageRoute({
     required this.child,
     this.duration = const Duration(milliseconds: 300),
@@ -34,6 +31,8 @@ class SmoothPageRoute<T> extends PageRouteBuilder<T> {
             );
           },
         );
+  final Widget child;
+  final Duration duration;
 }
 
 // Helper funkcije za lako korišćenje

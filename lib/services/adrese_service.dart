@@ -31,7 +31,8 @@ class AdreseService {
     // 🏘️ FILTRIRAJ ADRESE - ukloni sve što nije iz dozvoljenih gradova
     adrese = adrese
         .where(
-            (adresa) => GradAdresaValidator.isAdresaInAllowedCity(adresa, grad))
+          (adresa) => GradAdresaValidator.isAdresaInAllowedCity(adresa, grad),
+        )
         .toList();
 
     return adrese;
@@ -166,7 +167,8 @@ class AdreseService {
     // 3. Vrati lokalne rezultate sa validacijom
     return localResults
         .where(
-            (adresa) => GradAdresaValidator.isAdresaInAllowedCity(adresa, grad))
+          (adresa) => GradAdresaValidator.isAdresaInAllowedCity(adresa, grad),
+        )
         .toList();
   }
 
@@ -189,7 +191,7 @@ class AdreseService {
       'kafić',
       'hotel',
       'dom zdravlja',
-      'apoteka'
+      'apoteka',
     ];
 
     return placeKeywords.any((keyword) => query.contains(keyword));
@@ -241,9 +243,11 @@ class AdreseService {
     return adresa
         .trim()
         .split(' ')
-        .map((word) => word.isNotEmpty
-            ? word[0].toUpperCase() + word.substring(1).toLowerCase()
-            : word)
+        .map(
+          (word) => word.isNotEmpty
+              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+              : word,
+        )
         .join(' ');
   }
 

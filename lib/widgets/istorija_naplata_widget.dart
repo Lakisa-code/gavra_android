@@ -3,14 +3,13 @@ import 'package:intl/intl.dart';
 import '../utils/vozac_boja.dart';
 
 class IstorijaHaplataWidget extends StatelessWidget {
-  final List<Map<String, dynamic>> detaljiNaplata;
-  final String vozac;
-
   const IstorijaHaplataWidget({
     Key? key,
     required this.detaljiNaplata,
     required this.vozac,
   }) : super(key: key);
+  final List<Map<String, dynamic>> detaljiNaplata;
+  final String vozac;
 
   String _formatVreme(int milliseconds) {
     final datum = DateTime.fromMillisecondsSinceEpoch(milliseconds);
@@ -54,7 +53,6 @@ class IstorijaHaplataWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: VozacBoja.get(vozac).withOpacity(0.3),
-                      width: 1,
                     ),
                   ),
                   child: Row(
@@ -93,7 +91,6 @@ class IstorijaHaplataWidget extends StatelessWidget {
 
                       // Iznos
                       Expanded(
-                        flex: 1,
                         child: Text(
                           '${(naplata['iznos'] as double).toStringAsFixed(0)} ',
                           style: TextStyle(

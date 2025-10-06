@@ -16,8 +16,12 @@ class PrintingService {
   // Use centralized logger
 
   /// Štampa spisak putnika za selektovani dan i vreme
-  static Future<void> printPutniksList(String selectedDay, String selectedVreme,
-      String selectedGrad, BuildContext context) async {
+  static Future<void> printPutniksList(
+    String selectedDay,
+    String selectedVreme,
+    String selectedGrad,
+    BuildContext context,
+  ) async {
     try {
       dlog('📄 Priprema spiska putnika za štampanje...');
 
@@ -137,7 +141,8 @@ class PrintingService {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '📄 Nema putnika za $selectedDay - $selectedVreme - $selectedGrad'),
+                '📄 Nema putnika za $selectedDay - $selectedVreme - $selectedGrad',
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -147,7 +152,11 @@ class PrintingService {
 
       // Kreiraj PDF dokument
       final pdf = await _createPutniksPDF(
-          putnici, selectedDay, selectedVreme, selectedGrad);
+        putnici,
+        selectedDay,
+        selectedVreme,
+        selectedGrad,
+      );
 
       // Otvori pregled za štampanje
       await Printing.layoutPdf(
@@ -171,8 +180,12 @@ class PrintingService {
   }
 
   /// Kreira PDF dokument sa spiskom putnika
-  static Future<Uint8List> _createPutniksPDF(List<Putnik> putnici,
-      String selectedDay, String selectedVreme, String selectedGrad) async {
+  static Future<Uint8List> _createPutniksPDF(
+    List<Putnik> putnici,
+    String selectedDay,
+    String selectedVreme,
+    String selectedGrad,
+  ) async {
     final pdf = pw.Document();
 
     // Grupiši putnike po statusu
@@ -194,20 +207,29 @@ class PrintingService {
           return [
             // Zaglavlje
             _buildHeader(
-                selectedDay, selectedVreme, selectedGrad, putnici.length),
+              selectedDay,
+              selectedVreme,
+              selectedGrad,
+              putnici.length,
+            ),
 
             pw.SizedBox(height: 20),
 
             // Statistike
             _buildStatisticsSection(
-                pokupljeni.length, otkazani.length, cekaju.length),
+              pokupljeni.length,
+              otkazani.length,
+              cekaju.length,
+            ),
 
             pw.SizedBox(height: 20),
 
             // Spisak putnika koji čekaju
             if (cekaju.isNotEmpty) ...[
               _buildSectionTitle(
-                  '🕐 ČEKAJU UKRCAVANJE (${cekaju.length})', Colors.orange),
+                '🕐 ČEKAJU UKRCAVANJE (${cekaju.length})',
+                Colors.orange,
+              ),
               pw.SizedBox(height: 10),
               _buildPutnikTable(cekaju),
               pw.SizedBox(height: 20),
@@ -216,7 +238,9 @@ class PrintingService {
             // Spisak pokupljenih putnika
             if (pokupljeni.isNotEmpty) ...[
               _buildSectionTitle(
-                  '✅ POKUPLJENI (${pokupljeni.length})', Colors.green),
+                '✅ POKUPLJENI (${pokupljeni.length})',
+                Colors.green,
+              ),
               pw.SizedBox(height: 10),
               _buildPutnikTable(pokupljeni),
               pw.SizedBox(height: 20),
@@ -242,8 +266,12 @@ class PrintingService {
   }
 
   /// Kreira zaglavlje dokumenta
-  static pw.Widget _buildHeader(String selectedDay, String selectedVreme,
-      String selectedGrad, int totalCount) {
+  static pw.Widget _buildHeader(
+    String selectedDay,
+    String selectedVreme,
+    String selectedGrad,
+    int totalCount,
+  ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -269,30 +297,36 @@ class PrintingService {
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Dan: $selectedDay',
-                style:
-                    pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-            pw.Text('Ukupno: $totalCount putnika',
-                style:
-                    pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-          ],
-        ),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text('Polazak: $selectedVreme - $selectedGrad',
-                style:
-                    pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
             pw.Text(
-                'Datum štampanja: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}',
-                style: const pw.TextStyle(fontSize: 12)),
+              'Dan: $selectedDay',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              'Ukupno: $totalCount putnika',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
           ],
         ),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('',
-                style: const pw.TextStyle(fontSize: 12)), // Prazan prostor
+            pw.Text(
+              'Polazak: $selectedVreme - $selectedGrad',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              'Datum štampanja: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}',
+              style: const pw.TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              '',
+              style: const pw.TextStyle(fontSize: 12),
+            ), // Prazan prostor
             pw.Text('Strana 1', style: const pw.TextStyle(fontSize: 12)),
           ],
         ),
@@ -303,7 +337,10 @@ class PrintingService {
 
   /// Kreira sekciju sa statistikama
   static pw.Widget _buildStatisticsSection(
-      int pokupljeni, int otkazani, int cekaju) {
+    int pokupljeni,
+    int otkazani,
+    int cekaju,
+  ) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
@@ -314,7 +351,10 @@ class PrintingService {
         mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
         children: [
           _buildStatCard(
-              '✅ Pokupljeni', pokupljeni.toString(), PdfColors.green),
+            '✅ Pokupljeni',
+            pokupljeni.toString(),
+            PdfColors.green,
+          ),
           _buildStatCard('🕐 Čekaju', cekaju.toString(), PdfColors.orange),
           _buildStatCard('❌ Otkazani', otkazani.toString(), PdfColors.red),
         ],
@@ -326,11 +366,18 @@ class PrintingService {
   static pw.Widget _buildStatCard(String label, String value, PdfColor color) {
     return pw.Column(
       children: [
-        pw.Text(label,
-            style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-        pw.Text(value,
-            style: pw.TextStyle(
-                fontSize: 16, fontWeight: pw.FontWeight.bold, color: color)),
+        pw.Text(
+          label,
+          style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            fontSize: 16,
+            fontWeight: pw.FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }

@@ -1,46 +1,7 @@
 import '../utils/mesecni_helpers.dart';
 
 class MesecniPutnik {
-  final String id;
-  final String putnikIme;
-  final String tip;
-  final String? tipSkole;
-  final String? brojTelefona;
-  final String? brojTelefonaOca;
-  final String? brojTelefonaMajke;
-
-  /// Nova struktura: mapa dan -> lista polazaka (npr. {"pon": ["6 VS", "13 BC"]})
-  final Map<String, List<String>> polasciPoDanu;
-  final String? adresaBelaCrkva;
-  final String? adresaVrsac;
-  // Legacy single-time columns removed: use `polasciPoDanu` instead
-  final String tipPrikazivanja;
-  final String radniDani;
-  final bool aktivan;
-  final String status;
-  final DateTime datumPocetkaMeseca;
-  final DateTime datumKrajaMeseca;
-  final double ukupnaCenaMeseca;
-  final double? cena; // ✅ NOVA KOLONA - cena mesečne karte
-  final int brojPutovanja;
-  final int brojOtkazivanja;
-  final DateTime? poslednjiPutovanje;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final bool obrisan; // Soft delete flag
-
-  // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA
-  final DateTime? vremePlacanja; // vreme kada je plaćen - NOVA KOLONA
-  final int? placeniMesec; // mesec za koji je plaćeno (1-12)
-  final int? placenaGodina; // godina za koju je plaćeno
-
-  // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
-  final String?
-      vozac; // jedan vozač za sve akcije (dodao, pokupil, naplatio, otkazao)
-  final bool pokupljen; // da li je pokupljen
-  final DateTime? vremePokupljenja; // kada je pokupljen
-  final Map<String, dynamic>
-      statistics; // fleksibilne metrike i statistika (jsonb)
+  // fleksibilne metrike i statistika (jsonb)
 
   // No legacy single-time helpers; canonical data is in `polasciPoDanu` (map day -> list)
 
@@ -135,13 +96,50 @@ class MesecniPutnik {
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
       vozac: map['vozac_id'] as String?,
-      pokupljen: false,
-      vremePokupljenja: null,
       statistics: (map['statistics'] != null && map['statistics'] is Map)
           ? Map<String, dynamic>.from(map['statistics'] as Map)
           : <String, dynamic>{},
     );
   }
+  final String id;
+  final String putnikIme;
+  final String tip;
+  final String? tipSkole;
+  final String? brojTelefona;
+  final String? brojTelefonaOca;
+  final String? brojTelefonaMajke;
+
+  /// Nova struktura: mapa dan -> lista polazaka (npr. {"pon": ["6 VS", "13 BC"]})
+  final Map<String, List<String>> polasciPoDanu;
+  final String? adresaBelaCrkva;
+  final String? adresaVrsac;
+  // Legacy single-time columns removed: use `polasciPoDanu` instead
+  final String tipPrikazivanja;
+  final String radniDani;
+  final bool aktivan;
+  final String status;
+  final DateTime datumPocetkaMeseca;
+  final DateTime datumKrajaMeseca;
+  final double ukupnaCenaMeseca;
+  final double? cena; // ✅ NOVA KOLONA - cena mesečne karte
+  final int brojPutovanja;
+  final int brojOtkazivanja;
+  final DateTime? poslednjiPutovanje;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool obrisan; // Soft delete flag
+
+  // 💰 NOVA POLJA ZA STATISTIKU PLAĆANJA
+  final DateTime? vremePlacanja; // vreme kada je plaćen - NOVA KOLONA
+  final int? placeniMesec; // mesec za koji je plaćeno (1-12)
+  final int? placenaGodina; // godina za koju je plaćeno
+
+  // 🚗 DRIVER TRACKING POLJA - JEDNOSTAVAN PRISTUP
+  final String?
+      vozac; // jedan vozač za sve akcije (dodao, pokupil, naplatio, otkazao)
+  final bool pokupljen; // da li je pokupljen
+  final DateTime? vremePokupljenja; // kada je pokupljen
+  final Map<String, dynamic> statistics;
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {

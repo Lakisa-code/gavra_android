@@ -40,9 +40,11 @@ extension GeocodingServiceTest on GeocodingService {
       'orešac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva'
+      'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
-    return !allowedCities.any((allowed) =>
-        normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad));
+    return !allowedCities.any(
+      (allowed) =>
+          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+    );
   }
 }

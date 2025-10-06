@@ -88,7 +88,8 @@ class ConnectionResilienceService {
 
       if (wasOnline != isConnected) {
         dlog(
-            '🔄 [CONNECTION RESILIENCE] Network status changed: ${isConnected ? "ONLINE" : "OFFLINE"}');
+          '🔄 [CONNECTION RESILIENCE] Network status changed: ${isConnected ? "ONLINE" : "OFFLINE"}',
+        );
 
         _updateConnectionState(isConnected);
 
@@ -144,18 +145,21 @@ class ConnectionResilienceService {
 
         if (_isSupabaseConnected) {
           dlog(
-              '✅ [CONNECTION RESILIENCE] Reconnect uspešan nakon $attempt pokušaja');
+            '✅ [CONNECTION RESILIENCE] Reconnect uspešan nakon $attempt pokušaja',
+          );
           return;
         }
       } catch (e) {
         dlog(
-            '❌ [CONNECTION RESILIENCE] Reconnect pokušaj $attempt/$_maxRetries failed: $e');
+          '❌ [CONNECTION RESILIENCE] Reconnect pokušaj $attempt/$_maxRetries failed: $e',
+        );
       }
 
       if (attempt < _maxRetries) {
         final delay = _baseRetryDelay * attempt;
         dlog(
-            '⏳ [CONNECTION RESILIENCE] Čekam ${delay.inSeconds}s pre sledećeg pokušaja...');
+          '⏳ [CONNECTION RESILIENCE] Čekam ${delay.inSeconds}s pre sledećeg pokušaja...',
+        );
         await Future<void>.delayed(delay);
       }
     }

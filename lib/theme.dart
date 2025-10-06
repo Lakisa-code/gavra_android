@@ -529,7 +529,7 @@ class AppThemeHelpers {
       return LinearGradient(
         colors: [
           colorScheme.studentContainer,
-          colorScheme.studentSecondary.withOpacity(0.3)
+          colorScheme.studentSecondary.withOpacity(0.3),
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -538,7 +538,7 @@ class AppThemeHelpers {
       return LinearGradient(
         colors: [
           colorScheme.workerContainer,
-          colorScheme.workerSecondary.withOpacity(0.3)
+          colorScheme.workerSecondary.withOpacity(0.3),
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

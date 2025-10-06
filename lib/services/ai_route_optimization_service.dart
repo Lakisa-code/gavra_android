@@ -56,13 +56,15 @@ class AIRouteOptimizationService {
       'vrsac', 'straza', 'vojvodinci', 'potporanj', 'oresac',
       // BELA CRKVA OPŠTINA
       'bela crkva', 'vracev gaj', 'vraćev gaj', 'dupljaja', 'jasenovo',
-      'kruscica', 'kusic', 'crvena crkva'
+      'kruscica', 'kusic', 'crvena crkva',
     ]; // Proveri grad ili adresu
-    return serviceAreaCities.any((city) =>
-        normalizedGrad.contains(city) ||
-        city.contains(normalizedGrad) ||
-        normalizedAdresa.contains(city) ||
-        city.contains(normalizedAdresa));
+    return serviceAreaCities.any(
+      (city) =>
+          normalizedGrad.contains(city) ||
+          city.contains(normalizedGrad) ||
+          normalizedAdresa.contains(city) ||
+          city.contains(normalizedAdresa),
+    );
   }
 
   /// �🚀 MAIN OPTIMIZATION FUNCTION - AI-powered route planning
@@ -85,12 +87,14 @@ class AIRouteOptimizationService {
 
     if (validPassengers.length != passengers.length) {
       _logger.w(
-          '⚠️ Filtrisano ${passengers.length - validPassengers.length} putnika van BC/Vršac oblasti');
+        '⚠️ Filtrisano ${passengers.length - validPassengers.length} putnika van BC/Vršac oblasti',
+      );
     }
 
     final startTime = DateTime.now();
     _logger.i(
-        '🚀 Starting AI route optimization with ${validPassengers.length} valid passengers');
+      '🚀 Starting AI route optimization with ${validPassengers.length} valid passengers',
+    );
 
     try {
       // 1. 📍 GEOCODE ALL ADDRESSES - parallel processing
@@ -123,7 +127,10 @@ class AIRouteOptimizationService {
       switch (algorithm) {
         case OptimizationAlgorithm.genetic:
           final result = await _geneticAlgorithmOptimization(
-              passengers, matrix, maxCalculationTime ~/ 2);
+            passengers,
+            matrix,
+            maxCalculationTime ~/ 2,
+          );
           optimizedSequence = result.sequence;
           totalDistance = result.distance;
           metrics = result.metrics;
@@ -131,7 +138,10 @@ class AIRouteOptimizationService {
 
         case OptimizationAlgorithm.simulatedAnnealing:
           final result = await _simulatedAnnealingOptimization(
-              passengers, matrix, maxCalculationTime);
+            passengers,
+            matrix,
+            maxCalculationTime,
+          );
           optimizedSequence = result.sequence;
           totalDistance = result.distance;
           metrics = result.metrics;
@@ -169,7 +179,8 @@ class AIRouteOptimizationService {
       _logger
           .i('✅ Route optimization completed in ${calculationTime.inSeconds}s');
       _logger.i(
-          '📊 Distance: ${totalDistance.toStringAsFixed(2)}km, Algorithm: ${algorithm.name}');
+        '📊 Distance: ${totalDistance.toStringAsFixed(2)}km, Algorithm: ${algorithm.name}',
+      );
 
       return OptimizedRoute(
         optimizedSequence: optimizedSequence,
@@ -190,7 +201,8 @@ class AIRouteOptimizationService {
 
   /// 📍 BATCH GEOCODE ADDRESSES - parallel processing
   static Future<Map<Putnik, GeocodeResult>> _batchGeocodeAddresses(
-      List<Putnik> passengers) async {
+    List<Putnik> passengers,
+  ) async {
     final addressCoordinates = <Putnik, GeocodeResult>{};
 
     // Filter passengers with addresses
@@ -242,8 +254,7 @@ class AIRouteOptimizationService {
       // Weather data (free OpenWeatherMap API)
       if (considerWeather) {
         // NAPOMENA: Dodaj svoj OpenWeatherMap API key
-        const weatherApiKey =
-            String.fromEnvironment('OPENWEATHER_API_KEY', defaultValue: '');
+        const weatherApiKey = String.fromEnvironment('OPENWEATHER_API_KEY');
         if (weatherApiKey.isNotEmpty) {
           final weatherUrl =
               '$_weatherApiUrl?lat=${start.latitude}&lon=${start.longitude}&appid=$weatherApiKey&units=metric';
@@ -357,7 +368,12 @@ class AIRouteOptimizationService {
 
         // Apply external factors
         distance = _applyExternalFactors(
-            distance, pointA, pointB, externalData, vehicle);
+          distance,
+          pointA,
+          pointB,
+          externalData,
+          vehicle,
+        );
 
         matrix.setDistance(i, j, distance);
       }
@@ -642,7 +658,9 @@ class AIRouteOptimizationService {
   // HELPER METHODS
 
   static List<List<int>> _generateInitialPopulation(
-      int size, int populationSize) {
+    int size,
+    int populationSize,
+  ) {
     final population = <List<int>>[];
     final baseRoute = List<int>.generate(size, (i) => i);
 
@@ -656,7 +674,9 @@ class AIRouteOptimizationService {
   }
 
   static List<int> _tournamentSelection(
-      List<List<int>> population, List<double> fitness) {
+    List<List<int>> population,
+    List<double> fitness,
+  ) {
     const tournamentSize = 5;
     final random = math.Random();
     var bestIndex = random.nextInt(population.length);
@@ -734,7 +754,9 @@ class AIRouteOptimizationService {
   }
 
   static double _calculateRouteDistance(
-      List<int> route, DistanceMatrix matrix) {
+    List<int> route,
+    DistanceMatrix matrix,
+  ) {
     double totalDistance = 0.0;
 
     // From start (index 0) to first passenger
@@ -758,7 +780,9 @@ class AIRouteOptimizationService {
   }
 
   static List<Putnik> _applyDriverPreferences(
-      List<Putnik> passengers, Map<String, dynamic> preferences) {
+    List<Putnik> passengers,
+    Map<String, dynamic> preferences,
+  ) {
     // Example preferences: prioritize VIP passengers, avoid certain areas, etc.
     if (preferences['prioritize_vip'] == true) {
       final vipPassengers = passengers
@@ -774,7 +798,9 @@ class AIRouteOptimizationService {
   }
 
   static Duration _calculateEstimatedTime(
-      double distance, VehicleType vehicle) {
+    double distance,
+    VehicleType vehicle,
+  ) {
     double avgSpeed; // km/h
 
     switch (vehicle) {
@@ -796,11 +822,10 @@ class AIRouteOptimizationService {
 
 /// 📊 DISTANCE MATRIX CLASS
 class DistanceMatrix {
-  final List<List<double>> _matrix;
-  final int size;
-
   DistanceMatrix(this.size)
       : _matrix = List.generate(size, (_) => List.filled(size, 0.0));
+  final List<List<double>> _matrix;
+  final int size;
 
   void setDistance(int i, int j, double distance) {
     _matrix[i][j] = distance;
@@ -812,29 +837,18 @@ class DistanceMatrix {
 
 /// 📈 OPTIMIZATION RESULT CLASS
 class OptimizationResult {
-  final List<Putnik> sequence;
-  final double distance;
-  final Map<String, dynamic> metrics;
-
   OptimizationResult({
     required this.sequence,
     required this.distance,
     required this.metrics,
   });
+  final List<Putnik> sequence;
+  final double distance;
+  final Map<String, dynamic> metrics;
 }
 
 /// 🗺️ OPTIMIZED ROUTE CLASS
 class OptimizedRoute {
-  final List<Putnik> optimizedSequence;
-  final List<Putnik> originalSequence;
-  final double totalDistance;
-  final Duration estimatedTime;
-  final OptimizationAlgorithm algorithm;
-  final Duration calculationTime;
-  final Map<String, dynamic> metrics;
-  final Map<String, dynamic> externalFactors;
-  final Map<Putnik, GeocodeResult> coordinates;
-
   OptimizedRoute({
     required this.optimizedSequence,
     required this.originalSequence,
@@ -861,6 +875,15 @@ class OptimizedRoute {
       coordinates: {},
     );
   }
+  final List<Putnik> optimizedSequence;
+  final List<Putnik> originalSequence;
+  final double totalDistance;
+  final Duration estimatedTime;
+  final OptimizationAlgorithm algorithm;
+  final Duration calculationTime;
+  final Map<String, dynamic> metrics;
+  final Map<String, dynamic> externalFactors;
+  final Map<Putnik, GeocodeResult> coordinates;
 
   double get improvementPercentage {
     if (originalSequence.length != optimizedSequence.length) return 0.0;

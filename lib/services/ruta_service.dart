@@ -3,10 +3,9 @@ import '../models/ruta.dart';
 
 /// Servis za upravljanje rutama
 class RutaService {
-  final SupabaseClient _supabase;
-
   RutaService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Dohvata sve rute
   Future<List<Ruta>> getAllRute() async {

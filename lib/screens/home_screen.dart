@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     'Utorak',
     'Sreda',
     'Četvrtak',
-    'Petak'
+    'Petak',
   ];
 
   // 🕐 VREMENA ZA DROPDOWN
@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     '14:00 Vršac',
     '15:30 Vršac',
     '16:15 Vršac',
-    '19:00 Vršac'
+    '19:00 Vršac',
   ];
 
   // ✅ KORISTI UTILS FUNKCIJU ZA DROPDOWN DAN
@@ -294,7 +294,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
       // 🎯 PROSLIJEDI SELEKTOVANI DAN umesto današnjeg
       return await _putnikService.getAllPutniciFromBothTables(
-          targetDay: _selectedDay);
+        targetDay: _selectedDay,
+      );
     } catch (e) {
       return [];
     }
@@ -553,16 +554,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                prefixIcon: const Icon(Icons.person,
-                                    color: Colors.green),
+                                prefixIcon: const Icon(
+                                  Icons.person,
+                                  color: Colors.green,
+                                ),
                                 fillColor: Colors.white,
                                 filled: true,
                               ),
                               items: dozvoljenaImena
-                                  .map((ime) => DropdownMenuItem(
-                                        value: ime,
-                                        child: Text(ime),
-                                      ))
+                                  .map(
+                                    (ime) => DropdownMenuItem(
+                                      value: ime,
+                                      child: Text(ime),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (value) {
                                 setStateDialog(() {
@@ -611,12 +616,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             color: Colors.green.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                                color: Colors.green.withOpacity(0.3)),
+                              color: Colors.green.withOpacity(0.3),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.route,
-                                  color: Colors.green, size: 16),
+                              const Icon(
+                                Icons.route,
+                                color: Colors.green,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -684,15 +693,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                                color: Colors.orange.withOpacity(0.3)),
+                              color: Colors.orange.withOpacity(0.3),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.info_outline,
-                                      color: Colors.orange[700], size: 14),
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: Colors.orange[700],
+                                    size: 14,
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
@@ -770,7 +783,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  '❌ Grad "$_selectedGrad" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.'),
+                                '❌ Grad "$_selectedGrad" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -781,11 +795,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         final adresa = adresaController.text.trim();
                         if (adresa.isNotEmpty &&
                             !GradAdresaValidator.validateAdresaForCity(
-                                adresa, _selectedGrad)) {
+                              adresa,
+                              _selectedGrad,
+                            )) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                  '❌ Adresa "$adresa" nije validna za grad "$_selectedGrad". Dozvoljene su samo adrese iz Bele Crkve i Vršca.'),
+                                '❌ Adresa "$adresa" nije validna za grad "$_selectedGrad". Dozvoljene su samo adrese iz Bele Crkve i Vršca.',
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -803,23 +820,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                      '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
+                                    '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   SizedBox(height: 4),
                                   Text(
-                                      'Možete dodati samo POSTOJEĆE mesečne putnike.'),
+                                    'Možete dodati samo POSTOJEĆE mesečne putnike.',
+                                  ),
                                   SizedBox(height: 4),
                                   Text('Za NOVE mesečne putnike idite na:'),
                                   SizedBox(height: 2),
                                   Row(
                                     children: [
-                                      Icon(Icons.arrow_forward,
-                                          size: 16, color: Colors.white),
+                                      Icon(
+                                        Icons.arrow_forward,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
                                       SizedBox(width: 4),
-                                      Text('Meni → Mesečni putnici',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold)),
+                                      Text(
+                                        'Meni → Mesečni putnici',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -849,7 +875,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                    'NEPOZNAT VOZAČ! Morate biti ulogovani kao jedan od: ${VozacBoja.validDrivers.join(", ")}'),
+                                  'NEPOZNAT VOZAČ! Morate biti ulogovani kao jedan od: ${VozacBoja.validDrivers.join(", ")}',
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -1021,7 +1048,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Container(
                         height: 35,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(18),
@@ -1122,7 +1151,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final odgovarajuciDan =
               normalizedPutnikDan.contains(normalizedDanBaza);
           final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
-              putnik.grad, putnik.adresa, _selectedGrad);
+            putnik.grad,
+            putnik.adresa,
+            _selectedGrad,
+          );
           final prikazi = imaVreme &&
               imaGrad &&
               imaDan &&
@@ -1215,7 +1247,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           } catch (e) {
             // Log error and continue to fallback
             dlog(
-                '⚠️ [GET PUTNIK COUNT] Greška pri računanju broja putnika: $e');
+              '⚠️ [GET PUTNIK COUNT] Greška pri računanju broja putnika: $e',
+            );
           }
 
           // Fallback: brzo prebroj ako grad nije standardan
@@ -1223,13 +1256,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final normalizedStatus =
                 TextUtils.normalizeText(putnik.status ?? '');
             final gradMatch = GradAdresaValidator.isGradMatch(
-                putnik.grad, putnik.adresa, grad);
+              putnik.grad,
+              putnik.adresa,
+              grad,
+            );
             final vremeMatch =
                 _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
             final normalizedPutnikDan =
                 GradAdresaValidator.normalizeString(putnik.dan);
             final normalizedDanBaza = GradAdresaValidator.normalizeString(
-                _getDayAbbreviation(_selectedDay));
+              _getDayAbbreviation(_selectedDay),
+            );
             final danMatch = normalizedPutnikDan.contains(normalizedDanBaza);
             final statusOk = (normalizedStatus != 'otkazano' &&
                 normalizedStatus != 'otkazan' &&
@@ -1246,7 +1283,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return Scaffold(
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(
-                95), // Povećano sa 80 na 95 zbog sezonskog indikatora
+              95,
+            ), // Povećano sa 80 na 95 zbog sezonskog indikatora
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -1316,7 +1354,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Container(
                                 height: 32,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: VozacBoja.get(_currentDriver),
                                   borderRadius: BorderRadius.circular(14),
@@ -1361,12 +1401,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: Container(
                                 height: 32,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color: Colors.white.withOpacity(0.4)),
+                                    color: Colors.white.withOpacity(0.4),
+                                  ),
                                 ),
                                 child: const Center(
                                   child: FittedBox(
@@ -1396,12 +1439,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             child: Container(
                               height: 32,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.25),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                    color: Colors.white.withOpacity(0.3)),
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -1444,24 +1490,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     }).toList();
                                   },
                                   items: _dani
-                                      .map((dan) => DropdownMenuItem(
-                                            value: dan,
-                                            child: Center(
-                                              child: Text(
-                                                dan,
-                                                style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimary,
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 14,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                                overflow: TextOverflow.ellipsis,
-                                                maxLines: 1,
+                                      .map(
+                                        (dan) => DropdownMenuItem(
+                                          value: dan,
+                                          child: Center(
+                                            child: Text(
+                                              dan,
+                                              style: TextStyle(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
                                               ),
+                                              textAlign: TextAlign.center,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
                                             ),
-                                          ))
+                                          ),
+                                        ),
+                                      )
                                       .toList(),
                                   onChanged: (value) {
                                     setState(() => _selectedDay = value!);
@@ -1486,11 +1534,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Dugmad za akcije
                     Expanded(
-                      flex: 1,
                       child: _HomeScreenButton(
                         label: 'Dodaj',
                         icon: Icons.person_add,
@@ -1503,7 +1549,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         _currentDriver == 'Bojan' ||
                         _currentDriver == 'Svetlana')
                       Expanded(
-                        flex: 1,
                         child: _HomeScreenButton(
                           label: 'Danas',
                           icon: Icons.today,
@@ -1519,7 +1564,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       const SizedBox(width: 4),
                     if (['Bojan', 'Svetlana'].contains(_currentDriver))
                       Expanded(
-                        flex: 1,
                         child: _HomeScreenButton(
                           label: 'Admin',
                           icon: Icons.admin_panel_settings,
@@ -1533,19 +1577,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     const SizedBox(width: 4),
                     Expanded(
-                      flex: 1,
                       child: _HomeScreenButton(
                         label: 'Štampaj',
                         icon: Icons.print,
                         onTap: () async {
-                          await PrintingService.printPutniksList(_selectedDay,
-                              _selectedVreme, _selectedGrad, context);
+                          await PrintingService.printPutniksList(
+                            _selectedDay,
+                            _selectedVreme,
+                            _selectedGrad,
+                            context,
+                          );
                         },
                       ),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
-                      flex: 1,
                       child: _HomeScreenButton(
                         label: 'Logout',
                         icon: Icons.logout,
@@ -1565,7 +1611,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     padding: const EdgeInsets.all(8.0),
                     child: putniciZaPrikaz.isEmpty
                         ? const Center(
-                            child: Text('Nema putnika za ovaj polazak.'))
+                            child: Text('Nema putnika za ovaj polazak.'),
+                          )
                         : ListView.builder(
                             itemCount: putniciZaPrikaz.length,
                             itemBuilder: (context, index) {
@@ -1647,14 +1694,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
 // AnimatedActionButton widget sa hover efektima
 class AnimatedActionButton extends StatefulWidget {
-  final Widget child;
-  final VoidCallback onTap;
-  final double width;
-  final double height;
-  final EdgeInsets margin;
-  final List<Color> gradientColors;
-  final List<BoxShadow> boxShadow;
-
   const AnimatedActionButton({
     Key? key,
     required this.child,
@@ -1665,6 +1704,13 @@ class AnimatedActionButton extends StatefulWidget {
     required this.gradientColors,
     required this.boxShadow,
   }) : super(key: key);
+  final Widget child;
+  final VoidCallback onTap;
+  final double width;
+  final double height;
+  final EdgeInsets margin;
+  final List<Color> gradientColors;
+  final List<BoxShadow> boxShadow;
 
   @override
   State<AnimatedActionButton> createState() => _AnimatedActionButtonState();
@@ -1686,10 +1732,12 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton>
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
@@ -1734,7 +1782,8 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton>
                     ? widget.boxShadow.map((shadow) {
                         return BoxShadow(
                           color: shadow.color.withOpacity(
-                              (shadow.color.opacity * 1.5).clamp(0.0, 1.0)),
+                            (shadow.color.opacity * 1.5).clamp(0.0, 1.0),
+                          ),
                           blurRadius: shadow.blurRadius * 1.2,
                           offset: shadow.offset,
                         );
@@ -1759,15 +1808,14 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton>
 
 // Originalna _HomeScreenButton klasa sa seksi bojama
 class _HomeScreenButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
   const _HomeScreenButton({
     required this.label,
     required this.icon,
     required this.onTap,
   });
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

@@ -8,12 +8,6 @@ import '../services/smart_navigation_service.dart';
 /// 🧭 REAL-TIME GPS NAVIGATION WIDGET
 /// Prikazuje turn-by-turn instrukcije sa real-time GPS praćenjem
 class RealTimeNavigationWidget extends StatefulWidget {
-  final List<Putnik> optimizedRoute;
-  final void Function(String message)? onStatusUpdate;
-  final void Function(List<Putnik> newRoute)? onRouteUpdate;
-  final bool showDetailedInstructions;
-  final bool enableVoiceInstructions;
-
   const RealTimeNavigationWidget({
     Key? key,
     required this.optimizedRoute,
@@ -22,6 +16,11 @@ class RealTimeNavigationWidget extends StatefulWidget {
     this.showDetailedInstructions = true,
     this.enableVoiceInstructions = false,
   }) : super(key: key);
+  final List<Putnik> optimizedRoute;
+  final void Function(String message)? onStatusUpdate;
+  final void Function(List<Putnik> newRoute)? onRouteUpdate;
+  final bool showDetailedInstructions;
+  final bool enableVoiceInstructions;
 
   @override
   State<RealTimeNavigationWidget> createState() =>
@@ -108,7 +107,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         });
 
         widget.onStatusUpdate?.call(
-            '✅ Navigacija inicijalizovana sa ${_currentInstructions.length} instrukcija');
+          '✅ Navigacija inicijalizovana sa ${_currentInstructions.length} instrukcija',
+        );
 
         // Pokreni real-time praćenje
         _startGPSTracking();
@@ -160,7 +160,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       // );
 
       final Map<String, dynamic> updateResult = {
-        'needsRerouting': false
+        'needsRerouting': false,
       }; // Placeholder
 
       if (updateResult['needsRerouting'] == true) {
@@ -517,8 +517,6 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       final result = await SmartNavigationService.startOptimizedNavigation(
         putnici: _remainingPassengers,
         startCity: 'Bela Crkva', // ili dinamički na osnovu trenutne pozicije
-        optimizeForTime: true,
-        useTrafficData: false, // ISKLJUČENO - trošilo Google API 💸
       );
 
       if (result.success) {

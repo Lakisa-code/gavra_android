@@ -88,7 +88,9 @@ class PerformanceCacheService {
 
   /// 💾 Sačuvaj koordinate trajno (SharedPreferences)
   static Future<void> _saveToPersistentStorage(
-      String address, Position position) async {
+    String address,
+    Position position,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final coordData = {
@@ -146,8 +148,10 @@ class PerformanceCacheService {
   }
 
   /// 🧮 Generiši cache key za rutu
-  static String generateRouteKey(List<Putnik> putnici,
-      {Position? driverPosition}) {
+  static String generateRouteKey(
+    List<Putnik> putnici, {
+    Position? driverPosition,
+  }) {
     // Sortiraj putničke ID-jeve za konzistentan key
     final sortedIds = putnici.map((p) => p.id.toString()).toList()..sort();
     final putniciKey = sortedIds.join(',');

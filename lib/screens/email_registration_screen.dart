@@ -436,7 +436,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
 
     // Pokaži loading poruku
     _showLoadingDialog(
-        'Registracija u toku...', 'Molimo sačekajte dok se vaš nalog kreira.');
+      'Registracija u toku...',
+      'Molimo sačekajte dok se vaš nalog kreira.',
+    );
 
     try {
       final driverName = _selectedDriver!;
@@ -446,7 +448,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       dlog('📧 Registrujem vozača $driverName sa email-om: $email');
 
       final success = await EmailAuthService.registerDriverWithEmail(
-          driverName, email, password);
+        driverName,
+        email,
+        password,
+      );
 
       // Sakrij loading dialog
       if (mounted) Navigator.of(context).pop();
@@ -487,8 +492,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           }
         }
       } else {
-        _showErrorDialog('Neuspješna registracija',
-            'Provjerite podatke i pokušajte ponovo.');
+        _showErrorDialog(
+          'Neuspješna registracija',
+          'Provjerite podatke i pokušajte ponovo.',
+        );
       }
     } catch (e) {
       // Sakrij loading dialog ako je otvoren
@@ -496,7 +503,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
 
       dlog('❌ Greška pri registraciji: $e');
       _showErrorDialog(
-          'Greška', 'Došlo je do greške pri registraciji. Pokušajte ponovo.');
+        'Greška',
+        'Došlo je do greške pri registraciji. Pokušajte ponovo.',
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -508,8 +517,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message,
-            style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -572,12 +583,12 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         backgroundColor: const Color(0xFF1A1A2E),
         insetPadding: const EdgeInsets.all(16),
         contentPadding: const EdgeInsets.all(20),
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 24),
-            const SizedBox(width: 8),
-            const Flexible(
+            Icon(Icons.check_circle, color: Colors.green, size: 24),
+            SizedBox(width: 8),
+            Flexible(
               child: Text(
                 'Registracija uspešna!',
                 style: TextStyle(color: Colors.white, fontSize: 16),

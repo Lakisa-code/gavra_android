@@ -4,10 +4,9 @@ import 'vozac_mapping_service.dart';
 
 /// Servis za upravljanje mesečnim putnicima (normalizovana šema)
 class MesecniPutnikServiceNovi {
-  final SupabaseClient _supabase;
-
   MesecniPutnikServiceNovi({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Dohvata sve mesečne putnike
   Future<List<MesecniPutnik>> getAllMesecniPutnici() async {
@@ -42,7 +41,7 @@ class MesecniPutnikServiceNovi {
       final supabase = Supabase.instance.client;
       final response = await supabase
           .from('mesecni_putnici')
-          .select('*')
+          .select()
           .eq('putnik_ime', ime)
           .eq('obrisan', false)
           .single();
@@ -69,8 +68,11 @@ class MesecniPutnikServiceNovi {
                     final map = row as Map<String, dynamic>;
                     return (map['aktivan'] == true) && (map['obrisan'] != true);
                   })
-                  .map((json) => MesecniPutnik.fromMap(
-                      Map<String, dynamic>.from(json as Map)))
+                  .map(
+                    (json) => MesecniPutnik.fromMap(
+                      Map<String, dynamic>.from(json as Map),
+                    ),
+                  )
                   .toList();
             } catch (e) {
               return <MesecniPutnik>[];
@@ -84,14 +86,18 @@ class MesecniPutnikServiceNovi {
       return Stream.fromFuture(
         Supabase.instance.client
             .from('mesecni_putnici')
-            .select('*')
+            .select()
             .eq('aktivan', true)
             .eq('obrisan', false)
             .order('putnik_ime')
-            .then((response) => response
-                .map((json) =>
-                    MesecniPutnik.fromMap(Map<String, dynamic>.from(json)))
-                .toList()),
+            .then(
+              (response) => response
+                  .map(
+                    (json) =>
+                        MesecniPutnik.fromMap(Map<String, dynamic>.from(json)),
+                  )
+                  .toList(),
+            ),
       );
     }
   }
@@ -110,7 +116,9 @@ class MesecniPutnikServiceNovi {
 
   /// Ažurira mesečnog putnika
   Future<MesecniPutnik> updateMesecniPutnik(
-      String id, Map<String, dynamic> updates) async {
+    String id,
+    Map<String, dynamic> updates,
+  ) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 
     final response = await _supabase
@@ -171,7 +179,9 @@ class MesecniPutnikServiceNovi {
 
   /// Kreira dnevna putovanja iz mesečnih (placeholder - treba implementirati)
   Future<void> kreirajDnevnaPutovanjaIzMesecnih(
-      MesecniPutnik putnik, DateTime datum) async {
+    MesecniPutnik putnik,
+    DateTime datum,
+  ) async {
     // ✅ Kreiranje dnevnih putovanja iz mesečnih putnika
     // Ova metoda kreira zapise u putovanja_istorija tabeli za svaki polazak
 
@@ -187,7 +197,7 @@ class MesecniPutnikServiceNovi {
       final supabase = Supabase.instance.client;
       await supabase.from('mesecni_putnici').update({
         'broj_putovanja': brojIzIstorije,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       return true;
@@ -204,7 +214,7 @@ class MesecniPutnikServiceNovi {
       final supabase = Supabase.instance.client;
       await supabase.from('mesecni_putnici').update({
         'broj_otkazivanja': brojIzIstorije,
-        'updated_at': DateTime.now().toIso8601String()
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
       return true;
@@ -214,8 +224,13 @@ class MesecniPutnikServiceNovi {
   }
 
   /// Ažurira plaćanje za mesec (vozacId je UUID)
-  Future<bool> azurirajPlacanjeZaMesec(String putnikId, double iznos,
-      String vozacId, DateTime pocetakMeseca, DateTime krajMeseca) async {
+  Future<bool> azurirajPlacanjeZaMesec(
+    String putnikId,
+    double iznos,
+    String vozacId,
+    DateTime pocetakMeseca,
+    DateTime krajMeseca,
+  ) async {
     try {
       print('🔍 [AZURIRAJ PLACANJE] Input vozacId: $vozacId');
 
@@ -229,14 +244,16 @@ class MesecniPutnikServiceNovi {
         } else {
           // Ako nije UUID, pokušaj konverziju (fallback)
           print(
-              '⚠️ [AZURIRAJ PLACANJE] Not a UUID, attempting conversion from: $vozacId');
+            '⚠️ [AZURIRAJ PLACANJE] Not a UUID, attempting conversion from: $vozacId',
+          );
           final converted = VozacMappingService.getVozacUuid(vozacId);
           if (converted != null) {
             validVozacId = converted;
             print('✅ [AZURIRAJ PLACANJE] Converted to UUID: $validVozacId');
           } else {
             print(
-                '❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null');
+              '❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null',
+            );
             validVozacId = null;
           }
         }
@@ -284,8 +301,8 @@ class MesecniPutnikServiceNovi {
   /// Helper funkcija za validaciju UUID formata
   bool _isValidUuid(String str) {
     return RegExp(
-            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
-        .hasMatch(str);
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(str);
   }
 
   /// Briše mesečnog putnika (soft delete)
@@ -359,11 +376,12 @@ class MesecniPutnikServiceNovi {
 
   /// Dohvata sva ukrcavanja za mesečnog putnika
   Future<List<Map<String, dynamic>>> dohvatiUkrcavanjaZaPutnika(
-      String putnikIme) async {
+    String putnikIme,
+  ) async {
     try {
       final ukrcavanja = await _supabase
           .from('putovanja_istorija')
-          .select('*')
+          .select()
           .eq('putnik_ime', putnikIme)
           .eq('status', 'pokupljen')
           .order('created_at', ascending: false) as List<dynamic>;
@@ -376,11 +394,12 @@ class MesecniPutnikServiceNovi {
 
   /// Dohvata sve otkaze za mesečnog putnika
   Future<List<Map<String, dynamic>>> dohvatiOtkazeZaPutnika(
-      String putnikIme) async {
+    String putnikIme,
+  ) async {
     try {
       final otkazi = await _supabase
           .from('putovanja_istorija')
-          .select('*')
+          .select()
           .eq('putnik_ime', putnikIme)
           .eq('status', 'otkazan')
           .order('created_at', ascending: false) as List<dynamic>;
@@ -393,14 +412,15 @@ class MesecniPutnikServiceNovi {
 
   /// Dohvata sva plaćanja za mesečnog putnika iz putovanja_istorija
   Future<List<Map<String, dynamic>>> dohvatiPlacanjaZaPutnika(
-      String putnikIme) async {
+    String putnikIme,
+  ) async {
     try {
       List<Map<String, dynamic>> svaPlacanja = [];
 
       // 1. SVA PLAĆANJA iz putovanja_istorija (i dnevna i mesečna)
       final placanjaIzIstorije = await _supabase
           .from('putovanja_istorija')
-          .select('*')
+          .select()
           .eq('putnik_ime', putnikIme)
           .gt('cena', 0)
           .order('created_at', ascending: false) as List<dynamic>;
@@ -427,7 +447,8 @@ class MesecniPutnikServiceNovi {
         final mesecnaPlacanja = await _supabase
             .from('mesecni_putnici')
             .select(
-                'cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina')
+              'cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina',
+            )
             .eq('putnik_ime', putnikIme)
             .not('vreme_placanja', 'is', null)
             .order('vreme_placanja', ascending: false) as List<dynamic>;
@@ -513,7 +534,8 @@ class MesecniPutnikServiceNovi {
                   final obrisan = map['obrisan'] ??
                       false; // default false ako nema vrednost
                   print(
-                      '🔍 MESECNI STREAM DEBUG: ${map['putnik_ime']} - aktivan: $aktivan, obrisan: $obrisan');
+                    '🔍 MESECNI STREAM DEBUG: ${map['putnik_ime']} - aktivan: $aktivan, obrisan: $obrisan',
+                  );
                   return (aktivan as bool) && !(obrisan as bool);
                 } catch (_) {
                   return true;
@@ -521,8 +543,11 @@ class MesecniPutnikServiceNovi {
               }).toList();
 
               return filtered
-                  .map((json) => MesecniPutnik.fromMap(
-                      Map<String, dynamic>.from(json as Map)))
+                  .map(
+                    (json) => MesecniPutnik.fromMap(
+                      Map<String, dynamic>.from(json as Map),
+                    ),
+                  )
                   .toList();
             } catch (e) {
               return <MesecniPutnik>[];
@@ -539,7 +564,8 @@ class MesecniPutnikServiceNovi {
 
   /// Izračunava broj putovanja iz istorije
   static Future<int> izracunajBrojPutovanjaIzIstorije(
-      String mesecniPutnikId) async {
+    String mesecniPutnikId,
+  ) async {
     try {
       final supabase = Supabase.instance.client;
       // Dobij sve JEDINSTVENE DATUME kada je putnik pokupljen
@@ -567,7 +593,8 @@ class MesecniPutnikServiceNovi {
 
   /// Izračunava broj otkazivanja iz istorije
   static Future<int> izracunajBrojOtkazivanjaIzIstorije(
-      String mesecniPutnikId) async {
+    String mesecniPutnikId,
+  ) async {
     try {
       final supabase = Supabase.instance.client;
       // Dobij sve JEDINSTVENE DATUME kada je putnik otkazan

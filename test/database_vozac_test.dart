@@ -29,7 +29,8 @@ void main() {
         final vozacId = row['vozac_id'];
 
         print(
-            'ID: $id, Ime: $ime, vozac_id: "$vozacId" (${vozacId.runtimeType})');
+          'ID: $id, Ime: $ime, vozac_id: "$vozacId" (${vozacId.runtimeType})',
+        );
 
         // Proveri da li je prazan string
         if (vozacId is String && vozacId.isEmpty) {

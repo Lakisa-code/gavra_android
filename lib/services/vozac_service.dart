@@ -3,10 +3,9 @@ import '../models/vozac.dart';
 
 /// Servis za upravljanje vozačima
 class VozacService {
-  final SupabaseClient _supabase;
-
   VozacService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {

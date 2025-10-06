@@ -2,14 +2,6 @@ import 'package:uuid/uuid.dart';
 
 /// Model za vozače
 class Vozac {
-  final String id;
-  final String ime;
-  final String? brojTelefona;
-  final String? email;
-  final bool aktivan;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   Vozac({
     String? id,
     required this.ime,
@@ -33,6 +25,13 @@ class Vozac {
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
+  final String id;
+  final String ime;
+  final String? brojTelefona;
+  final String? email;
+  final bool aktivan;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Map<String, dynamic> toMap() {
     return {

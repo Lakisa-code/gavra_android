@@ -16,11 +16,10 @@ import 'supabase_safe.dart';
 /// 🔄 CENTRALIZOVANI REAL-TIME STATISTIKA SERVIS
 /// Rešava probleme sa duplikovanim stream-ovima i cache-om
 class RealTimeStatistikaService {
+  RealTimeStatistikaService._internal();
   static RealTimeStatistikaService? _instance;
   static RealTimeStatistikaService get instance =>
       _instance ??= RealTimeStatistikaService._internal();
-
-  RealTimeStatistikaService._internal();
 
   // 🎯 CENTRALIUZOVANI STREAM CACHE
   final Map<String, Stream<dynamic>> _streamCache = {};
@@ -155,16 +154,18 @@ class RealTimeStatistikaService {
 
   /// 📊 PRIVATNA METODA - Računaj statistike za putnika
   Future<Map<String, dynamic>> _calculatePutnikStatistike(
-      String putnikId) async {
+    String putnikId,
+  ) async {
     try {
       // Dohvati sva putovanja za putnika (safely)
       final response = await SupabaseSafe.run(
-          () => Supabase.instance.client
-              .from('putovanja_istorija')
-              .select()
-              .eq('putnik_id', putnikId)
-              .order('created_at', ascending: false),
-          fallback: <dynamic>[]);
+        () => Supabase.instance.client
+            .from('putovanja_istorija')
+            .select()
+            .eq('putnik_id', putnikId)
+            .order('created_at', ascending: false),
+        fallback: <dynamic>[],
+      );
 
       final putovanja = response is List ? response : <dynamic>[];
 

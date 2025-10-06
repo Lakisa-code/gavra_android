@@ -11,12 +11,11 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS p
 import 'package:rxdart/rxdart.dart'; // 🔧 DODANO za share() metodu
 
 class StatistikaService {
+  StatistikaService._internal();
   // Singleton pattern
   static StatistikaService? _instance;
   static StatistikaService get instance =>
-      _instance ??= StatistikaService._internal();
-
-  StatistikaService._internal(); // Private constructor
+      _instance ??= StatistikaService._internal(); // Private constructor
 
   // Instance cache za stream-ove da izbegnemo duplo kreiranje
   final Map<String, Stream<Map<String, double>>> _streamCache = {};
@@ -45,7 +44,10 @@ class StatistikaService {
 
   /// 🕐 STANDARDIZOVANO FILTRIRANJE PO VREMENSKOM OPSEGU
   static bool _jeUVremenskomOpsegu(
-      DateTime? dateTime, DateTime from, DateTime to) {
+    DateTime? dateTime,
+    DateTime from,
+    DateTime to,
+  ) {
     if (dateTime == null) return false;
     final normalized = _normalizeDateTime(dateTime);
     final normalizedFrom = _normalizeDateTime(from);
@@ -62,8 +64,12 @@ class StatistikaService {
   }
 
   /// 💰 PAZAR ZA ODREĐENOG VOZAČA - KORISTI VREMENSKI OPSEG
-  static Future<double> pazarZaVozaca(List<Putnik> putnici, String vozac,
-      {DateTime? from, DateTime? to}) async {
+  static Future<double> pazarZaVozaca(
+    List<Putnik> putnici,
+    String vozac, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
     // Ako nisu prosleđeni parametri, koristi današnji dan
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
@@ -73,8 +79,11 @@ class StatistikaService {
   }
 
   /// 🔄 REAL-TIME PAZAR STREAM ZA ODREĐENOG VOZAČA - JEDNOSTAVNO BEZ DUPLIKOVANJA
-  static Stream<double> streamPazarZaVozaca(String vozac,
-      {DateTime? from, DateTime? to}) {
+  static Stream<double> streamPazarZaVozaca(
+    String vozac, {
+    DateTime? from,
+    DateTime? to,
+  }) {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -87,8 +96,12 @@ class StatistikaService {
   }
 
   /// 💰 JEDNOSTAVNA KALKULACIJA PAZARA - KORISTI KOMBINOVANI STREAM
-  static double _calculateSimplePazarSync(List<Putnik> kombinovaniPutnici,
-      String vozac, DateTime fromDate, DateTime toDate) {
+  static double _calculateSimplePazarSync(
+    List<Putnik> kombinovaniPutnici,
+    String vozac,
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
     double ukupno = 0.0;
 
     for (final putnik in kombinovaniPutnici) {
@@ -106,8 +119,11 @@ class StatistikaService {
   }
 
   /// 🎫 STREAM BROJ MESEČNIH KARATA ZA ODREĐENOG VOZAČA
-  static Stream<int> streamBrojMesecnihKarataZaVozaca(String vozac,
-      {DateTime? from, DateTime? to}) {
+  static Stream<int> streamBrojMesecnihKarataZaVozaca(
+    String vozac, {
+    DateTime? from,
+    DateTime? to,
+  }) {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -129,7 +145,11 @@ class StatistikaService {
 
   /// 🔄 SINHRONA KALKULACIJA PAZARA (za stream)
   static double _calculatePazarSync(
-      List<Putnik> putnici, String vozac, DateTime fromDate, DateTime toDate) {
+    List<Putnik> putnici,
+    String vozac,
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
     // 1. PAZAR OD OBIČNIH PUTNIKA
     final filteredPutnici = putnici.where((putnik) {
       if (!_jePazarValjan(putnik)) return false;
@@ -140,7 +160,9 @@ class StatistikaService {
     }).toList();
 
     double ukupnoObicni = filteredPutnici.fold<double>(
-        0.0, (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0));
+      0.0,
+      (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0),
+    );
     // 2. STVARNI PAZAR OD MESEČNIH KARATA
     double ukupnoMesecne = 0.0;
     try {
@@ -157,7 +179,9 @@ class StatistikaService {
       }).toList();
 
       ukupnoMesecne = mesecniPutnici.fold<double>(
-          0.0, (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0));
+        0.0,
+        (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0),
+      );
     } catch (e) {
       // ignore: empty_catches
     }
@@ -167,33 +191,41 @@ class StatistikaService {
   }
 
   /// 📊 KOMBINOVANI REAL-TIME PAZAR STREAM (obični + mesečni putnici)
-  static Stream<Map<String, double>> streamKombinovanPazarSvihVozaca(
-      {DateTime? from, DateTime? to}) {
+  static Stream<Map<String, double>> streamKombinovanPazarSvihVozaca({
+    DateTime? from,
+    DateTime? to,
+  }) {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     // Kombinuj oba stream-a koristeći async*
     return instance._combineStreams(
-        PutnikService().streamKombinovaniPutniciFiltered(),
-        MesecniPutnikServiceNovi.streamAktivniMesecniPutnici(),
-        fromDate,
-        toDate);
+      PutnikService().streamKombinovaniPutniciFiltered(),
+      MesecniPutnikServiceNovi.streamAktivniMesecniPutnici(),
+      fromDate,
+      toDate,
+    );
   }
 
   /// 🔄 POMOĆNA FUNKCIJA ZA KOMBINOVANJE STREAM-OVA - SIMPLIFIKOVANO
   Stream<Map<String, double>> _combineStreams(
-      Stream<List<Putnik>> putnicStream,
-      Stream<List<MesecniPutnik>> mesecniStream,
-      DateTime fromDate,
-      DateTime toDate) {
+    Stream<List<Putnik>> putnicStream,
+    Stream<List<MesecniPutnik>> mesecniStream,
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
     // 🔧 POJEDNOSTAVLJENO: Koristi CombineLatest2 umesto StreamGroup
     return CombineLatestStream.combine2(
       putnicStream,
       mesecniStream,
       (List<Putnik> putnici, List<MesecniPutnik> mesecniPutnici) {
         final rezultat = _calculateKombinovanPazarSync(
-            putnici, mesecniPutnici, fromDate, toDate);
+          putnici,
+          mesecniPutnici,
+          fromDate,
+          toDate,
+        );
 
         return rezultat;
       },
@@ -201,15 +233,27 @@ class StatistikaService {
   }
 
   ///  PUBLIC SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (za external usage)
-  static Map<String, double> calculateKombinovanPazarSync(List<Putnik> putnici,
-      List<MesecniPutnik> mesecniPutnici, DateTime fromDate, DateTime toDate) {
+  static Map<String, double> calculateKombinovanPazarSync(
+    List<Putnik> putnici,
+    List<MesecniPutnik> mesecniPutnici,
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
     return _calculateKombinovanPazarSync(
-        putnici, mesecniPutnici, fromDate, toDate);
+      putnici,
+      mesecniPutnici,
+      fromDate,
+      toDate,
+    );
   }
 
   /// 🔄 SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (obični + mesečni)
-  static Map<String, double> _calculateKombinovanPazarSync(List<Putnik> putnici,
-      List<MesecniPutnik> mesecniPutnici, DateTime fromDate, DateTime toDate) {
+  static Map<String, double> _calculateKombinovanPazarSync(
+    List<Putnik> putnici,
+    List<MesecniPutnik> mesecniPutnici,
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
     // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA - RESETUJ SVE!
     final Map<String, double> pazarObicni = {};
     final Map<String, double> pazarMesecne = {};
@@ -278,8 +322,10 @@ class StatistikaService {
   }
 
   ///  REAL-TIME PAZAR STREAM ZA SVE VOZAČE - JEDNOSTAVNO BEZ DUPLIKOVANJA
-  static Stream<Map<String, double>> streamPazarSvihVozaca(
-      {DateTime? from, DateTime? to}) {
+  static Stream<Map<String, double>> streamPazarSvihVozaca({
+    DateTime? from,
+    DateTime? to,
+  }) {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -346,8 +392,11 @@ class StatistikaService {
   }
 
   /// �💰 PAZAR PO SVIM VOZAČIMA - KORISTI VREMENSKI OPSEG
-  static Future<Map<String, double>> pazarSvihVozaca(List<Putnik> putnici,
-      {DateTime? from, DateTime? to}) async {
+  static Future<Map<String, double>> pazarSvihVozaca(
+    List<Putnik> putnici, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
     // Ako nisu prosleđeni parametri, koristi današnji dan
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
@@ -419,7 +468,10 @@ class StatistikaService {
 
   /// Vraca detaljne statistike po vozacu - STVARNI MESEČNI PUTNICI
   static Future<Map<String, Map<String, dynamic>>> detaljneStatistikePoVozacima(
-      List<Putnik> putnici, DateTime from, DateTime to) async {
+    List<Putnik> putnici,
+    DateTime from,
+    DateTime to,
+  ) async {
     final normalizedFrom = _normalizeDateTime(from);
     final normalizedTo = _normalizeDateTime(to);
 
@@ -449,7 +501,10 @@ class StatistikaService {
       // Proverava da li je putnik u datom periodu (po vremenu dodavanja)
       if (putnik.vremeDodavanja != null &&
           _jeUVremenskomOpsegu(
-              putnik.vremeDodavanja, normalizedFrom, normalizedTo)) {
+            putnik.vremeDodavanja,
+            normalizedFrom,
+            normalizedTo,
+          )) {
         // 1. DODATI PUTNICI - ko je DODAO
         final dodaoVozac = putnik.dodaoVozac ?? 'Nepoznat';
         if (vozaciStats.containsKey(dodaoVozac)) {
@@ -492,7 +547,10 @@ class StatistikaService {
 
         // Proveri da li je plaćen u datom periodu
         if (_jeUVremenskomOpsegu(
-            putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
+          putnik.vremePlacanja,
+          normalizedFrom,
+          normalizedTo,
+        )) {
           final naplatioVozac = putnik.naplatioVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(naplatioVozac)) {
             vozaciStats[naplatioVozac]!['naplaceni']++;
@@ -517,7 +575,10 @@ class StatistikaService {
         // Proveri da li je mesečna karta plaćena u datom periodu
         if (putnik.vremePlacanja != null &&
             _jeUVremenskomOpsegu(
-                putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
+              putnik.vremePlacanja,
+              normalizedFrom,
+              normalizedTo,
+            )) {
           final naplatioVozac = putnik.vozac ??
               'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
           if (vozaciStats.containsKey(naplatioVozac)) {
@@ -551,24 +612,37 @@ class StatistikaService {
       final putnici = data[0] as List<Putnik>;
       final mesecniPutnici = data[1] as List<MesecniPutnik>;
       return _calculateDetaljneStatistikeSinhronno(
-          putnici, mesecniPutnici, from, to);
+        putnici,
+        mesecniPutnici,
+        from,
+        to,
+      );
     });
   }
 
   /// 🔄 PUBLIC SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za external usage)
   static Map<String, Map<String, dynamic>> calculateDetaljneStatistikeSinhronno(
-      List<Putnik> putnici,
-      List<MesecniPutnik> mesecniPutnici,
-      DateTime from,
-      DateTime to) {
+    List<Putnik> putnici,
+    List<MesecniPutnik> mesecniPutnici,
+    DateTime from,
+    DateTime to,
+  ) {
     return _calculateDetaljneStatistikeSinhronno(
-        putnici, mesecniPutnici, from, to);
+      putnici,
+      mesecniPutnici,
+      from,
+      to,
+    );
   }
 
   /// 🔄 SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za stream)
   static Map<String, Map<String, dynamic>>
-      _calculateDetaljneStatistikeSinhronno(List<Putnik> putnici,
-          List<MesecniPutnik> mesecniPutnici, DateTime from, DateTime to) {
+      _calculateDetaljneStatistikeSinhronno(
+    List<Putnik> putnici,
+    List<MesecniPutnik> mesecniPutnici,
+    DateTime from,
+    DateTime to,
+  ) {
     final normalizedFrom = _normalizeDateTime(from);
     final normalizedTo = _normalizeDateTime(to);
 
@@ -598,7 +672,10 @@ class StatistikaService {
     for (final putnik in putnici) {
       if (putnik.vremeDodavanja != null) {
         if (_jeUVremenskomOpsegu(
-            putnik.vremeDodavanja, normalizedFrom, normalizedTo)) {
+          putnik.vremeDodavanja,
+          normalizedFrom,
+          normalizedTo,
+        )) {
           final dodaoVozac = putnik.dodaoVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(dodaoVozac)) {
             vozaciStats[dodaoVozac]!['dodati']++;
@@ -609,7 +686,10 @@ class StatistikaService {
       // Proveri da li je otkazan u datom periodu
       if (putnik.jeOtkazan && putnik.vremeOtkazivanja != null) {
         if (_jeUVremenskomOpsegu(
-            putnik.vremeOtkazivanja, normalizedFrom, normalizedTo)) {
+          putnik.vremeOtkazivanja,
+          normalizedFrom,
+          normalizedTo,
+        )) {
           final otkazaoVozac = putnik.otkazaoVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(otkazaoVozac)) {
             vozaciStats[otkazaoVozac]!['otkazani']++;
@@ -620,7 +700,10 @@ class StatistikaService {
       // Proveri da li je naplaćen u datom periodu
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(
-            putnik.vremePlacanja, normalizedFrom, normalizedTo)) {
+          putnik.vremePlacanja,
+          normalizedFrom,
+          normalizedTo,
+        )) {
           final naplatioVozac = putnik.naplatioVozac!;
           if (vozaciStats.containsKey(naplatioVozac)) {
             final iznos = putnik.iznosPlacanja!;
@@ -640,9 +723,11 @@ class StatistikaService {
             // Ažuriraj poslednju naplatu
             if (vozaciStats[naplatioVozac]!['poslednjaNaplata'] == null ||
                 putnik.vremePlacanja!.isAfter(
-                    DateTime.fromMillisecondsSinceEpoch(
-                        vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
-                            as int))) {
+                  DateTime.fromMillisecondsSinceEpoch(
+                    vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
+                        as int,
+                  ),
+                )) {
               vozaciStats[naplatioVozac]!['poslednjaNaplata'] = detalj;
             }
 
@@ -659,7 +744,10 @@ class StatistikaService {
       // Proveri da li je pokupljen u datom periodu
       if (putnik.vremePokupljenja != null) {
         if (_jeUVremenskomOpsegu(
-            putnik.vremePokupljenja, normalizedFrom, normalizedTo)) {
+          putnik.vremePokupljenja,
+          normalizedFrom,
+          normalizedTo,
+        )) {
           final pokupioVozac = putnik.pokupioVozac;
           if (pokupioVozac != null && vozaciStats.containsKey(pokupioVozac)) {
             vozaciStats[pokupioVozac]!['pokupljeni']++;
@@ -674,7 +762,10 @@ class StatistikaService {
           (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0)) {
         if (putnik.vremePokupljenja != null) {
           if (_jeUVremenskomOpsegu(
-              putnik.vremePokupljenja, normalizedFrom, normalizedTo)) {
+            putnik.vremePokupljenja,
+            normalizedFrom,
+            normalizedTo,
+          )) {
             final pokupioVozac = putnik.dodaoVozac ?? 'Nepoznat';
             if (vozaciStats.containsKey(pokupioVozac)) {
               vozaciStats[pokupioVozac]!['dugovi']++;
@@ -700,7 +791,10 @@ class StatistikaService {
         // Proveri da li je mesečna karta plaćena u OVOM MESECU
         if (putnik.vremePlacanja != null &&
             _jeUVremenskomOpsegu(
-                putnik.vremePlacanja, mesecniFrom, mesecniTo)) {
+              putnik.vremePlacanja,
+              mesecniFrom,
+              mesecniTo,
+            )) {
           // 🎫 GRUPIRANJE: Dodaj samo prvi polazak po imenu (putnikIme)
           final kljuc = putnik.putnikIme.trim();
           if (!grupisaniMesecniPutnici.containsKey(kljuc)) {
@@ -732,9 +826,12 @@ class StatistikaService {
 
           // Ažuriraj poslednju naplatu
           if (vozaciStats[naplatioVozac]!['poslednjaNaplata'] == null ||
-              putnik.vremePlacanja!.isAfter(DateTime.fromMillisecondsSinceEpoch(
+              putnik.vremePlacanja!.isAfter(
+                DateTime.fromMillisecondsSinceEpoch(
                   vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
-                      as int))) {
+                      as int,
+                ),
+              )) {
             vozaciStats[naplatioVozac]!['poslednjaNaplata'] = detalj;
           }
         }
@@ -765,7 +862,9 @@ class StatistikaService {
           vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
       if (detalji.isNotEmpty) {
         final ukupanIznos = detalji.fold<double>(
-            0.0, (sum, detalj) => sum + (detalj['iznos'] as num).toDouble());
+          0.0,
+          (sum, detalj) => sum + (detalj['iznos'] as num).toDouble(),
+        );
         vozaciStats[vozac]!['prosecanIznos'] = ukupanIznos / detalji.length;
       }
     }
@@ -797,7 +896,10 @@ class StatistikaService {
   /// Vraca mapu: {imeVozaca: sumaPazara} i ukupno, za dati period - STANDARDIZOVANO FILTRIRANJE
   /// @deprecated Koristi pazarSvihVozaca() umesto ovoga za konzistentnost
   static Future<Map<String, double>> pazarPoVozacima(
-      List<Putnik> putnici, DateTime from, DateTime to) async {
+    List<Putnik> putnici,
+    DateTime from,
+    DateTime to,
+  ) async {
     // Preusmeri na novu standardizovanu funkciju
     return await pazarSvihVozaca(putnici, from: from, to: to);
   }
@@ -806,9 +908,10 @@ class StatistikaService {
 
   /// Dodaje kilometražu za sve vozače u vozaciStats
   static Future<void> _dodajKilometrazu(
-      Map<String, Map<String, dynamic>> vozaciStats,
-      DateTime from,
-      DateTime to) async {
+    Map<String, Map<String, dynamic>> vozaciStats,
+    DateTime from,
+    DateTime to,
+  ) async {
     try {
       // ✅ OPTIMIZACIJA: ograniči opseg na maksimalno 7 dana da ne bude previše sporo
       const limitOpseg = Duration(days: 7);
@@ -832,7 +935,10 @@ class StatistikaService {
 
   /// Računa kilometražu za vozača u datom periodu (SA PAMETNIM FILTRIRANJEM)
   static Future<double> _kmZaVozaca(
-      String vozac, DateTime from, DateTime to) async {
+    String vozac,
+    DateTime from,
+    DateTime to,
+  ) async {
     try {
       final response = await Supabase.instance.client
           .from('gps_lokacije')
@@ -870,7 +976,10 @@ class StatistikaService {
 
   /// � JAVNA METODA: Dobij kilometražu za vozača u određenom periodu
   static Future<double> getKilometrazu(
-      String vozac, DateTime from, DateTime to) async {
+    String vozac,
+    DateTime from,
+    DateTime to,
+  ) async {
     return await _kmZaVozaca(vozac, from, to);
   }
 
@@ -891,8 +1000,11 @@ class StatistikaService {
   }
 
   /// 💰 RESETUJ PAZAR ZA ODREĐENOG VOZAČA - briše podatke o naplatama
-  static Future<bool> resetujPazarZaVozaca(String vozac,
-      {DateTime? from, DateTime? to}) async {
+  static Future<bool> resetujPazarZaVozaca(
+    String vozac, {
+    DateTime? from,
+    DateTime? to,
+  }) async {
     try {
       final now = _normalizeDateTime(DateTime.now());
       final fromDate = from ?? DateTime(now.year, now.month, now.day);
@@ -971,7 +1083,11 @@ class StatistikaService {
 
   /// Računa rastojanje između dve GPS koordinate u kilometrima (Haversine formula)
   static double _distanceKm(
-      double lat1, double lon1, double lat2, double lon2) {
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double R = 6371; // Radius Zemlje u km
     double dLat = (lat2 - lat1) * pi / 180.0;
     double dLon = (lon2 - lon1) * pi / 180.0;

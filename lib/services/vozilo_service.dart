@@ -3,10 +3,9 @@ import '../models/vozilo.dart';
 
 /// Servis za upravljanje vozilima
 class VoziloService {
-  final SupabaseClient _supabase;
-
   VoziloService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Dohvata sva vozila
   Future<List<Vozilo>> getAllVozila() async {

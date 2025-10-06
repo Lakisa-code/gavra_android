@@ -20,8 +20,10 @@ class CacheService {
   }
 
   /// 📝 MEMORY CACHE - Za brz pristup u runtime-u
-  static T? getFromMemory<T>(String key,
-      {Duration maxAge = const Duration(minutes: 5)}) {
+  static T? getFromMemory<T>(
+    String key, {
+    Duration maxAge = const Duration(minutes: 5),
+  }) {
     final timestamp = _cacheTimestamp[key];
     if (timestamp != null && DateTime.now().difference(timestamp) < maxAge) {
       return _memoryCache[key] as T?;
@@ -44,8 +46,10 @@ class CacheService {
   }
 
   /// 🗂️ PERSISTENT CACHE - Za dugoročno čuvanje
-  static Future<T?> getFromDisk<T>(String key,
-      {Duration maxAge = const Duration(hours: 1)}) async {
+  static Future<T?> getFromDisk<T>(
+    String key, {
+    Duration maxAge = const Duration(hours: 1),
+  }) async {
     if (_prefs == null) return null;
 
     try {

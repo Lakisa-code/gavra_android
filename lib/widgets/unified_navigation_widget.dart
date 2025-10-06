@@ -4,17 +4,6 @@ import 'package:geolocator/geolocator.dart';
 import '../models/putnik.dart';
 
 class UnifiedNavigationWidget extends StatelessWidget {
-  final List<Putnik> putnici;
-  final String selectedVreme;
-  final String selectedGrad;
-  final bool isNavigating;
-  final int lastPassengerCount;
-  final VoidCallback onOptimizeAllRoutes;
-  final VoidCallback onStopNavigation;
-  final VoidCallback onStartGPSTracking;
-  final VoidCallback onOptimizeCurrentRoute;
-  final bool isRouteOptimized;
-
   const UnifiedNavigationWidget({
     Key? key,
     required this.putnici,
@@ -28,6 +17,16 @@ class UnifiedNavigationWidget extends StatelessWidget {
     required this.onOptimizeCurrentRoute,
     required this.isRouteOptimized,
   }) : super(key: key);
+  final List<Putnik> putnici;
+  final String selectedVreme;
+  final String selectedGrad;
+  final bool isNavigating;
+  final int lastPassengerCount;
+  final VoidCallback onOptimizeAllRoutes;
+  final VoidCallback onStopNavigation;
+  final VoidCallback onStartGPSTracking;
+  final VoidCallback onOptimizeCurrentRoute;
+  final bool isRouteOptimized;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +46,9 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
   /// 🎯 OPTIMIZUJ dugme - samo reorganizuje listu putnika
   Widget _buildOptimizeButton(
-      BuildContext context, List<Putnik> putniciSaAdresom) {
+    BuildContext context,
+    List<Putnik> putniciSaAdresom,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -121,7 +122,9 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
   /// 🗺️ NAVIGACIJA dugme - otvara Google Maps
   Widget _buildNavigationButton(
-      BuildContext context, List<Putnik> putniciSaAdresom) {
+    BuildContext context,
+    List<Putnik> putniciSaAdresom,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -239,7 +242,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
         final lastPutnik = putnici.last;
         if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
           final encodedAddress = Uri.encodeComponent(
-              '${lastPutnik.adresa}, ${lastPutnik.grad}, Serbia');
+            '${lastPutnik.adresa}, ${lastPutnik.grad}, Serbia',
+          );
           osmUrl += '&to=$encodedAddress';
         }
       }

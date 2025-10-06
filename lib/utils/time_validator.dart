@@ -118,7 +118,7 @@ class TimeValidator {
         '13:00',
         '14:00',
         '15:30',
-        '18:00'
+        '18:00',
       ];
     } else if (city.toLowerCase().contains('vr')) {
       return [
@@ -132,15 +132,17 @@ class TimeValidator {
         '14:00',
         '15:30',
         '17:00',
-        '19:00'
+        '19:00',
       ];
     }
     return ['06:00', '07:00', '08:00', '12:00', '14:00', '18:00'];
   }
 
   /// Formats time for display with optional seconds
-  static String formatTimeForDisplay(String timeString,
-      {bool showSeconds = false}) {
+  static String formatTimeForDisplay(
+    String timeString, {
+    bool showSeconds = false,
+  }) {
     final normalized = normalizeTimeFormat(timeString);
     if (normalized == null) return timeString;
 

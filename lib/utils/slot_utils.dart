@@ -34,7 +34,9 @@ class SlotUtils {
   // Compute counts per slot for a given day abbreviation ('pon','uto',...)
   // Returns a map with keys 'BC' and 'VS' mapping to slot->count maps.
   static Map<String, Map<String, int>> computeSlotCountsForDayAbbr(
-      List<Putnik> allPutnici, String targetDayAbbr) {
+    List<Putnik> allPutnici,
+    String targetDayAbbr,
+  ) {
     final Map<String, int> brojPutnikaBC = {for (var v in bcVremena) v: 0};
     final Map<String, int> brojPutnikaVS = {for (var v in vsVremena) v: 0};
 
@@ -79,7 +81,9 @@ class SlotUtils {
   // Compute counts per slot for a specific ISO date string (yyyy-MM-dd).
   // This is stricter for daily entries that include exact `datum` values.
   static Map<String, Map<String, int>> computeSlotCountsForDate(
-      List<Putnik> allPutnici, String isoDate) {
+    List<Putnik> allPutnici,
+    String isoDate,
+  ) {
     final Map<String, int> brojPutnikaBC = {for (var v in bcVremena) v: 0};
     final Map<String, int> brojPutnikaVS = {for (var v in vsVremena) v: 0};
 

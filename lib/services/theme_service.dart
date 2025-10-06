@@ -88,22 +88,33 @@ class ThemeService {
       textTheme: const TextTheme(
         // SVE BELO na tamnom!
         headlineLarge: TextStyle(
-            color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+          color: Colors.white,
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+        ),
         headlineMedium: TextStyle(
-            color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          color: Colors.white,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
         titleLarge: TextStyle(
-            color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
         titleMedium: TextStyle(
-            color: Color(0xFFE0E0E0),
-            fontSize: 18,
-            fontWeight: FontWeight.w500),
+          color: Color(0xFFE0E0E0),
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+        ),
         bodyLarge: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
         bodyMedium: TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
         bodySmall: TextStyle(color: Color(0xFF9E9E9E), fontSize: 12),
         labelLarge: TextStyle(
-            color: Color(0xFFE0E0E0),
-            fontSize: 14,
-            fontWeight: FontWeight.w500),
+          color: Color(0xFFE0E0E0),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

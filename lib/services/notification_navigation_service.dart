@@ -21,7 +21,6 @@ class NotificationNavigationService {
       // Show a popup with passenger info and navigation options
       await showDialog<void>(
         context: context,
-        barrierDismissible: true,
         builder: (BuildContext context) {
           return AlertDialog(
             title: Row(
@@ -39,7 +38,9 @@ class NotificationNavigationService {
                         ? 'Novi putnik dodat'
                         : 'Putnik otkazan',
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -51,7 +52,9 @@ class NotificationNavigationService {
                 Text(
                   '👤 $putnikIme',
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if ((putnikDan as String).isNotEmpty)
@@ -73,9 +76,10 @@ class NotificationNavigationService {
                   const Text(
                     '💳 Mesečna karta',
                     style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blue),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue,
+                    ),
                   ),
                 const SizedBox(height: 12),
                 Text(
@@ -93,7 +97,11 @@ class NotificationNavigationService {
                 onPressed: () {
                   Navigator.of(context).pop();
                   _navigateToAppropriateScreen(
-                      context, type, putnikData, mesecnaKarta);
+                    context,
+                    type,
+                    putnikData,
+                    mesecnaKarta,
+                  );
                 },
                 child: const Text('Otvori'),
               ),

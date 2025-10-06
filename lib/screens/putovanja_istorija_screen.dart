@@ -60,8 +60,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             ],
           ),
         ),
-        title: const Text('Istorija Putovanja',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Istorija Putovanja',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today, color: Colors.white),
@@ -131,7 +133,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           Expanded(
             child: StreamBuilder<List<PutovanjaIstorija>>(
               stream: PutovanjaIstorijaService.streamPutovanjaZaDatum(
-                  _selectedDate),
+                _selectedDate,
+              ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -144,9 +147,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.dangerPrimary),
+                        Icon(
+                          Icons.error,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.dangerPrimary,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Greška pri učitavanju putovanja',
@@ -408,9 +413,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             Row(
               children: [
                 if (putovanje.cena > 0) ...[
-                  Icon(Icons.monetization_on,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.successPrimary),
+                  Icon(
+                    Icons.monetization_on,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.successPrimary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${putovanje.cena.toStringAsFixed(0)} RSD',
@@ -529,7 +536,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       'septembar',
       'oktobar',
       'novembar',
-      'decembar'
+      'decembar',
     ];
 
     const dani = [
@@ -540,7 +547,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       'četvrtak',
       'petak',
       'subota',
-      'nedelja'
+      'nedelja',
     ];
 
     return '${dani[date.weekday]}, ${date.day}. ${meseci[date.month]} ${date.year}.';
@@ -657,8 +664,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         adresaPolaska: 'Bela Crkva', // Default vrednost
         vremePolaska: '07:00', // Default vrednost
         tipPutnika: _noviTipPutnika,
-        statusBelaCrkvaVrsac: 'nije_se_pojavio',
-        statusVrsacBelaCrkva: 'nije_se_pojavio',
         cena: _novaCena,
         datum: _selectedDate,
         vremeAkcije: DateTime.now(),
@@ -747,10 +752,14 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 items: const [
                   DropdownMenuItem(
-                      value: 'regularni', child: Text('Regularni')),
+                    value: 'regularni',
+                    child: Text('Regularni'),
+                  ),
                   DropdownMenuItem(value: 'povoljni', child: Text('Povoljni')),
                   DropdownMenuItem(
-                      value: 'besplatni', child: Text('Besplatni')),
+                    value: 'besplatni',
+                    child: Text('Besplatni'),
+                  ),
                 ],
                 onChanged: (value) => setState(() => _noviTipPutnika = value!),
               ),
@@ -772,7 +781,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   Future<void> _sacuvajEditPutovanje(
-      PutovanjaIstorija originalPutovanje) async {
+    PutovanjaIstorija originalPutovanje,
+  ) async {
     if (_noviPutnikIme.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ime putnika je obavezno')),
@@ -834,7 +844,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               isExpanded: true,
               items: const [
                 DropdownMenuItem(
-                    value: 'nije_se_pojavio', child: Text('Nije se pojavio')),
+                  value: 'nije_se_pojavio',
+                  child: Text('Nije se pojavio'),
+                ),
                 DropdownMenuItem(value: 'prisutan', child: Text('Prisutan')),
                 DropdownMenuItem(value: 'otsutan', child: Text('Odsutan')),
               ],
@@ -848,7 +860,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               isExpanded: true,
               items: const [
                 DropdownMenuItem(
-                    value: 'nije_se_pojavio', child: Text('Nije se pojavio')),
+                  value: 'nije_se_pojavio',
+                  child: Text('Nije se pojavio'),
+                ),
                 DropdownMenuItem(value: 'prisutan', child: Text('Prisutan')),
                 DropdownMenuItem(value: 'otsutan', child: Text('Odsutan')),
               ],
@@ -868,7 +882,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   Future<void> _updateStatusBelaCrkvaVrsac(
-      PutovanjaIstorija putovanje, String noviStatus) async {
+    PutovanjaIstorija putovanje,
+    String noviStatus,
+  ) async {
     final azuriranoPutovanje = PutovanjaIstorija(
       id: putovanje.id,
       mesecniPutnikId: putovanje.mesecniPutnikId,
@@ -896,7 +912,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   Future<void> _updateStatusVrsacBelaCrkva(
-      PutovanjaIstorija putovanje, String noviStatus) async {
+    PutovanjaIstorija putovanje,
+    String noviStatus,
+  ) async {
     final azuriranoPutovanje = PutovanjaIstorija(
       id: putovanje.id,
       mesecniPutnikId: putovanje.mesecniPutnikId,

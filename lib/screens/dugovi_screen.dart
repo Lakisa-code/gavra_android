@@ -5,8 +5,8 @@ import '../services/putnik_service.dart';
 import '../widgets/custom_back_button.dart';
 
 class DugoviScreen extends StatefulWidget {
-  final String? currentDriver;
   const DugoviScreen({Key? key, this.currentDriver}) : super(key: key);
+  final String? currentDriver;
 
   @override
   State<DugoviScreen> createState() => _DugoviScreenState();
@@ -85,12 +85,14 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
           // Dužnik je onaj koji je pokupljen i nije platio (iznosPlacanja == null ili 0) - SVI DUŽNICI
           final duznici = snapshot.data!
-              .where((p) =>
-                  (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
-                  (p.jePokupljen) &&
-                  (p.status == null ||
-                      (p.status != 'Otkazano' && p.status != 'otkazan')) &&
-                  (p.mesecnaKarta != true))
+              .where(
+                (p) =>
+                    (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
+                    (p.jePokupljen) &&
+                    (p.status == null ||
+                        (p.status != 'Otkazano' && p.status != 'otkazan')) &&
+                    (p.mesecnaKarta != true),
+              )
               // Uklonjeno ograničenje na trenutnog vozača - prikaži SVE dužnike
               .toList();
 
@@ -113,8 +115,10 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.green, size: 48),
                   SizedBox(height: 8),
-                  Text('Nema neplaćenih putnika!',
-                      style: TextStyle(color: Colors.green, fontSize: 16)),
+                  Text(
+                    'Nema neplaćenih putnika!',
+                    style: TextStyle(color: Colors.green, fontSize: 16),
+                  ),
                 ],
               ),
             );

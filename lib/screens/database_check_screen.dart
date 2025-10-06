@@ -30,14 +30,14 @@ class _DatabaseCheckScreenState extends State<DatabaseCheckScreen> {
       'dnevni_putnici',
       'mesecni_putnici',
       'putovanja_istorija',
-      'gps_lokacije'
+      'gps_lokacije',
     ];
 
     List<String> results = [];
 
     for (final tableName in expectedTables) {
       try {
-        final response = await supabase.from(tableName).select('*').limit(1);
+        final response = await supabase.from(tableName).select().limit(1);
 
         if (response.isNotEmpty) {
           results.add('✅ $tableName - postoji (ima podatke)');
@@ -46,7 +46,8 @@ class _DatabaseCheckScreenState extends State<DatabaseCheckScreen> {
         }
       } catch (e) {
         results.add(
-            '❌ $tableName - ne postoji ili greška: ${e.toString().split('\n')[0]}');
+          '❌ $tableName - ne postoji ili greška: ${e.toString().split('\n')[0]}',
+        );
       }
     }
 

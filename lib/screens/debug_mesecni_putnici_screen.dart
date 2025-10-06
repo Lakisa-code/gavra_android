@@ -39,7 +39,8 @@ class _DebugMesecniPutniciScreenState extends State<DebugMesecniPutniciScreen> {
       print('🔍 Loaded ${putnici.length} monthly passengers');
       for (final p in putnici) {
         print(
-            '   ${p.putnikIme} - ${p.tip} - ${p.radniDani} - aktivan: ${p.aktivan}');
+          '   ${p.putnikIme} - ${p.tip} - ${p.radniDani} - aktivan: ${p.aktivan}',
+        );
       }
     } catch (e) {
       setState(() {
@@ -97,7 +98,9 @@ class _DebugMesecniPutniciScreenState extends State<DebugMesecniPutniciScreen> {
                         final putnik = _putnici[index];
                         return Card(
                           margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor:
@@ -118,7 +121,8 @@ class _DebugMesecniPutniciScreenState extends State<DebugMesecniPutniciScreen> {
                                 Text('Status: ${putnik.status}'),
                                 if (putnik.polasciPoDanu.isNotEmpty)
                                   Text(
-                                      'Polasci: ${putnik.polasciPoDanu.toString()}'),
+                                    'Polasci: ${putnik.polasciPoDanu.toString()}',
+                                  ),
                               ],
                             ),
                             trailing: Column(

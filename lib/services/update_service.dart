@@ -193,7 +193,8 @@ class UpdateService {
         // DIREKTNA PROVERA: Ako su verzije iste, NEMA UPDATE-a!
         if (currentVersion == latestVersion) {
           dlog(
-              '✅ VERZIJE SU ISTE ($currentVersion == $latestVersion) - NEMA UPDATE-A!');
+            '✅ VERZIJE SU ISTE ($currentVersion == $latestVersion) - NEMA UPDATE-A!',
+          );
           await _saveLastCheckTime();
           return false;
         }
@@ -237,7 +238,8 @@ class UpdateService {
                 _isMajorVersionDifference(currentVersion, latestVersion);
             if (!isMajorUpdate) {
               dlog(
-                  '🕰️ Release je prestari ($daysSincePublish dana), preskačem update');
+                '🕰️ Release je prestari ($daysSincePublish dana), preskačem update',
+              );
               await _saveLastCheckTime();
               return false;
             }
@@ -256,7 +258,8 @@ class UpdateService {
 
         dlog('📊 Ima update: $hasUpdate');
         dlog(
-            '🔍 DETALJNO: $currentVersion vs $latestVersion = ${hasUpdate ? "TREBA UPDATE" : "NEMA UPDATE"}');
+          '🔍 DETALJNO: $currentVersion vs $latestVersion = ${hasUpdate ? "TREBA UPDATE" : "NEMA UPDATE"}',
+        );
 
         return hasUpdate;
       } else {
@@ -391,7 +394,9 @@ class UpdateChecker {
   }
 
   static void _showUpdateDialog(
-      BuildContext context, Map<String, dynamic>? versionInfo) {
+    BuildContext context,
+    Map<String, dynamic>? versionInfo,
+  ) {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -408,13 +413,17 @@ class UpdateChecker {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (versionInfo != null) ...[
-              Text('Verzija: ${versionInfo['version']}',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                'Verzija: ${versionInfo['version']}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               Text(versionInfo['name'] as String? ?? 'Nova verzija'),
               const SizedBox(height: 8),
-              const Text('Šta je novo:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Šta je novo:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text(versionInfo['body'] as String? ?? 'Poboljšanja i ispravke'),
             ] else ...[
               const Text('Dostupna je nova verzija Gavra Android aplikacije.'),
@@ -437,7 +446,8 @@ class UpdateChecker {
               // Označi verziju kao instaliranu
               if (versionInfo != null && versionInfo['version'] != null) {
                 UpdateService.markVersionAsInstalled(
-                    versionInfo['version'] as String);
+                  versionInfo['version'] as String,
+                );
               }
               Navigator.pop(context);
               UpdateService.downloadApk();
@@ -501,7 +511,8 @@ class UpdateChecker {
         builder: (context) => AlertDialog(
           title: const Text('Greška ❌'),
           content: const Text(
-              'Nemoguće proveriti update-e. Proverite internet konekciju.'),
+            'Nemoguće proveriti update-e. Proverite internet konekciju.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),

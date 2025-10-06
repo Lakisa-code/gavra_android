@@ -3,36 +3,6 @@ import '../services/vozac_mapping_service.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
 class MesecniPutnik {
-  final String id;
-  final String putnikIme; // kombinovano ime i prezime
-  final String? brojTelefona;
-  final String? brojTelefonaOca; // dodatni telefon oca
-  final String? brojTelefonaMajke; // dodatni telefon majke
-  final String tip; // direktno string umesto enum-a
-  final String? tipSkole;
-  final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
-  final String? adresaBelaCrkva; // adresa u Beloj Crkvi
-  final String? adresaVrsac; // adresa u Vršcu
-  final String radniDani;
-  final DateTime datumPocetkaMeseca;
-  final DateTime datumKrajaMeseca;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final bool aktivan;
-  final String status;
-  // Ostali fields za kompatibilnost
-  final double ukupnaCenaMeseca;
-  final double? cena;
-  final int brojPutovanja;
-  final int brojOtkazivanja;
-  final DateTime? poslednjePutovanje;
-  final bool obrisan;
-  final DateTime? vremePlacanja;
-  final int? placeniMesec;
-  final int? placenaGodina;
-  final String? vozac;
-  final Map<String, dynamic> statistics;
-
   MesecniPutnik({
     required this.id,
     required this.putnikIme,
@@ -64,11 +34,6 @@ class MesecniPutnik {
     this.statistics = const {},
   });
 
-  /// Dobij ime vozača iz UUID-a sa fallback na 'Nepoznat'
-  String get vozacIme {
-    return VozacMappingService.getVozacImeWithFallback(vozac);
-  }
-
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
     // Parse polasciPoDanu using helper
     Map<String, List<String>> polasciPoDanu = {};
@@ -96,7 +61,7 @@ class MesecniPutnik {
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
       datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
           ? DateTime.parse(map['datum_pocetka_meseca'] as String)
-          : DateTime(DateTime.now().year, DateTime.now().month, 1),
+          : DateTime(DateTime.now().year, DateTime.now().month),
       datumKrajaMeseca: map['datum_kraja_meseca'] != null
           ? DateTime.parse(map['datum_kraja_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
@@ -124,6 +89,40 @@ class MesecniPutnik {
       vozac: map['vozac_id'] as String?,
       statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
     );
+  }
+  final String id;
+  final String putnikIme; // kombinovano ime i prezime
+  final String? brojTelefona;
+  final String? brojTelefonaOca; // dodatni telefon oca
+  final String? brojTelefonaMajke; // dodatni telefon majke
+  final String tip; // direktno string umesto enum-a
+  final String? tipSkole;
+  final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
+  final String? adresaBelaCrkva; // adresa u Beloj Crkvi
+  final String? adresaVrsac; // adresa u Vršcu
+  final String radniDani;
+  final DateTime datumPocetkaMeseca;
+  final DateTime datumKrajaMeseca;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool aktivan;
+  final String status;
+  // Ostali fields za kompatibilnost
+  final double ukupnaCenaMeseca;
+  final double? cena;
+  final int brojPutovanja;
+  final int brojOtkazivanja;
+  final DateTime? poslednjePutovanje;
+  final bool obrisan;
+  final DateTime? vremePlacanja;
+  final int? placeniMesec;
+  final int? placenaGodina;
+  final String? vozac;
+  final Map<String, dynamic> statistics;
+
+  /// Dobij ime vozača iz UUID-a sa fallback na 'Nepoznat'
+  String get vozacIme {
+    return VozacMappingService.getVozacImeWithFallback(vozac);
   }
 
   Map<String, dynamic> toMap() {

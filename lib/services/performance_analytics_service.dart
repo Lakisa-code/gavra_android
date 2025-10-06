@@ -246,9 +246,11 @@ class PerformanceAnalyticsService {
       for (final metricName in metricsToExport) {
         if (_metrics.containsKey(metricName)) {
           final timeSeries = _timeSeries[metricName]
-                  ?.where((point) =>
-                      point.timestamp.isAfter(start) &&
-                      point.timestamp.isBefore(end))
+                  ?.where(
+                    (point) =>
+                        point.timestamp.isAfter(start) &&
+                        point.timestamp.isBefore(end),
+                  )
                   .toList() ??
               [];
 
@@ -261,16 +263,21 @@ class PerformanceAnalyticsService {
 
       // Export user behavior
       final behaviorEvents = _userBehavior.values
-          .where((event) =>
-              event.timestamp.isAfter(start) && event.timestamp.isBefore(end))
+          .where(
+            (event) =>
+                event.timestamp.isAfter(start) && event.timestamp.isBefore(end),
+          )
           .map((event) => event.toJson())
           .toList();
       exportData['user_behavior'] = behaviorEvents;
 
       // Export A/B test results
       final abTestEvents = _abTestResults.values
-          .where((result) =>
-              result.timestamp.isAfter(start) && result.timestamp.isBefore(end))
+          .where(
+            (result) =>
+                result.timestamp.isAfter(start) &&
+                result.timestamp.isBefore(end),
+          )
           .map((result) => result.toJson())
           .toList();
       exportData['ab_tests'] = abTestEvents;
@@ -330,7 +337,8 @@ class PerformanceAnalyticsService {
           if (currentAvg < threshold) {
             healthScore -= 10;
             issues.add(
-                'Low cache hit ratio: ${(currentAvg * 100).toStringAsFixed(1)}%');
+              'Low cache hit ratio: ${(currentAvg * 100).toStringAsFixed(1)}%',
+            );
           }
         } else {
           if (currentAvg > threshold) {
@@ -411,12 +419,14 @@ class PerformanceAnalyticsService {
         );
       });
 
-      testSummaries.add(ABTestSummaryItem(
-        testName: testName,
-        status: 'active',
-        variants: variantSummaries,
-        totalSampleSize: testResults.length,
-      ));
+      testSummaries.add(
+        ABTestSummaryItem(
+          testName: testName,
+          status: 'active',
+          variants: variantSummaries,
+          totalSampleSize: testResults.length,
+        ),
+      );
     });
 
     return ABTestSummary(
@@ -433,20 +443,22 @@ class PerformanceAnalyticsService {
       if (dataPoints.length >= 10) {
         // Need at least 10 points for trend
         final trend = _calculateTrend(dataPoints);
-        trends.add(PerformanceTrend(
-          metricName: metricName,
-          direction: trend > 0.1
-              ? 'improving'
-              : trend < -0.1
-                  ? 'degrading'
-                  : 'stable',
-          changePercent: trend * 100,
-          significance: trend.abs() > 0.2
-              ? 'high'
-              : trend.abs() > 0.1
-                  ? 'medium'
-                  : 'low',
-        ));
+        trends.add(
+          PerformanceTrend(
+            metricName: metricName,
+            direction: trend > 0.1
+                ? 'improving'
+                : trend < -0.1
+                    ? 'degrading'
+                    : 'stable',
+            changePercent: trend * 100,
+            significance: trend.abs() > 0.2
+                ? 'high'
+                : trend.abs() > 0.1
+                    ? 'medium'
+                    : 'low',
+          ),
+        );
       }
     });
 
@@ -464,23 +476,27 @@ class PerformanceAnalyticsService {
 
         if (isHigherBetter) {
           if (currentValue < threshold) {
-            alerts.add(PerformanceAlert(
-              type: 'warning',
-              message:
-                  'Low $name: ${(currentValue * 100).toStringAsFixed(1)}% (target: ${(threshold * 100).toStringAsFixed(1)}%)',
-              severity: currentValue < threshold * 0.8 ? 'high' : 'medium',
-              timestamp: DateTime.now(),
-            ));
+            alerts.add(
+              PerformanceAlert(
+                type: 'warning',
+                message:
+                    'Low $name: ${(currentValue * 100).toStringAsFixed(1)}% (target: ${(threshold * 100).toStringAsFixed(1)}%)',
+                severity: currentValue < threshold * 0.8 ? 'high' : 'medium',
+                timestamp: DateTime.now(),
+              ),
+            );
           }
         } else {
           if (currentValue > threshold) {
-            alerts.add(PerformanceAlert(
-              type: 'warning',
-              message:
-                  'High $name: ${currentValue.toStringAsFixed(2)} (threshold: ${threshold.toStringAsFixed(2)})',
-              severity: currentValue > threshold * 1.5 ? 'high' : 'medium',
-              timestamp: DateTime.now(),
-            ));
+            alerts.add(
+              PerformanceAlert(
+                type: 'warning',
+                message:
+                    'High $name: ${currentValue.toStringAsFixed(2)} (threshold: ${threshold.toStringAsFixed(2)})',
+                severity: currentValue > threshold * 1.5 ? 'high' : 'medium',
+                timestamp: DateTime.now(),
+              ),
+            );
           }
         }
       }
@@ -496,7 +512,8 @@ class PerformanceAnalyticsService {
     final cacheStats = AdvancedCachingService.getStats();
     if (cacheStats.hitRatio < 0.8) {
       recommendations.add(
-          '🔄 Consider increasing cache size or adjusting TTL values to improve cache hit ratio');
+        '🔄 Consider increasing cache size or adjusting TTL values to improve cache hit ratio',
+      );
     }
 
     // Performance recommendations based on metrics
@@ -507,12 +524,14 @@ class PerformanceAnalyticsService {
 
         if (name == 'geocoding_response_time' && currentValue > threshold) {
           recommendations.add(
-              '🗺️ Optimize geocoding by enabling more caching or using batch requests');
+            '🗺️ Optimize geocoding by enabling more caching or using batch requests',
+          );
         }
 
         if (name == 'memory_usage' && currentValue > threshold) {
           recommendations.add(
-              '🧠 Consider implementing more aggressive memory cleanup or reduce cache sizes');
+            '🧠 Consider implementing more aggressive memory cleanup or reduce cache sizes',
+          );
         }
       }
     });
@@ -530,7 +549,8 @@ class PerformanceAnalyticsService {
 
       if (isAlert) {
         _logger.w(
-            '🚨 Performance Alert: $metricName = $value (threshold: $threshold)');
+          '🚨 Performance Alert: $metricName = $value (threshold: $threshold)',
+        );
 
         // In production, send to monitoring service
         dlog('🚨 PERFORMANCE ALERT: $metricName exceeded threshold!');
@@ -618,7 +638,9 @@ class PerformanceAnalyticsService {
       // Persist metrics
       for (final metric in _metrics.values) {
         await prefs.setString(
-            '$_metricsPrefix${metric.name}', json.encode(metric.toJson()));
+          '$_metricsPrefix${metric.name}',
+          json.encode(metric.toJson()),
+        );
       }
 
       _logger.d('📊 Analytics data flushed to persistence');
@@ -663,7 +685,8 @@ class PerformanceAnalyticsService {
         final metadata =
             point['metadata']?.toString().replaceAll(',', ';') ?? '';
         lines.add(
-            '$metricName,${point['timestamp']},${point['value']},$metadata');
+          '$metricName,${point['timestamp']},${point['value']},$metadata',
+        );
       }
     });
 
@@ -674,16 +697,40 @@ class PerformanceAnalyticsService {
 // 📊 DATA CLASSES
 
 class PerformanceMetric {
+  PerformanceMetric(this.name);
+
+  factory PerformanceMetric.fromJson(Map<String, dynamic> json) {
+    final metric = PerformanceMetric(json['name'] as String);
+    final values = (json['values'] as List<dynamic>)
+        .map((v) => (v as num).toDouble())
+        .toList();
+    final timestamps = (json['timestamps'] as List<dynamic>)
+        .map((t) => DateTime.parse(t as String))
+        .toList();
+    final metadata = (json['metadata'] as List<dynamic>)
+        .map((m) => Map<String, dynamic>.from(m as Map))
+        .toList();
+
+    for (int i = 0; i < values.length; i++) {
+      metric._values.add(values[i]);
+      metric._timestamps.add(timestamps[i]);
+      metric._metadata.add(metadata[i]);
+    }
+
+    metric._errorCount = (json['error_count'] ?? 0) as int;
+    return metric;
+  }
   final String name;
   final List<double> _values = [];
   final List<DateTime> _timestamps = [];
   final List<Map<String, dynamic>> _metadata = [];
   int _errorCount = 0;
 
-  PerformanceMetric(this.name);
-
-  void addValue(double value,
-      {bool isError = false, Map<String, dynamic>? metadata}) {
+  void addValue(
+    double value, {
+    bool isError = false,
+    Map<String, dynamic>? metadata,
+  }) {
     _values.add(value);
     _timestamps.add(DateTime.now());
     _metadata.add(metadata ?? {});
@@ -725,36 +772,13 @@ class PerformanceMetric {
         'metadata': _metadata,
         'error_count': _errorCount,
       };
-
-  factory PerformanceMetric.fromJson(Map<String, dynamic> json) {
-    final metric = PerformanceMetric(json['name'] as String);
-    final values = (json['values'] as List<dynamic>)
-        .map((v) => (v as num).toDouble())
-        .toList();
-    final timestamps = (json['timestamps'] as List<dynamic>)
-        .map((t) => DateTime.parse(t as String))
-        .toList();
-    final metadata = (json['metadata'] as List<dynamic>)
-        .map((m) => Map<String, dynamic>.from(m as Map))
-        .toList();
-
-    for (int i = 0; i < values.length; i++) {
-      metric._values.add(values[i]);
-      metric._timestamps.add(timestamps[i]);
-      metric._metadata.add(metadata[i]);
-    }
-
-    metric._errorCount = (json['error_count'] ?? 0) as int;
-    return metric;
-  }
 }
 
 class DataPoint {
+  DataPoint(this.timestamp, this.value, this.metadata);
   final DateTime timestamp;
   final double value;
   final Map<String, dynamic>? metadata;
-
-  DataPoint(this.timestamp, this.value, this.metadata);
 
   Map<String, dynamic> toJson() => {
         'timestamp': timestamp.toIso8601String(),
@@ -764,13 +788,6 @@ class DataPoint {
 }
 
 class UserBehaviorEvent {
-  final String eventName;
-  final String action;
-  final DateTime timestamp;
-  final Map<String, dynamic> properties;
-  final String? userId;
-  final String? sessionId;
-
   UserBehaviorEvent({
     required this.eventName,
     required this.action,
@@ -779,6 +796,12 @@ class UserBehaviorEvent {
     this.userId,
     this.sessionId,
   });
+  final String eventName;
+  final String action;
+  final DateTime timestamp;
+  final Map<String, dynamic> properties;
+  final String? userId;
+  final String? sessionId;
 
   Map<String, dynamic> toJson() => {
         'event_name': eventName,
@@ -791,14 +814,6 @@ class UserBehaviorEvent {
 }
 
 class ABTestResult {
-  final String testName;
-  final String variant;
-  final String outcome;
-  final double value;
-  final DateTime timestamp;
-  final String? userId;
-  final Map<String, dynamic> metadata;
-
   ABTestResult({
     required this.testName,
     required this.variant,
@@ -808,6 +823,13 @@ class ABTestResult {
     this.userId,
     required this.metadata,
   });
+  final String testName;
+  final String variant;
+  final String outcome;
+  final double value;
+  final DateTime timestamp;
+  final String? userId;
+  final Map<String, dynamic> metadata;
 
   Map<String, dynamic> toJson() => {
         'test_name': testName,
@@ -833,14 +855,6 @@ class PerformanceDashboard {
 }
 
 class PerformanceMetricSummary {
-  final String name;
-  final int count;
-  final double average;
-  final double min;
-  final double max;
-  final int errorCount;
-  final DateTime? lastUpdated;
-
   PerformanceMetricSummary({
     required this.name,
     required this.count,
@@ -850,6 +864,13 @@ class PerformanceMetricSummary {
     required this.errorCount,
     this.lastUpdated,
   });
+  final String name;
+  final int count;
+  final double average;
+  final double min;
+  final double max;
+  final int errorCount;
+  final DateTime? lastUpdated;
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -863,92 +884,83 @@ class PerformanceMetricSummary {
 }
 
 class SystemStatus {
-  final double overallHealth;
-  final String status;
-  final List<String> issues;
-  final DateTime lastUpdated;
-
   SystemStatus({
     required this.overallHealth,
     required this.status,
     required this.issues,
     required this.lastUpdated,
   });
+  final double overallHealth;
+  final String status;
+  final List<String> issues;
+  final DateTime lastUpdated;
 }
 
 class CachePerformanceSummary {
-  final double hitRatio;
-  final int totalRequests;
-  final double avgResponseTime;
-  final double l1HitRatio;
-
   CachePerformanceSummary({
     required this.hitRatio,
     required this.totalRequests,
     required this.avgResponseTime,
     required this.l1HitRatio,
   });
+  final double hitRatio;
+  final int totalRequests;
+  final double avgResponseTime;
+  final double l1HitRatio;
 }
 
 class UserBehaviorSummary {
-  final int totalEvents;
-  final int uniqueUsers;
-  final List<MapEntry<String, int>> topEvents;
-  final List<MapEntry<String, int>> commonUserFlows;
-
   UserBehaviorSummary({
     required this.totalEvents,
     required this.uniqueUsers,
     required this.topEvents,
     required this.commonUserFlows,
   });
+  final int totalEvents;
+  final int uniqueUsers;
+  final List<MapEntry<String, int>> topEvents;
+  final List<MapEntry<String, int>> commonUserFlows;
 }
 
 class ABTestSummary {
-  final int activeTests;
-  final int totalTests;
-  final List<ABTestSummaryItem> testSummaries;
-
   ABTestSummary({
     required this.activeTests,
     required this.totalTests,
     required this.testSummaries,
   });
+  final int activeTests;
+  final int totalTests;
+  final List<ABTestSummaryItem> testSummaries;
 }
 
 class ABTestSummaryItem {
-  final String testName;
-  final String status;
-  final Map<String, ABTestVariantSummary> variants;
-  final int totalSampleSize;
-
   ABTestSummaryItem({
     required this.testName,
     required this.status,
     required this.variants,
     required this.totalSampleSize,
   });
+  final String testName;
+  final String status;
+  final Map<String, ABTestVariantSummary> variants;
+  final int totalSampleSize;
 }
 
 class ABTestVariantSummary {
-  final String variant;
-  final int sampleSize;
-  final double averageValue;
-  final double conversionRate;
-
   ABTestVariantSummary({
     required this.variant,
     required this.sampleSize,
     required this.averageValue,
     required this.conversionRate,
   });
+  final String variant;
+  final int sampleSize;
+  final double averageValue;
+  final double conversionRate;
 }
 
 class PerformanceTrend {
-  final String metricName;
-  final String direction; // improving, degrading, stable
-  final double changePercent;
-  final String significance; // high, medium, low
+  // high, medium, low
 
   PerformanceTrend({
     required this.metricName,
@@ -956,30 +968,26 @@ class PerformanceTrend {
     required this.changePercent,
     required this.significance,
   });
+  final String metricName;
+  final String direction; // improving, degrading, stable
+  final double changePercent;
+  final String significance;
 }
 
 class PerformanceAlert {
-  final String type;
-  final String message;
-  final String severity;
-  final DateTime timestamp;
-
   PerformanceAlert({
     required this.type,
     required this.message,
     required this.severity,
     required this.timestamp,
   });
+  final String type;
+  final String message;
+  final String severity;
+  final DateTime timestamp;
 }
 
 class MetricDetails {
-  final String name;
-  final PerformanceMetricSummary summary;
-  final List<DataPoint> timeSeries;
-  final Map<String, int> histogram;
-  final Map<String, double> percentiles;
-  final double trend;
-
   MetricDetails({
     required this.name,
     required this.summary,
@@ -1006,4 +1014,10 @@ class MetricDetails {
       trend: 0,
     );
   }
+  final String name;
+  final PerformanceMetricSummary summary;
+  final List<DataPoint> timeSeries;
+  final Map<String, int> histogram;
+  final Map<String, double> percentiles;
+  final double trend;
 }

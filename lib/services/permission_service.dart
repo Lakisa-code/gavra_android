@@ -14,7 +14,8 @@ class PermissionService {
 
   /// 🚀 INICIJALNO ZAHTEVANJE SVIH DOZVOLA (poziva se u main.dart)
   static Future<bool> requestAllPermissionsOnFirstLaunch(
-      BuildContext context) async {
+    BuildContext context,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool(_firstLaunchKey) ?? true;
 
@@ -58,8 +59,10 @@ class PermissionService {
                       Icon(Icons.location_on, color: Colors.green, size: 20),
                       SizedBox(width: 8),
                       Expanded(
-                          child: Text(
-                              '📍 GPS lokacija - za navigaciju do putnika')),
+                        child: Text(
+                          '📍 GPS lokacija - za navigaciju do putnika',
+                        ),
+                      ),
                     ],
                   ),
                   SizedBox(height: 8),
@@ -68,7 +71,8 @@ class PermissionService {
                       Icon(Icons.phone, color: Colors.blue, size: 20),
                       SizedBox(width: 8),
                       Expanded(
-                          child: Text('📞 Pozivi - za kontaktiranje putnika')),
+                        child: Text('📞 Pozivi - za kontaktiranje putnika'),
+                      ),
                     ],
                   ),
                   SizedBox(height: 8),
@@ -85,7 +89,8 @@ class PermissionService {
                       Icon(Icons.notifications, color: Colors.purple, size: 20),
                       SizedBox(width: 8),
                       Expanded(
-                          child: Text('🔔 Notifikacije - za nova putovanja')),
+                        child: Text('🔔 Notifikacije - za nova putovanja'),
+                      ),
                     ],
                   ),
                   SizedBox(height: 16),

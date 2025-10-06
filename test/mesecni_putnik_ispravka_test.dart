@@ -9,7 +9,7 @@ void main() {
       const tipSkole = 'osnovna';
       const brojTelefona = '+381641234567';
       const noviTip = 'ucenik';
-      const radniDani = 'pon,uto,sre,cet,pet';
+      // const radniDani = 'pon,uto,sre,cet,pet'; // Unused variable
 
       final Map<String, List<String>> polasciPoDanu = {
         'pon': ['07:30 BC', '14:00 VS'],
@@ -27,8 +27,7 @@ void main() {
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
         polasciPoDanu: polasciPoDanu,
-        radniDani: radniDani,
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -51,10 +50,10 @@ void main() {
         putnikIme: 'Ana Jovanović',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
         radniDani: 'pon',
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -93,8 +92,8 @@ void main() {
         'polasci_po_danu': {
           'pon': [
             {'bc': '07:30', 'vs': ''},
-            {'bc': '', 'vs': '14:00'}
-          ]
+            {'bc': '', 'vs': '14:00'},
+          ],
         },
         'radni_dani': 'pon,uto,sre,cet,pet',
         'aktivan': true,

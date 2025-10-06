@@ -18,7 +18,7 @@ void main() {
       expect(parsed['pon']!['vs'], '14:00');
 
       const map = {
-        "pon": {"bc": "06:00:00"}
+        'pon': {'bc': '06:00:00'},
       };
       final parsed2 = MesecniHelpers.parsePolasciPoDanu(map);
       expect(parsed2['pon']!['bc'], '06:00');

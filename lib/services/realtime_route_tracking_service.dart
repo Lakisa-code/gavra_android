@@ -144,11 +144,13 @@ class RealtimeRouteTrackingService {
 
     // Filtriraj samo ne-pokupljene putnike
     final remainingPassengers = _currentRoute
-        .where((p) =>
-            p.vremePokupljenja == null &&
-            !p.jeOtkazan &&
-            p.adresa != null &&
-            p.adresa!.isNotEmpty)
+        .where(
+          (p) =>
+              p.vremePokupljenja == null &&
+              !p.jeOtkazan &&
+              p.adresa != null &&
+              p.adresa!.isNotEmpty,
+        )
         .toList();
 
     if (remainingPassengers.isEmpty) {
@@ -158,7 +160,9 @@ class RealtimeRouteTrackingService {
 
     // Izračunaj novu optimalnu rutu
     final newOptimalRoute = await _calculateOptimalRouteFromPosition(
-        newPosition, remainingPassengers);
+      newPosition,
+      remainingPassengers,
+    );
 
     if (newOptimalRoute != _currentOptimalRoute) {
       _currentOptimalRoute = newOptimalRoute;
@@ -207,7 +211,8 @@ class RealtimeRouteTrackingService {
           if (duration > normalDuration * 1.2) {
             final delayMinutes = ((duration - normalDuration) / 60).round();
             trafficAlerts.add(
-                '🚦 Gužva prema ${putnik.ime} (${putnik.adresa}): +$delayMinutes min');
+              '🚦 Gužva prema ${putnik.ime} (${putnik.adresa}): +$delayMinutes min',
+            );
           }
         }
       }

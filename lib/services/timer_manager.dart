@@ -133,8 +133,9 @@ class TimerManager {
   }
 
   /// ⚠️ Detektuj dugotrajne timer-e (potencijalni leak)
-  static List<String> detectLongRunningTimers(
-      {Duration threshold = const Duration(hours: 1)}) {
+  static List<String> detectLongRunningTimers({
+    Duration threshold = const Duration(hours: 1),
+  }) {
     final longRunning = <String>[];
 
     for (final entry in _timerStartTimes.entries) {

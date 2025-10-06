@@ -20,8 +20,11 @@ void main() {
       );
 
       final map1 = putnik1.toMesecniPutniciMap();
-      expect(map1['vozac_id'], isNull,
-          reason: 'Empty string vozac should become null vozac_id');
+      expect(
+        map1['vozac_id'],
+        isNull,
+        reason: 'Empty string vozac should become null vozac_id',
+      );
       print('✅ Empty string vozac -> vozac_id: ${map1['vozac_id']}');
 
       // Test 2: Non-empty string vozac should map to vozac_id
@@ -43,7 +46,6 @@ void main() {
         polazak: '6:00',
         dan: 'Sre',
         grad: 'Bela Crkva',
-        vozac: null,
       );
 
       final map3 = putnik3.toMesecniPutniciMap();
@@ -60,9 +62,9 @@ void main() {
         putnikIme: 'Test Putnik',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['6:00 BC', '7:00 VS']
+          'pon': ['6:00 BC', '7:00 VS'],
         },
-        datumPocetkaMeseca: DateTime(2024, 1, 1),
+        datumPocetkaMeseca: DateTime(2024),
         datumKrajaMeseca: DateTime(2024, 1, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -70,8 +72,11 @@ void main() {
       );
 
       final map = putnik.toMap();
-      expect(map['vozac_id'], isNull,
-          reason: 'Empty string vozac should become null vozac_id');
+      expect(
+        map['vozac_id'],
+        isNull,
+        reason: 'Empty string vozac should become null vozac_id',
+      );
       print('✅ MesecniPutnik empty vozac -> vozac_id: ${map['vozac_id']}');
     });
 
@@ -84,9 +89,9 @@ void main() {
         putnikIme: 'New Putnik',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['6:00 BC']
+          'pon': ['6:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2024, 1, 1),
+        datumPocetkaMeseca: DateTime(2024),
         datumKrajaMeseca: DateTime(2024, 1, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -94,10 +99,14 @@ void main() {
       );
 
       final insertMap = putnikInsert.toMap();
-      expect(insertMap.containsKey('id'), isFalse,
-          reason: 'Empty ID should exclude id for INSERT');
+      expect(
+        insertMap.containsKey('id'),
+        isFalse,
+        reason: 'Empty ID should exclude id for INSERT',
+      );
       print(
-          '✅ INSERT (empty id) -> id excluded: ${!insertMap.containsKey('id')}');
+        '✅ INSERT (empty id) -> id excluded: ${!insertMap.containsKey('id')}',
+      );
 
       // Test 2: Valid ID should include id in map (UPDATE)
       final putnikUpdate = novi.MesecniPutnik(
@@ -105,9 +114,9 @@ void main() {
         putnikIme: 'Existing Putnik',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['7:00 BC']
+          'pon': ['7:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2024, 1, 1),
+        datumPocetkaMeseca: DateTime(2024),
         datumKrajaMeseca: DateTime(2024, 1, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -115,8 +124,11 @@ void main() {
       );
 
       final updateMap = putnikUpdate.toMap();
-      expect(updateMap.containsKey('id'), isTrue,
-          reason: 'Valid ID should include id for UPDATE');
+      expect(
+        updateMap.containsKey('id'),
+        isTrue,
+        reason: 'Valid ID should include id for UPDATE',
+      );
       expect(updateMap['id'], equals('existing-uuid-456'));
       print('✅ UPDATE (valid id) -> id included: ${updateMap['id']}');
     });
@@ -201,7 +213,8 @@ void main() {
         'aktivan': true,
       };
 
-      final putnici = Putnik.fromMesecniPutniciMultipleForDay(mesecniData, 'pon');
+      final putnici =
+          Putnik.fromMesecniPutniciMultipleForDay(mesecniData, 'pon');
 
       expect(putnici.isNotEmpty, true);
       expect(putnici.first.ime, 'Stefan Mitrović');
@@ -209,7 +222,8 @@ void main() {
       expect(putnici.first.mesecnaKarta, true);
 
       print(
-          '✅ fromMesecniPutniciMultiple creates ${putnici.length} putnik objects');
+        '✅ fromMesecniPutniciMultiple creates ${putnici.length} putnik objects',
+      );
     });
 
     test('Column mapping consistency across tables', () {

@@ -308,8 +308,10 @@ class AdvancedCachingService {
         for (final address in commonAddresses) {
           // Preload geocoding data if not cached
           final cacheKey = 'geocoding_${currentCity ?? 'default'}_$address';
-          final existing = await get<Map<String, dynamic>>(cacheKey,
-              type: CacheType.geocoding);
+          final existing = await get<Map<String, dynamic>>(
+            cacheKey,
+            type: CacheType.geocoding,
+          );
           if (existing == null) {
             // Schedule for background prefetch
             _schedulePredictivePrefetch(cacheKey, CacheType.geocoding);
@@ -352,7 +354,10 @@ class AdvancedCachingService {
   }
 
   static Future<void> _setToLevel3(
-      String key, dynamic value, CacheType type) async {
+    String key,
+    dynamic value,
+    CacheType type,
+  ) async {
     try {
       final ttl = _cacheTTL[type] ?? const Duration(hours: 1);
       final expiry = DateTime.now().add(ttl);
@@ -407,7 +412,11 @@ class AdvancedCachingService {
   }
 
   static Future<void> _setToLevel4(
-      String key, dynamic value, CacheType type, bool compress) async {
+    String key,
+    dynamic value,
+    CacheType type,
+    bool compress,
+  ) async {
     try {
       if (_level4FileCache == null) return;
 
@@ -473,7 +482,10 @@ class AdvancedCachingService {
   }
 
   static Future<void> _setToLevel5(
-      String key, dynamic value, bool compress) async {
+    String key,
+    dynamic value,
+    bool compress,
+  ) async {
     try {
       if (_level5NetworkCache == null) return;
 
@@ -526,14 +538,17 @@ class AdvancedCachingService {
   }
 
   static Future<void> _maintainDirectorySize(
-      Directory? dir, int maxSizeMB) async {
+    Directory? dir,
+    int maxSizeMB,
+  ) async {
     if (dir == null || !await dir.exists()) return;
 
     try {
       final files =
           await dir.list().where((e) => e is File).cast<File>().toList();
       files.sort(
-          (a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+        (a, b) => a.statSync().modified.compareTo(b.statSync().modified),
+      );
 
       int totalSize = 0;
       for (final file in files.reversed) {
@@ -706,14 +721,13 @@ class CacheStats {
 
 /// 💾 CACHE ENTRY CLASS
 class CacheEntry {
+  CacheEntry(this.data, this.type, {Duration? customTTL})
+      : created = DateTime.now(),
+        ttl = customTTL ?? const Duration(hours: 1);
   final dynamic data;
   final CacheType type;
   final DateTime created;
   final Duration ttl;
-
-  CacheEntry(this.data, this.type, {Duration? customTTL})
-      : created = DateTime.now(),
-        ttl = customTTL ?? const Duration(hours: 1);
 
   bool isExpired() => DateTime.now().isAfter(created.add(ttl));
 }

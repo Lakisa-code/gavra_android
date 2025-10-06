@@ -2,17 +2,6 @@ import 'package:uuid/uuid.dart';
 
 /// Model za rute
 class Ruta {
-  final String id;
-  final String naziv;
-  final String polazak;
-  final String dolazak;
-  final String? opis;
-  final double? udaljenostKm;
-  final Duration? prosecnoVreme;
-  final bool aktivan;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   Ruta({
     String? id,
     required this.naziv,
@@ -44,6 +33,16 @@ class Ruta {
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
+  final String id;
+  final String naziv;
+  final String polazak;
+  final String dolazak;
+  final String? opis;
+  final double? udaljenostKm;
+  final Duration? prosecnoVreme;
+  final bool aktivan;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Map<String, dynamic> toMap() {
     return {

@@ -25,7 +25,8 @@ class PutovanjaIstorijaService {
           return list;
         } catch (e) {
           dlog(
-              '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data: $e');
+            '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data: $e',
+          );
           return <PutovanjaIstorija>[];
         }
       });
@@ -37,7 +38,8 @@ class PutovanjaIstorijaService {
 
   // 📱 REALTIME STREAM putovanja za određeni datum
   static Stream<List<PutovanjaIstorija>> streamPutovanjaZaDatum(
-      DateTime datum) {
+    DateTime datum,
+  ) {
     try {
       final targetDate = datum.toIso8601String().split('T')[0];
 
@@ -46,13 +48,15 @@ class PutovanjaIstorijaService {
           final list = data
               .map((json) => PutovanjaIstorija.fromMap(json))
               .where(
-                  (p) => p.datum.toIso8601String().split('T')[0] == targetDate)
+                (p) => p.datum.toIso8601String().split('T')[0] == targetDate,
+              )
               .toList();
           list.sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
           return list;
         } catch (e) {
           dlog(
-              '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for date: $e');
+            '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for date: $e',
+          );
           return <PutovanjaIstorija>[];
         }
       });
@@ -64,7 +68,8 @@ class PutovanjaIstorijaService {
 
   // 📱 REALTIME STREAM putovanja za mesečnog putnika
   static Stream<List<PutovanjaIstorija>> streamPutovanjaMesecnogPutnika(
-      String mesecniPutnikId) {
+    String mesecniPutnikId,
+  ) {
     try {
       return RealtimeService.instance.putovanjaStream.map((data) {
         try {
@@ -76,13 +81,15 @@ class PutovanjaIstorijaService {
           return list;
         } catch (e) {
           dlog(
-              '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for mesecni: $e');
+            '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for mesecni: $e',
+          );
           return <PutovanjaIstorija>[];
         }
       });
     } catch (e) {
       dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream za mesečnog putnika: $e');
+        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream za mesečnog putnika: $e',
+      );
       return Stream.value([]);
     }
   }
@@ -91,17 +98,19 @@ class PutovanjaIstorijaService {
   static Future<List<PutovanjaIstorija>> getAllPutovanjaIstorija() async {
     try {
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .select()
-              .order('datum', ascending: false)
-              .order('vreme_polaska', ascending: false),
-          fallback: <dynamic>[]);
+        () => _supabase
+            .from('putovanja_istorija')
+            .select()
+            .order('datum', ascending: false)
+            .order('vreme_polaska', ascending: false),
+        fallback: <dynamic>[],
+      );
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) =>
-                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .map<PutovanjaIstorija>(
+              (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
+            )
             .toList();
       }
       return [];
@@ -113,22 +122,25 @@ class PutovanjaIstorijaService {
 
   // 🔍 DOBIJ putovanja za određeni datum
   static Future<List<PutovanjaIstorija>> getPutovanjaZaDatum(
-      DateTime datum) async {
+    DateTime datum,
+  ) async {
     try {
       final datumStr = datum.toIso8601String().split('T')[0];
 
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .select()
-              .eq('datum', datumStr)
-              .order('vreme_polaska'),
-          fallback: <dynamic>[]);
+        () => _supabase
+            .from('putovanja_istorija')
+            .select()
+            .eq('datum', datumStr)
+            .order('vreme_polaska'),
+        fallback: <dynamic>[],
+      );
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) =>
-                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .map<PutovanjaIstorija>(
+              (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
+            )
             .toList();
       }
       return [];
@@ -140,25 +152,29 @@ class PutovanjaIstorijaService {
 
   // 🔍 DOBIJ putovanja za vremenski opseg
   static Future<List<PutovanjaIstorija>> getPutovanjaZaOpseg(
-      DateTime odDatuma, DateTime doDatuma) async {
+    DateTime odDatuma,
+    DateTime doDatuma,
+  ) async {
     try {
       final odStr = odDatuma.toIso8601String().split('T')[0];
       final doStr = doDatuma.toIso8601String().split('T')[0];
 
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .select()
-              .gte('datum', odStr)
-              .lte('datum', doStr)
-              .order('datum', ascending: false)
-              .order('vreme_polaska'),
-          fallback: <dynamic>[]);
+        () => _supabase
+            .from('putovanja_istorija')
+            .select()
+            .gte('datum', odStr)
+            .lte('datum', doStr)
+            .order('datum', ascending: false)
+            .order('vreme_polaska'),
+        fallback: <dynamic>[],
+      );
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) =>
-                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .map<PutovanjaIstorija>(
+              (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
+            )
             .toList();
       }
       return [];
@@ -172,12 +188,9 @@ class PutovanjaIstorijaService {
   static Future<PutovanjaIstorija?> getPutovanjeById(String id) async {
     try {
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .select()
-              .eq('id', id)
-              .single(),
-          fallback: null);
+        () =>
+            _supabase.from('putovanja_istorija').select().eq('id', id).single(),
+      );
 
       if (response == null) return null;
       return PutovanjaIstorija.fromMap(response);
@@ -189,45 +202,51 @@ class PutovanjaIstorijaService {
 
   // 🔍 DOBIJ putovanja mesečnog putnika
   static Future<List<PutovanjaIstorija>> getPutovanjaMesecnogPutnika(
-      String mesecniPutnikId) async {
+    String mesecniPutnikId,
+  ) async {
     try {
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .select()
-              .eq('mesecni_putnik_id', mesecniPutnikId)
-              .order('datum', ascending: false),
-          fallback: <dynamic>[]);
+        () => _supabase
+            .from('putovanja_istorija')
+            .select()
+            .eq('mesecni_putnik_id', mesecniPutnikId)
+            .order('datum', ascending: false),
+        fallback: <dynamic>[],
+      );
 
       if (response is List) {
         return response
-            .map<PutovanjaIstorija>((json) =>
-                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .map<PutovanjaIstorija>(
+              (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
+            )
             .toList();
       }
       return [];
     } catch (e) {
       dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju za mesečnog putnika: $e');
+        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju za mesečnog putnika: $e',
+      );
       return [];
     }
   }
 
   // ➕ DODAJ novo putovanje
   static Future<PutovanjaIstorija?> dodajPutovanje(
-      PutovanjaIstorija putovanje) async {
+    PutovanjaIstorija putovanje,
+  ) async {
     try {
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .insert(putovanje.toMap())
-              .select()
-              .single(),
-          fallback: null);
+        () => _supabase
+            .from('putovanja_istorija')
+            .insert(putovanje.toMap())
+            .select()
+            .single(),
+      );
 
       if (response == null) return null;
       dlog(
-          '✅ [PUTOVANJA ISTORIJA SERVICE] Dodato putovanje: ${putovanje.putnikIme}');
+        '✅ [PUTOVANJA ISTORIJA SERVICE] Dodato putovanje: ${putovanje.putnikIme}',
+      );
 
       return PutovanjaIstorija.fromMap(response);
     } catch (e) {
@@ -267,7 +286,8 @@ class PutovanjaIstorijaService {
       return await dodajPutovanje(putovanje);
     } catch (e) {
       dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju mesečnog putovanja: $e');
+        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju mesečnog putovanja: $e',
+      );
       return null;
     }
   }
@@ -286,7 +306,6 @@ class PutovanjaIstorijaService {
     try {
       final putovanje = PutovanjaIstorija(
         id: '', // Biće generisan od strane baze
-        mesecniPutnikId: null,
         tipPutnika: 'dnevni',
         datum: datum,
         vremePolaska: vremePolaska,
@@ -304,27 +323,30 @@ class PutovanjaIstorijaService {
       return await dodajPutovanje(putovanje);
     } catch (e) {
       dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju dnevnog putovanja: $e');
+        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju dnevnog putovanja: $e',
+      );
       return null;
     }
   }
 
   // ✏️ AŽURIRAJ putovanje
   static Future<PutovanjaIstorija?> azurirajPutovanje(
-      PutovanjaIstorija putovanje) async {
+    PutovanjaIstorija putovanje,
+  ) async {
     try {
       final response = await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .update(putovanje.toMap())
-              .eq('id', putovanje.id)
-              .select()
-              .single(),
-          fallback: null);
+        () => _supabase
+            .from('putovanja_istorija')
+            .update(putovanje.toMap())
+            .eq('id', putovanje.id)
+            .select()
+            .single(),
+      );
 
       if (response == null) return null;
       dlog(
-          '✅ [PUTOVANJA ISTORIJA SERVICE] Ažurirano putovanje: ${putovanje.putnikIme}');
+        '✅ [PUTOVANJA ISTORIJA SERVICE] Ažurirano putovanje: ${putovanje.putnikIme}',
+      );
 
       return PutovanjaIstorija.fromMap(response);
     } catch (e) {
@@ -357,14 +379,16 @@ class PutovanjaIstorijaService {
       }
 
       await SupabaseSafe.run(
-          () => _supabase
-              .from('putovanja_istorija')
-              .update(updateData)
-              .eq('id', putovanjeId),
-          fallback: <dynamic>[]);
+        () => _supabase
+            .from('putovanja_istorija')
+            .update(updateData)
+            .eq('id', putovanjeId),
+        fallback: <dynamic>[],
+      );
 
       dlog(
-          '✅ [PUTOVANJA ISTORIJA SERVICE] Ažuriran status putovanja: $putovanjeId');
+        '✅ [PUTOVANJA ISTORIJA SERVICE] Ažuriran status putovanja: $putovanjeId',
+      );
 
       return true;
     } catch (e) {
@@ -377,8 +401,9 @@ class PutovanjaIstorijaService {
   static Future<bool> obrisiPutovanje(String id) async {
     try {
       await SupabaseSafe.run(
-          () => _supabase.from('putovanja_istorija').delete().eq('id', id),
-          fallback: <dynamic>[]);
+        () => _supabase.from('putovanja_istorija').delete().eq('id', id),
+        fallback: <dynamic>[],
+      );
 
       dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Obrisano putovanje: $id');
 
@@ -397,28 +422,32 @@ class PutovanjaIstorijaService {
     String? mesecniPutnikId,
   }) async {
     try {
-      final response = await SupabaseSafe.run(() {
-        var q = _supabase.from('putovanja_istorija').select();
-        if (odDatuma != null) {
-          q = q.gte('datum', odDatuma.toIso8601String().split('T')[0]);
-        }
-        if (doDatuma != null) {
-          q = q.lte('datum', doDatuma.toIso8601String().split('T')[0]);
-        }
-        if (tipPutnika != null) {
-          q = q.eq('tip_putnika', tipPutnika);
-        }
-        if (mesecniPutnikId != null) {
-          q = q.eq('mesecni_putnik_id', mesecniPutnikId);
-        }
-        return q;
-      }, fallback: <dynamic>[]);
+      final response = await SupabaseSafe.run(
+        () {
+          var q = _supabase.from('putovanja_istorija').select();
+          if (odDatuma != null) {
+            q = q.gte('datum', odDatuma.toIso8601String().split('T')[0]);
+          }
+          if (doDatuma != null) {
+            q = q.lte('datum', doDatuma.toIso8601String().split('T')[0]);
+          }
+          if (tipPutnika != null) {
+            q = q.eq('tip_putnika', tipPutnika);
+          }
+          if (mesecniPutnikId != null) {
+            q = q.eq('mesecni_putnik_id', mesecniPutnikId);
+          }
+          return q;
+        },
+        fallback: <dynamic>[],
+      );
 
       final list = response is List ? response : <dynamic>[];
       return list.length;
     } catch (e) {
       dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju broja putovanja: $e');
+        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju broja putovanja: $e',
+      );
       return 0;
     }
   }
@@ -431,22 +460,25 @@ class PutovanjaIstorijaService {
     String? mesecniPutnikId,
   }) async {
     try {
-      final response = await SupabaseSafe.run(() {
-        var q = _supabase.from('putovanja_istorija').select('cena');
-        if (odDatuma != null) {
-          q = q.gte('datum', odDatuma.toIso8601String().split('T')[0]);
-        }
-        if (doDatuma != null) {
-          q = q.lte('datum', doDatuma.toIso8601String().split('T')[0]);
-        }
-        if (tipPutnika != null) {
-          q = q.eq('tip_putnika', tipPutnika);
-        }
-        if (mesecniPutnikId != null) {
-          q = q.eq('mesecni_putnik_id', mesecniPutnikId);
-        }
-        return q;
-      }, fallback: <dynamic>[]);
+      final response = await SupabaseSafe.run(
+        () {
+          var q = _supabase.from('putovanja_istorija').select('cena');
+          if (odDatuma != null) {
+            q = q.gte('datum', odDatuma.toIso8601String().split('T')[0]);
+          }
+          if (doDatuma != null) {
+            q = q.lte('datum', doDatuma.toIso8601String().split('T')[0]);
+          }
+          if (tipPutnika != null) {
+            q = q.eq('tip_putnika', tipPutnika);
+          }
+          if (mesecniPutnikId != null) {
+            q = q.eq('mesecni_putnik_id', mesecniPutnikId);
+          }
+          return q;
+        },
+        fallback: <dynamic>[],
+      );
 
       final list = response is List ? response : <dynamic>[];
       double ukupno = 0.0;
@@ -457,7 +489,8 @@ class PutovanjaIstorijaService {
       return ukupno;
     } catch (e) {
       dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju ukupne zarade: $e');
+        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju ukupne zarade: $e',
+      );
       return 0.0;
     }
   }

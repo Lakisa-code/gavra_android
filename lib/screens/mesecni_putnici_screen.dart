@@ -290,12 +290,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               return const SizedBox.shrink();
                             }
                             final brojRadnika = snapshot.data!
-                                .where((p) =>
-                                    p.tip == 'radnik' &&
-                                    p.aktivan &&
-                                    !p.obrisan &&
-                                    p.status != 'bolovanje' &&
-                                    p.status != 'godišnje')
+                                .where(
+                                  (p) =>
+                                      p.tip == 'radnik' &&
+                                      p.aktivan &&
+                                      !p.obrisan &&
+                                      p.status != 'bolovanje' &&
+                                      p.status != 'godišnje',
+                                )
                                 .length;
                             return AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
@@ -304,7 +306,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 gradient: const LinearGradient(
                                   colors: [
                                     Color(0xFFFF6B6B),
-                                    Color(0xFFFF8E53)
+                                    Color(0xFFFF8E53),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -366,12 +368,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               return const SizedBox.shrink();
                             }
                             final brojUcenika = snapshot.data!
-                                .where((p) =>
-                                    p.tip == 'ucenik' &&
-                                    p.aktivan &&
-                                    !p.obrisan &&
-                                    p.status != 'bolovanje' &&
-                                    p.status != 'godišnje')
+                                .where(
+                                  (p) =>
+                                      p.tip == 'ucenik' &&
+                                      p.aktivan &&
+                                      !p.obrisan &&
+                                      p.status != 'bolovanje' &&
+                                      p.status != 'godišnje',
+                                )
                                 .length;
                             return AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
@@ -380,7 +384,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 gradient: const LinearGradient(
                                   colors: [
                                     Color(0xFF4ECDC4),
-                                    Color(0xFF44A08D)
+                                    Color(0xFF44A08D),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -423,8 +427,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         case 'import':
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text(
-                                    'Import funkcionalnost će biti dodana uskoro')),
+                              content: Text(
+                                'Import funkcionalnost će biti dodana uskoro',
+                              ),
+                            ),
                           );
                           break;
                       }
@@ -482,7 +488,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 ],
                 border: Border.all(
                   color: Theme.of(context).primaryColor.withOpacity(0.2),
-                  width: 1,
                 ),
               ),
               child: TextField(
@@ -525,20 +530,28 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 _mesecniPutnikService.mesecniPutniciStream,
                 _debouncedSearchStream,
                 _filterSubject.stream,
-                (List<MesecniPutnik> putnici, String searchTerm,
-                    String filterType) {
+                (
+                  List<MesecniPutnik> putnici,
+                  String searchTerm,
+                  String filterType,
+                ) {
                   // Serialize putnici to List<Map<String, dynamic>> for compute
                   final putniciMap = putnici.map((p) => p.toMap()).toList();
                   return compute(filterAndSortPutnici, {
                     'putnici': putniciMap,
                     'searchTerm': searchTerm,
                     'filterType': filterType,
-                  }).then((resultList) =>
-                      // Deserialize result back to MesecniPutnik
-                      (resultList as List)
-                          .map((m) => MesecniPutnik.fromMap(
-                              Map<String, dynamic>.from(m as Map)))
-                          .toList());
+                  }).then(
+                    (resultList) =>
+                        // Deserialize result back to MesecniPutnik
+                        (resultList as List)
+                            .map(
+                              (m) => MesecniPutnik.fromMap(
+                                Map<String, dynamic>.from(m as Map),
+                              ),
+                            )
+                            .toList(),
+                  );
                 },
               ).asyncExpand((future) => Stream.fromFuture(future)),
               builder: (context, snapshot) {
@@ -554,8 +567,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(_isConnected ? Icons.error : Icons.wifi_off,
-                            size: 64, color: Colors.red.shade400),
+                        Icon(
+                          _isConnected ? Icons.error : Icons.wifi_off,
+                          size: 64,
+                          color: Colors.red.shade400,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           _isConnected
@@ -689,7 +705,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 ),
           border: Border.all(
             color: bolovanje ? Colors.orange[200]! : Colors.grey[200]!,
-            width: 1,
           ),
         ),
         child: Padding(
@@ -800,14 +815,23 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         children: [
                           // Ikone za dostupne kontakte
                           if (putnik.brojTelefona != null)
-                            Icon(Icons.person,
-                                size: 14, color: Colors.green.shade600),
+                            Icon(
+                              Icons.person,
+                              size: 14,
+                              color: Colors.green.shade600,
+                            ),
                           if (putnik.brojTelefonaOca != null)
-                            Icon(Icons.man,
-                                size: 14, color: Colors.blue.shade600),
+                            Icon(
+                              Icons.man,
+                              size: 14,
+                              color: Colors.blue.shade600,
+                            ),
                           if (putnik.brojTelefonaMajke != null)
-                            Icon(Icons.woman,
-                                size: 14, color: Colors.pink.shade600),
+                            Icon(
+                              Icons.woman,
+                              size: 14,
+                              color: Colors.pink.shade600,
+                            ),
                           const SizedBox(width: 4),
                           Text(
                             '${_prebrojKontakte(putnik)} kontakt${_prebrojKontakte(putnik) == 1 ? '' : 'a'}',
@@ -862,15 +886,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     color: Colors.blue.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: Colors.blue.withOpacity(0.2), width: 1),
+                      color: Colors.blue.withOpacity(0.2),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.schedule,
-                              size: 16, color: Colors.blue.shade700),
+                          Icon(
+                            Icons.schedule,
+                            size: 16,
+                            color: Colors.blue.shade700,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'Radno vreme',
@@ -891,10 +919,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  Icon(Icons.departure_board,
-                                      size: 14, color: Colors.grey.shade600),
-                                  Icon(Icons.departure_board,
-                                      size: 14, color: Colors.grey.shade600),
+                                  Icon(
+                                    Icons.departure_board,
+                                    size: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  Icon(
+                                    Icons.departure_board,
+                                    size: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
@@ -917,8 +951,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             Expanded(
                               child: Row(
                                 children: [
-                                  Icon(Icons.departure_board,
-                                      size: 14, color: Colors.grey.shade600),
+                                  Icon(
+                                    Icons.departure_board,
+                                    size: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
@@ -942,8 +979,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today,
-                                size: 14, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -1000,18 +1040,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     child: Container(
                       height: 28,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: Colors.green.withOpacity(0.3), width: 1),
+                          color: Colors.green.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.trending_up,
-                              size: 14, color: Colors.green.shade700),
+                          Icon(
+                            Icons.trending_up,
+                            size: 14,
+                            color: Colors.green.shade700,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${putnik.brojPutovanja}',
@@ -1033,18 +1079,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     child: Container(
                       height: 28,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.orange.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: Colors.orange.withOpacity(0.3), width: 1),
+                          color: Colors.orange.withOpacity(0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.cancel_outlined,
-                              size: 14, color: Colors.orange.shade700),
+                          Icon(
+                            Icons.cancel_outlined,
+                            size: 14,
+                            color: Colors.orange.shade700,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${putnik.brojOtkazivanja}',
@@ -1132,7 +1184,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: color.withOpacity(0.3),
-            width: 1,
           ),
           boxShadow: [
             BoxShadow(
@@ -1344,8 +1395,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           value: 'radnik',
                           child: Row(
                             children: [
-                              Icon(Icons.business,
-                                  color: Colors.teal, size: 20),
+                              Icon(
+                                Icons.business,
+                                color: Colors.teal,
+                                size: 20,
+                              ),
                               SizedBox(width: 8),
                               Text('Radnik'),
                             ],
@@ -1355,8 +1409,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           value: 'ucenik',
                           child: Row(
                             children: [
-                              Icon(Icons.school,
-                                  color: Colors.orange, size: 20),
+                              Icon(
+                                Icons.school,
+                                color: Colors.orange,
+                                size: 20,
+                              ),
                               SizedBox(width: 8),
                               Text('Učenik'),
                             ],
@@ -1466,7 +1523,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: Colors.orange.withOpacity(0.3),
-                                  width: 1,
                                 ),
                               ),
                               child: Column(
@@ -1664,25 +1720,31 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         Row(
                           children: [
                             Expanded(
-                                child: _buildRadniDanCheckbox(
-                                    'pon', 'Ponedeljak')),
+                              child: _buildRadniDanCheckbox(
+                                'pon',
+                                'Ponedeljak',
+                              ),
+                            ),
                             Expanded(
-                                child: _buildRadniDanCheckbox('uto', 'Utorak')),
+                              child: _buildRadniDanCheckbox('uto', 'Utorak'),
+                            ),
                           ],
                         ),
                         Row(
                           children: [
                             Expanded(
-                                child: _buildRadniDanCheckbox('sre', 'Sreda')),
+                              child: _buildRadniDanCheckbox('sre', 'Sreda'),
+                            ),
                             Expanded(
-                                child:
-                                    _buildRadniDanCheckbox('cet', 'Četvrtak')),
+                              child: _buildRadniDanCheckbox('cet', 'Četvrtak'),
+                            ),
                           ],
                         ),
                         Row(
                           children: [
                             Expanded(
-                                child: _buildRadniDanCheckbox('pet', 'Petak')),
+                              child: _buildRadniDanCheckbox('pet', 'Petak'),
+                            ),
                             const Expanded(child: SizedBox()),
                           ],
                         ),
@@ -1749,7 +1811,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       );
     } else {
       showDialog<void>(
-          context: context, builder: (context) => dialogBuilder(context));
+        context: context,
+        builder: (context) => dialogBuilder(context),
+      );
     }
   }
 
@@ -1761,7 +1825,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         SnackBar(
           content: Text(validationError),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
         ),
       );
       return;
@@ -1816,7 +1879,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
         await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            editovanPutnik, DateTime.now().add(const Duration(days: 1)));
+          editovanPutnik,
+          DateTime.now().add(const Duration(days: 1)),
+        );
       } catch (_) {}
       // Očisti mape izmena nakon uspešnog čuvanja
       setState(() {
@@ -1945,7 +2010,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         child: Icon(
                           Icons.person_add,
                           color: AppThemeHelpers.getTypeOnContainerColor(
-                              _noviTip, context),
+                            _noviTip,
+                            context,
+                          ),
                           size: 20,
                         ),
                       ),
@@ -1960,7 +2027,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               AppThemeHelpers.getTypeIcon(_noviTip),
                               key: ValueKey(_noviTip),
                               color: AppThemeHelpers.getTypeOnContainerColor(
-                                  _noviTip, context),
+                                _noviTip,
+                                context,
+                              ),
                               size: 18,
                             ),
                           ),
@@ -1971,7 +2040,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: AppThemeHelpers.getTypeOnContainerColor(
-                                  _noviTip, context),
+                                _noviTip,
+                                context,
+                              ),
                             ),
                           ),
                         ],
@@ -1983,8 +2054,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.close,
-                            size: 18, color: Colors.red),
+                        icon: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.red,
+                        ),
                         onPressed: () {
                           // 🧹 RESETUJ FORMU KADA SE ZATVORI DIJALOG
                           _resetujFormuZaDodavanje();
@@ -2022,8 +2096,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: AppThemeHelpers.getTypeColor(
-                                      _noviTip, context)
-                                  .withOpacity(0.1),
+                                _noviTip,
+                                context,
+                              ).withOpacity(0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -2038,14 +2113,17 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: AppThemeHelpers.getTypeColor(
-                                            _noviTip, context)
-                                        .withOpacity(0.2),
+                                      _noviTip,
+                                      context,
+                                    ).withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(
                                     Icons.person,
                                     color: AppThemeHelpers.getTypeColor(
-                                        _noviTip, context),
+                                      _noviTip,
+                                      context,
+                                    ),
                                     size: 20,
                                   ),
                                 ),
@@ -2056,7 +2134,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: AppThemeHelpers.getTypeColor(
-                                          _noviTip, context),
+                                        _noviTip,
+                                        context,
+                                      ),
                                       fontSize: 16,
                                     ),
                                   ),
@@ -2078,14 +2158,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
                                     color: AppThemeHelpers.getTypeColor(
-                                        _noviTip, context),
+                                      _noviTip,
+                                      context,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
                                 prefixIcon: Icon(
                                   Icons.person,
                                   color: AppThemeHelpers.getTypeColor(
-                                      _noviTip, context),
+                                    _noviTip,
+                                    context,
+                                  ),
                                 ),
                                 fillColor: Colors.white,
                                 filled: true,
@@ -2106,13 +2190,17 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         : Icons.business,
                                     key: ValueKey('${_noviTip}_dropdown'),
                                     color: AppThemeHelpers.getTypeColor(
-                                        _noviTip, context),
+                                      _noviTip,
+                                      context,
+                                    ),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
                                     color: AppThemeHelpers.getTypeColor(
-                                        _noviTip, context),
+                                      _noviTip,
+                                      context,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
@@ -2124,8 +2212,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   value: 'radnik',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.business,
-                                          color: Colors.teal, size: 20),
+                                      Icon(
+                                        Icons.business,
+                                        color: Colors.teal,
+                                        size: 20,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Radnik'),
                                     ],
@@ -2135,8 +2226,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   value: 'ucenik',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.school,
-                                          color: Colors.orange, size: 20),
+                                      Icon(
+                                        Icons.school,
+                                        color: Colors.orange,
+                                        size: 20,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Učenik'),
                                     ],
@@ -2165,7 +2259,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
                                     color: AppThemeHelpers.getTypeColor(
-                                        _noviTip, context),
+                                      _noviTip,
+                                      context,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
@@ -2177,7 +2273,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         : Icons.business,
                                     key: ValueKey(_noviTip),
                                     color: AppThemeHelpers.getTypeColor(
-                                        _noviTip, context),
+                                      _noviTip,
+                                      context,
+                                    ),
                                   ),
                                 ),
                                 fillColor: Colors.white,
@@ -2280,7 +2378,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
                                           color: Colors.orange.withOpacity(0.3),
-                                          width: 1,
                                         ),
                                       ),
                                       child: Column(
@@ -2348,8 +2445,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                               labelText: 'Broj telefona oca',
                                               hintText: '064/123-456',
                                               border: OutlineInputBorder(),
-                                              prefixIcon: Icon(Icons.man,
-                                                  color: Colors.blue),
+                                              prefixIcon: Icon(
+                                                Icons.man,
+                                                color: Colors.blue,
+                                              ),
                                               fillColor: Colors.white,
                                               filled: true,
                                             ),
@@ -2372,8 +2471,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                               labelText: 'Broj telefona majke',
                                               hintText: '065/789-012',
                                               border: OutlineInputBorder(),
-                                              prefixIcon: Icon(Icons.woman,
-                                                  color: Colors.pink),
+                                              prefixIcon: Icon(
+                                                Icons.woman,
+                                                color: Colors.pink,
+                                              ),
                                               fillColor: Colors.white,
                                               filled: true,
                                             ),
@@ -2566,7 +2667,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       },
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         minimumSize: Size.zero,
                                         tapTargetSize:
                                             MaterialTapTargetSize.shrinkWrap,
@@ -2593,7 +2696,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       },
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         minimumSize: Size.zero,
                                         tapTargetSize:
                                             MaterialTapTargetSize.shrinkWrap,
@@ -2777,7 +2882,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Učitaj postojeće vremena
       final existingTimesJson = prefs.getString(key) ?? '{}';
       final existingTimes = Map<String, int>.from(
-          json.decode(existingTimesJson) as Map<String, dynamic>);
+        json.decode(existingTimesJson) as Map<String, dynamic>,
+      );
 
       // Povećaj broj korišćenja za ovo vreme
       existingTimes[normalizedTime] = (existingTimes[normalizedTime] ?? 0) + 1;
@@ -2797,7 +2903,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       await prefs.setString(key, json.encode(existingTimes));
 
       dlog(
-          '💾 Sačuvano vreme $normalizedTime za $smer $dan (vozač: ${vozac ?? 'global'})');
+        '💾 Sačuvano vreme $normalizedTime za $smer $dan (vozač: ${vozac ?? 'global'})',
+      );
     } catch (e) {
       dlog('❌ Greška pri čuvanju vremena polaska: $e');
     }
@@ -2811,7 +2918,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         SnackBar(
           content: Text(validationError),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
         ),
       );
       return;
@@ -2856,8 +2962,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         adresaBelaCrkva: adresaBelaCrkva.isEmpty ? null : adresaBelaCrkva,
         adresaVrsac: adresaVrsac.isEmpty ? null : adresaVrsac,
         radniDani: _getRadniDaniString(),
-        datumPocetkaMeseca:
-            DateTime(DateTime.now().year, DateTime.now().month, 1),
+        datumPocetkaMeseca: DateTime(DateTime.now().year, DateTime.now().month),
         datumKrajaMeseca:
             DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
         createdAt: DateTime.now(),
@@ -2874,7 +2979,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final dodatiPutnik =
           await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
       print(
-          '✅ USPEŠNO DODAT PUTNIK: ${dodatiPutnik.id} - ${dodatiPutnik.putnikIme}');
+        '✅ USPEŠNO DODAT PUTNIK: ${dodatiPutnik.id} - ${dodatiPutnik.putnikIme}',
+      );
 
       // 🔄 KRITIČNO: Refresh RealtimeService da se promene propagiraju kroz sve servise
       try {
@@ -2887,9 +2993,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
         await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-            dodatiPutnik, DateTime.now().add(const Duration(days: 1)));
+          dodatiPutnik,
+          DateTime.now().add(const Duration(days: 1)),
+        );
         print(
-            '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}');
+          '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}',
+        );
       } catch (e) {
         print('❌ GREŠKA pri kreiranju dnevnih putovanja: $e');
       }
@@ -2945,13 +3054,23 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             // Sačuvaj BC vremena ako postoje
             if (bcTime.isNotEmpty) {
               await _sacuvajVremePolasakaUIstorijuZaDan(
-                  prefs, bcTime, 'BC', dan, currentDriverName);
+                prefs,
+                bcTime,
+                'BC',
+                dan,
+                currentDriverName,
+              );
             }
 
             // Sačuvaj VS vremena ako postoje
             if (vsTime.isNotEmpty) {
               await _sacuvajVremePolasakaUIstorijuZaDan(
-                  prefs, vsTime, 'VS', dan, currentDriverName);
+                prefs,
+                vsTime,
+                'VS',
+                dan,
+                currentDriverName,
+              );
             }
           }
         }
@@ -2989,7 +3108,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-                'Da li ste sigurni da želite da obrišete putnika "${putnik.putnikIme}"?'),
+              'Da li ste sigurni da želite da obrišete putnika "${putnik.putnikIme}"?',
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -3000,20 +3120,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     .withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20),
+                      Icon(
+                        Icons.info,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
-                      const Text('Važne informacije:',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Važne informacije:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -3081,7 +3205,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     try {
       final success =
           await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
-              putnikId);
+        putnikId,
+      );
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -3125,51 +3250,59 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     // Glavni broj telefona
     if (putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty) {
-      opcije.add(ListTile(
-        leading: const Icon(Icons.person, color: Colors.green),
-        title: const Text('Pozovi putnika'),
-        subtitle: Text(putnik.brojTelefona!),
-        onTap: () async {
-          Navigator.pop(context);
-          await _pozovi(putnik.brojTelefona!);
-        },
-      ));
-      opcije.add(ListTile(
-        leading: const Icon(Icons.sms, color: Colors.green),
-        title: const Text('SMS putnik'),
-        subtitle: Text(putnik.brojTelefona!),
-        onTap: () async {
-          Navigator.pop(context);
-          await _posaljiSMS(putnik.brojTelefona!);
-        },
-      ));
+      opcije.add(
+        ListTile(
+          leading: const Icon(Icons.person, color: Colors.green),
+          title: const Text('Pozovi putnika'),
+          subtitle: Text(putnik.brojTelefona!),
+          onTap: () async {
+            Navigator.pop(context);
+            await _pozovi(putnik.brojTelefona!);
+          },
+        ),
+      );
+      opcije.add(
+        ListTile(
+          leading: const Icon(Icons.sms, color: Colors.green),
+          title: const Text('SMS putnik'),
+          subtitle: Text(putnik.brojTelefona!),
+          onTap: () async {
+            Navigator.pop(context);
+            await _posaljiSMS(putnik.brojTelefona!);
+          },
+        ),
+      );
     }
 
     // Otac
     if (putnik.brojTelefonaOca != null && putnik.brojTelefonaOca!.isNotEmpty) {
-      opcije.add(ListTile(
-        leading: const Icon(Icons.man, color: Colors.blue),
-        title: const Text('Pozovi oca'),
-        subtitle: Text(putnik.brojTelefonaOca!),
-        onTap: () async {
-          Navigator.pop(context);
-          await _pozovi(putnik.brojTelefonaOca!);
-        },
-      ));
+      opcije.add(
+        ListTile(
+          leading: const Icon(Icons.man, color: Colors.blue),
+          title: const Text('Pozovi oca'),
+          subtitle: Text(putnik.brojTelefonaOca!),
+          onTap: () async {
+            Navigator.pop(context);
+            await _pozovi(putnik.brojTelefonaOca!);
+          },
+        ),
+      );
     }
 
     // Majka
     if (putnik.brojTelefonaMajke != null &&
         putnik.brojTelefonaMajke!.isNotEmpty) {
-      opcije.add(ListTile(
-        leading: const Icon(Icons.woman, color: Colors.pink),
-        title: const Text('Pozovi majku'),
-        subtitle: Text(putnik.brojTelefonaMajke!),
-        onTap: () async {
-          Navigator.pop(context);
-          await _pozovi(putnik.brojTelefonaMajke!);
-        },
-      ));
+      opcije.add(
+        ListTile(
+          leading: const Icon(Icons.woman, color: Colors.pink),
+          title: const Text('Pozovi majku'),
+          subtitle: Text(putnik.brojTelefonaMajke!),
+          onTap: () async {
+            Navigator.pop(context);
+            await _pozovi(putnik.brojTelefonaMajke!);
+          },
+        ),
+      );
     }
 
     if (opcije.isEmpty) {
@@ -3285,15 +3418,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         final uuid = VozacMappingService.getVozacUuid(driverName);
         if (uuid != null && uuid.isNotEmpty) {
           dlog(
-              '✅ [GET CURRENT DRIVER UUID] Converted $driverName to UUID: $uuid');
+            '✅ [GET CURRENT DRIVER UUID] Converted $driverName to UUID: $uuid',
+          );
           return uuid;
         } else {
           dlog(
-              '❌ [GET CURRENT DRIVER UUID] Failed to convert $driverName to UUID');
+            '❌ [GET CURRENT DRIVER UUID] Failed to convert $driverName to UUID',
+          );
         }
       }
       dlog(
-          '⚠️ [GET CURRENT DRIVER UUID] Returning empty string - no valid driver');
+        '⚠️ [GET CURRENT DRIVER UUID] Returning empty string - no valid driver',
+      );
       return ''; // Vraća prazan string ako nije poznat
     } catch (e) {
       dlog('❌ [GET CURRENT DRIVER UUID] Error: $e');
@@ -3349,8 +3485,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.check_circle,
-                                color: Colors.green.shade600),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green.shade600,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Column(
@@ -3394,7 +3532,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(8),
@@ -3402,10 +3542,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedMonth,
-                          icon: Icon(Icons.calendar_month,
-                              color: Colors.purple.shade600),
+                          icon: Icon(
+                            Icons.calendar_month,
+                            color: Colors.purple.shade600,
+                          ),
                           style: TextStyle(
-                              color: Colors.purple.shade700, fontSize: 16),
+                            color: Colors.purple.shade700,
+                            fontSize: 16,
+                          ),
                           menuMaxHeight: 300, // Ograniči visinu dropdown menija
                           onChanged: (String? newValue) {
                             setState(() {
@@ -3443,15 +3587,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       decoration: InputDecoration(
                         labelText: 'Iznos (dinari)',
                         hintText: 'Unesite iznos plaćanja',
-                        prefixIcon: Icon(Icons.attach_money,
-                            color: Colors.purple.shade600),
+                        prefixIcon: Icon(
+                          Icons.attach_money,
+                          color: Colors.purple.shade600,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                              color: Colors.purple.shade600, width: 2),
+                            color: Colors.purple.shade600,
+                            width: 2,
+                          ),
                         ),
                       ),
                       autofocus: true,
@@ -3538,7 +3686,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(8),
@@ -3548,8 +3698,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         child: DropdownButton<String>(
                           value: selectedPeriod,
                           isExpanded: true,
-                          icon: Icon(Icons.arrow_drop_down,
-                              color: Colors.blue.shade600),
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.blue.shade600,
+                          ),
                           items: _getMonthOptions()
                               .map<DropdownMenuItem<String>>((String value) {
                             // Proveri da li je mesec plaćen
@@ -3587,8 +3739,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 value: 'Cela 2025',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.event_note,
-                                        size: 16, color: Colors.blue),
+                                    Icon(
+                                      Icons.event_note,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('Cela 2025'),
                                   ],
@@ -3598,8 +3753,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 value: 'Ukupno',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.history,
-                                        size: 16, color: Colors.purple),
+                                    Icon(
+                                      Icons.history,
+                                      size: 16,
+                                      color: Colors.purple,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('Ukupno'),
                                   ],
@@ -3641,8 +3799,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.error_outline,
-                                      color: Colors.red, size: 48),
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: Colors.red,
+                                    size: 48,
+                                  ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'Greška pri učitavanju:\n${snapshot.error}',
@@ -3673,8 +3834,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.warning_amber_outlined,
-                                      color: Colors.orange, size: 48),
+                                  const Icon(
+                                    Icons.warning_amber_outlined,
+                                    color: Colors.orange,
+                                    size: 48,
+                                  ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'Podaci trenutno nisu dostupni.\nPovežite se na internet.',
@@ -3685,7 +3849,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     const SizedBox(height: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 4),
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.red[100],
                                         borderRadius: BorderRadius.circular(12),
@@ -3707,7 +3873,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         }
 
                         return _buildStatistikeContent(
-                            putnik, stats, selectedPeriod);
+                          putnik,
+                          stats,
+                          selectedPeriod,
+                        );
                       },
                     ),
                   ],
@@ -3728,7 +3897,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 📊 KREIRANJE SADRŽAJA STATISTIKA NA OSNOVU PERIODA
   Widget _buildStatistikeContent(
-      MesecniPutnik putnik, Map<String, dynamic> stats, String period) {
+    MesecniPutnik putnik,
+    Map<String, dynamic> stats,
+    String period,
+  ) {
     Color periodColor = Colors.orange;
     IconData periodIcon = Icons.calendar_today;
 
@@ -3807,15 +3979,17 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               ),
               const SizedBox(height: 8),
               _buildStatRow(
-                  '💵 Poslednje plaćanje:',
-                  putnik.cena != null && putnik.cena! > 0
-                      ? '${putnik.cena!.toStringAsFixed(0)} RSD'
-                      : 'Nema podataka o ceni'),
+                '💵 Poslednje plaćanje:',
+                putnik.cena != null && putnik.cena! > 0
+                    ? '${putnik.cena!.toStringAsFixed(0)} RSD'
+                    : 'Nema podataka o ceni',
+              ),
               _buildStatRow(
-                  '📅 Datum plaćanja:',
-                  putnik.vremePlacanja != null
-                      ? _formatDatum(putnik.vremePlacanja!)
-                      : 'Nema podataka o datumu'),
+                '📅 Datum plaćanja:',
+                putnik.vremePlacanja != null
+                    ? _formatDatum(putnik.vremePlacanja!)
+                    : 'Nema podataka o datumu',
+              ),
               _buildStatRow('🚗 Vozač (naplata):', putnik.vozacIme),
             ],
           ),
@@ -3852,12 +4026,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               const SizedBox(height: 8),
               _buildStatRow('🚗 Putovanja:', '${stats['putovanja'] ?? 0}'),
               _buildStatRow('❌ Otkazivanja:', '${stats['otkazivanja'] ?? 0}'),
-              _buildStatRow('🔄 Poslednje putovanje:',
-                  stats['poslednje'] as String? ?? 'Nema podataka'),
+              _buildStatRow(
+                '🔄 Poslednje putovanje:',
+                stats['poslednje'] as String? ?? 'Nema podataka',
+              ),
               _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
               if (period == 'all_time' && stats['ukupan_prihod'] != null)
                 _buildStatRow(
-                    '💰 Ukupan prihod:', '${stats['ukupan_prihod']} RSD'),
+                  '💰 Ukupan prihod:',
+                  '${stats['ukupan_prihod']} RSD',
+                ),
             ],
           ),
         ),
@@ -3888,7 +4066,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               _buildStatRow('� Kreiran:', _formatDatum(putnik.createdAt)),
               _buildStatRow('🔄 Ažuriran:', _formatDatum(putnik.updatedAt)),
               _buildStatRow(
-                  '✅ Status:', putnik.aktivan ? 'Aktivan' : 'Neaktivan'),
+                '✅ Status:',
+                putnik.aktivan ? 'Aktivan' : 'Neaktivan',
+              ),
             ],
           ),
         ),
@@ -3898,7 +4078,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
-      String putnikId, String period) {
+    String putnikId,
+    String period,
+  ) {
     // 🔄 KORISTI NOVI CENTRALIZOVANI REAL-TIME SERVIS
     return RealTimeStatistikaService.instance
         .getPutnikStatistikeStream(putnikId)
@@ -3952,12 +4134,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 📅 GODIŠNJE STATISTIKE (2025)
   Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId) async {
-    final startOfYear = DateTime(2025, 1, 1);
+    final startOfYear = DateTime(2025);
     final endOfYear = DateTime(2025, 12, 31);
 
     final response = await supabase
         .from('putovanja_istorija')
-        .select('*')
+        .select()
         .eq('putnik_id', putnikId)
         .gte('created_at', startOfYear.toIso8601String())
         .lte('created_at', endOfYear.toIso8601String())
@@ -3998,7 +4180,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   Future<Map<String, dynamic>> _getUkupneStatistike(String putnikId) async {
     final response = await supabase
         .from('putovanja_istorija')
-        .select('*')
+        .select()
         .eq('putnik_id', putnikId)
         .order('created_at', ascending: false);
 
@@ -4068,7 +4250,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   Future<void> _sacuvajPlacanje(
-      String putnikId, double iznos, String mesec) async {
+    String putnikId,
+    double iznos,
+    String mesec,
+  ) async {
     try {
       // � Učitaj trenutnog vozača kao UUID
       final currentDriverUuid = await _getCurrentDriverUuid();
@@ -4089,7 +4274,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano'),
+                '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -4118,9 +4304,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // � GENERIČKA FUNKCIJA ZA STATISTIKE PO MESECIMA
   Future<Map<String, dynamic>> _getStatistikeZaMesec(
-      String putnikId, int mesec, int godina) async {
+    String putnikId,
+    int mesec,
+    int godina,
+  ) async {
     try {
-      final DateTime mesecStart = DateTime(godina, mesec, 1);
+      final DateTime mesecStart = DateTime(godina, mesec);
       final DateTime mesecEnd = DateTime(godina, mesec + 1, 0, 23, 59, 59);
 
       final String startStr = mesecStart.toIso8601String().split('T')[0];
@@ -4251,7 +4440,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     const months = [
       '', // 0 - ne postoji
       'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun',
-      'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
+      'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar',
     ];
 
     for (int i = 1; i < months.length; i++) {
@@ -4276,7 +4465,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       'Septembar',
       'Oktobar',
       'Novembar',
-      'Decembar'
+      'Decembar',
     ];
     return months[month];
   }
@@ -4284,7 +4473,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 📊 DOBIJ MESEČNE STATISTIKE ZA SEPTEMBAR 2025
   Future<Map<String, dynamic>> _getMesecneStatistike(String putnikId) async {
     try {
-      final DateTime septembarStart = DateTime(2025, 9, 1);
+      final DateTime septembarStart = DateTime(2025, 9);
       final DateTime septembarEnd = DateTime(2025, 9, 30, 23, 59, 59);
 
       final String startStr = septembarStart.toIso8601String().split('T')[0];
@@ -4361,7 +4550,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       throw Exception('Neispravno ime meseca: $monthName');
     }
 
-    DateTime pocetakMeseca = DateTime(year, monthNumber, 1);
+    DateTime pocetakMeseca = DateTime(year, monthNumber);
     DateTime krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
     return {
@@ -4464,23 +4653,31 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: 'jutarnja_smena',
-                    child: Text('Jutarnja smena (06:00-14:00)',
-                        style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'Jutarnja smena (06:00-14:00)',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                   const PopupMenuItem(
                     value: 'popodnevna_smena',
-                    child: Text('Popodnevna smena (14:00-22:00)',
-                        style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'Popodnevna smena (14:00-22:00)',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                   const PopupMenuItem(
                     value: 'skola',
-                    child: Text('Škola (07:30-14:00)',
-                        style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'Škola (07:30-14:00)',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                   const PopupMenuItem(
                     value: 'ocisti',
-                    child: Text('Očisti sva vremena',
-                        style: TextStyle(fontSize: 12, color: Colors.red)),
+                    child: Text(
+                      'Očisti sva vremena',
+                      style: TextStyle(fontSize: 12, color: Colors.red),
+                    ),
                   ),
                 ],
               ),
@@ -4504,8 +4701,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.info_outline,
-                      size: 12, color: Colors.orange.shade600),
+                  Icon(
+                    Icons.info_outline,
+                    size: 12,
+                    color: Colors.orange.shade600,
+                  ),
                   const SizedBox(width: 3),
                   Expanded(
                     child: Text(
@@ -4651,7 +4851,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               Text(
                 daniMapa[danKod] ?? danKod,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -4684,10 +4886,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           // Vremena u kompaktnom redu
           IntrinsicHeight(
             child: Row(
-              mainAxisSize: MainAxisSize.max,
               children: [
                 Flexible(
-                  flex: 1,
                   child: SizedBox(
                     width: double.infinity,
                     child: TextFormField(
@@ -4702,11 +4902,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                                color: Colors.grey.shade300, width: 1)),
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade300,
+                          ),
+                        ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 10),
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
                         labelStyle: const TextStyle(fontSize: 12),
                         hintStyle:
                             const TextStyle(fontSize: 12, color: Colors.grey),
@@ -4717,7 +4921,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 ),
                 const SizedBox(width: 4),
                 Flexible(
-                  flex: 1,
                   child: SizedBox(
                     width: double.infinity,
                     child: TextFormField(
@@ -4732,11 +4935,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(
-                                color: Colors.grey.shade300, width: 1)),
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade300,
+                          ),
+                        ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 10),
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
                         labelStyle: const TextStyle(fontSize: 12),
                         hintStyle:
                             const TextStyle(fontSize: 12, color: Colors.grey),
@@ -4769,7 +4976,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Kreiranje CSV sadržaja
       final csvData = StringBuffer();
       csvData.writeln(
-          'Ime,Tip,Škola/Ustanova,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status,Cena');
+        'Ime,Tip,Škola/Ustanova,Broj Telefona,Adresa BC,Adresa VS,Radni Dani,Polasci BC,Polasci VS,Status,Cena',
+      );
 
       for (final putnik in putnici) {
         final polasciBc = <String>[];
@@ -4782,19 +4990,21 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           if (vs != null && vs.isNotEmpty) polasciVs.add('$dan:$vs');
         }
 
-        csvData.writeln([
-          '"${putnik.putnikIme}"',
-          putnik.tip,
-          '"${putnik.tipSkole ?? ''}"',
-          putnik.brojTelefona ?? '',
-          '"${putnik.adresaBelaCrkva ?? ''}"',
-          '"${putnik.adresaVrsac ?? ''}"',
-          putnik.radniDani,
-          '"${polasciBc.join(';')}"',
-          '"${polasciVs.join(';')}"',
-          putnik.status,
-          putnik.cena?.toString() ?? '',
-        ].join(','));
+        csvData.writeln(
+          [
+            '"${putnik.putnikIme}"',
+            putnik.tip,
+            '"${putnik.tipSkole ?? ''}"',
+            putnik.brojTelefona ?? '',
+            '"${putnik.adresaBelaCrkva ?? ''}"',
+            '"${putnik.adresaVrsac ?? ''}"',
+            putnik.radniDani,
+            '"${polasciBc.join(';')}"',
+            '"${polasciVs.join(';')}"',
+            putnik.status,
+            putnik.cena?.toString() ?? '',
+          ].join(','),
+        );
       }
 
       // Snimanje fajla - implementacija u toku

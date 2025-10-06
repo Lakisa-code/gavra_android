@@ -3,12 +3,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/adrese_service.dart';
 
 class AutocompleteAdresaField extends StatefulWidget {
-  final TextEditingController controller;
-  final String grad; // 'Bela Crkva' ili 'Vršac'
-  final String? hintText;
-  final String? labelText;
-  final void Function(String)? onChanged;
-
   const AutocompleteAdresaField({
     Key? key,
     required this.controller,
@@ -17,6 +11,11 @@ class AutocompleteAdresaField extends StatefulWidget {
     this.labelText,
     this.onChanged,
   }) : super(key: key);
+  final TextEditingController controller;
+  final String grad; // 'Bela Crkva' ili 'Vršac'
+  final String? hintText;
+  final String? labelText;
+  final void Function(String)? onChanged;
 
   @override
   State<AutocompleteAdresaField> createState() =>

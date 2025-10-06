@@ -30,7 +30,8 @@ class GpsService {
         }
         if (response.length > 1) {
           _logger.w(
-              '⚠️ Pronađeno više vozača sa imenom "$vozacIme"; koristiću prvi match.');
+            '⚠️ Pronađeno više vozača sa imenom "$vozacIme"; koristiću prvi match.',
+          );
         }
         final first = response.first;
         if (first is Map<String, dynamic>) {
@@ -47,7 +48,8 @@ class GpsService {
       }
 
       _logger.w(
-          '⚠️ Neočekivan tip odgovora prilikom traženja vozaca: ${response.runtimeType}');
+        '⚠️ Neočekivan tip odgovora prilikom traženja vozaca: ${response.runtimeType}',
+      );
       return null;
     } catch (e) {
       _logger.e('❌ Greška pri dobijanju UUID vozača $vozacIme: $e');
@@ -62,8 +64,8 @@ class GpsService {
       // Konvertuj ime vozača u UUID ako je potrebno
       String? vozacUuid = vozacId;
       if (!RegExp(
-              r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
-          .hasMatch(vozacId)) {
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      ).hasMatch(vozacId)) {
         // Nije UUID, pokušaj konverziju
         vozacUuid = await _getVozacUuid(vozacId);
         if (vozacUuid == null) {
@@ -90,9 +92,11 @@ class GpsService {
       // Uzimanje lokacije
       _logger.i('📍 Dobijanje trenutne lokacije...');
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.high,
+      );
       _logger.i(
-          '✅ Lokacija dobijena: ${position.latitude}, ${position.longitude}');
+        '✅ Lokacija dobijena: ${position.latitude}, ${position.longitude}',
+      );
 
       // Slanje u Supabase
       _logger.i('📤 Slanje lokacije u Supabase...');

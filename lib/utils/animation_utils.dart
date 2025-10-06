@@ -13,10 +13,12 @@ class AnimationUtils {
       position: Tween<Offset>(
         begin: beginOffset,
         end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      )),
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        ),
+      ),
       child: FadeTransition(
         opacity: animation,
         child: child,
@@ -34,10 +36,12 @@ class AnimationUtils {
       scale: Tween<double>(
         begin: beginScale,
         end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.elasticOut,
-      )),
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.elasticOut,
+        ),
+      ),
       child: FadeTransition(
         opacity: animation,
         child: child,
@@ -54,10 +58,12 @@ class AnimationUtils {
       scale: Tween<double>(
         begin: 0.0,
         end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.bounceOut,
-      )),
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.bounceOut,
+        ),
+      ),
       child: child,
     );
   }
@@ -72,10 +78,12 @@ class AnimationUtils {
       turns: Tween<double>(
         begin: turns,
         end: 0.0,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutBack,
-      )),
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        ),
+      ),
       child: FadeTransition(
         opacity: animation,
         child: child,
@@ -86,9 +94,6 @@ class AnimationUtils {
 
 /// 🎭 ANIMATED PAGE TRANSITION
 class CustomPageRoute<T> extends PageRouteBuilder<T> {
-  final Widget child;
-  final PageTransitionType transitionType;
-
   CustomPageRoute({
     required this.child,
     this.transitionType = PageTransitionType.slideUp,
@@ -104,7 +109,6 @@ class CustomPageRoute<T> extends PageRouteBuilder<T> {
                 return AnimationUtils.slideFadeTransition(
                   child: child,
                   animation: animation,
-                  beginOffset: const Offset(0.0, 0.3),
                 );
               case PageTransitionType.slideRight:
                 return AnimationUtils.slideFadeTransition(
@@ -130,15 +134,12 @@ class CustomPageRoute<T> extends PageRouteBuilder<T> {
             }
           },
         );
+  final Widget child;
+  final PageTransitionType transitionType;
 }
 
 /// 🎬 ANIMATED CONTAINER WRAPPER
 class AnimatedCard extends StatefulWidget {
-  final Widget child;
-  final Duration duration;
-  final bool isVisible;
-  final int delay;
-
   const AnimatedCard({
     Key? key,
     required this.child,
@@ -146,6 +147,10 @@ class AnimatedCard extends StatefulWidget {
     this.isVisible = true,
     this.delay = 0,
   }) : super(key: key);
+  final Widget child;
+  final Duration duration;
+  final bool isVisible;
+  final int delay;
 
   @override
   State<AnimatedCard> createState() => _AnimatedCardState();
@@ -169,26 +174,32 @@ class _AnimatedCardState extends State<AnimatedCard>
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 1.0, curve: Curves.easeOut),
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 1.0, curve: Curves.easeOut),
+      ),
+    );
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
 
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
+      ),
+    );
 
     // Start animation with delay
     Future.delayed(Duration(milliseconds: widget.delay), () {
@@ -233,11 +244,6 @@ class _AnimatedCardState extends State<AnimatedCard>
 
 /// 🎪 STAGGERED LIST ANIMATION
 class StaggeredListView extends StatefulWidget {
-  final List<Widget> children;
-  final Duration staggerDelay;
-  final Axis scrollDirection;
-  final ScrollPhysics? physics;
-
   const StaggeredListView({
     Key? key,
     required this.children,
@@ -245,6 +251,10 @@ class StaggeredListView extends StatefulWidget {
     this.scrollDirection = Axis.vertical,
     this.physics,
   }) : super(key: key);
+  final List<Widget> children;
+  final Duration staggerDelay;
+  final Axis scrollDirection;
+  final ScrollPhysics? physics;
 
   @override
   State<StaggeredListView> createState() => _StaggeredListViewState();
@@ -269,11 +279,6 @@ class _StaggeredListViewState extends State<StaggeredListView> {
 
 /// 📱 FLOATING ACTION BUTTON sa animacijom
 class AnimatedFAB extends StatefulWidget {
-  final VoidCallback? onPressed;
-  final Widget child;
-  final bool isVisible;
-  final Color? backgroundColor;
-
   const AnimatedFAB({
     Key? key,
     this.onPressed,
@@ -281,6 +286,10 @@ class AnimatedFAB extends StatefulWidget {
     this.isVisible = true,
     this.backgroundColor,
   }) : super(key: key);
+  final VoidCallback? onPressed;
+  final Widget child;
+  final bool isVisible;
+  final Color? backgroundColor;
 
   @override
   State<AnimatedFAB> createState() => _AnimatedFABState();
@@ -303,18 +312,22 @@ class _AnimatedFABState extends State<AnimatedFAB>
     _scaleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.elasticOut,
+      ),
+    );
 
     _rotationAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     if (widget.isVisible) {
       _controller.forward();

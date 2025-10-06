@@ -5,16 +5,6 @@ import '../theme.dart';
 /// 🎨 Flutter Bank Gradient AppBar
 /// Beautiful gradient AppBar inspired by the Flutter Bank design
 class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String? title;
-  final Widget? titleWidget;
-  final List<Widget>? actions;
-  final Widget? leading;
-  final bool automaticallyImplyLeading;
-  final Color? titleColor;
-  final double? titleSpacing;
-  final bool centerTitle;
-  final double elevation;
-
   const GradientAppBar({
     Key? key,
     this.title,
@@ -26,9 +16,20 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleSpacing,
     this.centerTitle = true,
     this.elevation = 0,
-  })  : assert(title != null || titleWidget != null,
-            'Either title or titleWidget must be provided'),
+  })  : assert(
+          title != null || titleWidget != null,
+          'Either title or titleWidget must be provided',
+        ),
         super(key: key);
+  final String? title;
+  final Widget? titleWidget;
+  final List<Widget>? actions;
+  final Widget? leading;
+  final bool automaticallyImplyLeading;
+  final Color? titleColor;
+  final double? titleSpacing;
+  final bool centerTitle;
+  final double elevation;
 
   @override
   Widget build(BuildContext context) {
@@ -74,18 +75,6 @@ class GradientAppBar extends StatelessWidget implements PreferredSizeWidget {
 /// 🎨 Flutter Bank Scaffold with Gradient
 /// Complete scaffold with gradient background and beautiful styling
 class GradientScaffold extends StatelessWidget {
-  final String? appBarTitle;
-  final Widget body;
-  final List<Widget>? appBarActions;
-  final Widget? floatingActionButton;
-  final FloatingActionButtonLocation? floatingActionButtonLocation;
-  final Widget? bottomNavigationBar;
-  final Widget? drawer;
-  final Widget? endDrawer;
-  final bool extendBodyBehindAppBar;
-  final bool hasGradientBackground;
-  final Color? backgroundColor;
-
   const GradientScaffold({
     Key? key,
     this.appBarTitle,
@@ -100,6 +89,17 @@ class GradientScaffold extends StatelessWidget {
     this.hasGradientBackground = false,
     this.backgroundColor,
   }) : super(key: key);
+  final String? appBarTitle;
+  final Widget body;
+  final List<Widget>? appBarActions;
+  final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
+  final Widget? bottomNavigationBar;
+  final Widget? drawer;
+  final Widget? endDrawer;
+  final bool extendBodyBehindAppBar;
+  final bool hasGradientBackground;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -132,13 +132,6 @@ class GradientScaffold extends StatelessWidget {
 /// 🃏 Flutter Bank Card
 /// Beautiful card with consistent styling
 class FlutterBankCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsets? margin;
-  final EdgeInsets? padding;
-  final double? elevation;
-  final Color? color;
-  final VoidCallback? onTap;
-
   const FlutterBankCard({
     Key? key,
     required this.child,
@@ -148,6 +141,12 @@ class FlutterBankCard extends StatelessWidget {
     this.color,
     this.onTap,
   }) : super(key: key);
+  final Widget child;
+  final EdgeInsets? margin;
+  final EdgeInsets? padding;
+  final double? elevation;
+  final Color? color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -185,14 +184,6 @@ enum FlutterBankButtonVariant { primary, secondary }
 /// 🔘 Flutter Bank Button
 /// Beautiful gradient button with consistent styling
 class FlutterBankButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-  final IconData? icon;
-  final FlutterBankButtonVariant variant;
-  final EdgeInsets? padding;
-  final double? width;
-
   const FlutterBankButton({
     Key? key,
     required this.text,
@@ -215,6 +206,13 @@ class FlutterBankButton extends StatelessWidget {
     this.width,
   })  : variant = FlutterBankButtonVariant.secondary,
         super(key: key);
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final IconData? icon;
+  final FlutterBankButtonVariant variant;
+  final EdgeInsets? padding;
+  final double? width;
 
   bool get isSecondary => variant == FlutterBankButtonVariant.secondary;
 
@@ -258,7 +256,9 @@ class FlutterBankButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             side: isSecondary
                 ? BorderSide(
-                    color: Theme.of(context).colorScheme.primary, width: 1.5)
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.5,
+                  )
                 : BorderSide.none,
           ),
         ),

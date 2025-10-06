@@ -217,12 +217,15 @@ class _AdminScreenState extends State<AdminScreen> {
                               child: Container(
                                 height: 28,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color: Colors.white.withOpacity(0.4)),
+                                    color: Colors.white.withOpacity(0.4),
+                                  ),
                                 ),
                                 child: const Center(
                                   child: FittedBox(
@@ -263,12 +266,15 @@ class _AdminScreenState extends State<AdminScreen> {
                               child: Container(
                                 height: 28,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color: Colors.white.withOpacity(0.4)),
+                                    color: Colors.white.withOpacity(0.4),
+                                  ),
                                 ),
                                 child: const Center(
                                   child: FittedBox(
@@ -309,12 +315,15 @@ class _AdminScreenState extends State<AdminScreen> {
                               child: Container(
                                 height: 28,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 4, vertical: 2),
+                                  horizontal: 4,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color: Colors.white.withOpacity(0.4)),
+                                    color: Colors.white.withOpacity(0.4),
+                                  ),
                                 ),
                                 child: const Center(
                                   child: FittedBox(
@@ -355,7 +364,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                 color: Colors.white.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                    color: Colors.white.withOpacity(0.3)),
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
                               ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
@@ -377,7 +387,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       'Utorak',
                                       'Sreda',
                                       'Četvrtak',
-                                      'Petak'
+                                      'Petak',
                                     ].map<Widget>((String value) {
                                       return Center(
                                         child: Row(
@@ -420,13 +430,15 @@ class _AdminScreenState extends State<AdminScreen> {
                                     'Utorak',
                                     'Sreda',
                                     'Četvrtak',
-                                    'Petak'
+                                    'Petak',
                                   ].map((dan) {
                                     return DropdownMenuItem<String>(
                                       value: dan,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         child: Center(
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
@@ -483,8 +495,10 @@ class _AdminScreenState extends State<AdminScreen> {
                   const SizedBox(height: 16),
                   const Text('Učitavanje admin panela...'),
                   const SizedBox(height: 8),
-                  const Text('Molimo sačekajte...',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const Text(
+                    'Molimo sačekajte...',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
@@ -637,7 +651,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 // Vozač vidi samo svoj pazar
                 filteredPazar = {
                   if (pazar.containsKey(_currentDriver))
-                    _currentDriver!: pazar[_currentDriver!]!
+                    _currentDriver!: pazar[_currentDriver!]!,
                 };
               }
 
@@ -646,7 +660,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 'Bruda',
                 'Bilevski',
                 'Bojan',
-                'Svetlana'
+                'Svetlana',
               ];
 
               // Filter vozače redosled na osnovu trenutnog vozača
@@ -699,13 +713,15 @@ class _AdminScreenState extends State<AdminScreen> {
                           decoration: BoxDecoration(
                             color: Colors.green[50],
                             borderRadius: BorderRadius.circular(8),
-                            border:
-                                Border.all(color: Colors.green[200]!, width: 1),
+                            border: Border.all(color: Colors.green[200]!),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.person,
-                                  color: Colors.green[600], size: 16),
+                              Icon(
+                                Icons.person,
+                                color: Colors.green[600],
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -744,7 +760,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                         .withAlpha(
                                       70,
                                     ),
-                                    width: 1,
                                   ),
                                 ),
                                 child: Row(
@@ -823,7 +838,8 @@ class _AdminScreenState extends State<AdminScreen> {
                           Expanded(
                             child: StreamBuilder<double>(
                               stream: DailyCheckInService.streamTodayAmount(
-                                  'Bruda'),
+                                'Bruda',
+                              ),
                               builder: (context, snapshot) {
                                 final kusurBruda = snapshot.data ?? 0.0;
 
@@ -834,7 +850,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                     color: Colors.purple[50],
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                        color: Colors.purple[300]!, width: 1.2),
+                                      color: Colors.purple[300]!,
+                                      width: 1.2,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -890,7 +908,8 @@ class _AdminScreenState extends State<AdminScreen> {
                           Expanded(
                             child: StreamBuilder<double>(
                               stream: DailyCheckInService.streamTodayAmount(
-                                  'Bilevski'),
+                                'Bilevski',
+                              ),
                               builder: (context, snapshot) {
                                 final kusurBilevski = snapshot.data ?? 0.0;
 
@@ -901,7 +920,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                     color: Colors.orange[50],
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                        color: Colors.orange[300]!, width: 1.2),
+                                      color: Colors.orange[300]!,
+                                      width: 1.2,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -1024,20 +1045,23 @@ class _AdminScreenState extends State<AdminScreen> {
                                 child: Container(
                                   height: 60,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [
                                         Color(0xFF00D4FF),
-                                        Color(0xFF0077BE)
+                                        Color(0xFF0077BE),
                                       ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                        color: const Color(0xFF0077BE),
-                                        width: 1.2),
+                                      color: const Color(0xFF0077BE),
+                                      width: 1.2,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: const Color(0xFF00D4FF)
@@ -1092,20 +1116,23 @@ class _AdminScreenState extends State<AdminScreen> {
                                 child: Container(
                                   height: 60,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [
                                         Color(0xFFFF6B35),
-                                        Color(0xFFF7931E)
+                                        Color(0xFFF7931E),
                                       ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                        color: const Color(0xFFF7931E),
-                                        width: 1.2),
+                                      color: const Color(0xFFF7931E),
+                                      width: 1.2,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: const Color(0xFFFF6B35)

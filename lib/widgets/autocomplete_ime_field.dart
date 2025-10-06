@@ -3,14 +3,6 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import '../services/imena_service.dart';
 
 class AutocompleteImeField extends StatefulWidget {
-  final TextEditingController controller;
-  final String? hintText;
-  final void Function(String)? onChanged;
-  final String? Function(String?)? validator;
-  final bool enabled;
-  final bool mesecnaKarta;
-  final List<String>? dozvoljenaImena;
-
   const AutocompleteImeField({
     Key? key,
     required this.controller,
@@ -21,6 +13,13 @@ class AutocompleteImeField extends StatefulWidget {
     this.mesecnaKarta = false,
     this.dozvoljenaImena,
   }) : super(key: key);
+  final TextEditingController controller;
+  final String? hintText;
+  final void Function(String)? onChanged;
+  final String? Function(String?)? validator;
+  final bool enabled;
+  final bool mesecnaKarta;
+  final List<String>? dozvoljenaImena;
 
   @override
   State<AutocompleteImeField> createState() => _AutocompleteImeFieldState();
@@ -131,7 +130,6 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
       },
       hideOnEmpty: true,
       hideOnError: true,
-      hideOnLoading: false,
       loadingBuilder: (context) {
         return Container(
           padding: const EdgeInsets.all(16),

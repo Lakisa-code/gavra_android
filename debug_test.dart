@@ -3,13 +3,14 @@ void main() {
   print('🚀 Gavra Debug System Test');
 
   // Proveri debug flag
-  const bool debugEnabled = bool.fromEnvironment('DEBUG', defaultValue: false);
+  const bool debugEnabled = bool.fromEnvironment('DEBUG');
   print('Debug enabled: $debugEnabled');
 
   // Simulacija debug, warning i error logova
   if (debugEnabled) {
     print(
-        '[DEBUG ${DateTime.now()}] 🔍 Ovo je debug log - vidljiv samo u debug mode');
+      '[DEBUG ${DateTime.now()}] 🔍 Ovo je debug log - vidljiv samo u debug mode',
+    );
   }
 
   print('[WARNING ${DateTime.now()}] ⚠️ Ovo je warning - uvek vidljiv');

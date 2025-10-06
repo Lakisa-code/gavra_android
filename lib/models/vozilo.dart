@@ -2,16 +2,6 @@ import 'package:uuid/uuid.dart';
 
 /// Model za vozila
 class Vozilo {
-  final String id;
-  final String registracija;
-  final String marka;
-  final String model;
-  final int? godinaProizvodnje;
-  final int brojSedista;
-  final bool aktivan;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   Vozilo({
     String? id,
     required this.registracija,
@@ -39,6 +29,15 @@ class Vozilo {
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
+  final String id;
+  final String registracija;
+  final String marka;
+  final String model;
+  final int? godinaProizvodnje;
+  final int brojSedista;
+  final bool aktivan;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Map<String, dynamic> toMap() {
     return {

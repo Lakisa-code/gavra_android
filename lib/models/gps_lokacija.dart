@@ -2,18 +2,6 @@ import 'package:uuid/uuid.dart';
 
 /// Model za GPS lokacije vozila
 class GPSLokacija {
-  final String id;
-  final String voziloId;
-  final String? vozacId;
-  final double latitude;
-  final double longitude;
-  final double? brzina;
-  final double? pravac;
-  final DateTime vreme;
-  final String? adresa;
-  final bool aktivan;
-  final DateTime createdAt;
-
   GPSLokacija({
     String? id,
     required this.voziloId,
@@ -46,22 +34,6 @@ class GPSLokacija {
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'vozilo_id': voziloId,
-      'vozac_id': vozacId,
-      'latitude': latitude,
-      'longitude': longitude,
-      'brzina': brzina,
-      'pravac': pravac,
-      'vreme': vreme.toIso8601String(),
-      'adresa': adresa,
-      'aktivan': aktivan,
-      'created_at': createdAt.toIso8601String(),
-    };
-  }
-
   /// Kreira GPS lokaciju sa trenutnim vremenom
   factory GPSLokacija.sada({
     required String voziloId,
@@ -82,5 +54,32 @@ class GPSLokacija {
       vreme: DateTime.now(),
       adresa: adresa,
     );
+  }
+  final String id;
+  final String voziloId;
+  final String? vozacId;
+  final double latitude;
+  final double longitude;
+  final double? brzina;
+  final double? pravac;
+  final DateTime vreme;
+  final String? adresa;
+  final bool aktivan;
+  final DateTime createdAt;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'vozilo_id': voziloId,
+      'vozac_id': vozacId,
+      'latitude': latitude,
+      'longitude': longitude,
+      'brzina': brzina,
+      'pravac': pravac,
+      'vreme': vreme.toIso8601String(),
+      'adresa': adresa,
+      'aktivan': aktivan,
+      'created_at': createdAt.toIso8601String(),
+    };
   }
 }

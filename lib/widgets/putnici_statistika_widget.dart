@@ -7,11 +7,6 @@ import 'pie_chart_widget.dart';
 import 'putnik_list.dart';
 
 class PutniciStatistikaWidget extends StatelessWidget {
-  final int ukupnoPutnika;
-  final Map<DateTime, int> putniciPoDanu;
-  final List<Putnik> duznici;
-  final String? periodOpis;
-  final String? currentDriver;
   // Svi callbackovi uklonjeni, widget je sada samo prikaz
 
   const PutniciStatistikaWidget({
@@ -22,6 +17,11 @@ class PutniciStatistikaWidget extends StatelessWidget {
     this.periodOpis,
     required this.currentDriver,
   }) : super(key: key);
+  final int ukupnoPutnika;
+  final Map<DateTime, int> putniciPoDanu;
+  final List<Putnik> duznici;
+  final String? periodOpis;
+  final String? currentDriver;
 
   @override
   Widget build(BuildContext context) {
@@ -32,25 +32,32 @@ class PutniciStatistikaWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (periodOpis != null)
-              Text(periodOpis!,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(
+                periodOpis!,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             const SizedBox(height: 12),
             Card(
               color: Colors.blue[50],
               child: ListTile(
                 leading: Icon(Icons.people, color: Colors.blue[700]),
                 title: const Text('Ukupno putnika'),
-                trailing: Text('$ukupnoPutnika',
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold)),
+                trailing: Text(
+                  '$ukupnoPutnika',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
             // Bar chart: broj putnika po danu
             BarChartWidget(
               data: putniciPoDanu,
-              color: Colors.blue,
               title: 'Broj putnika po danu',
             ),
             const SizedBox(height: 24),
@@ -79,12 +86,16 @@ class PutniciStatistikaWidget extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-            const Text('Lista dužnika:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Lista dužnika:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             duznici.isEmpty
-                ? Text('Nema dužnika za izabrani period.',
-                    style: TextStyle(color: Colors.green[700]))
+                ? Text(
+                    'Nema dužnika za izabrani period.',
+                    style: TextStyle(color: Colors.green[700]),
+                  )
                 : PutnikList(
                     putnici: duznici,
                     currentDriver: currentDriver,

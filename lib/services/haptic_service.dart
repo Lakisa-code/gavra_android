@@ -92,16 +92,15 @@ class HapticService {
 /// 📳 HAPTIC BUTTON WRAPPER
 /// Automatski dodaje haptic feedback na dugmad
 class HapticButton extends StatelessWidget {
-  final Widget child;
-  final VoidCallback? onPressed;
-  final HapticType hapticType;
-
   const HapticButton({
     Key? key,
     required this.child,
     this.onPressed,
     this.hapticType = HapticType.light,
   }) : super(key: key);
+  final Widget child;
+  final VoidCallback? onPressed;
+  final HapticType hapticType;
 
   @override
   Widget build(BuildContext context) {
@@ -140,11 +139,6 @@ class HapticButton extends StatelessWidget {
 
 /// 📳 ENHANCED ELEVATED BUTTON sa haptic feedback
 class HapticElevatedButton extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final Widget child;
-  final HapticType hapticType;
-  final ButtonStyle? style;
-
   const HapticElevatedButton({
     Key? key,
     required this.onPressed,
@@ -152,6 +146,10 @@ class HapticElevatedButton extends StatelessWidget {
     this.hapticType = HapticType.light,
     this.style,
   }) : super(key: key);
+  final VoidCallback? onPressed;
+  final Widget child;
+  final HapticType hapticType;
+  final ButtonStyle? style;
 
   @override
   Widget build(BuildContext context) {

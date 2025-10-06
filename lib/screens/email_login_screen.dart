@@ -395,7 +395,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute<void>(
-                            builder: (context) => const HomeScreen()),
+                          builder: (context) => const HomeScreen(),
+                        ),
                       );
                     }
                   },
@@ -415,13 +416,17 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           }
         }
       } else {
-        _showErrorDialog('Neuspješna prijava',
-            'Provjerite email i šifru ili potvrdite email adresu.');
+        _showErrorDialog(
+          'Neuspješna prijava',
+          'Provjerite email i šifru ili potvrdite email adresu.',
+        );
       }
     } catch (e) {
       dlog('❌ Greška pri prijavi: $e');
       _showErrorDialog(
-          'Greška', 'Došlo je do greške pri prijavi. Pokušajte ponovo.');
+        'Greška',
+        'Došlo je do greške pri prijavi. Pokušajte ponovo.',
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -431,8 +436,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     final email = _emailController.text.trim();
 
     if (email.isEmpty || !EmailAuthService.isValidEmailFormat(email)) {
-      _showErrorDialog('Nevažeći email',
-          'Unesite validnu email adresu da biste resetovali šifru.');
+      _showErrorDialog(
+        'Nevažeći email',
+        'Unesite validnu email adresu da biste resetovali šifru.',
+      );
       return;
     }
 
@@ -443,7 +450,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
       if (success) {
         _showSuccessDialog(
-            'Email poslan', 'Provjerite email za link za reset šifre.');
+          'Email poslan',
+          'Provjerite email za link za reset šifre.',
+        );
       } else {
         _showErrorDialog('Greška', 'Nije moguće poslati email za reset šifre.');
       }
@@ -461,8 +470,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message,
-            style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -479,8 +490,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message,
-            style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

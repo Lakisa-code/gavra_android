@@ -17,9 +17,9 @@ void main() {
           'pon': ['07:30 BC', '15:00 VS'],
           'uto': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
-        createdAt: DateTime(2025, 10, 1, 8, 0),
+        createdAt: DateTime(2025, 10, 1, 8),
         updatedAt: DateTime.now(),
         ukupnaCenaMeseca: 17000,
         cena: 17000,
@@ -29,8 +29,11 @@ void main() {
       final map = putnik.toMap();
 
       // Proverava da li id je uključen za UPDATE
-      expect(map.containsKey('id'), isTrue,
-          reason: 'UPDATE operacija mora da uključi id');
+      expect(
+        map.containsKey('id'),
+        isTrue,
+        reason: 'UPDATE operacija mora da uključi id',
+      );
       expect(map['id'], equals('test-uuid-123'));
 
       // Proverava da li su svi obavezni podaci tu
@@ -60,9 +63,9 @@ void main() {
           'pon': ['06:30 BC', '14:30 VS'],
           'sre': ['06:30 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
-        createdAt: DateTime(2025, 10, 1, 7, 0),
+        createdAt: DateTime(2025, 10, 1, 7),
         updatedAt: DateTime.now(),
         ukupnaCenaMeseca: 15000,
         cena: 15000,
@@ -72,8 +75,11 @@ void main() {
       final map = putnik.toMap();
 
       // Proverava da li id je uključen za UPDATE
-      expect(map.containsKey('id'), isTrue,
-          reason: 'UPDATE operacija mora da uključi id');
+      expect(
+        map.containsKey('id'),
+        isTrue,
+        reason: 'UPDATE operacija mora da uključi id',
+      );
       expect(map['id'], equals('test-uuid-789'));
 
       // Proverava da li su svi obavezni podaci tu
@@ -103,17 +109,19 @@ void main() {
         rutaId: 'ruta-uuid-123',
         datumPutovanja: DateTime(2025, 10, 5),
         vremePolaska: '08:00',
-        brojMesta: 1,
         cena: 300.0,
-        createdAt: DateTime(2025, 10, 5, 7, 0),
+        createdAt: DateTime(2025, 10, 5, 7),
         updatedAt: DateTime.now(),
       );
 
       final map = putnik.toMap();
 
       // Proverava da li id je uključen za UPDATE
-      expect(map.containsKey('id'), isTrue,
-          reason: 'UPDATE operacija mora da uključi id');
+      expect(
+        map.containsKey('id'),
+        isTrue,
+        reason: 'UPDATE operacija mora da uključi id',
+      );
       expect(map['id'], equals('dnevni-uuid-123'));
 
       // Proverava da li su svi obavezni podaci tu
@@ -148,8 +156,11 @@ void main() {
       final map = putovanje.toMap();
 
       // Proverava da li id je uključen za UPDATE
-      expect(map.containsKey('id'), isTrue,
-          reason: 'UPDATE operacija mora da uključi id');
+      expect(
+        map.containsKey('id'),
+        isTrue,
+        reason: 'UPDATE operacija mora da uključi id',
+      );
       expect(map['id'], equals('putovanje-uuid-123'));
 
       // Proverava da li su svi obavezni podaci tu
@@ -171,9 +182,9 @@ void main() {
         putnikIme: 'Test Putnik',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['07:00 BC']
+          'pon': ['07:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -181,8 +192,11 @@ void main() {
       );
 
       final mapPrazanVozac = putnikPrazanVozac.toMap();
-      expect(mapPrazanVozac['vozac_id'], isNull,
-          reason: 'Prazan string za vozac treba biti null u bazi');
+      expect(
+        mapPrazanVozac['vozac_id'],
+        isNull,
+        reason: 'Prazan string za vozac treba biti null u bazi',
+      );
 
       // Test sa null
       final putnikNullVozac = novi.MesecniPutnik(
@@ -190,18 +204,20 @@ void main() {
         putnikIme: 'Test Putnik 2',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['07:00 BC']
+          'pon': ['07:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        vozac: null, // Null
       );
 
       final mapNullVozac = putnikNullVozac.toMap();
-      expect(mapNullVozac['vozac_id'], isNull,
-          reason: 'Null vozac treba ostati null u bazi');
+      expect(
+        mapNullVozac['vozac_id'],
+        isNull,
+        reason: 'Null vozac treba ostati null u bazi',
+      );
 
       print('✅ Testiranje praznog vozac_id - PASSED');
     });
@@ -216,20 +232,26 @@ void main() {
         putnikIme: 'Timestamp Test',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
-        createdAt: DateTime(2025, 10, 1),
+        createdAt: DateTime(2025, 10),
         updatedAt: sada, // Trenutni timestamp
       );
 
       final map = putnik.toMap();
 
-      expect(map.containsKey('updated_at'), isTrue,
-          reason: 'updated_at mora biti prisutno');
-      expect(map['updated_at'], contains(sada.year.toString()),
-          reason: 'updated_at mora sadržavati trenutnu godinu');
+      expect(
+        map.containsKey('updated_at'),
+        isTrue,
+        reason: 'updated_at mora biti prisutno',
+      );
+      expect(
+        map['updated_at'],
+        contains(sada.year.toString()),
+        reason: 'updated_at mora sadržavati trenutnu godinu',
+      );
 
       print('✅ Testiranje updated_at timestamp - PASSED');
     });
@@ -291,12 +313,12 @@ void main() {
         putnikIme: 'Service Test',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['07:00 BC']
+          'pon': ['07:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
-        createdAt: DateTime(2025, 10, 1),
-        updatedAt: DateTime(2025, 10, 1),
+        createdAt: DateTime(2025, 10),
+        updatedAt: DateTime(2025, 10),
         cena: 15000,
       );
 

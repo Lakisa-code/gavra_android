@@ -47,12 +47,12 @@ void main() {
         putnikIme: 'Test Putnik',
         tip: 'osnovna',
         polasciPoDanu: {
-          'pon': ['6 VS']
+          'pon': ['6 VS'],
         },
-        datumPocetkaMeseca: DateTime(2025, 1, 1),
+        datumPocetkaMeseca: DateTime(2025),
         datumKrajaMeseca: DateTime(2025, 1, 31),
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
+        createdAt: DateTime(2025),
+        updatedAt: DateTime(2025),
       );
 
       final map = putnik.toMap();

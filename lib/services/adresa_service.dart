@@ -3,10 +3,9 @@ import '../models/adresa.dart';
 
 /// Servis za upravljanje adresama
 class AdresaService {
-  final SupabaseClient _supabase;
-
   AdresaService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
+  final SupabaseClient _supabase;
 
   /// Dohvata sve adrese
   Future<List<Adresa>> getAllAdrese() async {

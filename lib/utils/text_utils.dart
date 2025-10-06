@@ -29,7 +29,7 @@ class TextUtils {
   static const List<String> bolovanjeGodisnji = [
     'bolovanje',
     'godišnji',
-    'godisnji'
+    'godisnji',
   ];
   static const List<String> otkazani = ['otkazano', 'otkazan'];
   static const List<String> pokupljeni = ['pokupljen'];

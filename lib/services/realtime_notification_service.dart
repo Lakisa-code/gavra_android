@@ -59,11 +59,13 @@ class RealtimeNotificationService {
         _logger.i('\u2705 Forwarded notification to server: $responseBody');
       } else {
         _logger.e(
-            '\u274c Server returned error while forwarding OneSignal notification: $responseBody');
+          '\u274c Server returned error while forwarding OneSignal notification: $responseBody',
+        );
       }
     } catch (e) {
       _logger.e(
-          '\u274c Exception while forwarding OneSignal notification to server: $e');
+        '\u274c Exception while forwarding OneSignal notification to server: $e',
+      );
     }
   }
 
@@ -79,7 +81,8 @@ class RealtimeNotificationService {
     if (message == null) return;
     try {
       _logger.i(
-          '🔔 Handling initial Firebase message: ${message.notification?.title}');
+        '🔔 Handling initial Firebase message: ${message.notification?.title}',
+      );
       await _handleFirebaseNotificationTap(message);
     } catch (e) {
       _logger.w('⚠️ Error handling initial Firebase message: $e');
@@ -91,7 +94,8 @@ class RealtimeNotificationService {
   /// Initialize service with full multi-channel support (Firebase + OneSignal + Local)
   static Future<void> initialize() async {
     _logger.i(
-        '🔔 RealtimeNotificationService initialized - multi-channel: Firebase + OneSignal + Local');
+      '🔔 RealtimeNotificationService initialized - multi-channel: Firebase + OneSignal + Local',
+    );
   }
 
   /// Setup foreground Firebase message listeners for real-time notifications
@@ -129,11 +133,11 @@ class RealtimeNotificationService {
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
           payload: (message.data['type'] as String?) ?? 'firebase_foreground',
-          playCustomSound: true,
         );
       } else {
         _logger.i(
-            '🔕 Notifikacija ignorisana (nije za danas ili nije tip dodat/otkazan)');
+          '🔕 Notifikacija ignorisana (nije za danas ili nije tip dodat/otkazan)',
+        );
       }
     });
 
@@ -170,7 +174,10 @@ class RealtimeNotificationService {
 
   /// Real-time notifications using Firebase + OneSignal + Local notifications
   static void sendRealtimeNotification(
-      String title, String body, Map<String, dynamic> data) {
+    String title,
+    String body,
+    Map<String, dynamic> data,
+  ) {
     _logger.i('🔔 Sending multi-channel notification: $title - $body');
 
     try {
@@ -182,7 +189,6 @@ class RealtimeNotificationService {
         title: title,
         body: body,
         payload: payloadJson,
-        playCustomSound: true,
       );
       _logger.i('✅ Local notification sent');
 
@@ -200,7 +206,8 @@ class RealtimeNotificationService {
       );
 
       _logger.i(
-          '🎯 Multi-channel notification completed: Firebase + OneSignal + Local');
+        '🎯 Multi-channel notification completed: Firebase + OneSignal + Local',
+      );
     } catch (e) {
       _logger.e('❌ Error sending notifications: $e');
     }
@@ -209,14 +216,14 @@ class RealtimeNotificationService {
   /// Test notification functionality with multi-channel support
   static Future<void> sendTestNotification(String message) async {
     _logger.i(
-        '🔔 Test notification: $message (multi-channel: Firebase + OneSignal + Local)');
+      '🔔 Test notification: $message (multi-channel: Firebase + OneSignal + Local)',
+    );
 
     // Show local notification
     await LocalNotificationService.showRealtimeNotification(
       title: 'Gavra Test - Multi Channel',
       body: message,
       payload: 'test_notification',
-      playCustomSound: true,
     );
   }
 
@@ -247,15 +254,7 @@ class RealtimeNotificationService {
       }
 
       NotificationSettings settings = await FirebaseMessaging.instance
-          .requestPermission(
-            alert: true,
-            badge: true,
-            sound: true,
-            carPlay: false,
-            criticalAlert: false,
-            provisional: false,
-            announcement: false,
-          )
+          .requestPermission()
           .timeout(const Duration(seconds: 10));
 
       bool granted =
@@ -271,7 +270,8 @@ class RealtimeNotificationService {
 
   /// Handle Firebase notification tap - navigate to specific passenger
   static Future<void> _handleFirebaseNotificationTap(
-      RemoteMessage message) async {
+    RemoteMessage message,
+  ) async {
     try {
       _logger.i('🔔 Handling Firebase notification tap...');
 

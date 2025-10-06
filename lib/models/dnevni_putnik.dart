@@ -48,26 +48,6 @@ extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
 
 /// Model za dnevne putnike
 class DnevniPutnik {
-  final String id;
-  final String ime;
-  final String? brojTelefona;
-  final String adresaId;
-  final String rutaId;
-  final DateTime datumPutovanja;
-  final String vremePolaska;
-  final int brojMesta;
-  final double cena;
-  final DnevniPutnikStatus status;
-  final String? napomena;
-  final DateTime? vremePokupljenja;
-  final String? pokupioVozacId;
-  final DateTime? vremePlacanja;
-  final String? naplatioVozacId;
-  final String? dodaoVozacId;
-  final bool obrisan;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   DnevniPutnik({
     String? id,
     required this.ime,
@@ -104,7 +84,8 @@ class DnevniPutnik {
       brojMesta: map['broj_mesta'] as int? ?? 1,
       cena: (map['cena'] as num).toDouble(),
       status: DnevniPutnikStatusExtension.fromString(
-          map['status'] as String? ?? 'rezervisan'),
+        map['status'] as String? ?? 'rezervisan',
+      ),
       napomena: map['napomena'] as String?,
       vremePokupljenja: map['vreme_pokupljenja'] != null
           ? DateTime.parse(map['vreme_pokupljenja'] as String)
@@ -120,6 +101,25 @@ class DnevniPutnik {
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
+  final String id;
+  final String ime;
+  final String? brojTelefona;
+  final String adresaId;
+  final String rutaId;
+  final DateTime datumPutovanja;
+  final String vremePolaska;
+  final int brojMesta;
+  final double cena;
+  final DnevniPutnikStatus status;
+  final String? napomena;
+  final DateTime? vremePokupljenja;
+  final String? pokupioVozacId;
+  final DateTime? vremePlacanja;
+  final String? naplatioVozacId;
+  final String? dodaoVozacId;
+  final bool obrisan;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Map<String, dynamic> toMap() {
     return {
@@ -185,8 +185,6 @@ class DnevniPutnik {
       naplatioVozac: naplatioVozacId,
       pokupioVozac: pokupioVozacId,
       dodaoVozac: dodaoVozacId,
-      vozac:
-          null, // Driver linking will be implemented with enhanced driver management
       grad: adresa.grad,
       adresa: '${adresa.ulica} ${adresa.broj}',
       obrisan: obrisan,

@@ -16,40 +16,43 @@ void main() {
       };
 
       // PROBLEM: Ovaj kod iz _sacuvajNovogPutnika() neće raditi sa novim modelom
-      expect(() {
-        final noviPutnik = MesecniPutnik(
-          // GREŠKA: Ovi parametri ne postoje u novom modelu!
-          // ime: ime.split(' ').first,
-          // prezime: ime.split(' ').length > 1 ? ime.split(' ').skip(1).join(' ') : '',
-          // tip: MesecniPutnikTipExtension.fromString(noviTip), // GREŠKA: extension ne postoji
-          // tipSkole: tipSkole.isEmpty ? null : tipSkole,
-          // brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-          // adresaId: 'placeholder-address-uuid', // GREŠKA: adresaId ne postoji
-          // rutaId: 'placeholder-route-uuid', // GREŠKA: rutaId ne postoji
-          // polasciPoDanu: polasciPoDanu,
-          // cenaMesecneKarte: 0.0, // GREŠKA: cenaMesecneKarte je uklonjen
-          // datumPocetka: DateTime(2025, 10, 1), // GREŠKA: datumPocetka ne postoji
-          // datumKraja: DateTime(2025, 10, 31), // GREŠKA: datumKraja ne postoji
-          // radniDani: 'pon,uto,sre,cet,pet', // GREŠKA: tip String umesto Map
+      expect(
+        () {
+          final noviPutnik = MesecniPutnik(
+            // GREŠKA: Ovi parametri ne postoje u novom modelu!
+            // ime: ime.split(' ').first,
+            // prezime: ime.split(' ').length > 1 ? ime.split(' ').skip(1).join(' ') : '',
+            // tip: MesecniPutnikTipExtension.fromString(noviTip), // GREŠKA: extension ne postoji
+            // tipSkole: tipSkole.isEmpty ? null : tipSkole,
+            // brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
+            // adresaId: 'placeholder-address-uuid', // GREŠKA: adresaId ne postoji
+            // rutaId: 'placeholder-route-uuid', // GREŠKA: rutaId ne postoji
+            // polasciPoDanu: polasciPoDanu,
+            // cenaMesecneKarte: 0.0, // GREŠKA: cenaMesecneKarte je uklonjen
+            // datumPocetka: DateTime(2025, 10, 1), // GREŠKA: datumPocetka ne postoji
+            // datumKraja: DateTime(2025, 10, 31), // GREŠKA: datumKraja ne postoji
+            // radniDani: 'pon,uto,sre,cet,pet', // GREŠKA: tip String umesto Map
 
-          // ISPRAVAN PRISTUP:
-          id: '',
-          putnikIme: ime,
-          tip: noviTip,
-          tipSkole: tipSkole.isEmpty ? null : tipSkole,
-          brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-          polasciPoDanu: polasciPoDanu,
-          datumPocetkaMeseca: DateTime(2025, 10, 1),
-          datumKrajaMeseca: DateTime(2025, 10, 31),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+            // ISPRAVAN PRISTUP:
+            id: '',
+            putnikIme: ime,
+            tip: noviTip,
+            tipSkole: tipSkole.isEmpty ? null : tipSkole,
+            brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
+            polasciPoDanu: polasciPoDanu,
+            datumPocetkaMeseca: DateTime(2025, 10),
+            datumKrajaMeseca: DateTime(2025, 10, 31),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
 
-        // Proveri da je objekat kreiran uspešno
-        expect(noviPutnik, isNotNull);
-        expect(noviPutnik.putnikIme, ime);
-        expect(noviPutnik.tip, noviTip);
-      }, returnsNormally);
+          // Proveri da je objekat kreiran uspešno
+          expect(noviPutnik, isNotNull);
+          expect(noviPutnik.putnikIme, ime);
+          expect(noviPutnik.tip, noviTip);
+        },
+        returnsNormally,
+      );
     });
 
     test('Test ispravnog kreiranja MesecniPutnik modela', () {
@@ -71,7 +74,7 @@ void main() {
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
         polasciPoDanu: polasciPoDanu,
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -95,9 +98,9 @@ void main() {
         putnikIme: 'Ana Jovanović',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

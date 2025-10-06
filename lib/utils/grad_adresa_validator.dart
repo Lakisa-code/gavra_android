@@ -4,7 +4,10 @@ class GradAdresaValidator {
   /// 🔍 JEDNOSTAVNO GRAD POREĐENJE - samo 2 glavna grada
   /// ✅ LOGIKA: Bela Crkva ili Vršac - filtrira po gradu putnika
   static bool isGradMatch(
-      String? putnikGrad, String? putnikAdresa, String selectedGrad) {
+    String? putnikGrad,
+    String? putnikAdresa,
+    String selectedGrad,
+  ) {
     final normalizedSelectedGrad = normalizeString(selectedGrad);
     final normalizedPutnikGrad = normalizeString(putnikGrad);
 
@@ -193,8 +196,10 @@ class GradAdresaValidator {
     }
 
     // Inače proveri da li je u listi blokiranih gradova
-    return blockedCities.any((blocked) =>
-        normalizedGrad.contains(blocked) || blocked.contains(normalizedGrad));
+    return blockedCities.any(
+      (blocked) =>
+          normalizedGrad.contains(blocked) || blocked.contains(normalizedGrad),
+    );
   }
 
   /// ⏰ NORMALIZUJ VREME - konvertuj "05:00:00" u "5:00"

@@ -4,14 +4,13 @@ import '../utils/logging.dart';
 import 'email_login_screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
-  final String email;
-  final String driverName;
-
   const EmailVerificationScreen({
     Key? key,
     required this.email,
     required this.driverName,
   }) : super(key: key);
+  final String email;
+  final String driverName;
 
   @override
   State<EmailVerificationScreen> createState() =>
@@ -181,7 +180,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Colors.blue.withOpacity(0.3),
-          width: 1,
         ),
       ),
       child: Column(
@@ -366,12 +364,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
         );
       } else {
         _showErrorDialog(
-            'Neuspješna verifikacija', 'Provjerite kod i pokušajte ponovo.');
+          'Neuspješna verifikacija',
+          'Provjerite kod i pokušajte ponovo.',
+        );
       }
     } catch (e) {
       dlog('❌ Greška pri verifikaciji email-a: $e');
       _showErrorDialog(
-          'Greška', 'Došlo je do greške pri verifikaciji. Pokušajte ponovo.');
+        'Greška',
+        'Došlo je do greške pri verifikaciji. Pokušajte ponovo.',
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -385,7 +387,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
 
       if (success) {
         _showSuccessDialog(
-            'Kod poslan', 'Novi verifikacioni kod je poslan na vaš email.');
+          'Kod poslan',
+          'Novi verifikacioni kod je poslan na vaš email.',
+        );
       } else {
         _showErrorDialog('Greška', 'Nije moguće poslati novi kod.');
       }
@@ -403,8 +407,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message,
-            style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -421,8 +427,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Text(message,
-            style: TextStyle(color: Colors.white.withOpacity(0.8))),
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+        ),
         actions: [
           TextButton(
             onPressed: onOk ?? () => Navigator.of(context).pop(),

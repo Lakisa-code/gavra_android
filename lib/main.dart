@@ -50,7 +50,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final alreadyInitialized = Firebase.apps.isNotEmpty;
     if (!alreadyInitialized) {
       await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform);
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
     }
   } catch (e) {
     // Ignore duplicate-init or platform-specific errors in background isolate
@@ -134,10 +135,6 @@ void main() async {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
-      authOptions: const FlutterAuthClientOptions(
-        authFlowType: AuthFlowType.pkce,
-        autoRefreshToken: true,
-      ),
     ).timeout(const Duration(seconds: 10));
   } catch (e) {
     _logger.e('❌ Supabase initialization failed: $e');
@@ -309,12 +306,15 @@ class _MyAppState extends State<MyApp> {
     final appLinks = AppLinks();
 
     // Listen for incoming deep links when app is already running
-    appLinks.uriLinkStream.listen((uri) {
-      _logger.i('📧 Deep link received: $uri');
-      _handleDeepLink(uri);
-    }, onError: (Object err) {
-      _logger.e('❌ Deep link error: $err');
-    });
+    appLinks.uriLinkStream.listen(
+      (uri) {
+        _logger.i('📧 Deep link received: $uri');
+        _handleDeepLink(uri);
+      },
+      onError: (Object err) {
+        _logger.e('❌ Deep link error: $err');
+      },
+    );
 
     // Check for deep link when app is launched
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -353,12 +353,14 @@ class _MyAppState extends State<MyApp> {
       context: navigatorKey.currentContext!,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 28),
-            const SizedBox(width: 12),
-            const Text('Email potvrđen!',
-                style: TextStyle(color: Colors.white)),
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 12),
+            Text(
+              'Email potvrđen!',
+              style: TextStyle(color: Colors.white),
+            ),
           ],
         ),
         content: const Text(
@@ -466,7 +468,8 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey, // Dodaj globalni navigator key
       theme: ThemeService.svetlaTema(
-          driverName: _currentDriver), // 🎨 Svetla tema sa vozačem
+        driverName: _currentDriver,
+      ), // 🎨 Svetla tema sa vozačem
       darkTheme: ThemeService.tamnaTema(), // 🎨 Tamna tema za noć
       themeMode: _nocniRezim
           ? ThemeMode.dark

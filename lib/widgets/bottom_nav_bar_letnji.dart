@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import '../utils/slot_utils.dart';
 
 class BottomNavBarLetnji extends StatefulWidget {
-  final List<String> sviPolasci;
-  final String selectedGrad;
-  final String selectedVreme;
-  final void Function(String grad, String vreme) onPolazakChanged;
-  final int Function(String grad, String vreme) getPutnikCount;
-  final bool Function(String grad, String vreme)? isSlotLoading;
   const BottomNavBarLetnji({
     super.key,
     required this.sviPolasci,
@@ -17,6 +11,12 @@ class BottomNavBarLetnji extends StatefulWidget {
     required this.getPutnikCount,
     this.isSlotLoading,
   });
+  final List<String> sviPolasci;
+  final String selectedGrad;
+  final String selectedVreme;
+  final void Function(String grad, String vreme) onPolazakChanged;
+  final int Function(String grad, String vreme) getPutnikCount;
+  final bool Function(String grad, String vreme)? isSlotLoading;
 
   @override
   State<BottomNavBarLetnji> createState() => _BottomNavBarLetnjieState();
@@ -57,7 +57,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
       '13:00',
       '14:00',
       '15:30',
-      '18:00'
+      '18:00',
     ];
     const List<String> vsVremena = [
       '6:00',
@@ -68,7 +68,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
       '14:00',
       '15:30',
       '16:15',
-      '19:00'
+      '19:00',
     ];
 
     if (widget.selectedGrad == 'Bela Crkva') {
@@ -127,7 +127,6 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
               onPolazakChanged: widget.onPolazakChanged,
               getPutnikCount: widget.getPutnikCount,
               isSlotLoading: widget.isSlotLoading,
-              fixedBoxWidth: 56,
               scrollController: _bcScrollController,
             ),
             _PolazakRow(
@@ -139,7 +138,6 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
               onPolazakChanged: widget.onPolazakChanged,
               getPutnikCount: widget.getPutnikCount,
               isSlotLoading: widget.isSlotLoading,
-              fixedBoxWidth: 56,
               scrollController: _vsScrollController,
             ),
           ],
@@ -150,17 +148,6 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
 }
 
 class _PolazakRow extends StatelessWidget {
-  final String label;
-  final List<String> vremena;
-  final String selectedGrad;
-  final String selectedVreme;
-  final String grad;
-  final void Function(String grad, String vreme) onPolazakChanged;
-  final int Function(String grad, String vreme) getPutnikCount;
-  final bool Function(String grad, String vreme)? isSlotLoading;
-  final double fixedBoxWidth;
-  final ScrollController? scrollController;
-
   const _PolazakRow({
     required this.label,
     required this.vremena,
@@ -170,27 +157,36 @@ class _PolazakRow extends StatelessWidget {
     required this.onPolazakChanged,
     required this.getPutnikCount,
     this.isSlotLoading,
-    this.fixedBoxWidth = 56,
     this.scrollController,
     Key? key,
   }) : super(key: key);
+  final String label;
+  final List<String> vremena;
+  final String selectedGrad;
+  final String selectedVreme;
+  final String grad;
+  final void Function(String grad, String vreme) onPolazakChanged;
+  final int Function(String grad, String vreme) getPutnikCount;
+  final bool Function(String grad, String vreme)? isSlotLoading;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 0),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(label,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black,
-                )),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -203,10 +199,11 @@ class _PolazakRow extends StatelessWidget {
                   return GestureDetector(
                     onTap: () => onPolazakChanged(grad, vreme),
                     child: Container(
-                      width: fixedBoxWidth,
+                      width: 60.0,
                       margin: const EdgeInsets.symmetric(horizontal: 2),
                       padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 0),
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: selected
                             ? (isDarkMode
@@ -235,29 +232,31 @@ class _PolazakRow extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Builder(builder: (ctx) {
-                            final loading =
-                                isSlotLoading?.call(grad, vreme) ?? false;
-                            if (loading) {
-                              return const SizedBox(
-                                height: 12,
-                                width: 12,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                          Builder(
+                            builder: (ctx) {
+                              final loading =
+                                  isSlotLoading?.call(grad, vreme) ?? false;
+                              if (loading) {
+                                return const SizedBox(
+                                  height: 12,
+                                  width: 12,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                );
+                              }
+                              return Text(
+                                getPutnikCount(grad, vreme).toString(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: selected
+                                      ? Colors.blue
+                                      : (isDarkMode
+                                          ? Colors.grey[300]
+                                          : Colors.grey[700]),
+                                ),
                               );
-                            }
-                            return Text(
-                              getPutnikCount(grad, vreme).toString(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: selected
-                                    ? Colors.blue
-                                    : (isDarkMode
-                                        ? Colors.grey[300]
-                                        : Colors.grey[700]),
-                              ),
-                            );
-                          }),
+                            },
+                          ),
                         ],
                       ),
                     ),

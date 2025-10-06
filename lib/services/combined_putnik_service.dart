@@ -70,7 +70,10 @@ class CombinedPutnikService {
       final filtered = result.where((putnik) {
         if (grad != null) {
           if (!GradAdresaValidator.isGradMatch(
-              putnik.grad, putnik.adresa, grad)) {
+            putnik.grad,
+            putnik.adresa,
+            grad,
+          )) {
             return false;
           }
         }
@@ -90,7 +93,8 @@ class CombinedPutnikService {
             .map((p) => '${p.ime}@${p.polazak}@${p.grad}')
             .toList();
         dlog(
-            '🔎 [COMBINED] after filtering (grad=$grad, vreme=$vreme): ${filtered.length} -> sample: $sampleFiltered');
+          '🔎 [COMBINED] after filtering (grad=$grad, vreme=$vreme): ${filtered.length} -> sample: $sampleFiltered',
+        );
       } catch (_) {}
 
       return filtered;
@@ -106,7 +110,8 @@ class CombinedPutnikService {
     // PROBLEM: Ni dnevni ni mesečni modeli nemaju potrebna polja i metode
     try {
       dlog(
-          '⚠️ getAllPutniciFromBothTables: Metoda privremeno onemogućena - model refactoring u toku');
+        '⚠️ getAllPutniciFromBothTables: Metoda privremeno onemogućena - model refactoring u toku',
+      );
       return [];
 
       // TODO: Implement kada se kompletira refactoring modela
@@ -129,10 +134,14 @@ class CombinedPutnikService {
 
   /// Resetuje pokupljenja za nova vremena polaska (za kompatibilnost sa starim interfejsom)
   Future<void> resetPokupljenjaNaPolazak(
-      String novoVreme, String grad, String currentDriver) async {
+    String novoVreme,
+    String grad,
+    String currentDriver,
+  ) async {
     try {
       _logger.i(
-          '🔄 RESET POKUPLJENJA - novo vreme: $novoVreme, grad: $grad, vozač: $currentDriver');
+        '🔄 RESET POKUPLJENJA - novo vreme: $novoVreme, grad: $grad, vozač: $currentDriver',
+      );
       // TODO: Implementirati logiku za reset pokupljenja u normalizovanoj šemi
     } catch (e) {
       _logger.e('❌ Error in resetPokupljenjaNaPolazak: $e');

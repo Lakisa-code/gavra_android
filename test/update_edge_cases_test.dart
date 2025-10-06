@@ -12,20 +12,12 @@ void main() {
         putnikIme: 'Null Safety Test',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        // Sva opciona polja null
-        brojTelefona: null,
-        tipSkole: null,
-        adresaBelaCrkva: null,
-        adresaVrsac: null,
-        cena: null,
-        vozac: null,
-        vremePlacanja: null,
       );
 
       final map = putnikSaNullovima.toMap();
@@ -55,7 +47,7 @@ void main() {
         putnikIme: 'Empty Polasci Test',
         tip: 'radnik',
         polasciPoDanu: {}, // Prazan Map
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -77,11 +69,11 @@ void main() {
         putnikIme: 'Extreme Dates Test',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(1900, 1, 1), // Vrlo stari datum
+        datumPocetkaMeseca: DateTime(1900), // Vrlo stari datum
         datumKrajaMeseca: DateTime(2100, 12, 31), // Daleka budućnost
-        createdAt: DateTime(2000, 1, 1),
+        createdAt: DateTime(2000),
         updatedAt: DateTime(2030, 6, 15),
         poslednjePutovanje: DateTime(2025, 12, 31, 23, 59, 59), // Kraj godine
       );
@@ -105,9 +97,9 @@ void main() {
         putnikIme: 'Large Numbers Test',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -139,9 +131,9 @@ void main() {
         putnikIme: 'Милош Đorđević 🚌', // Ćirilica + emoji
         tip: 'đak', // Unicode karakter
         polasciPoDanu: {
-          'понедељак': ['08:00 BC']
+          'понедељак': ['08:00 BC'],
         }, // Ćirilica dan
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -181,7 +173,7 @@ void main() {
         putnikIme: 'Large Polasci Test',
         tip: 'radnik',
         polasciPoDanu: velikiPolasci,
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -195,8 +187,11 @@ void main() {
       expect(map['polasci_po_danu'].keys.length, equals(7));
 
       // Performance check - mora biti brže od 100ms
-      expect(stopwatch.elapsedMilliseconds, lessThan(100),
-          reason: 'toMap() mora biti brž od 100ms čak i sa velikim podacima');
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(100),
+        reason: 'toMap() mora biti brž od 100ms čak i sa velikim podacima',
+      );
 
       print('✅ Performance test - PASSED (${stopwatch.elapsedMilliseconds}ms)');
     });
@@ -209,9 +204,9 @@ void main() {
         putnikIme: 'Price Consistency Test',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -226,9 +221,12 @@ void main() {
       expect(map['ukupna_cena_meseca'], equals(17000.0));
 
       // Proveri da li iznosPlacanja getter radi pravilno
-      expect(putnikCene.iznosPlacanja, equals(15000.0),
-          reason:
-              'iznosPlacanja treba da vrati cena umesto ukupnaCenaMeseca ako postoji');
+      expect(
+        putnikCene.iznosPlacanja,
+        equals(15000.0),
+        reason:
+            'iznosPlacanja treba da vrati cena umesto ukupnaCenaMeseca ako postoji',
+      );
 
       print('✅ Konzistentnost cena test - PASSED');
     });
@@ -241,12 +239,12 @@ void main() {
         putnikIme: 'Original Name',
         tip: 'radnik',
         polasciPoDanu: {
-          'pon': ['08:00 BC']
+          'pon': ['08:00 BC'],
         },
-        datumPocetkaMeseca: DateTime(2025, 10, 1),
+        datumPocetkaMeseca: DateTime(2025, 10),
         datumKrajaMeseca: DateTime(2025, 10, 31),
-        createdAt: DateTime(2025, 10, 1),
-        updatedAt: DateTime(2025, 10, 1),
+        createdAt: DateTime(2025, 10),
+        updatedAt: DateTime(2025, 10),
         cena: 15000.0,
         vozac: 'stari-vozac-uuid',
       );
@@ -265,10 +263,10 @@ void main() {
       expect(izmenjeniPutnik.id, equals('test-copywith'));
       expect(izmenjeniPutnik.tip, equals('radnik'));
       expect(izmenjeniPutnik.vozac, equals('stari-vozac-uuid'));
-      expect(izmenjeniPutnik.createdAt, equals(DateTime(2025, 10, 1)));
+      expect(izmenjeniPutnik.createdAt, equals(DateTime(2025, 10)));
 
       // Ali updatedAt treba da bude nov
-      expect(izmenjeniPutnik.updatedAt, isNot(equals(DateTime(2025, 10, 1))));
+      expect(izmenjeniPutnik.updatedAt, isNot(equals(DateTime(2025, 10))));
 
       print('✅ copyWith method test - PASSED');
     });

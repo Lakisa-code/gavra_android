@@ -50,8 +50,9 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         .gte('timestamp', range.start.toIso8601String())
         .lte('timestamp', range.end.toIso8601String());
     final lokacije = (response as List).cast<Map<String, dynamic>>();
-    lokacije.sort((a, b) =>
-        (a['timestamp'] as String).compareTo(b['timestamp'] as String));
+    lokacije.sort(
+      (a, b) => (a['timestamp'] as String).compareTo(b['timestamp'] as String),
+    );
     double ukupno = 0;
     for (int i = 1; i < lokacije.length; i++) {
       ukupno += _distanceKm(
@@ -112,8 +113,10 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
             ],
           ),
         ),
-        title: const Text('Detaljne statistike',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Detaljne statistike',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.date_range, color: Colors.white),
@@ -130,8 +133,10 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today,
-                      color: Theme.of(context).colorScheme.primary),
+                  Icon(
+                    Icons.calendar_today,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -174,7 +179,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
                             return const Center(
-                                child: CircularProgressIndicator());
+                              child: CircularProgressIndicator(),
+                            );
                           }
 
                           final statistike =
@@ -209,7 +215,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                                   title: Text(
                                     vozac,
                                     style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   subtitle: Text(
                                     'Ukupno: ${stats['dodati']} putnika | Pazar: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
@@ -286,7 +293,9 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                                             builder: (context) {
                                               return FutureBuilder<double>(
                                                 future: _kmZaVozaca(
-                                                    vozac, _selectedRange),
+                                                  vozac,
+                                                  _selectedRange,
+                                                ),
                                                 builder: (context, snapshot) {
                                                   String km;
                                                   Color color = Colors.blueGrey;
@@ -309,7 +318,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                                                   return Padding(
                                                     padding:
                                                         const EdgeInsets.only(
-                                                            top: 8.0),
+                                                      top: 8.0,
+                                                    ),
                                                     child: _StatRow(
                                                       icon: Icons.route,
                                                       color: color,
@@ -379,12 +389,6 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 }
 
 class _StatRow extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String label;
-  final String value;
-  final bool isTotal;
-
   const _StatRow({
     required this.icon,
     required this.color,
@@ -392,6 +396,11 @@ class _StatRow extends StatelessWidget {
     required this.value,
     this.isTotal = false,
   });
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+  final bool isTotal;
 
   @override
   Widget build(BuildContext context) {

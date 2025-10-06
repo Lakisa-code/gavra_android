@@ -40,10 +40,7 @@ class LocalNotificationService {
       'Gavra Realtime Notifikacije',
       description: 'Kanal za realtime heads-up notifikacije sa zvukom',
       importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
       enableLights: true,
-      showBadge: true,
     );
 
     await flutterLocalNotificationsPlugin
@@ -85,16 +82,11 @@ class LocalNotificationService {
             importance: Importance.max,
             priority: Priority.high,
             playSound: false, // Mi ćemo custom zvuk
-            enableVibration: true,
             enableLights: true,
-            showWhen: true,
             when: DateTime.now().millisecondsSinceEpoch,
             fullScreenIntent: true, // Za lock screen
             category: AndroidNotificationCategory.call, // Visok prioritet
             visibility: NotificationVisibility.public, // Prikaži na lock screen
-            autoCancel: true,
-            ongoing: false,
-            showProgress: false,
             ticker: '$title - $body',
             largeIcon:
                 const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
@@ -160,8 +152,6 @@ class LocalNotificationService {
         importance: Importance.max,
         priority: Priority.high,
         playSound: false,
-        enableVibration: true,
-        showWhen: true,
       );
 
       const NotificationDetails platformChannelSpecifics = NotificationDetails(
@@ -182,7 +172,8 @@ class LocalNotificationService {
 
   /// Handle notification tap - navigate to passenger with filters
   static Future<void> _handleNotificationTap(
-      NotificationResponse response) async {
+    NotificationResponse response,
+  ) async {
     try {
       final context = navigatorKey.currentContext;
       if (context == null) return;
@@ -285,12 +276,14 @@ class LocalNotificationService {
                 Icon(icon, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(
-                    child: Text(message,
-                        style: const TextStyle(color: Colors.white))),
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
               ],
             ),
             backgroundColor: bgColor,
-            duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: 'OK',
               textColor: Colors.white,
@@ -320,7 +313,6 @@ class LocalNotificationService {
     await showRealtimeNotification(
       title: title,
       body: body,
-      playCustomSound: true,
     );
   }
 
@@ -336,20 +328,22 @@ class LocalNotificationService {
 
   /// 🔍 FETCH PUTNIK DATA FROM DATABASE BY NAME
   static Future<Map<String, dynamic>?> _fetchPutnikFromDatabase(
-      String putnikIme) async {
+    String putnikIme,
+  ) async {
     try {
       final supabase = Supabase.instance.client;
 
       // Traži u putovanja_istorija tabeli (dnevni putnici)
       final dnevniResult = await SupabaseSafe.run(
-          () => supabase
-              .from('putovanja_istorija')
-              .select('putnik_ime, grad, vreme_polaska, dan, polazak')
-              .eq('putnik_ime', putnikIme)
-              .eq('obrisan', false)
-              .order('created_at', ascending: false)
-              .limit(1),
-          fallback: <dynamic>[]);
+        () => supabase
+            .from('putovanja_istorija')
+            .select('putnik_ime, grad, vreme_polaska, dan, polazak')
+            .eq('putnik_ime', putnikIme)
+            .eq('obrisan', false)
+            .order('created_at', ascending: false)
+            .limit(1),
+        fallback: <dynamic>[],
+      );
 
       if (dnevniResult is List && dnevniResult.isNotEmpty) {
         final data = dnevniResult.first;
@@ -357,7 +351,7 @@ class LocalNotificationService {
           'grad': data['grad'],
           'polazak': data['vreme_polaska'] ?? data['polazak'],
           'dan': data['dan'],
-          'tip': 'dnevni'
+          'tip': 'dnevni',
         };
       }
 
@@ -402,7 +396,7 @@ class LocalNotificationService {
             'grad': grad,
             'polazak': polazak,
             'dan': danNedelje,
-            'tip': 'mesecni'
+            'tip': 'mesecni',
           };
         }
       }

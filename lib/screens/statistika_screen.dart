@@ -94,9 +94,12 @@ class _StatistikaScreenState extends State<StatistikaScreen>
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.dangerPrimary),
-            child: const Text('DA, RESETUJ',
-                style: TextStyle(color: Colors.white)),
+              backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
+            ),
+            child: const Text(
+              'DA, RESETUJ',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -250,7 +253,6 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Colors.white.withOpacity(0.4),
-                                        width: 1,
                                       ),
                                     ),
                                     child: Center(
@@ -281,7 +283,6 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Colors.white.withOpacity(0.4),
-                                        width: 1,
                                       ),
                                     ),
                                     child: Center(
@@ -312,7 +313,6 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: Colors.white.withOpacity(0.4),
-                              width: 1,
                             ),
                           ),
                           child: DropdownButtonHideUnderline(
@@ -331,24 +331,28 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                 fontSize: 12,
                               ),
                               items: _periods
-                                  .map((p) => DropdownMenuItem(
-                                        value: p,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 8, vertical: 4),
-                                          child: Center(
-                                            child: Text(
-                                              _periodLabel(p),
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
-                                              textAlign: TextAlign.center,
+                                  .map(
+                                    (p) => DropdownMenuItem(
+                                      value: p,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            _periodLabel(p),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
                                             ),
+                                            textAlign: TextAlign.center,
                                           ),
                                         ),
-                                      ))
+                                      ),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (v) {
                                 if (v != null) setState(() => _period = v);
@@ -367,7 +371,6 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: Colors.white.withOpacity(0.4),
-                                width: 1,
                               ),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -386,24 +389,28 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                   fontSize: 12,
                                 ),
                                 items: _availableYears
-                                    .map((year) => DropdownMenuItem(
-                                          value: year,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4),
-                                            child: Center(
-                                              child: Text(
-                                                '$year',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
-                                                ),
-                                                textAlign: TextAlign.center,
+                                    .map(
+                                      (year) => DropdownMenuItem(
+                                        value: year,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              '$year',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.white,
                                               ),
+                                              textAlign: TextAlign.center,
                                             ),
                                           ),
-                                        ))
+                                        ),
+                                      ),
+                                    )
                                     .toList(),
                                 onChanged: (v) {
                                   if (v != null) {
@@ -470,11 +477,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       final petak = ponedeljak.add(const Duration(days: 4));
       to = DateTime(petak.year, petak.month, petak.day, 23, 59, 59);
     } else if (_period == 'mesec') {
-      from = DateTime(now.year, now.month, 1);
+      from = DateTime(now.year, now.month);
       to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
     } else {
       // 🔧 FIX: Koristi selektovanu godinu umesto now.year
-      from = DateTime(_selectedYear, 1, 1);
+      from = DateTime(_selectedYear);
       to = DateTime(_selectedYear, 12, 31, 23, 59, 59);
     }
 
@@ -496,7 +503,8 @@ class _StatistikaScreenState extends State<StatistikaScreen>
 
         // 🔄 REAL-TIME PAZAR STREAM sa kombinovanim putnicima (uključuje mesečne karte)
         dlog(
-            '🎯 [VOZAČI TAB] Pozivam streamPazarSvihVozaca sa from: ${from.toString()}, to: ${to.toString()}');
+          '🎯 [VOZAČI TAB] Pozivam streamPazarSvihVozaca sa from: ${from.toString()}, to: ${to.toString()}',
+        );
         return StreamBuilder<Map<String, double>>(
           stream: StatistikaService.streamPazarSvihVozaca(
             from: from,
@@ -504,7 +512,8 @@ class _StatistikaScreenState extends State<StatistikaScreen>
           ),
           builder: (context, pazarSnapshot) {
             dlog(
-                '📊 VOZAČI TAB STREAM STATE: ${pazarSnapshot.connectionState}');
+              '📊 VOZAČI TAB STREAM STATE: ${pazarSnapshot.connectionState}',
+            );
             dlog('📊 VOZAČI TAB HAS DATA: ${pazarSnapshot.hasData}');
             dlog('📊 VOZAČI TAB DATA: ${pazarSnapshot.data}');
 
@@ -518,9 +527,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.dangerPrimary),
+                    Icon(
+                      Icons.error,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.dangerPrimary,
+                    ),
                     const SizedBox(height: 16),
                     Text('Greška: ${pazarSnapshot.error}'),
                     ElevatedButton(
@@ -552,7 +563,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                 padding: const EdgeInsets.all(16.0),
                 child: StreamBuilder<Map<String, Map<String, dynamic>>>(
                   stream: StatistikaService.streamDetaljneStatistikePoVozacima(
-                      from, to),
+                    from,
+                    to,
+                  ),
                   builder: (context, detaljneSnapshot) {
                     if (detaljneSnapshot.connectionState ==
                         ConnectionState.waiting) {
@@ -648,43 +661,54 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                           ),
                           const SizedBox(height: 12),
                           _buildStatRow(
-                              'Dodati putnici',
-                              stats['dodati'],
-                              Icons.add_circle,
-                              Theme.of(context).colorScheme.primary),
+                            'Dodati putnici',
+                            stats['dodati'],
+                            Icons.add_circle,
+                            Theme.of(context).colorScheme.primary,
+                          ),
                           _buildStatRow(
-                              'Otkazani',
-                              stats['otkazani'],
-                              Icons.cancel,
-                              Theme.of(context).colorScheme.dangerPrimary),
+                            'Otkazani',
+                            stats['otkazani'],
+                            Icons.cancel,
+                            Theme.of(context).colorScheme.dangerPrimary,
+                          ),
                           _buildStatRow(
-                              'Naplaćeni',
-                              stats['naplaceni'],
-                              Icons.payment,
-                              Theme.of(context).colorScheme.successPrimary),
+                            'Naplaćeni',
+                            stats['naplaceni'],
+                            Icons.payment,
+                            Theme.of(context).colorScheme.successPrimary,
+                          ),
                           _buildStatRow(
-                              'Pokupljeni',
-                              stats['pokupljeni'],
-                              Icons.check_circle,
-                              Theme.of(context).colorScheme.studentPrimary),
+                            'Pokupljeni',
+                            stats['pokupljeni'],
+                            Icons.check_circle,
+                            Theme.of(context).colorScheme.studentPrimary,
+                          ),
                           _buildStatRow(
-                              'Dugovi',
-                              stats['dugovi'],
-                              Icons.warning,
-                              Theme.of(context).colorScheme.dangerPrimary),
-                          _buildStatRow('Mesečne karte', stats['mesecneKarte'],
-                              Icons.card_membership, Colors.purple),
+                            'Dugovi',
+                            stats['dugovi'],
+                            Icons.warning,
+                            Theme.of(context).colorScheme.dangerPrimary,
+                          ),
                           _buildStatRow(
-                              'Kilometraža',
-                              '${(stats['kilometraza'] ?? 0.0).toStringAsFixed(1)} km',
-                              Icons.route,
-                              Theme.of(context).colorScheme.workerPrimary),
+                            'Mesečne karte',
+                            stats['mesecneKarte'],
+                            Icons.card_membership,
+                            Colors.purple,
+                          ),
+                          _buildStatRow(
+                            'Kilometraža',
+                            '${(stats['kilometraza'] ?? 0.0).toStringAsFixed(1)} km',
+                            Icons.route,
+                            Theme.of(context).colorScheme.workerPrimary,
+                          ),
                           const Divider(color: Colors.white24),
                           _buildStatRow(
-                              'Ukupno pazar',
-                              '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
-                              Icons.monetization_on,
-                              Colors.amber),
+                            'Ukupno pazar',
+                            '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
+                            Icons.monetization_on,
+                            Colors.amber,
+                          ),
                         ],
                       ),
                     ),
@@ -699,7 +723,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   }
 
   Widget _buildStatRow(
-      String label, dynamic value, IconData icon, Color color) {
+    String label,
+    dynamic value,
+    IconData icon,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -709,7 +737,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
           Text(
             '$label: ',
             style: TextStyle(
-                color: Colors.grey[700], fontSize: 14), // 🎨 Tamniji tekst
+              color: Colors.grey[700],
+              fontSize: 14,
+            ), // 🎨 Tamniji tekst
           ),
           Text(
             value.toString(),
