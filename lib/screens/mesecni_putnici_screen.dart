@@ -45,7 +45,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late final Stream<String> _debouncedSearchStream;
 
   // 🔄 OPTIMIZACIJA: Connection resilience
-  StreamSubscription? _connectionSubscription;
+  StreamSubscription<dynamic>? _connectionSubscription;
   bool _isConnected = true;
 
   // Form controllers
@@ -537,7 +537,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       // Deserialize result back to MesecniPutnik
                       (resultList as List)
                           .map((m) => MesecniPutnik.fromMap(
-                              Map<String, dynamic>.from(m)))
+                              Map<String, dynamic>.from(m as Map)))
                           .toList());
                 },
               ).asyncExpand((future) => Stream.fromFuture(future)),
@@ -1734,7 +1734,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     final mq = MediaQuery.of(context);
     if (mq.size.height < 700 || mq.size.width < 600) {
-      showModalBottomSheet(
+      showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -1748,7 +1748,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         ),
       );
     } else {
-      showDialog(
+      showDialog<void>(
           context: context, builder: (context) => dialogBuilder(context));
     }
   }
@@ -1893,7 +1893,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         'pet': true,
       };
     });
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => Dialog(
         child: ConstrainedBox(
@@ -3179,7 +3179,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       return;
     }
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -3317,7 +3317,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       iznosController.text = putnik.cena!.toStringAsFixed(0);
     }
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
@@ -3511,7 +3511,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   Future<void> _prikaziDetaljneStatistike(MesecniPutnik putnik) async {
     String selectedPeriod = _getCurrentMonthYear();
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
@@ -3853,7 +3853,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               _buildStatRow('🚗 Putovanja:', '${stats['putovanja'] ?? 0}'),
               _buildStatRow('❌ Otkazivanja:', '${stats['otkazivanja'] ?? 0}'),
               _buildStatRow('🔄 Poslednje putovanje:',
-                  stats['poslednje'] ?? 'Nema podataka'),
+                  stats['poslednje'] as String? ?? 'Nema podataka'),
               _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
               if (period == 'all_time' && stats['ukupan_prihod'] != null)
                 _buildStatRow(
@@ -3938,7 +3938,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           'error': true,
         };
       }
-    }).handleError((error) {
+    }).handleError((Object error) {
       dlog('❌ Stream error za statistike: $error');
       return {
         'putovanja': 0,
@@ -3971,13 +3971,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     for (final record in response) {
       if (record['status'] == 'pokupljen') {
         putovanja++;
-        ukupanPrihod += (record['iznos_placanja'] ?? 0).toDouble();
+        ukupanPrihod += ((record['iznos_placanja'] ?? 0) as num).toDouble();
       } else if (record['status'] == 'otkazan') {
         otkazivanja++;
       }
 
       if (poslednje == null && record['created_at'] != null) {
-        final datum = DateTime.parse(record['created_at']);
+        final datum = DateTime.parse(record['created_at'] as String);
         poslednje = '${datum.day}/${datum.month}/${datum.year}';
       }
     }
@@ -4010,13 +4010,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     for (final record in response) {
       if (record['status'] == 'pokupljen') {
         putovanja++;
-        ukupanPrihod += (record['iznos_placanja'] ?? 0).toDouble();
+        ukupanPrihod += ((record['iznos_placanja'] ?? 0) as num).toDouble();
       } else if (record['status'] == 'otkazan') {
         otkazivanja++;
       }
 
       if (poslednje == null && record['created_at'] != null) {
-        final datum = DateTime.parse(record['created_at']);
+        final datum = DateTime.parse(record['created_at'] as String);
         poslednje = '${datum.day}/${datum.month}/${datum.year}';
       }
     }
@@ -4800,7 +4800,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Snimanje fajla - implementacija u toku
       // Za sada samo prikaži CSV sadržaj u dialog-u
       if (mounted) {
-        showDialog(
+        showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Export CSV'),
