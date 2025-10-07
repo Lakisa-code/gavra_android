@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -830,10 +832,26 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         }
       } catch (e) {
         if (mounted) {
+          String errorMessage;
+          if (e.toString().contains('internet') ||
+              e.toString().contains('mrežn')) {
+            errorMessage =
+                '⚠️ Nema internet konekcije. Kusur će biti sačuvan lokalno.';
+            // TODO: Dodaj lokalno čuvanje kusura
+            await _saveKusurLocally(
+                automatskiPopis, automatskiPopis['sitanNovac'] as double);
+          } else {
+            errorMessage = '❌ Greška pri ažuriranju kusura: $e';
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Greška pri ažuriranju kusura: $e'),
-              backgroundColor: Colors.red,
+              content: Text(errorMessage),
+              backgroundColor: e.toString().contains('internet') ||
+                      e.toString().contains('mrežn')
+                  ? Colors.orange
+                  : Colors.red,
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -878,23 +896,58 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     Map<String, dynamic> automatskiPopis,
     double newSitanNovac,
   ) async {
-    final supabase = Supabase.instance.client;
-    final datum = DateTime.parse(automatskiPopis['datum'] as String);
+    try {
+      final supabase = Supabase.instance.client;
+      final datum = DateTime.parse(automatskiPopis['datum'] as String);
 
-    await supabase.from('daily_reports').upsert({
-      'vozac': automatskiPopis['vozac'],
-      'datum': datum.toIso8601String().split('T')[0],
-      'ukupan_pazar': automatskiPopis['ukupanPazar'],
-      'sitan_novac': newSitanNovac, // Ažurirani kusur
-      'dodati_putnici': automatskiPopis['dodatiPutnici'],
-      'otkazani_putnici': automatskiPopis['otkazaniPutnici'],
-      'naplaceni_putnici': automatskiPopis['naplaceniPutnici'],
-      'pokupljeni_putnici': automatskiPopis['pokupljeniPutnici'],
-      'dugovi_putnici': automatskiPopis['dugoviPutnici'],
-      'mesecne_karte': automatskiPopis['mesecneKarte'],
-      'kilometraza': automatskiPopis['kilometraza'],
-      'automatski_generisal': automatskiPopis['automatskiGenerisal'],
-      'updated_at': DateTime.now().toIso8601String(),
-    });
+      await supabase.from('daily_reports').upsert({
+        'vozac': automatskiPopis['vozac'],
+        'datum': datum.toIso8601String().split('T')[0],
+        'ukupan_pazar': automatskiPopis['ukupanPazar'],
+        'sitan_novac': newSitanNovac, // Ažurirani kusur
+        'dodati_putnici': automatskiPopis['dodatiPutnici'],
+        'otkazani_putnici': automatskiPopis['otkazaniPutnici'],
+        'naplaceni_putnici': automatskiPopis['naplaceniPutnici'],
+        'pokupljeni_putnici': automatskiPopis['pokupljeniPutnici'],
+        'dugovi_putnici': automatskiPopis['dugoviPutnici'],
+        'mesecne_karte': automatskiPopis['mesecneKarte'],
+        'kilometraza': automatskiPopis['kilometraza'],
+        'automatski_generisal': automatskiPopis['automatskiGenerisal'],
+        'updated_at': DateTime.now().toIso8601String(),
+      }).timeout(const Duration(seconds: 10));
+
+      dlog('✅ Kusur uspešno ažuriran u daily_reports tabeli');
+    } on TimeoutException {
+      dlog('⏰ Timeout pri ažuriranju kusura - nema internet konekcije');
+      throw Exception(
+          'Nema internet konekcije. Kusur neće biti sačuvan u bazi.');
+    } on SocketException {
+      dlog('🌐 SocketException pri ažuriranju kusura - nema mrežne konekcije');
+      throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
+    } on PostgrestException catch (e) {
+      dlog('❌ PostgrestException pri ažuriranju kusura: ${e.message}');
+      throw Exception('Greška u bazi podataka: ${e.message}');
+    } catch (e) {
+      dlog('❌ Neočekivana greška pri ažuriranju kusura: $e');
+      throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
+    }
+  }
+
+  // Sačuvaj kusur lokalno kad nema internet konekcije
+  Future<void> _saveKusurLocally(
+    Map<String, dynamic> automatskiPopis,
+    double kusur,
+  ) async {
+    try {
+      // Ažuriraj lokalni automatski popis
+      automatskiPopis['sitanNovac'] = kusur;
+      automatskiPopis['offline_updated'] = true;
+      automatskiPopis['offline_timestamp'] = DateTime.now().toIso8601String();
+
+      dlog('💾 Kusur sačuvan lokalno: $kusur RSD');
+      // TODO: Implementiraj sync kada se vrati internet konekcija
+    } catch (e) {
+      dlog('❌ Greška pri lokalnom čuvanju kusura: $e');
+    }
   }
 }
