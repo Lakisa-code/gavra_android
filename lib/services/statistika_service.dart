@@ -104,14 +104,24 @@ class StatistikaService {
     double ukupno = 0.0;
 
     for (final putnik in kombinovaniPutnici) {
-      if (_jePazarValjan(putnik) &&
-          putnik.vozac == vozac &&
-          putnik.vremePlacanja != null &&
-          _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-        final iznos = putnik.iznosPlacanja!;
-        ukupno += iznos;
-
-        // putnik.mesecnaKarta == true ? 'MESEČNI' : 'DNEVNI';
+      if (_jePazarValjan(putnik) && putnik.vozac == vozac) {
+        // 🎫 MESEČNI PUTNICI - računaju se SAMO u dan plaćanja!
+        if (putnik.mesecnaKarta == true) {
+          // Za mesečne putnike, računaj pazar SAMO ako je plaćen u traženom opsegu
+          if (putnik.vremePlacanja != null &&
+              _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+            final iznos = putnik.iznosPlacanja!;
+            ukupno += iznos;
+          }
+        }
+        // 💰 DNEVNI PUTNICI - računaju se samo za određeni datum
+        else {
+          if (putnik.vremePlacanja != null &&
+              _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+            final iznos = putnik.iznosPlacanja!;
+            ukupno += iznos;
+          }
+        }
       }
     }
     return ukupno;
@@ -347,11 +357,9 @@ class StatistikaService {
       for (final putnik in putnici) {
         if (putnik.mesecnaKarta == true) {
           // Za mesečne putnike, grupisi po imenu (samo prvi valjan putnik)
+          // ✅ UKLONJENA DUPLA PROVERA DATUMA - proverava se samo u finalnom računanju
           if (!mesecniPutniciGrupisani.containsKey(putnik.ime) &&
-              _jePazarValjan(putnik) &&
-              putnik.vremePlacanja != null &&
-              putnik.vozac != null &&
-              _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+              _jePazarValjan(putnik)) {
             mesecniPutniciGrupisani[putnik.ime] = putnik;
           }
         } else {
@@ -797,8 +805,25 @@ class StatistikaService {
           if (!grupisaniMesecniPutnici.containsKey(kljuc)) {
             grupisaniMesecniPutnici[kljuc] = putnik;
           }
-        } else {}
-      } else {}
+        } else {
+          // DEBUG: Zašto se Ana Cortan ne uključuje?
+          if (putnik.putnikIme.toLowerCase().contains('ana')) {
+            print(
+                '🔍 DEBUG Ana Cortan: jePlacen=${putnik.jePlacen}, vremePlacanja=${putnik.vremePlacanja}, mesecniFrom=$mesecniFrom, mesecniTo=$mesecniTo');
+            if (putnik.vremePlacanja != null) {
+              final u_opsegu = _jeUVremenskomOpsegu(
+                  putnik.vremePlacanja, mesecniFrom, mesecniTo);
+              print('🔍 DEBUG Ana Cortan u opsegu: $u_opsegu');
+            }
+          }
+        }
+      } else {
+        // DEBUG: Ana nije plaćena?
+        if (putnik.putnikIme.toLowerCase().contains('ana')) {
+          print(
+              '🔍 DEBUG Ana Cortan NIJE PLAĆENA: jePlacen=${putnik.jePlacen}, cena=${putnik.cena}');
+        }
+      }
     }
 
     // 🎫 PROCES GRUPISANIH MESEČNIH PUTNIKA

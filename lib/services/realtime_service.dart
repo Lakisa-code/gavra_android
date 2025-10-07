@@ -144,8 +144,8 @@ class RealtimeService {
     });
     */
 
-    // 🆕 dnevni_putnici (umesto putovanja_istorija)
-    _putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
+    // 🔄 PUTOVANJA ISTORIJA - umesto dnevni_putnici
+    _putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in (data as List<dynamic>)) {
@@ -157,10 +157,11 @@ class RealtimeService {
         try {
           final sample = rows
               .take(5)
-              .map((r) => r['ime'] ?? r['id']?.toString() ?? r.toString())
+              .map(
+                  (r) => r['putnik_ime'] ?? r['id']?.toString() ?? r.toString())
               .toList();
           dlog(
-            '🔔 [REALTIME] dnevni_putnici rows: ${rows.length}; sample: $sample',
+            '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample: $sample',
           );
         } catch (_) {}
         if (!_putovanjaController.isClosed) {
@@ -168,7 +169,7 @@ class RealtimeService {
         }
         _emitCombinedPutnici();
       } catch (e) {
-        dlog('❌ [REALTIME] Error processing dnevni_putnici: $e');
+        dlog('❌ [REALTIME] Error processing putovanja_istorija: $e');
       }
     });
 
@@ -238,14 +239,14 @@ class RealtimeService {
     try {
       final combined = <Putnik>[];
 
-      // 🆕 Convert dnevni_putnici rows (umesto putovanja_istorija)
+      // 🔄 Convert putovanja_istorija rows to Putnik objects
       for (final r in _lastPutovanjaRows) {
         try {
-          // 🔄 Za dnevne putnike, kreiraj Putnik objekat direktno
+          // 🔄 Za putovanja istorija, kreiraj Putnik objekat iz istorije
           final putnik = Putnik(
             id: r['id'] as String? ?? '',
-            ime: r['ime'] as String? ?? '',
-            polazak: r['polazak'] as String? ?? '',
+            ime: r['putnik_ime'] as String? ?? '',
+            polazak: r['vreme_polaska'] as String? ?? '',
             grad: r['grad'] as String? ?? '',
             dan: r['dan'] as String? ?? '',
             adresa: r['adresa'] as String?,
