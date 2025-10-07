@@ -63,7 +63,9 @@ class PutnikService {
               return await supabase
                   .from('putovanja_istorija')
                   .select()
-                  .eq('datum', isoDate)
+                  .gte('created_at', '${isoDate}T00:00:00.000Z')
+                  .lt('created_at',
+                      '${DateTime.parse(isoDate).add(Duration(days: 1)).toIso8601String().split('T')[0]}T00:00:00.000Z')
                   .eq('tip_putnika', 'dnevni');
             }
             return await supabase

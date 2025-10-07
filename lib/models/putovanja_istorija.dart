@@ -31,7 +31,7 @@ class PutovanjaIstorija {
       id: map['id'] as String,
       mesecniPutnikId: map['mesecni_putnik_id'] as String?,
       tipPutnika: map['tip_putnika'] as String,
-      datum: DateTime.parse(map['datum'] as String),
+      datum: DateTime.parse(map['datum_putovanja'] as String),
       vremePolaska: map['vreme_polaska'] as String,
       vremeAkcije: map['vreme_pokupljenja'] != null
           ? DateTime.parse(map['vreme_pokupljenja'] as String)
@@ -93,7 +93,7 @@ class PutovanjaIstorija {
       'id': id,
       'mesecni_putnik_id': mesecniPutnikId,
       'tip_putnika': tipPutnika,
-      'datum': datum.toIso8601String().split('T')[0],
+      'datum_putovanja': datum.toIso8601String().split('T')[0],
       'vreme_polaska': vremePolaska,
       'adresa_polaska': adresaPolaska,
       'status':

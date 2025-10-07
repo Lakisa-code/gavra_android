@@ -250,7 +250,7 @@ class RealtimeService {
             grad: r['grad'] as String? ?? '',
             dan: r['dan'] as String? ?? '',
             adresa: r['adresa'] as String?,
-            datum: r['datum']?.toString(),
+            datum: r['datum_putovanja']?.toString(),
             status: r['status'] as String?,
             obrisan: r['obrisan'] == true,
             mesecnaKarta: false, // dnevni putnici nemaju mesečnu kartu

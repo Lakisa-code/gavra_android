@@ -101,7 +101,7 @@ class PutovanjaIstorijaService {
         () => _supabase
             .from('putovanja_istorija')
             .select()
-            .order('datum', ascending: false)
+            .order('datum_putovanja', ascending: false)
             .order('vreme_polaska', ascending: false),
         fallback: <dynamic>[],
       );
@@ -131,7 +131,7 @@ class PutovanjaIstorijaService {
         () => _supabase
             .from('putovanja_istorija')
             .select()
-            .eq('datum', datumStr)
+            .eq('datum_putovanja', datumStr)
             .order('vreme_polaska'),
         fallback: <dynamic>[],
       );
