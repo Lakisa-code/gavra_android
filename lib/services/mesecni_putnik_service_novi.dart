@@ -266,9 +266,9 @@ class MesecniPutnikServiceNovi {
           .from('putovanja_istorija')
           .select('id')
           .eq('mesecni_putnik_id', putnikId)
-          .eq('tip_putnika', 'mesecna_karta')
-          .eq('placeni_mesec', pocetakMeseca.month)
-          .eq('placena_godina', pocetakMeseca.year)
+          .eq('tip_putnika', 'mesecni')
+          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
+          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
           .eq('status', 'placeno')
           .limit(1);
 
@@ -278,7 +278,7 @@ class MesecniPutnikServiceNovi {
         );
         // Ažuriraj postojeći zapis umesto kreiranja novog
         await _supabase.from('putovanja_istorija').update({
-          'naplata_vozac': vozacId,
+          'vozac_id': validVozacId,
           'cena': iznos,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', existingPayment.first['id'] as String);
@@ -290,15 +290,12 @@ class MesecniPutnikServiceNovi {
           await _supabase.from('putovanja_istorija').insert({
             'mesecni_putnik_id': putnikId,
             'putnik_ime': putnik.putnikIme,
-            'tip_putnika':
-                'mesecni', // ✅ ISPRAVKA: koristi 'mesecni' umesto 'mesecna_karta'
+            'tip_putnika': 'mesecni',
             'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
             'vreme_polaska': 'mesecno_placanje',
             'status': 'placeno',
-            'vozac_id': vozacId, // ✅ ISPRAVKA: vozac_id umesto naplata_vozac
+            'vozac_id': validVozacId,
             'cena': iznos,
-            'placeni_mesec': pocetakMeseca.month,
-            'placena_godina': pocetakMeseca.year,
             'napomene':
                 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
           });
