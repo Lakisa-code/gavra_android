@@ -1,5 +1,6 @@
 import '../utils/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 
 import '../models/putnik.dart';
 import 'package:rxdart/rxdart.dart';
@@ -490,11 +491,7 @@ class PutnikService {
             await supabase.from(tabela).update({
               'cena': null, // ✅ RESETUJ cenu za mesecne putnike
               'vreme_placanja': null, // ✅ RESETUJ vreme placanja
-              'vozac_id': (lastAction.oldData['vozac'] == null ||
-                      lastAction.oldData['vozac'].toString().isEmpty)
-                  ? null
-                  : lastAction.oldData['vozac'], // UUID validacija
-              'naplata_vozac': null, // ✅ RESETUJ naplatu vozaca
+              'vozac_id': null, // ✅ RESETUJ vozača kao UUID (uklanja i legacy)
             }).eq('id', lastAction.putnikId as String);
           } else {
             await supabase.from(tabela).update({
@@ -1157,24 +1154,31 @@ class PutnikService {
       // Za mesečne putnike ažuriraj SVE potrebne kolone za plaćanje
       final now = DateTime.now();
       dlog('🔧 [OZNACI PLACENO] Ažuriram mesečnog putnika sa cena: $iznos');
+
+      // Konvertuj ime vozača u UUID ako nije već UUID
+      String? validVozacId = naplatioVozac.isEmpty
+          ? null
+          : (VozacMappingService.getVozacUuid(naplatioVozac) ?? naplatioVozac);
+
       await supabase.from(tabela).update({
         'cena': iznos, // ✅ CENA mesečne karte
         'vreme_placanja': now.toIso8601String(), // ✅ TIMESTAMP plaćanja
-        'vozac_id':
-            (naplatioVozac.isEmpty) ? null : naplatioVozac, // UUID validacija
-        'naplata_vozac':
-            naplatioVozac, // ✅ NOVA KOLONA - vozač koji je naplatu izvršio
+        'vozac_id': validVozacId, // ✅ STANDARDIZOVANO - samo vozac_id (UUID)
         'updated_at': now.toIso8601String(), // ✅ AŽURIRAJ timestamp
       }).eq('id', id as String);
       dlog('✅ [OZNACI PLACENO] Mesečni putnik uspešno plaćen');
     } else {
       // Za putovanja_istorija koristi cena kolonu
       dlog('🔧 [OZNACI PLACENO] Ažuriram dnevnog putnika sa cena: $iznos');
+
+      // Konvertuj ime vozača u UUID ako nije već UUID
+      String? validVozacId = naplatioVozac.isEmpty
+          ? null
+          : (VozacMappingService.getVozacUuid(naplatioVozac) ?? naplatioVozac);
+
       await supabase.from(tabela).update({
         'cena': iznos,
-        'naplata_vozac':
-            naplatioVozac, // ✅ NOVA KOLONA - vozač koji je naplatu izvršio
-        // 'vreme_akcije': now.toIso8601String(), // UKLONITI - kolona ne postoji
+        'vozac_id': validVozacId, // ✅ STANDARDIZOVANO - samo vozac_id (UUID)
         'status': 'placen', // ✅ DODAJ STATUS plaćanja
       }).eq('id', id as String);
       dlog('✅ [OZNACI PLACENO] Dnevni putnik uspešno plaćen');
@@ -1854,7 +1858,7 @@ class PutnikService {
       final mesecnaPlacanja = await supabase
           .from('mesecni_putnici')
           .select(
-            'cena, vreme_placanja, naplata_vozac, placeni_mesec, placena_godina',
+            'cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina',
           )
           .eq('putnik_ime', putnikIme)
           .not('vreme_placanja', 'is', null)
@@ -1865,7 +1869,8 @@ class PutnikService {
         svaPlacanja.add({
           'cena': mesecno['cena'],
           'created_at': mesecno['vreme_placanja'],
-          'vozac_ime': mesecno['naplata_vozac'], // Za konsistentnost sa UI
+          'vozac_ime': VozacMappingService.getVozacImeWithFallback(
+              mesecno['vozac_id'] as String?), // UUID->ime konverzija
           'putnik_ime': putnikIme,
           'tip': 'mesecna_karta',
           'placeniMesec': mesecno['placeni_mesec'],

@@ -1030,7 +1030,7 @@ class MesecniPutnikService {
       await _supabase.from('mesecni_putnici').update({
         'cena': iznos,
         'vreme_placanja': DateTime.now().toIso8601String(),
-        'naplata_vozac': vozac, // Vozač koji je naplatio
+        'vozac_id': vozac, // Vozač koji je naplatio (kao UUID)
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
@@ -1058,7 +1058,7 @@ class MesecniPutnikService {
       await _supabase.from('mesecni_putnici').update({
         'cena': iznos,
         'vreme_placanja': vremePlace, // Stvarni datum plaćanja
-        'naplata_vozac': vozac, // Vozač koji je naplatio
+        'vozac_id': vozac, // Vozač koji je naplatio (kao UUID)
         'updated_at': DateTime.now().toIso8601String(),
         // Dodaj informacije o tome za koji mesec je plaćeno
         'placeni_mesec': pocetakMeseca.month,

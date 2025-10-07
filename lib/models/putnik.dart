@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'mesecni_putnik.dart';
 import '../utils/mesecni_helpers.dart';
+import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 
 // Enum za statuse putnika
 enum PutnikStatus {
@@ -131,7 +132,8 @@ class Putnik {
       placeno: MesecniHelpers.priceIsPaid(map),
       iznosPlacanja: _parseDouble(map['cena']), // koristi cena kolonu
       naplatioVozac: MesecniHelpers.priceIsPaid(map)
-          ? (map['naplata_vozac'] as String?)
+          ? VozacMappingService.getVozacImeWithFallback(
+              map['vozac_id'] as String?)
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
       dodaoVozac: map['dodao_vozac'] as String?,
@@ -408,8 +410,8 @@ class Putnik {
           placeno: placeno,
           iznosPlacanja: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? map['naplata_vozac']
-                  as String? // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+              ? VozacMappingService.getVozacImeWithFallback(
+                  map['vozac_id'] as String?)
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac']
               as String?, // ✅ NOVA KOLONA za pokupljanje
@@ -456,8 +458,8 @@ class Putnik {
           placeno: placeno,
           iznosPlacanja: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? map['naplata_vozac']
-                  as String? // ✅ ISPRAVLJENO: koristi naplata_vozac kolonu
+              ? VozacMappingService.getVozacImeWithFallback(
+                  map['vozac_id'] as String?)
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac']
               as String?, // ✅ NOVA KOLONA za pokupljanje
