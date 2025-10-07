@@ -34,8 +34,7 @@ class StatistikaService {
   static bool _jePazarValjan(Putnik putnik) {
     // Osnovni uslovi za validno računanje pazara
     final imaIznos = putnik.iznosPlacanja != null && putnik.iznosPlacanja! > 0;
-    final imaVozaca =
-        putnik.naplatioVozac != null && putnik.naplatioVozac!.isNotEmpty;
+    final imaVozaca = putnik.vozac != null && putnik.vozac!.isNotEmpty;
     final nijeOtkazan = !putnik.jeOtkazan;
     final isValid = imaIznos && imaVozaca && nijeOtkazan;
 
@@ -106,7 +105,7 @@ class StatistikaService {
 
     for (final putnik in kombinovaniPutnici) {
       if (_jePazarValjan(putnik) &&
-          putnik.naplatioVozac == vozac &&
+          putnik.vozac == vozac &&
           putnik.vremePlacanja != null &&
           _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
         final iznos = putnik.iznosPlacanja!;
@@ -154,7 +153,7 @@ class StatistikaService {
     final filteredPutnici = putnici.where((putnik) {
       if (!_jePazarValjan(putnik)) return false;
       if (putnik.vremePlacanja == null) return false;
-      if (putnik.naplatioVozac != vozac) return false;
+      if (putnik.vozac != vozac) return false;
 
       return _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate);
     }).toList();
@@ -172,7 +171,7 @@ class StatistikaService {
         if (putnik.iznosPlacanja == null || putnik.iznosPlacanja! <= 0) {
           return false;
         }
-        if (putnik.naplatioVozac != vozac) return false;
+        if (putnik.vozac != vozac) return false;
         if (putnik.vremePlacanja == null) return false;
 
         return _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate);
@@ -271,7 +270,7 @@ class StatistikaService {
 
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.naplatioVozac!;
+          final vozac = putnik.vozac!;
           if (pazarObicni.containsKey(vozac)) {
             pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
           }
@@ -351,7 +350,7 @@ class StatistikaService {
           if (!mesecniPutniciGrupisani.containsKey(putnik.ime) &&
               _jePazarValjan(putnik) &&
               putnik.vremePlacanja != null &&
-              putnik.naplatioVozac != null &&
+              putnik.vozac != null &&
               _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
             mesecniPutniciGrupisani[putnik.ime] = putnik;
           }
@@ -367,10 +366,9 @@ class StatistikaService {
       for (final putnik in putniciFinal) {
         if (_jePazarValjan(putnik) &&
             putnik.vremePlacanja != null &&
-            putnik.naplatioVozac !=
-                null && // ✅ DODATO: proveri da naplatioVozac nije null
+            putnik.vozac != null && // ✅ DODATO: proveri da vozac nije null
             _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.naplatioVozac!;
+          final vozac = putnik.vozac!;
           final iznos = putnik.iznosPlacanja!;
 
           if (rezultat.containsKey(vozac)) {
@@ -414,7 +412,7 @@ class StatistikaService {
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.naplatioVozac!;
+          final vozac = putnik.vozac!;
           if (pazarObicni.containsKey(vozac)) {
             pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
           }
@@ -551,11 +549,11 @@ class StatistikaService {
           normalizedFrom,
           normalizedTo,
         )) {
-          final naplatioVozac = putnik.naplatioVozac ?? 'Nepoznat';
-          if (vozaciStats.containsKey(naplatioVozac)) {
-            vozaciStats[naplatioVozac]!['naplaceni']++;
-            vozaciStats[naplatioVozac]!['pazarObicni'] += putnik.iznosPlacanja!;
-            vozaciStats[naplatioVozac]!['ukupnoPazar'] += putnik.iznosPlacanja!;
+          final vozacIme = putnik.vozac ?? 'Nepoznat';
+          if (vozaciStats.containsKey(vozacIme)) {
+            vozaciStats[vozacIme]!['naplaceni']++;
+            vozaciStats[vozacIme]!['pazarObicni'] += putnik.iznosPlacanja!;
+            vozaciStats[vozacIme]!['ukupnoPazar'] += putnik.iznosPlacanja!;
           }
         }
       }
@@ -579,16 +577,16 @@ class StatistikaService {
               normalizedFrom,
               normalizedTo,
             )) {
-          final naplatioVozac = putnik.vozac ??
+          final vozacIme = putnik.vozac ??
               'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
-          if (vozaciStats.containsKey(naplatioVozac)) {
+          if (vozaciStats.containsKey(vozacIme)) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
-            vozaciStats[naplatioVozac]!['mesecneKarte']++;
+            vozaciStats[vozacIme]!['mesecneKarte']++;
             // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
-            vozaciStats[naplatioVozac]!['naplaceni']++;
-            vozaciStats[naplatioVozac]!['pazarMesecne'] +=
+            vozaciStats[vozacIme]!['naplaceni']++;
+            vozaciStats[vozacIme]!['pazarMesecne'] +=
                 (putnik.iznosPlacanja ?? 0.0);
-            vozaciStats[naplatioVozac]!['ukupnoPazar'] +=
+            vozaciStats[vozacIme]!['ukupnoPazar'] +=
                 (putnik.iznosPlacanja ?? 0.0);
           }
         }
@@ -704,8 +702,8 @@ class StatistikaService {
           normalizedFrom,
           normalizedTo,
         )) {
-          final naplatioVozac = putnik.naplatioVozac!;
-          if (vozaciStats.containsKey(naplatioVozac)) {
+          final vozacIme = putnik.vozac!;
+          if (vozaciStats.containsKey(vozacIme)) {
             final iznos = putnik.iznosPlacanja!;
 
             // Dodaj detalj naplate
@@ -716,26 +714,25 @@ class StatistikaService {
               'tip': putnik.mesecnaKarta == true ? 'Mesečna' : 'Dnevna',
             };
 
-            (vozaciStats[naplatioVozac]!['detaljiNaplata']
+            (vozaciStats[vozacIme]!['detaljiNaplata']
                     as List<Map<String, dynamic>>)
                 .add(detalj);
 
             // Ažuriraj poslednju naplatu
-            if (vozaciStats[naplatioVozac]!['poslednjaNaplata'] == null ||
+            if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
                 putnik.vremePlacanja!.isAfter(
                   DateTime.fromMillisecondsSinceEpoch(
-                    vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
-                        as int,
+                    vozaciStats[vozacIme]!['poslednjaNaplata']['vreme'] as int,
                   ),
                 )) {
-              vozaciStats[naplatioVozac]!['poslednjaNaplata'] = detalj;
+              vozaciStats[vozacIme]!['poslednjaNaplata'] = detalj;
             }
 
             // ❌ MESEČNE KARTE SE NE RAČUNAJU U 'naplaceni' - to je samo za obične putnike
             if (putnik.mesecnaKarta != true) {
-              vozaciStats[naplatioVozac]!['naplaceni']++;
-              vozaciStats[naplatioVozac]!['pazarObicni'] += iznos;
-              vozaciStats[naplatioVozac]!['ukupnoPazar'] += iznos;
+              vozaciStats[vozacIme]!['naplaceni']++;
+              vozaciStats[vozacIme]!['pazarObicni'] += iznos;
+              vozaciStats[vozacIme]!['ukupnoPazar'] += iznos;
             }
           }
         }
@@ -806,9 +803,9 @@ class StatistikaService {
 
     // 🎫 PROCES GRUPISANIH MESEČNIH PUTNIKA
     for (final putnik in grupisaniMesecniPutnici.values) {
-      final naplatioVozac =
+      final vozacIme =
           putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
-      if (vozaciStats.containsKey(naplatioVozac)) {
+      if (vozaciStats.containsKey(vozacIme)) {
         final iznos = putnik.iznosPlacanja ?? 0.0;
 
         // Dodaj detalj naplate za mesečnu kartu
@@ -820,27 +817,26 @@ class StatistikaService {
             'tip': 'Mesečna',
           };
 
-          (vozaciStats[naplatioVozac]!['detaljiNaplata']
+          (vozaciStats[vozacIme]!['detaljiNaplata']
                   as List<Map<String, dynamic>>)
               .add(detalj);
 
           // Ažuriraj poslednju naplatu
-          if (vozaciStats[naplatioVozac]!['poslednjaNaplata'] == null ||
+          if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
               putnik.vremePlacanja!.isAfter(
                 DateTime.fromMillisecondsSinceEpoch(
-                  vozaciStats[naplatioVozac]!['poslednjaNaplata']['vreme']
-                      as int,
+                  vozaciStats[vozacIme]!['poslednjaNaplata']['vreme'] as int,
                 ),
               )) {
-            vozaciStats[naplatioVozac]!['poslednjaNaplata'] = detalj;
+            vozaciStats[vozacIme]!['poslednjaNaplata'] = detalj;
           }
         }
 
         // ✅ MESEČNE KARTE SE DODAJU I U 'naplaceni' I U 'mesecneKarte'
-        vozaciStats[naplatioVozac]!['naplaceni']++; // ✅ DODANO
-        vozaciStats[naplatioVozac]!['mesecneKarte']++;
-        vozaciStats[naplatioVozac]!['pazarMesecne'] += iznos;
-        vozaciStats[naplatioVozac]!['ukupnoPazar'] += iznos;
+        vozaciStats[vozacIme]!['naplaceni']++; // ✅ DODANO
+        vozaciStats[vozacIme]!['mesecneKarte']++;
+        vozaciStats[vozacIme]!['pazarMesecne'] += iznos;
+        vozaciStats[vozacIme]!['ukupnoPazar'] += iznos;
       }
     }
 
@@ -883,7 +879,7 @@ class StatistikaService {
     // SABERI PAZAR SAMO IZ PUTNIKA
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik)) {
-        final vozac = putnik.naplatioVozac!;
+        final vozac = putnik.vozac!;
         if (pazar.containsKey(vozac)) {
           pazar[vozac] = pazar[vozac]! + putnik.iznosPlacanja!;
         }
