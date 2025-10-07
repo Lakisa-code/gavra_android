@@ -839,21 +839,24 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                 '⚠️ Nema internet konekcije. Kusur će biti sačuvan lokalno.';
             // TODO: Dodaj lokalno čuvanje kusura
             await _saveKusurLocally(
-                automatskiPopis, automatskiPopis['sitanNovac'] as double);
+              automatskiPopis,
+              automatskiPopis['sitanNovac'] as double,
+            );
           } else {
             errorMessage = '❌ Greška pri ažuriranju kusura: $e';
           }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: e.toString().contains('internet') ||
-                      e.toString().contains('mrežn')
-                  ? Colors.orange
-                  : Colors.red,
-              duration: const Duration(seconds: 4),
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: e.toString().contains('internet') ||
+                        e.toString().contains('mrežn')
+                    ? Colors.orange
+                    : Colors.red,
+              ),
+            );
+          }
         }
       }
     }
@@ -914,13 +917,18 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         'kilometraza': automatskiPopis['kilometraza'],
         'automatski_generisal': automatskiPopis['automatskiGenerisal'],
         'updated_at': DateTime.now().toIso8601String(),
-      }).timeout(const Duration(seconds: 10));
+      }).timeout(
+        const Duration(
+          seconds: 10,
+        ),
+      );
 
       dlog('✅ Kusur uspešno ažuriran u daily_reports tabeli');
     } on TimeoutException {
       dlog('⏰ Timeout pri ažuriranju kusura - nema internet konekcije');
       throw Exception(
-          'Nema internet konekcije. Kusur neće biti sačuvan u bazi.');
+        'Nema internet konekcije. Kusur neće biti sačuvan u bazi.',
+      );
     } on SocketException {
       dlog('🌐 SocketException pri ažuriranju kusura - nema mrežne konekcije');
       throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');

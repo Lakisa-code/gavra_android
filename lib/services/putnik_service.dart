@@ -1848,7 +1848,8 @@ class PutnikService {
       final redovnaPlacanja = await supabase
           .from('putovanja_istorija')
           .select(
-              '*, vozac_id, naplata_vozac') // Dodaj i vozac_id i naplata_vozac za fallback
+            '*, vozac_id, naplata_vozac',
+          ) // Dodaj i vozac_id i naplata_vozac za fallback
           .eq('putnik_ime', putnikIme)
           .gt('cena', 0)
           .order('created_at', ascending: false) as List<dynamic>;
@@ -1883,7 +1884,8 @@ class PutnikService {
           'cena': mesecno['cena'],
           'created_at': mesecno['vreme_placanja'],
           'vozac_ime': VozacMappingService.getVozacImeWithFallback(
-              mesecno['vozac_id'] as String?), // UUID->ime konverzija
+            mesecno['vozac_id'] as String?,
+          ), // UUID->ime konverzija
           'putnik_ime': putnikIme,
           'tip': 'mesecna_karta',
           'placeniMesec': mesecno['placeni_mesec'],

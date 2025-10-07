@@ -133,7 +133,8 @@ class Putnik {
       iznosPlacanja: _parseDouble(map['cena']), // koristi cena kolonu
       naplatioVozac: MesecniHelpers.priceIsPaid(map)
           ? VozacMappingService.getVozacImeWithFallback(
-              map['vozac_id'] as String?)
+              map['vozac_id'] as String?,
+            )
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
       dodaoVozac: map['dodao_vozac'] as String?,
@@ -411,7 +412,8 @@ class Putnik {
           iznosPlacanja: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
               ? VozacMappingService.getVozacImeWithFallback(
-                  map['vozac_id'] as String?)
+                  map['vozac_id'] as String?,
+                )
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac']
               as String?, // ✅ NOVA KOLONA za pokupljanje
@@ -459,7 +461,8 @@ class Putnik {
           iznosPlacanja: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
               ? VozacMappingService.getVozacImeWithFallback(
-                  map['vozac_id'] as String?)
+                  map['vozac_id'] as String?,
+                )
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac']
               as String?, // ✅ NOVA KOLONA za pokupljanje
