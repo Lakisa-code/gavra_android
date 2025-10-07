@@ -1855,7 +1855,7 @@ class PutnikService {
 
       // Konvertuj redovna plaćanja sa vozac_id->ime mapiranjem
       for (var redovno in redovnaPlacanja) {
-        final redovnoMap = Map<String, dynamic>.from(redovno);
+        final redovnoMap = redovno as Map<String, dynamic>;
         // Koristi vozac_id prvo, fallback na naplata_vozac za legacy podatke
         final vozacId = redovnoMap['vozac_id'] as String?;
         final legacyVozac = redovnoMap['naplata_vozac'] as String?;
