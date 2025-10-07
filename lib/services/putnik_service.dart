@@ -1847,12 +1847,25 @@ class PutnikService {
       // 1. REDOVNA PUTOVANJA iz putovanja_istorija
       final redovnaPlacanja = await supabase
           .from('putovanja_istorija')
-          .select()
+          .select(
+              '*, vozac_id, naplata_vozac') // Dodaj i vozac_id i naplata_vozac za fallback
           .eq('putnik_ime', putnikIme)
           .gt('cena', 0)
           .order('created_at', ascending: false) as List<dynamic>;
 
-      svaPlacanja.addAll(redovnaPlacanja.cast<Map<String, dynamic>>());
+      // Konvertuj redovna plaćanja sa vozac_id->ime mapiranjem
+      for (var redovno in redovnaPlacanja) {
+        final redovnoMap = Map<String, dynamic>.from(redovno);
+        // Koristi vozac_id prvo, fallback na naplata_vozac za legacy podatke
+        final vozacId = redovnoMap['vozac_id'] as String?;
+        final legacyVozac = redovnoMap['naplata_vozac'] as String?;
+
+        redovnoMap['vozac_ime'] = vozacId != null
+            ? VozacMappingService.getVozacImeWithFallback(vozacId)
+            : legacyVozac ?? 'Nepoznat';
+
+        svaPlacanja.add(redovnoMap);
+      }
 
       // 2. MESEČNA PLAĆANJA iz mesecni_putnici
       final mesecnaPlacanja = await supabase
@@ -1876,12 +1889,6 @@ class PutnikService {
           'placeniMesec': mesecno['placeni_mesec'],
           'placenaGodina': mesecno['placena_godina'],
         });
-      }
-
-      // Dodaj vozac_ime i za redovna plaćanja (mapiranje naplata_vozac -> vozac_ime)
-      for (var redovno
-          in svaPlacanja.where((p) => p['tip'] != 'mesecna_karta')) {
-        redovno['vozac_ime'] = redovno['naplata_vozac'];
       }
 
       // Sortiraj sve po datumu, najnovije prvo

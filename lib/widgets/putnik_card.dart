@@ -1974,17 +1974,17 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(_putnik.naplatioVozac),
+                              color: VozacBoja.get(_putnik.vozac),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          if (_putnik.naplatioVozac != null &&
-                              _putnik.naplatioVozac!.isNotEmpty)
+                          if (_putnik.vozac != null &&
+                              _putnik.vozac!.isNotEmpty)
                             Text(
-                              'Naplatio: ${_putnik.naplatioVozac}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
+                              'Naplatio: ${_putnik.vozac}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: VozacBoja.get(_putnik.naplatioVozac)
+                                color: VozacBoja.get(_putnik.vozac)
                                     .withOpacity(0.8),
                                 fontStyle: FontStyle.italic,
                               ),
