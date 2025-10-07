@@ -17,6 +17,8 @@ void main() {
         vremeDodavanja: DateTime.now(),
         iznosPlacanja: GavraTestConstants.testAmount,
         naplatioVozac: GavraTestConstants.testDriverSvetlana,
+        vozac: GavraTestConstants
+            .testDriverSvetlana, // Add vozac property for payment display
         vremePlacanja: DateTime(2025, 10, 6, 15, 30),
         mesecnaKarta: false,
         brojTelefona: GavraTestConstants.testPhoneNumber,
