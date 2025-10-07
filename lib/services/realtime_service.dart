@@ -242,19 +242,39 @@ class RealtimeService {
       // 🔄 Convert putovanja_istorija rows to Putnik objects
       for (final r in _lastPutovanjaRows) {
         try {
-          // 🔄 Za putovanja istorija, kreiraj Putnik objekat iz istorije
+          // 🔄 Za putovanja istorija, trebaju podaci iz mesecni_putnici tabele
+          // Pronađi odgovarajući mesečni putnik red
+          String? putnikIme;
+          String? grad;
+          double? iznosPlacanja;
+
+          final mesecniPutnikId = r['mesecni_putnik_id'] as String?;
+          if (mesecniPutnikId != null) {
+            // Pronađi odgovarajući mesečni putnik
+            for (final mesecniMap in _lastMesecniRows) {
+              if (mesecniMap['id'] == mesecniPutnikId) {
+                putnikIme = mesecniMap['putnik_ime'] as String?;
+                iznosPlacanja =
+                    (mesecniMap['ukupna_cena_meseca'] as num?)?.toDouble();
+                // Za grad, koristimo logiku: ako je mesečno plaćanje, označavamo kao takvo
+                grad = 'mesecno_placanje';
+                break;
+              }
+            }
+          }
+
           final putnik = Putnik(
             id: r['id'] as String? ?? '',
-            ime: r['putnik_ime'] as String? ?? '',
-            polazak: r['vreme_polaska'] as String? ?? '',
-            grad: r['grad'] as String? ?? '',
+            ime: putnikIme ?? '',
+            polazak: r['vreme_polaska'] as String? ?? 'mesecno_placanje',
+            grad: grad ?? '',
             dan: r['dan'] as String? ?? '',
             adresa: r['adresa'] as String?,
             datum: r['datum_putovanja']?.toString(),
             status: r['status'] as String?,
             obrisan: r['obrisan'] == true,
-            mesecnaKarta: false, // dnevni putnici nemaju mesečnu kartu
-            iznosPlacanja: (r['iznos_placanja'] as num?)?.toDouble(),
+            mesecnaKarta: true, // putovanja iz istorije su mesečni
+            iznosPlacanja: iznosPlacanja,
             vremePokupljenja: r['vreme_pokupljenja'] != null
                 ? DateTime.tryParse(r['vreme_pokupljenja'].toString())
                 : null,
