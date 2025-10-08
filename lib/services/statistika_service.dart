@@ -809,11 +809,15 @@ class StatistikaService {
           // DEBUG: Zašto se Ana Cortan ne uključuje?
           if (putnik.putnikIme.toLowerCase().contains('ana')) {
             print(
-                '🔍 DEBUG Ana Cortan: jePlacen=${putnik.jePlacen}, vremePlacanja=${putnik.vremePlacanja}, mesecniFrom=$mesecniFrom, mesecniTo=$mesecniTo');
+              '🔍 DEBUG Ana Cortan: jePlacen=${putnik.jePlacen}, vremePlacanja=${putnik.vremePlacanja}, mesecniFrom=$mesecniFrom, mesecniTo=$mesecniTo',
+            );
             if (putnik.vremePlacanja != null) {
-              final u_opsegu = _jeUVremenskomOpsegu(
-                  putnik.vremePlacanja, mesecniFrom, mesecniTo);
-              print('🔍 DEBUG Ana Cortan u opsegu: $u_opsegu');
+              final uOpsegu = _jeUVremenskomOpsegu(
+                putnik.vremePlacanja,
+                mesecniFrom,
+                mesecniTo,
+              );
+              print('🔍 DEBUG Ana Cortan u opsegu: $uOpsegu');
             }
           }
         }
@@ -821,7 +825,8 @@ class StatistikaService {
         // DEBUG: Ana nije plaćena?
         if (putnik.putnikIme.toLowerCase().contains('ana')) {
           print(
-              '🔍 DEBUG Ana Cortan NIJE PLAĆENA: jePlacen=${putnik.jePlacen}, cena=${putnik.cena}');
+            '🔍 DEBUG Ana Cortan NIJE PLAĆENA: jePlacen=${putnik.jePlacen}, cena=${putnik.cena}',
+          );
         }
       }
     }

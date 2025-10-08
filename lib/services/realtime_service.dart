@@ -158,7 +158,8 @@ class RealtimeService {
           final sample = rows
               .take(5)
               .map(
-                  (r) => r['putnik_ime'] ?? r['id']?.toString() ?? r.toString())
+                (r) => r['putnik_ime'] ?? r['id']?.toString() ?? r.toString(),
+              )
               .toList();
           dlog(
             '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample: $sample',
