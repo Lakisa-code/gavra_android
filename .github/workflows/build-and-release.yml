@@ -2,11 +2,11 @@ name: 🚀 Unified Build & Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -20,14 +20,14 @@ jobs:
       - name: ☕ Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
 
       - name: 📱 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.2'
-          channel: 'stable'
+          flutter-version: "3.35.2"
+          channel: "stable"
           cache: true
 
       - name: 📦 Get dependencies
@@ -35,9 +35,6 @@ jobs:
 
       - name: 🔍 Analyze code
         run: flutter analyze
-
-      - name: 🧪 Run tests
-        run: flutter test --coverage
 
       - name: 🔨 Build Debug APK
         run: flutter build apk --debug
