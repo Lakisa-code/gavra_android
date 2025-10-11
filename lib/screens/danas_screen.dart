@@ -31,6 +31,7 @@ import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
+import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
 import 'dugovi_screen.dart';
 
 // Using centralized logger
@@ -128,6 +129,41 @@ class _DanasScreenState extends State<DanasScreen> {
     _healthCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _checkStreamHealth();
     });
+  }
+
+  // 🚨 ERROR TYPE DETECTION HELPER
+  Widget _buildErrorWidgetForException(Object error, String streamName, {VoidCallback? onRetry}) {
+    final errorString = error.toString().toLowerCase();
+
+    if (errorString.contains('timeout') || errorString.contains('time')) {
+      return TimeoutErrorWidget(
+        operation: streamName,
+        timeout: const Duration(seconds: 30),
+        onRetry: onRetry,
+      );
+    }
+
+    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
+      return NetworkErrorWidget(
+        message: 'Problem sa mrežom u $streamName',
+        onRetry: onRetry,
+      );
+    }
+
+    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
+      return DataErrorWidget(
+        dataType: streamName,
+        reason: error.toString(),
+        onRefresh: onRetry,
+      );
+    }
+
+    // Default stream error
+    return StreamErrorWidget(
+      streamName: streamName,
+      errorMessage: error.toString(),
+      onRetry: onRetry,
+    );
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
@@ -379,6 +415,21 @@ class _DanasScreenState extends State<DanasScreen> {
     return FutureBuilder<Map<String, int>>(
       future: _calculateDjackieBrojeviAsync(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          // 🚨 MINI ERROR WIDGET ZA APPBAR
+          return MiniStreamErrorWidget(
+            streamName: 'djacki_brojac',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Greška đačkog brojača: ${snapshot.error}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+          );
+        }
+
         final statistike = snapshot.data ?? {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
         final ostalo = statistike['ostalo'] ?? 0; // 10 - ostalo da se vrati
         final ukupnoUjutro = statistike['ukupno_ujutro'] ?? 0; // 30 - ukupno ujutro
@@ -1691,8 +1742,15 @@ class _DanasScreenState extends State<DanasScreen> {
                 }
 
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Greška: ${snapshot.error}'),
+                  // 🚨 KORISTI SMART ERROR DETECTION
+                  return _buildErrorWidgetForException(
+                    snapshot.error!,
+                    'putnici_stream',
+                    onRetry: () {
+                      setState(() {
+                        // Force refresh stream
+                      });
+                    },
                   );
                 }
 
@@ -1835,6 +1893,19 @@ class _DanasScreenState extends State<DanasScreen> {
                   builder: (context, pazarSnapshot) {
                     // 💓 REGISTRUJ HEARTBEAT ZA PAZAR STREAM
                     _registerStreamHeartbeat('pazar_stream');
+
+                    if (pazarSnapshot.hasError) {
+                      // 🚨 KORISTI SMART ERROR DETECTION
+                      return _buildErrorWidgetForException(
+                        pazarSnapshot.error!,
+                        'pazar_stream',
+                        onRetry: () {
+                          setState(() {
+                            // Force refresh stream
+                          });
+                        },
+                      );
+                    }
 
                     if (!pazarSnapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
