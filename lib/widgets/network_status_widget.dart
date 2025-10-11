@@ -120,7 +120,9 @@ class NetworkStatusIndicator extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildStatusRow(
-                  'Connectivity', (details['isConnected'] as bool? ?? false) ? 'CONNECTED' : 'DISCONNECTED'),
+                'Connectivity',
+                (details['isConnected'] as bool? ?? false) ? 'CONNECTED' : 'DISCONNECTED',
+              ),
               _buildStatusRow('Avg Response', '${details['averageResponseTime'].toStringAsFixed(0)}ms'),
               _buildStatusRow('Total Errors', '${details['totalErrors']}'),
               _buildStatusRow('Active Streams', '${details['streamCount']}'),

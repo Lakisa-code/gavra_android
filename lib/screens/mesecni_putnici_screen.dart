@@ -979,7 +979,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           ? Icons.check_circle_outline
                           : Icons.payments_outlined,
                       label:
-                          putnik.cena != null && putnik.cena! > 0 ? '${putnik.cena!.toStringAsFixed(0)}din' : 'Plati',
+                          putnik.cena != null && putnik.cena! > 0 ? '${putnik.cena!.toStringAsFixed(0)} RSD' : 'Plati',
                       color: putnik.cena != null && putnik.cena! > 0 ? Colors.green : Colors.purple,
                     ),
                   ),
@@ -3377,7 +3377,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Trenutno plaćeno: ${putnik.cena!.toStringAsFixed(0)} din',
+                                    'Trenutno plaćeno: ${putnik.cena!.toStringAsFixed(0)} RSD',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: Colors.green.shade700,
@@ -4040,7 +4040,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       'otkazivanja': otkazivanja,
       'poslednje': poslednje ?? 'Nema podataka',
       'uspesnost': uspesnost,
-      'ukupan_prihod': ukupanPrihod.toStringAsFixed(0),
+      'ukupan_prihod': '${ukupanPrihod.toStringAsFixed(0)} RSD',
     };
   }
 
@@ -4083,7 +4083,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       'otkazivanja': otkazivanja,
       'poslednje': poslednje ?? 'Nema podataka',
       'uspesnost': uspesnost,
-      'ukupan_prihod': ukupanPrihod.toStringAsFixed(0),
+      'ukupan_prihod': '${ukupanPrihod.toStringAsFixed(0)} RSD',
     };
   }
 

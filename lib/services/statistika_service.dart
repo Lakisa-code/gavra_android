@@ -37,9 +37,14 @@ class StatistikaService {
   static bool _jePazarValjan(Putnik putnik) {
     // Osnovni uslovi za validno računanje pazara
     final imaIznos = putnik.iznosPlacanja != null && putnik.iznosPlacanja! > 0;
-    final imaVozaca = putnik.vozac != null && putnik.vozac!.isNotEmpty;
+
+    // ✅ PRIORITET: naplatioVozac > vozac (SAMO REGISTROVANI VOZAČI)
+    final registrovaniVozac = putnik.naplatioVozac ?? putnik.vozac;
+    final imaRegistrovanogVozaca =
+        registrovaniVozac != null && registrovaniVozac.isNotEmpty && VozacBoja.isValidDriver(registrovaniVozac);
+
     final nijeOtkazan = !putnik.jeOtkazan;
-    final isValid = imaIznos && imaVozaca && nijeOtkazan;
+    final isValid = imaIznos && imaRegistrovanogVozaca && nijeOtkazan;
 
     return isValid;
   }
@@ -392,8 +397,10 @@ class StatistikaService {
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
         if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.vozac!;
-          if (pazarObicni.containsKey(vozac)) {
+          // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
+          final vozac = putnik.naplatioVozac ?? putnik.vozac!;
+          // ✅ Validacija da je vozač registrovan
+          if (pazarObicni.containsKey(vozac) && VozacBoja.isValidDriver(vozac)) {
             pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
           }
         } else {}
@@ -411,8 +418,10 @@ class StatistikaService {
             putnik.iznosPlacanja != null &&
             putnik.iznosPlacanja! > 0 &&
             putnik.vozac != null &&
-            putnik.vozac!.isNotEmpty) {
+            putnik.vozac!.isNotEmpty &&
+            VozacBoja.isValidDriver(putnik.vozac!)) {
           if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+            // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike
             final vozac = putnik.vozac!;
             if (pazarMesecne.containsKey(vozac)) {
               pazarMesecne[vozac] = pazarMesecne[vozac]! + putnik.iznosPlacanja!;
@@ -525,8 +534,9 @@ class StatistikaService {
           normalizedFrom,
           normalizedTo,
         )) {
-          final vozacIme = putnik.vozac ?? 'Nepoznat';
-          if (vozaciStats.containsKey(vozacIme)) {
+          // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
+          final vozacIme = putnik.naplatioVozac ?? putnik.vozac!;
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             vozaciStats[vozacIme]!['naplaceni']++;
             vozaciStats[vozacIme]!['pazarObicni'] += putnik.iznosPlacanja!;
             vozaciStats[vozacIme]!['ukupnoPazar'] += putnik.iznosPlacanja!;
@@ -553,8 +563,9 @@ class StatistikaService {
               normalizedFrom,
               normalizedTo,
             )) {
-          final vozacIme = putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
-          if (vozaciStats.containsKey(vozacIme)) {
+          // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike (BEZ FALLBACK-a)
+          final vozacIme = putnik.vozac!;
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[vozacIme]!['mesecneKarte']++;
             // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
@@ -672,8 +683,9 @@ class StatistikaService {
           normalizedFrom,
           normalizedTo,
         )) {
-          final vozacIme = putnik.vozac!;
-          if (vozaciStats.containsKey(vozacIme)) {
+          // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
+          final vozacIme = putnik.naplatioVozac ?? putnik.vozac!;
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             final iznos = putnik.iznosPlacanja!;
 
             // Dodaj detalj naplate
@@ -1137,16 +1149,18 @@ class StatistikaService {
   static Future<Map<String, dynamic>> cleanDebugInfo() async {
     try {
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
+      final actualAmount = (stats['ukupno_sve'] as num).toDouble();
+
       return {
         'timestamp': DateTime.now().toIso8601String(),
         'service': 'StatistikaService.cleanDebugInfo -> CleanStatistikaService',
         'clean_stats': stats,
         'validation': {
           'no_duplicates': stats['no_duplicates'],
-          'expected_amount': 13800.0,
-          'actual_amount': stats['ukupno_sve'],
-          'amount_matches': stats['ukupno_sve'] == 13800.0,
-          'single_record': stats['broj_ukupno'] == 1,
+          'actual_amount': actualAmount,
+          'total_records': stats['broj_ukupno'],
+          'mesecni_records': stats['broj_mesecnih'],
+          'standalone_records': stats['broj_standalone'],
         },
       };
     } catch (e) {

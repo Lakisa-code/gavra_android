@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'istorija_naplata_widget.dart';
 
 class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
@@ -93,8 +94,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                                  .withOpacity(0.8),
+                              color: (vozacBoje[vozac] ?? Colors.blueGrey).withOpacity(0.8),
                             ),
                           ),
                         ],
@@ -126,9 +126,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
                     Expanded(
                       child: _buildStatCard(
                         '💰 Prosek',
-                        avgPlacanjeObicno > 0
-                            ? avgPlacanjeObicno.toStringAsFixed(0)
-                            : '0',
+                        avgPlacanjeObicno > 0 ? '${avgPlacanjeObicno.toStringAsFixed(0)} RSD' : '0 RSD',
                         Colors.green,
                       ),
                     ),
@@ -139,9 +137,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
 
                 // Istorija naplate
                 IstorijaHaplataWidget(
-                  detaljiNaplata:
-                      stats['detaljiNaplata'] as List<Map<String, dynamic>>? ??
-                          [],
+                  detaljiNaplata: stats['detaljiNaplata'] as List<Map<String, dynamic>>? ?? [],
                   vozac: vozac,
                 ),
               ],

@@ -2162,7 +2162,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)}',
+                            'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)} RSD',
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.get(_putnik.vozac),
@@ -2330,7 +2330,7 @@ class _PutnikCardState extends State<PutnikCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano',
+                '✅ Plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec je sačuvano',
               ),
               backgroundColor: Colors.green,
             ),

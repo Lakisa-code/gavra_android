@@ -10,6 +10,7 @@ import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
 import '../services/daily_checkin_service.dart'; // 🌅 DODANO za sitan novac
+import '../services/fail_fast_stream_manager.dart'; // 🛑 NOVO fail-fast stream management
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
@@ -131,6 +132,52 @@ class _DanasScreenState extends State<DanasScreen> {
     _healthCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _checkStreamHealth();
     });
+  }
+
+  // 🛑 BUILD FAIL-FAST STATUS WIDGET
+  Widget _buildFailFastStatus() {
+    final status = FailFastStreamManager.instance.getStatus();
+    final isHealthy = FailFastStreamManager.instance.isHealthy();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Health: ${isHealthy ? "✅ HEALTHY" : "⚠️ UNHEALTHY"}',
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: isHealthy ? Colors.green : Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          'Active: ${status["active_subscriptions"]}',
+          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+        ),
+        Text(
+          'Total: ${status["total_subscriptions_created"]}',
+          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+        ),
+        Text(
+          'Errors: ${status["total_errors"]}',
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: (status['total_errors'] as int) > 0 ? Colors.red : Colors.green,
+          ),
+        ),
+        Text(
+          'Fail-Fast: ${(status["fail_fast_mode"] as bool? ?? false) ? "🛑 ON" : "🟢 OFF"}',
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: (status['fail_fast_mode'] as bool? ?? false) ? Colors.red : Colors.green,
+          ),
+        ),
+      ],
+    );
   }
 
   // 🚨 ERROR TYPE DETECTION HELPER
@@ -366,6 +413,12 @@ class _DanasScreenState extends State<DanasScreen> {
                           ),
                         );
                       }),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '🛑 Fail-Fast Stream Manager:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      _buildFailFastStatus(),
                     ],
                   ),
                 ),
@@ -1214,7 +1267,6 @@ class _DanasScreenState extends State<DanasScreen> {
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
   String? _currentDriver; // Dodato za dohvat vozača
-  StreamSubscription<dynamic>? _dailyCheckinSub;
 
   // Lista polazaka za chipove - LETNJI RASPORED
   final List<String> _sviPolasci = [
@@ -1344,13 +1396,23 @@ class _DanasScreenState extends State<DanasScreen> {
     _initializeCurrentDriver().then((_) {
       if (_currentDriver != null && _currentDriver!.isNotEmpty) {
         try {
-          _dailyCheckinSub = DailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
+          // 🛑 REGISTRUJ DAILY CHECKIN SUBSCRIPTION SA FAIL-FAST MANAGER
+          final dailyCheckinSub = DailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
+          FailFastStreamManager.instance.registerSubscription(
+            'daily_checkin_${_currentDriver}',
+            dailyCheckinSub,
+            onError: (error, stackTrace) {
+              dlog('🚨 Daily checkin stream error: $error');
+            },
+          );
 
           // 💓 POKRENI HEARTBEAT MONITORING
           _startHealthMonitoring();
-          dlog('🛰️ Subscribed to daily_checkins realtime for $_currentDriver');
+          dlog('🛰️ Subscribed to daily_checkins realtime for $_currentDriver via fail-fast manager');
         } catch (e) {
           dlog('⚠️ Failed to subscribe daily_checkins realtime: $e');
+          // In fail-fast mode, rethrow critical initialization errors
+          rethrow;
         }
       }
     });
@@ -1485,18 +1547,24 @@ class _DanasScreenState extends State<DanasScreen> {
 
   @override
   void dispose() {
+    // 🛑 FAIL-FAST STREAM DISPOSAL - dispose all subscriptions immediately
+    try {
+      FailFastStreamManager.instance.disposeAll(reason: 'DanasScreen disposal');
+    } catch (e) {
+      // In fail-fast mode, we don't swallow errors - let them propagate
+      dlog('🚨 [FAIL-FAST] Error during stream disposal: $e');
+      rethrow; // Re-throw to ensure visibility
+    }
+
     // 🛑 Zaustavi realtime tracking kad se ekran zatvori
     RealtimeRouteTrackingService.stopRouteTracking();
-    // Otkaži pretplatu za daily_checkins ako postoji
-    try {
-      _dailyCheckinSub?.cancel();
-    } catch (e) {
-      dlog('⚠️ Error cancelling daily_checkins subscription: $e');
-    }
 
     // 💓 CLEANUP HEARTBEAT MONITORING
     _healthCheckTimer?.cancel();
     _isRealtimeHealthy.dispose();
+
+    // 🚥 CLEANUP NETWORK STATUS SERVICE
+    RealtimeNetworkStatusService.instance.dispose();
 
     super.dispose();
   }
