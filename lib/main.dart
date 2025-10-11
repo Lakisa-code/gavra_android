@@ -1,33 +1,35 @@
 // import 'services/permission_service.dart'; // Moved to WelcomeScreen
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 // Firebase imports - enabled for multi-channel notifications
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:app_links/app_links.dart';
 
+import 'config/app_config.dart';
 import 'firebase_options.dart';
+import 'screens/email_login_screen.dart';
 // 🤖 GitHub Actions Android workflow for unlimited free APK delivery
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
-import 'screens/email_login_screen.dart';
+import 'services/connection_resilience_service.dart';
+import 'services/firebase_service.dart';
 import 'services/gps_service.dart';
 import 'services/local_notification_service.dart';
+import 'services/realtime_notification_counter_service.dart';
 import 'services/realtime_notification_service.dart';
+import 'services/realtime_priority_service.dart';
+import 'services/realtime_service.dart';
 import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
-import 'services/realtime_notification_counter_service.dart';
-import 'services/firebase_service.dart';
-import 'services/realtime_priority_service.dart';
+import 'services/vozilo_service.dart';
 import 'supabase_client.dart';
-import 'services/realtime_service.dart';
-import 'config/app_config.dart';
 import 'utils/gbox_detector.dart';
 
 final _logger = Logger();
@@ -91,9 +93,7 @@ void main() async {
   // Firebase initialization - PRILAGOĐENO za GBox/Huawei
   try {
     final shouldOptimize = await GBoxDetector.shouldOptimizeFirebase();
-    final timeout = shouldOptimize
-        ? const Duration(seconds: 10)
-        : const Duration(seconds: 20);
+    final timeout = shouldOptimize ? const Duration(seconds: 10) : const Duration(seconds: 20);
 
     // Check if Firebase is already initialized
     final alreadyInitialized = Firebase.apps.isNotEmpty;
@@ -107,8 +107,7 @@ void main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     try {
-      final initialMessage =
-          await FirebaseMessaging.instance.getInitialMessage();
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
       await RealtimeNotificationService.handleInitialMessage(initialMessage);
     } catch (e) {
       _logger.w('\u26a0\ufe0f Error handling initial FCM message: $e');
@@ -136,6 +135,10 @@ void main() async {
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     ).timeout(const Duration(seconds: 10));
+
+    // 🌐 INICIJALIZUJ CONNECTION RESILIENCE SERVICE
+    await ConnectionResilienceService.initialize();
+    _logger.i('✅ Supabase i ConnectionResilience uspešno inicijalizovani');
   } catch (e) {
     _logger.e('❌ Supabase initialization failed: $e');
     // Continue without Supabase if it fails
@@ -147,8 +150,7 @@ void main() async {
     defaultHeaders: {'apiKey': supabaseAnonKey},
   );
   final Link link = httpLink;
-  ValueNotifier<GraphQLClient> client =
-      ValueNotifier(GraphQLClient(link: link, cache: GraphQLCache()));
+  ValueNotifier<GraphQLClient> client = ValueNotifier(GraphQLClient(link: link, cache: GraphQLCache()));
 
   runApp(GraphQLProvider(client: client, child: const MyApp()));
 }
@@ -157,6 +159,26 @@ void main() async {
 Future<String?> getCurrentDriver() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString('current_driver');
+}
+
+// Helper function to get default vehicle ID for GPS tracking
+Future<String?> getDefaultVehicleId() async {
+  try {
+    final voziloService = VoziloService();
+    final vozila = await voziloService.getAllVozila();
+
+    // Return the first active vehicle, or create a default one
+    if (vozila.isNotEmpty) {
+      return vozila.first.id;
+    }
+
+    // If no vehicles exist, return a default UUID
+    // In a real app, you'd want to create a vehicle here
+    return 'default-vehicle-uuid';
+  } catch (e) {
+    _logger.w('⚠️ Failed to get default vehicle: $e');
+    return 'default-vehicle-uuid';
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -195,8 +217,7 @@ class _MyAppState extends State<MyApp> {
         await LocalNotificationService.initialize(context);
 
         // 2. Zatim zatraži permissions jednom kroz Firebase sistem
-        await RealtimeNotificationService.requestNotificationPermissions()
-            .timeout(const Duration(seconds: 15));
+        await RealtimeNotificationService.requestNotificationPermissions().timeout(const Duration(seconds: 15));
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
@@ -274,15 +295,25 @@ class _MyAppState extends State<MyApp> {
         const Duration(minutes: 1),
         () async {
           final currentVozacId = await getCurrentDriver();
-          if (currentVozacId != null && currentVozacId.isNotEmpty) {
-            GpsService.sendCurrentLocation(vozacId: currentVozacId);
+          final voziloId = await getDefaultVehicleId();
+          if (currentVozacId != null && currentVozacId.isNotEmpty && voziloId != null) {
+            GpsService.sendCurrentLocation(
+              vozacId: currentVozacId,
+              voziloId: voziloId,
+            );
           }
         },
         isPeriodic: true,
       );
 
       // Pošalji odmah na startu
-      GpsService.sendCurrentLocation(vozacId: vozacId);
+      final voziloId = await getDefaultVehicleId();
+      if (voziloId != null) {
+        GpsService.sendCurrentLocation(
+          vozacId: vozacId,
+          voziloId: voziloId,
+        );
+      }
     })();
   }
 
@@ -334,8 +365,7 @@ class _MyAppState extends State<MyApp> {
     _logger.i('🔗 Handling deep link: ${uri.toString()}');
 
     // Check if it's a Supabase auth callback
-    if (uri.host == 'gjtabtwudbrmfeyjiicu.supabase.co' &&
-        uri.path.contains('/auth/v1/callback')) {
+    if (uri.host == 'gjtabtwudbrmfeyjiicu.supabase.co' && uri.path.contains('/auth/v1/callback')) {
       // Handle Supabase auth callback
       Supabase.instance.client.auth.getSessionFromUrl(uri).then((response) {
         _logger.i('✅ Email verification successful!');
@@ -374,8 +404,7 @@ class _MyAppState extends State<MyApp> {
               // Navigate to email login screen
               Navigator.of(context).pushReplacementNamed('/email-login');
             },
-            child:
-                const Text('Prijaviť se', style: TextStyle(color: Colors.blue)),
+            child: const Text('Prijaviť se', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -471,9 +500,7 @@ class _MyAppState extends State<MyApp> {
         driverName: _currentDriver,
       ), // 🎨 Svetla tema sa vozačem
       darkTheme: ThemeService.tamnaTema(), // 🎨 Tamna tema za noć
-      themeMode: _nocniRezim
-          ? ThemeMode.dark
-          : ThemeMode.light, // 🎨 Dinamičko prebacivanje teme
+      themeMode: _nocniRezim ? ThemeMode.dark : ThemeMode.light, // 🎨 Dinamičko prebacivanje teme
       routes: {
         '/email-login': (context) => const EmailLoginScreen(),
       },

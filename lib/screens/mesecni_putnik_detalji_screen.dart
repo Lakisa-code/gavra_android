@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/mesecni_putnik_novi.dart';
-import '../services/mesecni_putnik_service_novi.dart';
+
+import '../models/mesecni_putnik.dart';
+import '../services/mesecni_putnik_service.dart';
+import '../theme.dart'; // Za theme boje
 // foundation import not needed; using centralized logger
 import '../utils/logging.dart';
-import '../theme.dart'; // Za theme boje
 import '../widgets/custom_back_button.dart';
 
 class MesecniPutnikDetaljiScreen extends StatefulWidget {
@@ -15,23 +16,21 @@ class MesecniPutnikDetaljiScreen extends StatefulWidget {
   final MesecniPutnik putnik;
 
   @override
-  State<MesecniPutnikDetaljiScreen> createState() =>
-      _MesecniPutnikDetaljiScreenState();
+  State<MesecniPutnikDetaljiScreen> createState() => _MesecniPutnikDetaljiScreenState();
 }
 
-class _MesecniPutnikDetaljiScreenState
-    extends State<MesecniPutnikDetaljiScreen> {
+class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen> {
   List<Map<String, dynamic>> _svaUkrcavanja = [];
   List<Map<String, dynamic>> _sviOtkazi = [];
   List<Map<String, dynamic>> _svaPlacanja = [];
   bool _loading = true;
 
-  late final MesecniPutnikServiceNovi _service;
+  late final MesecniPutnikService _service;
 
   @override
   void initState() {
     super.initState();
-    _service = MesecniPutnikServiceNovi();
+    _service = MesecniPutnikService();
     _ucitajSveDetalje();
   }
 
@@ -633,14 +632,12 @@ class _MesecniPutnikDetaljiScreenState
     final tipPlacanja = placanje['tip'] ?? 'redovno';
 
     // Dodatne informacije za mesečne karte
-    String subtitle =
-        'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+    String subtitle = 'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     if (tipPlacanja == 'mesecna_karta') {
       final mesec = placanje['placeniMesec'] ?? 0;
       final godina = placanje['placenaGodina'] ?? 0;
       final mesecNaziv = _getNazivMeseca(mesec as int);
-      subtitle =
-          'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+      subtitle = 'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     }
 
     return Card(
@@ -663,9 +660,7 @@ class _MesecniPutnikDetaljiScreenState
         ),
         subtitle: Text(subtitle),
         trailing: Icon(
-          tipPlacanja == 'mesecna_karta'
-              ? Icons.event_available
-              : Icons.receipt,
+          tipPlacanja == 'mesecna_karta' ? Icons.event_available : Icons.receipt,
           color: Colors.grey.shade600,
         ),
       ),
@@ -814,8 +809,7 @@ class _MesecniPutnikDetaljiScreenState
               dan.toString(),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    aktivnost != null ? FontWeight.bold : FontWeight.normal,
+                fontWeight: aktivnost != null ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),

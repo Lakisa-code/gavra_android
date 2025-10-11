@@ -1,9 +1,22 @@
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../utils/grad_adresa_validator.dart';
 import 'geocoding_service.dart';
 
-/// Servis za upravljanje i filtriranje adresa po gradovima
+/// Servis za upravljanje i filtriranje adresa po gradovima - LOCAL IMPLEMENTACIJA
 /// 🏘️ OGRANIČENO NA BELA CRKVA I VRŠAC ADRESE SAMO
+///
+/// KADA KORISTITI:
+/// - Za autocomplete adresa u UI forms
+/// - Za lokalno cache-ovanje često korišćenih adresa
+/// - Za address validation po gradovima
+/// - Za geocoding integration
+/// - Za putnik adrese (stringovi u forms)
+///
+/// NE KORISTITI ZA:
+/// - Trajno čuvanje struktuirane adrese (koristi AdresaService)
+/// - Relacijske veze sa UUID-jima
+/// - Admin CRUD operacije na cloud adresama
 class AdreseService {
   static const String _kljucAdreseBelaCrkva = 'adrese_bela_crkva';
   static const String _kljucAdreseVrsac = 'adrese_vrsac';
@@ -16,9 +29,7 @@ class AdreseService {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final String kljuc = grad.toLowerCase() == 'bela crkva'
-        ? _kljucAdreseBelaCrkva
-        : _kljucAdreseVrsac;
+    final String kljuc = grad.toLowerCase() == 'bela crkva' ? _kljucAdreseBelaCrkva : _kljucAdreseVrsac;
 
     List<String> adrese = prefs.getStringList(kljuc) ?? [];
 
@@ -127,9 +138,7 @@ class AdreseService {
     final adrese = await getAdreseZaGrad(grad);
     final queryLower = query.toLowerCase();
 
-    final localResults = adrese
-        .where((adresa) => adresa.toLowerCase().contains(queryLower))
-        .toList();
+    final localResults = adrese.where((adresa) => adresa.toLowerCase().contains(queryLower)).toList();
 
     // 2. Ako nema lokalnih rezultata ili query liči na naziv mesta (bolnica, škola...)
     final isPlaceQuery = _isPlaceQuery(queryLower);
@@ -137,8 +146,7 @@ class AdreseService {
     if (localResults.isEmpty || isPlaceQuery) {
       try {
         // Pokušaj da nađeš preko geocoding API
-        final coords =
-            await GeocodingService.getKoordinateZaAdresu(grad, query);
+        final coords = await GeocodingService.getKoordinateZaAdresu(grad, query);
         if (coords != null) {
           // Ako je pronađena lokacija, dodaj je kao rezultat
           final geocodedLocation = query.trim();
@@ -206,9 +214,7 @@ class AdreseService {
 
   static Future<void> _sacuvajAdrese(String grad, List<String> adrese) async {
     final prefs = await SharedPreferences.getInstance();
-    final String kljuc = grad.toLowerCase() == 'bela crkva'
-        ? _kljucAdreseBelaCrkva
-        : _kljucAdreseVrsac;
+    final String kljuc = grad.toLowerCase() == 'bela crkva' ? _kljucAdreseBelaCrkva : _kljucAdreseVrsac;
     await prefs.setStringList(kljuc, adrese);
   }
 
@@ -244,9 +250,7 @@ class AdreseService {
         .trim()
         .split(' ')
         .map(
-          (word) => word.isNotEmpty
-              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
-              : word,
+          (word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word,
         )
         .join(' ');
   }

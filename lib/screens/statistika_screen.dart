@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../models/putnik.dart';
 import '../services/firebase_service.dart';
+import '../services/local_notification_service.dart';
+import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
-import '../services/local_notification_service.dart';
+import '../theme.dart'; // DODANO za theme extensions
 import '../utils/date_utils.dart'
     as app_date_utils; // DODANO: Centralna vikend logika
-
-import '../models/putnik.dart';
-import '../services/putnik_service.dart';
-import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
-import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
-import '../theme.dart'; // DODANO za theme extensions
-
 import '../utils/logging.dart';
+import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
+import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
 
 class StatistikaScreen extends StatefulWidget {
   const StatistikaScreen({Key? key}) : super(key: key);
@@ -561,26 +559,278 @@ class _StatistikaScreenState extends State<StatistikaScreen>
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: StreamBuilder<Map<String, Map<String, dynamic>>>(
-                  stream: StatistikaService.streamDetaljneStatistikePoVozacima(
-                    from,
-                    to,
-                  ),
-                  builder: (context, detaljneSnapshot) {
-                    if (detaljneSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                child: Column(
+                  children: [
+                    // 🆕 CLEAN STATISTIKE CARD
+                    Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.green.shade50,
+                              Colors.green.shade100,
+                            ],
+                          ),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Column(
+                          children: [
+                            // Header
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.verified,
+                                      color: Colors.green.shade700,),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Clean Statistike (bez duplikata)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Icon(Icons.cleaning_services,
+                                      color: Colors.green.shade700,),
+                                ],
+                              ),
+                            ),
+                            // Content
+                            FutureBuilder<Map<String, dynamic>>(
+                              future:
+                                  StatistikaService.dohvatiCleanStatistike(),
+                              builder: (context, cleanSnapshot) {
+                                if (cleanSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.green,),
+                                    ),
+                                  );
+                                }
 
-                    final detaljneStats = detaljneSnapshot.data ?? {};
+                                if (cleanSnapshot.hasError) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.error,
+                                            color: Colors.red.shade700,),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Greška: ${cleanSnapshot.error}',
+                                          style: const TextStyle(
+                                              color: Colors.red,),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
 
-                    return DetaljanPazarPoVozacimaWidget(
-                      vozaciStatistike: detaljneStats,
-                      ukupno: ukupno,
-                      periodLabel: _periodLabel(_period),
-                      vozacBoje: vozacBoje,
-                    );
-                  },
+                                if (!cleanSnapshot.hasData) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Text('Nema podataka'),
+                                  );
+                                }
+
+                                final data = cleanSnapshot.data!;
+                                final noDuplicates =
+                                    data['no_duplicates'] == true;
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                  child: Column(
+                                    children: [
+                                      // Status indicator
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: noDuplicates
+                                              ? Colors.green
+                                              : Colors.orange,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              noDuplicates
+                                                  ? Icons.check_circle
+                                                  : Icons.warning,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              noDuplicates
+                                                  ? 'Bez duplikata'
+                                                  : 'Duplikati prisutni',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // Stats grid
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              'Ukupno',
+                                              '${data['ukupno_sve']} RSD',
+                                              Icons.account_balance_wallet,
+                                              Colors.blue.shade700,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              'Zapisi',
+                                              '${data['broj_ukupno']}',
+                                              Icons.receipt,
+                                              Colors.purple.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              'Mesečni',
+                                              '${data['ukupno_mesecni']} RSD',
+                                              Icons.people,
+                                              Colors.orange.shade700,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              'Dnevni',
+                                              '${data['ukupno_standalone']} RSD',
+                                              Icons.directions_car,
+                                              Colors.green.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // Debug button
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () async {
+                                            try {
+                                              final debugInfo =
+                                                  await StatistikaService
+                                                      .cleanDebugInfo();
+                                              if (mounted) {
+                                                showDialog<void>(
+                                                  context: context,
+                                                  builder: (context) =>
+                                                      AlertDialog(
+                                                    title: const Text(
+                                                        'Clean Debug Info',),
+                                                    content:
+                                                        SingleChildScrollView(
+                                                      child: Text(
+                                                        debugInfo.toString(),
+                                                        style: const TextStyle(
+                                                            fontFamily:
+                                                                'monospace',),
+                                                      ),
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                                context,),
+                                                        child: const Text(
+                                                            'Zatvori',),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+                                            } catch (e) {
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                      content:
+                                                          Text('Greška: $e'),),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          icon: Icon(Icons.info,
+                                              color: Colors.green.shade700,),
+                                          label: Text(
+                                            'Debug Info',
+                                            style: TextStyle(
+                                                color: Colors.green.shade700,),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(
+                                                color: Colors.green.shade300,),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Postojeće komponente
+                    StreamBuilder<Map<String, Map<String, dynamic>>>(
+                      stream:
+                          StatistikaService.streamDetaljneStatistikePoVozacima(
+                        from,
+                        to,
+                      ),
+                      builder: (context, detaljneSnapshot) {
+                        if (detaljneSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator(),);
+                        }
+
+                        final detaljneStats = detaljneSnapshot.data ?? {};
+
+                        return DetaljanPazarPoVozacimaWidget(
+                          vozaciStatistike: detaljneStats,
+                          ukupno: ukupno,
+                          periodLabel: _periodLabel(_period),
+                          vozacBoje: vozacBoje,
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             );
@@ -770,5 +1020,42 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       default:
         return period;
     }
+  }
+
+  // 🆕 Helper metoda za kreiranje stat card-a
+  Widget _buildStatCard(
+      String naslov, String vrednost, IconData ikona, Color boja,) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: boja.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: boja.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(ikona, color: boja, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            naslov,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: boja,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            vrednost,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: boja,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 }

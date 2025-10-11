@@ -5,8 +5,10 @@ class Vozac {
   Vozac({
     String? id,
     required this.ime,
+    this.prezime,
     this.brojTelefona,
     this.email,
+    this.adresaId,
     this.aktivan = true,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -18,8 +20,10 @@ class Vozac {
     return Vozac(
       id: map['id'] as String,
       ime: map['ime'] as String,
+      prezime: map['prezime'] as String?,
       brojTelefona: map['broj_telefona'] as String?,
       email: map['email'] as String?,
+      adresaId: map['adresa_id'] as String?,
       aktivan: map['aktivan'] as bool? ?? true,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -27,8 +31,10 @@ class Vozac {
   }
   final String id;
   final String ime;
+  final String? prezime;
   final String? brojTelefona;
   final String? email;
+  final String? adresaId; // ID adrese vozača
   final bool aktivan;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -37,13 +43,27 @@ class Vozac {
     return {
       'id': id,
       'ime': ime,
+      'prezime': prezime,
       'broj_telefona': brojTelefona,
       'email': email,
+      'adresa_id': adresaId,
       'aktivan': aktivan,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  String get punoIme => ime;
+  /// Vraća puno ime vozača (ime + prezime)
+  String get punoIme {
+    if (prezime != null && prezime!.isNotEmpty) {
+      return '$ime $prezime';
+    }
+    return ime;
+  }
+
+  /// ToString metoda za debugging
+  @override
+  String toString() {
+    return 'Vozac{id: $id, ime: $ime, prezime: $prezime, aktivan: $aktivan}';
+  }
 }

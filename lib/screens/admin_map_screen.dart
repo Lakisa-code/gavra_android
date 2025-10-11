@@ -1,73 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/putnik_service.dart';
+
+import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
+import '../services/putnik_service.dart';
 import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
-
-// Model za GPS lokacije vozača
-class GpsLokacija {
-  GpsLokacija({
-    required this.id,
-    required this.name,
-    required this.lat,
-    required this.lng,
-    required this.timestamp,
-    required this.color,
-    required this.vehicleType,
-  });
-
-  factory GpsLokacija.fromMap(Map<String, dynamic> map) {
-    return GpsLokacija(
-      id: map['id'] as int,
-      name: map['name'] as String? ?? 'Nepoznato',
-      lat: (map['lat'] as num?)?.toDouble() ??
-          (map['latitude'] as num?)?.toDouble() ??
-          0.0,
-      lng: (map['lng'] as num?)?.toDouble() ??
-          (map['longitude'] as num?)?.toDouble() ??
-          0.0,
-      timestamp: _parseTimestamp(map),
-      color: map['color'] as String? ?? 'blue',
-      vehicleType: map['vehicle_type'] as String? ?? 'car',
-    );
-  }
-  final int id;
-  final String name;
-  final double lat;
-  final double lng;
-  final DateTime timestamp;
-  final String color;
-  final String vehicleType;
-
-  static DateTime _parseTimestamp(Map<String, dynamic> map) {
-    // Pokušaj različite nazive timestamp kolona
-    final timestampKeys = [
-      'created_at',
-      'timestamp',
-      'time',
-      'datetime',
-      'updated_at',
-    ];
-
-    for (final key in timestampKeys) {
-      final value = map[key];
-      if (value != null) {
-        try {
-          return DateTime.parse(value.toString());
-        } catch (e) {
-          dlog('⚠️ Greška parsiranja timestamp-a za $key: $e');
-        }
-      }
-    }
-
-    dlog('⚠️ Nijedan timestamp key nije pronađen, koristim trenutno vreme');
-    return DateTime.now();
-  }
-}
 
 class AdminMapScreen extends StatefulWidget {
   const AdminMapScreen({Key? key}) : super(key: key);
@@ -78,7 +19,7 @@ class AdminMapScreen extends StatefulWidget {
 
 class _AdminMapScreenState extends State<AdminMapScreen> {
   final MapController _mapController = MapController();
-  List<GpsLokacija> _gpsLokacije = [];
+  List<GPSLokacija> _gpsLokacije = [];
   List<Putnik> _putnici = [];
   Position? _currentPosition;
   bool _isLoading = true;
@@ -102,8 +43,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _loadPutnici() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastPutniciLoad != null &&
-        DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
+    if (_lastPutniciLoad != null && DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
       return;
     }
 
@@ -150,8 +90,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _loadGpsLokacije() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastGpsLoad != null &&
-        DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
+    if (_lastGpsLoad != null && DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
       return;
     }
 
@@ -161,17 +100,15 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       });
 
       // Prvo pokušaj da dobiješ strukturu tabele
-      final response = await Supabase.instance.client
-          .from('gps_lokacije')
-          .select()
-          .limit(10); // Uzmi samo 10 da vidimo strukturu
+      final response =
+          await Supabase.instance.client.from('gps_lokacije').select().limit(10); // Uzmi samo 10 da vidimo strukturu
 
       dlog('🗺️ GPS Response: ${response.length} lokacija dobijeno');
 
-      final gpsLokacije = <GpsLokacija>[];
+      final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {
-          gpsLokacije.add(GpsLokacija.fromMap(json as Map<String, dynamic>));
+          gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
         } catch (e) {
           dlog('⚠️ Greška parsiranja GPS lokacije: $e');
           dlog('📍 JSON: $json');
@@ -221,21 +158,19 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     // VOZAČI - ako su uključeni
     if (_showDrivers) {
       // Grupiši GPS lokacije po vozaču i uzmi najnoviju za svakog
-      Map<String, GpsLokacija> najnovijeLokacije = {};
+      Map<String, GPSLokacija> najnovijeLokacije = {};
       for (final lokacija in _gpsLokacije) {
-        if (!najnovijeLokacije.containsKey(lokacija.name) ||
-            najnovijeLokacije[lokacija.name]!
-                .timestamp
-                .isBefore(lokacija.timestamp)) {
-          najnovijeLokacije[lokacija.name] = lokacija;
+        final vozacKey = lokacija.vozacId ?? 'nepoznat';
+        if (!najnovijeLokacije.containsKey(vozacKey) || najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
+          najnovijeLokacije[vozacKey] = lokacija;
         }
       }
 
       // Kreiraj markere za svakog vozača
-      najnovijeLokacije.forEach((vozac, lokacija) {
+      najnovijeLokacije.forEach((vozacId, lokacija) {
         markers.add(
           Marker(
-            point: LatLng(lokacija.lat, lokacija.lng),
+            point: LatLng(lokacija.latitude, lokacija.longitude),
             child: Container(
               width: 60,
               height: 60,
@@ -260,7 +195,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                     size: 20,
                   ),
                   Text(
-                    vozac.substring(0, 1),
+                    vozacId.substring(0, 1).toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -285,9 +220,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     });
   }
 
-  Color _getDriverColor(GpsLokacija lokacija) {
-    // 🎨 KORISTI OFICIJELNE BOJE VOZAČA
-    switch (lokacija.name.toLowerCase()) {
+  Color _getDriverColor(GPSLokacija lokacija) {
+    // Koristimo vozac_id umesto name
+    final vozacId = lokacija.vozacId?.toLowerCase() ?? 'nepoznat';
+
+    switch (vozacId) {
       case 'bojan':
         return const Color(0xFF00E5FF); // svetla cyan plava
       case 'svetlana':
@@ -402,9 +339,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   // 🚗 Vozači toggle
                   IconButton(
                     icon: Icon(
-                      _showDrivers
-                          ? Icons.directions_car
-                          : Icons.directions_car_outlined,
+                      _showDrivers ? Icons.directions_car : Icons.directions_car_outlined,
                       color: _showDrivers ? Colors.white : Colors.white54,
                     ),
                     onPressed: () {
@@ -427,8 +362,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       });
                       _updateMarkers();
                     },
-                    tooltip:
-                        _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
+                    tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
                   ),
                   // 🔄 Refresh dugme
                   TextButton(
@@ -524,8 +458,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                     _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                     _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
                   ],
-                  if (_showPassengers)
-                    _buildLegendItem(Colors.green, '👤 Putnici'),
+                  if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
                   const SizedBox(height: 4),
                   const Text(
                     '💚 BESPLATNO OpenStreetMap',

@@ -4,8 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
-import '../utils/slot_utils.dart';
 import '../utils/logging.dart';
+import '../utils/slot_utils.dart';
 import 'supabase_safe.dart';
 
 typedef RealtimePayloadHandler = void Function(Map<String, dynamic> payload);
@@ -58,7 +58,13 @@ class RealtimeService {
     final client = Supabase.instance.client;
     try {
       dlog('🔌 [REALTIME SERVICE] Creating stream for table: $table');
-      final stream = client.from(table).stream(primaryKey: ['id']);
+      final stream = client.from(table).stream(primaryKey: ['id']).timeout(
+        const Duration(seconds: 30),
+        onTimeout: (sink) {
+          dlog('⏰ [REALTIME SERVICE] Stream timeout for $table - retrying...');
+          sink.close();
+        },
+      );
       return stream.map((data) {
         dlog(
           '🔔 [REALTIME SERVICE] Stream event for $table: ${(data as List?)?.length ?? 0} rows',
@@ -144,62 +150,76 @@ class RealtimeService {
     });
     */
 
-    // 🔄 PUTOVANJA ISTORIJA - umesto dnevni_putnici
-    _putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
-      try {
-        final rows = <Map<String, dynamic>>[];
-        for (final r in (data as List<dynamic>)) {
-          if (r is Map) {
-            rows.add(Map<String, dynamic>.from(r));
-          }
-        }
-        _lastPutovanjaRows = rows;
+    // 🔄 STANDARDIZOVANO: putovanja_istorija (glavni naziv tabele)
+    _putovanjaSub = tableStream('putovanja_istorija').listen(
+      (dynamic data) {
         try {
-          final sample = rows
-              .take(5)
-              .map(
-                (r) => r['putnik_ime'] ?? r['id']?.toString() ?? r.toString(),
-              )
-              .toList();
-          dlog(
-            '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample: $sample',
-          );
-        } catch (_) {}
-        if (!_putovanjaController.isClosed) {
-          _putovanjaController.add(rows);
+          final rows = <Map<String, dynamic>>[];
+          for (final r in (data as List<dynamic>)) {
+            if (r is Map) {
+              rows.add(Map<String, dynamic>.from(r));
+            }
+          }
+          _lastPutovanjaRows = rows;
+          try {
+            final sample = rows
+                .take(5)
+                .map(
+                  (r) => r['putnik_ime'] ?? r['id']?.toString() ?? r.toString(),
+                )
+                .toList();
+            dlog(
+              '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample: $sample',
+            );
+          } catch (_) {}
+          if (!_putovanjaController.isClosed) {
+            _putovanjaController.add(rows);
+          }
+          _emitCombinedPutnici();
+        } catch (e) {
+          dlog('❌ [REALTIME] Error processing putovanja_istorija: $e');
+          // Nastavi rad bez prekidanja
         }
-        _emitCombinedPutnici();
-      } catch (e) {
-        dlog('❌ [REALTIME] Error processing putovanja_istorija: $e');
-      }
-    });
+      },
+      onError: (Object error) {
+        dlog('❌ [REALTIME] putovanja_istorija stream error: $error');
+        // Pokušaj reconnect preko ConnectionResilience
+      },
+    );
 
-    // mesecni_putnici
-    _mesecniSub = tableStream('mesecni_putnici').listen((dynamic data) {
-      try {
-        final rows = <Map<String, dynamic>>[];
-        for (final r in (data as List<dynamic>)) {
-          if (r is Map) {
-            rows.add(Map<String, dynamic>.from(r));
-          }
-        }
-        _lastMesecniRows = rows;
+    // 🔄 STANDARDIZOVANO: mesecni_putnici sa boljim error handling
+    _mesecniSub = tableStream('mesecni_putnici').listen(
+      (dynamic data) {
         try {
-          final sample = rows
-              .take(5)
-              .map(
-                (r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString(),
-              )
-              .toList();
-          dlog(
-            '🔔 [REALTIME] mesecni_putnici rows: ${rows.length}; sample: $sample',
-          );
-        } catch (_) {}
-        _emitCombinedPutnici();
-      } catch (e) {
-        // ignore
-      }
-    });
+          final rows = <Map<String, dynamic>>[];
+          for (final r in (data as List<dynamic>)) {
+            if (r is Map) {
+              rows.add(Map<String, dynamic>.from(r));
+            }
+          }
+          _lastMesecniRows = rows;
+          try {
+            final sample = rows
+                .take(5)
+                .map(
+                  (r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString(),
+                )
+                .toList();
+            dlog(
+              '🔔 [REALTIME] mesecni_putnici rows: ${rows.length}; sample: $sample',
+            );
+          } catch (_) {}
+          _emitCombinedPutnici();
+        } catch (e) {
+          dlog('❌ [REALTIME] Error processing mesecni_putnici: $e');
+          // Nastavi rad bez prekidanja
+        }
+      },
+      onError: (Object error) {
+        dlog('❌ [REALTIME] mesecni_putnici stream error: $error');
+        // Pokušaj reconnect preko ConnectionResilience
+      },
+    );
 
     // Fetch initial data to ensure streams have data immediately
     refreshNow();
@@ -207,21 +227,21 @@ class RealtimeService {
 
   /// Stop any centralized subscriptions started with [startForDriver]
   Future<void> stopForDriver() async {
-    // _dailySub je komentarisana jer se ne kreira
-    /*
-    try {
-      await _dailySub?.cancel();
-      _dailySub = null;
-    } catch (_) {}
-    */
+    dlog('🛑 [REALTIME SERVICE] Stopping realtime subscriptions...');
+
+    // Zaustavi sve aktivne subscription-e sa proper error handling
     try {
       await _putovanjaSub?.cancel();
       _putovanjaSub = null;
-    } catch (_) {}
+    } catch (e) {
+      dlog('⚠️ [REALTIME SERVICE] Error canceling putovanja subscription: $e');
+    }
     try {
       await _mesecniSub?.cancel();
       _mesecniSub = null;
-    } catch (_) {}
+    } catch (e) {
+      dlog('⚠️ [REALTIME SERVICE] Error canceling mesecni subscription: $e');
+    }
 
     // Clear internal state
     _lastPutovanjaRows.clear();
@@ -234,6 +254,19 @@ class RealtimeService {
     if (!_combinedPutniciController.isClosed) {
       _combinedPutniciController.add([]);
     }
+
+    dlog('✅ [REALTIME SERVICE] All subscriptions stopped');
+  }
+
+  /// 🔄 EMERGENCY RESTART REALTIME CONNECTIONS
+  Future<void> restartConnections(String? vozac) async {
+    dlog('🔄 [REALTIME SERVICE] Emergency restart requested...');
+
+    await stopForDriver();
+    await Future<void>.delayed(const Duration(seconds: 2)); // Brief pause
+    startForDriver(vozac);
+
+    dlog('✅ [REALTIME SERVICE] Emergency restart completed');
   }
 
   void _emitCombinedPutnici() {
@@ -505,35 +538,33 @@ class RealtimeService {
   /// and emit the latest combined set.
   Future<void> refreshNow() async {
     try {
-      // 🆕 KORISTI NORMALIZOVANU ŠEMU: dnevni_putnici i mesecni_putnici
-      final dnevniPutnici = await SupabaseSafe.select('dnevni_putnici');
-      final mesecniPutnici = await Supabase.instance.client
-          .from('mesecni_putnici')
-          .select()
-          .eq('aktivan', true)
-          .eq('obrisan', false);
+      dlog('🔄 [REFRESH NOW] Starting manual refresh...');
 
-      // 🔄 Ažuriraj interne varijable da koriste nove tabele
-      _lastPutovanjaRows = (dnevniPutnici is List)
-          ? dnevniPutnici
+      // 🔄 STANDARDIZOVANO: koristi putovanja_istorija i mesecni_putnici
+      final putovanjaData = await SupabaseSafe.select('putovanja_istorija');
+      final mesecniData = await SupabaseSafe.select('mesecni_putnici');
+
+      // 🔄 Ažuriraj interne varijable sa standardizovanim nazivima
+      _lastPutovanjaRows = (putovanjaData is List)
+          ? putovanjaData
               .map((e) => Map<String, dynamic>.from(e as Map))
               .toList()
           : [];
-      _lastMesecniRows = mesecniPutnici
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList();
+      _lastMesecniRows = (mesecniData is List)
+          ? mesecniData.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+          : [];
 
       try {
-        final dSample = _lastPutovanjaRows
-            .take(5)
-            .map((r) => r['ime'] ?? r['id']?.toString() ?? r.toString())
+        final pSample = _lastPutovanjaRows
+            .take(3)
+            .map((r) => r['putnik_ime'] ?? r['id']?.toString() ?? 'unknown')
             .toList();
         final mSample = _lastMesecniRows
-            .take(5)
-            .map((r) => r['ime'] ?? r['putnik_ime'] ?? r['id'] ?? r.toString())
+            .take(3)
+            .map((r) => r['putnik_ime'] ?? r['id']?.toString() ?? 'unknown')
             .toList();
         dlog(
-          '🔄 [REFRESH NOW] fetched dnevni: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: dnevni=$dSample, mesecni=$mSample',
+          '🔄 [REFRESH NOW] fetched putovanja: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: putovanja=$pSample, mesecni=$mSample',
         );
       } catch (_) {}
       _emitCombinedPutnici();

@@ -5,13 +5,14 @@ import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreetMap
 
+import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
 import '../services/daily_checkin_service.dart'; // 🌅 DODANO za sitan novac
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/mesecni_putnik_service_novi.dart'; // 🎓 DODANO za đačke statistike
+import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
@@ -101,10 +102,11 @@ class _DanasScreenState extends State<DanasScreen> {
       final danasnjiDan = _getTodayForDatabase();
 
       // Direktno dohvati mesečne putnike iz baze da imamo pristup tip informaciji
-      final sviMesecniPutnici = await MesecniPutnikServiceNovi().getAktivniMesecniPutnici();
+      final service = MesecniPutnikService();
+      final sviMesecniPutnici = await service.getAktivniMesecniPutnici();
 
       // Filtriraj samo učenike za današnji dan
-      final djaci = sviMesecniPutnici.where((mp) {
+      final djaci = sviMesecniPutnici.where((MesecniPutnik mp) {
         final dayMatch = mp.radniDani.toLowerCase().contains(danasnjiDan.toLowerCase());
         final jeUcenik = mp.tip == 'ucenik';
         final aktivanStatus = mp.status == 'radi'; // samo oni koji rade
@@ -258,7 +260,131 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // 🎓 FINALNO DUGME - OSTALO/UKUPNO FORMAT
+  // � CLEAN STATS INDIKATOR
+  Widget _buildCleanStatsIndicator() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: StatistikaService.dohvatiCleanStatistike(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || !snapshot.hasData) {
+          return SizedBox(
+            height: 26,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red.shade700,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error, color: Colors.white, size: 12),
+                  SizedBox(width: 4),
+                  Text(
+                    'ERR',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final data = snapshot.data!;
+        final noDuplicates = data['no_duplicates'] == true;
+        final amount = (data['ukupno_sve'] as num).toDouble();
+        final expectedAmount = 13800.0;
+        final isCorrect = amount == expectedAmount;
+
+        return GestureDetector(
+          onTap: () async {
+            try {
+              final debugInfo = await StatistikaService.cleanDebugInfo();
+              if (mounted) {
+                showDialog<void>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clean Stats Debug'),
+                    content: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Ukupno: ${data['ukupno_sve']} RSD'),
+                          Text('Zapisi: ${data['broj_ukupno']}'),
+                          Text('Duplikati: ${noDuplicates ? 'NE' : 'DA'}'),
+                          Text('Očekivano: $expectedAmount RSD'),
+                          Text('Tačnost: ${isCorrect ? 'DA' : 'NE'}'),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Debug:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            debugInfo.toString(),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Zatvori'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Greška: $e')),
+                );
+              }
+            }
+          },
+          child: SizedBox(
+            height: 26,
+            child: Container(
+              decoration: BoxDecoration(
+                color: noDuplicates && isCorrect ? Colors.green.shade700 : Colors.orange.shade700,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    noDuplicates && isCorrect ? Icons.verified : Icons.warning,
+                    color: Colors.white,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isCorrect ? '${(amount / 1000).toStringAsFixed(1)}K' : 'ERR',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // �🎓 FINALNO DUGME - OSTALO/UKUPNO FORMAT
   Widget _buildDjackiBrojacButton() {
     return FutureBuilder<Map<String, int>>(
       future: _calculateDjackieBrojeviAsync(),
@@ -1526,7 +1652,10 @@ class _DanasScreenState extends State<DanasScreen> {
                   // DUGMAD U APP BAR-U - dinamički broj dugmića
                   Row(
                     children: [
-                      // 🎓 ĐAČKI BROJAČ
+                      // � CLEAN STATS INDIKATOR
+                      Expanded(child: _buildCleanStatsIndicator()),
+                      const SizedBox(width: 2),
+                      // �🎓 ĐAČKI BROJAČ
                       Expanded(child: _buildDjackiBrojacButton()),
                       const SizedBox(width: 2),
                       // 🚀 DUGME ZA OPTIMIZACIJU RUTE

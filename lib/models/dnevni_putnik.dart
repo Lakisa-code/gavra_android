@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
-import 'putnik.dart';
+
 import 'adresa.dart';
+import 'putnik.dart';
 import 'ruta.dart';
 
 /// Status dnevnih putnika
@@ -87,13 +88,9 @@ class DnevniPutnik {
         map['status'] as String? ?? 'rezervisan',
       ),
       napomena: map['napomena'] as String?,
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
       pokupioVozacId: map['pokupio_vozac_id'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
+      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       naplatioVozacId: map['naplatio_vozac_id'] as String?,
       dodaoVozacId: map['dodao_vozac_id'] as String?,
       obrisan: map['obrisan'] as bool? ?? false,
@@ -147,13 +144,10 @@ class DnevniPutnik {
 
   String get punoIme => ime;
 
-  bool get jePokupljen =>
-      status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
+  bool get jePokupljen => status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
   bool get jePlacen => vremePlacanja != null;
   bool get jeOtkazan => status == DnevniPutnikStatus.otkazan;
-  bool get jeOdsustvo =>
-      status == DnevniPutnikStatus.bolovanje ||
-      status == DnevniPutnikStatus.godisnji;
+  bool get jeOdsustvo => status == DnevniPutnikStatus.bolovanje || status == DnevniPutnikStatus.godisnji;
 
   /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
   Putnik toPutnik(Adresa adresa, Ruta ruta) {
@@ -191,5 +185,170 @@ class DnevniPutnik {
       brojTelefona: brojTelefona,
       datum: datumPutovanja.toIso8601String().split('T')[0],
     );
+  }
+
+  // ✅ VALIDACIJSKE METODE
+
+  /// Validira da li su sva obavezna polja popunjena
+  bool get isValid {
+    return ime.trim().isNotEmpty && adresaId.isNotEmpty && rutaId.isNotEmpty && cena >= 0 && vremePolaska.isNotEmpty;
+  }
+
+  /// Validira format vremena polaska (HH:mm)
+  bool get isVremePolaskaValid {
+    final timeRegex = RegExp(r'^([01]?[0-9]|2[0-3]):[0-5][0-9]$');
+    return timeRegex.hasMatch(vremePolaska);
+  }
+
+  /// Proverava da li je putnik aktivan (nije obrisan i nije otkazan)
+  bool get isAktivan {
+    return !obrisan && status != DnevniPutnikStatus.otkazan;
+  }
+
+  /// Proverava da li je putnik pokupljen
+  bool get isPokupljen {
+    return status == DnevniPutnikStatus.pokupljen && vremePokupljenja != null;
+  }
+
+  /// Proverava da li je putnik plaćen
+  bool get isPlacen {
+    return vremePlacanja != null && cena > 0;
+  }
+
+  /// Vraća ljudski čitljiv status
+  String get statusLabel {
+    switch (status) {
+      case DnevniPutnikStatus.rezervisan:
+        return 'Rezervisan';
+      case DnevniPutnikStatus.pokupljen:
+        return 'Pokupljen';
+      case DnevniPutnikStatus.otkazan:
+        return 'Otkazan';
+      case DnevniPutnikStatus.bolovanje:
+        return 'Bolovanje';
+      case DnevniPutnikStatus.godisnji:
+        return 'Godišnji odmor';
+    }
+  }
+
+  /// Vraća dan u nedelji kao kraticu
+  String get danKratica {
+    switch (datumPutovanja.weekday) {
+      case 1:
+        return 'pon';
+      case 2:
+        return 'uto';
+      case 3:
+        return 'sre';
+      case 4:
+        return 'cet';
+      case 5:
+        return 'pet';
+      case 6:
+        return 'sub';
+      case 7:
+        return 'ned';
+      default:
+        return 'pon';
+    }
+  }
+
+  // ✅ RELATIONSHIP HELPER METODE
+
+  /// Konvertuje u Putnik objekat za kompatibilnost sa UI
+  Putnik toPutnikWithRelations(Adresa adresa, Ruta ruta) {
+    return Putnik(
+      id: id,
+      ime: ime,
+      polazak: vremePolaska,
+      pokupljen: isPokupljen,
+      vremeDodavanja: createdAt,
+      mesecnaKarta: false,
+      dan: danKratica,
+      status: status.value,
+      vremePokupljenja: vremePokupljenja,
+      vremePlacanja: vremePlacanja,
+      placeno: isPlacen,
+      iznosPlacanja: cena,
+      naplatioVozac: naplatioVozacId,
+      pokupioVozac: pokupioVozacId,
+      dodaoVozac: dodaoVozacId,
+      grad: adresa.grad,
+      adresa: adresa.naziv,
+      obrisan: obrisan,
+      brojTelefona: brojTelefona,
+      datum: datumPutovanja.toIso8601String().split('T')[0],
+      // Nova polja specifična za dnevne putnike
+      rutaNaziv: ruta.naziv,
+      adresaKoordinate: '${adresa.latitude},${adresa.longitude}',
+    );
+  }
+
+  /// Kopira objekat sa izmenjenim vrednostima
+  DnevniPutnik copyWith({
+    String? id,
+    String? ime,
+    String? brojTelefona,
+    String? adresaId,
+    String? rutaId,
+    DateTime? datumPutovanja,
+    String? vremePolaska,
+    int? brojMesta,
+    double? cena,
+    DnevniPutnikStatus? status,
+    String? napomena,
+    DateTime? vremePokupljenja,
+    String? pokupioVozacId,
+    DateTime? vremePlacanja,
+    String? naplatioVozacId,
+    String? dodaoVozacId,
+    bool? obrisan,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return DnevniPutnik(
+      id: id ?? this.id,
+      ime: ime ?? this.ime,
+      brojTelefona: brojTelefona ?? this.brojTelefona,
+      adresaId: adresaId ?? this.adresaId,
+      rutaId: rutaId ?? this.rutaId,
+      datumPutovanja: datumPutovanja ?? this.datumPutovanja,
+      vremePolaska: vremePolaska ?? this.vremePolaska,
+      brojMesta: brojMesta ?? this.brojMesta,
+      cena: cena ?? this.cena,
+      status: status ?? this.status,
+      napomena: napomena ?? this.napomena,
+      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
+      pokupioVozacId: pokupioVozacId ?? this.pokupioVozacId,
+      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
+      naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
+      dodaoVozacId: dodaoVozacId ?? this.dodaoVozacId,
+      obrisan: obrisan ?? this.obrisan,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+    );
+  }
+
+  /// toString za debugging
+  @override
+  String toString() {
+    return 'DnevniPutnik(id: $id, ime: $ime, datum: ${datumPutovanja.toIso8601String().split('T')[0]}, '
+        'polazak: $vremePolaska, status: ${status.value}, cena: $cena)';
+  }
+
+  /// Jednakost dva objekta
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DnevniPutnik &&
+        other.id == id &&
+        other.ime == ime &&
+        other.datumPutovanja == datumPutovanja &&
+        other.vremePolaska == vremePolaska;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
   }
 }

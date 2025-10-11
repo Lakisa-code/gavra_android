@@ -9,7 +9,7 @@ import '../utils/logging.dart';
 class CombinedPutnikService {
   final Logger _logger = Logger();
   // final DnevniPutnikService _dnevniService = DnevniPutnikService(); // Unused
-  // final MesecniPutnikServiceNovi _mesecniService = MesecniPutnikServiceNovi(); // Unused
+  // final MesecniPutnikService _mesecniService = MesecniPutnikService(); // Unused
   // final AdresaService _adresaService = AdresaService(); // Unused
   // final RutaService _rutaService = RutaService(); // Unused
 

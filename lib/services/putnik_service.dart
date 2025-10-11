@@ -1,12 +1,14 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/dnevni_putnik.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 import '../utils/logging.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
-import 'mesecni_putnik_service_novi.dart'; // DODANO za automatsku sinhronizaciju
+import 'dnevni_putnik_service.dart'; // DODANO za normalizovanu arhitekturu
+import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_notification_service.dart';
 import 'realtime_service.dart';
 import 'supabase_safe.dart';
@@ -28,6 +30,9 @@ class UndoAction {
 
 class PutnikService {
   final supabase = Supabase.instance.client;
+
+  // ✅ DODANO: Instance DnevniPutnikService za normalizovanu arhitekturu
+  late final DnevniPutnikService _dnevniPutnikService = DnevniPutnikService();
 
   // Stream caching: map of active filter keys to BehaviorSubject streams
   final Map<String, BehaviorSubject<List<Putnik>>> _streams = {};
@@ -289,23 +294,22 @@ class PutnikService {
     List<Putnik> allPutnici = [];
 
     try {
-      // Učitaj dnevne putnike iz putovanja_istorija
-      final dnevniResponse = await supabase
-          .from('putovanja_istorija')
-          .select()
-          .eq('tip_putnika', 'dnevni')
-          .order('created_at', ascending: false);
+      // ✅ REFAKTORISANO: Koristi DnevniPutnikService umesto direktnog pristupa putovanja_istorija
+      // Prvo dohvati dnevne putnike iz normalizovane dnevni_putnici tabele
+      final targetDate = targetDay ?? _getTodayName();
+      final datum = _parseDateFromDayName(targetDate);
 
-      for (final data in dnevniResponse) {
-        allPutnici.add(Putnik.fromPutovanjaIstorija(data));
-      }
+      dlog(
+        '🎯 [getAllPutniciFromBothTables] Loading daily passengers for: $targetDate (${datum.toIso8601String().split('T')[0]})',
+      );
 
-      // � UKLONJENO: Ne učitavaj mesečne putnike iz putovanja_istorija
-      // jer oni postoje u mesecni_putnici tabeli i ne treba da se duplikuju
+      // Dohvati dnevne putnike kao Putnik objekte sa relationship podacima
+      final dnevniPutnici = await _dnevniPutnikService.getDnevniPutniciKaoPutnici(datum);
+      allPutnici.addAll(dnevniPutnici);
+
+      dlog('✅ [getAllPutniciFromBothTables] Loaded ${dnevniPutnici.length} daily passengers');
 
       // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz mesecni_putnici za selektovani dan
-      // Ako nije prosleđen targetDay, koristi današnji dan
-      final targetDate = targetDay ?? _getTodayName();
       final danKratica = _getDayAbbreviationFromName(targetDate);
 
       dlog(
@@ -365,6 +369,49 @@ class PutnikService {
       'Nedelja',
     ];
     return daniNazivi[danas.weekday - 1];
+  }
+
+  // ✅ DODANO: Helper funkcija za konverziju naziva dana u DateTime objekat
+  DateTime _parseDateFromDayName(String dayName) {
+    final today = DateTime.now();
+    final todayWeekday = today.weekday;
+
+    int targetWeekday;
+    switch (dayName.toLowerCase()) {
+      case 'ponedeljak':
+        targetWeekday = 1;
+        break;
+      case 'utorak':
+        targetWeekday = 2;
+        break;
+      case 'sreda':
+        targetWeekday = 3;
+        break;
+      case 'četvrtak':
+        targetWeekday = 4;
+        break;
+      case 'petak':
+        targetWeekday = 5;
+        break;
+      case 'subota':
+        targetWeekday = 6;
+        break;
+      case 'nedelja':
+        targetWeekday = 7;
+        break;
+      default:
+        targetWeekday = todayWeekday; // Defaultuje na danas
+    }
+
+    // Izračunaj koliko dana treba dodati/oduzeti
+    int daysDifference = targetWeekday - todayWeekday;
+
+    // Ako je ciljan dan u prošlosti ove nedelje, uzmi iz sledeće nedelje
+    if (daysDifference < 0) {
+      daysDifference += 7;
+    }
+
+    return today.add(Duration(days: daysDifference));
   }
 
   // Helper funkcija za konverziju punog naziva dana u kraticu
@@ -583,19 +630,39 @@ class PutnikService {
         );
       } else {
         dlog('📊 [DODAJ PUTNIKA] Dodajem DNEVNOG putnika...');
-        // DNEVNI PUTNIK - dodaj u putovanja_istorija tabelu (RLS je sada rešen!)
-        final insertData = putnik.toPutovanjaIstorijaMap();
-        dlog('📊 [DODAJ PUTNIKA] Insert data: $insertData');
-        final insertRes = await SupabaseSafe.run(
-          () => supabase.from('putovanja_istorija').insert(insertData),
-          fallback: <dynamic>[],
-        );
-        if (insertRes == null) {
-          dlog(
-            '⚠️ [DODAJ PUTNIKA] Insert returned null (putovanja_istorija missing?)',
+
+        // ✅ REFAKTORISANO: Kreiraj DnevniPutnik objekat i dodaj preko DnevniPutnikService
+        try {
+          // Konvertuj Putnik u DnevniPutnik - potrebne su adresa_id i ruta_id
+          final dnevniPutnik = await _createDnevniPutnikFromPutnik(putnik);
+
+          // Validiraj pre dodavanja
+          final isValid = await _dnevniPutnikService.validateNoviPutnik(dnevniPutnik);
+          if (!isValid) {
+            throw Exception('Validacija dnevnog putnika neuspešna');
+          }
+
+          // Dodaj preko normalizovanog servisa
+          final dodatiPutnik = await _dnevniPutnikService.createDnevniPutnik(dnevniPutnik);
+          dlog('✅ [DODAJ PUTNIKA] Dnevni putnik uspešno dodat preko DnevniPutnikService: ${dodatiPutnik.id}');
+        } catch (e) {
+          dlog('❌ [DODAJ PUTNIKA] Greška sa DnevniPutnikService: $e');
+
+          // FALLBACK: Koristi legacy putovanja_istorija pristup
+          dlog('🔄 [DODAJ PUTNIKA] Fallback na putovanja_istorija...');
+          final insertData = putnik.toPutovanjaIstorijaMap();
+          dlog('📊 [DODAJ PUTNIKA] Insert data: $insertData');
+          final insertRes = await SupabaseSafe.run(
+            () => supabase.from('putovanja_istorija').insert(insertData),
+            fallback: <dynamic>[],
           );
-        } else {
-          dlog('✅ [DODAJ PUTNIKA] Dnevni putnik uspešno dodat');
+          if (insertRes == null) {
+            dlog(
+              '⚠️ [DODAJ PUTNIKA] Insert returned null (putovanja_istorija missing?)',
+            );
+          } else {
+            dlog('✅ [DODAJ PUTNIKA] Dnevni putnik dodat preko legacy pristupa');
+          }
         }
       }
 
@@ -717,7 +784,7 @@ class PutnikService {
 
       // 3. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
       try {
-        final zakupljenoRows = await MesecniPutnikServiceNovi.getZakupljenoDanas();
+        final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
         if (zakupljenoRows.isNotEmpty) {
           dlog(
             '📊 [STREAM] Dobio ${zakupljenoRows.length} zakupljeno zapisa za danas',
@@ -1004,7 +1071,7 @@ class PutnikService {
 
       // 🔄 AUTOMATSKA SINHRONIZACIJA - ažuriraj brojPutovanja iz istorije
       try {
-        await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(id);
+        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(id);
         dlog(
           '✅ AUTOMATSKI SINHRONIZOVAN brojPutovanja za mesečnog putnika: $id',
         );
@@ -1027,7 +1094,7 @@ class PutnikService {
         dlog(
           '📊 [AUTO SYNC PICKUP] Sinhronizujem broj putovanja za mesečnog putnika ID: ${response['mesecni_putnik_id']}',
         );
-        await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
+        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
           response['mesecni_putnik_id'] as String,
         );
         dlog('✅ [AUTO SYNC PICKUP] Broj putovanja automatski ažuriran');
@@ -1100,7 +1167,7 @@ class PutnikService {
 
       // Konvertuj ime vozača u UUID ako nije već UUID
       String? validVozacId =
-          naplatioVozac.isEmpty ? null : (VozacMappingService.getVozacUuid(naplatioVozac) ?? naplatioVozac);
+          naplatioVozac.isEmpty ? null : (VozacMappingService.getVozacUuidSync(naplatioVozac) ?? naplatioVozac);
 
       await supabase.from(tabela).update({
         'cena': iznos, // ✅ CENA mesečne karte
@@ -1115,7 +1182,7 @@ class PutnikService {
 
       // Konvertuj ime vozača u UUID ako nije već UUID
       String? validVozacId =
-          naplatioVozac.isEmpty ? null : (VozacMappingService.getVozacUuid(naplatioVozac) ?? naplatioVozac);
+          naplatioVozac.isEmpty ? null : (VozacMappingService.getVozacUuidSync(naplatioVozac) ?? naplatioVozac);
 
       await supabase.from(tabela).update({
         'cena': iznos,
@@ -1243,7 +1310,7 @@ class PutnikService {
           dlog(
             '📊 [AUTO SYNC] Sinhronizujem broj otkazivanja za mesečnog putnika ID: ${respMap['mesecni_putnik_id']}',
           );
-          await MesecniPutnikServiceNovi.sinhronizujBrojOtkazivanjaSaIstorijom(
+          await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
             respMap['mesecni_putnik_id'] as String,
           );
           dlog('✅ [AUTO SYNC] Broj otkazivanja automatski ažuriran');
@@ -1535,14 +1602,14 @@ class PutnikService {
               '📊 [RESET SYNC] Sinhronizujem broj otkazivanja za: $imePutnika',
             );
             final putnikId = mesecniResponse['id'] as String;
-            await MesecniPutnikServiceNovi.sinhronizujBrojOtkazivanjaSaIstorijom(putnikId);
+            await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(putnikId);
             dlog('✅ [RESET SYNC] Broj otkazivanja sinhronizovan nakon reset-a');
 
             // 📊 TAKOĐE sinhronizuj broj putovanja (NOVO!)
             dlog(
               '📊 [RESET SYNC] Sinhronizujem broj putovanja za: $imePutnika',
             );
-            await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
+            await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
               putnikId,
             );
             dlog('✅ [RESET SYNC] Broj putovanja sinhronizovan nakon reset-a');
@@ -1818,6 +1885,25 @@ class PutnikService {
       dlog('❌ Greška pri dohvatanju plaćanja: $e');
       return [];
     }
+  }
+
+  // ✅ HELPER METODA: Konvertuje Putnik u DnevniPutnik
+  Future<DnevniPutnik> _createDnevniPutnikFromPutnik(Putnik putnik) async {
+    // Za sada ću baciti grešku jer treba implementacija sa address/route mapping
+    throw UnimplementedError('Konverzija Putnik -> DnevniPutnik zahteva mapiranje adresa_id i ruta_id. '
+        'Ova funkcionalnost će biti implementirana u sledećoj fazi.');
+
+    // TODO: Implementirati kada se rešavaju adrese i rute
+    // return DnevniPutnik(
+    //   ime: putnik.ime,
+    //   brojTelefona: putnik.brojTelefona,
+    //   adresaId: 'TODO', // Treba mapirati putnik.adresa -> adresa_id
+    //   rutaId: 'TODO',   // Treba mapirati putnik.grad -> ruta_id
+    //   datumPutovanja: DateTime.parse(putnik.datum),
+    //   vremePolaska: putnik.polazak,
+    //   cena: putnik.iznosPlacanja ?? 0.0,
+    //   dodaoVozacId: putnik.dodaoVozac,
+    // );
   }
 
   // Helper metod za dobijanje naziva dana nedelje

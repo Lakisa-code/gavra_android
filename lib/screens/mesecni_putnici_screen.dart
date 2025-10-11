@@ -8,8 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/mesecni_putnik_novi.dart';
-import '../services/mesecni_putnik_service_novi.dart';
+import '../models/mesecni_putnik.dart';
+import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/real_time_statistika_service.dart';
 import '../services/realtime_service.dart';
@@ -38,7 +38,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final SupabaseClient supabase = Supabase.instance.client;
 
   // Novi servis instance
-  final MesecniPutnikServiceNovi _mesecniPutnikService = MesecniPutnikServiceNovi();
+  final MesecniPutnikService _mesecniPutnikService = MesecniPutnikService();
 
   // 🔄 OPTIMIZACIJA: Debounced search stream i filter stream
   late final BehaviorSubject<String> _searchSubject;
@@ -3074,7 +3074,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _sinhronizujStatistike(String putnikId) async {
     try {
-      final success = await MesecniPutnikServiceNovi.sinhronizujBrojPutovanjaSaIstorijom(
+      final success = await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
         putnikId,
       );
 
@@ -3292,12 +3292,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       if (driverName != null && driverName.isNotEmpty) {
         // Ako je već UUID, vrati direktno
-        if (VozacMappingService.isValidVozacUuid(driverName)) {
+        if (VozacMappingService.isValidVozacUuidSync(driverName)) {
           dlog('✅ [GET CURRENT DRIVER UUID] Already UUID: $driverName');
           return driverName;
         }
         // Inače konvertuj ime u UUID
-        final uuid = VozacMappingService.getVozacUuid(driverName);
+        final uuid = VozacMappingService.getVozacUuidSync(driverName);
         if (uuid != null && uuid.isNotEmpty) {
           dlog(
             '✅ [GET CURRENT DRIVER UUID] Converted $driverName to UUID: $uuid',
@@ -3322,7 +3322,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // Čuva legacy funkciju za kompatibilnost
   Future<String> _getCurrentDriver() async {
     final uuid = await _getCurrentDriverUuid();
-    return VozacMappingService.getVozacImeWithFallback(uuid);
+    return VozacMappingService.getVozacImeWithFallbackSync(uuid);
   }
 
   // �💰 PRIKAZ DIJALOGA ZA PLAĆANJE

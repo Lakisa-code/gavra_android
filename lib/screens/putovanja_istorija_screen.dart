@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
-import '../widgets/custom_back_button.dart';
 import '../theme.dart'; // Za theme boje
+import '../widgets/custom_back_button.dart';
 
 class PutovanjaIstorijaScreen extends StatefulWidget {
   const PutovanjaIstorijaScreen({Key? key}) : super(key: key);
 
   @override
-  State<PutovanjaIstorijaScreen> createState() =>
-      _PutovanjaIstorijaScreenState();
+  State<PutovanjaIstorijaScreen> createState() => _PutovanjaIstorijaScreenState();
 }
 
 class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
@@ -211,8 +211,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 }
 
                 // Grupiranje po vremenu polaska
-                final Map<String, List<PutovanjaIstorija>> grupisanaPutovanja =
-                    {};
+                final Map<String, List<PutovanjaIstorija>> grupisanaPutovanja = {};
                 for (final putovanje in putovanja) {
                   final vreme = putovanje.vremePolaska;
                   if (!grupisanaPutovanja.containsKey(vreme)) {
@@ -281,8 +280,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.indigo.shade100,
                     borderRadius: BorderRadius.circular(12),
@@ -658,9 +656,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       final novoPutovanje = PutovanjaIstorija(
         id: '', // Biće automatski generisan u Supabase
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty
-            ? null
-            : _noviPutnikTelefon.trim(),
+        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
         adresaPolaska: 'Bela Crkva', // Default vrednost
         vremePolaska: '07:00', // Default vrednost
         tipPutnika: _noviTipPutnika,
@@ -795,14 +791,12 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         id: originalPutovanje.id,
         mesecniPutnikId: originalPutovanje.mesecniPutnikId,
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty
-            ? null
-            : _noviPutnikTelefon.trim(),
+        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
         adresaPolaska: originalPutovanje.adresaPolaska,
         vremePolaska: originalPutovanje.vremePolaska,
         tipPutnika: _noviTipPutnika,
-        statusBelaCrkvaVrsac: originalPutovanje.statusBelaCrkvaVrsac,
-        statusVrsacBelaCrkva: originalPutovanje.statusVrsacBelaCrkva,
+        status: originalPutovanje.status,
+        pokupljen: originalPutovanje.pokupljen,
         cena: _novaCena,
         datum: originalPutovanje.datum,
         vremeAkcije: originalPutovanje.vremeAkcije,
@@ -838,9 +832,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Bela Crkva → Vršac:'),
+            const Text('Status putovanja:'),
             DropdownButton<String>(
-              value: putovanje.statusBelaCrkvaVrsac,
+              value: putovanje.status,
               isExpanded: true,
               items: const [
                 DropdownMenuItem(
@@ -849,25 +843,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 DropdownMenuItem(value: 'prisutan', child: Text('Prisutan')),
                 DropdownMenuItem(value: 'otsutan', child: Text('Odsutan')),
+                DropdownMenuItem(value: 'pokupljen', child: Text('Pokupljen')),
+                DropdownMenuItem(value: 'otkazan', child: Text('Otkazan')),
               ],
-              onChanged: (value) =>
-                  _updateStatusBelaCrkvaVrsac(putovanje, value!),
-            ),
-            const SizedBox(height: 16),
-            const Text('Vršac → Bela Crkva:'),
-            DropdownButton<String>(
-              value: putovanje.statusVrsacBelaCrkva,
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(
-                  value: 'nije_se_pojavio',
-                  child: Text('Nije se pojavio'),
-                ),
-                DropdownMenuItem(value: 'prisutan', child: Text('Prisutan')),
-                DropdownMenuItem(value: 'otsutan', child: Text('Odsutan')),
-              ],
-              onChanged: (value) =>
-                  _updateStatusVrsacBelaCrkva(putovanje, value!),
+              onChanged: (value) => _updateMainStatus(putovanje, value!),
             ),
           ],
         ),
@@ -881,7 +860,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
   }
 
-  Future<void> _updateStatusBelaCrkvaVrsac(
+  Future<void> _updateMainStatus(
     PutovanjaIstorija putovanje,
     String noviStatus,
   ) async {
@@ -893,38 +872,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       adresaPolaska: putovanje.adresaPolaska,
       vremePolaska: putovanje.vremePolaska,
       tipPutnika: putovanje.tipPutnika,
-      statusBelaCrkvaVrsac: noviStatus,
-      statusVrsacBelaCrkva: putovanje.statusVrsacBelaCrkva,
-      cena: putovanje.cena,
-      datum: putovanje.datum,
-      vremeAkcije: putovanje.vremeAkcije,
-      createdAt: putovanje.createdAt,
-      updatedAt: DateTime.now(),
-    );
-
-    await PutovanjaIstorijaService.azurirajPutovanje(azuriranoPutovanje);
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Status ažuriran na: $noviStatus')),
-      );
-    }
-  }
-
-  Future<void> _updateStatusVrsacBelaCrkva(
-    PutovanjaIstorija putovanje,
-    String noviStatus,
-  ) async {
-    final azuriranoPutovanje = PutovanjaIstorija(
-      id: putovanje.id,
-      mesecniPutnikId: putovanje.mesecniPutnikId,
-      putnikIme: putovanje.putnikIme,
-      brojTelefona: putovanje.brojTelefona,
-      adresaPolaska: putovanje.adresaPolaska,
-      vremePolaska: putovanje.vremePolaska,
-      tipPutnika: putovanje.tipPutnika,
-      statusBelaCrkvaVrsac: putovanje.statusBelaCrkvaVrsac,
-      statusVrsacBelaCrkva: noviStatus,
+      status: noviStatus,
+      pokupljen: noviStatus == 'pokupljen',
       cena: putovanje.cena,
       datum: putovanje.datum,
       vremeAkcije: putovanje.vremeAkcije,

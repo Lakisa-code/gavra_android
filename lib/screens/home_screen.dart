@@ -5,11 +5,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../main.dart' show globalThemeToggler; // Za theme toggle
+import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/mesecni_putnik_service_novi.dart';
+import '../services/mesecni_putnik_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
@@ -247,9 +248,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Use centralized RealtimeService to avoid duplicate Supabase subscriptions
     _realtimeSubscription?.cancel();
 
-    // 🆕 Koristi dnevni_putnici umesto putovanja_istorija
-    _realtimeSubscription = RealtimeService.instance.subscribe('dnevni_putnici', (data) {
+    // 🔄 STANDARDIZOVANO: koristi putovanja_istorija (glavni naziv tabele)
+    _realtimeSubscription = RealtimeService.instance.subscribe('putovanja_istorija', (data) {
       // Stream will update StreamBuilder via service layers
+      dlog(
+        '🔄 [HOME SCREEN] Received realtime update: ${data?.length ?? 0} records',
+      );
     });
   }
 
@@ -444,10 +448,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     bool manuelnoOznaceno = false; // 🔧 NOVO: prati da li je manuelno označeno
 
     // Povuci dozvoljena imena iz mesecni_putnici tabele
-    final serviceInstance = MesecniPutnikServiceNovi();
+    final serviceInstance = MesecniPutnikService();
     final lista = await serviceInstance.getAllMesecniPutnici();
-    final dozvoljenaImena =
-        lista.where((putnik) => !putnik.obrisan && putnik.aktivan).map((putnik) => putnik.putnikIme).toList();
+    final dozvoljenaImena = lista
+        .where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan)
+        .map((MesecniPutnik putnik) => putnik.putnikIme)
+        .toList();
 
     if (!mounted) return;
 
@@ -560,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                               items: dozvoljenaImena
                                   .map(
-                                    (ime) => DropdownMenuItem(
+                                    (String ime) => DropdownMenuItem(
                                       value: ime,
                                       child: Text(ime),
                                     ),

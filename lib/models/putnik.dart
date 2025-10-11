@@ -76,6 +76,9 @@ class Putnik {
     this.priority, // prioritet za optimizaciju ruta
     this.brojTelefona, // broj telefona putnika
     this.datum,
+    // ✅ DODANO: Nova polja za kompatibilnost sa DnevniPutnik modelom
+    this.rutaNaziv,
+    this.adresaKoordinate,
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
@@ -129,14 +132,14 @@ class Putnik {
       placeno: MesecniHelpers.priceIsPaid(map),
       iznosPlacanja: _parseDouble(map['cena']), // koristi cena kolonu
       naplatioVozac: MesecniHelpers.priceIsPaid(map)
-          ? VozacMappingService.getVozacImeWithFallback(
+          ? VozacMappingService.getVozacImeWithFallbackSync(
               map['vozac_id'] as String?,
             )
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
       dodaoVozac: map['dodao_vozac'] as String?,
       vozac: (map['vozac'] as String?) ??
-          VozacMappingService.getVozacImeWithFallback(
+          VozacMappingService.getVozacImeWithFallbackSync(
             map['vozac_id'] as String?,
           ),
       grad: grad,
@@ -165,7 +168,7 @@ class Putnik {
       placeno: _parseDouble(map['cena']) > 0,
       iznosPlacanja: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
-          ? VozacMappingService.getVozacImeWithFallback(
+          ? VozacMappingService.getVozacImeWithFallbackSync(
               map['vozac_id'] as String?,
             )
           : null, // ✅ Samo ako je stvarno plaćeno
@@ -174,7 +177,7 @@ class Putnik {
       // Ako tabela sadrži ime u 'vozac' polju, koristi ga, inače pokušaj da
       // mapiramo 'vozac_id' (UUID) na ime pomoću VozacMappingService.
       vozac: (map['vozac'] as String?) ??
-          VozacMappingService.getVozacImeWithFallback(
+          VozacMappingService.getVozacImeWithFallbackSync(
             map['vozac_id'] as String?,
           ),
       grad: map['grad'] as String? ?? map['adresa_polaska'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
@@ -233,6 +236,9 @@ class Putnik {
   final int? priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
   final String? brojTelefona; // NOVO - broj telefona putnika
   final String? datum;
+  // ✅ DODANO: Nova polja za kompatibilnost sa DnevniPutnik modelom
+  final String? rutaNaziv;
+  final String? adresaKoordinate;
 
   // Getter-i za kompatibilnost
   String get destinacija => grad;
@@ -393,7 +399,7 @@ class Putnik {
           placeno: placeno,
           iznosPlacanja: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? VozacMappingService.getVozacImeWithFallback(
+              ? VozacMappingService.getVozacImeWithFallbackSync(
                   map['vozac_id'] as String?,
                 )
               : null, // ✅ Samo ako je stvarno plaćeno
@@ -437,7 +443,7 @@ class Putnik {
           placeno: placeno,
           iznosPlacanja: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? VozacMappingService.getVozacImeWithFallback(
+              ? VozacMappingService.getVozacImeWithFallbackSync(
                   map['vozac_id'] as String?,
                 )
               : null, // ✅ Samo ako je stvarno plaćeno

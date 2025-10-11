@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:uuid/uuid.dart';
 
 /// Model za adrese
@@ -58,6 +60,9 @@ class Adresa {
   double? get latitude => _parseLatitudeFromPoint();
   double? get longitude => _parseLongitudeFromPoint();
 
+  // Naziv adrese za kompatibilnost sa DnevniPutnik modelom
+  String get naziv => punaAdresa;
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -115,4 +120,82 @@ class Adresa {
     if (lat == null || lng == null) return null;
     return '($lat,$lng)';
   }
+
+  /// Validation methods
+  bool get hasValidCoordinates => latitude != null && longitude != null;
+
+  bool get isValidAddress => ulica.isNotEmpty && grad.isNotEmpty;
+
+  bool get hasCompleteAddress => isValidAddress && broj != null && broj!.isNotEmpty;
+
+  /// Standardized address format
+  String get standardizedAddress {
+    final parts = <String>[];
+
+    // Add street
+    if (ulica.isNotEmpty) {
+      parts.add(_capitalizeWords(ulica));
+    }
+
+    // Add number if exists
+    if (broj != null && broj!.isNotEmpty) {
+      parts.add(broj!);
+    }
+
+    // Add city
+    if (grad.isNotEmpty) {
+      parts.add(_capitalizeWords(grad));
+    }
+
+    // Add postal code if exists
+    if (postanskiBroj != null && postanskiBroj!.isNotEmpty) {
+      parts.add(postanskiBroj!);
+    }
+
+    return parts.join(', ');
+  }
+
+  /// Distance calculation between two addresses
+  double? distanceTo(Adresa other) {
+    if (!hasValidCoordinates || !other.hasValidCoordinates) {
+      return null;
+    }
+
+    final lat1 = latitude!;
+    final lon1 = longitude!;
+    final lat2 = other.latitude!;
+    final lon2 = other.longitude!;
+
+    // Haversine formula
+    const double earthRadius = 6371; // km
+    final double dLat = _toRadians(lat2 - lat1);
+    final double dLon = _toRadians(lon2 - lon1);
+
+    final double a = math.pow(math.sin(dLat / 2), 2) +
+        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) * math.pow(math.sin(dLon / 2), 2);
+
+    final double c = 2 * math.asin(math.sqrt(a));
+    return earthRadius * c;
+  }
+
+  /// Helper methods
+  String _capitalizeWords(String text) {
+    return text
+        .split(' ')
+        .map(
+          (word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word,
+        )
+        .join(' ');
+  }
+
+  double _toRadians(double degrees) => degrees * (math.pi / 180);
+
+  /// Enhanced toString for debugging
+  @override
+  String toString() {
+    return 'Adresa{id: $id, adresa: $standardizedAddress, '
+        'koordinate: ${hasValidCoordinates ? "($latitude,$longitude)" : "none"}}';
+  }
 }
+
+// Remove the extension as we're using dart:math directly

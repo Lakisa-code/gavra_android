@@ -1,14 +1,15 @@
 import 'dart:async';
-import '../utils/logging.dart';
+
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
-import '../models/mesecni_putnik_novi.dart';
+import '../utils/logging.dart';
+import 'mesecni_putnik_service.dart';
 import 'putnik_service.dart';
-import 'mesecni_putnik_service_novi.dart';
-import 'statistika_service.dart';
 import 'realtime_service.dart';
+import 'statistika_service.dart';
 import 'supabase_safe.dart';
 
 // Use centralized logger via dlog directly
@@ -18,8 +19,7 @@ import 'supabase_safe.dart';
 class RealTimeStatistikaService {
   RealTimeStatistikaService._internal();
   static RealTimeStatistikaService? _instance;
-  static RealTimeStatistikaService get instance =>
-      _instance ??= RealTimeStatistikaService._internal();
+  static RealTimeStatistikaService get instance => _instance ??= RealTimeStatistikaService._internal();
 
   // 🎯 CENTRALIUZOVANI STREAM CACHE
   final Map<String, Stream<dynamic>> _streamCache = {};
@@ -34,7 +34,7 @@ class RealTimeStatistikaService {
 
       _kombinovaniStream = CombineLatestStream.combine2(
         PutnikService().streamKombinovaniPutniciFiltered(),
-        MesecniPutnikServiceNovi.streamAktivniMesecniPutnici(),
+        MesecniPutnikService.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
           return [putnici, mesecni];
         },
@@ -53,8 +53,7 @@ class RealTimeStatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final cacheKey =
-        'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
+    final cacheKey = 'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
       dlog('🆕 KREIRANJE PAZAR STREAM-A: $cacheKey');
@@ -87,8 +86,7 @@ class RealTimeStatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final cacheKey =
-        'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
+    final cacheKey = 'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
       dlog('🆕 KREIRANJE DETALJNE STATISTIKE STREAM-A: $cacheKey');
@@ -123,8 +121,7 @@ class RealTimeStatistikaService {
       _streamCache[cacheKey] = RealtimeService.instance
           .tableStream('putovanja_istorija')
           .map((data) {
-            final List<dynamic> items =
-                data is List ? List<dynamic>.from(data) : <dynamic>[];
+            final List<dynamic> items = data is List ? List<dynamic>.from(data) : <dynamic>[];
             final filtered = items.where((row) {
               try {
                 return row['putnik_id']?.toString() == putnikId.toString();
@@ -184,16 +181,14 @@ class RealTimeStatistikaService {
       }
 
       final ukupno = ukupnoPutovanja + otkazi;
-      final uspesnost =
-          ukupno > 0 ? ((ukupnoPutovanja / ukupno) * 100).round() : 0;
+      final uspesnost = ukupno > 0 ? ((ukupnoPutovanja / ukupno) * 100).round() : 0;
 
       return {
         'ukupnoPutovanja': ukupnoPutovanja,
         'otkazi': otkazi,
         'ukupanPrihod': ukupanPrihod,
         'uspesnost': uspesnost,
-        'poslednje':
-            putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
+        'poslednje': putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
       };
     } catch (e) {
       dlog('❌ Greška pri računanju statistika za putnika $putnikId: $e');

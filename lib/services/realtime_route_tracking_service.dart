@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart';
 import 'gps_service.dart';
 import 'local_notification_service.dart';
+import 'vozilo_service.dart';
 
 /// 🚗 REALTIME ROUTE TRACKING SERVICE
 /// Kontinuirano praćenje vozača tokom vožnje sa dinamičkim rerautovanjem
@@ -15,16 +18,13 @@ class RealtimeRouteTrackingService {
 
   // Google APIs
   static const String _googleApiKey = 'AIzaSyBOhQKU9YoA1z_h_N_y_XhbOL5gHWZXqPY';
-  static const String _directionsApiUrl =
-      'https://maps.googleapis.com/maps/api/directions/json';
-  static const String _trafficApiUrl =
-      'https://maps.googleapis.com/maps/api/distancematrix/json';
+  static const String _directionsApiUrl = 'https://maps.googleapis.com/maps/api/directions/json';
+  static const String _trafficApiUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
 
   // Stream kontroleri za realtime podatke
   static final StreamController<RealtimeRouteData> _routeDataController =
       StreamController<RealtimeRouteData>.broadcast();
-  static final StreamController<List<String>> _trafficAlertsController =
-      StreamController<List<String>>.broadcast();
+  static final StreamController<List<String>> _trafficAlertsController = StreamController<List<String>>.broadcast();
 
   // Tracking stanje
   static bool _isTrackingActive = false;
@@ -36,10 +36,25 @@ class RealtimeRouteTrackingService {
   static String? _currentOptimalRoute;
 
   // Getteri za stream-ove
-  static Stream<RealtimeRouteData> get routeDataStream =>
-      _routeDataController.stream;
-  static Stream<List<String>> get trafficAlertsStream =>
-      _trafficAlertsController.stream;
+  static Stream<RealtimeRouteData> get routeDataStream => _routeDataController.stream;
+  static Stream<List<String>> get trafficAlertsStream => _trafficAlertsController.stream;
+
+  /// Helper method to get default vehicle ID
+  static Future<String?> _getDefaultVehicleId() async {
+    try {
+      final voziloService = VoziloService();
+      final vozila = await voziloService.getAllVozila();
+
+      if (vozila.isNotEmpty) {
+        return vozila.first.id;
+      }
+
+      return 'default-vehicle-uuid';
+    } catch (e) {
+      _logger.w('⚠️ Failed to get default vehicle: $e');
+      return 'default-vehicle-uuid';
+    }
+  }
 
   /// 🚀 Pokreni kontinuirano praćenje rute
   static Future<void> startRouteTracking({
@@ -111,7 +126,13 @@ class RealtimeRouteTrackingService {
       );
 
       // Pošalji GPS u bazu (postojeći servis)
-      await GpsService.sendCurrentLocation(vozacId: _currentDriverId!);
+      final voziloId = await _getDefaultVehicleId();
+      if (voziloId != null) {
+        await GpsService.sendCurrentLocation(
+          vozacId: _currentDriverId!,
+          voziloId: voziloId,
+        );
+      }
 
       // Proveri da li je vozač značajno promenio poziciju
       if (_lastKnownPosition != null) {
@@ -145,11 +166,7 @@ class RealtimeRouteTrackingService {
     // Filtriraj samo ne-pokupljene putnike
     final remainingPassengers = _currentRoute
         .where(
-          (p) =>
-              p.vremePokupljenja == null &&
-              !p.jeOtkazan &&
-              p.adresa != null &&
-              p.adresa!.isNotEmpty,
+          (p) => p.vremePokupljenja == null && !p.jeOtkazan && p.adresa != null && p.adresa!.isNotEmpty,
         )
         .toList();
 
@@ -172,8 +189,7 @@ class RealtimeRouteTrackingService {
       // Pošalji notifikaciju o novoj ruti
       await LocalNotificationService.showRealtimeNotification(
         title: '🔄 Nova optimalna ruta!',
-        body:
-            'Ruta je automatski optimizovana na osnovu vaše trenutne pozicije',
+        body: 'Ruta je automatski optimizovana na osnovu vaše trenutne pozicije',
         payload: 'route_recalculated',
       );
 
@@ -202,10 +218,8 @@ class RealtimeRouteTrackingService {
 
         if (trafficData != null) {
           // Analiziraj saobraćajne podatke
-          final duration =
-              (trafficData['duration_in_traffic']?['value'] as num?) ?? 0;
-          final normalDuration =
-              (trafficData['duration']?['value'] as num?) ?? 0;
+          final duration = (trafficData['duration_in_traffic']?['value'] as num?) ?? 0;
+          final normalDuration = (trafficData['duration']?['value'] as num?) ?? 0;
 
           // Ako je gužva značajna (više od 20% duže)
           if (duration > normalDuration * 1.2) {
@@ -223,8 +237,7 @@ class RealtimeRouteTrackingService {
         // Pošalji notifikaciju o gužvi
         await LocalNotificationService.showRealtimeNotification(
           title: '🚦 Saobraćajno upozorenje',
-          body:
-              'Detektovane su gužve na vašoj ruti. Proverite preporučene alternative.',
+          body: 'Detektovane su gužve na vašoj ruti. Proverite preporučene alternative.',
           payload: 'traffic_alert',
         );
       }
@@ -275,8 +288,7 @@ class RealtimeRouteTrackingService {
 
     try {
       // Kreiraj waypoints string za Google Directions API
-      final waypoints =
-          passengers.map((p) => Uri.encodeComponent(p.adresa!)).join('|');
+      final waypoints = passengers.map((p) => Uri.encodeComponent(p.adresa!)).join('|');
 
       final url = Uri.parse('$_directionsApiUrl?'
           'origin=${currentPosition.latitude},${currentPosition.longitude}&'
@@ -291,13 +303,10 @@ class RealtimeRouteTrackingService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
 
-        if (data['status'] == 'OK' &&
-            data['routes'] != null &&
-            (data['routes'] as List).isNotEmpty) {
+        if (data['status'] == 'OK' && data['routes'] != null && (data['routes'] as List).isNotEmpty) {
           // Vrati optimizovanu rutu kao string
           final route = data['routes'][0];
-          final waypointOrder =
-              (route['waypoint_order'] as List<dynamic>?) ?? <dynamic>[];
+          final waypointOrder = (route['waypoint_order'] as List<dynamic>?) ?? <dynamic>[];
 
           final optimizedPassengers = <Putnik>[];
           for (final index in waypointOrder) {

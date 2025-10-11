@@ -41,7 +41,8 @@ class SimpleLogger {
 
   void w(Object? message) => wlog('[$name] $message');
 
-  void e(Object? message, [Object? error, StackTrace? stackTrace]) => elog('[$name] $message', error, stackTrace);
+  void e(Object? message, [Object? error, StackTrace? stackTrace]) =>
+      elog('[$name] $message', error, stackTrace);
 }
 
 /// Returns a lightweight logger instance for a file or class.

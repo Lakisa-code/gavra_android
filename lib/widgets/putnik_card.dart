@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/mesecni_putnik_novi.dart' as novi_model;
+import '../models/mesecni_putnik.dart' as novi_model;
 import '../models/putnik.dart';
 import '../services/geocoding_service.dart';
 import '../services/haptic_service.dart';
-import '../services/mesecni_putnik_service_novi.dart';
+import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../utils/vozac_boja.dart';
@@ -306,7 +306,7 @@ class _PutnikCardState extends State<PutnikCard> {
     novi_model.MesecniPutnik? mesecniPutnik;
     if (_putnik.mesecnaKarta == true) {
       try {
-        mesecniPutnik = await MesecniPutnikServiceNovi.getMesecniPutnikByIme(_putnik.ime);
+        mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
       } catch (e) {
         // Ignoriši grešku, nastavi bez podataka o roditeljima
       }
@@ -578,7 +578,9 @@ class _PutnikCardState extends State<PutnikCard> {
   }
 
   /// 🔥 NOVA FUNKCIJA: Automatsko SMS roditeljima za plaćanje (samo za mesečne putnike učenike)
-  Future<void> _posaljiSMSRoditeljimePlacanje(novi_model.MesecniPutnik mesecniPutnik) async {
+  Future<void> _posaljiSMSRoditeljimePlacanje(
+    novi_model.MesecniPutnik mesecniPutnik,
+  ) async {
     final List<String> roditelji = [];
 
     // Dodaj broj oca ako postoji
@@ -683,7 +685,7 @@ class _PutnikCardState extends State<PutnikCard> {
   // 📅 PLAĆANJE MESEČNE KARTE - CUSTOM CENA (korisnik unosi iznos)
   Future<void> _handleMesecniPayment() async {
     // Prvo dohvati mesečnog putnika iz baze po imenu (ne po ID!)
-    final mesecniPutnik = await MesecniPutnikServiceNovi.getMesecniPutnikByIme(_putnik.ime);
+    final mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
 
     if (mesecniPutnik == null) {
       if (mounted) {
@@ -710,11 +712,11 @@ class _PutnikCardState extends State<PutnikCard> {
     int brojPutovanja = 0;
     int brojOtkazivanja = 0;
     try {
-      brojPutovanja = await MesecniPutnikServiceNovi.izracunajBrojPutovanjaIzIstorije(
+      brojPutovanja = await MesecniPutnikService.izracunajBrojPutovanjaIzIstorije(
         _putnik.id! as String,
       );
       // ✅ NOVA LOGIKA - računaj otkazivanja iz stvarne istorije
-      brojOtkazivanja = await MesecniPutnikServiceNovi.izracunajBrojOtkazivanjaIzIstorije(
+      brojOtkazivanja = await MesecniPutnikService.izracunajBrojOtkazivanjaIzIstorije(
         _putnik.id! as String,
       );
     } catch (e) {
@@ -1102,10 +1104,14 @@ class _PutnikCardState extends State<PutnikCard> {
       // Pozovi odgovarajući service za plaćanje
       if (isMesecni && mesec != null) {
         // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
-        print('🔍 [DEBUG PAYMENT] Tražim mesečnog putnika po imenu: ${_putnik.ime}');
-        final mesecniPutnik = await MesecniPutnikServiceNovi.getMesecniPutnikByIme(_putnik.ime);
+        print(
+          '🔍 [DEBUG PAYMENT] Tražim mesečnog putnika po imenu: ${_putnik.ime}',
+        );
+        final mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
         if (mesecniPutnik != null) {
-          print('🔍 [DEBUG PAYMENT] Pronašao mesečnog putnika: ${mesecniPutnik.putnikIme}, ID: ${mesecniPutnik.id}');
+          print(
+            '🔍 [DEBUG PAYMENT] Pronašao mesečnog putnika: ${mesecniPutnik.putnikIme}, ID: ${mesecniPutnik.id}',
+          );
           // Koristi static funkciju kao u mesecni_putnici_screen.dart
           await _sacuvajPlacanjeStatic(
             putnikId: mesecniPutnik.id,
@@ -1114,7 +1120,9 @@ class _PutnikCardState extends State<PutnikCard> {
             vozacIme: finalDriver, // ✅ Koristi finalDriver umesto currentDriver
           );
         } else {
-          print('❌ [DEBUG PAYMENT] Mesečni putnik ${_putnik.ime} nije pronađen!');
+          print(
+            '❌ [DEBUG PAYMENT] Mesečni putnik ${_putnik.ime} nije pronađen!',
+          );
           throw Exception('Mesečni putnik ${_putnik.ime} nije pronađen u bazi');
         }
       } else {
@@ -2306,7 +2314,7 @@ class _PutnikCardState extends State<PutnikCard> {
       print('🔍 [DEBUG SAVE PAYMENT] Calling azurirajPlacanjeZaMesec...');
 
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
-      final uspeh = await MesecniPutnikServiceNovi().azurirajPlacanjeZaMesec(
+      final uspeh = await MesecniPutnikService().azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
         vozacIme,

@@ -1,3 +1,4 @@
+import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 
 /// Model za GPS lokacije vozila
@@ -81,5 +82,54 @@ class GPSLokacija {
       'aktivan': aktivan,
       'created_at': createdAt.toIso8601String(),
     };
+  }
+
+  /// Vraća distancu do druge lokacije u kilometrima
+  double distanceTo(GPSLokacija other) {
+    return Geolocator.distanceBetween(
+          latitude,
+          longitude,
+          other.latitude,
+          other.longitude,
+        ) /
+        1000;
+  }
+
+  /// Formatirana adresa za prikaz
+  String get displayAdresa => adresa ?? 'Nepoznata lokacija';
+
+  /// Da li je lokacija "sveža" (manja od 5 minuta)
+  bool get isFresh => DateTime.now().difference(vreme).inMinutes < 5;
+
+  /// Validira GPS koordinate
+  bool get isValidCoordinates {
+    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+  }
+
+  /// Validira brzinu (realna vrednost)
+  bool get isValidSpeed {
+    return brzina == null || (brzina! >= 0 && brzina! <= 200);
+  }
+
+  /// Formatirana brzina za prikaz
+  String get displayBrzina {
+    if (brzina == null) return 'N/A';
+    return '${brzina!.toStringAsFixed(1)} km/h';
+  }
+
+  /// Formatiran pravac za prikaz
+  String get displayPravac {
+    if (pravac == null) return 'N/A';
+    final directions = ['S', 'SI', 'I', 'JI', 'J', 'JZ', 'Z', 'SZ'];
+    final index = ((pravac! + 22.5) % 360 / 45).floor();
+    return '${directions[index]} (${pravac!.toStringAsFixed(0)}°)';
+  }
+
+  /// ToString metoda za debugging
+  @override
+  String toString() {
+    return 'GPSLokacija{id: $id, vozilo: $voziloId, vozac: $vozacId, '
+        'lat: ${latitude.toStringAsFixed(6)}, lng: ${longitude.toStringAsFixed(6)}, '
+        'vreme: $vreme}';
   }
 }
