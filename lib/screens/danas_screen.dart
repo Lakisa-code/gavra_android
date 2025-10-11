@@ -15,6 +15,7 @@ import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
+import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network status service
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
@@ -29,6 +30,7 @@ import '../utils/slot_utils.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import '../widgets/bottom_nav_bar_zimski.dart';
+import '../widgets/network_status_widget.dart'; // 🚥 NOVO network status widget
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
 import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
@@ -1319,6 +1321,9 @@ class _DanasScreenState extends State<DanasScreen> {
   void initState() {
     super.initState();
 
+    // 🚥 INICIJALIZUJ NETWORK STATUS SERVICE
+    RealtimeNetworkStatusService.instance.initialize();
+
     // ✅ SETUP FILTERS FROM NOTIFICATION DATA
     if (widget.filterGrad != null) {
       _selectedGrad = widget.filterGrad!;
@@ -1717,6 +1722,9 @@ class _DanasScreenState extends State<DanasScreen> {
                       const SizedBox(width: 2),
                       // ⚡ SPEEDOMETER
                       Expanded(child: _buildSpeedometerButton()),
+                      const SizedBox(width: 8),
+                      // 🚥 NETWORK STATUS INDICATOR
+                      const MiniNetworkStatusWidget(),
                     ],
                   ),
                 ],
@@ -1736,6 +1744,20 @@ class _DanasScreenState extends State<DanasScreen> {
               builder: (context, snapshot) {
                 // 💓 REGISTRUJ HEARTBEAT ZA GLAVNI PUTNICI STREAM
                 _registerStreamHeartbeat('putnici_stream');
+
+                // 🚥 REGISTRUJ NETWORK STATUS - SUCCESS/ERROR
+                if (snapshot.hasData && !snapshot.hasError) {
+                  RealtimeNetworkStatusService.instance.registerStreamResponse(
+                    'putnici_stream',
+                    const Duration(milliseconds: 500), // Estimated response time
+                  );
+                } else if (snapshot.hasError) {
+                  RealtimeNetworkStatusService.instance.registerStreamResponse(
+                    'putnici_stream',
+                    const Duration(seconds: 30), // Error timeout
+                    hasError: true,
+                  );
+                }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -1893,6 +1915,20 @@ class _DanasScreenState extends State<DanasScreen> {
                   builder: (context, pazarSnapshot) {
                     // 💓 REGISTRUJ HEARTBEAT ZA PAZAR STREAM
                     _registerStreamHeartbeat('pazar_stream');
+
+                    // 🚥 REGISTRUJ NETWORK STATUS - SUCCESS/ERROR
+                    if (pazarSnapshot.hasData && !pazarSnapshot.hasError) {
+                      RealtimeNetworkStatusService.instance.registerStreamResponse(
+                        'pazar_stream',
+                        const Duration(milliseconds: 800), // Estimated response time
+                      );
+                    } else if (pazarSnapshot.hasError) {
+                      RealtimeNetworkStatusService.instance.registerStreamResponse(
+                        'pazar_stream',
+                        const Duration(seconds: 30), // Error timeout
+                        hasError: true,
+                      );
+                    }
 
                     if (pazarSnapshot.hasError) {
                       // 🚨 KORISTI SMART ERROR DETECTION
