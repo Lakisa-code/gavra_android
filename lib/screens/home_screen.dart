@@ -1166,8 +1166,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             putnik.adresa,
             _selectedGrad,
           );
-          final prikazi =
-              imaVreme && imaGrad && imaDan && odgovarajuciDan && odgovarajuciGrad && normalizedStatus != 'obrisan';
+          final odgovarajuceVreme =
+              GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
+          final prikazi = imaVreme &&
+              imaGrad &&
+              imaDan &&
+              odgovarajuciDan &&
+              odgovarajuciGrad &&
+              odgovarajuceVreme &&
+              normalizedStatus != 'obrisan';
           return prikazi;
         });
         final sviPutnici = filtered.toList();

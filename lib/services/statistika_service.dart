@@ -1,21 +1,23 @@
-import '../models/putnik.dart';
-import '../models/mesecni_putnik_novi.dart';
-import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
-import 'putnik_service.dart'; // 🔄 DODANO za real-time streams
-import 'mesecni_putnik_service_novi.dart'; // 🔄 DODANO za mesečne putnike
 import 'dart:async';
 import 'dart:math'; // 🚗 DODANO za kilometražu kalkulacije
+
 import 'package:async/async.dart'; // Za StreamZip i StreamGroup
-import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS podatke
 // DateFormat import removed - not needed after debug cleanup
 import 'package:rxdart/rxdart.dart'; // 🔧 DODANO za share() metodu
+import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS podatke
+
+import '../models/mesecni_putnik_novi.dart';
+import '../models/putnik.dart';
+import '../utils/logging.dart'; // 🔧 DODANO za dlog funkciju
+import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
+import 'mesecni_putnik_service_novi.dart'; // 🔄 DODANO za mesečne putnike
+import 'putnik_service.dart'; // 🔄 DODANO za real-time streams
 
 class StatistikaService {
   StatistikaService._internal();
   // Singleton pattern
   static StatistikaService? _instance;
-  static StatistikaService get instance =>
-      _instance ??= StatistikaService._internal(); // Private constructor
+  static StatistikaService get instance => _instance ??= StatistikaService._internal(); // Private constructor
 
   // Instance cache za stream-ove da izbegnemo duplo kreiranje
   final Map<String, Stream<Map<String, double>>> _streamCache = {};
@@ -53,8 +55,7 @@ class StatistikaService {
     final normalizedTo = _normalizeDateTime(to);
 
     // ✅ FIXED: Use proper inclusive date range comparison
-    final result = !normalized.isBefore(normalizedFrom) &&
-        !normalized.isAfter(normalizedTo);
+    final result = !normalized.isBefore(normalizedFrom) && !normalized.isAfter(normalizedTo);
 
     if (!result) {
     } else {}
@@ -89,6 +90,21 @@ class StatistikaService {
 
     // � SAMO KOMBINOVANI STREAM - ne duplikuj mesečne putnike!
     return PutnikService().streamKombinovaniPutniciFiltered().map((putnici) {
+      // Debug: pokaži sample od najnovijih 6 putnika (ime, vozac, iznos, vremePlacanja)
+      try {
+        final sample = putnici
+            .take(6)
+            .map(
+              (p) => {
+                'ime': p.ime,
+                'vozac': p.vozac,
+                'iznos': p.iznosPlacanja,
+                'vreme': p.vremePlacanja?.toIso8601String(),
+              },
+            )
+            .toList();
+        dlog('🔔 [PAZAR DEBUG] sample putnici: $sample');
+      } catch (_) {}
       final pazar = _calculateSimplePazarSync(putnici, vozac, fromDate, toDate);
       return pazar;
     });
@@ -108,16 +124,14 @@ class StatistikaService {
         // 🎫 MESEČNI PUTNICI - računaju se SAMO u dan plaćanja!
         if (putnik.mesecnaKarta == true) {
           // Za mesečne putnike, računaj pazar SAMO ako je plaćen u traženom opsegu
-          if (putnik.vremePlacanja != null &&
-              _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+          if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
             final iznos = putnik.iznosPlacanja!;
             ukupno += iznos;
           }
         }
         // 💰 DNEVNI PUTNICI - računaju se samo za određeni datum
         else {
-          if (putnik.vremePlacanja != null &&
-              _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+          if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
             final iznos = putnik.iznosPlacanja!;
             ukupno += iznos;
           }
@@ -137,8 +151,7 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    return MesecniPutnikServiceNovi.streamAktivniMesecniPutnici()
-        .map((mesecniPutnici) {
+    return MesecniPutnikServiceNovi.streamAktivniMesecniPutnici().map((mesecniPutnici) {
       int brojKarata = 0;
       for (final putnik in mesecniPutnici) {
         if (putnik.jePlacen &&
@@ -299,8 +312,7 @@ class StatistikaService {
     for (final putnik in uniqueMesecni.values) {
       if (putnik.aktivan && !putnik.obrisan && putnik.jePlacen) {
         // 💰 NOVA LOGIKA: Proveravamo da li je DANAS plaćeno (vremePlacanja), ne za koji mesec
-        if (putnik.vremePlacanja != null &&
-            _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+        if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           final vozac = putnik.vozac ?? 'Nepoznat';
           final iznos = putnik.iznosPlacanja ?? 0.0;
 
@@ -324,8 +336,7 @@ class StatistikaService {
     // Dodaj ukupan pazar
     rezultat['_ukupno'] = ukupno;
     rezultat['_ukupno_obicni'] = pazarObicni.values.fold(0.0, (a, b) => a + b);
-    rezultat['_ukupno_mesecni'] =
-        pazarMesecne.values.fold(0.0, (a, b) => a + b);
+    rezultat['_ukupno_mesecni'] = pazarMesecne.values.fold(0.0, (a, b) => a + b);
 
     return rezultat;
   }
@@ -358,8 +369,7 @@ class StatistikaService {
         if (putnik.mesecnaKarta == true) {
           // Za mesečne putnike, grupisi po imenu (samo prvi valjan putnik)
           // ✅ UKLONJENA DUPLA PROVERA DATUMA - proverava se samo u finalnom računanju
-          if (!mesecniPutniciGrupisani.containsKey(putnik.ime) &&
-              _jePazarValjan(putnik)) {
+          if (!mesecniPutniciGrupisani.containsKey(putnik.ime) && _jePazarValjan(putnik)) {
             mesecniPutniciGrupisani[putnik.ime] = putnik;
           }
         } else {
@@ -431,8 +441,7 @@ class StatistikaService {
     // 2. SABERI MESEČNE KARTE - STVARNI PODACI
     try {
       // Učitaj sve mesečne putnike
-      final mesecniPutnici =
-          await MesecniPutnikServiceNovi().getAktivniMesecniPutnici();
+      final mesecniPutnici = await MesecniPutnikServiceNovi().getAktivniMesecniPutnici();
 
       for (final putnik in mesecniPutnici) {
         // Proveri da li je putnik platio u ovom periodu
@@ -444,8 +453,7 @@ class StatistikaService {
           if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
             final vozac = putnik.vozac!;
             if (pazarMesecne.containsKey(vozac)) {
-              pazarMesecne[vozac] =
-                  pazarMesecne[vozac]! + putnik.iznosPlacanja!;
+              pazarMesecne[vozac] = pazarMesecne[vozac]! + putnik.iznosPlacanja!;
             }
           }
         }
@@ -484,8 +492,7 @@ class StatistikaService {
     final Map<String, Map<String, dynamic>> vozaciStats = {};
 
     // UČITAJ STVARNE MESEČNE PUTNIKE
-    final mesecniPutnici =
-        await MesecniPutnikServiceNovi().getAllMesecniPutnici();
+    final mesecniPutnici = await MesecniPutnikServiceNovi().getAllMesecniPutnici();
 
     // 🎯 INICIJALIZUJ SVE VOZAČE SA NULAMA - DODANA POLJA ZA MESEČNE KARTE
     for (final vozac in sviVozaci) {
@@ -519,8 +526,7 @@ class StatistikaService {
 
         // 2. OTKAZANI - ko je OTKAZAO (ili ko je dodao ako nema otkazaoVozac)
         if (putnik.jeOtkazan) {
-          final otkazaoVozac =
-              putnik.otkazaoVozac ?? putnik.dodaoVozac ?? 'Nepoznat';
+          final otkazaoVozac = putnik.otkazaoVozac ?? putnik.dodaoVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(otkazaoVozac)) {
             vozaciStats[otkazaoVozac]!['otkazani']++;
           }
@@ -585,17 +591,14 @@ class StatistikaService {
               normalizedFrom,
               normalizedTo,
             )) {
-          final vozacIme = putnik.vozac ??
-              'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
+          final vozacIme = putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
           if (vozaciStats.containsKey(vozacIme)) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[vozacIme]!['mesecneKarte']++;
             // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
             vozaciStats[vozacIme]!['naplaceni']++;
-            vozaciStats[vozacIme]!['pazarMesecne'] +=
-                (putnik.iznosPlacanja ?? 0.0);
-            vozaciStats[vozacIme]!['ukupnoPazar'] +=
-                (putnik.iznosPlacanja ?? 0.0);
+            vozaciStats[vozacIme]!['pazarMesecne'] += (putnik.iznosPlacanja ?? 0.0);
+            vozaciStats[vozacIme]!['ukupnoPazar'] += (putnik.iznosPlacanja ?? 0.0);
           }
         }
       }
@@ -608,8 +611,7 @@ class StatistikaService {
   }
 
   /// 🔄 REAL-TIME DETALJNE STATISTIKE STREAM ZA SVE VOZAČE
-  static Stream<Map<String, Map<String, dynamic>>>
-      streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
+  static Stream<Map<String, Map<String, dynamic>>> streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
       PutnikService().streamKombinovaniPutniciFiltered(),
@@ -642,8 +644,7 @@ class StatistikaService {
   }
 
   /// 🔄 SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za stream)
-  static Map<String, Map<String, dynamic>>
-      _calculateDetaljneStatistikeSinhronno(
+  static Map<String, Map<String, dynamic>> _calculateDetaljneStatistikeSinhronno(
     List<Putnik> putnici,
     List<MesecniPutnik> mesecniPutnici,
     DateTime from,
@@ -667,8 +668,7 @@ class StatistikaService {
         'pazarObicni': 0.0, // 🆕 PAZAR samo od običnih putnika
         'pazarMesecne': 0.0, // 🆕 PAZAR samo od mesečnih karata
         'kilometraza': 0.0, // 🚗 KILOMETRAŽA za taj dan
-        'detaljiNaplata':
-            <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
+        'detaljiNaplata': <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
         'poslednjaNaplata': null, // 🆕 Poslednja naplata
         'prosecanIznos': 0.0, // 🆕 Prosečan iznos naplate
       };
@@ -722,9 +722,7 @@ class StatistikaService {
               'tip': putnik.mesecnaKarta == true ? 'Mesečna' : 'Dnevna',
             };
 
-            (vozaciStats[vozacIme]!['detaljiNaplata']
-                    as List<Map<String, dynamic>>)
-                .add(detalj);
+            (vozaciStats[vozacIme]!['detaljiNaplata'] as List<Map<String, dynamic>>).add(detalj);
 
             // Ažuriraj poslednju naplatu
             if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
@@ -833,8 +831,7 @@ class StatistikaService {
 
     // 🎫 PROCES GRUPISANIH MESEČNIH PUTNIKA
     for (final putnik in grupisaniMesecniPutnici.values) {
-      final vozacIme =
-          putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
+      final vozacIme = putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
       if (vozaciStats.containsKey(vozacIme)) {
         final iznos = putnik.iznosPlacanja ?? 0.0;
 
@@ -847,9 +844,7 @@ class StatistikaService {
             'tip': 'Mesečna',
           };
 
-          (vozaciStats[vozacIme]!['detaljiNaplata']
-                  as List<Map<String, dynamic>>)
-              .add(detalj);
+          (vozaciStats[vozacIme]!['detaljiNaplata'] as List<Map<String, dynamic>>).add(detalj);
 
           // Ažuriraj poslednju naplatu
           if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
@@ -875,8 +870,7 @@ class StatistikaService {
       // Za real-time stream, koristimo uprošćenu kilometražu bez database poziva
       // jer bi to bilo previše sporo za real-time azuriranje
       for (final vozac in sviVozaci) {
-        vozaciStats[vozac]!['kilometraza'] =
-            0.0; // Default vrednost za real-time
+        vozaciStats[vozac]!['kilometraza'] = 0.0; // Default vrednost za real-time
       }
     } catch (e) {
       // ignore: empty_catches
@@ -884,8 +878,7 @@ class StatistikaService {
 
     // 🧮 KALKULIŠI PROSEČNE IZNOSE ZA SVE VOZAČE
     for (final vozac in sviVozaci) {
-      final detalji =
-          vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
+      final detalji = vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
       if (detalji.isNotEmpty) {
         final ukupanIznos = detalji.fold<double>(
           0.0,
@@ -1015,10 +1008,7 @@ class StatistikaService {
       final supabase = Supabase.instance.client;
 
       // Obriši sve GPS pozicije iz tabele
-      await supabase
-          .from('gps_lokacije')
-          .delete()
-          .neq('id', 0); // Briše sve redove (neq sa nepostojećim ID)
+      await supabase.from('gps_lokacije').delete().neq('id', 0); // Briše sve redove (neq sa nepostojećim ID)
       return true;
     } catch (e) {
       return false;
@@ -1117,9 +1107,7 @@ class StatistikaService {
     const double R = 6371; // Radius Zemlje u km
     double dLat = (lat2 - lat1) * pi / 180.0;
     double dLon = (lon2 - lon1) * pi / 180.0;
-    double a = 0.5 -
-        cos(dLat) / 2 +
-        cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * (1 - cos(dLon)) / 2;
+    double a = 0.5 - cos(dLat) / 2 + cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * (1 - cos(dLon)) / 2;
     return R * 2 * asin(sqrt(a));
   }
 }
