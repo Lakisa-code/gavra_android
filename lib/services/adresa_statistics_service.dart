@@ -38,7 +38,7 @@ class AdresaStatisticsService {
     try {
       // Check cache first
       if (!forceRefresh) {
-        final cached = await CacheService.get<Map<String, dynamic>>(_statsCacheKey);
+        final cached = await CacheService.getFromDisk<Map<String, dynamic>>(_statsCacheKey);
         if (cached != null) {
           _logger.i('🎯 Statistics cache hit');
           return cached;
@@ -495,7 +495,7 @@ class AdresaStatisticsService {
 
   /// Get cache status
   Future<Map<String, dynamic>> getCacheStatus() async {
-    final hasCache = await CacheService.get<Map<String, dynamic>>(_statsCacheKey) != null;
+    final hasCache = await CacheService.getFromDisk<Map<String, dynamic>>(_statsCacheKey) != null;
     return {
       'has_cached_statistics': hasCache,
       'cache_key': _statsCacheKey,

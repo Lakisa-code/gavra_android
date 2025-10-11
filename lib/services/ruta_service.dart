@@ -698,7 +698,8 @@ class RutaService {
         'zarada_po_km': ruta.udaljenostKm != null && ruta.udaljenostKm! > 0
             ? double.parse((ukupnaZarada / ruta.udaljenostKm!).toStringAsFixed(2))
             : 0.0,
-        'putnika_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty ? _calculateDailyPassengers(putnici) : {},
+        'putnika_po_danu':
+            ukupnoPutnika > 0 && putnici.isNotEmpty ? _calculateDailyPassengers(putnici) : <String, int>{},
         'generirano': DateTime.now().toIso8601String(),
       };
     } catch (e) {

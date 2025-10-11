@@ -661,7 +661,8 @@ class PutovanjaIstorijaService {
         final validation = putovanje.validateFull();
         if (validation.isNotEmpty) {
           dlog(
-              '❌ [PUTOVANJA ISTORIJA SERVICE] Batch validation failed for ${putovanje.putnikIme}: ${validation.values.join(', ')}');
+            '❌ [PUTOVANJA ISTORIJA SERVICE] Batch validation failed for ${putovanje.putnikIme}: ${validation.values.join(', ')}',
+          );
           return [];
         }
       }
