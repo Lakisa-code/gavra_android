@@ -56,6 +56,11 @@ class _DanasScreenState extends State<DanasScreen> {
   final Set<String> _resettingSlots = {};
   Timer? _resetDebounceTimer;
 
+  // 💓 HEARTBEAT MONITORING VARIABLES
+  final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
+  Timer? _healthCheckTimer;
+  final Map<String, DateTime> _streamHeartbeats = {};
+
   // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM (ne prebacuje na ponedeljak)
   DateTime _getTargetDateForWeekend(DateTime today) {
     return today; // Vraća trenutni datum bez obzira na vikend
@@ -94,6 +99,35 @@ class _DanasScreenState extends State<DanasScreen> {
   // ✅ KORISTI UTILS FUNKCIJU UMESTO DUPLIRANE LOGIKE
   String _getDayName(int weekday) {
     return app_date_utils.DateUtils.weekdayToString(weekday);
+  }
+
+  // 💓 HEARTBEAT MONITORING FUNCTIONS
+  void _registerStreamHeartbeat(String streamName) {
+    _streamHeartbeats[streamName] = DateTime.now();
+  }
+
+  void _checkStreamHealth() {
+    final now = DateTime.now();
+    bool isHealthy = true;
+
+    for (final entry in _streamHeartbeats.entries) {
+      final timeSinceLastHeartbeat = now.difference(entry.value);
+      if (timeSinceLastHeartbeat.inSeconds > 30) {
+        // 30 sekundi timeout
+        isHealthy = false;
+        break;
+      }
+    }
+
+    if (_isRealtimeHealthy.value != isHealthy) {
+      _isRealtimeHealthy.value = isHealthy;
+    }
+  }
+
+  void _startHealthMonitoring() {
+    _healthCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _checkStreamHealth();
+    });
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
@@ -260,101 +294,57 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // � CLEAN STATS INDIKATOR
-  Widget _buildCleanStatsIndicator() {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: StatistikaService.dohvatiCleanStatistike(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError || !snapshot.hasData) {
-          return SizedBox(
-            height: 26,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.red.shade700,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error, color: Colors.white, size: 12),
-                  SizedBox(width: 4),
-                  Text(
-                    'ERR',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+  // 💓 REALTIME HEARTBEAT INDICATOR
+  Widget _buildHeartbeatIndicator() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isRealtimeHealthy,
+      builder: (context, isHealthy, child) {
+        return GestureDetector(
+          onTap: () {
+            // Pokaži heartbeat debug info
+            showDialog<void>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Realtime Health Status'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Status: ${isHealthy ? 'ZDRAVO' : 'PROBLEM'}'),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Stream Heartbeats:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      ..._streamHeartbeats.entries.map((entry) {
+                        final timeSince = DateTime.now().difference(entry.value);
+                        return Text(
+                          '${entry.key}: ${timeSince.inSeconds}s ago',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            color: timeSince.inSeconds > 30 ? Colors.red : Colors.green,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Zatvori'),
                   ),
                 ],
               ),
-            ),
-          );
-        }
-
-        final data = snapshot.data!;
-        final noDuplicates = data['no_duplicates'] == true;
-        final amount = (data['ukupno_sve'] as num).toDouble();
-        final expectedAmount = 13800.0;
-        final isCorrect = amount == expectedAmount;
-
-        return GestureDetector(
-          onTap: () async {
-            try {
-              final debugInfo = await StatistikaService.cleanDebugInfo();
-              if (mounted) {
-                showDialog<void>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Clean Stats Debug'),
-                    content: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Ukupno: ${data['ukupno_sve']} RSD'),
-                          Text('Zapisi: ${data['broj_ukupno']}'),
-                          Text('Duplikati: ${noDuplicates ? 'NE' : 'DA'}'),
-                          Text('Očekivano: $expectedAmount RSD'),
-                          Text('Tačnost: ${isCorrect ? 'DA' : 'NE'}'),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Debug:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            debugInfo.toString(),
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Zatvori'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Greška: $e')),
-                );
-              }
-            }
+            );
           },
           child: SizedBox(
             height: 26,
             child: Container(
               decoration: BoxDecoration(
-                color: noDuplicates && isCorrect ? Colors.green.shade700 : Colors.orange.shade700,
+                color: isHealthy ? Colors.green.shade700 : Colors.red.shade700,
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -362,13 +352,13 @@ class _DanasScreenState extends State<DanasScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    noDuplicates && isCorrect ? Icons.verified : Icons.warning,
+                    isHealthy ? Icons.favorite : Icons.heart_broken,
                     color: Colors.white,
                     size: 12,
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    isCorrect ? '${(amount / 1000).toStringAsFixed(1)}K' : 'ERR',
+                    isHealthy ? 'LIVE' : 'DEAD',
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -1299,6 +1289,9 @@ class _DanasScreenState extends State<DanasScreen> {
       if (_currentDriver != null && _currentDriver!.isNotEmpty) {
         try {
           _dailyCheckinSub = DailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
+
+          // 💓 POKRENI HEARTBEAT MONITORING
+          _startHealthMonitoring();
           dlog('🛰️ Subscribed to daily_checkins realtime for $_currentDriver');
         } catch (e) {
           dlog('⚠️ Failed to subscribe daily_checkins realtime: $e');
@@ -1444,6 +1437,10 @@ class _DanasScreenState extends State<DanasScreen> {
     } catch (e) {
       dlog('⚠️ Error cancelling daily_checkins subscription: $e');
     }
+
+    // 💓 CLEANUP HEARTBEAT MONITORING
+    _healthCheckTimer?.cancel();
+    _isRealtimeHealthy.dispose();
 
     super.dispose();
   }
@@ -1653,7 +1650,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   Row(
                     children: [
                       // � CLEAN STATS INDIKATOR
-                      Expanded(child: _buildCleanStatsIndicator()),
+                      Expanded(child: _buildHeartbeatIndicator()),
                       const SizedBox(width: 2),
                       // �🎓 ĐAČKI BROJAČ
                       Expanded(child: _buildDjackiBrojacButton()),
@@ -1686,6 +1683,9 @@ class _DanasScreenState extends State<DanasScreen> {
                 vreme: widget.filterVreme ?? _selectedVreme,
               ), // 🔄 KOMBINOVANI STREAM (mesečni + dnevni)
               builder: (context, snapshot) {
+                // 💓 REGISTRUJ HEARTBEAT ZA GLAVNI PUTNICI STREAM
+                _registerStreamHeartbeat('putnici_stream');
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -1833,6 +1833,9 @@ class _DanasScreenState extends State<DanasScreen> {
                     to: dayEnd,
                   ), // 🔄 REAL-TIME PAZAR STREAM
                   builder: (context, pazarSnapshot) {
+                    // 💓 REGISTRUJ HEARTBEAT ZA PAZAR STREAM
+                    _registerStreamHeartbeat('pazar_stream');
+
                     if (!pazarSnapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
