@@ -41,7 +41,7 @@ class RutaService {
       // Pokušaj cache prvo
       final cacheKey = _getAllCacheKey();
       final cached = await CacheService.getFromDisk<List<dynamic>>(cacheKey,
-          maxAge: _cacheExpiry);
+          maxAge: _cacheExpiry,);
       if (cached != null) {
         dlog('📱 [RUTA SERVICE] Vraćam keširane sve rute');
         return cached
@@ -75,7 +75,7 @@ class RutaService {
       // Pokušaj cache prvo
       final cacheKey = _getActiveCacheKey();
       final cached = await CacheService.getFromDisk<List<dynamic>>(cacheKey,
-          maxAge: _cacheExpiry);
+          maxAge: _cacheExpiry,);
       if (cached != null) {
         dlog('📱 [RUTA SERVICE] Vraćam keširane aktivne rute');
         return cached
@@ -143,7 +143,7 @@ class RutaService {
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
         dlog(
-            '❌ [RUTA SERVICE] Validacija neuspešna: ${validation.values.join(', ')}');
+            '❌ [RUTA SERVICE] Validacija neuspešna: ${validation.values.join(', ')}',);
         return null;
       }
 
@@ -176,7 +176,7 @@ class RutaService {
 
   /// Proverava duplikate ruta
   Future<List<Ruta>> _checkForDuplicates(
-      String polazak, String dolazak, String naziv) async {
+      String polazak, String dolazak, String naziv,) async {
     try {
       final response = await SupabaseSafe.run(
         () => _supabase
@@ -224,7 +224,7 @@ class RutaService {
       final validation = azuriranaRuta.validateFull();
       if (validation.isNotEmpty) {
         dlog(
-            '❌ [RUTA SERVICE] Ažurirana ruta nije validna: ${validation.values.join(', ')}');
+            '❌ [RUTA SERVICE] Ažurirana ruta nije validna: ${validation.values.join(', ')}',);
         return null;
       }
 
@@ -246,7 +246,7 @@ class RutaService {
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
         dlog(
-            '❌ [RUTA SERVICE] Validacija neuspešna: ${validation.values.join(', ')}');
+            '❌ [RUTA SERVICE] Validacija neuspešna: ${validation.values.join(', ')}',);
         return null;
       }
 
@@ -325,7 +325,7 @@ class RutaService {
       final hasDependencies = await _checkRutaDependencies(id);
       if (hasDependencies) {
         dlog(
-            '❌ [RUTA SERVICE] Ne može se obrisati ruta $id - ima povezane putnike');
+            '❌ [RUTA SERVICE] Ne može se obrisati ruta $id - ima povezane putnike',);
         return false;
       }
 
@@ -398,7 +398,7 @@ class RutaService {
           // Tekstualna pretraga
           if (query != null && query.isNotEmpty) {
             q = q.or(
-                'naziv.ilike.%$query%,polazak.ilike.%$query%,dolazak.ilike.%$query%,opis.ilike.%$query%');
+                'naziv.ilike.%$query%,polazak.ilike.%$query%,dolazak.ilike.%$query%,opis.ilike.%$query%',);
           }
 
           // Filteri
@@ -419,11 +419,11 @@ class RutaService {
           }
           if (minVremeMinuti != null) {
             q = q.gte(
-                'prosecno_vreme', minVremeMinuti * 60); // Konvertuj u sekunde
+                'prosecno_vreme', minVremeMinuti * 60,); // Konvertuj u sekunde
           }
           if (maxVremeMinuti != null) {
             q = q.lte(
-                'prosecno_vreme', maxVremeMinuti * 60); // Konvertuj u sekunde
+                'prosecno_vreme', maxVremeMinuti * 60,); // Konvertuj u sekunde
           }
 
           return q.order('naziv').limit(limit);
@@ -457,7 +457,7 @@ class RutaService {
 
   /// Dohvata rute između dva grada (poboljšana verzija)
   Future<List<Ruta>> getRuteIzmedju(String polazak, String destinacija,
-      {bool sameAktivan = true}) async {
+      {bool sameAktivan = true,}) async {
     try {
       final response = await SupabaseSafe.run(
         () {
@@ -484,7 +484,7 @@ class RutaService {
       return [];
     } catch (e) {
       dlog(
-          '❌ [RUTA SERVICE] Greška pri dohvatanju ruta između $polazak i $destinacija: $e');
+          '❌ [RUTA SERVICE] Greška pri dohvatanju ruta između $polazak i $destinacija: $e',);
       return [];
     }
   }
@@ -547,7 +547,7 @@ class RutaService {
         final validation = ruta.validateFull();
         if (validation.isNotEmpty) {
           dlog(
-              '❌ [RUTA SERVICE] Batch validacija neuspešna za ${ruta.naziv}: ${validation.values.join(', ')}');
+              '❌ [RUTA SERVICE] Batch validacija neuspešna za ${ruta.naziv}: ${validation.values.join(', ')}',);
           return [];
         }
       }
@@ -590,7 +590,7 @@ class RutaService {
       }
 
       dlog(
-          '✅ [RUTA SERVICE] Batch ažurirano ${results.length}/${rute.length} ruta');
+          '✅ [RUTA SERVICE] Batch ažurirano ${results.length}/${rute.length} ruta',);
       return results;
     } catch (e) {
       dlog('❌ [RUTA SERVICE] Greška pri batch ažuriranju ruta: $e');
@@ -648,7 +648,7 @@ class RutaService {
       final cacheKey = _getStatsCacheKey();
       final cached = await CacheService.getFromDisk<Map<String, dynamic>>(
           cacheKey,
-          maxAge: const Duration(minutes: 30));
+          maxAge: const Duration(minutes: 30),);
       if (cached != null) {
         dlog('📱 [RUTA SERVICE] Vraćam keširane statistike');
         return cached;
@@ -773,7 +773,7 @@ class RutaService {
         'status_distribution': statusCount,
         'zarada_po_km': ruta.udaljenostKm != null && ruta.udaljenostKm! > 0
             ? double.parse(
-                (ukupnaZarada / ruta.udaljenostKm!).toStringAsFixed(2))
+                (ukupnaZarada / ruta.udaljenostKm!).toStringAsFixed(2),)
             : 0.0,
         'putnika_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty
             ? _calculateDailyPassengers(putnici)
@@ -782,7 +782,7 @@ class RutaService {
       };
     } catch (e) {
       dlog(
-          '❌ [RUTA SERVICE] Greška pri dobijanju statistika za rutu $rutaId: $e');
+          '❌ [RUTA SERVICE] Greška pri dobijanju statistika za rutu $rutaId: $e',);
       return {};
     }
   }
@@ -812,7 +812,7 @@ class RutaService {
 
       // Header
       csvLines.add(
-          'ID,Naziv,Polazak,Dolazak,Opis,Udaljenost (km),Prosečno vreme (min),Aktivan,Kreiran');
+          'ID,Naziv,Polazak,Dolazak,Opis,Udaljenost (km),Prosečno vreme (min),Aktivan,Kreiran',);
 
       // Data rows
       for (final ruta in rute) {
@@ -859,7 +859,7 @@ class RutaService {
       await _clearCache();
 
       dlog(
-          '✅ [RUTA SERVICE] Očišćene stare neaktivne rute starije od $cutoffDateStr');
+          '✅ [RUTA SERVICE] Očišćene stare neaktivne rute starije od $cutoffDateStr',);
     } catch (e) {
       dlog('❌ [RUTA SERVICE] Greška pri čišćenju starih ruta: $e');
     }

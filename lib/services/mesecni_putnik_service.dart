@@ -686,7 +686,7 @@ class MesecniPutnikService {
 
   /// Batch operacija za kreiranje više putnika odjednom
   Future<List<MesecniPutnik>> createMesecniPutniciBatch(
-      List<MesecniPutnik> putnici) async {
+      List<MesecniPutnik> putnici,) async {
     final results = <MesecniPutnik>[];
 
     for (final putnik in putnici) {
@@ -705,7 +705,7 @@ class MesecniPutnikService {
 
   /// Batch operacija za ažuriranje više putnika
   Future<List<MesecniPutnik>> updateMesecniPutniciBatch(
-      Map<String, Map<String, dynamic>> updates) async {
+      Map<String, Map<String, dynamic>> updates,) async {
     final results = <MesecniPutnik>[];
 
     for (final entry in updates.entries) {
@@ -831,7 +831,7 @@ class MesecniPutnikService {
 
     // Header
     buffer.writeln(
-        'ID,Ime,Tip,Tip Škole,Aktivan,Status,Cena,Radni Dani,Broj Putovanja,Datum Početka,Datum Kraja');
+        'ID,Ime,Tip,Tip Škole,Aktivan,Status,Cena,Radni Dani,Broj Putovanja,Datum Početka,Datum Kraja',);
 
     // Data rows
     for (final putnik in putnici) {

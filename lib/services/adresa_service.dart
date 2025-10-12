@@ -51,7 +51,7 @@ class AdresaService {
       if (!forceRefresh) {
         final cached =
             await CacheService.getFromDisk<List<Map<String, dynamic>>>(
-                _listCacheKey);
+                _listCacheKey,);
         if (cached != null) {
           _logger.i('🎯 Cache hit: $_listCacheKey');
           _cacheHits++;
@@ -188,7 +188,7 @@ class AdresaService {
       // Validate after update
       if (!updatedAdresa.isCompletelyValid) {
         _logger.w(
-            '⚠️ Updated address failed validation: ${updatedAdresa.validationErrors}');
+            '⚠️ Updated address failed validation: ${updatedAdresa.validationErrors}',);
       }
 
       // Update cache
@@ -249,7 +249,7 @@ class AdresaService {
           validAdrese.add(normalized);
         } else {
           invalidAdrese.add(
-              '${adresa.displayAddress}: ${adresa.validationErrors.join(', ')}');
+              '${adresa.displayAddress}: ${adresa.validationErrors.join(', ')}',);
         }
       }
 
@@ -291,7 +291,7 @@ class AdresaService {
 
   /// Update multiple addresses in batch
   Future<void> updateMultipleAdrese(
-      Map<String, Map<String, dynamic>> updates) async {
+      Map<String, Map<String, dynamic>> updates,) async {
     _incrementOperation();
 
     try {
@@ -478,7 +478,7 @@ class AdresaService {
       }
 
       _logger.i(
-          '✅ Grouped ${allAdrese.length} addresses into ${grouped.length} municipalities');
+          '✅ Grouped ${allAdrese.length} addresses into ${grouped.length} municipalities',);
       return grouped;
     } catch (e) {
       _logger.e('❌ Error grouping addresses by municipality: $e');
@@ -571,7 +571,7 @@ class AdresaService {
 
       // CSV Header
       csv.writeln(
-          'ID,Ulica,Broj,Grad,Postanski_Broj,Latitude,Longitude,Municipality,Valid,Created_At,Updated_At');
+          'ID,Ulica,Broj,Grad,Postanski_Broj,Latitude,Longitude,Municipality,Valid,Created_At,Updated_At',);
 
       // CSV Data
       for (final adresa in adrese) {

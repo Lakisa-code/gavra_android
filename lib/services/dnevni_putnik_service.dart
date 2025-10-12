@@ -238,7 +238,7 @@ class DnevniPutnikService {
       }
 
       dlog(
-          '✅ Converted ${putnici.length}/${dnevniPutnici.length} dnevni putnici to Putnik objects');
+          '✅ Converted ${putnici.length}/${dnevniPutnici.length} dnevni putnici to Putnik objects',);
       return putnici;
     } catch (e) {
       dlog('❌ Error getting dnevni putnici as Putnik: $e');
@@ -248,7 +248,7 @@ class DnevniPutnikService {
 
   /// Batch operacije - dodavanje više putnika odjednom
   Future<List<DnevniPutnik>> dodajViseputnika(
-      List<DnevniPutnik> putnici) async {
+      List<DnevniPutnik> putnici,) async {
     try {
       final List<Map<String, dynamic>> data =
           putnici.map((p) => p.toMap()).toList();
@@ -336,7 +336,7 @@ class DnevniPutnikService {
 
     if (duplikat) {
       dlog(
-          '⚠️ Duplicate putnik detected: ${putnik.ime} at ${putnik.vremePolaska}');
+          '⚠️ Duplicate putnik detected: ${putnik.ime} at ${putnik.vremePolaska}',);
       return false;
     }
 

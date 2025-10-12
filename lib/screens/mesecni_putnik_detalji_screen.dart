@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -7,21 +9,25 @@ import '../theme.dart'; // Za theme boje
 // foundation import not needed; using centralized logger
 import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
+import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
 class MesecniPutnikDetaljiScreen extends StatefulWidget {
   const MesecniPutnikDetaljiScreen({
     super.key,
     required this.putnik,
   });
+
   final MesecniPutnik putnik;
 
   @override
-  State<MesecniPutnikDetaljiScreen> createState() =>
-      _MesecniPutnikDetaljiScreenState();
+  State<MesecniPutnikDetaljiScreen> createState() => _MesecniPutnikDetaljiScreenState();
 }
 
-class _MesecniPutnikDetaljiScreenState
-    extends State<MesecniPutnikDetaljiScreen> {
+class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
+    with AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
+  @override
+  bool get wantKeepAlive => true; // 🔄 PERFORMANCE: Keep state alive
+
   List<Map<String, dynamic>> _svaUkrcavanja = [];
   List<Map<String, dynamic>> _sviOtkazi = [];
   List<Map<String, dynamic>> _svaPlacanja = [];
@@ -29,40 +35,144 @@ class _MesecniPutnikDetaljiScreenState
 
   late final MesecniPutnikService _service;
 
+  // 🔄 PERFORMANCE: Cached computed values
+  Map<String, List<Map<String, dynamic>>>? _cachedNedeljniPodaci;
+  Map<String, List<Map<String, dynamic>>>? _cachedMesecniPodaci;
+  // Note: _cachedGodisnjiPodaci removed as unused
+
+  // 🔄 V3.0 REALTIME MONITORING STATE (Clean Architecture - bez heartbeat)
+  late ValueNotifier<bool> _isRealtimeHealthy;
+  late ValueNotifier<bool> _dataStreamHealthy;
+  late ValueNotifier<String> _realtimeHealthStatus;
+  late ValueNotifier<bool> _isNetworkConnected;
+  Timer? _monitoringTimer;
+  StreamSubscription<bool>? _networkSubscription;
+
   @override
   void initState() {
     super.initState();
     _service = MesecniPutnikService();
+
+    // 🔄 V3.0: Setup realtime monitoring
+    _setupRealtimeMonitoring();
+
     _ucitajSveDetalje();
+  }
+
+  // 🔄 V3.0 REALTIME MONITORING SETUP (Backend only - no visual heartbeat)
+  void _setupRealtimeMonitoring() {
+    _isRealtimeHealthy = ValueNotifier(true);
+    _dataStreamHealthy = ValueNotifier(true);
+    _realtimeHealthStatus = ValueNotifier('healthy');
+    _isNetworkConnected = ValueNotifier(true);
+
+    // 🔄 V3.0: Simple network status monitoring (simplified for now)
+    _isNetworkConnected.value = true;
+
+    // Health monitoring timer
+    _monitoringTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _updateHealthStatus();
+    });
+  }
+
+  void _updateHealthStatus() {
+    final networkHealthy = _isNetworkConnected.value;
+    final dataHealthy = _dataStreamHealthy.value;
+
+    _isRealtimeHealthy.value = networkHealthy && dataHealthy;
+
+    if (!networkHealthy) {
+      _realtimeHealthStatus.value = 'network_error';
+    } else if (!dataHealthy) {
+      _realtimeHealthStatus.value = 'data_error';
+    } else {
+      _realtimeHealthStatus.value = 'healthy';
+    }
   }
 
   Future<void> _ucitajSveDetalje() async {
     setState(() => _loading = true);
 
+    // 🔄 V3.0: Mark data stream as healthy at start
+    _dataStreamHealthy.value = true;
+
+    // 🔄 PERFORMANCE: Clear cached data when reloading
+    _cachedNedeljniPodaci = null;
+    _cachedMesecniPodaci = null;
+    // Note: _cachedGodisnjiPodaci removed as unused
+
     try {
-      // Učitaj sva ukrcavanja
-      _svaUkrcavanja = await _service.dohvatiUkrcavanjaZaPutnika(
-        widget.putnik.putnikIme,
-      );
+      // 🔄 RESILIENCE: Check network before loading
+      if (!_isNetworkConnected.value) {
+        throw Exception('Nema internetske konekcije');
+      }
 
-      // Učitaj sve otkaze
-      _sviOtkazi = await _service.dohvatiOtkazeZaPutnika(
-        widget.putnik.putnikIme,
-      );
+      // 🔄 PERFORMANCE: Parallel loading for better performance
+      final results = await Future.wait([
+        _service.dohvatiUkrcavanjaZaPutnika(widget.putnik.putnikIme),
+        _service.dohvatiOtkazeZaPutnika(widget.putnik.putnikIme),
+        _service.dohvatiPlacanjaZaPutnika(widget.putnik.putnikIme),
+      ]);
 
-      // Učitaj sva plaćanja
-      _svaPlacanja = await _service.dohvatiPlacanjaZaPutnika(
-        widget.putnik.putnikIme,
-      );
+      if (!mounted) return; // 🔄 RESILIENCE: Check after async operation
+
+      _svaUkrcavanja = results[0];
+      _sviOtkazi = results[1];
+      _svaPlacanja = results[2];
+
+      // 🔄 V3.0: Mark data stream as healthy after successful load
+      _dataStreamHealthy.value = true;
     } catch (e) {
       dlog('Greška pri učitavanju detalja: $e');
+
+      if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
+
+      // 🔄 V3.0: Mark data stream as unhealthy on error
+      _dataStreamHealthy.value = false;
+
+      // 🔄 RESILIENCE: Show user-friendly error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isNetworkConnected.value
+                  ? 'Greška pri učitavanju podataka. Pokušajte ponovo.'
+                  : 'Nema internetske konekcije. Proverite konekciju i pokušajte ponovo.',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            action: SnackBarAction(
+              label: 'Pokušaj ponovo',
+              textColor: Colors.white,
+              onPressed: _ucitajSveDetalje,
+            ),
+          ),
+        );
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        _updateHealthStatus();
+      }
     }
   }
 
   @override
+  void dispose() {
+    // 🔄 V3.0 REALTIME MONITORING CLEANUP
+    _monitoringTimer?.cancel();
+    _networkSubscription?.cancel();
+    _isRealtimeHealthy.dispose();
+    _dataStreamHealthy.dispose();
+    _realtimeHealthStatus.dispose();
+    _isNetworkConnected.dispose();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // 🔄 PERFORMANCE: Required for AutomaticKeepAliveClientMixin
+
     return Scaffold(
       appBar: AppBar(
         leading: const GradientBackButton(),
@@ -107,70 +217,155 @@ class _MesecniPutnikDetaljiScreenState
             onPressed: _ucitajSveDetalje,
             icon: const Icon(Icons.refresh, color: Colors.white),
           ),
+          // 🔄 V3.0: Discrete network status monitoring
+          ValueListenableBuilder<String>(
+            valueListenable: _realtimeHealthStatus,
+            builder: (context, healthStatus, child) {
+              return ValueListenableBuilder<bool>(
+                valueListenable: _isNetworkConnected,
+                builder: (context, isConnected, child) {
+                  if (!isConnected || healthStatus != 'healthy') {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        !isConnected ? Icons.wifi_off : Icons.error_outline,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              );
+            },
+          ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : DefaultTabController(
-              length: 4,
-              child: Column(
-                children: [
-                  // Osnovne informacije
-                  _buildBasicInfoCard(),
+      body: _buildBody(),
+    );
+  }
 
-                  // Tab bar
-                  Container(
-                    color: Colors.grey.shade100,
-                    child: const TabBar(
-                      labelColor: Colors.indigo,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorColor: Colors.indigo,
-                      tabs: [
-                        Tab(
-                          text: 'Nedeljno',
-                          icon: Icon(Icons.calendar_view_week),
-                        ),
-                        Tab(text: 'Mesečno', icon: Icon(Icons.calendar_month)),
-                        Tab(text: 'Godišnje', icon: Icon(Icons.calendar_today)),
-                        Tab(text: 'Plaćanja', icon: Icon(Icons.payments)),
-                      ],
-                    ),
-                  ),
-
-                  // Tab views
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _buildNedeljniTab(),
-                        _buildMesecniTab(),
-                        _buildGodisnjiTab(),
-                        _buildPlacanjaTab(),
-                      ],
-                    ),
-                  ),
-                ],
+  // 🔄 V3.0: Enhanced body with better error handling
+  Widget _buildBody() {
+    if (_loading) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Učitavam detalje...',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                fontSize: 16,
               ),
             ),
+          ],
+        ),
+      );
+    }
+
+    // 🔄 V3.0: Check for data errors
+    if (!_dataStreamHealthy.value && _svaUkrcavanja.isEmpty && _sviOtkazi.isEmpty && _svaPlacanja.isEmpty) {
+      return StreamErrorWidget(
+        streamName: 'MesecniPutnikDetalji',
+        errorMessage: 'Greška pri učitavanju podataka o putniku',
+        onRetry: _ucitajSveDetalje,
+      );
+    }
+
+    return DefaultTabController(
+      length: 4,
+      child: Column(
+        children: [
+          // Osnovne informacije
+          _buildBasicInfoCard(),
+
+          // Tab bar
+          Container(
+            color: Colors.grey.shade100,
+            child: const TabBar(
+              labelColor: Colors.indigo,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Colors.indigo,
+              labelStyle: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+              indicatorWeight: 3,
+              splashFactory: InkRipple.splashFactory,
+              tabs: [
+                Tab(
+                  text: 'Nedeljno',
+                  icon: Icon(Icons.calendar_view_week),
+                ),
+                Tab(text: 'Mesečno', icon: Icon(Icons.calendar_month)),
+                Tab(text: 'Godišnje', icon: Icon(Icons.calendar_today)),
+                Tab(text: 'Plaćanja', icon: Icon(Icons.payments)),
+              ],
+            ),
+          ),
+
+          // Tab views
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildNedeljniTab(),
+                _buildMesecniTab(),
+                _buildGodisnjiTab(),
+                _buildPlacanjaTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBasicInfoCard() {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            Theme.of(context).colorScheme.primary.withOpacity(0.08),
+            Theme.of(context).colorScheme.primary.withOpacity(0.04),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,13 +373,18 @@ class _MesecniPutnikDetaljiScreenState
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: Colors.indigo,
+                radius: 28,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 child: Text(
                   widget.putnik.putnikIme[0].toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,15 +392,30 @@ class _MesecniPutnikDetaljiScreenState
                     Text(
                       widget.putnik.putnikIme,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    Text(
-                      '${widget.putnik.tip.toUpperCase()} • ${widget.putnik.aktivan ? "AKTIVAN" : "NEAKTIVAN"}',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: widget.putnik.aktivan
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${widget.putnik.tip.toUpperCase()} • ${widget.putnik.aktivan ? "AKTIVAN" : "NEAKTIVAN"}',
+                        style: TextStyle(
+                          color: widget.putnik.aktivan
+                              ? Theme.of(context).colorScheme.onPrimaryContainer
+                              : Theme.of(context).colorScheme.onErrorContainer,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ],
@@ -209,20 +424,59 @@ class _MesecniPutnikDetaljiScreenState
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '${widget.putnik.brojPutovanja} vožnji',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.tertiary,
+                          Theme.of(context).colorScheme.tertiary.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '${widget.putnik.brojPutovanja} vožnji',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  Text(
-                    '${widget.putnik.brojOtkazivanja} otkaza',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange,
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.errorContainer,
+                          Theme.of(context).colorScheme.errorContainer.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.error.withOpacity(0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '${widget.putnik.brojOtkazivanja} otkaza',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                 ],
@@ -311,8 +565,9 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Widget _buildNedeljniTab() {
-    // Grupisanje po nedeljama
-    final nedeljniPodaci = _grupisiPoNedeljama(_svaUkrcavanja);
+    // 🔄 PERFORMANCE: Cache expensive grouping operations
+    _cachedNedeljniPodaci ??= _grupisiPoNedeljama(_svaUkrcavanja);
+    final nedeljniPodaci = _cachedNedeljniPodaci!;
     final nedeljniOtkazi = _grupisiPoNedeljama(_sviOtkazi);
 
     return SingleChildScrollView(
@@ -397,8 +652,9 @@ class _MesecniPutnikDetaljiScreenState
   }
 
   Widget _buildMesecniTab() {
-    // Grupisanje po mesecima
-    final mesecniPodaci = _grupisiPoMesecima(_svaUkrcavanja);
+    // 🔄 PERFORMANCE: Cache expensive grouping operations
+    _cachedMesecniPodaci ??= _grupisiPoMesecima(_svaUkrcavanja);
+    final mesecniPodaci = _cachedMesecniPodaci!;
     final mesecniOtkazi = _grupisiPoMesecima(_sviOtkazi);
 
     return SingleChildScrollView(
@@ -634,14 +890,12 @@ class _MesecniPutnikDetaljiScreenState
     final tipPlacanja = placanje['tip'] ?? 'redovno';
 
     // Dodatne informacije za mesečne karte
-    String subtitle =
-        'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+    String subtitle = 'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     if (tipPlacanja == 'mesecna_karta') {
       final mesec = placanje['placeniMesec'] ?? 0;
       final godina = placanje['placenaGodina'] ?? 0;
       final mesecNaziv = _getNazivMeseca(mesec as int);
-      subtitle =
-          'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+      subtitle = 'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     }
 
     return Card(
@@ -664,9 +918,7 @@ class _MesecniPutnikDetaljiScreenState
         ),
         subtitle: Text(subtitle),
         trailing: Icon(
-          tipPlacanja == 'mesecna_karta'
-              ? Icons.event_available
-              : Icons.receipt,
+          tipPlacanja == 'mesecna_karta' ? Icons.event_available : Icons.receipt,
           color: Colors.grey.shade600,
         ),
       ),
@@ -815,8 +1067,7 @@ class _MesecniPutnikDetaljiScreenState
               dan.toString(),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    aktivnost != null ? FontWeight.bold : FontWeight.normal,
+                fontWeight: aktivnost != null ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),

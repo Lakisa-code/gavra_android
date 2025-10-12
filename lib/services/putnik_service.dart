@@ -335,7 +335,7 @@ class PutnikService {
       allPutnici.addAll(dnevniPutnici);
 
       dlog(
-          '✅ [getAllPutniciFromBothTables] Loaded ${dnevniPutnici.length} daily passengers');
+          '✅ [getAllPutniciFromBothTables] Loaded ${dnevniPutnici.length} daily passengers',);
 
       // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz mesecni_putnici za selektovani dan
       final danKratica = _getDayAbbreviationFromName(targetDate);
@@ -681,7 +681,7 @@ class PutnikService {
           final dodatiPutnik =
               await _dnevniPutnikService.createDnevniPutnik(dnevniPutnik);
           dlog(
-              '✅ [DODAJ PUTNIKA] Dnevni putnik uspešno dodat preko DnevniPutnikService: ${dodatiPutnik.id}');
+              '✅ [DODAJ PUTNIKA] Dnevni putnik uspešno dodat preko DnevniPutnikService: ${dodatiPutnik.id}',);
         } catch (e) {
           dlog('❌ [DODAJ PUTNIKA] Greška sa DnevniPutnikService: $e');
 
@@ -1695,7 +1695,7 @@ class PutnikService {
             );
             final putnikId = mesecniResponse['id'] as String;
             await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
-                putnikId);
+                putnikId,);
             dlog('✅ [RESET SYNC] Broj otkazivanja sinhronizovan nakon reset-a');
 
             // 📊 TAKOĐE sinhronizuj broj putovanja (NOVO!)

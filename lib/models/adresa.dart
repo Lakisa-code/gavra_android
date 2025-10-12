@@ -240,7 +240,7 @@ class Adresa {
     ];
 
     return allowedCities.any((city) =>
-        normalizedGrad.contains(city) || city.contains(normalizedGrad));
+        normalizedGrad.contains(city) || city.contains(normalizedGrad),);
   }
 
   /// Validate postal code format (Serbian postal codes)
@@ -294,7 +294,7 @@ class Adresa {
 
     if (!isValidUlica) {
       errors.add(
-          'Naziv ulice nije valjan (minimum 2 karaktera, dozvoljeni karakteri)');
+          'Naziv ulice nije valjan (minimum 2 karaktera, dozvoljeni karakteri)',);
     }
     if (!isValidBroj) {
       errors.add('Broj nije valjan (format: 1, 12a, 5/3, 15-17)');
@@ -403,7 +403,7 @@ class Adresa {
 
     final belongsToBelaCrkva = belaCrkvaSettlements.any((settlement) =>
         normalizedGrad.contains(settlement) ||
-        settlement.contains(normalizedGrad));
+        settlement.contains(normalizedGrad),);
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
     return 'Vršac'; // Default for all other valid addresses

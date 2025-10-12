@@ -126,12 +126,12 @@ class NetworkStatusIndicator extends StatelessWidget {
                     : 'DISCONNECTED',
               ),
               _buildStatusRow('Avg Response',
-                  '${details['averageResponseTime'].toStringAsFixed(0)}ms'),
+                  '${details['averageResponseTime'].toStringAsFixed(0)}ms',),
               _buildStatusRow('Total Errors', '${details['totalErrors']}'),
               _buildStatusRow('Active Streams', '${details['streamCount']}'),
               if (details['lastSuccessfulPing'] != null)
                 _buildStatusRow('Last Ping',
-                    _formatTimestamp(details['lastSuccessfulPing'] as String?)),
+                    _formatTimestamp(details['lastSuccessfulPing'] as String?),),
               const SizedBox(height: 16),
               const Text(
                 'Stream Errors:',
@@ -142,7 +142,7 @@ class NetworkStatusIndicator extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ..._buildStreamErrorsList(
-                  details['errorCounts'] as Map<String, dynamic>? ?? {}),
+                  details['errorCounts'] as Map<String, dynamic>? ?? {},),
               const SizedBox(height: 16),
               const Text(
                 'Status Legend:',
@@ -153,12 +153,12 @@ class NetworkStatusIndicator extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _buildLegendItem(
-                  Colors.green.shade600, 'EXCELLENT', 'Sve radi savršeno'),
+                  Colors.green.shade600, 'EXCELLENT', 'Sve radi savršeno',),
               _buildLegendItem(Colors.yellow.shade600, 'GOOD', 'Mali problemi'),
               _buildLegendItem(
-                  Colors.orange.shade600, 'POOR', 'Veliki problemi'),
+                  Colors.orange.shade600, 'POOR', 'Veliki problemi',),
               _buildLegendItem(
-                  Colors.red.shade600, 'OFFLINE', 'Nema konekcije'),
+                  Colors.red.shade600, 'OFFLINE', 'Nema konekcije',),
             ],
           ),
         ),

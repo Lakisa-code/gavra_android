@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -30,21 +32,97 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   DateTime? _lastPutniciLoad;
   static const cacheDuration = Duration(seconds: 30);
 
+  // V3.0 Clean Monitoring - realtime streams za admin bez heartbeat
+  StreamSubscription<List<Map<String, dynamic>>>? _gpsSubscription;
+  StreamSubscription<List<Map<String, dynamic>>>? _putnikSubscription;
+
   // Početna pozicija - Bela Crkva/Vršac region
   static const LatLng _initialCenter = LatLng(44.9, 21.4);
 
   @override
   void initState() {
     super.initState();
+    _initializeRealtimeMonitoring(); // V3.0 Clean monitoring
     _getCurrentLocation();
-    _loadGpsLokacije();
-    _loadPutnici();
+    _loadGpsLokacije(); // Fallback
+    _loadPutnici(); // Fallback
+  }
+
+  // V3.0 Clean - Setup realtime monitoring with resilience
+  void _initializeRealtimeMonitoring() {
+    // GPS Realtime Stream with error recovery
+    _gpsSubscription =
+        Supabase.instance.client.from('gps_lokacije').stream(primaryKey: ['id']).order('timestamp').listen(
+              (data) {
+                if (mounted) {
+                  try {
+                    final gpsLokacije = data.map((json) => GPSLokacija.fromMap(json)).toList();
+                    setState(() {
+                      _gpsLokacije = gpsLokacije;
+                      _isLoading = false;
+                      _updateMarkers();
+                    });
+                  } catch (e) {
+                    dlog('GPS Data parsing error: $e');
+                    // Fallback to cached data
+                    if (_gpsLokacije.isEmpty) {
+                      _loadGpsLokacije();
+                    }
+                  }
+                }
+              },
+              onError: (Object error) {
+                dlog('GPS Stream Error: $error');
+                // V3.0 Resilience - Auto retry after 5 seconds
+                Timer(const Duration(seconds: 5), () {
+                  if (mounted) {
+                    _initializeRealtimeMonitoring();
+                  }
+                });
+              },
+            );
+
+    // Putnik Realtime Stream with error recovery
+    _putnikSubscription = Supabase.instance.client.from('putnik').stream(primaryKey: ['id']).listen(
+      (data) {
+        if (mounted) {
+          try {
+            final putnici = data.map((json) => Putnik.fromMap(json)).toList();
+            setState(() {
+              _putnici = putnici;
+              _updateMarkers();
+            });
+          } catch (e) {
+            dlog('Putnik Data parsing error: $e');
+            // Fallback to cached data
+            if (_putnici.isEmpty) {
+              _loadPutnici();
+            }
+          }
+        }
+      },
+      onError: (Object error) {
+        dlog('Putnik Stream Error: $error');
+        // V3.0 Resilience - Auto retry after 3 seconds
+        Timer(const Duration(seconds: 3), () {
+          if (mounted) {
+            _initializeRealtimeMonitoring();
+          }
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _gpsSubscription?.cancel();
+    _putnikSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadPutnici() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastPutniciLoad != null &&
-        DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
+    if (_lastPutniciLoad != null && DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
       return;
     }
 
@@ -91,8 +169,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _loadGpsLokacije() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastGpsLoad != null &&
-        DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
+    if (_lastGpsLoad != null && DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
       return;
     }
 
@@ -102,10 +179,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       });
 
       // Prvo pokušaj da dobiješ strukturu tabele
-      final response = await Supabase.instance.client
-          .from('gps_lokacije')
-          .select()
-          .limit(10); // Uzmi samo 10 da vidimo strukturu
+      final response =
+          await Supabase.instance.client.from('gps_lokacije').select().limit(10); // Uzmi samo 10 da vidimo strukturu
 
       dlog('🗺️ GPS Response: ${response.length} lokacija dobijeno');
 
@@ -165,8 +240,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       Map<String, GPSLokacija> najnovijeLokacije = {};
       for (final lokacija in _gpsLokacije) {
         final vozacKey = lokacija.vozacId ?? 'nepoznat';
-        if (!najnovijeLokacije.containsKey(vozacKey) ||
-            najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
+        if (!najnovijeLokacije.containsKey(vozacKey) || najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
           najnovijeLokacije[vozacKey] = lokacija;
         }
       }
@@ -344,9 +418,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   // 🚗 Vozači toggle
                   IconButton(
                     icon: Icon(
-                      _showDrivers
-                          ? Icons.directions_car
-                          : Icons.directions_car_outlined,
+                      _showDrivers ? Icons.directions_car : Icons.directions_car_outlined,
                       color: _showDrivers ? Colors.white : Colors.white54,
                     ),
                     onPressed: () {
@@ -369,8 +441,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       });
                       _updateMarkers();
                     },
-                    tooltip:
-                        _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
+                    tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
                   ),
                   // 🔄 Refresh dugme
                   TextButton(
@@ -424,30 +495,101 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               MarkerLayer(markers: _markers),
             ],
           ),
-          // 📊 Loading indicator
+          // 📊 V3.0 Loading State - Elegant design
           if (_isLoading)
             Container(
-              color: Colors.black26,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.4),
+                    Colors.black.withOpacity(0.2),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  margin: const EdgeInsets.symmetric(horizontal: 32),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 25,
+                        offset: const Offset(0, 15),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).primaryColor,
+                              Theme.of(context).primaryColor.withOpacity(0.8),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        '🗺️ Učitavam GPS podatke...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Realtime monitoring aktiviran',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          // 📋 Legend
+          // 📋 V3.0 Enhanced Legend
           Positioned(
-            top: 10,
-            right: 10,
+            top: 16,
+            right: 16,
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const [
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.95),
+                    Colors.white.withOpacity(0.85),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.2),
+                ),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 5,
-                    offset: Offset(0, 2),
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
@@ -455,23 +597,60 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Legenda:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.legend_toggle,
+                        size: 16,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Legenda',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Theme.of(context).primaryColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   if (_showDrivers) ...[
                     _buildLegendItem(const Color(0xFF00E5FF), '🚗 Bojan'),
                     _buildLegendItem(const Color(0xFFFF1493), '🚗 Svetlana'),
                     _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                     _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
                   ],
-                  if (_showPassengers)
-                    _buildLegendItem(Colors.green, '👤 Putnici'),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '💚 BESPLATNO OpenStreetMap',
-                    style: TextStyle(fontSize: 10, color: Colors.green),
+                  if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.eco,
+                          size: 12,
+                          color: Colors.green[700],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'OpenStreetMap',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -484,23 +663,35 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Widget _buildLegendItem(Color color, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 12,
-            height: 12,
+            width: 14,
+            height: 14,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 10),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[800],
+              letterSpacing: 0.3,
+            ),
           ),
         ],
       ),
