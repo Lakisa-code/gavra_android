@@ -218,8 +218,11 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🚨 ERROR TYPE DETECTION HELPER
-  Widget _buildErrorWidgetForException(Object error, String streamName,
-      {VoidCallback? onRetry,}) {
+  Widget _buildErrorWidgetForException(
+    Object error,
+    String streamName, {
+    VoidCallback? onRetry,
+  }) {
     final errorString = error.toString().toLowerCase();
 
     if (errorString.contains('timeout') || errorString.contains('time')) {
@@ -1890,7 +1893,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   RealtimeNetworkStatusService.instance.registerStreamResponse(
                     'putnici_stream',
                     const Duration(
-                        milliseconds: 500,), // Estimated response time
+                      milliseconds: 500,
+                    ), // Estimated response time
                   );
                 } else if (snapshot.hasError) {
                   RealtimeNetworkStatusService.instance.registerStreamResponse(
@@ -2076,7 +2080,8 @@ class _DanasScreenState extends State<DanasScreen> {
                           .registerStreamResponse(
                         'pazar_stream',
                         const Duration(
-                            milliseconds: 800,), // Estimated response time
+                          milliseconds: 800,
+                        ), // Estimated response time
                       );
                     } else if (pazarSnapshot.hasError) {
                       RealtimeNetworkStatusService.instance

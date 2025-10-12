@@ -37,7 +37,8 @@ class GpsService {
           final refreshedUuid = VozacMappingService.getVozacUuidSync(vozacIme);
           if (refreshedUuid != null) {
             _logger.i(
-                '✅ Vozač pronađen posle refresh cache: $vozacIme -> $refreshedUuid',);
+              '✅ Vozač pronađen posle refresh cache: $vozacIme -> $refreshedUuid',
+            );
             return refreshedUuid;
           }
 
@@ -85,12 +86,14 @@ class GpsService {
         final fallbackUuid = VozacMappingService.getVozacUuidSync(vozacIme);
         if (fallbackUuid != null) {
           _logger.i(
-              '✅ Koristi fallback UUID za vozača: $vozacIme -> $fallbackUuid',);
+            '✅ Koristi fallback UUID za vozača: $vozacIme -> $fallbackUuid',
+          );
           return fallbackUuid;
         }
       } else {
         _logger.e(
-            '❌ Supabase greška pri dobijanju UUID vozača $vozacIme: ${e.message}',);
+          '❌ Supabase greška pri dobijanju UUID vozača $vozacIme: ${e.message}',
+        );
       }
       return null;
     } catch (e) {
@@ -99,7 +102,8 @@ class GpsService {
       final fallbackUuid = VozacMappingService.getVozacUuidSync(vozacIme);
       if (fallbackUuid != null) {
         _logger.i(
-            '✅ Koristi emergency fallback UUID za vozača: $vozacIme -> $fallbackUuid',);
+          '✅ Koristi emergency fallback UUID za vozača: $vozacIme -> $fallbackUuid',
+        );
         return fallbackUuid;
       }
       return null;

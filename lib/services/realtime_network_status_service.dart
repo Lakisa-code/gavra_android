@@ -92,8 +92,11 @@ class RealtimeNetworkStatusService {
   }
 
   /// 📊 REGISTER STREAM RESPONSE
-  void registerStreamResponse(String streamName, Duration responseTime,
-      {bool hasError = false,}) {
+  void registerStreamResponse(
+    String streamName,
+    Duration responseTime, {
+    bool hasError = false,
+  }) {
     _lastResponseTimes[streamName] = DateTime.now();
 
     if (hasError) {

@@ -81,13 +81,17 @@ class FailFastStreamManager {
 
     if (kDebugMode) {
       print(
-          '📡 [FAIL-FAST] Subscription added: $streamName${isCritical ? ' (CRITICAL)' : ''}',);
+        '📡 [FAIL-FAST] Subscription added: $streamName${isCritical ? ' (CRITICAL)' : ''}',
+      );
     }
   }
 
   /// 🚨 HANDLE STREAM ERROR WITH FAIL-FAST LOGIC
   void _handleStreamError(
-      String streamName, Object error, StackTrace stackTrace,) {
+    String streamName,
+    Object error,
+    StackTrace stackTrace,
+  ) {
     _errorCounts[streamName] = (_errorCounts[streamName] ?? 0) + 1;
     final errorCount = _errorCounts[streamName]!;
 
@@ -100,7 +104,8 @@ class FailFastStreamManager {
         errorCount >= maxErrorsBeforeFail) {
       if (kDebugMode) {
         print(
-            '💥 [FAIL-FAST] CRITICAL STREAM FAILED: $streamName - TERMINATING',);
+          '💥 [FAIL-FAST] CRITICAL STREAM FAILED: $streamName - TERMINATING',
+        );
       }
 
       // Cancel all subscriptions and terminate app
@@ -119,14 +124,18 @@ class FailFastStreamManager {
 
   /// 💥 EMERGENCY SHUTDOWN FOR CRITICAL STREAM FAILURES
   void _emergencyShutdown(
-      String streamName, Object error, StackTrace stackTrace,) {
+    String streamName,
+    Object error,
+    StackTrace stackTrace,
+  ) {
     // Cancel all subscriptions immediately
     disposeAll();
 
     // Log critical failure
     if (kDebugMode) {
       print(
-          '💥💥💥 [FAIL-FAST] EMERGENCY SHUTDOWN - Critical stream $streamName failed',);
+        '💥💥💥 [FAIL-FAST] EMERGENCY SHUTDOWN - Critical stream $streamName failed',
+      );
       print('Error: $error');
       print('StackTrace: $stackTrace');
     }
@@ -202,7 +211,8 @@ class FailFastStreamManager {
   void disposeAll() {
     if (kDebugMode) {
       print(
-          '🧹 [FAIL-FAST] Disposing all subscriptions (${_activeSubscriptions.length})',);
+        '🧹 [FAIL-FAST] Disposing all subscriptions (${_activeSubscriptions.length})',
+      );
     }
 
     for (final subscription in _activeSubscriptions.values) {

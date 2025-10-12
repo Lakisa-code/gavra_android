@@ -35,13 +35,15 @@ class AdresaStatisticsService {
   // ✅ COMPREHENSIVE STATISTICS
 
   /// Get complete address analytics dashboard data
-  Future<Map<String, dynamic>> getComprehensiveStatistics(
-      {bool forceRefresh = false,}) async {
+  Future<Map<String, dynamic>> getComprehensiveStatistics({
+    bool forceRefresh = false,
+  }) async {
     try {
       // Check cache first
       if (!forceRefresh) {
         final cached = await CacheService.getFromDisk<Map<String, dynamic>>(
-            _statsCacheKey,);
+          _statsCacheKey,
+        );
         if (cached != null) {
           _logger.i('🎯 Statistics cache hit');
           return cached;
@@ -76,7 +78,8 @@ class AdresaStatisticsService {
       await CacheService.saveToDisk(_statsCacheKey, stats);
 
       _logger.i(
-          '✅ Comprehensive statistics calculated for ${allAdrese.length} addresses',);
+        '✅ Comprehensive statistics calculated for ${allAdrese.length} addresses',
+      );
       return stats;
     } catch (e) {
       _logger.e('❌ Error calculating comprehensive statistics: $e');
@@ -86,7 +89,8 @@ class AdresaStatisticsService {
 
   /// Calculate basic overview statistics
   Future<Map<String, dynamic>> _calculateOverviewStats(
-      List<Adresa> adrese,) async {
+    List<Adresa> adrese,
+  ) async {
     final overview = <String, dynamic>{};
 
     overview['total_addresses'] = adrese.length;
@@ -122,7 +126,8 @@ class AdresaStatisticsService {
 
   /// Calculate geographic distribution statistics
   Future<Map<String, dynamic>> _calculateGeographicStats(
-      List<Adresa> adrese,) async {
+    List<Adresa> adrese,
+  ) async {
     final geographic = <String, dynamic>{};
 
     // Municipality distribution
@@ -184,7 +189,8 @@ class AdresaStatisticsService {
 
   /// Calculate data quality statistics
   Future<Map<String, dynamic>> _calculateQualityStats(
-      List<Adresa> adrese,) async {
+    List<Adresa> adrese,
+  ) async {
     final quality = <String, dynamic>{};
 
     // Validation breakdown
@@ -351,7 +357,8 @@ class AdresaStatisticsService {
 
   /// Calculate geographic bounds for addresses with coordinates
   Map<String, double> _calculateGeographicBounds(
-      List<Adresa> adreseSaKoordinatama,) {
+    List<Adresa> adreseSaKoordinatama,
+  ) {
     if (adreseSaKoordinatama.isEmpty) return {};
 
     double minLat = adreseSaKoordinatama.first.latitude!;
@@ -422,7 +429,8 @@ class AdresaStatisticsService {
 
     final sortedCoverage = streetCoverageRates.entries
         .where(
-            (e) => streetCounts[e.key]! >= 2,) // Only streets with 2+ addresses
+          (e) => streetCounts[e.key]! >= 2,
+        ) // Only streets with 2+ addresses
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -482,7 +490,8 @@ class AdresaStatisticsService {
       trends['generated_at'] = DateTime.now().toIso8601String();
 
       _logger.i(
-          '✅ Creation trends calculated: ${trends['total_new_addresses']} new addresses',);
+        '✅ Creation trends calculated: ${trends['total_new_addresses']} new addresses',
+      );
       return trends;
     } catch (e) {
       _logger.e('❌ Error calculating creation trends: $e');
@@ -515,16 +524,19 @@ class AdresaStatisticsService {
         'With Coordinates,${overview['addresses_with_coordinates']},${overview['coordinate_coverage_percentage']}',
       );
       csv.writeln(
-          'Fully Valid,${overview['fully_valid_addresses']},${overview['validation_success_percentage']}',);
+        'Fully Valid,${overview['fully_valid_addresses']},${overview['validation_success_percentage']}',
+      );
       csv.writeln(
-          'In Service Area,${overview['in_service_area']},${overview['service_area_coverage_percentage']}',);
+        'In Service Area,${overview['in_service_area']},${overview['service_area_coverage_percentage']}',
+      );
       csv.writeln('Priority Locations,${overview['priority_locations']},N/A');
       csv.writeln();
 
       // Municipality distribution
       csv.writeln('# MUNICIPALITY DISTRIBUTION');
       csv.writeln(
-          'Municipality,Total Addresses,With Coordinates,Coordinate Coverage %',);
+        'Municipality,Total Addresses,With Coordinates,Coordinate Coverage %',
+      );
       final geographic = stats['geographic'] as Map<String, dynamic>;
       final municipalityDist =
           geographic['municipality_distribution'] as Map<String, dynamic>;

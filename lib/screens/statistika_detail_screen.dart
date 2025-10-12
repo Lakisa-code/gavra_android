@@ -57,8 +57,10 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
       _errorMessage = null;
     });
 
-    _putnikSubscription =
-        PutnikService().streamKombinovaniPutniciFiltered().timeout(const Duration(seconds: 30)).listen(
+    _putnikSubscription = PutnikService()
+        .streamKombinovaniPutniciFiltered()
+        .timeout(const Duration(seconds: 30))
+        .listen(
       (putnici) {
         if (mounted) {
           setState(() {
@@ -82,7 +84,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   // V3.0 Performance-Optimized GPS Calculation with Caching
   Future<double> _calculateKmForVozac(String vozac, DateTimeRange range) async {
-    final cacheKey = '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
+    final cacheKey =
+        '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
 
     if (_kmCache.containsKey(cacheKey)) {
       return _kmCache[cacheKey]!;
@@ -123,7 +126,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   }
 
   // V3.0 Enhanced Haversine Formula with Early Returns
-  double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _haversineDistance(
+      double lat1, double lon1, double lat2, double lon2) {
     // Early return for same coordinates
     if (lat1 == lat2 && lon1 == lon2) return 0.0;
 
@@ -137,8 +141,11 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) + cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(lat1)) *
+            cos(_toRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     final distance = earthRadius * c;
@@ -660,7 +667,10 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                 }
 
                 // Generate daily breakdown for visualization
-                final days = _selectedRange!.end.difference(_selectedRange!.start).inDays + 1;
+                final days = _selectedRange!.end
+                        .difference(_selectedRange!.start)
+                        .inDays +
+                    1;
                 final avgKmPerDay = totalKm / days;
 
                 return LineChart(
@@ -683,7 +693,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           getTitlesWidget: (value, meta) {
                             final dayIndex = value.toInt();
                             if (dayIndex >= 0 && dayIndex < days) {
-                              final date = _selectedRange!.start.add(Duration(days: dayIndex));
+                              final date = _selectedRange!.start
+                                  .add(Duration(days: dayIndex));
                               return Text(
                                 '${date.day}',
                                 style: const TextStyle(fontSize: 12),
