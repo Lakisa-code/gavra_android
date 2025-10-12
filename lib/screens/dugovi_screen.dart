@@ -99,7 +99,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
       if (timeSinceLastHeartbeat.inSeconds > 60) {
         isHealthy = false;
         dlog(
-            '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s');
+            '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',);
         break;
       }
     }
@@ -121,7 +121,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     }
 
     dlog(
-        '🩺 DugoviScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy');
+        '🩺 DugoviScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',);
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
@@ -244,7 +244,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
         break;
       case 'vozac':
         dugovi.sort(
-            (a, b) => (a.pokupioVozac ?? '').compareTo(b.pokupioVozac ?? ''));
+            (a, b) => (a.pokupioVozac ?? '').compareTo(b.pokupioVozac ?? ''),);
         break;
     }
   }
@@ -386,7 +386,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                           builder: (context, status, child) {
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                  horizontal: 8, vertical: 2,),
                               decoration: BoxDecoration(
                                 color: _getStatusColor(status).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(10),
@@ -538,7 +538,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     child: DropdownButton<String>(
                       value: _selectedFilter,
                       icon: Icon(Icons.arrow_drop_down,
-                          color: Colors.indigo.shade600),
+                          color: Colors.indigo.shade600,),
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.indigo.shade800,
@@ -552,13 +552,13 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       },
                       items: const [
                         DropdownMenuItem(
-                            value: 'svi', child: Text('Svi dugovi')),
+                            value: 'svi', child: Text('Svi dugovi'),),
                         DropdownMenuItem(
                             value: 'veliki_dug',
-                            child: Text('Veliki dugovi (500+ RSD)')),
+                            child: Text('Veliki dugovi (500+ RSD)'),),
                         DropdownMenuItem(
                             value: 'mali_dug',
-                            child: Text('Mali dugovi (<500 RSD)')),
+                            child: Text('Mali dugovi (<500 RSD)'),),
                       ],
                     ),
                   ),
@@ -592,12 +592,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     },
                     items: const [
                       DropdownMenuItem(
-                          value: 'iznos', child: Text('Po iznosu')),
+                          value: 'iznos', child: Text('Po iznosu'),),
                       DropdownMenuItem(
-                          value: 'vreme', child: Text('Po vremenu')),
+                          value: 'vreme', child: Text('Po vremenu'),),
                       DropdownMenuItem(value: 'ime', child: Text('Po imenu')),
                       DropdownMenuItem(
-                          value: 'vozac', child: Text('Po vozaču')),
+                          value: 'vozac', child: Text('Po vozaču'),),
                     ],
                   ),
                 ),
@@ -829,7 +829,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 🚨 ERROR TYPE DETECTION HELPER
   Widget _buildErrorWidgetForException(Object error, String streamName,
-      {VoidCallback? onRetry}) {
+      {VoidCallback? onRetry,}) {
     final errorString = error.toString().toLowerCase();
 
     if (errorString.contains('timeout') || errorString.contains('time')) {

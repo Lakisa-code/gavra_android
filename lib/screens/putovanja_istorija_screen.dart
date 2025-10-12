@@ -107,7 +107,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         // 60 seconds timeout
         isHealthy = false;
         dlog(
-            '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s');
+            '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',);
         break;
       }
     }
@@ -129,7 +129,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     }
 
     dlog(
-        '🩺 PutovanjaIstorijaScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy');
+        '🩺 PutovanjaIstorijaScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',);
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
@@ -157,7 +157,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           });
 
           dlog(
-              '✅ PutovanjaIstorijaScreen: Received ${putovanja.length} putovanja');
+              '✅ PutovanjaIstorijaScreen: Received ${putovanja.length} putovanja',);
         }
       },
       onError: (Object error) {
@@ -174,7 +174,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
               dlog(
-                  '🔄 PutovanjaIstorijaScreen: Auto-retrying stream connection...');
+                  '🔄 PutovanjaIstorijaScreen: Auto-retrying stream connection...',);
               _initializeRealtimeStream();
             }
           });
@@ -225,7 +225,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   // 🚨 ERROR TYPE DETECTION HELPER
   Widget _buildErrorWidgetForException(Object error, String streamName,
-      {VoidCallback? onRetry}) {
+      {VoidCallback? onRetry,}) {
     final errorString = error.toString().toLowerCase();
 
     if (errorString.contains('timeout') || errorString.contains('time')) {
@@ -329,7 +329,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           builder: (context, status, child) {
                             return Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                  horizontal: 8, vertical: 2,),
                               decoration: BoxDecoration(
                                 color: _getStatusColor(status).withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(10),
@@ -488,7 +488,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                            horizontal: 12, vertical: 8,),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
@@ -497,7 +497,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         child: Row(
                           children: [
                             Icon(Icons.calendar_today,
-                                size: 16, color: Colors.indigo.shade600),
+                                size: 16, color: Colors.indigo.shade600,),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -518,7 +518,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     // Filter dropdown
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4),
+                          horizontal: 12, vertical: 4,),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
@@ -528,7 +528,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         child: DropdownButton<String>(
                           value: _selectedFilter,
                           icon: Icon(Icons.arrow_drop_down,
-                              color: Colors.indigo.shade600),
+                              color: Colors.indigo.shade600,),
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.indigo.shade800,
@@ -543,9 +543,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           items: const [
                             DropdownMenuItem(value: 'svi', child: Text('Svi')),
                             DropdownMenuItem(
-                                value: 'mesecni', child: Text('Mesečni')),
+                                value: 'mesecni', child: Text('Mesečni'),),
                             DropdownMenuItem(
-                                value: 'dnevni', child: Text('Dnevni')),
+                                value: 'dnevni', child: Text('Dnevni'),),
                           ],
                         ),
                       ),
@@ -564,11 +564,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         children: [
                           IconButton(
                             icon: Icon(Icons.sort,
-                                size: 20, color: Colors.indigo.shade600),
+                                size: 20, color: Colors.indigo.shade600,),
                             onPressed: _showSortOptions,
                             tooltip: 'Sortiraj',
                             constraints: const BoxConstraints(
-                                minWidth: 40, minHeight: 40),
+                                minWidth: 40, minHeight: 40,),
                           ),
                           Container(
                             width: 1,
@@ -577,11 +577,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           ),
                           IconButton(
                             icon: Icon(Icons.file_download,
-                                size: 20, color: Colors.indigo.shade600),
+                                size: 20, color: Colors.indigo.shade600,),
                             onPressed: _exportData,
                             tooltip: 'Eksportuj',
                             constraints: const BoxConstraints(
-                                minWidth: 40, minHeight: 40),
+                                minWidth: 40, minHeight: 40,),
                           ),
                         ],
                       ),
@@ -619,7 +619,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       builder: (context, status, child) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                              horizontal: 6, vertical: 2,),
                           decoration: BoxDecoration(
                             color: _getStatusColor(status).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -1393,7 +1393,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
       // 🔄 REINITIALIZE STREAM FOR NEW DATE
       dlog(
-          '📅 PutovanjaIstorijaScreen: Date changed to ${_selectedDate.toIso8601String().split('T')[0]}');
+          '📅 PutovanjaIstorijaScreen: Date changed to ${_selectedDate.toIso8601String().split('T')[0]}',);
       _initializeRealtimeStream();
     }
   }
@@ -1600,7 +1600,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   // 💾 SAČUVAJ IZMENE PUTOVANJA
   Future<void> _sacuvajIzmenePutovanja(
-      PutovanjaIstorija originalPutovanje) async {
+      PutovanjaIstorija originalPutovanje,) async {
     if (_noviPutnikIme.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ime putnika je obavezno')),

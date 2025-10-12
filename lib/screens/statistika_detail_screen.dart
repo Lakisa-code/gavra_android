@@ -127,7 +127,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   // V3.0 Enhanced Haversine Formula with Early Returns
   double _haversineDistance(
-      double lat1, double lon1, double lat2, double lon2) {
+      double lat1, double lon1, double lat2, double lon2,) {
     // Early return for same coordinates
     if (lat1 == lat2 && lon1 == lon2) return 0.0;
 

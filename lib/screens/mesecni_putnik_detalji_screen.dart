@@ -173,7 +173,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
   @override
   Widget build(BuildContext context) {
     super.build(
-        context); // 🔄 PERFORMANCE: Required for AutomaticKeepAliveClientMixin
+        context,); // 🔄 PERFORMANCE: Required for AutomaticKeepAliveClientMixin
 
     return Scaffold(
       appBar: AppBar(
@@ -405,7 +405,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                          horizontal: 8, vertical: 2,),
                       decoration: BoxDecoration(
                         color: widget.putnik.aktivan
                             ? Theme.of(context).colorScheme.primaryContainer
