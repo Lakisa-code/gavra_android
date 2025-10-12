@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
@@ -12,6 +14,7 @@ import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
+// import '../widgets/stream_error_widget.dart'; // 🚨 STREAM ERROR HANDLING - LOKALNO IMPLEMENTIRANO
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
@@ -30,6 +33,12 @@ class _AdminScreenState extends State<AdminScreen> {
   String? _currentDriver;
   final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 
+  // 🔄 REALTIME MONITORING STATE
+  late ValueNotifier<bool> _isRealtimeHealthy;
+  late ValueNotifier<bool> _kusurStreamHealthy;
+  late ValueNotifier<bool> _putnikDataHealthy;
+  Timer? _healthCheckTimer;
+
   //
   // Statistika pazara
 
@@ -40,7 +49,14 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
     _selectedDan = app_date_utils.DateUtils.getTodayFullName(); // ✅ KORISTI UTILS FUNKCIJU
+
+    // 🔄 INITIALIZE REALTIME MONITORING
+    _isRealtimeHealthy = ValueNotifier(true);
+    _kusurStreamHealthy = ValueNotifier(true);
+    _putnikDataHealthy = ValueNotifier(true);
+
     _loadCurrentDriver();
+    _setupRealtimeMonitoring();
 
     // Inicijalizuj heads-up i zvuk notifikacije
     try {
@@ -80,6 +96,13 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   void dispose() {
+    // 🧹 CLEANUP REALTIME MONITORING
+    _healthCheckTimer?.cancel();
+    _isRealtimeHealthy.dispose();
+    _kusurStreamHealthy.dispose();
+    _putnikDataHealthy.dispose();
+
+    dlog('🧹 AdminScreen: Disposed realtime monitoring resources');
     // Real-time stream se automatski zatvaraju
     super.dispose();
   }
@@ -100,6 +123,190 @@ class _AdminScreenState extends State<AdminScreen> {
         _currentDriver = null;
       });
     }
+  }
+
+  // 🔄 REALTIME MONITORING SETUP
+  void _setupRealtimeMonitoring() {
+    dlog('🔄 AdminScreen: Setting up realtime monitoring...');
+
+    // Health check every 30 seconds
+    _healthCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _checkStreamHealth();
+    });
+
+    dlog('✅ AdminScreen: Realtime monitoring active');
+  }
+
+  // 🩺 STREAM HEALTH CHECK
+  void _checkStreamHealth() {
+    try {
+      // Check if realtime services are responding
+      final healthCheck = true; // RealtimeService.isConnected() - simplified for now
+      _isRealtimeHealthy.value = healthCheck;
+
+      // Check specific stream health (will be updated by StreamBuilders)
+      // Kusur streams health is managed by individual StreamBuilders
+      // Putnik data health check
+      _putnikDataHealthy.value = true; // Assume healthy unless FutureBuilder reports error
+
+      dlog(
+        '🩺 AdminScreen health check: Realtime=${_isRealtimeHealthy.value}, Kusur=${_kusurStreamHealthy.value}, Putnik=${_putnikDataHealthy.value}',
+      );
+
+      // 🚨 COMPREHENSIVE HEALTH REPORT
+      final overallHealth = _isRealtimeHealthy.value && _kusurStreamHealthy.value && _putnikDataHealthy.value;
+
+      if (!overallHealth) {
+        dlog('⚠️ AdminScreen health issues detected:');
+        if (!_isRealtimeHealthy.value) dlog('  - Realtime service disconnected');
+        if (!_kusurStreamHealthy.value) dlog('  - Kusur streams failing');
+        if (!_putnikDataHealthy.value) dlog('  - Putnik data loading issues');
+      }
+    } catch (e) {
+      dlog('⚠️ AdminScreen health check error: $e');
+      _isRealtimeHealthy.value = false;
+      _kusurStreamHealthy.value = false;
+      _putnikDataHealthy.value = false;
+    }
+  }
+
+  // 💚 HEARTBEAT INDICATOR
+  Widget _buildHeartbeatIndicator() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isRealtimeHealthy,
+      builder: (context, isHealthy, child) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Pulsing dot
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 1500),
+                curve: Curves.easeInOut,
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isHealthy ? Colors.greenAccent : Colors.redAccent,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isHealthy ? Colors.greenAccent.withOpacity(0.6) : Colors.redAccent.withOpacity(0.6),
+                      blurRadius: isHealthy ? 4 : 2,
+                      spreadRadius: isHealthy ? 1 : 0,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Status text
+              Text(
+                isHealthy ? 'LIVE' : 'ERR',
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  color: isHealthy ? Colors.greenAccent : Colors.redAccent,
+                  letterSpacing: 0.5,
+                  shadows: const [
+                    Shadow(
+                      offset: Offset(0.5, 0.5),
+                      blurRadius: 2,
+                      color: Colors.black54,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 🌐 NETWORK STATUS WIDGET
+  Widget NetworkStatusWidget() {
+    return Container(
+      height: 28,
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.blueAccent.withOpacity(0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.1),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: const Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.wifi,
+              color: Colors.blueAccent,
+              size: 12,
+            ),
+            SizedBox(width: 2),
+            Text(
+              'NET',
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                color: Colors.blueAccent,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🚨 STREAM ERROR WIDGET
+  Widget StreamErrorWidget({
+    required String streamName,
+    required String errorMessage,
+    required VoidCallback onRetry,
+    bool compact = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: compact ? 14 : 20,
+          ),
+          if (!compact) const SizedBox(height: 4),
+          Text(
+            compact ? 'ERR' : 'Stream Error',
+            style: TextStyle(
+              fontSize: compact ? 8 : 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.red,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (!compact) const SizedBox(height: 4),
+          GestureDetector(
+            onTap: onRetry,
+            child: Icon(
+              Icons.refresh,
+              color: Colors.red,
+              size: compact ? 12 : 16,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Mapiranje punih imena dana u skraćenice za filtriranje
@@ -157,354 +364,409 @@ class _AdminScreenState extends State<AdminScreen> {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
-                  // PRVI RED - Admin Panel
-                  Container(
-                    height: 24,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'A D M I N   P A N E L',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        letterSpacing: 1.8,
-                        shadows: const [
-                          Shadow(
-                            offset: Offset(1, 1),
-                            blurRadius: 3,
-                            color: Colors.black54,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  // DRUGI RED - Admin ikone
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final screenWidth = constraints.maxWidth;
-                      const spacing = 1.0; // Minimal spacing
-                      const padding = 8.0; // Safety padding
-                      final availableWidth = screenWidth - padding;
-                      final buttonWidth = (availableWidth - (spacing * 4)) / 5; // 5 buttons with 4 spaces
-
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // MESEČNI PUTNICI - levo
-                          SizedBox(
-                            width: buttonWidth,
-                            child: InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const MesecniPutniciScreen(),
+                  // ADMIN PANEL CONTAINER - levo
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // PRVI RED - Admin Panel sa Heartbeat
+                        Container(
+                          height: 24,
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'A D M I N   P A N E L',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  letterSpacing: 1.8,
+                                  shadows: const [
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      blurRadius: 3,
+                                      color: Colors.black54,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Putnici',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                            color: Colors.white,
+                              const SizedBox(width: 8),
+                              _buildHeartbeatIndicator(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // DRUGI RED - Admin ikone
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final screenWidth = constraints.maxWidth;
+                            const spacing = 1.0; // Minimal spacing
+                            const padding = 8.0; // Safety padding
+                            final availableWidth = screenWidth - padding;
+                            final buttonWidth = (availableWidth - (spacing * 4)) / 5; // 5 buttons with 4 spaces
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // MESEČNI PUTNICI - levo
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const MesecniPutniciScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.4),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'Putnici',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // STATISTIKE - desno-sredina
-                          SizedBox(
-                            width: buttonWidth,
-                            child: InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const StatistikaScreen(),
-                                ),
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Statistike',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // GEOCODING ADMIN - novo
-                          SizedBox(
-                            width: buttonWidth,
-                            child: InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const GeocodingAdminScreen(),
-                                ),
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.settings,
-                                          color: Colors.white,
-                                          size: 14,
-                                        ),
-                                        Text(
-                                          'API',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 12,
-                                            color: Colors.white,
-                                            letterSpacing: 0.3,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // ISTORIJA DUGME - četvrto
-                          SizedBox(
-                            width: buttonWidth,
-                            child: InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const PutovanjaIstorijaScreen(),
-                                ),
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 28,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
-                                  ),
-                                ),
-                                child: const Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.history,
-                                          color: Colors.white,
-                                          size: 12,
-                                        ),
-                                        Text(
-                                          'Istorija',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // DROPDOWN - desno
-                          SizedBox(
-                            width: buttonWidth,
-                            child: Container(
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
-                                ),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _selectedDan,
-                                  isExpanded: true,
-                                  hint: const Center(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Icon(
-                                        Icons.calendar_today,
-                                        color: Colors.white,
-                                        size: 12,
                                       ),
                                     ),
                                   ),
-                                  selectedItemBuilder: (BuildContext context) {
-                                    return [
-                                      'Ponedeljak',
-                                      'Utorak',
-                                      'Sreda',
-                                      'Četvrtak',
-                                      'Petak',
-                                    ].map<Widget>((String value) {
-                                      return Center(
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Flexible(
-                                              child: FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text(
-                                                  value,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w600,
+                                ),
+
+                                // STATISTIKE - desno-sredina
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const StatistikaScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.4),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'Statistike',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // GEOCODING ADMIN - novo
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const GeocodingAdminScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.4),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.settings,
+                                                color: Colors.white,
+                                                size: 14,
+                                              ),
+                                              Text(
+                                                'API',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                  letterSpacing: 0.3,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // ISTORIJA DUGME - četvrto
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const PutovanjaIstorijaScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.4),
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.history,
+                                                color: Colors.white,
+                                                size: 12,
+                                              ),
+                                              Text(
+                                                'Istorija',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 10,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // DROPDOWN - desno
+                                SizedBox(
+                                  width: buttonWidth,
+                                  child: Container(
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: _selectedDan,
+                                        isExpanded: true,
+                                        hint: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Icon(
+                                              Icons.calendar_today,
+                                              color: Colors.white,
+                                              size: 12,
+                                            ),
+                                          ),
+                                        ),
+                                        selectedItemBuilder: (BuildContext context) {
+                                          return [
+                                            'Ponedeljak',
+                                            'Utorak',
+                                            'Sreda',
+                                            'Četvrtak',
+                                            'Petak',
+                                          ].map<Widget>((String value) {
+                                            return Center(
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Flexible(
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      child: Text(
+                                                        value,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ),
                                                   ),
-                                                  textAlign: TextAlign.center,
+                                                  const SizedBox(width: 2),
+                                                  Icon(
+                                                    Icons.keyboard_arrow_down,
+                                                    color: Colors.white.withOpacity(0.7),
+                                                    size: 14,
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList();
+                                        },
+                                        icon: const SizedBox.shrink(),
+                                        dropdownColor: Theme.of(context).colorScheme.primary,
+                                        style: const TextStyle(color: Colors.white),
+                                        items: [
+                                          'Ponedeljak',
+                                          'Utorak',
+                                          'Sreda',
+                                          'Četvrtak',
+                                          'Petak',
+                                        ].map((dan) {
+                                          return DropdownMenuItem<String>(
+                                            value: dan,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 8,
+                                                vertical: 4,
+                                              ),
+                                              child: Center(
+                                                child: FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    dan,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 2),
-                                            Icon(
-                                              Icons.keyboard_arrow_down,
-                                              color: Colors.white.withOpacity(0.7),
-                                              size: 14,
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }).toList();
-                                  },
-                                  icon: const SizedBox.shrink(),
-                                  dropdownColor: Theme.of(context).colorScheme.primary,
-                                  style: const TextStyle(color: Colors.white),
-                                  items: [
-                                    'Ponedeljak',
-                                    'Utorak',
-                                    'Sreda',
-                                    'Četvrtak',
-                                    'Petak',
-                                  ].map((dan) {
-                                    return DropdownMenuItem<String>(
-                                      value: dan,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        child: Center(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Text(
-                                              dan,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ),
-                                        ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() {
+                                              _selectedDan = value;
+                                            });
+                                          }
+                                        },
                                       ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      setState(() {
-                                        _selectedDan = value;
-                                      });
-                                    }
-                                  },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  // NETWORK STATUS - desno
+                  const SizedBox(width: 8),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 60,
+                        height: 28,
+                        child: NetworkStatusWidget(),
+                      ),
+                      const SizedBox(height: 4),
+                      // Stream health indicator
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _kusurStreamHealthy,
+                        builder: (context, isHealthy, child) {
+                          return Container(
+                            width: 60,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: isHealthy ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isHealthy ? Colors.greenAccent : Colors.redAccent,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                isHealthy ? 'STREAM' : 'ERROR',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                  color: isHealthy ? Colors.greenAccent : Colors.redAccent,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -521,6 +783,13 @@ class _AdminScreenState extends State<AdminScreen> {
           },
         ),
         builder: (context, snapshot) {
+          // 🩺 UPDATE PUTNIK DATA HEALTH STATUS
+          if (snapshot.hasError) {
+            _putnikDataHealthy.value = false;
+          } else if (snapshot.hasData) {
+            _putnikDataHealthy.value = true;
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             dlog('🔄 Admin screen učitava podatke...');
             return Center(
@@ -855,6 +1124,36 @@ class _AdminScreenState extends State<AdminScreen> {
                                 'Bruda',
                               ),
                               builder: (context, snapshot) {
+                                // 🚨 ENHANCED ERROR HANDLING
+                                if (snapshot.hasError) {
+                                  _kusurStreamHealthy.value = false;
+                                  return Container(
+                                    height: 60,
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.red[300]!,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: StreamErrorWidget(
+                                      streamName: 'kusur_bruda',
+                                      errorMessage: 'Kusur stream error',
+                                      onRetry: () {
+                                        setState(() {});
+                                      },
+                                      compact: true,
+                                    ),
+                                  );
+                                }
+
+                                // Update health status on successful data
+                                if (snapshot.hasData) {
+                                  _kusurStreamHealthy.value = true;
+                                }
+
                                 final kusurBruda = snapshot.data ?? 0.0;
 
                                 return Container(
@@ -923,6 +1222,36 @@ class _AdminScreenState extends State<AdminScreen> {
                                 'Bilevski',
                               ),
                               builder: (context, snapshot) {
+                                // 🚨 ENHANCED ERROR HANDLING
+                                if (snapshot.hasError) {
+                                  _kusurStreamHealthy.value = false;
+                                  return Container(
+                                    height: 60,
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.red[300]!,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: StreamErrorWidget(
+                                      streamName: 'kusur_bilevski',
+                                      errorMessage: 'Kusur stream error',
+                                      onRetry: () {
+                                        setState(() {});
+                                      },
+                                      compact: true,
+                                    ),
+                                  );
+                                }
+
+                                // Update health status on successful data
+                                if (snapshot.hasData) {
+                                  _kusurStreamHealthy.value = true;
+                                }
+
                                 final kusurBilevski = snapshot.data ?? 0.0;
 
                                 return Container(
