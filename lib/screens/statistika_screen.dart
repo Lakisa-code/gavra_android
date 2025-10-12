@@ -7,8 +7,7 @@ import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart'; // DODANO za theme extensions
-import '../utils/date_utils.dart'
-    as app_date_utils; // DODANO: Centralna vikend logika
+import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
 import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
@@ -20,8 +19,7 @@ class StatistikaScreen extends StatefulWidget {
   State<StatistikaScreen> createState() => _StatistikaScreenState();
 }
 
-class _StatistikaScreenState extends State<StatistikaScreen>
-    with SingleTickerProviderStateMixin {
+class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _period = 'nedelja'; // nedelja, mesec, godina
   final List<String> _periods = ['nedelja', 'mesec', 'godina'];
@@ -33,8 +31,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
+    _tabController = TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
     _tabController.addListener(() {
       setState(() {}); // Refresh UI kada se promeni tab
     });
@@ -68,8 +65,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   void _initializeAvailableYears() {
     // Za sada dodajem nekoliko godina (možemo kasnije proširiti da čita iz baze)
     final currentYear = DateTime.now().year;
-    _availableYears =
-        List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
+    _availableYears = List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
     if (mounted) setState(() {});
   }
 
@@ -257,9 +253,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                       child: Text(
                                         'Vozači',
                                         style: TextStyle(
-                                          color: _tabController.index == 0
-                                              ? Colors.white
-                                              : Colors.white70,
+                                          color: _tabController.index == 0 ? Colors.white : Colors.white70,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -287,9 +281,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                       child: Text(
                                         'Detaljno',
                                         style: TextStyle(
-                                          color: _tabController.index == 1
-                                              ? Colors.white
-                                              : Colors.white70,
+                                          color: _tabController.index == 1 ? Colors.white : Colors.white70,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -316,8 +308,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _period,
-                              dropdownColor:
-                                  Theme.of(context).colorScheme.primary,
+                              dropdownColor: Theme.of(context).colorScheme.primary,
                               icon: const Icon(
                                 Icons.arrow_drop_down,
                                 color: Colors.white,
@@ -374,8 +365,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
                                 value: _selectedYear,
-                                dropdownColor:
-                                    Theme.of(context).colorScheme.primary,
+                                dropdownColor: Theme.of(context).colorScheme.primary,
                                 icon: const Icon(
                                   Icons.arrow_drop_down,
                                   color: Colors.white,
@@ -467,8 +457,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       }
 
       // 🔄 Period ide od subote pre ponedeljka do petka te nedelje
-      final subota =
-          ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
+      final subota = ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
       from = DateTime(subota.year, subota.month, subota.day);
 
       // 📅 ZAVRŠI U PETAK (dodaj 4 dana od ponedeljka)
@@ -492,8 +481,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     final to = period['to']!;
 
     return StreamBuilder<List<Putnik>>(
-      stream: PutnikService()
-          .streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
+      stream: PutnikService().streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -544,8 +532,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
             final pazarMap = pazarSnapshot.data ?? <String, double>{};
             final ukupno = pazarMap['_ukupno'] ?? 0.0;
             // Ukloni '_ukupno' ključ za čist prikaz
-            final Map<String, double> cistPazarMap = Map.from(pazarMap)
-              ..remove('_ukupno');
+            final Map<String, double> cistPazarMap = Map.from(pazarMap)..remove('_ukupno');
             // Dodaj ukupno u mapu
             cistPazarMap['_ukupno'] = ukupno;
 
@@ -585,8 +572,10 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                               padding: const EdgeInsets.all(16),
                               child: Row(
                                 children: [
-                                  Icon(Icons.verified,
-                                      color: Colors.green.shade700,),
+                                  Icon(
+                                    Icons.verified,
+                                    color: Colors.green.shade700,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Clean Statistike (bez duplikata)',
@@ -597,24 +586,25 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                     ),
                                   ),
                                   const Spacer(),
-                                  Icon(Icons.cleaning_services,
-                                      color: Colors.green.shade700,),
+                                  Icon(
+                                    Icons.cleaning_services,
+                                    color: Colors.green.shade700,
+                                  ),
                                 ],
                               ),
                             ),
                             // Content
                             FutureBuilder<Map<String, dynamic>>(
-                              future:
-                                  StatistikaService.dohvatiCleanStatistike(),
+                              future: StatistikaService.dohvatiCleanStatistike(),
                               builder: (context, cleanSnapshot) {
-                                if (cleanSnapshot.connectionState ==
-                                    ConnectionState.waiting) {
+                                if (cleanSnapshot.connectionState == ConnectionState.waiting) {
                                   return const Padding(
                                     padding: EdgeInsets.all(16),
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.green,),
+                                        Colors.green,
+                                      ),
                                     ),
                                   );
                                 }
@@ -624,13 +614,16 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
                                       children: [
-                                        Icon(Icons.error,
-                                            color: Colors.red.shade700,),
+                                        Icon(
+                                          Icons.error,
+                                          color: Colors.red.shade700,
+                                        ),
                                         const SizedBox(height: 8),
                                         Text(
                                           'Greška: ${cleanSnapshot.error}',
                                           style: const TextStyle(
-                                              color: Colors.red,),
+                                            color: Colors.red,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -645,12 +638,10 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                 }
 
                                 final data = cleanSnapshot.data!;
-                                final noDuplicates =
-                                    data['no_duplicates'] == true;
+                                final noDuplicates = data['no_duplicates'] == true;
 
                                 return Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                                   child: Column(
                                     children: [
                                       // Status indicator
@@ -660,27 +651,20 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: noDuplicates
-                                              ? Colors.green
-                                              : Colors.orange,
-                                          borderRadius:
-                                              BorderRadius.circular(20),
+                                          color: noDuplicates ? Colors.green : Colors.orange,
+                                          borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Icon(
-                                              noDuplicates
-                                                  ? Icons.check_circle
-                                                  : Icons.warning,
+                                              noDuplicates ? Icons.check_circle : Icons.warning,
                                               color: Colors.white,
                                               size: 16,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              noDuplicates
-                                                  ? 'Bez duplikata'
-                                                  : 'Duplikati prisutni',
+                                              noDuplicates ? 'Bez duplikata' : 'Duplikati prisutni',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
@@ -742,32 +726,30 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                         child: OutlinedButton.icon(
                                           onPressed: () async {
                                             try {
-                                              final debugInfo =
-                                                  await StatistikaService
-                                                      .cleanDebugInfo();
+                                              final debugInfo = await StatistikaService.cleanDebugInfo();
                                               if (mounted) {
                                                 showDialog<void>(
                                                   context: context,
-                                                  builder: (context) =>
-                                                      AlertDialog(
+                                                  builder: (context) => AlertDialog(
                                                     title: const Text(
-                                                        'Clean Debug Info',),
-                                                    content:
-                                                        SingleChildScrollView(
+                                                      'Clean Debug Info',
+                                                    ),
+                                                    content: SingleChildScrollView(
                                                       child: Text(
                                                         debugInfo.toString(),
                                                         style: const TextStyle(
-                                                            fontFamily:
-                                                                'monospace',),
+                                                          fontFamily: 'monospace',
+                                                        ),
                                                       ),
                                                     ),
                                                     actions: [
                                                       TextButton(
-                                                        onPressed: () =>
-                                                            Navigator.pop(
-                                                                context,),
+                                                        onPressed: () => Navigator.pop(
+                                                          context,
+                                                        ),
                                                         child: const Text(
-                                                            'Zatvori',),
+                                                          'Zatvori',
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -775,25 +757,28 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                               }
                                             } catch (e) {
                                               if (mounted) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
+                                                ScaffoldMessenger.of(context).showSnackBar(
                                                   SnackBar(
-                                                      content:
-                                                          Text('Greška: $e'),),
+                                                    content: Text('Greška: $e'),
+                                                  ),
                                                 );
                                               }
                                             }
                                           },
-                                          icon: Icon(Icons.info,
-                                              color: Colors.green.shade700,),
+                                          icon: Icon(
+                                            Icons.info,
+                                            color: Colors.green.shade700,
+                                          ),
                                           label: Text(
                                             'Debug Info',
                                             style: TextStyle(
-                                                color: Colors.green.shade700,),
+                                              color: Colors.green.shade700,
+                                            ),
                                           ),
                                           style: OutlinedButton.styleFrom(
                                             side: BorderSide(
-                                                color: Colors.green.shade300,),
+                                              color: Colors.green.shade300,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -808,16 +793,15 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                     ),
                     // Postojeće komponente
                     StreamBuilder<Map<String, Map<String, dynamic>>>(
-                      stream:
-                          StatistikaService.streamDetaljneStatistikePoVozacima(
+                      stream: StatistikaService.streamDetaljneStatistikePoVozacima(
                         from,
                         to,
                       ),
                       builder: (context, detaljneSnapshot) {
-                        if (detaljneSnapshot.connectionState ==
-                            ConnectionState.waiting) {
+                        if (detaljneSnapshot.connectionState == ConnectionState.waiting) {
                           return const Center(
-                              child: CircularProgressIndicator(),);
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
                         final detaljneStats = detaljneSnapshot.data ?? {};
@@ -841,8 +825,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   }
 
   Widget _buildDetaljnoTab() {
-    final period =
-        _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
+    final period = _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
     final from = period['from']!;
     final to = period['to']!;
 
@@ -879,11 +862,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 4, // 🎨 Dodao shadow
-                    color: vozacColor
-                        .withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
+                    color: vozacColor.withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
+                      borderRadius: BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
                       side: BorderSide(
                         color: vozacColor.withOpacity(0.6), // 🎨 Jasniji border
                         width: 2,
@@ -903,8 +884,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[
-                                      800], // 🎨 Tamniji tekst za bolji kontrast
+                                  color: Colors.grey[800], // 🎨 Tamniji tekst za bolji kontrast
                                 ),
                               ),
                             ],
@@ -1024,7 +1004,11 @@ class _StatistikaScreenState extends State<StatistikaScreen>
 
   // 🆕 Helper metoda za kreiranje stat card-a
   Widget _buildStatCard(
-      String naslov, String vrednost, IconData ikona, Color boja,) {
+    String naslov,
+    String vrednost,
+    IconData ikona,
+    Color boja,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

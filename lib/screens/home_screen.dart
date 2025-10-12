@@ -32,6 +32,7 @@ import '../widgets/bottom_nav_bar_letnji.dart';
 // import '../widgets/supabase_analysis_widget.dart'; // REMOVED - file not found
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
+import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
@@ -67,6 +68,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
+
+  // 🚨 REALTIME MONITORING VARIABLES
+  final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
+  // Note: FailFastStreamManagerNew and NetworkStatus will be integrated later
+  StreamSubscription<dynamic>? _networkStatusSubscription;
 
   final List<String> _dani = [
     'Ponedeljak',
@@ -197,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _selectedDay = _getTodayName(); // Postavi na današnji dan
     _initializeCurrentDriver();
     _initializeRealtimeService();
+    _setupRealtimeMonitoring(); // 🚨 NOVO: Setup realtime monitoring
     _loadPutnici();
     _setupRealtimeListener();
     _startSmartNotifikacije();
@@ -241,6 +248,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       RealtimeService.instance.startForDriver(driver);
     } catch (e) {
       // Ignoriši grešku ako realtime ne može da se pokrene
+    }
+  }
+
+  // 🚨 NOVO: Setup realtime monitoring system
+  void _setupRealtimeMonitoring() {
+    try {
+      // Setup heartbeat monitoring
+      Timer.periodic(const Duration(seconds: 30), (timer) {
+        _checkRealtimeHealth();
+      });
+
+      _logger.i('🚨 Realtime monitoring setup completed');
+    } catch (e) {
+      _logger.e('Failed to setup realtime monitoring: $e');
+    }
+  }
+
+  // 🚨 Check realtime system health
+  void _checkRealtimeHealth() {
+    try {
+      final isHealthy = _realtimeSubscription != null;
+
+      if (_isRealtimeHealthy.value != isHealthy) {
+        _isRealtimeHealthy.value = isHealthy;
+        _logger.i('💓 Realtime health changed: $isHealthy');
+      }
+    } catch (e) {
+      _isRealtimeHealthy.value = false;
+      _logger.e('Heartbeat check failed: $e');
     }
   }
 
@@ -439,6 +475,69 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
       );
     }
+  }
+
+  // 🚥 Network Status Widget (placeholder for now)
+  Widget NetworkStatusWidget() {
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.blue.withOpacity(0.4),
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.wifi,
+          color: Colors.blue,
+          size: 16,
+        ),
+      ),
+    );
+  }
+
+  // 💓 Heartbeat indicator for planning mode
+  Widget _buildHeartbeatIndicator() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isRealtimeHealthy,
+      builder: (context, isHealthy, child) {
+        return Container(
+          height: 32,
+          decoration: BoxDecoration(
+            color: isHealthy ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isHealthy ? Colors.green.withOpacity(0.4) : Colors.red.withOpacity(0.4),
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isHealthy ? '💓 Planning realtime je zdrav' : '⚠️ Planning realtime problem',
+                    ),
+                    backgroundColor: isHealthy ? Colors.green : Colors.red,
+                  ),
+                );
+              },
+              child: Center(
+                child: Icon(
+                  isHealthy ? Icons.favorite : Icons.heart_broken,
+                  color: isHealthy ? Colors.green : Colors.red,
+                  size: 16,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showAddPutnikDialog() async {
@@ -1132,6 +1231,55 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       initialData: const [],
       builder: (context, snapshot) {
+        // 🚨 NOVO: Error handling sa specialized widgets
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(95),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
+                  ),
+                ),
+                child: const SafeArea(
+                  child: Center(
+                    child: Text(
+                      'REZERVACIJE - ERROR',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.8,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            body: Center(
+              child: StreamErrorWidget(
+                streamName: 'home_planning_stream',
+                errorMessage: snapshot.error.toString(),
+                onRetry: () {
+                  setState(() {
+                    // Trigger rebuild
+                  });
+                },
+              ),
+            ),
+          );
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -1438,6 +1586,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                           const SizedBox(width: 2),
 
+                          // 🚥 NETWORK STATUS - sredina-levo
+                          Expanded(
+                            flex: 15,
+                            child: NetworkStatusWidget(),
+                          ),
+
+                          const SizedBox(width: 2),
+
+                          // 💓 HEARTBEAT MONITOR - sredina-desno
+                          Expanded(
+                            flex: 15,
+                            child: _buildHeartbeatIndicator(),
+                          ),
+
+                          const SizedBox(width: 2),
+
                           // DROPDOWN - desno
                           Expanded(
                             flex: 35,
@@ -1676,6 +1840,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Cleanup real-time subscriptions
     _realtimeSubscription?.cancel();
+
+    // 🚨 NOVO: Cleanup realtime monitoring
+    _networkStatusSubscription?.cancel();
+    _isRealtimeHealthy.dispose();
+    // Note: FailFastManager cleanup will be added later
 
     // CACHE UKLONJEN - nema više cache listener-a
 
