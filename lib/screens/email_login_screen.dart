@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/email_auth_service.dart';
-import '../utils/logging.dart';
-import 'home_screen.dart';
-import 'email_registration_screen.dart';
-import 'daily_checkin_screen.dart';
-import '../services/daily_checkin_service.dart';
+
 import '../main.dart' show globalThemeRefresher;
+import '../services/daily_checkin_service.dart';
+import '../services/email_auth_service.dart';
+import '../services/permission_service.dart';
+import '../utils/logging.dart';
+import 'daily_checkin_screen.dart';
+import 'email_registration_screen.dart';
+import 'home_screen.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({Key? key}) : super(key: key);
@@ -15,14 +18,87 @@ class EmailLoginScreen extends StatefulWidget {
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
 }
 
-class _EmailLoginScreenState extends State<EmailLoginScreen>
-    with TickerProviderStateMixin {
+class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+
+  // STATIC GLOBAL AUDIO PLAYER - za pesme u pozadini
+  static AudioPlayer? _globalAudioPlayer;
+
+  // PUSTI SPECIJALNE PESME ZA VOZAČE - CELA PESMA U POZADINI
+  static Future<void> _playDriverWelcomeSong(String driverName) async {
+    try {
+      // Stvori globalni audio player ako ne postoji
+      _globalAudioPlayer ??= AudioPlayer();
+
+      // Zaustavi trenutnu pesmu
+      await _globalAudioPlayer!.stop();
+
+      String assetPath;
+      double volume = 0.8; // Uvek 0.8 za sve pesme
+
+      switch (driverName.toLowerCase()) {
+        case 'svetlana':
+          // 🎺 SVETLANINA SPECIJALNA PESMA - "Hiljson Mandela & Miach - Anđeo"
+          assetPath = 'assets/svetlana.mp3';
+          dlog(
+            '🎺 🎵 SVETLANA EMAIL LOGIN: Puštam "Hiljson Mandela & Miach - Anđeo" kao dobrodošlicu - CELA PESMA! 🎵 🎺',
+          );
+          break;
+
+        case 'bruda':
+          // 🎵 BRUDINA SPECIJALNA PESMA
+          assetPath = 'assets/bruda.mp3';
+          dlog('🎵 BRUDA EMAIL LOGIN: Puštam Brudinu specijalnu pesmu - CELA PESMA!');
+          break;
+
+        case 'bilevski':
+          // 🎵 BILEVSKIJEVA SPECIJALNA PESMA
+          assetPath = 'assets/bilevski.mp3';
+          dlog(
+            '🎵 BILEVSKI EMAIL LOGIN: Puštam Bilevskijevu specijalnu pesmu - CELA PESMA!',
+          );
+          break;
+
+        case 'bojan':
+          // 🎵 BOJANOVA SPECIJALNA PESMA
+          assetPath = 'assets/gavra.mp3';
+          dlog('🎵 BOJAN EMAIL LOGIN: Puštam Gavrinu specijalnu pesmu - CELA PESMA!');
+          break;
+
+        default:
+          // 🎵 Default pesma za ostale vozače
+          assetPath = 'assets/gavra.mp3';
+          dlog('🎵 Puštam default welcome song za $driverName - CELA PESMA!');
+          break;
+      }
+
+      // Postavi i pokreni pesmu - CELA PESMA
+      await _globalAudioPlayer!.setAsset(assetPath);
+      await _globalAudioPlayer!.setVolume(volume);
+      await _globalAudioPlayer!.setLoopMode(LoopMode.off); // Bez ponavljanja
+      await _globalAudioPlayer!.play();
+
+      dlog(
+        '🎵 ✓ EMAIL LOGIN: Pesma pokrenuta u pozadini za $driverName - neće se prekinuti!',
+      );
+
+      // Postaviti listener da se audio player očisti kad pesma završi
+      _globalAudioPlayer!.playerStateStream.listen((state) {
+        if (state.processingState == ProcessingState.completed) {
+          dlog('🎵 ✓ EMAIL LOGIN: Pesma završena, čistim audio player...');
+          _globalAudioPlayer?.dispose();
+          _globalAudioPlayer = null;
+        }
+      });
+    } catch (e) {
+      dlog('❌ EMAIL LOGIN: Greška pri puštanju pesme: $e');
+    }
+  }
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -361,8 +437,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
       dlog('🔐 Pokušavam prijavu sa email-om: $email');
 
-      final driverName =
-          await EmailAuthService.signInWithEmail(email, password);
+      final driverName = await EmailAuthService.signInWithEmail(email, password);
 
       if (driverName != null) {
         dlog('✅ Uspješna prijava vozača: $driverName');
@@ -372,15 +447,21 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         await prefs.setString('current_driver', driverName);
         dlog('💾 Vozač $driverName sačuvan u SharedPreferences');
 
+        // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
+        // ignore: use_build_context_synchronously
+        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+
         // 🎨 Osveži temu za vozača
         if (globalThemeRefresher != null) {
           globalThemeRefresher!();
           dlog('🎨 Tema osvežena za vozača $driverName');
         }
 
+        // 🎵 PUSTI PESMU NAKON EMAIL LOGIN-A
+        await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
+
         // Provjeri daily check-in
-        final needsCheckIn =
-            !await DailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn = !await DailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Idi na daily check-in

@@ -1,20 +1,21 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../utils/logging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import '../services/local_notification_service.dart';
-import '../services/realtime_notification_service.dart';
-import '../services/password_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../main.dart' show globalThemeRefresher;
 import '../services/daily_checkin_service.dart';
+import '../services/driver_registration_service.dart';
+import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
+import '../services/realtime_notification_service.dart';
+import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
-import 'home_screen.dart';
-import 'change_password_screen.dart';
 import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
-import '../main.dart' show globalThemeRefresher;
+import 'email_registration_screen.dart';
+import 'home_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -23,8 +24,7 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -105,28 +105,25 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     }
   }
 
+  // Lista vozača za email sistem - bez hardcoded šifara
   final List<Map<String, dynamic>> _drivers = [
     {
       'name': 'Bilevski',
-      'password': '2222',
       'color': const Color(0xFFFF9800), // narandžasta
       'icon': Icons.directions_car,
     },
     {
       'name': 'Bruda',
-      'password': '1111',
       'color': const Color(0xFF7C4DFF), // ljubičasta
       'icon': Icons.local_taxi,
     },
     {
       'name': 'Bojan',
-      'password': '1919',
       'color': const Color(0xFF00E5FF), // svetla cyan plava
       'icon': Icons.airport_shuttle,
     },
     {
       'name': 'Svetlana',
-      'password': '0000',
       'color': const Color(0xFFFF1493), // deep pink
       'icon': Icons.favorite,
     },
@@ -163,8 +160,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
       // Also request Firebase/iOS style permissions via RealtimeNotificationService
       try {
-        final granted =
-            await RealtimeNotificationService.requestNotificationPermissions();
+        final granted = await RealtimeNotificationService.requestNotificationPermissions();
         dlog('🔔 RealtimeNotificationService permission result: $granted');
       } catch (e) {
         dlog(
@@ -178,13 +174,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   // 🔄 AUTO-LOGIN BEZ PESME - Proveri da li je vozač već logovan
   Future<void> _checkAutoLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedDriver = prefs.getString('current_driver');
+    // PROVERI SUPABASE AUTH STATE
+    final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
 
-    if (savedDriver != null && savedDriver.isNotEmpty) {
+    final prefs = await SharedPreferences.getInstance();
+    final savedDriver =
+        prefs.getString('current_driver'); // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
+    if (driverFromSupabase != null && (savedDriver == null || savedDriver != driverFromSupabase)) {
+      dlog('🔄 Sinhronizujem Supabase korisnika ($driverFromSupabase) sa local storage');
+      await prefs.setString('current_driver', driverFromSupabase);
+    }
+
+    // Koristi driver iz Supabase ako postoji, inače iz local storage
+    final activeDriver = driverFromSupabase ?? savedDriver;
+
+    if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN
       dlog(
-        '🔄 AUTO-LOGIN: $savedDriver je već logovan - proveravam daily check-in',
+        '🔄 AUTO-LOGIN: $activeDriver je već logovan - proveravam daily check-in',
       );
 
       // 🎨 OSVEŽI TEMU ZA VOZAČA
@@ -212,19 +219,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         return;
       }
 
-      final hasCheckedIn =
-          await DailyCheckInService.hasCheckedInToday(savedDriver);
+      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
       if (!hasCheckedIn) {
         // POŠALJI NA DAILY CHECK-IN SCREEN
-        dlog('📅 DAILY CHECK-IN: $savedDriver mora da uradi check-in');
+        dlog('📅 DAILY CHECK-IN: $activeDriver mora da uradi check-in');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
             builder: (context) => DailyCheckInScreen(
-              vozac: savedDriver,
+              vozac: activeDriver,
               onCompleted: () {
                 // Kada završi check-in, idi na HomeScreen
                 Navigator.pushReplacement(
@@ -239,7 +245,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         );
       } else {
         // DIREKTNO NA HOME SCREEN
-        dlog('✓ DAILY CHECK-IN: $savedDriver već uradio check-in danas');
+        dlog('✓ DAILY CHECK-IN: $activeDriver već uradio check-in danas');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
@@ -263,8 +269,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
 
@@ -295,93 +300,47 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       return;
     }
 
-    // Dohvati šifru iz PasswordService-a
-    final correctPassword = await PasswordService.getPassword(driverName);
+    dlog('🚗 Vozač $driverName kliknuo za login - proveravam registraciju...');
 
-    // Pronađi vozača za boju
-    final driver = _drivers.firstWhere((d) => d['name'] == driverName);
+    // PROVERI DA LI JE VOZAČ VEĆ REGISTROVAN SA EMAIL-OM
+    final isRegistered = await DriverRegistrationService.isDriverRegistered(driverName);
 
-    // Prikaži dialog za unos šifre
-    final enteredPassword = await _showPasswordDialog(
-      driverName,
-      driver['color'] as Color,
-    );
-
-    if (enteredPassword == null) {
-      // Korisnik je otkazao
-      return;
-    }
-
-    if (enteredPassword == correctPassword) {
-      // Šifra je tačna, nastavi sa login-om
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('current_driver', driverName);
-
-      // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
-      // ignore: use_build_context_synchronously
-      await PermissionService.requestAllPermissionsOnFirstLaunch(context);
-
-      // 🎨 OSVEŽI TEMU ZA NOVOG VOZAČA
-      if (globalThemeRefresher != null) {
-        globalThemeRefresher!();
-      }
-
-      // 🎵 PUSTI PESMU SAMO PRI MANUELNOM LOGIN-U SA ŠIFROM (ne pri auto-login-u)
-      await _WelcomeScreenState._playDriverWelcomeSong(driverName);
-
-      // 📅 PROVERI DAILY CHECK-IN I NAKON MANUELNOG LOGIN-A
-      final today = DateTime.now();
-
-      // 🏖️ PRESKOČI VIKENDE - ne radi se subotom i nedeljom
-      if (today.weekday == 6 || today.weekday == 7) {
-        dlog(
-          '🏖️ Preskoćem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen',
-        );
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
-        );
-        return;
-      }
-
-      final hasCheckedIn =
-          await DailyCheckInService.hasCheckedInToday(driverName);
+    if (isRegistered) {
+      // VOZAČ JE REGISTROVAN - IDI NA EMAIL LOGIN
+      dlog('✅ Vozač $driverName je već registrovan - idem na email login');
 
       if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (context) => const EmailLoginScreen(),
+        ),
+      );
+    } else {
+      // VOZAČ NIJE REGISTROVAN - IDI NA EMAIL REGISTRACIJU
+      dlog('📧 Vozač $driverName nije registrovan - idem na email registraciju');
 
-      if (!hasCheckedIn) {
-        // POŠALJI NA DAILY CHECK-IN SCREEN
-        dlog('📅 MANUAL LOGIN: $driverName mora da uradi check-in');
-        Navigator.pushReplacement(
+      if (!mounted) return;
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute<bool>(
+          builder: (context) => EmailRegistrationScreen(
+            preselectedDriverName: driverName,
+          ),
+        ),
+      );
+
+      // Ako je registracija uspešna, automatski idi na login
+      if (result == true) {
+        dlog('✅ Registracija uspešna - idem na email login');
+        if (!mounted) return;
+        Navigator.push(
           context,
           MaterialPageRoute<void>(
-            builder: (context) => DailyCheckInScreen(
-              vozac: driverName,
-              onCompleted: () {
-                // Kada završi check-in, idi na HomeScreen
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => const HomeScreen(),
-                  ),
-                );
-              },
-            ),
+            builder: (context) => const EmailLoginScreen(),
           ),
         );
-      } else {
-        // DIREKTNO NA HOME SCREEN
-        dlog('✓ MANUAL LOGIN: $driverName već uradio check-in danas');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
-        );
       }
-    } else {
-      // Pogreška šifra
-      if (!mounted) return;
-      _showErrorDialog('Pogreška šifra!', 'Molimo pokušajte ponovo.');
     }
   }
 
@@ -435,146 +394,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               },
               child: const Text(
                 'U redu',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<String?> _showPasswordDialog(
-    String driverName,
-    Color driverColor,
-  ) async {
-    final TextEditingController passwordController = TextEditingController();
-
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2A2A2A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: driverColor.withOpacity(0.5),
-              width: 2,
-            ),
-          ),
-          title: Column(
-            children: [
-              Icon(Icons.lock, color: driverColor, size: 40),
-              const SizedBox(height: 12),
-              Text(
-                'Šifra za $driverName',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          content: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.4,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      letterSpacing: 2,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Unesite šifru',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: driverColor.withOpacity(0.5),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: driverColor, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: Colors.black.withOpacity(0.3),
-                    ),
-                    onSubmitted: (value) {
-                      Navigator.of(context).pop(value);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Otkaži', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop(); // Zatvori password dialog
-                // Otvori change password screen
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) =>
-                        ChangePasswordScreen(driverName: driverName),
-                  ),
-                );
-              },
-              child: Text(
-                'Promeni šifru',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop(); // Zatvori password dialog
-                // Otvori email login screen
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => const EmailLoginScreen(),
-                  ),
-                );
-              },
-              child: const Text(
-                'Email Prijava',
-                style: TextStyle(color: Colors.green),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: driverColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop(passwordController.text);
-              },
-              child: const Text(
-                'Uloguj se',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -678,8 +497,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical:
-                                      4.0, // Increased slightly for better visibility
+                                  vertical: 4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'] as String,
@@ -894,8 +712,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             fontSize: 13, // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
                             color: color,
-                            letterSpacing:
-                                1.0, // Further reduced to prevent overflow
+                            letterSpacing: 1.0, // Further reduced to prevent overflow
                             shadows: [
                               Shadow(
                                 color: Colors.white.withOpacity(0.5),

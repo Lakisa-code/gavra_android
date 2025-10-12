@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../utils/logging.dart';
 
 class EmailAuthService {
@@ -25,8 +26,7 @@ class EmailAuthService {
         email: email,
         password: password,
         data: {'driver_name': driverName},
-        emailRedirectTo:
-            'gavra013://auth/callback', // Omogući email verification
+        emailRedirectTo: 'gavra013://auth/callback', // Omogući email verification
       );
 
       if (response.user != null) {
@@ -58,8 +58,7 @@ class EmailAuthService {
       );
 
       if (response.user != null) {
-        final driverName =
-            response.user!.userMetadata?['driver_name'] as String?;
+        final driverName = response.user!.userMetadata?['driver_name'] as String?;
         dlog('✅ Prijava uspešna za vozača: $driverName');
         return driverName;
       } else {
@@ -69,51 +68,6 @@ class EmailAuthService {
     } catch (e) {
       dlog('❌ Greška pri prijavi: $e');
       return null;
-    }
-  }
-
-  /// Potvrdi email verifikaciju
-  static Future<bool> confirmEmailVerification(
-    String email,
-    String code,
-  ) async {
-    try {
-      dlog('✅ Potvrđujem email verifikaciju za: $email');
-
-      final AuthResponse response = await _supabase.auth.verifyOTP(
-        email: email,
-        token: code,
-        type: OtpType.email,
-      );
-
-      if (response.user != null) {
-        dlog('✅ Email verifikacija uspešna');
-        return true;
-      } else {
-        dlog('❌ Email verifikacija nije uspela');
-        return false;
-      }
-    } catch (e) {
-      dlog('❌ Greška pri email verifikaciji: $e');
-      return false;
-    }
-  }
-
-  /// Ponovo pošalji email kod
-  static Future<bool> resendEmailCode(String email) async {
-    try {
-      dlog('📧 Ponovo šaljem email kod za: $email');
-
-      await _supabase.auth.resend(
-        type: OtpType.email,
-        email: email,
-      );
-
-      dlog('✅ Email kod ponovo poslat');
-      return true;
-    } catch (e) {
-      dlog('❌ Greška pri ponovnom slanju email koda: $e');
-      return false;
     }
   }
 
@@ -128,24 +82,6 @@ class EmailAuthService {
       return true;
     } catch (e) {
       dlog('❌ Greška pri resetu lozinke: $e');
-      return false;
-    }
-  }
-
-  /// Pošalji ponovo email za potvrdu
-  static Future<bool> resendEmailConfirmation(String email) async {
-    try {
-      dlog('📧 Šaljem ponovo email za potvrdu na: $email');
-
-      await _supabase.auth.resend(
-        type: OtpType.signup,
-        email: email,
-      );
-
-      dlog('✅ Email za potvrdu poslat ponovo');
-      return true;
-    } catch (e) {
-      dlog('❌ Greška pri slanju email-a za potvrdu: $e');
       return false;
     }
   }

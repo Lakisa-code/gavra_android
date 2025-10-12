@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+
+import '../services/driver_registration_service.dart';
 import '../services/email_auth_service.dart';
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
-import 'email_verification_screen.dart';
-import 'email_login_screen.dart';
 
 class EmailRegistrationScreen extends StatefulWidget {
-  const EmailRegistrationScreen({Key? key}) : super(key: key);
+  const EmailRegistrationScreen({
+    Key? key,
+    this.preselectedDriverName,
+  }) : super(key: key);
+  final String? preselectedDriverName;
 
   @override
-  State<EmailRegistrationScreen> createState() =>
-      _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
 }
 
-class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
-    with TickerProviderStateMixin {
+class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -31,6 +33,13 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
   @override
   void initState() {
     super.initState();
+
+    // Postavi preselected driver ako je proslećen
+    if (widget.preselectedDriverName != null) {
+      _selectedDriver = widget.preselectedDriverName;
+      dlog('🚗 Preselected driver: ${widget.preselectedDriverName}');
+    }
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -457,44 +466,36 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       if (mounted) Navigator.of(context).pop();
 
       if (success) {
-        dlog('✅ Registracija uspješna');
+        dlog('✅ Registracija uspješna u Supabase');
 
-        // Pokaži uspešnu poruku
-        await _showSuccessDialog();
+        // REGISTRUJ VOZAČA LOKALNO
+        final localRegistrationSuccess = await DriverRegistrationService.markDriverAsRegistered(
+          driverName,
+          email,
+        );
 
-        // Proveri da li je email verifikacija potrebna
-        final currentUser = EmailAuthService.getCurrentUser();
-        final needsVerification =
-            EmailAuthService.isEmailVerificationRequired(currentUser);
+        if (localRegistrationSuccess) {
+          dlog('✅ Vozač $driverName lokalno registrovan');
 
-        if (mounted) {
-          if (needsVerification) {
-            dlog('📧 Idem na email verifikaciju');
-            // Idi na email verifikaciju
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) => EmailVerificationScreen(
-                  email: email,
-                  driverName: driverName,
-                ),
-              ),
-            );
-          } else {
-            dlog('✅ Email automatski potvrđen, idem na login');
-            // Email je automatski potvrđen, idi direktno na login
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute<void>(
-                builder: (context) => const EmailLoginScreen(),
-              ),
-            );
+          // Pokaži uspešnu poruku
+          await _showSuccessDialog();
+
+          // Vrati true da signal uspješnu registraciju
+          if (mounted) {
+            Navigator.of(context).pop(true);
           }
+        } else {
+          dlog('❌ Greška pri lokalnoj registraciji vozača');
+          _showErrorDialog(
+            'Greška!',
+            'Vozač je registrovan u sistemu, ali lokalna registracija nije uspešna.',
+          );
         }
       } else {
+        dlog('❌ Registracija nije uspješna');
         _showErrorDialog(
-          'Neuspješna registracija',
-          'Provjerite podatke i pokušajte ponovo.',
+          'Registracija neuspješna',
+          'Provjerite podatke i pokušajte ponovo. Email možda već postoji.',
         );
       }
     } catch (e) {
@@ -605,8 +606,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           child: SingleChildScrollView(
             child: Text(
               'Poslali smo vam email sa linkom za potvrdu naloga. Molimo proverite vašu email poštu i kliknite na link da aktivirate nalog.',
-              style:
-                  TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
             ),
           ),
         ),

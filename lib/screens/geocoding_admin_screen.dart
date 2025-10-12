@@ -269,37 +269,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     return locations;
   }
 
-  // 🎨 STATUS COLOR HELPER
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'healthy':
-        return Colors.green;
-      case 'network_error':
-        return Colors.orange;
-      case 'stream_error':
-      case 'heartbeat_timeout':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  // 📝 STATUS TEXT HELPER
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'healthy':
-        return 'LIVE';
-      case 'network_error':
-        return 'NET';
-      case 'stream_error':
-        return 'ERR';
-      case 'heartbeat_timeout':
-        return 'TIMEOUT';
-      default:
-        return 'OFF';
-    }
-  }
-
   Future<void> _clearCache() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -443,45 +412,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             ),
           ),
 
-          // 📊 REALTIME STATUS INDICATOR
-          ValueListenableBuilder<bool>(
-            valueListenable: _geocodingStreamHealthy,
-            builder: (context, isHealthy, child) {
-              final status = isHealthy ? 'healthy' : 'stream_error';
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(status).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _getStatusColor(status),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(status),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _getStatusText(status),
-                      style: TextStyle(
-                        color: _getStatusColor(status),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+          const SizedBox.shrink(),
 
           // Auto-refresh toggle
           const SizedBox(width: 8),

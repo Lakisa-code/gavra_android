@@ -29,10 +29,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject =
-      BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject =
-      BehaviorSubject<String>.seeded('svi');
+  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
+  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
   late Stream<String> _debouncedSearchStream;
   final TextEditingController _searchController = TextEditingController();
 
@@ -99,7 +97,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
       if (timeSinceLastHeartbeat.inSeconds > 60) {
         isHealthy = false;
         dlog(
-            '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',);
+          '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',
+        );
         break;
       }
     }
@@ -121,7 +120,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
     }
 
     dlog(
-        '🩺 DugoviScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',);
+      '🩺 DugoviScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',
+    );
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
@@ -150,8 +150,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 (p) =>
                     (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
                     (p.jePokupljen) &&
-                    (p.status == null ||
-                        (p.status != 'Otkazano' && p.status != 'otkazan')) &&
+                    (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')) &&
                     (p.mesecnaKarta != true),
               )
               .toList();
@@ -192,9 +191,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 🔍 DEBOUNCED SEARCH SETUP
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject
-        .debounceTime(const Duration(milliseconds: 300))
-        .distinct();
+    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
 
     _debouncedSearchStream.listen((query) {
       _performSearch(query);
@@ -244,7 +241,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
         break;
       case 'vozac':
         dugovi.sort(
-            (a, b) => (a.pokupioVozac ?? '').compareTo(b.pokupioVozac ?? ''),);
+          (a, b) => (a.pokupioVozac ?? '').compareTo(b.pokupioVozac ?? ''),
+        );
         break;
     }
   }
@@ -258,8 +256,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     if (searchQuery.isNotEmpty) {
       dugovi = dugovi.where((duznik) {
         return duznik.ime.toLowerCase().contains(searchQuery) ||
-            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ??
-                false) ||
+            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ?? false) ||
             (duznik.grad.toLowerCase().contains(searchQuery));
       }).toList();
     }
@@ -287,37 +284,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
     // Za dugove, koristimo standardnu cenu ili specifičnu cenu iz putnika
     // Default cena za Bela Crkva - Vršac je 500 RSD
     return 500.0; // Osnovni iznos karte - može se proširiti na osnovu rute
-  }
-
-  // 🎨 STATUS COLOR HELPER
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'healthy':
-        return Colors.green;
-      case 'network_error':
-        return Colors.orange;
-      case 'stream_error':
-      case 'heartbeat_timeout':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  // 📝 STATUS TEXT HELPER
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'healthy':
-        return 'LIVE';
-      case 'network_error':
-        return 'NET';
-      case 'stream_error':
-        return 'ERR';
-      case 'heartbeat_timeout':
-        return 'TIMEOUT';
-      default:
-        return 'OFF';
-    }
   }
 
   @override
@@ -379,47 +345,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        // 💓 V3.0 REALTIME STATUS INDICATOR
-                        ValueListenableBuilder<String>(
-                          valueListenable: _realtimeHealthStatus,
-                          builder: (context, status, child) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2,),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(status).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color:
-                                      _getStatusColor(status).withOpacity(0.5),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(status),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _getStatusText(status),
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
                       ],
                     ),
                   ),
@@ -438,32 +363,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       _initializeRealtimeStream();
                     },
                     tooltip: 'Osveži podatke',
-                  ),
-                  // 🌐 NETWORK STATUS INDICATOR
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _isNetworkConnected,
-                    builder: (context, isConnected, child) {
-                      return Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: isConnected
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.red.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isConnected
-                                ? Colors.green.withOpacity(0.5)
-                                : Colors.red.withOpacity(0.5),
-                          ),
-                        ),
-                        child: Icon(
-                          isConnected ? Icons.wifi : Icons.wifi_off,
-                          size: 16,
-                          color: isConnected ? Colors.white : Colors.white70,
-                        ),
-                      );
-                    },
                   ),
                 ],
               ),
@@ -527,8 +426,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
               // Filter dropdown
               Expanded(
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
@@ -537,8 +435,10 @@ class _DugoviScreenState extends State<DugoviScreen> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedFilter,
-                      icon: Icon(Icons.arrow_drop_down,
-                          color: Colors.indigo.shade600,),
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.indigo.shade600,
+                      ),
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.indigo.shade800,
@@ -552,13 +452,17 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       },
                       items: const [
                         DropdownMenuItem(
-                            value: 'svi', child: Text('Svi dugovi'),),
+                          value: 'svi',
+                          child: Text('Svi dugovi'),
+                        ),
                         DropdownMenuItem(
-                            value: 'veliki_dug',
-                            child: Text('Veliki dugovi (500+ RSD)'),),
+                          value: 'veliki_dug',
+                          child: Text('Veliki dugovi (500+ RSD)'),
+                        ),
                         DropdownMenuItem(
-                            value: 'mali_dug',
-                            child: Text('Mali dugovi (<500 RSD)'),),
+                          value: 'mali_dug',
+                          child: Text('Mali dugovi (<500 RSD)'),
+                        ),
                       ],
                     ),
                   ),
@@ -568,8 +472,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
               // Sort dropdown
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
@@ -592,12 +495,18 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     },
                     items: const [
                       DropdownMenuItem(
-                          value: 'iznos', child: Text('Po iznosu'),),
+                        value: 'iznos',
+                        child: Text('Po iznosu'),
+                      ),
                       DropdownMenuItem(
-                          value: 'vreme', child: Text('Po vremenu'),),
+                        value: 'vreme',
+                        child: Text('Po vremenu'),
+                      ),
                       DropdownMenuItem(value: 'ime', child: Text('Po imenu')),
                       DropdownMenuItem(
-                          value: 'vozac', child: Text('Po vozaču'),),
+                        value: 'vozac',
+                        child: Text('Po vozaču'),
+                      ),
                     ],
                   ),
                 ),
@@ -620,14 +529,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isHealthy
-                            ? 'Prikazano: $filteredCount od $totalCount dužnika'
-                            : 'Podaci se učitavaju...',
+                        isHealthy ? 'Prikazano: $filteredCount od $totalCount dužnika' : 'Podaci se učitavaju...',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.indigo.shade600,
-                          fontStyle:
-                              isHealthy ? FontStyle.normal : FontStyle.italic,
+                          fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
                         ),
                       ),
                       if (isHealthy) ...[
@@ -645,46 +551,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
                   );
                 },
               ),
-              const Spacer(),
-              // Real-time indicator
-              ValueListenableBuilder<String>(
-                valueListenable: _realtimeHealthStatus,
-                builder: (context, status, child) {
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: _getStatusColor(status).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(status),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getStatusText(status),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: _getStatusColor(status),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ],
@@ -694,8 +560,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 💰 CALCULATE TOTAL DEBT
   double _calculateTotalDebt() {
-    return _getFilteredDugovi()
-        .fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
+    return _getFilteredDugovi().fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
   }
 
   // 🚀 V3.0 REALTIME CONTENT BUILDER
@@ -732,8 +597,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -828,8 +692,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
   }
 
   // 🚨 ERROR TYPE DETECTION HELPER
-  Widget _buildErrorWidgetForException(Object error, String streamName,
-      {VoidCallback? onRetry,}) {
+  Widget _buildErrorWidgetForException(
+    Object error,
+    String streamName, {
+    VoidCallback? onRetry,
+  }) {
     final errorString = error.toString().toLowerCase();
 
     if (errorString.contains('timeout') || errorString.contains('time')) {
@@ -840,18 +707,14 @@ class _DugoviScreenState extends State<DugoviScreen> {
       );
     }
 
-    if (errorString.contains('network') ||
-        errorString.contains('socket') ||
-        errorString.contains('connection')) {
+    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
       return NetworkErrorWidget(
         message: 'Problem sa mrežom u $streamName',
         onRetry: onRetry ?? _initializeRealtimeStream,
       );
     }
 
-    if (errorString.contains('data') ||
-        errorString.contains('parse') ||
-        errorString.contains('format')) {
+    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
       return DataErrorWidget(
         dataType: streamName,
         reason: error.toString(),
