@@ -18,9 +18,12 @@ class PutovanjaIstorijaService {
 
   // Cache keys
   static String _getAllCacheKey() => '${_cacheKeyPrefix}_all';
-  static String _getByDateCacheKey(DateTime date) => '${_cacheKeyPrefix}_date_${date.toIso8601String().split('T')[0]}';
-  static String _getByMesecniCacheKey(String mesecniPutnikId) => '${_cacheKeyPrefix}_mesecni_$mesecniPutnikId';
-  static String _getSearchCacheKey(String query) => '${_cacheKeyPrefix}_search_$query';
+  static String _getByDateCacheKey(DateTime date) =>
+      '${_cacheKeyPrefix}_date_${date.toIso8601String().split('T')[0]}';
+  static String _getByMesecniCacheKey(String mesecniPutnikId) =>
+      '${_cacheKeyPrefix}_mesecni_$mesecniPutnikId';
+  static String _getSearchCacheKey(String query) =>
+      '${_cacheKeyPrefix}_search_$query';
 
   // Clear cache methods
   static Future<void> _clearCache() async {
@@ -44,7 +47,8 @@ class PutovanjaIstorijaService {
     try {
       return RealtimeService.instance.putovanjaStream.map((data) {
         try {
-          final list = data.map((json) => PutovanjaIstorija.fromMap(json)).toList();
+          final list =
+              data.map((json) => PutovanjaIstorija.fromMap(json)).toList();
           list.sort((a, b) {
             final cmp = b.datum.compareTo(a.datum);
             if (cmp != 0) return cmp;
@@ -127,10 +131,14 @@ class PutovanjaIstorijaService {
     try {
       // Try cache first
       final cacheKey = _getAllCacheKey();
-      final cached = await CacheService.getFromDisk<List<dynamic>>(cacheKey, maxAge: _cacheExpiry);
+      final cached = await CacheService.getFromDisk<List<dynamic>>(cacheKey,
+          maxAge: _cacheExpiry);
       if (cached != null) {
         dlog('📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached all data');
-        return cached.map((json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>)).toList();
+        return cached
+            .map((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .toList();
       }
 
       final response = await SupabaseSafe.run(
@@ -148,7 +156,9 @@ class PutovanjaIstorijaService {
         // Cache the result
         await CacheService.saveToDisk(cacheKey, dataList);
 
-        return dataList.map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json)).toList();
+        return dataList
+            .map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -166,14 +176,23 @@ class PutovanjaIstorijaService {
 
       // Try cache first
       final cacheKey = _getByDateCacheKey(datum);
-      final cached = await CacheService.getFromDisk<List<dynamic>>(cacheKey, maxAge: _cacheExpiry);
+      final cached = await CacheService.getFromDisk<List<dynamic>>(cacheKey,
+          maxAge: _cacheExpiry);
       if (cached != null) {
-        dlog('📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached data for date: $datumStr');
-        return cached.map((json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>)).toList();
+        dlog(
+            '📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached data for date: $datumStr');
+        return cached
+            .map((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .toList();
       }
 
       final response = await SupabaseSafe.run(
-        () => _supabase.from('putovanja_istorija').select().eq('datum_putovanja', datumStr).order('vreme_polaska'),
+        () => _supabase
+            .from('putovanja_istorija')
+            .select()
+            .eq('datum_putovanja', datumStr)
+            .order('vreme_polaska'),
         fallback: <dynamic>[],
       );
 
@@ -183,7 +202,9 @@ class PutovanjaIstorijaService {
         // Cache the result
         await CacheService.saveToDisk(cacheKey, dataList);
 
-        return dataList.map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json)).toList();
+        return dataList
+            .map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -230,7 +251,8 @@ class PutovanjaIstorijaService {
   static Future<PutovanjaIstorija?> getPutovanjeById(String id) async {
     try {
       final response = await SupabaseSafe.run(
-        () => _supabase.from('putovanja_istorija').select().eq('id', id).single(),
+        () =>
+            _supabase.from('putovanja_istorija').select().eq('id', id).single(),
       );
 
       if (response == null) return null;
@@ -279,12 +301,17 @@ class PutovanjaIstorijaService {
       // Validate before adding
       final validation = putovanje.validateFull();
       if (validation.isNotEmpty) {
-        dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Validation failed: ${validation.values.join(', ')}');
+        dlog(
+            '❌ [PUTOVANJA ISTORIJA SERVICE] Validation failed: ${validation.values.join(', ')}');
         return null;
       }
 
       final response = await SupabaseSafe.run(
-        () => _supabase.from('putovanja_istorija').insert(putovanje.toMap()).select().single(),
+        () => _supabase
+            .from('putovanja_istorija')
+            .insert(putovanje.toMap())
+            .select()
+            .single(),
       );
 
       if (response == null) return null;
@@ -397,12 +424,18 @@ class PutovanjaIstorijaService {
       // Validate before updating
       final validation = putovanje.validateFull();
       if (validation.isNotEmpty) {
-        dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Validation failed: ${validation.values.join(', ')}');
+        dlog(
+            '❌ [PUTOVANJA ISTORIJA SERVICE] Validation failed: ${validation.values.join(', ')}');
         return null;
       }
 
       final response = await SupabaseSafe.run(
-        () => _supabase.from('putovanja_istorija').update(putovanje.toMap()).eq('id', putovanje.id).select().single(),
+        () => _supabase
+            .from('putovanja_istorija')
+            .update(putovanje.toMap())
+            .eq('id', putovanje.id)
+            .select()
+            .single(),
       );
 
       if (response == null) return null;
@@ -450,7 +483,10 @@ class PutovanjaIstorijaService {
       }
 
       await SupabaseSafe.run(
-        () => _supabase.from('putovanja_istorija').update(updateData).eq('id', putovanjeId),
+        () => _supabase
+            .from('putovanja_istorija')
+            .update(updateData)
+            .eq('id', putovanjeId),
         fallback: <dynamic>[],
       );
 
@@ -590,9 +626,11 @@ class PutovanjaIstorijaService {
       String? cacheKey;
       if (query != null && query.length > 2) {
         cacheKey = _getSearchCacheKey(query);
-        final cached = await CacheService.getFromMemory<List<PutovanjaIstorija>>(cacheKey);
+        final cached =
+            await CacheService.getFromMemory<List<PutovanjaIstorija>>(cacheKey);
         if (cached != null) {
-          dlog('📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached search results');
+          dlog(
+              '📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached search results');
           return cached;
         }
       }
@@ -603,15 +641,18 @@ class PutovanjaIstorijaService {
 
           // Text search
           if (query != null && query.isNotEmpty) {
-            q = q.or('putnik_ime.ilike.%$query%,adresa_polaska.ilike.%$query%,broj_telefona.ilike.%$query%');
+            q = q.or(
+                'putnik_ime.ilike.%$query%,adresa_polaska.ilike.%$query%,broj_telefona.ilike.%$query%');
           }
 
           // Date range
           if (odDatuma != null) {
-            q = q.gte('datum_putovanja', odDatuma.toIso8601String().split('T')[0]);
+            q = q.gte(
+                'datum_putovanja', odDatuma.toIso8601String().split('T')[0]);
           }
           if (doDatuma != null) {
-            q = q.lte('datum_putovanja', doDatuma.toIso8601String().split('T')[0]);
+            q = q.lte(
+                'datum_putovanja', doDatuma.toIso8601String().split('T')[0]);
           }
 
           // Filters
@@ -628,14 +669,19 @@ class PutovanjaIstorijaService {
             q = q.eq('pokupljen', pokupljen);
           }
 
-          return q.order('datum_putovanja', ascending: false).order('vreme_polaska', ascending: false).limit(limit);
+          return q
+              .order('datum_putovanja', ascending: false)
+              .order('vreme_polaska', ascending: false)
+              .limit(limit);
         },
         fallback: <dynamic>[],
       );
 
       if (response is List) {
-        final results =
-            response.map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>)).toList();
+        final results = response
+            .map<PutovanjaIstorija>((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .toList();
 
         // Cache simple search results
         if (cacheKey != null) {
@@ -675,8 +721,10 @@ class PutovanjaIstorijaService {
       );
 
       if (response is List) {
-        final results =
-            response.map<PutovanjaIstorija>((json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>)).toList();
+        final results = response
+            .map<PutovanjaIstorija>((json) =>
+                PutovanjaIstorija.fromMap(json as Map<String, dynamic>))
+            .toList();
 
         // Clear cache for all affected dates
         final affectedDates = putovanja.map((p) => p.datum).toSet();
@@ -685,13 +733,17 @@ class PutovanjaIstorijaService {
         }
 
         // Clear cache for all affected mesecni putnici
-        final affectedMesecni =
-            putovanja.map((p) => p.mesecniPutnikId).where((id) => id != null).cast<String>().toSet();
+        final affectedMesecni = putovanja
+            .map((p) => p.mesecniPutnikId)
+            .where((id) => id != null)
+            .cast<String>()
+            .toSet();
         for (final mesecniId in affectedMesecni) {
           await _clearCacheForMesecni(mesecniId);
         }
 
-        dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Batch dodano ${results.length} putovanja');
+        dlog(
+            '✅ [PUTOVANJA ISTORIJA SERVICE] Batch dodano ${results.length} putovanja');
         return results;
       }
       return [];
@@ -715,7 +767,8 @@ class PutovanjaIstorijaService {
         }
       }
 
-      dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Batch ažurirano ${results.length}/${putovanja.length} putovanja');
+      dlog(
+          '✅ [PUTOVANJA ISTORIJA SERVICE] Batch ažurirano ${results.length}/${putovanja.length} putovanja');
       return results;
     } catch (e) {
       dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri batch ažuriranju: $e');
@@ -746,12 +799,17 @@ class PutovanjaIstorijaService {
         await _clearCacheForDate(datum);
       }
 
-      final affectedMesecni = putovanja.map((p) => p.mesecniPutnikId).where((id) => id != null).cast<String>().toSet();
+      final affectedMesecni = putovanja
+          .map((p) => p.mesecniPutnikId)
+          .where((id) => id != null)
+          .cast<String>()
+          .toSet();
       for (final mesecniId in affectedMesecni) {
         await _clearCacheForMesecni(mesecniId);
       }
 
-      dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Batch obrisano ${ids.length} putovanja');
+      dlog(
+          '✅ [PUTOVANJA ISTORIJA SERVICE] Batch obrisano ${ids.length} putovanja');
       return true;
     } catch (e) {
       dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri batch brisanju: $e');
@@ -777,8 +835,10 @@ class PutovanjaIstorijaService {
 
       final ukupno = putovanja.length;
       final pokupljeni = putovanja.where((p) => p.pokupljen).length;
-      final nisu_se_pojavili = putovanja.where((p) => p.status == 'nije_se_pojavio').length;
-      final ukupnaZarada = putovanja.fold<double>(0.0, (sum, p) => sum + p.cena);
+      final nisu_se_pojavili =
+          putovanja.where((p) => p.status == 'nije_se_pojavio').length;
+      final ukupnaZarada =
+          putovanja.fold<double>(0.0, (sum, p) => sum + p.cena);
 
       final statusDistribution = <String, int>{};
       final tipPutnikaDistribution = <String, int>{};
@@ -786,10 +846,12 @@ class PutovanjaIstorijaService {
 
       for (final putovanje in putovanja) {
         // Status distribution
-        statusDistribution[putovanje.status] = (statusDistribution[putovanje.status] ?? 0) + 1;
+        statusDistribution[putovanje.status] =
+            (statusDistribution[putovanje.status] ?? 0) + 1;
 
         // Tip putnika distribution
-        tipPutnikaDistribution[putovanje.tipPutnika] = (tipPutnikaDistribution[putovanje.tipPutnika] ?? 0) + 1;
+        tipPutnikaDistribution[putovanje.tipPutnika] =
+            (tipPutnikaDistribution[putovanje.tipPutnika] ?? 0) + 1;
 
         // Daily count
         final dan = putovanje.datum.toIso8601String().split('T')[0];
@@ -800,9 +862,11 @@ class PutovanjaIstorijaService {
         'ukupno_putovanja': ukupno,
         'pokupljeni': pokupljeni,
         'nisu_se_pojavili': nisu_se_pojavili,
-        'procenat_pokupljenih': ukupno > 0 ? (pokupljeni / ukupno * 100).round() : 0,
+        'procenat_pokupljenih':
+            ukupno > 0 ? (pokupljeni / ukupno * 100).round() : 0,
         'ukupna_zarada': ukupnaZarada,
-        'prosecna_zarada_po_putovanju': ukupno > 0 ? ukupnaZarada / ukupno : 0.0,
+        'prosecna_zarada_po_putovanju':
+            ukupno > 0 ? ukupnaZarada / ukupno : 0.0,
         'status_distribution': statusDistribution,
         'tip_putnika_distribution': tipPutnikaDistribution,
         'daily_count': dailyCount,
@@ -810,7 +874,8 @@ class PutovanjaIstorijaService {
         'period_end': doDatuma?.toIso8601String().split('T')[0],
       };
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju detaljnih statistika: $e');
+      dlog(
+          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju detaljnih statistika: $e');
       return {};
     }
   }
@@ -834,7 +899,8 @@ class PutovanjaIstorijaService {
       final csvLines = <String>[];
 
       // Header
-      csvLines.add('ID,Tip Putnika,Datum,Vreme Polaska,Putnik,Telefon,Adresa,Status,Pokupljen,Cena,Kreiran');
+      csvLines.add(
+          'ID,Tip Putnika,Datum,Vreme Polaska,Putnik,Telefon,Adresa,Status,Pokupljen,Cena,Kreiran');
 
       // Data rows
       for (final putovanje in putovanja) {
@@ -856,7 +922,8 @@ class PutovanjaIstorijaService {
       }
 
       final csvContent = csvLines.join('\n');
-      dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Exported ${putovanja.length} records to CSV');
+      dlog(
+          '✅ [PUTOVANJA ISTORIJA SERVICE] Exported ${putovanja.length} records to CSV');
 
       return csvContent;
     } catch (e) {
@@ -874,14 +941,19 @@ class PutovanjaIstorijaService {
       final cutoffDateStr = cutoffDate.toIso8601String().split('T')[0];
 
       await SupabaseSafe.run(
-        () => _supabase.from('putovanja_istorija').delete().lt('datum_putovanja', cutoffDateStr),
+        () => _supabase
+            .from('putovanja_istorija')
+            .delete()
+            .lt('datum_putovanja', cutoffDateStr),
       );
 
       await _clearCache();
 
-      dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Cleaned up records older than $cutoffDateStr');
+      dlog(
+          '✅ [PUTOVANJA ISTORIJA SERVICE] Cleaned up records older than $cutoffDateStr');
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri čišćenju starih zapisa: $e');
+      dlog(
+          '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri čišćenju starih zapisa: $e');
     }
   }
 

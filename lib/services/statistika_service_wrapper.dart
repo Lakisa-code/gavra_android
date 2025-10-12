@@ -10,7 +10,9 @@ class StatistikaService {
 
   /// Dohvati mesečne statistike (kompatibilna metoda)
   static Future<Map<String, dynamic>> dohvatiMesecneStatistike(
-      int mesec, int godina,) async {
+    int mesec,
+    int godina,
+  ) async {
     return await CleanStatistikaService.dohvatiMesecneStatistike(mesec, godina);
   }
 

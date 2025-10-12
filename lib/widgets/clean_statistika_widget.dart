@@ -148,7 +148,11 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
   }
 
   Widget _buildStatistikaCard(
-      String naslov, String vrednost, IconData ikona, Color boja,) {
+    String naslov,
+    String vrednost,
+    IconData ikona,
+    Color boja,
+  ) {
     return Card(
       child: ListTile(
         leading: CircleAvatar(

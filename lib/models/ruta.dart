@@ -25,7 +25,9 @@ class Ruta {
       dolazak: map['dolazak'] as String,
       opis: map['opis'] as String?,
       udaljenostKm: (map['udaljenost_km'] as num?)?.toDouble(),
-      prosecnoVreme: map['prosecno_vreme'] != null ? Duration(seconds: map['prosecno_vreme'] as int) : null,
+      prosecnoVreme: map['prosecno_vreme'] != null
+          ? Duration(seconds: map['prosecno_vreme'] as int)
+          : null,
       aktivan: map['aktivan'] as bool? ?? true,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -178,7 +180,9 @@ class Ruta {
 
   /// Kalkuliše prosečnu brzinu (km/h)
   double? get prosecnaBrzina {
-    if (udaljenostKm == null || prosecnoVreme == null || prosecnoVreme!.inMinutes == 0) {
+    if (udaljenostKm == null ||
+        prosecnoVreme == null ||
+        prosecnoVreme!.inMinutes == 0) {
       return null;
     }
     return udaljenostKm! / (prosecnoVreme!.inMinutes / 60.0);
@@ -251,7 +255,8 @@ class Ruta {
     final startCity = polazak.toLowerCase().trim();
     final endCity = dolazak.toLowerCase().trim();
 
-    return (startCity == city1 && endCity == city2) || (startCity == city2 && endCity == city1);
+    return (startCity == city1 && endCity == city2) ||
+        (startCity == city2 && endCity == city1);
   }
 
   // 📋 COMPARISON METODE

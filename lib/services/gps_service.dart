@@ -24,7 +24,8 @@ class GpsService {
       // Avoid using `.single()` because it throws when 0 or multiple rows are
       // returned. Instead fetch the rows and handle empty/multiple results
       // gracefully.
-      final dynamic response = await supabase.from('vozaci').select('id').eq('ime', vozacIme);
+      final dynamic response =
+          await supabase.from('vozaci').select('id').eq('ime', vozacIme);
 
       // The SDK normally returns a List for select() without .single().
       if (response is List) {
@@ -35,14 +36,16 @@ class GpsService {
           await VozacMappingService.refreshMapping();
           final refreshedUuid = VozacMappingService.getVozacUuidSync(vozacIme);
           if (refreshedUuid != null) {
-            _logger.i('✅ Vozač pronađen posle refresh cache: $vozacIme -> $refreshedUuid');
+            _logger.i(
+                '✅ Vozač pronađen posle refresh cache: $vozacIme -> $refreshedUuid');
             return refreshedUuid;
           }
 
           // Nemamo permisiju za automatsko kreiranje redova sa anon ključem
           // (PostgrestException: row-level security). Ne pokušavamo više
           // automatsku registraciju sa klijentske strane iz sigurnosnih razloga.
-          _logger.i('ℹ️ RLS policy on table `vozaci` preventing anonymous inserts.\n'
+          _logger.i(
+              'ℹ️ RLS policy on table `vozaci` preventing anonymous inserts.\n'
               'Uputstvo: kreirajte vozača ručno u Supabase dashboard-u,\n'
               'ili iz backend servisa koji koristi SERVICE_ROLE key za administrativne operacije.');
           return null;
@@ -58,7 +61,8 @@ class GpsService {
           _logger.d('✅ Vozač pronađen u bazi: $vozacIme -> $uuid');
           return uuid;
         }
-        _logger.w('⚠️ Neočekivan format reda iz Supabase: ${first.runtimeType}');
+        _logger
+            .w('⚠️ Neočekivan format reda iz Supabase: ${first.runtimeType}');
         return null;
       }
 
@@ -75,15 +79,18 @@ class GpsService {
       return null;
     } on PostgrestException catch (e) {
       if (e.message.contains('row-level security')) {
-        _logger.w('🔒 RLS politika sprečava pristup tabeli vozaci: ${e.message}');
+        _logger
+            .w('🔒 RLS politika sprečava pristup tabeli vozaci: ${e.message}');
         // Pokušaj fallback sa cache
         final fallbackUuid = VozacMappingService.getVozacUuidSync(vozacIme);
         if (fallbackUuid != null) {
-          _logger.i('✅ Koristi fallback UUID za vozača: $vozacIme -> $fallbackUuid');
+          _logger.i(
+              '✅ Koristi fallback UUID za vozača: $vozacIme -> $fallbackUuid');
           return fallbackUuid;
         }
       } else {
-        _logger.e('❌ Supabase greška pri dobijanju UUID vozača $vozacIme: ${e.message}');
+        _logger.e(
+            '❌ Supabase greška pri dobijanju UUID vozača $vozacIme: ${e.message}');
       }
       return null;
     } catch (e) {
@@ -91,7 +98,8 @@ class GpsService {
       // Pokušaj fallback sa cache
       final fallbackUuid = VozacMappingService.getVozacUuidSync(vozacIme);
       if (fallbackUuid != null) {
-        _logger.i('✅ Koristi emergency fallback UUID za vozača: $vozacIme -> $fallbackUuid');
+        _logger.i(
+            '✅ Koristi emergency fallback UUID za vozača: $vozacIme -> $fallbackUuid');
         return fallbackUuid;
       }
       return null;

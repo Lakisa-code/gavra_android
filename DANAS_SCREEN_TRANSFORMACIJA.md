@@ -1,8 +1,31 @@
-# ⚡ DANAS SCREEN TRANSFORMACIJA - ŠAMPIONSKI IZVEŠTAJ
+# ⚡ DANAS SCREEN TRANSFORMACIJA V3.0 - CENTRALNI HEARTBEAT HUB
 
 ## 📅 **DATUM:** 12. Oktobar 2025
 
-## 🎯 **STATUS:** KOMPLETNA REALTIME ARHITEKTURA IMPLEMENTIRANA ✅
+## 🎯 **STATUS:** GLAVNI REALTIME MONITORING HUB ✅
+
+## 🏆 **NOVA ULOGA:** Centralni heartbeat sistem za celu aplikaciju
+
+---
+
+## 💓 **DANAS SCREEN KAO HEARTBEAT HUB V3.0**
+
+### **NOVA ARHITEKTURA:**
+
+- **💓 DanasScreen** = **CENTRALNI HEARTBEAT HUB**
+- **🔧 AdminScreen** = Clean monitoring (bez heartbeat UI)
+- **📊 StatistikaScreen** = Clean analytics (bez heartbeat UI)
+
+### **RAZLOG ZA CENTRALIZACIJU:**
+
+```dart
+🎯 DANAS SCREEN JE IDEALAN HEARTBEAT HUB JER:
+1. Glavni operativni screen sa realtime putnicima
+2. Najčešće korišćen tokom dana
+3. Kritični realtime data flows (putnici, pazat, GPS)
+4. Ovde su najviše potrebni debug info i health monitoring
+5. Natura glavnog "control center" aplikacije
+```
 
 ---
 
@@ -10,8 +33,10 @@
 
 ### **RAZLIKA IZMEĐU SCREENOVA:**
 
-- **⚡ DANAS SCREEN** = **EXECUTION MODE** (operativni rad za danas)
+- **⚡ DANAS SCREEN** = **EXECUTION MODE** (operativni rad za danas) + **MONITORING HUB**
 - **🏠 HOME SCREEN** = **PLANNING MODE** (rezervacije za celu nedelju)
+- **🔧 AdminScreen** = **CONTROL MODE** (admin operacije sa clean UI)
+- **📊 StatistikaScreen** = **ANALYTICS MODE** (statistike sa clean presentation)
 
 ### **STANJE PRIJE TRANSFORMACIJE:**
 
@@ -60,21 +85,60 @@ StreamBuilder pattern za realtime đački brojač
 - No more manual refresh
 ```
 
-### **FAZA 3: HEARTBEAT MONITORING IMPLEMENTACIJA** ✅
+### **FAZA 3: CENTRALNI HEARTBEAT MONITORING SYSTEM** ✅
 
 ```dart
-DODANO:
-// Heartbeat sistem
-final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
+GLAVNE KOMPONENTE HEARTBEAT HUB-a:
 
+// 💓 HEARTBEAT MONITORING VARIABLES
+final Map<String, DateTime> _streamHeartbeats = {};
+Timer? _healthCheckTimer;
+
+// 💓 HEARTBEAT MONITORING FUNCTIONS
+void _registerStreamHeartbeat(String streamName) {
+  _streamHeartbeats[streamName] = DateTime.now();
+}
+
+bool _checkAllStreamsHealthy() {
+  final now = DateTime.now();
+  for (final entry in _streamHeartbeats.entries) {
+    final timeSinceLastHeartbeat = now.difference(entry.value);
+    if (timeSinceLastHeartbeat.inSeconds > 30) {
+      return false; // Stream timeout!
+    }
+  }
+  return true;
+}
+
+// 💓 REALTIME HEARTBEAT INDICATOR
 Widget _buildHeartbeatIndicator() {
   return ValueListenableBuilder<bool>(
     valueListenable: _isRealtimeHealthy,
     builder: (context, isHealthy, child) {
-      return Container(
-        decoration: BoxDecoration(
-          color: isHealthy ? Colors.green : Colors.red,
-        ),
+      return GestureDetector(
+        onTap: () {
+          // Pokaži heartbeat debug info
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('🔍 Realtime Health Status'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Stream Heartbeats:',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  ..._streamHeartbeats.entries.map((entry) {
+                    // Detaljni prikaz health status-a za svaki stream
+                  }),
+                ],
+              ),
+            ),
+          );
+        },
         child: Icon(
           isHealthy ? Icons.favorite : Icons.heart_broken,
         ),

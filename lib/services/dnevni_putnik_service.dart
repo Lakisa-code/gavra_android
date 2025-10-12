@@ -9,7 +9,8 @@ import 'adresa_service.dart';
 
 /// Servis za upravljanje dnevnim putnicima
 class DnevniPutnikService {
-  DnevniPutnikService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
+  DnevniPutnikService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
 
   // Logger instance - koristićemo dlog funkciju iz logging.dart
@@ -44,7 +45,8 @@ class DnevniPutnikService {
 
   /// Kreira novog dnevnog putnika
   Future<DnevniPutnik> createDnevniPutnik(DnevniPutnik putnik) async {
-    final response = await _supabase.from('dnevni_putnici').insert(putnik.toMap()).select('''
+    final response =
+        await _supabase.from('dnevni_putnici').insert(putnik.toMap()).select('''
           *
         ''').single();
 
@@ -58,7 +60,11 @@ class DnevniPutnikService {
   ) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 
-    final response = await _supabase.from('dnevni_putnici').update(updates).eq('id', id).select('''
+    final response = await _supabase
+        .from('dnevni_putnici')
+        .update(updates)
+        .eq('id', id)
+        .select('''
           *
         ''').single();
 
@@ -104,9 +110,13 @@ class DnevniPutnikService {
     String query, {
     DateTime? datum,
   }) async {
-    var queryBuilder = _supabase.from('dnevni_putnici').select('''
+    var queryBuilder = _supabase
+        .from('dnevni_putnici')
+        .select('''
           *
-        ''').eq('obrisan', false).or('ime.ilike.%$query%,prezime.ilike.%$query%,broj_telefona.ilike.%$query%');
+        ''')
+        .eq('obrisan', false)
+        .or('ime.ilike.%$query%,prezime.ilike.%$query%,broj_telefona.ilike.%$query%');
 
     if (datum != null) {
       final datumString = datum.toIso8601String().split('T')[0];
@@ -124,9 +134,15 @@ class DnevniPutnikService {
   ) async {
     final datumString = datum.toIso8601String().split('T')[0];
 
-    final response = await _supabase.from('dnevni_putnici').select('''
+    final response = await _supabase
+        .from('dnevni_putnici')
+        .select('''
           *
-        ''').eq('ruta_id', rutaId).eq('datum', datumString).eq('obrisan', false).order('polazak');
+        ''')
+        .eq('ruta_id', rutaId)
+        .eq('datum', datumString)
+        .eq('obrisan', false)
+        .order('polazak');
 
     return response.map((json) => DnevniPutnik.fromMap(json)).toList();
   }
@@ -135,10 +151,16 @@ class DnevniPutnikService {
   Stream<List<DnevniPutnik>> dnevniPutniciStreamZaDatum(DateTime datum) {
     final datumString = datum.toIso8601String().split('T')[0];
 
-    return _supabase.from('dnevni_putnici').stream(primaryKey: ['id']).order('polazak').map(
+    return _supabase
+        .from('dnevni_putnici')
+        .stream(primaryKey: ['id'])
+        .order('polazak')
+        .map(
           (data) => data
               .where(
-                (putnik) => putnik['datum'] == datumString && putnik['obrisan'] == false,
+                (putnik) =>
+                    putnik['datum'] == datumString &&
+                    putnik['obrisan'] == false,
               )
               .map((json) => DnevniPutnik.fromMap(json))
               .toList(),
@@ -172,7 +194,8 @@ class DnevniPutnikService {
     }
 
     try {
-      final response = await _supabase.from('rute').select().eq('id', rutaId).single();
+      final response =
+          await _supabase.from('rute').select().eq('id', rutaId).single();
 
       final ruta = Ruta.fromMap(response);
       _rutaCache[rutaId] = ruta;
@@ -214,7 +237,8 @@ class DnevniPutnikService {
         }
       }
 
-      dlog('✅ Converted ${putnici.length}/${dnevniPutnici.length} dnevni putnici to Putnik objects');
+      dlog(
+          '✅ Converted ${putnici.length}/${dnevniPutnici.length} dnevni putnici to Putnik objects');
       return putnici;
     } catch (e) {
       dlog('❌ Error getting dnevni putnici as Putnik: $e');
@@ -223,13 +247,17 @@ class DnevniPutnikService {
   }
 
   /// Batch operacije - dodavanje više putnika odjednom
-  Future<List<DnevniPutnik>> dodajViseputnika(List<DnevniPutnik> putnici) async {
+  Future<List<DnevniPutnik>> dodajViseputnika(
+      List<DnevniPutnik> putnici) async {
     try {
-      final List<Map<String, dynamic>> data = putnici.map((p) => p.toMap()).toList();
+      final List<Map<String, dynamic>> data =
+          putnici.map((p) => p.toMap()).toList();
 
-      final response = await _supabase.from('dnevni_putnici').insert(data).select();
+      final response =
+          await _supabase.from('dnevni_putnici').insert(data).select();
 
-      final dodatiPutnici = response.map((json) => DnevniPutnik.fromMap(json)).toList();
+      final dodatiPutnici =
+          response.map((json) => DnevniPutnik.fromMap(json)).toList();
       dlog('✅ Batch added ${dodatiPutnici.length} dnevni putnici');
 
       return dodatiPutnici;
@@ -247,8 +275,10 @@ class DnevniPutnikService {
       final ukupno = putnici.length;
       final pokupljeni = putnici.where((p) => p.isPokupljen).length;
       final placeni = putnici.where((p) => p.isPlacen).length;
-      final otkazani = putnici.where((p) => p.status == DnevniPutnikStatus.otkazan).length;
-      final ukupnaZarada = putnici.fold<double>(0, (sum, p) => sum + (p.isPlacen ? p.cena : 0));
+      final otkazani =
+          putnici.where((p) => p.status == DnevniPutnikStatus.otkazan).length;
+      final ukupnaZarada =
+          putnici.fold<double>(0, (sum, p) => sum + (p.isPlacen ? p.cena : 0));
 
       return {
         'ukupno': ukupno,
@@ -256,7 +286,8 @@ class DnevniPutnikService {
         'placeni': placeni,
         'otkazani': otkazani,
         'ukupna_zarada': ukupnaZarada,
-        'procenat_pokupljenosti': ukupno > 0 ? (pokupljeni / ukupno * 100).round() : 0,
+        'procenat_pokupljenosti':
+            ukupno > 0 ? (pokupljeni / ukupno * 100).round() : 0,
         'procenat_placenos': ukupno > 0 ? (placeni / ukupno * 100).round() : 0,
       };
     } catch (e) {
@@ -294,7 +325,8 @@ class DnevniPutnikService {
     }
 
     // Proveri duplikate za isti datum i vreme
-    final postojeciPutnici = await getDnevniPutniciZaDatum(putnik.datumPutovanja);
+    final postojeciPutnici =
+        await getDnevniPutniciZaDatum(putnik.datumPutovanja);
     final duplikat = postojeciPutnici.any(
       (p) =>
           p.ime.toLowerCase() == putnik.ime.toLowerCase() &&
@@ -303,7 +335,8 @@ class DnevniPutnikService {
     );
 
     if (duplikat) {
-      dlog('⚠️ Duplicate putnik detected: ${putnik.ime} at ${putnik.vremePolaska}');
+      dlog(
+          '⚠️ Duplicate putnik detected: ${putnik.ime} at ${putnik.vremePolaska}');
       return false;
     }
 

@@ -37,7 +37,8 @@ class PutovanjaIstorija {
           ? DateTime.parse(map['vreme_akcije'] as String)
           : null, // FIXED: Consistent mapping to vreme_akcije
       adresaPolaska: map['adresa_polaska'] as String,
-      status: map['status'] as String? ?? 'nije_se_pojavio', // KORISTI status kolonu
+      status: map['status'] as String? ??
+          'nije_se_pojavio', // KORISTI status kolonu
       putnikIme: map['putnik_ime'] as String,
       brojTelefona: map['broj_telefona'] as String?,
       cena: (map['cena'] as num?)?.toDouble() ?? 0.0,
@@ -49,8 +50,12 @@ class PutovanjaIstorija {
       obrisan: map['obrisan'] as bool? ?? false,
       pokupljen: map['pokupljen'] as bool? ?? false,
       vozac: map['vozac'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
-      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'] as String)
+          : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null,
     );
   }
   final String id;
@@ -84,9 +89,11 @@ class PutovanjaIstorija {
       'tip_putnika': tipPutnika,
       'datum_putovanja': datum.toIso8601String().split('T')[0],
       'vreme_polaska': vremePolaska,
-      'vreme_akcije': vremeAkcije?.toIso8601String(), // FIXED: Added missing mapping
+      'vreme_akcije':
+          vremeAkcije?.toIso8601String(), // FIXED: Added missing mapping
       'adresa_polaska': adresaPolaska,
-      'status': status, // KORISTI status umesto status_bela_crkva_vrsac/status_vrsac_bela_crkva
+      'status':
+          status, // KORISTI status umesto status_bela_crkva_vrsac/status_vrsac_bela_crkva
       'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
       'cena': cena,
@@ -256,7 +263,8 @@ class PutovanjaIstorija {
     }
 
     if (!hasValidMesecniPutnikLink()) {
-      errors['mesecniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
+      errors['mesecniPutnikId'] =
+          'Mesečni putnici moraju imati ID mesečnog putnika';
     }
 
     if (!isDatumValid()) {

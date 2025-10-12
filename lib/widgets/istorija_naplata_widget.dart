@@ -25,7 +25,8 @@ class IstorijaHaplataWidget extends StatelessWidget {
 
     // Sortiraj po vremenu (najnovije prvo)
     final sortiraneNaplate = List<Map<String, dynamic>>.from(detaljiNaplata);
-    sortiraneNaplate.sort((a, b) => (b['vreme'] as int).compareTo(a['vreme'] as int));
+    sortiraneNaplate
+        .sort((a, b) => (b['vreme'] as int).compareTo(a['vreme'] as int));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +47,8 @@ class IstorijaHaplataWidget extends StatelessWidget {
               children: sortiraneNaplate.take(5).map((naplata) {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: VozacBoja.get(vozac).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -60,11 +62,15 @@ class IstorijaHaplataWidget extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
-                          color: naplata['tip'] == 'Mesečna' ? Colors.orange : Colors.blue,
+                          color: naplata['tip'] == 'Mesečna'
+                              ? Colors.orange
+                              : Colors.blue,
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Icon(
-                          naplata['tip'] == 'Mesečna' ? Icons.card_membership : Icons.confirmation_num,
+                          naplata['tip'] == 'Mesečna'
+                              ? Icons.card_membership
+                              : Icons.confirmation_num,
                           size: 12,
                           color: Colors.white,
                         ),

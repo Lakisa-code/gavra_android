@@ -170,59 +170,6 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
-  // 💚 HEARTBEAT INDICATOR
-  Widget _buildHeartbeatIndicator() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _isRealtimeHealthy,
-      builder: (context, isHealthy, child) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Pulsing dot
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 1500),
-                curve: Curves.easeInOut,
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: isHealthy ? Colors.greenAccent : Colors.redAccent,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: isHealthy ? Colors.greenAccent.withOpacity(0.6) : Colors.redAccent.withOpacity(0.6),
-                      blurRadius: isHealthy ? 4 : 2,
-                      spreadRadius: isHealthy ? 1 : 0,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 4),
-              // Status text
-              Text(
-                isHealthy ? 'LIVE' : 'ERR',
-                style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
-                  color: isHealthy ? Colors.greenAccent : Colors.redAccent,
-                  letterSpacing: 0.5,
-                  shadows: const [
-                    Shadow(
-                      offset: Offset(0.5, 0.5),
-                      blurRadius: 2,
-                      color: Colors.black54,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   // 🌐 NETWORK STATUS WIDGET
   Widget NetworkStatusWidget() {
     return Container(
@@ -394,8 +341,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              _buildHeartbeatIndicator(),
                             ],
                           ),
                         ),
@@ -678,7 +623,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                         },
                                         icon: const SizedBox.shrink(),
                                         dropdownColor: Theme.of(context).colorScheme.primary,
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                        ),
                                         items: [
                                           'Ponedeljak',
                                           'Utorak',

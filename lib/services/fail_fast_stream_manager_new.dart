@@ -80,12 +80,14 @@ class FailFastStreamManager {
     _errorCounts[streamName] = 0;
 
     if (kDebugMode) {
-      print('📡 [FAIL-FAST] Subscription added: $streamName${isCritical ? ' (CRITICAL)' : ''}');
+      print(
+          '📡 [FAIL-FAST] Subscription added: $streamName${isCritical ? ' (CRITICAL)' : ''}');
     }
   }
 
   /// 🚨 HANDLE STREAM ERROR WITH FAIL-FAST LOGIC
-  void _handleStreamError(String streamName, Object error, StackTrace stackTrace) {
+  void _handleStreamError(
+      String streamName, Object error, StackTrace stackTrace) {
     _errorCounts[streamName] = (_errorCounts[streamName] ?? 0) + 1;
     final errorCount = _errorCounts[streamName]!;
 
@@ -94,9 +96,11 @@ class FailFastStreamManager {
     }
 
     // FAIL-FAST for critical streams
-    if (_criticalStreams.contains(streamName) && errorCount >= maxErrorsBeforeFail) {
+    if (_criticalStreams.contains(streamName) &&
+        errorCount >= maxErrorsBeforeFail) {
       if (kDebugMode) {
-        print('💥 [FAIL-FAST] CRITICAL STREAM FAILED: $streamName - TERMINATING');
+        print(
+            '💥 [FAIL-FAST] CRITICAL STREAM FAILED: $streamName - TERMINATING');
       }
 
       // Cancel all subscriptions and terminate app
@@ -114,13 +118,15 @@ class FailFastStreamManager {
   }
 
   /// 💥 EMERGENCY SHUTDOWN FOR CRITICAL STREAM FAILURES
-  void _emergencyShutdown(String streamName, Object error, StackTrace stackTrace) {
+  void _emergencyShutdown(
+      String streamName, Object error, StackTrace stackTrace) {
     // Cancel all subscriptions immediately
     disposeAll();
 
     // Log critical failure
     if (kDebugMode) {
-      print('💥💥💥 [FAIL-FAST] EMERGENCY SHUTDOWN - Critical stream $streamName failed');
+      print(
+          '💥💥💥 [FAIL-FAST] EMERGENCY SHUTDOWN - Critical stream $streamName failed');
       print('Error: $error');
       print('StackTrace: $stackTrace');
     }
@@ -178,7 +184,8 @@ class FailFastStreamManager {
       'totalErrors': _errorCounts.values.fold(0, (sum, count) => sum + count),
       'subscriptions': _activeSubscriptions.keys.map((name) {
         final startTime = _subscriptionStartTimes[name];
-        final age = startTime != null ? now.difference(startTime) : Duration.zero;
+        final age =
+            startTime != null ? now.difference(startTime) : Duration.zero;
 
         return {
           'name': name,
@@ -194,7 +201,8 @@ class FailFastStreamManager {
   /// 🧹 DISPOSE ALL SUBSCRIPTIONS
   void disposeAll() {
     if (kDebugMode) {
-      print('🧹 [FAIL-FAST] Disposing all subscriptions (${_activeSubscriptions.length})');
+      print(
+          '🧹 [FAIL-FAST] Disposing all subscriptions (${_activeSubscriptions.length})');
     }
 
     for (final subscription in _activeSubscriptions.values) {
@@ -223,7 +231,8 @@ class FailFastStreamManager {
 
   /// 📈 GET HEALTH METRICS
   bool get isHealthy {
-    final totalErrors = _errorCounts.values.fold(0, (sum, count) => sum + count);
+    final totalErrors =
+        _errorCounts.values.fold(0, (sum, count) => sum + count);
     final hasStaleSubscriptions = _subscriptionStartTimes.values.any(
       (startTime) => DateTime.now().difference(startTime) > maxSubscriptionAge,
     );

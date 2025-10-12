@@ -45,7 +45,9 @@ class CleanStatistikaService {
 
   /// Dohvati mesečne statistike
   static Future<Map<String, dynamic>> dohvatiMesecneStatistike(
-      int mesec, int godina,) async {
+    int mesec,
+    int godina,
+  ) async {
     final mesecniPutnici = await _supabase
         .from('mesecni_putnici')
         .select()

@@ -12,7 +12,9 @@ class StatistikaService {
       wrapper.StatistikaService.dohvatiUkupneStatistike();
 
   static Future<Map<String, dynamic>> dohvatiMesecneStatistike(
-          int mesec, int godina,) =>
+    int mesec,
+    int godina,
+  ) =>
       wrapper.StatistikaService.dohvatiMesecneStatistike(mesec, godina);
 
   static Future<List<Map<String, dynamic>>> dohvatiSvePutnike() =>

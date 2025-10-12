@@ -16,10 +16,12 @@ class MesecniPutnikDetaljiScreen extends StatefulWidget {
   final MesecniPutnik putnik;
 
   @override
-  State<MesecniPutnikDetaljiScreen> createState() => _MesecniPutnikDetaljiScreenState();
+  State<MesecniPutnikDetaljiScreen> createState() =>
+      _MesecniPutnikDetaljiScreenState();
 }
 
-class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen> {
+class _MesecniPutnikDetaljiScreenState
+    extends State<MesecniPutnikDetaljiScreen> {
   List<Map<String, dynamic>> _svaUkrcavanja = [];
   List<Map<String, dynamic>> _sviOtkazi = [];
   List<Map<String, dynamic>> _svaPlacanja = [];
@@ -632,12 +634,14 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
     final tipPlacanja = placanje['tip'] ?? 'redovno';
 
     // Dodatne informacije za mesečne karte
-    String subtitle = 'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+    String subtitle =
+        'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     if (tipPlacanja == 'mesecna_karta') {
       final mesec = placanje['placeniMesec'] ?? 0;
       final godina = placanje['placenaGodina'] ?? 0;
       final mesecNaziv = _getNazivMeseca(mesec as int);
-      subtitle = 'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+      subtitle =
+          'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     }
 
     return Card(
@@ -660,7 +664,9 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
         ),
         subtitle: Text(subtitle),
         trailing: Icon(
-          tipPlacanja == 'mesecna_karta' ? Icons.event_available : Icons.receipt,
+          tipPlacanja == 'mesecna_karta'
+              ? Icons.event_available
+              : Icons.receipt,
           color: Colors.grey.shade600,
         ),
       ),
@@ -809,7 +815,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
               dan.toString(),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: aktivnost != null ? FontWeight.bold : FontWeight.normal,
+                fontWeight:
+                    aktivnost != null ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),

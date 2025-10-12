@@ -9,7 +9,8 @@ class PutovanjaIstorijaScreen extends StatefulWidget {
   const PutovanjaIstorijaScreen({Key? key}) : super(key: key);
 
   @override
-  State<PutovanjaIstorijaScreen> createState() => _PutovanjaIstorijaScreenState();
+  State<PutovanjaIstorijaScreen> createState() =>
+      _PutovanjaIstorijaScreenState();
 }
 
 class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
@@ -211,7 +212,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 }
 
                 // Grupiranje po vremenu polaska
-                final Map<String, List<PutovanjaIstorija>> grupisanaPutovanja = {};
+                final Map<String, List<PutovanjaIstorija>> grupisanaPutovanja =
+                    {};
                 for (final putovanje in putovanja) {
                   final vreme = putovanje.vremePolaska;
                   if (!grupisanaPutovanja.containsKey(vreme)) {
@@ -280,7 +282,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.indigo.shade100,
                     borderRadius: BorderRadius.circular(12),
@@ -656,7 +659,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       final novoPutovanje = PutovanjaIstorija(
         id: '', // Biće automatski generisan u Supabase
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
+        brojTelefona: _noviPutnikTelefon.trim().isEmpty
+            ? null
+            : _noviPutnikTelefon.trim(),
         adresaPolaska: 'Bela Crkva', // Default vrednost
         vremePolaska: '07:00', // Default vrednost
         tipPutnika: _noviTipPutnika,
@@ -791,7 +796,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         id: originalPutovanje.id,
         mesecniPutnikId: originalPutovanje.mesecniPutnikId,
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
+        brojTelefona: _noviPutnikTelefon.trim().isEmpty
+            ? null
+            : _noviPutnikTelefon.trim(),
         adresaPolaska: originalPutovanje.adresaPolaska,
         vremePolaska: originalPutovanje.vremePolaska,
         tipPutnika: _noviTipPutnika,

@@ -121,13 +121,17 @@ class NetworkStatusIndicator extends StatelessWidget {
             children: [
               _buildStatusRow(
                 'Connectivity',
-                (details['isConnected'] as bool? ?? false) ? 'CONNECTED' : 'DISCONNECTED',
+                (details['isConnected'] as bool? ?? false)
+                    ? 'CONNECTED'
+                    : 'DISCONNECTED',
               ),
-              _buildStatusRow('Avg Response', '${details['averageResponseTime'].toStringAsFixed(0)}ms'),
+              _buildStatusRow('Avg Response',
+                  '${details['averageResponseTime'].toStringAsFixed(0)}ms'),
               _buildStatusRow('Total Errors', '${details['totalErrors']}'),
               _buildStatusRow('Active Streams', '${details['streamCount']}'),
               if (details['lastSuccessfulPing'] != null)
-                _buildStatusRow('Last Ping', _formatTimestamp(details['lastSuccessfulPing'] as String?)),
+                _buildStatusRow('Last Ping',
+                    _formatTimestamp(details['lastSuccessfulPing'] as String?)),
               const SizedBox(height: 16),
               const Text(
                 'Stream Errors:',
@@ -137,7 +141,8 @@ class NetworkStatusIndicator extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              ..._buildStreamErrorsList(details['errorCounts'] as Map<String, dynamic>? ?? {}),
+              ..._buildStreamErrorsList(
+                  details['errorCounts'] as Map<String, dynamic>? ?? {}),
               const SizedBox(height: 16),
               const Text(
                 'Status Legend:',
@@ -147,10 +152,13 @@ class NetworkStatusIndicator extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              _buildLegendItem(Colors.green.shade600, 'EXCELLENT', 'Sve radi savršeno'),
+              _buildLegendItem(
+                  Colors.green.shade600, 'EXCELLENT', 'Sve radi savršeno'),
               _buildLegendItem(Colors.yellow.shade600, 'GOOD', 'Mali problemi'),
-              _buildLegendItem(Colors.orange.shade600, 'POOR', 'Veliki problemi'),
-              _buildLegendItem(Colors.red.shade600, 'OFFLINE', 'Nema konekcije'),
+              _buildLegendItem(
+                  Colors.orange.shade600, 'POOR', 'Veliki problemi'),
+              _buildLegendItem(
+                  Colors.red.shade600, 'OFFLINE', 'Nema konekcije'),
             ],
           ),
         ),
@@ -223,7 +231,8 @@ class NetworkStatusIndicator extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
-                  color: count > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                  color:
+                      count > 0 ? Colors.red.shade700 : Colors.green.shade700,
                 ),
               ),
             ),

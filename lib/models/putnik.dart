@@ -85,7 +85,8 @@ class Putnik {
     // AUTOMATSKA DETEKCIJA TIPA TABELE - SAMO NOVE TABELE
 
     // Ako ima mesecni_putnik_id ili tip_putnika, iz putovanja_istorija tabele
-    if (map.containsKey('mesecni_putnik_id') || map.containsKey('tip_putnika')) {
+    if (map.containsKey('mesecni_putnik_id') ||
+        map.containsKey('tip_putnika')) {
       return Putnik.fromPutovanjaIstorija(map);
     }
 
@@ -115,8 +116,11 @@ class Putnik {
       id: map['id'], // ✅ UUID iz mesecni_putnici
       ime: map['putnik_ime'] as String? ?? '',
       polazak: MesecniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
-      pokupljen: map['status'] == null || (map['status'] != 'bolovanje' && map['status'] != 'godisnji'),
-      vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
+      pokupljen: map['status'] == null ||
+          (map['status'] != 'bolovanje' && map['status'] != 'godisnji'),
+      vremeDodavanja: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : null,
       mesecnaKarta: true, // uvek true za mesečne putnike
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
@@ -156,10 +160,13 @@ class Putnik {
       ime: map['putnik_ime'] as String? ?? '',
       polazak: _formatVremePolaska(map['vreme_polaska']?.toString() ?? '6:00'),
       pokupljen: map['status'] == 'pokupljen', // ✅ KORISTI samo status kolonu
-      vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
+      vremeDodavanja: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
       dan: _determineDanFromDatum(
-        map['datum_putovanja'] as String?, // ✅ ISPRAVKA: koristiti datum_putovanja iz baze
+        map['datum_putovanja']
+            as String?, // ✅ ISPRAVKA: koristiti datum_putovanja iz baze
       ), // ✅ Izvlači dan iz datum_putovanja
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
@@ -180,8 +187,11 @@ class Putnik {
           VozacMappingService.getVozacImeWithFallbackSync(
             map['vozac_id'] as String?,
           ),
-      grad: map['grad'] as String? ?? map['adresa_polaska'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
-      otkazaoVozac: map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
+      grad: map['grad'] as String? ??
+          map['adresa_polaska'] as String? ??
+          'Bela Crkva', // ✅ KORISTI grad kolonu
+      otkazaoVozac:
+          map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
       adresa: map['adresa_polaska'] as String?,
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
@@ -211,7 +221,8 @@ class Putnik {
       status: 'radi',
     );
   }
-  final dynamic id; // ✅ Može biti int (putovanja_istorija) ili String (mesecni_putnici)
+  final dynamic
+      id; // ✅ Može biti int (putovanja_istorija) ili String (mesecni_putnici)
   final String ime;
   final String polazak;
   final bool? pokupljen;
@@ -233,7 +244,8 @@ class Putnik {
   final DateTime? vremeOtkazivanja; // NOVO - vreme kada je otkazano
   final String? adresa; // NOVO - adresa putnika za optimizaciju rute
   final bool obrisan; // NOVO - soft delete flag
-  final int? priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
+  final int?
+      priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
   final String? brojTelefona; // NOVO - broj telefona putnika
   final String? datum;
   // ✅ DODANO: Nova polja za kompatibilnost sa DnevniPutnik modelom
@@ -243,16 +255,24 @@ class Putnik {
   // Getter-i za kompatibilnost
   String get destinacija => grad;
   String get vremePolaska => polazak;
-  String get datumPolaska => DateTime.now().toIso8601String().split('T')[0]; // Današnji datum kao placeholder
+  String get datumPolaska => DateTime.now()
+      .toIso8601String()
+      .split('T')[0]; // Današnji datum kao placeholder
 
   // Getter-i za centralizovanu logiku statusa
   bool get jeOtkazan =>
       obrisan || // 🆕 Dodaj prověru za obrisan (aktivan=false u bazi)
-      (status != null && (status!.toLowerCase() == 'otkazano' || status!.toLowerCase() == 'otkazan'));
+      (status != null &&
+          (status!.toLowerCase() == 'otkazano' ||
+              status!.toLowerCase() == 'otkazan'));
 
-  bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
+  bool get jeBolovanje =>
+      status != null && status!.toLowerCase() == 'bolovanje';
 
-  bool get jeGodisnji => status != null && (status!.toLowerCase() == 'godišnji' || status!.toLowerCase() == 'godisnji');
+  bool get jeGodisnji =>
+      status != null &&
+      (status!.toLowerCase() == 'godišnji' ||
+          status!.toLowerCase() == 'godisnji');
 
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
@@ -269,7 +289,9 @@ class Putnik {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
-    final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
+    final vremeDodavanja = map['created_at'] != null
+        ? DateTime.parse(map['created_at'] as String)
+        : null;
     final vremePokupljenja = map['poslednje_putovanje'] != null
         ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
@@ -279,7 +301,8 @@ class Putnik {
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
-    final iznosPlacanja = map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
+    final iznosPlacanja =
+        map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
     final vozac = map['vozac'] as String?; // ✅ ČITAJ vozača
     final obrisan = map['aktivan'] == false;
 
@@ -311,7 +334,9 @@ class Putnik {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
-    final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
+    final vremeDodavanja = map['created_at'] != null
+        ? DateTime.parse(map['created_at'] as String)
+        : null;
     final vremePokupljenja = map['poslednje_putovanje'] != null
         ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
@@ -321,7 +346,8 @@ class Putnik {
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
-    final iznosPlacanja = map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
+    final iznosPlacanja =
+        map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
     final vozac = map['vozac'] as String?; // ✅ ČITAJ vozača
     final obrisan = map['aktivan'] == false;
 
@@ -360,7 +386,11 @@ class Putnik {
 
     // ✅ NOVA LOGIKA: Čitaj vremena iz novih kolona po danima
     // Određi da li putnik radi za targetDan
-    final radniDani = danString.split(',').map((s) => s.trim().toLowerCase()).where((s) => s.isNotEmpty).toList();
+    final radniDani = danString
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty)
+        .toList();
     final normalizedTarget = targetDan.trim().toLowerCase();
     if (!radniDani.contains(normalizedTarget)) {
       return putnici; // Putnik ne radi za targetDan
@@ -374,7 +404,10 @@ class Putnik {
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
       bool pokupljenZaOvajPolazak = false;
-      if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
+      if (vremePokupljenja != null &&
+          status != 'bolovanje' &&
+          status != 'godisnji' &&
+          status != 'otkazan') {
         final polazakSati = int.tryParse(polazakBC.split(':')[0]) ?? 0;
         final pokupljenSati = vremePokupljenja.hour;
 
@@ -391,7 +424,8 @@ class Putnik {
           pokupljen: pokupljenZaOvajPolazak,
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: true,
-          dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
+          dan: (normalizedTarget[0].toUpperCase() +
+              normalizedTarget.substring(1)),
           status: status,
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenja,
@@ -403,8 +437,10 @@ class Putnik {
                   map['vozac_id'] as String?,
                 )
               : null, // ✅ Samo ako je stvarno plaćeno
-          pokupioVozac: map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
-          dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
+          pokupioVozac: map['pokupljanje_vozac']
+              as String?, // ✅ NOVA KOLONA za pokupljanje
+          dodaoVozac:
+              map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
           vozac: vozac, // ✅ KORISTI vozač varijablu
           grad: 'Bela Crkva',
           adresa: map['adresa_bela_crkva'] as String? ?? 'Bela Crkva',
@@ -418,7 +454,10 @@ class Putnik {
     if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
       bool pokupljenZaOvajPolazak = false;
-      if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
+      if (vremePokupljenja != null &&
+          status != 'bolovanje' &&
+          status != 'godisnji' &&
+          status != 'otkazan') {
         final polazakSati = int.tryParse(polazakVS.split(':')[0]) ?? 0;
         final pokupljenSati = vremePokupljenja.hour;
 
@@ -435,7 +474,8 @@ class Putnik {
           pokupljen: pokupljenZaOvajPolazak,
           vremeDodavanja: vremeDodavanja,
           mesecnaKarta: true,
-          dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
+          dan: (normalizedTarget[0].toUpperCase() +
+              normalizedTarget.substring(1)),
           status: status,
           statusVreme: map['updated_at'] as String?,
           vremePokupljenja: vremePokupljenja,
@@ -447,8 +487,10 @@ class Putnik {
                   map['vozac_id'] as String?,
                 )
               : null, // ✅ Samo ako je stvarno plaćeno
-          pokupioVozac: map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
-          dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
+          pokupioVozac: map['pokupljanje_vozac']
+              as String?, // ✅ NOVA KOLONA za pokupljanje
+          dodaoVozac:
+              map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
           vozac: vozac, // ✅ KORISTI vozač varijablu
           grad: 'Vršac',
           adresa: map['adresa_vrsac'] as String? ?? 'Vršac',
@@ -480,7 +522,8 @@ class Putnik {
       final parts = vremeString.split(':');
       if (parts.isNotEmpty) {
         final hour = int.tryParse(parts[0]) ?? 6;
-        final minute = parts.length > 1 ? (parts[1] == '00' ? '00' : parts[1]) : '00';
+        final minute =
+            parts.length > 1 ? (parts[1] == '00' ? '00' : parts[1]) : '00';
         // Ako su minuti 00, ne prikazuj ih; inače prikazuj
         if (minute == '00') {
           return '$hour:00';
@@ -553,12 +596,16 @@ class Putnik {
       'radni_dani': dan,
       'aktivan': !obrisan,
       'status': status ?? 'radi', // ✅ JEDNOSTAVNO - jedna kolona
-      'datum_pocetka_meseca': startOfMonth.toIso8601String().split('T')[0], // OBAVEZNO
-      'datum_kraja_meseca': endOfMonth.toIso8601String().split('T')[0], // OBAVEZNO
-      'ukupna_cena_meseca': iznosPlacanja ?? 0.0, // možda treba cena umesto ovoga
+      'datum_pocetka_meseca':
+          startOfMonth.toIso8601String().split('T')[0], // OBAVEZNO
+      'datum_kraja_meseca':
+          endOfMonth.toIso8601String().split('T')[0], // OBAVEZNO
+      'ukupna_cena_meseca':
+          iznosPlacanja ?? 0.0, // možda treba cena umesto ovoga
       'broj_putovanja': 0, // ✅ NOVA KOLONA - default 0
       'broj_otkazivanja': 0, // ✅ NOVA KOLONA - default 0
-      'poslednje_putovanje': vremePokupljenja?.toIso8601String(), // ✅ TIMESTAMP format
+      'poslednje_putovanje':
+          vremePokupljenja?.toIso8601String(), // ✅ TIMESTAMP format
       // UUID validacija za vozac_id
       'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       // Ne uključujemo 'obrisan' kolonu za putovanja_istorija tabelu
@@ -607,7 +654,8 @@ class Putnik {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
       'mesecni_putnik_id': mesecnaKarta == true ? id : null,
       'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
-      'datum_putovanja': _getDateForDay(dan), // ✅ ISPRAVKA: koristiti datum_putovanja
+      'datum_putovanja':
+          _getDateForDay(dan), // ✅ ISPRAVKA: koristiti datum_putovanja
       'vreme_polaska': polazak,
       'putnik_ime': ime,
       'cena': iznosPlacanja ?? 0.0,
@@ -617,7 +665,8 @@ class Putnik {
       'napomene': 'Putovanje dodato ${DateTime.now().toIso8601String()}',
       'placeni_mesec': null, // ✅ Za dnevne putnike
       'placena_godina': null, // ✅ Za dnevne putnike
-      'created_at': vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'created_at':
+          vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
   }

@@ -103,7 +103,10 @@ class GPSLokacija {
 
   /// Validira GPS koordinate
   bool get isValidCoordinates {
-    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+    return latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
   }
 
   /// Validira brzinu (realna vrednost)

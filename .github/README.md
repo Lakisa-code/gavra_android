@@ -1,33 +1,58 @@
-# 🚀 Gavra Android - GitHub Actions CI/CD
+# 🚀 Gavra Android - Realtime Transportation Management
 
 ![Build Status](https://github.com/bojanbc83/gavra_android/workflows/🚀%20Build%20and%20Release%20Flutter%20APK/badge.svg)
 ![PR Check](https://github.com/bojanbc83/gavra_android/workflows/🔍%20PR%20Quality%20Check/badge.svg)
 
+## 💓 Realtime Monitoring Architecture V3.0
+
+### 🎯 **OPTIMIZED CLEAN ARCHITECTURE**
+
+- **💓 DanasScreen**: Centralni heartbeat monitoring hub sa detaljnim debug info
+- **🔧 AdminScreen**: Clean admin interface sa backend monitoring
+- **📊 StatistikaScreen**: Professional analytics UI sa diskretnim monitoring
+- **🌐 Network Status**: Distribuiran connection monitoring svugde
+
+### 🏆 **PRODUCTION-READY FEATURES**
+
+- ✅ **Stream Health Tracking**: Realtime monitoring svih data stream-ova
+- ✅ **Error Recovery**: Graceful handling sa retry mehanizmima
+- ✅ **Performance Optimized**: Clean UI bez visual clutter-a
+- ✅ **Debug Capabilities**: Comprehensive monitoring u development mode-u
+
+---
+
 ## 📋 Automated Workflows
 
 ### 🔨 Build and Release (`build-and-release.yml`)
+
 **Triggers:**
+
 - Push to `main` branch
 - New version tags (`v*`)
 - Manual trigger
 
 **Jobs:**
+
 1. **🔍 Code Analysis** - Flutter analyze + tests
 2. **🔨 Debug Build** - Creates debug APK for testing
 3. **🚀 Release Build** - Creates production APK (main branch only)
 4. **📢 Notification** - Build status summary
 
 **Artifacts:**
+
 - Debug APK (30 days retention)
 - Release APK (90 days retention)
 - GitHub Releases (on version tags)
 
 ### 🔍 PR Quality Check (`pr-check.yml`)
+
 **Triggers:**
+
 - Pull requests to `main`/`develop`
 - Push to `develop` branch
 
 **Checks:**
+
 - ✅ Code formatting (`flutter format`)
 - ✅ Static analysis (`flutter analyze`)
 - ✅ Test execution
@@ -35,11 +60,14 @@
 - 🔒 Basic security scan
 
 ### 🏷️ Auto Release Tagging (`auto-release.yml`)
+
 **Triggers:**
+
 - Push to `main` with code changes
 - Automatic versioning from `pubspec.yaml`
 
 **Features:**
+
 - Auto-creates tags based on app version
 - Generates release notes from commits
 - Skip with `[skip-tag]` in commit message
@@ -47,6 +75,7 @@
 ## 📱 Usage
 
 ### 🔄 Development Workflow
+
 ```bash
 # 1. Create feature branch
 git checkout -b feature/nova-funkcionalnost
@@ -63,7 +92,57 @@ git push origin feature/nova-funkcionalnost
 # Triggers build, release, and auto-tagging
 ```
 
+---
+
+## 🔄 Realtime Architecture Features
+
+### 💓 **DanasScreen - Heartbeat Hub**
+
+```dart
+// Centralni monitoring sistem
+final Map<String, DateTime> _streamHeartbeats = {};
+
+void _registerStreamHeartbeat(String streamName) {
+  _streamHeartbeats[streamName] = DateTime.now();
+}
+
+// Debug info dostupan tap-om na heartbeat indicator
+Widget _buildHeartbeatIndicator() { /* detailed monitoring */ }
+```
+
+### 🔧 **AdminScreen - Clean Monitoring**
+
+```dart
+// Backend health tracking bez UI clutter-a
+ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
+ValueNotifier<bool> _kusurStreamHealthy = ValueNotifier(true);
+
+// Diskretno network status monitoring
+Widget _buildNetworkStatusWidget() { /* minimal UI footprint */ }
+```
+
+### 📊 **StatistikaScreen - Analytics Focus**
+
+```dart
+// Professional analytics sa backend monitoring
+ValueNotifier<bool> _pazarStreamHealthy = ValueNotifier(true);
+ValueNotifier<bool> _statistikaStreamHealthy = ValueNotifier(true);
+
+// Stream error handling maintaining clean presentation
+Widget StreamErrorWidget() { /* graceful recovery */ }
+```
+
+### 🌐 **Network Status Everywhere**
+
+- Diskretno connection monitoring
+- Realtime network state tracking
+- Development debug capabilities
+- Production-ready robustness
+
+---
+
 ### 🚀 Release Process
+
 ```bash
 # 1. Update version in pubspec.yaml
 version: 1.2.3+4
@@ -81,6 +160,7 @@ git push origin main
 ```
 
 ### 📦 Manual Release
+
 ```bash
 # Create and push tag manually
 git tag -a v1.2.3 -m "Release 1.2.3"
@@ -89,6 +169,7 @@ git push origin v1.2.3
 ```
 
 ### 🛑 Skip Auto-tagging
+
 ```bash
 # Add [skip-tag] to commit message
 git commit -m "Fix typo [skip-tag]"
@@ -97,10 +178,13 @@ git commit -m "Fix typo [skip-tag]"
 ## 🔧 Configuration
 
 ### 🔑 Required Secrets
+
 - `GITHUB_TOKEN` - Auto-provided by GitHub Actions
 
 ### 📊 Optional Enhancements
+
 Add to repository secrets for extended functionality:
+
 - `DISCORD_WEBHOOK` - Team notifications
 - `SLACK_WEBHOOK` - Build notifications
 - `CODECOV_TOKEN` - Coverage reporting
@@ -108,13 +192,15 @@ Add to repository secrets for extended functionality:
 ### 🛠️ Customization
 
 **Modify Flutter version:**
+
 ```yaml
 # In workflow files
-flutter-version: '3.35.2'
-channel: 'stable'
+flutter-version: "3.35.2"
+channel: "stable"
 ```
 
 **Change build targets:**
+
 ```yaml
 # Add iOS builds, web builds, etc.
 flutter build ios --release
@@ -122,6 +208,7 @@ flutter build web --release
 ```
 
 **Add deployment:**
+
 ```yaml
 # Deploy to Firebase, Google Play Store, etc.
 - name: Deploy to Firebase
@@ -131,6 +218,7 @@ flutter build web --release
 ## 📈 Build Artifacts
 
 ### 🔍 Accessing Builds
+
 1. Go to **Actions** tab in GitHub
 2. Select successful workflow run
 3. Download artifacts:
@@ -138,11 +226,13 @@ flutter build web --release
    - `gavra-android-release` - Release APK
 
 ### 📱 Installing APK
+
 1. Download APK from GitHub Actions or Releases
 2. Enable "Install from unknown sources" on Android
 3. Install APK file
 
 ### 🏷️ Release Tags
+
 - Automatic releases: `v1.2.3`
 - Pre-releases: `v1.2.3-beta.1`
 - Manual releases: Custom tags
@@ -150,6 +240,7 @@ flutter build web --release
 ## 🚨 Troubleshooting
 
 ### ❌ Build Failures
+
 ```bash
 # Check logs in GitHub Actions
 # Common issues:
@@ -159,6 +250,7 @@ flutter build web --release
 ```
 
 ### 🔧 Local Testing
+
 ```bash
 # Test workflow locally (act required)
 act -j build-debug
@@ -166,6 +258,7 @@ act -j analyze
 ```
 
 ### 📞 Support
+
 - Check workflow logs in GitHub Actions
 - Review Flutter doctor output
 - Verify pubspec.yaml versions

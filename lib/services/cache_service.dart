@@ -122,7 +122,9 @@ class CacheService {
     return {
       'memory_cache_size': _memoryCache.length,
       'oldest_memory_cache': _cacheTimestamp.values.isNotEmpty
-          ? _cacheTimestamp.values.reduce((a, b) => a.isBefore(b) ? a : b).toIso8601String()
+          ? _cacheTimestamp.values
+              .reduce((a, b) => a.isBefore(b) ? a : b)
+              .toIso8601String()
           : 'N/A',
       'disk_cache_available': _prefs != null,
     };
@@ -139,7 +141,8 @@ class CacheKeys {
   static String putniksByDay(String day) => 'putnici_$day';
 
   // Statistike cache
-  static String statistikeVozac(String vozac, String period) => 'stats_${vozac}_$period';
+  static String statistikeVozac(String vozac, String period) =>
+      'stats_${vozac}_$period';
   static String ukupneStatistike(String period) => 'total_stats_$period';
 
   // Adrese cache

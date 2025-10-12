@@ -159,6 +159,7 @@ class VozacMappingService {
 
   /// Proveri da li je UUID vozača valjan sinhron
   static bool isValidVozacUuidSync(String uuid) {
-    return _vozacUuidToName?.containsKey(uuid) ?? _fallbackMapping.containsValue(uuid);
+    return _vozacUuidToName?.containsKey(uuid) ??
+        _fallbackMapping.containsValue(uuid);
   }
 }

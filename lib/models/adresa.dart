@@ -26,7 +26,9 @@ class Adresa {
       postanskiBroj: map['postanski_broj'] as String?,
       koordinate: map['koordinate'] as String?, // PostgreSQL POINT as string
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : DateTime.now(),
     );
   }
 
@@ -133,7 +135,8 @@ class Adresa {
 
   bool get isValidAddress => ulica.isNotEmpty && grad.isNotEmpty;
 
-  bool get hasCompleteAddress => isValidAddress && broj != null && broj!.isNotEmpty;
+  bool get hasCompleteAddress =>
+      isValidAddress && broj != null && broj!.isNotEmpty;
 
   /// Standardized address format
   String get standardizedAddress {
@@ -179,7 +182,9 @@ class Adresa {
     final double dLon = _toRadians(lon2 - lon1);
 
     final double a = math.pow(math.sin(dLat / 2), 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) * math.pow(math.sin(dLon / 2), 2);
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.pow(math.sin(dLon / 2), 2);
 
     final double c = 2 * math.asin(math.sqrt(a));
     return earthRadius * c;
@@ -234,12 +239,14 @@ class Adresa {
       'gudurica', 'kustilj', 'marcovac', 'potporanj', 'socica',
     ];
 
-    return allowedCities.any((city) => normalizedGrad.contains(city) || city.contains(normalizedGrad));
+    return allowedCities.any((city) =>
+        normalizedGrad.contains(city) || city.contains(normalizedGrad));
   }
 
   /// Validate postal code format (Serbian postal codes)
   bool get isValidPostanskiBroj {
-    if (postanskiBroj == null || postanskiBroj!.trim().isEmpty) return true; // Optional
+    if (postanskiBroj == null || postanskiBroj!.trim().isEmpty)
+      return true; // Optional
 
     // Serbian postal codes: 5-digit format
     final postalPattern = RegExp(r'^[0-9]{5}$');
@@ -274,7 +281,11 @@ class Adresa {
 
   /// Comprehensive validation combining all rules
   bool get isCompletelyValid {
-    return isValidUlica && isValidBroj && isValidGrad && isValidPostanskiBroj && isInServiceArea;
+    return isValidUlica &&
+        isValidBroj &&
+        isValidGrad &&
+        isValidPostanskiBroj &&
+        isInServiceArea;
   }
 
   /// Get validation error messages
@@ -282,13 +293,15 @@ class Adresa {
     final errors = <String>[];
 
     if (!isValidUlica) {
-      errors.add('Naziv ulice nije valjan (minimum 2 karaktera, dozvoljeni karakteri)');
+      errors.add(
+          'Naziv ulice nije valjan (minimum 2 karaktera, dozvoljeni karakteri)');
     }
     if (!isValidBroj) {
       errors.add('Broj nije valjan (format: 1, 12a, 5/3, 15-17)');
     }
     if (!isValidGrad) {
-      errors.add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
+      errors
+          .add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
     }
     if (!isValidPostanskiBroj) {
       errors.add('Poštanski broj nije valjan (format: 12345)');
@@ -388,8 +401,9 @@ class Adresa {
       'dobricevo',
     ];
 
-    final belongsToBelaCrkva = belaCrkvaSettlements
-        .any((settlement) => normalizedGrad.contains(settlement) || settlement.contains(normalizedGrad));
+    final belongsToBelaCrkva = belaCrkvaSettlements.any((settlement) =>
+        normalizedGrad.contains(settlement) ||
+        settlement.contains(normalizedGrad));
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
     return 'Vršac'; // Default for all other valid addresses
@@ -402,15 +416,21 @@ class Adresa {
     final lowerUlica = ulica.toLowerCase();
 
     if (lowerUlica.contains('bolnica')) return '🏥';
-    if (lowerUlica.contains('skola') || lowerUlica.contains('škola')) return '🏫';
-    if (lowerUlica.contains('vrtic') || lowerUlica.contains('vrtić')) return '🏠';
-    if (lowerUlica.contains('posta') || lowerUlica.contains('pošta')) return '📮';
+    if (lowerUlica.contains('skola') || lowerUlica.contains('škola'))
+      return '🏫';
+    if (lowerUlica.contains('vrtic') || lowerUlica.contains('vrtić'))
+      return '🏠';
+    if (lowerUlica.contains('posta') || lowerUlica.contains('pošta'))
+      return '📮';
     if (lowerUlica.contains('banka')) return '🏛️';
     if (lowerUlica.contains('crkva')) return '⛪';
     if (lowerUlica.contains('park')) return '🌳';
     if (lowerUlica.contains('stadion')) return '🏟️';
-    if (lowerUlica.contains('market') || lowerUlica.contains('prodavnica')) return '🏪';
-    if (lowerUlica.contains('restoran') || lowerUlica.contains('kafic') || lowerUlica.contains('kafić')) return '🍽️';
+    if (lowerUlica.contains('market') || lowerUlica.contains('prodavnica'))
+      return '🏪';
+    if (lowerUlica.contains('restoran') ||
+        lowerUlica.contains('kafic') ||
+        lowerUlica.contains('kafić')) return '🍽️';
 
     return '📍'; // Default location icon
   }
@@ -485,7 +505,9 @@ class Adresa {
     return text
         .split(' ')
         .map(
-          (word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word,
+          (word) => word.isNotEmpty
+              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+              : word,
         )
         .join(' ');
   }
