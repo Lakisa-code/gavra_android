@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// 💎 Sapphire Platinum Premium - Luksuzni metalni preliv!
+// 🌊💎 GEOCODING BLUE PARADISE - Identične boje kao Geocoding Screen!
 const ColorScheme flutterBankColorScheme = ColorScheme(
   brightness: Brightness.light,
-  // Sapphire platinum gradient colors - vrhunski luksuz
-  primary: Color(0xFF0F1B4C), // Deep sapphire navy (najintenzivnija)
+  // Geocoding screen identical blue colors
+  primary: Color(0xFF1E3A8A), // Blue-900 (gore levo u geocoding)
   onPrimary: Colors.white,
-  primaryContainer: Color(0xFF1E3A8A), // Royal sapphire blue
+  primaryContainer: Color(0xFF3B82F6), // Blue-500 (sredina u geocoding)
   onPrimaryContainer: Colors.white,
 
-  // Secondary colors - platinum metallic progression
-  secondary: Color(0xFF3B82F6), // Brilliant sapphire
+  // Secondary colors - geocoding blue progression
+  secondary: Color(0xFF1D4ED8), // Blue-600 (dole desno u geocoding)
   onSecondary: Colors.white,
-  secondaryContainer: Color(0xFF60A5FA), // Light platinum sapphire
-  onSecondaryContainer: Color(0xFF1565C0),
+  secondaryContainer: Color(0xFF60A5FA), // Blue-400 (svetliji accent)
+  onSecondaryContainer: Colors.white,
 
-  // Surface colors - metallic tinted
-  surface: Color(0xFFF8FBFF), // Svetla metalik pozadina
-  onSurface: Color(0xFF1A1A1A),
-  surfaceContainerHighest: Color(0xFFF0F7FF),
+  // Surface colors - blue tinted
+  surface: Color(0xFFF0F9FF), // Blue-50 pozadina
+  onSurface: Color(0xFF1E3A8A),
+  surfaceContainerHighest: Color(0xFFE0F2FE),
 
-  // Error colors
-  error: Color(0xFFE53E3E),
+  // Error colors - coral accent
+  error: Color(0xFFFF4757), // Coral red
   onError: Colors.white,
 );
 
@@ -51,33 +51,33 @@ const ColorScheme svetlanaPinkColorScheme = ColorScheme(
   onError: Colors.white,
 );
 
-// 🌙💎 DARK Sapphire Platinum Premium - Luksuzni tamni metalni preliv!
+// �💫 MIDNIGHT SEDUCTION - Seksi dark tema sa prelivima ludila!
 const ColorScheme darkSapphirePlatinumColorScheme = ColorScheme(
   brightness: Brightness.dark,
-  // Dark sapphire platinum gradient colors - vrhunski dark luksuz
-  primary: Color(0xFF93C5FD), // Light platinum sapphire (glavni u dark mode)
-  onPrimary: Color(0xFF0F1B4C), // Deep sapphire tekst
-  primaryContainer: Color(0xFF1E3A8A), // Royal sapphire blue container
-  onPrimaryContainer: Color(0xFF93C5FD),
+  // Midnight seduction colors - seksi crno/siva sa neon akcentima
+  primary: Color(0xFFE5E7EB), // Platinum silver (glavni svetli)
+  onPrimary: Color(0xFF000000), // Pure black tekst
+  primaryContainer: Color(0xFF1F2937), // Dark charcoal container
+  onPrimaryContainer: Color(0xFFF3F4F6),
 
-  // Secondary colors - dark platinum metallic progression
-  secondary: Color(0xFF60A5FA), // Medium platinum sapphire
-  onSecondary: Color(0xFF0F1B4C),
-  secondaryContainer: Color(0xFF1E40AF), // Dark sapphire container
-  onSecondaryContainer: Color(0xFF93C5FD),
+  // Secondary colors - neon purple/pink accents za seksapil
+  secondary: Color(0xFFBB86FC), // Electric purple (seksi akcenat)
+  onSecondary: Color(0xFF000000),
+  secondaryContainer: Color(0xFF6B46C1), // Deep purple container
+  onSecondaryContainer: Color(0xFFE5E7EB),
 
-  // Surface colors - dark sapphire tinted
-  surface: Color(0xFF0A0F1C), // Vrlo tamna sapphire pozadina
-  onSurface: Color(0xFFE1E7FF), // Svetli sapphire tekst
-  surfaceVariant: Color(0xFF111827), // Dark variant
+  // Surface colors - deep black/charcoal progression
+  surface: Color(0xFF000000), // Pure black pozadina (najseksi)
+  onSurface: Color(0xFFF9FAFB), // Almost white tekst
+  surfaceVariant: Color(0xFF111827), // Dark charcoal variant
   onSurfaceVariant: Color(0xFFD1D5DB),
 
-  // Dark theme specific
-  inverseSurface: Color(0xFFE1E7FF),
-  onInverseSurface: Color(0xFF0A0F1C),
-  inversePrimary: Color(0xFF0F1B4C),
+  // Dark theme specific - hot pink accents
+  inverseSurface: Color(0xFFF9FAFB),
+  onInverseSurface: Color(0xFF000000),
+  inversePrimary: Color(0xFF374151),
 
-  outline: Color(0xFF374151),
+  outline: Color(0xFF4B5563),
   outlineVariant: Color(0xFF1F2937),
   shadow: Color(0xFF000000),
   scrim: Color(0xFF000000),
@@ -275,132 +275,260 @@ final ThemeData flutterBankTheme = ThemeData(
   // iconTheme: skipped for Flutter 3.24.3 compatibility
 );
 
-// 💎 Sapphire Platinum Gradient - Premium Left to Right Metallic Flow
+// 🌊💎 GEOCODING IDENTICAL Gradient - Identičan kao u Geocoding Screen!
 const LinearGradient flutterBankGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
   colors: [
-    Color(0xFF0F1B4C), // Deep sapphire navy (tamna - levo)
-    Color(0xFF1E3A8A), // Royal sapphire blue
-    Color(0xFF3B82F6), // Brilliant sapphire (srednja)
-    Color(0xFF60A5FA), // Light platinum sapphire
-    Color(0xFF93C5FD), // Platinum metallic shine (svetla - desno)
+    Color(0xFF1E3A8A), // Blue-900 (gore levo - identično)
+    Color(0xFF3B82F6), // Blue-500 (sredina - identično)
+    Color(0xFF1D4ED8), // Blue-600 (dole desno - identično)
   ],
-  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+  stops: [0.0, 0.5, 1.0],
 );
 
-// 🌙💎 DARK Sapphire Platinum Gradient - Premium Dark Metallic Flow
+// 🌙� DARK Midnight Seduction Gradient - Seksi Black/Gray Ludilo
 const LinearGradient darkSapphirePlatinumGradient = LinearGradient(
   colors: [
-    Color(0xFF0A0F1C), // Vrlo tamna sapphire pozadina (levo)
-    Color(0xFF111827), // Dark sapphire
-    Color(0xFF1E3A8A), // Royal sapphire blue (srednja)
-    Color(0xFF3B82F6), // Brilliant sapphire
-    Color(0xFF60A5FA), // Light platinum sapphire (svetla - desno)
+    Color(0xFF000000), // Pure black seksapil (levo)
+    Color(0xFF111111), // Tamno charcoal
+    Color(0xFF1F2937), // Rich dark gray (srednja)
+    Color(0xFF374151), // Medium gray
+    Color(0xFF6B7280), // Light platinum gray
+    Color(0xFFBB86FC), // Electric purple seksapil (desno)
   ],
-  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+  stops: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
 );
 
-// 💎 Utility class for sapphire platinum styles
+// 🌊💎 Utility class for geocoding blue styles
 class FlutterBankStyles {
-  // Card decoration with sapphire metallic shadow
+  // Card decoration with geocoding blue glow and borders
   static BoxDecoration cardDecoration = BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      width: 2,
+      color: const Color(0xFF1D4ED8).withOpacity(0.4), // Blue-600 border
+    ),
     boxShadow: [
       BoxShadow(
-        color:
-            const Color(0xFF0F1B4C).withOpacity(0.25), // Deep sapphire shadow
+        color: const Color(0xFF1E3A8A).withOpacity(0.3), // Blue-900 glow
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
       ),
       BoxShadow(
-        color: const Color(0xFF3B82F6)
-            .withOpacity(0.15), // Brilliant sapphire shimmer
-        blurRadius: 20,
+        color: const Color(0xFF3B82F6).withOpacity(0.25), // Blue-500 shimmer
+        blurRadius: 24,
         offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFF1D4ED8).withOpacity(0.2), // Blue-600 glow
+        blurRadius: 16,
+        offset: const Offset(0, 6),
+      ),
+      BoxShadow(
+        color: const Color(0xFF60A5FA).withOpacity(0.15), // Blue-400 accent
+        blurRadius: 12,
+        offset: const Offset(0, 4),
       ),
     ],
   );
 
-  // Sapphire platinum gradient background
+  // Geocoding gradient background
   static BoxDecoration gradientBackground = const BoxDecoration(
     gradient: flutterBankGradient,
   );
 
-  // Button with premium sapphire flowing gradient
+  // Button with geocoding blue gradient
   static BoxDecoration gradientButton = BoxDecoration(
     gradient: flutterBankGradient,
     borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      width: 1.5,
+      color: const Color(0xFF1D4ED8).withOpacity(0.6), // Blue-600 border
+    ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF0F1B4C).withOpacity(0.6), // Deep sapphire shadow
+        color: const Color(0xFF1E3A8A).withOpacity(0.6), // Blue-900 shadow
         blurRadius: 24,
         offset: const Offset(0, 12),
         spreadRadius: 2,
       ),
       BoxShadow(
-        color: const Color(0xFF60A5FA).withOpacity(0.4), // Platinum shimmer
-        blurRadius: 16,
+        color: const Color(0xFF3B82F6).withOpacity(0.4), // Blue-500 shimmer
+        blurRadius: 18,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFF1D4ED8).withOpacity(0.3), // Blue-600 glow
+        blurRadius: 12,
         offset: const Offset(0, 6),
       ),
       BoxShadow(
-        color: const Color(0xFF93C5FD).withOpacity(0.2), // Light metallic glow
+        color: const Color(0xFF60A5FA).withOpacity(0.2), // Blue-400 accent
         blurRadius: 8,
         offset: const Offset(0, 3),
+      ),
+    ],
+  );
+
+  // Popup/Dialog decoration with geocoding blue styling
+  static BoxDecoration popupDecoration = BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: const Color(0xFF1D4ED8).withOpacity(0.5), // Blue-600 border
+      width: 2,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFF1E3A8A).withOpacity(0.4), // Blue-900 glow
+        blurRadius: 36,
+        offset: const Offset(0, 16),
+        spreadRadius: 6,
+      ),
+      BoxShadow(
+        color: const Color(0xFF3B82F6).withOpacity(0.3), // Blue-500 shimmer
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+      ),
+      BoxShadow(
+        color: const Color(0xFF1D4ED8).withOpacity(0.2), // Blue-600 accent
+        blurRadius: 16,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  );
+
+  // Dropdown decoration for light theme
+  static BoxDecoration dropdownDecoration = BoxDecoration(
+    color: const Color(0xFFF0F9FF), // Blue-50 background
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: const Color(0xFF1D4ED8).withOpacity(0.4),
+      width: 1.5,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFF1E3A8A).withOpacity(0.3),
+        blurRadius: 16,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFF3B82F6).withOpacity(0.2),
+        blurRadius: 8,
+        offset: const Offset(0, 4),
       ),
     ],
   );
 }
 
-// 🌙💎 Dark Utility class for dark sapphire platinum styles
+// 🌙� Dark Utility class for Midnight Seduction styles
 class DarkSapphirePlatinumStyles {
-  // Card decoration with dark sapphire glow
+  // Card decoration with sexy dark glow and purple accents
   static BoxDecoration cardDecoration = BoxDecoration(
-    color: const Color(0xFF111827), // Dark sapphire background
+    color: const Color(0xFF111111), // Rich charcoal background
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
-      color: const Color(0xFF60A5FA).withOpacity(0.2),
+      color: const Color(0xFFBB86FC).withOpacity(0.3), // Electric purple border
+      width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF60A5FA).withOpacity(0.15), // Sapphire glow
+        color: const Color(0xFFBB86FC).withOpacity(0.2), // Purple seduction glow
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
       ),
       BoxShadow(
-        color: const Color(0xFF93C5FD).withOpacity(0.1), // Platinum shimmer
+        color: const Color(0xFF6B7280).withOpacity(0.15), // Platinum gray shimmer
         blurRadius: 20,
         offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFF000000).withOpacity(0.8), // Deep black depth
+        blurRadius: 8,
+        offset: const Offset(0, 4),
       ),
     ],
   );
 
-  // Dark sapphire gradient background
+  // Dark midnight seduction gradient background
   static BoxDecoration gradientBackground = const BoxDecoration(
     gradient: darkSapphirePlatinumGradient,
   );
 
-  // Button with dark premium sapphire flowing gradient
+  // Button with sexy dark gradient and purple glow
   static BoxDecoration gradientButton = BoxDecoration(
     gradient: darkSapphirePlatinumGradient,
     borderRadius: BorderRadius.circular(16),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF60A5FA).withOpacity(0.3), // Sapphire glow shadow
-        blurRadius: 24,
+        color: const Color(0xFFBB86FC).withOpacity(0.4), // Electric purple glow
+        blurRadius: 28,
         offset: const Offset(0, 12),
-        spreadRadius: 2,
+        spreadRadius: 3,
       ),
       BoxShadow(
-        color: const Color(0xFF93C5FD).withOpacity(0.2), // Platinum shimmer
-        blurRadius: 16,
+        color: const Color(0xFF6B7280).withOpacity(0.2), // Platinum gray elegance
+        blurRadius: 18,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFF374151).withOpacity(0.3), // Dark gray depth
+        blurRadius: 12,
         offset: const Offset(0, 6),
       ),
       BoxShadow(
-        color: const Color(0xFF3B82F6).withOpacity(0.1), // Light sapphire glow
-        blurRadius: 8,
+        color: const Color(0xFF000000).withOpacity(0.6), // Pure black seksapil
+        blurRadius: 6,
         offset: const Offset(0, 3),
+      ),
+    ],
+  );
+
+  // Popup/Dialog decoration with dark seduction styling
+  static BoxDecoration popupDecoration = BoxDecoration(
+    color: const Color(0xFF111111), // Rich charcoal background
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: const Color(0xFFBB86FC).withOpacity(0.4), // Electric purple border
+      width: 2,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFBB86FC).withOpacity(0.3), // Purple glow
+        blurRadius: 40,
+        offset: const Offset(0, 16),
+        spreadRadius: 6,
+      ),
+      BoxShadow(
+        color: const Color(0xFF000000).withOpacity(0.9), // Deep black shadow
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+      ),
+    ],
+  );
+
+  // Dropdown decoration for dark theme
+  static BoxDecoration dropdownDecoration = BoxDecoration(
+    color: const Color(0xFF1F2937), // Dark gray background
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: const Color(0xFFBB86FC).withOpacity(0.3),
+      width: 1.5,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFBB86FC).withOpacity(0.2),
+        blurRadius: 16,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFF000000).withOpacity(0.7),
+        blurRadius: 8,
+        offset: const Offset(0, 4),
       ),
     ],
   );
@@ -620,25 +748,19 @@ class AppThemeHelpers {
   /// Vraća boju na osnovu tipa putnika (učenik/radnik)
   static Color getTypeColor(String tip, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return tip == 'ucenik'
-        ? colorScheme.studentPrimary
-        : colorScheme.workerPrimary;
+    return tip == 'ucenik' ? colorScheme.studentPrimary : colorScheme.workerPrimary;
   }
 
   /// Vraća kontejner boju na osnovu tipa putnika
   static Color getTypeContainerColor(String tip, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return tip == 'ucenik'
-        ? colorScheme.studentContainer
-        : colorScheme.workerContainer;
+    return tip == 'ucenik' ? colorScheme.studentContainer : colorScheme.workerContainer;
   }
 
   /// Vraća on-container boju na osnovu tipa putnika
   static Color getTypeOnContainerColor(String tip, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return tip == 'ucenik'
-        ? colorScheme.onStudentContainer
-        : colorScheme.onWorkerContainer;
+    return tip == 'ucenik' ? colorScheme.onStudentContainer : colorScheme.onWorkerContainer;
   }
 
   /// Vraća gradijent na osnovu tipa putnika

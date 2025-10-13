@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gavra_android/services/clean_statistika_service.dart';
 
+import '../theme.dart';
+
 /// Widget za prikaz čistih statistika bez duplikata
 class CleanStatistikaWidget extends StatefulWidget {
   const CleanStatistikaWidget({Key? key}) : super(key: key);
@@ -95,8 +97,7 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (_statistike!['no_duplicates'] == true)
-                    const Icon(Icons.check_circle, color: Colors.green),
+                  if (_statistike!['no_duplicates'] == true) const Icon(Icons.check_circle, color: Colors.green),
                 ],
               ),
             ),
@@ -116,8 +117,7 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
             // Mesečni putnici
             _buildStatistikaCard(
               'Mesečni putnici',
-              '${_statistike!['ukupno_mesecni']} RSD ' +
-                  '(${_statistike!['broj_mesecnih']} zapisa)',
+              '${_statistike!['ukupno_mesecni']} RSD ' + '(${_statistike!['broj_mesecnih']} zapisa)',
               Icons.people,
               Colors.orange,
             ),
@@ -127,8 +127,7 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
             // Standalone putovanja
             _buildStatistikaCard(
               'Dnevna putovanja',
-              '${_statistike!['ukupno_standalone']} RSD ' +
-                  '(${_statistike!['broj_standalone']} zapisa)',
+              '${_statistike!['ukupno_standalone']} RSD ' + '(${_statistike!['broj_standalone']} zapisa)',
               Icons.directions_car,
               Colors.purple,
             ),
@@ -170,14 +169,51 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Debug informacije'),
-        content: SingleChildScrollView(
-          child: Text(_statistike.toString()),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFBB86FC).withOpacity(0.4)
+                : const Color(0xFF008B8B).withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        title: Text(
+          'Debug informacije',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Container(
+          decoration: Theme.of(context).brightness == Brightness.dark
+              ? DarkSapphirePlatinumStyles.popupDecoration
+              : FlutterBankStyles.popupDecoration,
+          child: SingleChildScrollView(
+            child: Text(
+              _statistike.toString(),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Zatvori'),
+          Container(
+            decoration: Theme.of(context).brightness == Brightness.dark
+                ? DarkSapphirePlatinumStyles.gradientButton
+                : FlutterBankStyles.gradientButton,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Zatvori',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ],
       ),

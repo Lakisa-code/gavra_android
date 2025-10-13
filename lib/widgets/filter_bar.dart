@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 class FilterBar extends StatelessWidget {
   const FilterBar({
     Key? key,
@@ -13,15 +15,16 @@ class FilterBar extends StatelessWidget {
     required this.onGradChanged,
     required this.onVremeChanged,
   }) : super(key: key);
+
   final List<String> dani;
   final String selectedDay;
   final List<String> gradovi;
   final String selectedGrad;
   final List<String> vremena;
   final String selectedVreme;
-  final ValueChanged<String> onDayChanged;
-  final ValueChanged<String> onGradChanged;
-  final ValueChanged<String> onVremeChanged;
+  final void Function(String) onDayChanged;
+  final void Function(String) onGradChanged;
+  final void Function(String) onVremeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -31,76 +34,118 @@ class FilterBar extends StatelessWidget {
         children: [
           // Dan
           Expanded(
-            child: DropdownButtonFormField<String>(
-              value: selectedDay,
-              decoration: const InputDecoration(
-                labelText: 'Dan',
-                border: OutlineInputBorder(),
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Container(
+              decoration: Theme.of(context).brightness == Brightness.dark
+                  ? DarkSapphirePlatinumStyles.dropdownDecoration
+                  : FlutterBankStyles.dropdownDecoration,
+              child: DropdownButtonFormField<String>(
+                value: selectedDay,
+                dropdownColor:
+                    Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F2937) : const Color(0xFFF5F8FF),
+                decoration: InputDecoration(
+                  labelText: 'Dan',
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: dani
+                    .map(
+                      (dan) => DropdownMenuItem(
+                        value: dan,
+                        child: Text(
+                          dan,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) onDayChanged(value);
+                },
               ),
-              items: dani
-                  .map(
-                    (dan) => DropdownMenuItem(
-                      value: dan,
-                      child: Text(dan),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) onDayChanged(value);
-              },
             ),
           ),
           const SizedBox(width: 8),
           // Grad
           Expanded(
-            child: DropdownButtonFormField<String>(
-              value: selectedGrad,
-              decoration: const InputDecoration(
-                labelText: 'Grad',
-                border: OutlineInputBorder(),
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Container(
+              decoration: Theme.of(context).brightness == Brightness.dark
+                  ? DarkSapphirePlatinumStyles.dropdownDecoration
+                  : FlutterBankStyles.dropdownDecoration,
+              child: DropdownButtonFormField<String>(
+                value: selectedGrad,
+                dropdownColor:
+                    Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F2937) : const Color(0xFFF5F8FF),
+                decoration: InputDecoration(
+                  labelText: 'Grad',
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: gradovi
+                    .map(
+                      (grad) => DropdownMenuItem(
+                        value: grad,
+                        child: Text(
+                          grad,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) onGradChanged(value);
+                },
               ),
-              items: gradovi
-                  .map(
-                    (grad) => DropdownMenuItem(
-                      value: grad,
-                      child: Text(grad),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) onGradChanged(value);
-              },
             ),
           ),
           const SizedBox(width: 8),
           // Vreme
           Expanded(
-            child: DropdownButtonFormField<String>(
-              value: selectedVreme,
-              decoration: const InputDecoration(
-                labelText: 'Vreme',
-                border: OutlineInputBorder(),
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Container(
+              decoration: Theme.of(context).brightness == Brightness.dark
+                  ? DarkSapphirePlatinumStyles.dropdownDecoration
+                  : FlutterBankStyles.dropdownDecoration,
+              child: DropdownButtonFormField<String>(
+                value: selectedVreme,
+                dropdownColor:
+                    Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1F2937) : const Color(0xFFF5F8FF),
+                decoration: InputDecoration(
+                  labelText: 'Vreme',
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: vremena
+                    .map(
+                      (vreme) => DropdownMenuItem(
+                        value: vreme,
+                        child: Text(
+                          vreme,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) onVremeChanged(value);
+                },
               ),
-              items: vremena
-                  .map(
-                    (vreme) => DropdownMenuItem(
-                      value: vreme,
-                      child: Text(vreme),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) onVremeChanged(value);
-              },
             ),
           ),
         ],

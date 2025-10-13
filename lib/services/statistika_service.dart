@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS p
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../utils/logging.dart'; // 🔧 DODANO za dlog funkciju
+import '../utils/novac_validacija.dart'; // 🆕 DODANO za centralizovanu validaciju
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
 import 'clean_statistika_service.dart'; // 🆕 DODANO za clean statistike
 import 'mesecni_putnik_service.dart'; // 🔄 DODANO za mesečne putnike
@@ -18,8 +19,7 @@ class StatistikaService {
   StatistikaService._internal();
   // Singleton pattern
   static StatistikaService? _instance;
-  static StatistikaService get instance =>
-      _instance ??= StatistikaService._internal(); // Private constructor
+  static StatistikaService get instance => _instance ??= StatistikaService._internal(); // Private constructor
 
   // Instance cache za stream-ove da izbegnemo duplo kreiranje
   final Map<String, Stream<Map<String, double>>> _streamCache = {};
@@ -34,21 +34,10 @@ class StatistikaService {
 
   // Debug logging completely removed for production build
 
-  /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi se svuda!
+  /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi centralizovanu validaciju
   static bool _jePazarValjan(Putnik putnik) {
-    // Osnovni uslovi za validno računanje pazara
-    final imaIznos = putnik.iznosPlacanja != null && putnik.iznosPlacanja! > 0;
-
-    // ✅ PRIORITET: naplatioVozac > vozac (SAMO REGISTROVANI VOZAČI)
-    final registrovaniVozac = putnik.naplatioVozac ?? putnik.vozac;
-    final imaRegistrovanogVozaca = registrovaniVozac != null &&
-        registrovaniVozac.isNotEmpty &&
-        VozacBoja.isValidDriver(registrovaniVozac);
-
-    final nijeOtkazan = !putnik.jeOtkazan;
-    final isValid = imaIznos && imaRegistrovanogVozaca && nijeOtkazan;
-
-    return isValid;
+    // ✅ KORISTI CENTRALIZOVANU VALIDACIJU
+    return NovcanaValidacija.isValidPayment(putnik);
   }
 
   /// 🕐 STANDARDIZOVANO FILTRIRANJE PO VREMENSKOM OPSEGU
@@ -63,8 +52,7 @@ class StatistikaService {
     final normalizedTo = _normalizeDateTime(to);
 
     // ✅ FIXED: Use proper inclusive date range comparison
-    final result = !normalized.isBefore(normalizedFrom) &&
-        !normalized.isAfter(normalizedTo);
+    final result = !normalized.isBefore(normalizedFrom) && !normalized.isAfter(normalizedTo);
 
     if (!result) {
     } else {}
@@ -150,8 +138,7 @@ class StatistikaService {
     for (final putnik in sviPutnici) {
       if (_jePazarValjan(putnik) && putnik.vozac == vozac) {
         // Za SVE putnike (mesečne i obične) - računaj pazar SAMO ako je plaćen u traženom opsegu
-        if (putnik.vremePlacanja != null &&
-            _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+        if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           final iznos = putnik.iznosPlacanja!;
           ukupno += iznos;
         }
@@ -170,8 +157,7 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    return MesecniPutnikService.streamAktivniMesecniPutnici()
-        .map((mesecniPutnici) {
+    return MesecniPutnikService.streamAktivniMesecniPutnici().map((mesecniPutnici) {
       int brojKarata = 0;
       for (final putnik in mesecniPutnici) {
         if (putnik.jePlacen &&
@@ -332,8 +318,7 @@ class StatistikaService {
     for (final putnik in uniqueMesecni.values) {
       if (putnik.aktivan && !putnik.obrisan && putnik.jePlacen) {
         // 💰 NOVA LOGIKA: Proveravamo da li je DANAS plaćeno (vremePlacanja), ne za koji mesec
-        if (putnik.vremePlacanja != null &&
-            _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+        if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           final vozac = putnik.vozac ?? 'Nepoznat';
           final iznos = putnik.iznosPlacanja ?? 0.0;
 
@@ -357,8 +342,7 @@ class StatistikaService {
     // Dodaj ukupan pazar
     rezultat['_ukupno'] = ukupno;
     rezultat['_ukupno_obicni'] = pazarObicni.values.fold(0.0, (a, b) => a + b);
-    rezultat['_ukupno_mesecni'] =
-        pazarMesecne.values.fold(0.0, (a, b) => a + b);
+    rezultat['_ukupno_mesecni'] = pazarMesecne.values.fold(0.0, (a, b) => a + b);
 
     return rezultat;
   }
@@ -407,8 +391,7 @@ class StatistikaService {
           // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
           final vozac = putnik.naplatioVozac ?? putnik.vozac!;
           // ✅ Validacija da je vozač registrovan
-          if (pazarObicni.containsKey(vozac) &&
-              VozacBoja.isValidDriver(vozac)) {
+          if (pazarObicni.containsKey(vozac) && VozacBoja.isValidDriver(vozac)) {
             pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
           }
         } else {}
@@ -418,8 +401,7 @@ class StatistikaService {
     // 2. SABERI MESEČNE KARTE - STVARNI PODACI
     try {
       // Učitaj sve mesečne putnike
-      final mesecniPutnici =
-          await MesecniPutnikService().getAktivniMesecniPutnici();
+      final mesecniPutnici = await MesecniPutnikService().getAktivniMesecniPutnici();
 
       for (final putnik in mesecniPutnici) {
         // Proveri da li je putnik platio u ovom periodu
@@ -433,8 +415,7 @@ class StatistikaService {
             // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike
             final vozac = putnik.vozac!;
             if (pazarMesecne.containsKey(vozac)) {
-              pazarMesecne[vozac] =
-                  pazarMesecne[vozac]! + putnik.iznosPlacanja!;
+              pazarMesecne[vozac] = pazarMesecne[vozac]! + putnik.iznosPlacanja!;
             }
           }
         }
@@ -507,8 +488,7 @@ class StatistikaService {
 
         // 2. OTKAZANI - ko je OTKAZAO (ili ko je dodao ako nema otkazaoVozac)
         if (putnik.jeOtkazan) {
-          final otkazaoVozac =
-              putnik.otkazaoVozac ?? putnik.dodaoVozac ?? 'Nepoznat';
+          final otkazaoVozac = putnik.otkazaoVozac ?? putnik.dodaoVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(otkazaoVozac)) {
             vozaciStats[otkazaoVozac]!['otkazani']++;
           }
@@ -547,8 +527,7 @@ class StatistikaService {
         )) {
           // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
           final vozacIme = putnik.naplatioVozac ?? putnik.vozac!;
-          if (vozaciStats.containsKey(vozacIme) &&
-              VozacBoja.isValidDriver(vozacIme)) {
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             vozaciStats[vozacIme]!['naplaceni']++;
             vozaciStats[vozacIme]!['pazarObicni'] += putnik.iznosPlacanja!;
             vozaciStats[vozacIme]!['ukupnoPazar'] += putnik.iznosPlacanja!;
@@ -577,16 +556,13 @@ class StatistikaService {
             )) {
           // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike (BEZ FALLBACK-a)
           final vozacIme = putnik.vozac!;
-          if (vozaciStats.containsKey(vozacIme) &&
-              VozacBoja.isValidDriver(vozacIme)) {
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[vozacIme]!['mesecneKarte']++;
             // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
             vozaciStats[vozacIme]!['naplaceni']++;
-            vozaciStats[vozacIme]!['pazarMesecne'] +=
-                (putnik.iznosPlacanja ?? 0.0);
-            vozaciStats[vozacIme]!['ukupnoPazar'] +=
-                (putnik.iznosPlacanja ?? 0.0);
+            vozaciStats[vozacIme]!['pazarMesecne'] += (putnik.iznosPlacanja ?? 0.0);
+            vozaciStats[vozacIme]!['ukupnoPazar'] += (putnik.iznosPlacanja ?? 0.0);
           }
         }
       }
@@ -599,8 +575,7 @@ class StatistikaService {
   }
 
   /// 🔄 REAL-TIME DETALJNE STATISTIKE STREAM ZA SVE VOZAČE
-  static Stream<Map<String, Map<String, dynamic>>>
-      streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
+  static Stream<Map<String, Map<String, dynamic>>> streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
       PutnikService().streamKombinovaniPutniciFiltered(),
@@ -633,8 +608,7 @@ class StatistikaService {
   }
 
   /// 🔄 SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za stream)
-  static Map<String, Map<String, dynamic>>
-      _calculateDetaljneStatistikeSinhronno(
+  static Map<String, Map<String, dynamic>> _calculateDetaljneStatistikeSinhronno(
     List<Putnik> putnici,
     List<MesecniPutnik> mesecniPutnici,
     DateTime from,
@@ -658,8 +632,7 @@ class StatistikaService {
         'pazarObicni': 0.0, // 🆕 PAZAR samo od običnih putnika
         'pazarMesecne': 0.0, // 🆕 PAZAR samo od mesečnih karata
         'kilometraza': 0.0, // 🚗 KILOMETRAŽA za taj dan
-        'detaljiNaplata':
-            <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
+        'detaljiNaplata': <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
         'poslednjaNaplata': null, // 🆕 Poslednja naplata
         'prosecanIznos': 0.0, // 🆕 Prosečan iznos naplate
       };
@@ -703,8 +676,7 @@ class StatistikaService {
         )) {
           // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
           final vozacIme = putnik.naplatioVozac ?? putnik.vozac!;
-          if (vozaciStats.containsKey(vozacIme) &&
-              VozacBoja.isValidDriver(vozacIme)) {
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             final iznos = putnik.iznosPlacanja!;
 
             // Dodaj detalj naplate
@@ -715,9 +687,7 @@ class StatistikaService {
               'tip': putnik.mesecnaKarta == true ? 'Mesečna' : 'Dnevna',
             };
 
-            (vozaciStats[vozacIme]!['detaljiNaplata']
-                    as List<Map<String, dynamic>>)
-                .add(detalj);
+            (vozaciStats[vozacIme]!['detaljiNaplata'] as List<Map<String, dynamic>>).add(detalj);
 
             // Ažuriraj poslednju naplatu
             if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
@@ -826,8 +796,7 @@ class StatistikaService {
 
     // 🎫 PROCES GRUPISANIH MESEČNIH PUTNIKA
     for (final putnik in grupisaniMesecniPutnici.values) {
-      final vozacIme =
-          putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
+      final vozacIme = putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
       if (vozaciStats.containsKey(vozacIme)) {
         final iznos = putnik.iznosPlacanja ?? 0.0;
 
@@ -840,9 +809,7 @@ class StatistikaService {
             'tip': 'Mesečna',
           };
 
-          (vozaciStats[vozacIme]!['detaljiNaplata']
-                  as List<Map<String, dynamic>>)
-              .add(detalj);
+          (vozaciStats[vozacIme]!['detaljiNaplata'] as List<Map<String, dynamic>>).add(detalj);
 
           // Ažuriraj poslednju naplatu
           if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
@@ -868,8 +835,7 @@ class StatistikaService {
       // Za real-time stream, koristimo uprošćenu kilometražu bez database poziva
       // jer bi to bilo previše sporo za real-time azuriranje
       for (final vozac in sviVozaci) {
-        vozaciStats[vozac]!['kilometraza'] =
-            0.0; // Default vrednost za real-time
+        vozaciStats[vozac]!['kilometraza'] = 0.0; // Default vrednost za real-time
       }
     } catch (e) {
       // ignore: empty_catches
@@ -877,8 +843,7 @@ class StatistikaService {
 
     // 🧮 KALKULIŠI PROSEČNE IZNOSE ZA SVE VOZAČE
     for (final vozac in sviVozaci) {
-      final detalji =
-          vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
+      final detalji = vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
       if (detalji.isNotEmpty) {
         final ukupanIznos = detalji.fold<double>(
           0.0,
@@ -975,14 +940,10 @@ class StatistikaService {
       double maksimalnaDistancaPoSegmentu = 5.0; // 5km max po segmentu
 
       for (int i = 1; i < lokacije.length; i++) {
-        final lat1 = (lokacije[i - 1]['latitude'] as num)
-            .toDouble(); // ✅ Ispravljen naziv
-        final lng1 = (lokacije[i - 1]['longitude'] as num)
-            .toDouble(); // ✅ Ispravljen naziv
-        final lat2 =
-            (lokacije[i]['latitude'] as num).toDouble(); // ✅ Ispravljen naziv
-        final lng2 =
-            (lokacije[i]['longitude'] as num).toDouble(); // ✅ Ispravljen naziv
+        final lat1 = (lokacije[i - 1]['latitude'] as num).toDouble(); // ✅ Ispravljen naziv
+        final lng1 = (lokacije[i - 1]['longitude'] as num).toDouble(); // ✅ Ispravljen naziv
+        final lat2 = (lokacije[i]['latitude'] as num).toDouble(); // ✅ Ispravljen naziv
+        final lng2 = (lokacije[i]['longitude'] as num).toDouble(); // ✅ Ispravljen naziv
 
         final distanca = _distanceKm(lat1, lng1, lat2, lng2);
 
@@ -1012,10 +973,7 @@ class StatistikaService {
       final supabase = Supabase.instance.client;
 
       // Obriši sve GPS pozicije iz tabele
-      await supabase
-          .from('gps_lokacije')
-          .delete()
-          .neq('id', 0); // Briše sve redove (neq sa nepostojećim ID)
+      await supabase.from('gps_lokacije').delete().neq('id', 0); // Briše sve redove (neq sa nepostojećim ID)
       return true;
     } catch (e) {
       return false;
@@ -1114,9 +1072,7 @@ class StatistikaService {
     const double R = 6371; // Radius Zemlje u km
     double dLat = (lat2 - lat1) * pi / 180.0;
     double dLon = (lon2 - lon1) * pi / 180.0;
-    double a = 0.5 -
-        cos(dLat) / 2 +
-        cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * (1 - cos(dLon)) / 2;
+    double a = 0.5 - cos(dLat) / 2 + cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * (1 - cos(dLon)) / 2;
     return R * 2 * asin(sqrt(a));
   }
 

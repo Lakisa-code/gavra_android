@@ -88,13 +88,9 @@ class DnevniPutnik {
         map['status'] as String? ?? 'rezervisan',
       ),
       napomena: map['napomena'] as String?,
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
       pokupioVozacId: map['pokupio_vozac_id'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
+      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       naplatioVozacId: map['naplatio_vozac_id'] as String?,
       dodaoVozacId: map['dodao_vozac_id'] as String?,
       obrisan: map['obrisan'] as bool? ?? false,
@@ -148,13 +144,10 @@ class DnevniPutnik {
 
   String get punoIme => ime;
 
-  bool get jePokupljen =>
-      status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
+  bool get jePokupljen => status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
   bool get jePlacen => vremePlacanja != null;
   bool get jeOtkazan => status == DnevniPutnikStatus.otkazan;
-  bool get jeOdsustvo =>
-      status == DnevniPutnikStatus.bolovanje ||
-      status == DnevniPutnikStatus.godisnji;
+  bool get jeOdsustvo => status == DnevniPutnikStatus.bolovanje || status == DnevniPutnikStatus.godisnji;
 
   /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
   Putnik toPutnik(Adresa adresa, Ruta ruta) {
@@ -182,7 +175,7 @@ class DnevniPutnik {
       vremePokupljenja: vremePokupljenja,
       vremePlacanja: vremePlacanja,
       placeno: jePlacen,
-      iznosPlacanja: cena,
+      cena: cena,
       naplatioVozac: naplatioVozacId,
       pokupioVozac: pokupioVozacId,
       dodaoVozac: dodaoVozacId,
@@ -198,11 +191,7 @@ class DnevniPutnik {
 
   /// Validira da li su sva obavezna polja popunjena
   bool get isValid {
-    return ime.trim().isNotEmpty &&
-        adresaId.isNotEmpty &&
-        rutaId.isNotEmpty &&
-        cena >= 0 &&
-        vremePolaska.isNotEmpty;
+    return ime.trim().isNotEmpty && adresaId.isNotEmpty && rutaId.isNotEmpty && cena >= 0 && vremePolaska.isNotEmpty;
   }
 
   /// Validira format vremena polaska (HH:mm)
@@ -280,7 +269,7 @@ class DnevniPutnik {
       vremePokupljenja: vremePokupljenja,
       vremePlacanja: vremePlacanja,
       placeno: isPlacen,
-      iznosPlacanja: cena,
+      cena: cena,
       naplatioVozac: naplatioVozacId,
       pokupioVozac: pokupioVozacId,
       dodaoVozac: dodaoVozacId,
@@ -360,9 +349,6 @@ class DnevniPutnik {
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        ime.hashCode ^
-        datumPutovanja.hashCode ^
-        vremePolaska.hashCode;
+    return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
   }
 }

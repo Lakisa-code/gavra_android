@@ -9,8 +9,7 @@ import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart'; // DODANO za theme extensions
-import '../utils/date_utils.dart'
-    as app_date_utils; // DODANO: Centralna vikend logika
+import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
 import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
@@ -22,8 +21,7 @@ class StatistikaScreen extends StatefulWidget {
   State<StatistikaScreen> createState() => _StatistikaScreenState();
 }
 
-class _StatistikaScreenState extends State<StatistikaScreen>
-    with SingleTickerProviderStateMixin {
+class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _period = 'nedelja'; // nedelja, mesec, godina
   final List<String> _periods = ['nedelja', 'mesec', 'godina'];
@@ -41,8 +39,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   @override
   void initState() {
     super.initState();
-    _tabController =
-        TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
+    _tabController = TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
     _tabController.addListener(() {
       setState(() {}); // Refresh UI kada se promeni tab
     });
@@ -106,17 +103,13 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       );
 
       // 🚨 COMPREHENSIVE HEALTH REPORT
-      final overallHealth = _isRealtimeHealthy.value &&
-          _pazarStreamHealthy.value &&
-          _statistikaStreamHealthy.value;
+      final overallHealth = _isRealtimeHealthy.value && _pazarStreamHealthy.value && _statistikaStreamHealthy.value;
 
       if (!overallHealth) {
         dlog('⚠️ StatistikaScreen health issues detected:');
-        if (!_isRealtimeHealthy.value)
-          dlog('  - Realtime service disconnected');
+        if (!_isRealtimeHealthy.value) dlog('  - Realtime service disconnected');
         if (!_pazarStreamHealthy.value) dlog('  - Pazar streams failing');
-        if (!_statistikaStreamHealthy.value)
-          dlog('  - Statistika streams failing');
+        if (!_statistikaStreamHealthy.value) dlog('  - Statistika streams failing');
       }
     } catch (e) {
       dlog('⚠️ StatistikaScreen health check error: $e');
@@ -180,8 +173,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   void _initializeAvailableYears() {
     // Za sada dodajem nekoliko godina (možemo kasnije proširiti da čita iz baze)
     final currentYear = DateTime.now().year;
-    _availableYears =
-        List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
+    _availableYears = List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
     if (mounted) setState(() {});
   }
 
@@ -285,20 +277,16 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                           color: _tabController.index == 0
                                               ? Colors.white.withOpacity(0.3)
                                               : Colors.white.withOpacity(0.15),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color:
-                                                Colors.white.withOpacity(0.4),
+                                            color: Colors.white.withOpacity(0.4),
                                           ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Vozači',
                                             style: TextStyle(
-                                              color: _tabController.index == 0
-                                                  ? Colors.white
-                                                  : Colors.white70,
+                                              color: _tabController.index == 0 ? Colors.white : Colors.white70,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -317,20 +305,16 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                           color: _tabController.index == 1
                                               ? Colors.white.withOpacity(0.3)
                                               : Colors.white.withOpacity(0.15),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color:
-                                                Colors.white.withOpacity(0.4),
+                                            color: Colors.white.withOpacity(0.4),
                                           ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Detaljno',
                                             style: TextStyle(
-                                              color: _tabController.index == 1
-                                                  ? Colors.white
-                                                  : Colors.white70,
+                                              color: _tabController.index == 1 ? Colors.white : Colors.white70,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -346,27 +330,23 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                             // Dropdown desno - stilizovan kao dugme
                             Container(
                               height: 32,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.4),
-                                ),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: Theme.of(context).brightness == Brightness.dark
+                                  ? DarkSapphirePlatinumStyles.dropdownDecoration
+                                  : FlutterBankStyles.dropdownDecoration,
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
-                                  dropdownColor:
-                                      Theme.of(context).colorScheme.primary,
-                                  icon: const Icon(
+                                  dropdownColor: Theme.of(context).brightness == Brightness.dark
+                                      ? const Color(0xFF1F2937)
+                                      : const Color(0xFFF5F8FF),
+                                  icon: Icon(
                                     Icons.arrow_drop_down,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     size: 18,
                                   ),
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
                                   ),
@@ -405,27 +385,23 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                               const SizedBox(width: 8),
                               Container(
                                 height: 32,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
-                                  ),
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: Theme.of(context).brightness == Brightness.dark
+                                    ? DarkSapphirePlatinumStyles.dropdownDecoration
+                                    : FlutterBankStyles.dropdownDecoration,
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
-                                    dropdownColor:
-                                        Theme.of(context).colorScheme.primary,
-                                    icon: const Icon(
+                                    dropdownColor: Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFF1F2937)
+                                        : const Color(0xFFF5F8FF),
+                                    icon: Icon(
                                       Icons.arrow_drop_down,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       size: 18,
                                     ),
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                     ),
@@ -434,18 +410,17 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                           (year) => DropdownMenuItem(
                                             value: year,
                                             child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
+                                              padding: const EdgeInsets.symmetric(
                                                 horizontal: 8,
                                                 vertical: 4,
                                               ),
                                               child: Center(
                                                 child: Text(
                                                   '$year',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Colors.white,
+                                                    color: Theme.of(context).colorScheme.onSurface,
                                                   ),
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -507,8 +482,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
       }
 
       // 🔄 Period ide od subote pre ponedeljka do petka te nedelje
-      final subota =
-          ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
+      final subota = ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
       from = DateTime(subota.year, subota.month, subota.day);
 
       // 📅 ZAVRŠI U PETAK (dodaj 4 dana od ponedeljka)
@@ -532,8 +506,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
     final to = period['to']!;
 
     return StreamBuilder<List<Putnik>>(
-      stream: PutnikService()
-          .streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
+      stream: PutnikService().streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -585,8 +558,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
             final pazarMap = pazarSnapshot.data ?? <String, double>{};
             final ukupno = pazarMap['_ukupno'] ?? 0.0;
             // Ukloni '_ukupno' ključ za čist prikaz
-            final Map<String, double> cistPazarMap = Map.from(pazarMap)
-              ..remove('_ukupno');
+            final Map<String, double> cistPazarMap = Map.from(pazarMap)..remove('_ukupno');
             // Dodaj ukupno u mapu
             cistPazarMap['_ukupno'] = ukupno;
 
@@ -604,14 +576,12 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                   children: [
                     // Postojeće komponente
                     StreamBuilder<Map<String, Map<String, dynamic>>>(
-                      stream:
-                          StatistikaService.streamDetaljneStatistikePoVozacima(
+                      stream: StatistikaService.streamDetaljneStatistikePoVozacima(
                         from,
                         to,
                       ),
                       builder: (context, detaljneSnapshot) {
-                        if (detaljneSnapshot.connectionState ==
-                            ConnectionState.waiting) {
+                        if (detaljneSnapshot.connectionState == ConnectionState.waiting) {
                           return const Center(
                             child: CircularProgressIndicator(),
                           );
@@ -654,8 +624,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
   }
 
   Widget _buildDetaljnoTab() {
-    final period =
-        _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
+    final period = _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
     final from = period['from']!;
     final to = period['to']!;
 
@@ -706,11 +675,9 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 4, // 🎨 Dodao shadow
-                    color: vozacColor
-                        .withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
+                    color: vozacColor.withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
+                      borderRadius: BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
                       side: BorderSide(
                         color: vozacColor.withOpacity(0.6), // 🎨 Jasniji border
                         width: 2,
@@ -730,8 +697,7 @@ class _StatistikaScreenState extends State<StatistikaScreen>
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[
-                                      800], // 🎨 Tamniji tekst za bolji kontrast
+                                  color: Colors.grey[800], // 🎨 Tamniji tekst za bolji kontrast
                                 ),
                               ),
                             ],
