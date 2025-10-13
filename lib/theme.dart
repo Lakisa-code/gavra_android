@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// 🎨 Flutter Bank Inspired Theme - Based on the beautiful design from the image
+// 💎 Sapphire Platinum Premium - Luksuzni metalni preliv!
 const ColorScheme flutterBankColorScheme = ColorScheme(
   brightness: Brightness.light,
-  // Primary blue gradient colors inspired by the bank app
-  primary: Color(0xFF4F7EFC), // Main blue from the image
+  // Sapphire platinum gradient colors - vrhunski luksuz
+  primary: Color(0xFF0F1B4C), // Deep sapphire navy (najintenzivnija)
   onPrimary: Colors.white,
-  primaryContainer: Color(0xFF6B93FD), // Lighter blue
+  primaryContainer: Color(0xFF1E3A8A), // Royal sapphire blue
   onPrimaryContainer: Colors.white,
 
-  // Secondary colors for accents
-  secondary: Color(0xFF4CAF50), // Green for success states
+  // Secondary colors - platinum metallic progression
+  secondary: Color(0xFF3B82F6), // Brilliant sapphire
   onSecondary: Colors.white,
-  secondaryContainer: Color(0xFFE8F5E8),
-  onSecondaryContainer: Color(0xFF2E7D32),
+  secondaryContainer: Color(0xFF60A5FA), // Light platinum sapphire
+  onSecondaryContainer: Color(0xFF1565C0),
 
-  // Surface colors - clean whites and subtle grays
-  surface: Color(0xFFF8F9FD), // Svetlo plava pozadina
+  // Surface colors - metallic tinted
+  surface: Color(0xFFF8FBFF), // Svetla metalik pozadina
   onSurface: Color(0xFF1A1A1A),
-  surfaceContainerHighest: Color(0xFFF8F9FA),
+  surfaceContainerHighest: Color(0xFFF0F7FF),
 
   // Error colors
-  error: Color(0xFFFF5252),
+  error: Color(0xFFE53E3E),
   onError: Colors.white,
 );
 
@@ -51,7 +51,46 @@ const ColorScheme svetlanaPinkColorScheme = ColorScheme(
   onError: Colors.white,
 );
 
-// � Custom Color Extensions for App-Specific Colors
+// 🌙💎 DARK Sapphire Platinum Premium - Luksuzni tamni metalni preliv!
+const ColorScheme darkSapphirePlatinumColorScheme = ColorScheme(
+  brightness: Brightness.dark,
+  // Dark sapphire platinum gradient colors - vrhunski dark luksuz
+  primary: Color(0xFF93C5FD), // Light platinum sapphire (glavni u dark mode)
+  onPrimary: Color(0xFF0F1B4C), // Deep sapphire tekst
+  primaryContainer: Color(0xFF1E3A8A), // Royal sapphire blue container
+  onPrimaryContainer: Color(0xFF93C5FD),
+
+  // Secondary colors - dark platinum metallic progression
+  secondary: Color(0xFF60A5FA), // Medium platinum sapphire
+  onSecondary: Color(0xFF0F1B4C),
+  secondaryContainer: Color(0xFF1E40AF), // Dark sapphire container
+  onSecondaryContainer: Color(0xFF93C5FD),
+
+  // Surface colors - dark sapphire tinted
+  surface: Color(0xFF0A0F1C), // Vrlo tamna sapphire pozadina
+  onSurface: Color(0xFFE1E7FF), // Svetli sapphire tekst
+  surfaceVariant: Color(0xFF111827), // Dark variant
+  onSurfaceVariant: Color(0xFFD1D5DB),
+
+  // Dark theme specific
+  inverseSurface: Color(0xFFE1E7FF),
+  onInverseSurface: Color(0xFF0A0F1C),
+  inversePrimary: Color(0xFF0F1B4C),
+
+  outline: Color(0xFF374151),
+  outlineVariant: Color(0xFF1F2937),
+  shadow: Color(0xFF000000),
+  scrim: Color(0xFF000000),
+  surfaceTint: Color(0xFF93C5FD),
+
+  // Error colors for dark
+  error: Color(0xFFEF4444),
+  onError: Color(0xFF1F2937),
+  errorContainer: Color(0xFF7F1D1D),
+  onErrorContainer: Color(0xFFFECACA),
+);
+
+// 🌟 Custom Color Extensions for App-Specific Colors
 extension AppColors on ColorScheme {
   // 🧑‍🎓 Student Colors
   Color get studentPrimary => const Color(0xFFFF9800); // Orange
@@ -81,17 +120,17 @@ extension AppColors on ColorScheme {
   Color get onDangerContainer => const Color(0xFFC62828);
 }
 
-// �🎯 Main Flutter Bank Theme
+// � Main Metallic Blue Theme - Preliva se kao metalni sjaj!
 final ThemeData flutterBankTheme = ThemeData(
   colorScheme: flutterBankColorScheme,
   useMaterial3: true,
   fontFamily: 'Inter', // Modern, clean font
-  scaffoldBackgroundColor: const Color(0xFFF8F9FD), // 🎨 Seksi svetla pozadina
+  scaffoldBackgroundColor: const Color(0xFFF8FBFF), // � Svetla metalik pozadina
 
-  // 📱 AppBar Theme - Beautiful gradient like in the image
+  // 📱 AppBar Theme - Metallic blue gradient sa prelivom
   appBarTheme: const AppBarTheme(
     elevation: 0,
-    backgroundColor: Color(0xFF4F7EFC), // 🎨 Seksi plava pozadina
+    backgroundColor: Color(0xFF4A90E2), // � Steel blue pozadina
     foregroundColor: Colors.white,
     systemOverlayStyle: SystemUiOverlayStyle.light,
     titleTextStyle: TextStyle(
@@ -169,13 +208,13 @@ final ThemeData flutterBankTheme = ThemeData(
     ),
   ),
 
-  // 🔘 Button Themes
+  // 💎 Button Themes - Sapphire Platinum Flow
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
-      backgroundColor: const Color(0xFF4F7EFC),
+      backgroundColor: const Color(0xFF0F1B4C), // Deep sapphire navy
       foregroundColor: Colors.white,
-      elevation: 6,
-      shadowColor: const Color(0xFF4F7EFC).withOpacity(0.3),
+      elevation: 15,
+      shadowColor: const Color(0xFF0F1B4C).withOpacity(0.6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -190,7 +229,7 @@ final ThemeData flutterBankTheme = ThemeData(
 
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
-      foregroundColor: const Color(0xFF4F7EFC),
+      foregroundColor: const Color(0xFF0F1B4C), // Deep sapphire text
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -201,14 +240,6 @@ final ThemeData flutterBankTheme = ThemeData(
         letterSpacing: 0.3,
       ),
     ),
-  ),
-
-  // 🎯 FloatingActionButton Theme
-  floatingActionButtonTheme: const FloatingActionButtonThemeData(
-    backgroundColor: Color(0xFF4F7EFC),
-    foregroundColor: Colors.white,
-    elevation: 8,
-    shape: CircleBorder(),
   ),
 
   // 📄 Input Decoration Theme
@@ -225,7 +256,10 @@ final ThemeData flutterBankTheme = ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Color(0xFF4F7EFC), width: 2),
+      borderSide: const BorderSide(
+        color: Color(0xFF0F1B4C),
+        width: 2,
+      ), // Sapphire focus
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     labelStyle: const TextStyle(
@@ -241,47 +275,132 @@ final ThemeData flutterBankTheme = ThemeData(
   // iconTheme: skipped for Flutter 3.24.3 compatibility
 );
 
-// 🌈 Custom gradient for AppBar (like in the Flutter Bank image)
+// 💎 Sapphire Platinum Gradient - Premium Left to Right Metallic Flow
 const LinearGradient flutterBankGradient = LinearGradient(
-  begin: Alignment.topLeft,
-  end: Alignment.bottomRight,
   colors: [
-    Color(0xFF4F7EFC), // Main blue
-    Color(0xFF6B93FD), // Lighter blue
-    Color(0xFF8BB5FF), // Even lighter blue
+    Color(0xFF0F1B4C), // Deep sapphire navy (tamna - levo)
+    Color(0xFF1E3A8A), // Royal sapphire blue
+    Color(0xFF3B82F6), // Brilliant sapphire (srednja)
+    Color(0xFF60A5FA), // Light platinum sapphire
+    Color(0xFF93C5FD), // Platinum metallic shine (svetla - desno)
   ],
-  stops: [0.0, 0.5, 1.0],
+  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
-// 🎯 Utility class for common styles
+// 🌙💎 DARK Sapphire Platinum Gradient - Premium Dark Metallic Flow
+const LinearGradient darkSapphirePlatinumGradient = LinearGradient(
+  colors: [
+    Color(0xFF0A0F1C), // Vrlo tamna sapphire pozadina (levo)
+    Color(0xFF111827), // Dark sapphire
+    Color(0xFF1E3A8A), // Royal sapphire blue (srednja)
+    Color(0xFF3B82F6), // Brilliant sapphire
+    Color(0xFF60A5FA), // Light platinum sapphire (svetla - desno)
+  ],
+  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+);
+
+// 💎 Utility class for sapphire platinum styles
 class FlutterBankStyles {
-  // Card decoration with subtle shadow
+  // Card decoration with sapphire metallic shadow
   static BoxDecoration cardDecoration = BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.06),
-        blurRadius: 16,
-        offset: const Offset(0, 4),
+        color:
+            const Color(0xFF0F1B4C).withOpacity(0.25), // Deep sapphire shadow
+        blurRadius: 32,
+        offset: const Offset(0, 12),
+        spreadRadius: 4,
+      ),
+      BoxShadow(
+        color: const Color(0xFF3B82F6)
+            .withOpacity(0.15), // Brilliant sapphire shimmer
+        blurRadius: 20,
+        offset: const Offset(0, 8),
       ),
     ],
   );
 
-  // Gradient background for screens
+  // Sapphire platinum gradient background
   static BoxDecoration gradientBackground = const BoxDecoration(
     gradient: flutterBankGradient,
   );
 
-  // Button with gradient
+  // Button with premium sapphire flowing gradient
   static BoxDecoration gradientButton = BoxDecoration(
     gradient: flutterBankGradient,
     borderRadius: BorderRadius.circular(16),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF4F7EFC).withOpacity(0.3),
-        blurRadius: 12,
+        color: const Color(0xFF0F1B4C).withOpacity(0.6), // Deep sapphire shadow
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+        spreadRadius: 2,
+      ),
+      BoxShadow(
+        color: const Color(0xFF60A5FA).withOpacity(0.4), // Platinum shimmer
+        blurRadius: 16,
         offset: const Offset(0, 6),
+      ),
+      BoxShadow(
+        color: const Color(0xFF93C5FD).withOpacity(0.2), // Light metallic glow
+        blurRadius: 8,
+        offset: const Offset(0, 3),
+      ),
+    ],
+  );
+}
+
+// 🌙💎 Dark Utility class for dark sapphire platinum styles
+class DarkSapphirePlatinumStyles {
+  // Card decoration with dark sapphire glow
+  static BoxDecoration cardDecoration = BoxDecoration(
+    color: const Color(0xFF111827), // Dark sapphire background
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      color: const Color(0xFF60A5FA).withOpacity(0.2),
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFF60A5FA).withOpacity(0.15), // Sapphire glow
+        blurRadius: 32,
+        offset: const Offset(0, 12),
+        spreadRadius: 4,
+      ),
+      BoxShadow(
+        color: const Color(0xFF93C5FD).withOpacity(0.1), // Platinum shimmer
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  );
+
+  // Dark sapphire gradient background
+  static BoxDecoration gradientBackground = const BoxDecoration(
+    gradient: darkSapphirePlatinumGradient,
+  );
+
+  // Button with dark premium sapphire flowing gradient
+  static BoxDecoration gradientButton = BoxDecoration(
+    gradient: darkSapphirePlatinumGradient,
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFF60A5FA).withOpacity(0.3), // Sapphire glow shadow
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+        spreadRadius: 2,
+      ),
+      BoxShadow(
+        color: const Color(0xFF93C5FD).withOpacity(0.2), // Platinum shimmer
+        blurRadius: 16,
+        offset: const Offset(0, 6),
+      ),
+      BoxShadow(
+        color: const Color(0xFF3B82F6).withOpacity(0.1), // Light sapphire glow
+        blurRadius: 8,
+        offset: const Offset(0, 3),
       ),
     ],
   );

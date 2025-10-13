@@ -9,7 +9,8 @@ import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart'; // DODANO za theme extensions
-import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
+import '../utils/date_utils.dart'
+    as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
 import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
@@ -21,7 +22,8 @@ class StatistikaScreen extends StatefulWidget {
   State<StatistikaScreen> createState() => _StatistikaScreenState();
 }
 
-class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerProviderStateMixin {
+class _StatistikaScreenState extends State<StatistikaScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _period = 'nedelja'; // nedelja, mesec, godina
   final List<String> _periods = ['nedelja', 'mesec', 'godina'];
@@ -39,7 +41,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
+    _tabController =
+        TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
     _tabController.addListener(() {
       setState(() {}); // Refresh UI kada se promeni tab
     });
@@ -103,13 +106,17 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
       );
 
       // 🚨 COMPREHENSIVE HEALTH REPORT
-      final overallHealth = _isRealtimeHealthy.value && _pazarStreamHealthy.value && _statistikaStreamHealthy.value;
+      final overallHealth = _isRealtimeHealthy.value &&
+          _pazarStreamHealthy.value &&
+          _statistikaStreamHealthy.value;
 
       if (!overallHealth) {
         dlog('⚠️ StatistikaScreen health issues detected:');
-        if (!_isRealtimeHealthy.value) dlog('  - Realtime service disconnected');
+        if (!_isRealtimeHealthy.value)
+          dlog('  - Realtime service disconnected');
         if (!_pazarStreamHealthy.value) dlog('  - Pazar streams failing');
-        if (!_statistikaStreamHealthy.value) dlog('  - Statistika streams failing');
+        if (!_statistikaStreamHealthy.value)
+          dlog('  - Statistika streams failing');
       }
     } catch (e) {
       dlog('⚠️ StatistikaScreen health check error: $e');
@@ -173,94 +180,12 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
   void _initializeAvailableYears() {
     // Za sada dodajem nekoliko godina (možemo kasnije proširiti da čita iz baze)
     final currentYear = DateTime.now().year;
-    _availableYears = List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
+    _availableYears =
+        List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
     if (mounted) setState(() {});
   }
 
-  /// 🔄 RESETUJ SVE KILOMETRAŽE - briše sve GPS pozicije
-  Future<void> _resetujKilometrazu() async {
-    // Pokaži potvrdu pre brisanja
-    final potvrda = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('⚠️ Resetovanje kilometraže'),
-        content: const Text(
-          'Da li ste sigurni da želite da resetujete SVE kilometraže na 0?\n\n'
-          'Ova akcija će obrisati sve GPS pozicije i NIJE MOGUĆE poništiti je!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Odustani'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
-            ),
-            child: const Text(
-              'DA, RESETUJ',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (potvrda != true) return;
-
-    // Pokaži loading
-    if (!mounted) return;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Resetujem kilometražu...'),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      final uspeh = await StatistikaService.resetujSveKilometraze();
-
-      if (mounted) Navigator.of(context).pop(); // Zatvori loading
-
-      if (uspeh) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('✅ Kilometraža je uspešno resetovana na 0'),
-              backgroundColor: Theme.of(context).colorScheme.successPrimary,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('❌ Greška pri resetovanju kilometraže'),
-              backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) Navigator.of(context).pop(); // Zatvori loading
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška: $e'),
-            backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
-          ),
-        );
-      }
-    }
-  }
+  // 🔄 RESETUJ SVE KILOMETRAŽE function is removed as unused
 
   @override
   Widget build(BuildContext context) {
@@ -360,16 +285,20 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                           color: _tabController.index == 0
                                               ? Colors.white.withOpacity(0.3)
                                               : Colors.white.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(0.4),
+                                            color:
+                                                Colors.white.withOpacity(0.4),
                                           ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Vozači',
                                             style: TextStyle(
-                                              color: _tabController.index == 0 ? Colors.white : Colors.white70,
+                                              color: _tabController.index == 0
+                                                  ? Colors.white
+                                                  : Colors.white70,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -388,16 +317,20 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                           color: _tabController.index == 1
                                               ? Colors.white.withOpacity(0.3)
                                               : Colors.white.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(0.4),
+                                            color:
+                                                Colors.white.withOpacity(0.4),
                                           ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Detaljno',
                                             style: TextStyle(
-                                              color: _tabController.index == 1 ? Colors.white : Colors.white70,
+                                              color: _tabController.index == 1
+                                                  ? Colors.white
+                                                  : Colors.white70,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -413,7 +346,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                             // Dropdown desno - stilizovan kao dugme
                             Container(
                               height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(12),
@@ -424,7 +358,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
-                                  dropdownColor: Theme.of(context).colorScheme.primary,
+                                  dropdownColor:
+                                      Theme.of(context).colorScheme.primary,
                                   icon: const Icon(
                                     Icons.arrow_drop_down,
                                     color: Colors.white,
@@ -470,7 +405,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               const SizedBox(width: 8),
                               Container(
                                 height: 32,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(12),
@@ -481,7 +417,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
-                                    dropdownColor: Theme.of(context).colorScheme.primary,
+                                    dropdownColor:
+                                        Theme.of(context).colorScheme.primary,
                                     icon: const Icon(
                                       Icons.arrow_drop_down,
                                       color: Colors.white,
@@ -497,7 +434,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                           (year) => DropdownMenuItem(
                                             value: year,
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 8,
                                                 vertical: 4,
                                               ),
@@ -543,12 +481,6 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
           _buildDetaljnoTab(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _resetujKilometrazu,
-        tooltip: 'Resetuj kilometražu',
-        backgroundColor: Theme.of(context).colorScheme.dangerPrimary,
-        child: const Icon(Icons.delete_forever, color: Colors.white),
-      ),
     );
   }
 
@@ -575,7 +507,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
       }
 
       // 🔄 Period ide od subote pre ponedeljka do petka te nedelje
-      final subota = ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
+      final subota =
+          ponedeljak.subtract(const Duration(days: 2)); // Subota pre ponedeljka
       from = DateTime(subota.year, subota.month, subota.day);
 
       // 📅 ZAVRŠI U PETAK (dodaj 4 dana od ponedeljka)
@@ -599,7 +532,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     final to = period['to']!;
 
     return StreamBuilder<List<Putnik>>(
-      stream: PutnikService().streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
+      stream: PutnikService()
+          .streamKombinovaniPutniciFiltered(), // 🔄 KOMBINOVANI STREAM (server-filtered)
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -651,7 +585,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
             final pazarMap = pazarSnapshot.data ?? <String, double>{};
             final ukupno = pazarMap['_ukupno'] ?? 0.0;
             // Ukloni '_ukupno' ključ za čist prikaz
-            final Map<String, double> cistPazarMap = Map.from(pazarMap)..remove('_ukupno');
+            final Map<String, double> cistPazarMap = Map.from(pazarMap)
+              ..remove('_ukupno');
             // Dodaj ukupno u mapu
             cistPazarMap['_ukupno'] = ukupno;
 
@@ -669,12 +604,14 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                   children: [
                     // Postojeće komponente
                     StreamBuilder<Map<String, Map<String, dynamic>>>(
-                      stream: StatistikaService.streamDetaljneStatistikePoVozacima(
+                      stream:
+                          StatistikaService.streamDetaljneStatistikePoVozacima(
                         from,
                         to,
                       ),
                       builder: (context, detaljneSnapshot) {
-                        if (detaljneSnapshot.connectionState == ConnectionState.waiting) {
+                        if (detaljneSnapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Center(
                             child: CircularProgressIndicator(),
                           );
@@ -717,7 +654,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
   }
 
   Widget _buildDetaljnoTab() {
-    final period = _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
+    final period =
+        _calculatePeriod(); // 📅 KORISTI ISTU CENTRALIZOVANU FUNKCIJU
     final from = period['from']!;
     final to = period['to']!;
 
@@ -768,9 +706,11 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 4, // 🎨 Dodao shadow
-                    color: vozacColor.withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
+                    color: vozacColor
+                        .withOpacity(0.25), // 🎨 POJAČAO sa 0.1 na 0.25
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
+                      borderRadius:
+                          BorderRadius.circular(12), // 🎨 Zaobljeni uglovi
                       side: BorderSide(
                         color: vozacColor.withOpacity(0.6), // 🎨 Jasniji border
                         width: 2,
@@ -790,7 +730,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[800], // 🎨 Tamniji tekst za bolji kontrast
+                                  color: Colors.grey[
+                                      800], // 🎨 Tamniji tekst za bolji kontrast
                                 ),
                               ),
                             ],

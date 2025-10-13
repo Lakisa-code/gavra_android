@@ -25,8 +25,10 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
+  final BehaviorSubject<String> _searchSubject =
+      BehaviorSubject<String>.seeded('');
+  final BehaviorSubject<String> _filterSubject =
+      BehaviorSubject<String>.seeded('svi');
   late Stream<String> _debouncedSearchStream;
   final TextEditingController _searchController = TextEditingController();
 
@@ -146,7 +148,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
 
   // 🔍 DEBOUNCED SEARCH SETUP
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
+    _debouncedSearchStream = _searchSubject
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct();
 
     _debouncedSearchStream.listen((query) {
       _performSearch(query);
@@ -219,18 +223,21 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     switch (_sortBy) {
       case 'count':
         _cachedPopularLocations.sort(
-          (a, b) => ((b['count'] ?? 0) as int).compareTo((a['count'] ?? 0) as int),
+          (a, b) =>
+              ((b['count'] ?? 0) as int).compareTo((a['count'] ?? 0) as int),
         );
         break;
       case 'location':
         _cachedPopularLocations.sort(
-          (a, b) => ((a['location'] ?? '') as String).compareTo((b['location'] ?? '') as String),
+          (a, b) => ((a['location'] ?? '') as String)
+              .compareTo((b['location'] ?? '') as String),
         );
         break;
       case 'recent':
         // Sort by most recently accessed (if timestamp available)
         _cachedPopularLocations.sort(
-          (a, b) => ((b['last_accessed'] ?? 0) as int).compareTo((a['last_accessed'] ?? 0) as int),
+          (a, b) => ((b['last_accessed'] ?? 0) as int)
+              .compareTo((a['last_accessed'] ?? 0) as int),
         );
         break;
     }
@@ -244,7 +251,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final searchQuery = _searchController.text.toLowerCase();
     if (searchQuery.isNotEmpty) {
       locations = locations.where((location) {
-        final locationName = (location['location'] ?? '').toString().toLowerCase();
+        final locationName =
+            (location['location'] ?? '').toString().toLowerCase();
         return locationName.contains(searchQuery);
       }).toList();
     }
@@ -396,7 +404,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           // Back button
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            icon:
+                const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           ),
 
           // Title
@@ -493,7 +502,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               decoration: InputDecoration(
                 hintText: 'Pretraži lokacije...',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.6)),
+                prefixIcon:
+                    Icon(Icons.search, color: Colors.white.withOpacity(0.6)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         onPressed: () {
@@ -507,7 +517,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                       )
                     : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -567,7 +578,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+          color: isSelected
+              ? Colors.white.withOpacity(0.2)
+              : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
@@ -599,7 +612,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+          color:
+              isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(

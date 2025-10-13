@@ -18,7 +18,8 @@ class EmailLoginScreen extends StatefulWidget {
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
 }
 
-class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProviderStateMixin {
+class _EmailLoginScreenState extends State<EmailLoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -53,7 +54,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         case 'bruda':
           // 🎵 BRUDINA SPECIJALNA PESMA
           assetPath = 'assets/bruda.mp3';
-          dlog('🎵 BRUDA EMAIL LOGIN: Puštam Brudinu specijalnu pesmu - CELA PESMA!');
+          dlog(
+            '🎵 BRUDA EMAIL LOGIN: Puštam Brudinu specijalnu pesmu - CELA PESMA!',
+          );
           break;
 
         case 'bilevski':
@@ -67,7 +70,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         case 'bojan':
           // 🎵 BOJANOVA SPECIJALNA PESMA
           assetPath = 'assets/gavra.mp3';
-          dlog('🎵 BOJAN EMAIL LOGIN: Puštam Gavrinu specijalnu pesmu - CELA PESMA!');
+          dlog(
+            '🎵 BOJAN EMAIL LOGIN: Puštam Gavrinu specijalnu pesmu - CELA PESMA!',
+          );
           break;
 
         default:
@@ -437,7 +442,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
 
       dlog('🔐 Pokušavam prijavu sa email-om: $email');
 
-      final driverName = await EmailAuthService.signInWithEmail(email, password);
+      final driverName =
+          await EmailAuthService.signInWithEmail(email, password);
 
       if (driverName != null) {
         dlog('✅ Uspješna prijava vozača: $driverName');
@@ -461,7 +467,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
-        final needsCheckIn = !await DailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn =
+            !await DailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Idi na daily check-in

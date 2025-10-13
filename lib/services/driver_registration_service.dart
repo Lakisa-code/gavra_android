@@ -19,7 +19,8 @@ class DriverRegistrationService {
   static Future<bool> isDriverRegistered(String driverName) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final registeredDrivers = prefs.getStringList(_registeredDriversKey) ?? [];
+      final registeredDrivers =
+          prefs.getStringList(_registeredDriversKey) ?? [];
       return registeredDrivers.contains(driverName);
     } catch (e) {
       dlog('❌ Greška pri proveri registracije vozača: $e');
@@ -28,12 +29,16 @@ class DriverRegistrationService {
   }
 
   /// Registruj vozača lokalno (nakon uspešne email registracije)
-  static Future<bool> markDriverAsRegistered(String driverName, String email) async {
+  static Future<bool> markDriverAsRegistered(
+    String driverName,
+    String email,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
       // Dodaj vozača u listu registrovanih
-      final registeredDrivers = prefs.getStringList(_registeredDriversKey) ?? [];
+      final registeredDrivers =
+          prefs.getStringList(_registeredDriversKey) ?? [];
       if (!registeredDrivers.contains(driverName)) {
         registeredDrivers.add(driverName);
         await prefs.setStringList(_registeredDriversKey, registeredDrivers);
@@ -67,7 +72,8 @@ class DriverRegistrationService {
       final prefs = await SharedPreferences.getInstance();
 
       // Ukloni iz liste registrovanih
-      final registeredDrivers = prefs.getStringList(_registeredDriversKey) ?? [];
+      final registeredDrivers =
+          prefs.getStringList(_registeredDriversKey) ?? [];
       registeredDrivers.remove(driverName);
       await prefs.setStringList(_registeredDriversKey, registeredDrivers);
 

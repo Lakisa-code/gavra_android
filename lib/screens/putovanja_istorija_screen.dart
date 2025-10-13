@@ -14,7 +14,8 @@ class PutovanjaIstorijaScreen extends StatefulWidget {
   const PutovanjaIstorijaScreen({Key? key}) : super(key: key);
 
   @override
-  State<PutovanjaIstorijaScreen> createState() => _PutovanjaIstorijaScreenState();
+  State<PutovanjaIstorijaScreen> createState() =>
+      _PutovanjaIstorijaScreenState();
 }
 
 class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
@@ -37,8 +38,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
+  final BehaviorSubject<String> _searchSubject =
+      BehaviorSubject<String>.seeded('');
+  final BehaviorSubject<String> _filterSubject =
+      BehaviorSubject<String>.seeded('svi');
   late Stream<String> _debouncedSearchStream;
   final TextEditingController _searchController = TextEditingController();
 
@@ -141,7 +144,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     });
 
     _putovanjaSubscription =
-        PutovanjaIstorijaService.streamPutovanjaZaDatum(_selectedDate).timeout(const Duration(seconds: 30)).listen(
+        PutovanjaIstorijaService.streamPutovanjaZaDatum(_selectedDate)
+            .timeout(const Duration(seconds: 30))
+            .listen(
       (putovanja) {
         if (mounted) {
           _registerStreamHeartbeat('putovanja_stream');
@@ -184,7 +189,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   // 🔍 DEBOUNCED SEARCH SETUP
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
+    _debouncedSearchStream = _searchSubject
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct();
 
     _debouncedSearchStream.listen((query) {
       _performSearch(query);
@@ -236,14 +243,18 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       );
     }
 
-    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
+    if (errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('connection')) {
       return NetworkErrorWidget(
         message: 'Problem sa mrežom u $streamName',
         onRetry: onRetry ?? _initializeRealtimeStream,
       );
     }
 
-    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
+    if (errorString.contains('data') ||
+        errorString.contains('parse') ||
+        errorString.contains('format')) {
       return DataErrorWidget(
         dataType: streamName,
         reason: error.toString(),
@@ -552,11 +563,14 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         final totalCount = _cachedPutovanja.length;
 
                         return Text(
-                          isHealthy ? 'Prikazano: $filteredCount od $totalCount putovanja' : 'Podaci se učitavaju...',
+                          isHealthy
+                              ? 'Prikazano: $filteredCount od $totalCount putovanja'
+                              : 'Podaci se učitavaju...',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.indigo.shade600,
-                            fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
+                            fontStyle:
+                                isHealthy ? FontStyle.normal : FontStyle.italic,
                           ),
                         );
                       },
@@ -572,13 +586,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             child: _buildRealtimeContent(),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _dodajNovoPutovanje(),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
-        tooltip: 'Dodaj novo putovanje',
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -615,7 +622,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -725,7 +733,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       putovanja = putovanja.where((putovanje) {
         return putovanje.putnikIme.toLowerCase().contains(searchQuery) ||
             putovanje.adresaPolaska.toLowerCase().contains(searchQuery) ||
-            (putovanje.brojTelefona?.toLowerCase().contains(searchQuery) ?? false);
+            (putovanje.brojTelefona?.toLowerCase().contains(searchQuery) ??
+                false);
       }).toList();
     }
 
@@ -790,7 +799,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.indigo.shade100,
                     borderRadius: BorderRadius.circular(12),
@@ -1120,7 +1130,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     setState(() {
       switch (sortBy) {
         case 'vreme':
-          _cachedPutovanja.sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
+          _cachedPutovanja
+              .sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
           break;
         case 'ime':
           _cachedPutovanja.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
@@ -1358,7 +1369,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       final novoPutovanje = PutovanjaIstorija(
         id: '', // Biće automatski generisan u Supabase
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
+        brojTelefona: _noviPutnikTelefon.trim().isEmpty
+            ? null
+            : _noviPutnikTelefon.trim(),
         adresaPolaska: 'Bela Crkva', // Default vrednost
         vremePolaska: '07:00', // Default vrednost
         tipPutnika: _noviTipPutnika,
@@ -1487,7 +1500,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         id: originalPutovanje.id,
         mesecniPutnikId: originalPutovanje.mesecniPutnikId,
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
+        brojTelefona: _noviPutnikTelefon.trim().isEmpty
+            ? null
+            : _noviPutnikTelefon.trim(),
         adresaPolaska: originalPutovanje.adresaPolaska,
         vremePolaska: originalPutovanje.vremePolaska,
         tipPutnika: _noviTipPutnika,

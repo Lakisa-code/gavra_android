@@ -13,10 +13,12 @@ class EmailRegistrationScreen extends StatefulWidget {
   final String? preselectedDriverName;
 
   @override
-  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() =>
+      _EmailRegistrationScreenState();
 }
 
-class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with TickerProviderStateMixin {
+class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -469,7 +471,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
         dlog('✅ Registracija uspješna u Supabase');
 
         // REGISTRUJ VOZAČA LOKALNO
-        final localRegistrationSuccess = await DriverRegistrationService.markDriverAsRegistered(
+        final localRegistrationSuccess =
+            await DriverRegistrationService.markDriverAsRegistered(
           driverName,
           email,
         );
@@ -606,7 +609,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           child: SingleChildScrollView(
             child: Text(
               'Poslali smo vam email sa linkom za potvrdu naloga. Molimo proverite vašu email poštu i kliknite na link da aktivirate nalog.',
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
             ),
           ),
         ),

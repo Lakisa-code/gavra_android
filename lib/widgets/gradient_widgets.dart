@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../theme.dart';
 
 /// 🎨 Flutter Bank Gradient AppBar
@@ -80,8 +81,6 @@ class GradientScaffold extends StatelessWidget {
     this.appBarTitle,
     required this.body,
     this.appBarActions,
-    this.floatingActionButton,
-    this.floatingActionButtonLocation,
     this.bottomNavigationBar,
     this.drawer,
     this.endDrawer,
@@ -92,8 +91,6 @@ class GradientScaffold extends StatelessWidget {
   final String? appBarTitle;
   final Widget body;
   final List<Widget>? appBarActions;
-  final Widget? floatingActionButton;
-  final FloatingActionButtonLocation? floatingActionButtonLocation;
   final Widget? bottomNavigationBar;
   final Widget? drawer;
   final Widget? endDrawer;
@@ -118,8 +115,6 @@ class GradientScaffold extends StatelessWidget {
               child: body,
             )
           : body,
-      floatingActionButton: floatingActionButton,
-      floatingActionButtonLocation: floatingActionButtonLocation,
       bottomNavigationBar: bottomNavigationBar,
       drawer: drawer,
       endDrawer: endDrawer,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../theme.dart'; // Import our new Flutter Bank theme
 
 class ThemeService {
@@ -80,10 +81,6 @@ class ThemeService {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-      ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: Color(0xFF9E9E9E),
-        foregroundColor: Colors.white,
       ),
       textTheme: const TextTheme(
         // SVE BELO na tamnom!

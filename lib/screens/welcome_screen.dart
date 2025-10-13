@@ -24,86 +24,13 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
-  // STATIC GLOBAL AUDIO PLAYER - za pesme u pozadini
-  static AudioPlayer? _globalAudioPlayer;
-
-  // PUSTI SPECIJALNE PESME ZA VOZAČE - CELA PESMA U POZADINI
-  static Future<void> _playDriverWelcomeSong(String driverName) async {
-    try {
-      // Stvori globalni audio player ako ne postoji
-      _globalAudioPlayer ??= AudioPlayer();
-
-      // Zaustavi trenutnu pesmu
-      await _globalAudioPlayer!.stop();
-
-      String assetPath;
-      double volume = 0.8; // Uvek 0.8 za sve pesme
-
-      switch (driverName.toLowerCase()) {
-        case 'svetlana':
-          // 🎺 SVETLANINA SPECIJALNA PESMA - "Hiljson Mandela & Miach - Anđeo"
-          assetPath = 'assets/svetlana.mp3';
-          dlog(
-            '🎺 🎵 SVETLANA LOGIN: Puštam "Hiljson Mandela & Miach - Anđeo" kao dobrodošlicu - CELA PESMA! 🎵 🎺',
-          );
-          break;
-
-        case 'bruda':
-          // 🎵 BRUDINA SPECIJALNA PESMA
-          assetPath = 'assets/bruda.mp3';
-          dlog('🎵 BRUDA LOGIN: Puštam Brudinu specijalnu pesmu - CELA PESMA!');
-          break;
-
-        case 'bilevski':
-          // 🎵 BILEVSKIJEVA SPECIJALNA PESMA
-          assetPath = 'assets/bilevski.mp3';
-          dlog(
-            '🎵 BILEVSKI LOGIN: Puštam Bilevskijevu specijalnu pesmu - CELA PESMA!',
-          );
-          break;
-
-        case 'bojan':
-          // 🎵 BOJANOVA SPECIJALNA PESMA
-          assetPath = 'assets/gavra.mp3';
-          dlog('🎵 BOJAN LOGIN: Puštam Gavrinu specijalnu pesmu - CELA PESMA!');
-          break;
-
-        default:
-          // 🎵 Default pesma za ostale vozače
-          assetPath = 'assets/gavra.mp3';
-          dlog('🎵 Puštam default welcome song za $driverName - CELA PESMA!');
-          break;
-      }
-
-      // Postavi i pokreni pesmu - CELA PESMA
-      await _globalAudioPlayer!.setAsset(assetPath);
-      await _globalAudioPlayer!.setVolume(volume);
-      await _globalAudioPlayer!.setLoopMode(LoopMode.off); // Bez ponavljanja
-      await _globalAudioPlayer!.play();
-
-      dlog(
-        '🎵 ✓ Pesma pokrenuta u pozadini za $driverName - neće se prekinuti!',
-      );
-
-      // Postaviti listener da se audio player očisti kad pesma završi
-      _globalAudioPlayer!.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          dlog('🎵 ✓ Pesma završena, čistim audio player...');
-          _globalAudioPlayer?.dispose();
-          _globalAudioPlayer = null;
-        }
-      });
-    } catch (e) {
-      dlog('❌ Greška pri puštanju pesme: $e');
-    }
-  }
 
   // Lista vozača za email sistem - bez hardcoded šifara
   final List<Map<String, dynamic>> _drivers = [
@@ -160,7 +87,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
       // Also request Firebase/iOS style permissions via RealtimeNotificationService
       try {
-        final granted = await RealtimeNotificationService.requestNotificationPermissions();
+        final granted =
+            await RealtimeNotificationService.requestNotificationPermissions();
         dlog('🔔 RealtimeNotificationService permission result: $granted');
       } catch (e) {
         dlog(
@@ -175,13 +103,18 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   // 🔄 AUTO-LOGIN BEZ PESME - Proveri da li je vozač već logovan
   Future<void> _checkAutoLogin() async {
     // PROVERI SUPABASE AUTH STATE
-    final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
+    final driverFromSupabase =
+        await DriverRegistrationService.getCurrentLoggedInDriver();
 
     final prefs = await SharedPreferences.getInstance();
-    final savedDriver =
-        prefs.getString('current_driver'); // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
-    if (driverFromSupabase != null && (savedDriver == null || savedDriver != driverFromSupabase)) {
-      dlog('🔄 Sinhronizujem Supabase korisnika ($driverFromSupabase) sa local storage');
+    final savedDriver = prefs.getString(
+      'current_driver',
+    ); // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
+    if (driverFromSupabase != null &&
+        (savedDriver == null || savedDriver != driverFromSupabase)) {
+      dlog(
+        '🔄 Sinhronizujem Supabase korisnika ($driverFromSupabase) sa local storage',
+      );
       await prefs.setString('current_driver', driverFromSupabase);
     }
 
@@ -219,7 +152,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         return;
       }
 
-      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn =
+          await DailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
@@ -269,7 +203,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
 
@@ -303,7 +238,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     dlog('🚗 Vozač $driverName kliknuo za login - proveravam registraciju...');
 
     // PROVERI DA LI JE VOZAČ VEĆ REGISTROVAN SA EMAIL-OM
-    final isRegistered = await DriverRegistrationService.isDriverRegistered(driverName);
+    final isRegistered =
+        await DriverRegistrationService.isDriverRegistered(driverName);
 
     if (isRegistered) {
       // VOZAČ JE REGISTROVAN - IDI NA EMAIL LOGIN
@@ -318,7 +254,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       );
     } else {
       // VOZAČ NIJE REGISTROVAN - IDI NA EMAIL REGISTRACIJU
-      dlog('📧 Vozač $driverName nije registrovan - idem na email registraciju');
+      dlog(
+        '📧 Vozač $driverName nije registrovan - idem na email registraciju',
+      );
 
       if (!mounted) return;
       final result = await Navigator.push<bool>(
@@ -497,7 +435,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 4.0, // Increased slightly for better visibility
+                                  vertical:
+                                      4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'] as String,
@@ -712,7 +651,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             fontSize: 13, // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
                             color: color,
-                            letterSpacing: 1.0, // Further reduced to prevent overflow
+                            letterSpacing:
+                                1.0, // Further reduced to prevent overflow
                             shadows: [
                               Shadow(
                                 color: Colors.white.withOpacity(0.5),

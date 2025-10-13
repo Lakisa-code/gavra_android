@@ -26,7 +26,8 @@ class EmailAuthService {
         email: email,
         password: password,
         data: {'driver_name': driverName},
-        emailRedirectTo: 'gavra013://auth/callback', // Omogući email verification
+        emailRedirectTo:
+            'gavra013://auth/callback', // Omogući email verification
       );
 
       if (response.user != null) {
@@ -58,7 +59,8 @@ class EmailAuthService {
       );
 
       if (response.user != null) {
-        final driverName = response.user!.userMetadata?['driver_name'] as String?;
+        final driverName =
+            response.user!.userMetadata?['driver_name'] as String?;
         dlog('✅ Prijava uspešna za vozača: $driverName');
         return driverName;
       } else {
