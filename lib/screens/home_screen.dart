@@ -147,8 +147,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (targetDayIndex == null) return now.toIso8601String().split('T')[0];
 
     final currentDayIndex = now.weekday - 1;
+
+    // 🎯 FIX: Ako je odabrani dan isto što i današnji dan, koristi današnji datum
+    if (targetDayIndex == currentDayIndex) {
+      return now.toIso8601String().split('T')[0];
+    }
+
+    // Inače traži sledeći put kada će biti taj dan
     int daysToAdd =
-        targetDayIndex >= currentDayIndex ? targetDayIndex - currentDayIndex : (7 - currentDayIndex) + targetDayIndex;
+        targetDayIndex > currentDayIndex ? targetDayIndex - currentDayIndex : (7 - currentDayIndex) + targetDayIndex;
     final targetDate = now.add(Duration(days: daysToAdd));
     return targetDate.toIso8601String().split('T')[0];
   }

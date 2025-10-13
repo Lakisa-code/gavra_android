@@ -93,9 +93,7 @@ void main() async {
   // Firebase initialization - PRILAGOĐENO za GBox/Huawei
   try {
     final shouldOptimize = await GBoxDetector.shouldOptimizeFirebase();
-    final timeout = shouldOptimize
-        ? const Duration(seconds: 10)
-        : const Duration(seconds: 20);
+    final timeout = shouldOptimize ? const Duration(seconds: 10) : const Duration(seconds: 20);
 
     // Check if Firebase is already initialized
     final alreadyInitialized = Firebase.apps.isNotEmpty;
@@ -109,8 +107,7 @@ void main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     try {
-      final initialMessage =
-          await FirebaseMessaging.instance.getInitialMessage();
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
       await RealtimeNotificationService.handleInitialMessage(initialMessage);
     } catch (e) {
       _logger.w('\u26a0\ufe0f Error handling initial FCM message: $e');
@@ -153,8 +150,7 @@ void main() async {
     defaultHeaders: {'apiKey': supabaseAnonKey},
   );
   final Link link = httpLink;
-  ValueNotifier<GraphQLClient> client =
-      ValueNotifier(GraphQLClient(link: link, cache: GraphQLCache()));
+  ValueNotifier<GraphQLClient> client = ValueNotifier(GraphQLClient(link: link, cache: GraphQLCache()));
 
   runApp(GraphQLProvider(client: client, child: const MyApp()));
 }
@@ -178,10 +174,10 @@ Future<String?> getDefaultVehicleId() async {
 
     // If no vehicles exist, return a default UUID
     // In a real app, you'd want to create a vehicle here
-    return 'default-vehicle-uuid';
+    return 'a0000000-0000-4000-8000-000000000000';
   } catch (e) {
     _logger.w('⚠️ Failed to get default vehicle: $e');
-    return 'default-vehicle-uuid';
+    return 'a0000000-0000-4000-8000-000000000000';
   }
 }
 
@@ -221,8 +217,7 @@ class _MyAppState extends State<MyApp> {
         await LocalNotificationService.initialize(context);
 
         // 2. Zatim zatraži permissions jednom kroz Firebase sistem
-        await RealtimeNotificationService.requestNotificationPermissions()
-            .timeout(const Duration(seconds: 15));
+        await RealtimeNotificationService.requestNotificationPermissions().timeout(const Duration(seconds: 15));
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
@@ -301,9 +296,7 @@ class _MyAppState extends State<MyApp> {
         () async {
           final currentVozacId = await getCurrentDriver();
           final voziloId = await getDefaultVehicleId();
-          if (currentVozacId != null &&
-              currentVozacId.isNotEmpty &&
-              voziloId != null) {
+          if (currentVozacId != null && currentVozacId.isNotEmpty && voziloId != null) {
             GpsService.sendCurrentLocation(
               vozacId: currentVozacId,
               voziloId: voziloId,
@@ -372,8 +365,7 @@ class _MyAppState extends State<MyApp> {
     _logger.i('🔗 Handling deep link: ${uri.toString()}');
 
     // Check if it's a Supabase auth callback
-    if (uri.host == 'gjtabtwudbrmfeyjiicu.supabase.co' &&
-        uri.path.contains('/auth/v1/callback')) {
+    if (uri.host == 'gjtabtwudbrmfeyjiicu.supabase.co' && uri.path.contains('/auth/v1/callback')) {
       // Handle Supabase auth callback
       Supabase.instance.client.auth.getSessionFromUrl(uri).then((response) {
         _logger.i('✅ Email verification successful!');
@@ -412,8 +404,7 @@ class _MyAppState extends State<MyApp> {
               // Navigate to email login screen
               Navigator.of(context).pushReplacementNamed('/email-login');
             },
-            child:
-                const Text('Prijaviť se', style: TextStyle(color: Colors.blue)),
+            child: const Text('Prijaviť se', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -509,9 +500,7 @@ class _MyAppState extends State<MyApp> {
         driverName: _currentDriver,
       ), // 🎨 Svetla tema sa vozačem
       darkTheme: ThemeService.tamnaTema(), // 🎨 Tamna tema za noć
-      themeMode: _nocniRezim
-          ? ThemeMode.dark
-          : ThemeMode.light, // 🎨 Dinamičko prebacivanje teme
+      themeMode: _nocniRezim ? ThemeMode.dark : ThemeMode.light, // 🎨 Dinamičko prebacivanje teme
       routes: {
         '/email-login': (context) => const EmailLoginScreen(),
       },

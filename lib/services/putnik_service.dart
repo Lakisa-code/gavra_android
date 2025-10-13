@@ -89,6 +89,9 @@ class PutnikService {
           }
         }
 
+        // 🛑 UKLONJENO: Mesečni putnici se učitavaju preko MesecniPutnikService
+        // da se izbegne duplo računanje u admin screen-u
+
         // Fetch monthly rows for the relevant day (if isoDate provided, convert)
         String? danKratica;
         if (isoDate != null) {
@@ -107,13 +110,6 @@ class PutnikService {
 
         for (final m in mesecni) {
           // Debug logovanje
-          final ime = m['ime'] as String? ?? '';
-          if (ime.toLowerCase().contains('ana') || ime.toLowerCase().contains('cortan')) {
-            print(
-              '🔍 [DEBUG] Našao Ana/Cortan: $ime, aktivan: ${m['aktivan']}, obrisan: ${m['obrisan']}',
-            );
-          }
-
           // ✅ ISPRAVKA: Generiši putnik objekte za SVE radne dane, ne samo trenutni
           final radniDaniString = m['radni_dani'] as String? ?? '';
           final radniDaniLista = radniDaniString.split(',').map((d) => d.trim()).toList();

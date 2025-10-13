@@ -71,8 +71,7 @@ class VozacMappingService {
   static Future<String?> getVozacUuid(String ime) async {
     await _ensureMappingLoaded();
     final uuid = _vozacNameToUuid?[ime];
-    if (uuid == null) {
-    }
+    if (uuid == null) {}
     return uuid;
   }
 
@@ -80,8 +79,7 @@ class VozacMappingService {
   static Future<String?> getVozacIme(String uuid) async {
     await _ensureMappingLoaded();
     final ime = _vozacUuidToName?[uuid];
-    if (ime == null) {
-    }
+    if (ime == null) {}
     return ime;
   }
 
@@ -126,8 +124,7 @@ class VozacMappingService {
   /// Debug funkcija za ispis mapiranja
   static Future<void> printMapping() async {
     await _ensureMappingLoaded();
-    _vozacNameToUuid?.forEach((ime, uuid) {
-    });
+    _vozacNameToUuid?.forEach((ime, uuid) {});
   }
 
   // KOMPATIBILNOST: Sinhrone metode za modele i mesta gde async nije moguć
@@ -151,7 +148,6 @@ class VozacMappingService {
 
   /// Proveri da li je UUID vozača valjan sinhron
   static bool isValidVozacUuidSync(String uuid) {
-    return _vozacUuidToName?.containsKey(uuid) ??
-        _fallbackMapping.containsValue(uuid);
+    return _vozacUuidToName?.containsKey(uuid) ?? _fallbackMapping.containsValue(uuid);
   }
 }

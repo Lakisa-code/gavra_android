@@ -14,7 +14,7 @@ import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
 import 'clean_statistika_service.dart'; // 🆕 DODANO za clean statistike
 import 'mesecni_putnik_service.dart'; // 🔄 DODANO za mesečne putnike
 import 'putnik_service.dart'; // 🔄 DODANO za real-time streams
-import 'vozac_mapping_service.dart'; // 🆕 DODANO za mapping ime vozača → UUID
+import 'vozac_mapping_service.dart'; // 🔧 DODANO za mapiranje UUID -> imena
 
 class StatistikaService {
   StatistikaService._internal();
@@ -222,9 +222,13 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // Kombinuj oba stream-a koristeći async*
+    // Kreiraj ISO datum za filter - isti kao u streamPazarZaVozaca
+    final isoDate =
+        '${fromDate.year.toString().padLeft(4, '0')}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
+
+    // Kombinuj oba stream-a koristeći async* SA DATUM FILTEROM
     return instance._combineStreams(
-      PutnikService().streamKombinovaniPutniciFiltered(),
+      PutnikService().streamKombinovaniPutniciFiltered(isoDate: isoDate),
       MesecniPutnikService.streamAktivniMesecniPutnici(),
       fromDate,
       toDate,
@@ -285,7 +289,7 @@ class StatistikaService {
       pazarMesecne[vozac] = 0.0; // 🔧 RESETUJ NA 0!
     }
 
-    // 1. SABERI OBIČNI PAZAR iz putnici tabele - ISKLJUČI MESEČNE KARTE
+    // 1. SABERI OBIČNI PAZAR iz putovanja_istorija tabele - ISKLJUČI MESEČNE KARTE
     for (final putnik in putnici) {
       // 🛑 PRESKAČI MESEČNE KARTE - one se računaju odvojeno iz MesecniPutnikService
       if (putnik.mesecnaKarta == true) {
@@ -300,9 +304,7 @@ class StatistikaService {
           }
         }
       }
-    }
-
-    // 2. SABERI MESEČNE KARTE - KORISTI vremePlacanja (kad je plaćeno) umesto placeniMesec
+    } // 2. SABERI MESEČNE KARTE - KORISTI vremePlacanja (kad je plaćeno) umesto placeniMesec
 
     // 💡 GRUPIRAJ MESEČNE PUTNIKE PO ID DA SE IZBEGNE DUPLO RAČUNANJE
     final Map<String, MesecniPutnik> uniqueMesecni = {};
@@ -314,11 +316,13 @@ class StatistikaService {
       if (putnik.aktivan && !putnik.obrisan && putnik.jePlacen) {
         // 💰 NOVA LOGIKA: Proveravamo da li je DANAS plaćeno (vremePlacanja), ne za koji mesec
         if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.vozac ?? 'Nepoznat';
+          // 🔧 MAPIRANJE UUID -> IME VOZAČA
+          final vozacUuid = putnik.vozac ?? 'Nepoznat';
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacUuid);
           final iznos = putnik.iznosPlacanja ?? 0.0;
 
-          if (pazarMesecne.containsKey(vozac)) {
-            pazarMesecne[vozac] = pazarMesecne[vozac]! + iznos;
+          if (pazarMesecne.containsKey(vozacIme)) {
+            pazarMesecne[vozacIme] = pazarMesecne[vozacIme]! + iznos;
           }
         } else {}
       } else {}

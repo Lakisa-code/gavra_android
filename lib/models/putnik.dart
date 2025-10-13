@@ -117,8 +117,8 @@ class Putnik {
       vremePokupljenja: map['poslednje_putovanje'] != null
           ? DateTime.parse(map['poslednje_putovanje'] as String).toLocal()
           : (map['vreme_pokupljenja'] != null
-                ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
-                : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
+              ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
+              : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String).toLocal()
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
@@ -152,7 +152,9 @@ class Putnik {
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
       // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
-      // vremePlacanja: null, // ✅ NEMA U SHEMI - default je null
+      vremePlacanja: map['datum_putovanja'] != null
+          ? DateTime.parse(map['datum_putovanja'] as String)
+          : null, // ✅ KORISTI datum_putovanja za mesečne putnike
       placeno: _parseDouble(map['cena']) > 0,
       cena: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
@@ -259,8 +261,8 @@ class Putnik {
     final vremePokupljenja = map['poslednje_putovanje'] != null
         ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
-              ? DateTime.parse(map['vreme_pokupljenja'] as String)
-              : null); // ✅ FALLBACK na vreme_pokupljenja
+            ? DateTime.parse(map['vreme_pokupljenja'] as String)
+            : null); // ✅ FALLBACK na vreme_pokupljenja
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
@@ -300,8 +302,8 @@ class Putnik {
     final vremePokupljenja = map['poslednje_putovanje'] != null
         ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
-              ? DateTime.parse(map['vreme_pokupljenja'] as String)
-              : null); // ✅ FALLBACK na vreme_pokupljenja
+            ? DateTime.parse(map['vreme_pokupljenja'] as String)
+            : null); // ✅ FALLBACK na vreme_pokupljenja
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
@@ -528,9 +530,7 @@ class Putnik {
             'Ned': 'ned',
           };
           return map[dan] ?? dan.toLowerCase().substring(0, 3);
-        })(): grad == 'Bela Crkva'
-            ? {'bc': polazak}
-            : {'vs': polazak},
+        })(): grad == 'Bela Crkva' ? {'bc': polazak} : {'vs': polazak},
       }),
       'adresa_bela_crkva': grad == 'Bela Crkva' ? adresa : null,
       'adresa_vrsac': grad == 'Vršac' ? adresa : null,

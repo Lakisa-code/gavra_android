@@ -886,7 +886,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           Text(
                             'Period: ${_formatDate(firstDayOfMonth)} - ${_formatDate(lastDayOfMonth)}',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 12,
                               color: Colors.grey[600],
                               fontStyle: FontStyle.italic,
                             ),
@@ -1770,7 +1770,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                         child: Text(
                                           '📅 MESEČNA KARTA',
                                           style: TextStyle(
-                                            fontSize: 9,
+                                            fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.green[700],
                                             letterSpacing: 0.3,
@@ -2189,7 +2189,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                 DateTime.parse(_putnik.statusVreme!),
                               ),
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 color: VozacBoja.get(_putnik.otkazaoVozac).withOpacity(0.8),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -2234,22 +2234,21 @@ class _PutnikCardState extends State<PutnikCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Plaćeno ${_putnik.iznosPlacanja!.toStringAsFixed(0)} RSD',
+                            'Plaćeno',
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.get(_putnik.vozac),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          if (_putnik.vozac != null && _putnik.vozac!.isNotEmpty)
-                            Text(
-                              'Naplatio: ${_putnik.vozac}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: VozacBoja.get(_putnik.vozac).withOpacity(0.8),
-                                fontStyle: FontStyle.italic,
-                              ),
+                          Text(
+                            '${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: VozacBoja.get(_putnik.vozac).withOpacity(0.8),
+                              fontStyle: FontStyle.italic,
                             ),
+                          ),
                         ],
                       ),
                   ],
