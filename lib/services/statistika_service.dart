@@ -92,22 +92,6 @@ class StatistikaService {
 
     // � SAMO KOMBINOVANI STREAM SA DATUM FILTEROM - ne duplikuj mesečne putnike!
     return PutnikService().streamKombinovaniPutniciFiltered(isoDate: isoDate).map((putnici) {
-      // Debug: pokaži sample od najnovijih 6 putnika (ime, vozac, iznos, vremePlacanja)
-      try {
-        final sample = putnici
-            .take(6)
-            .map(
-              (p) => {
-                'ime': p.ime,
-                'vozac': p.vozac,
-                'iznos': p.iznosPlacanja,
-                'vreme': p.vremePlacanja?.toIso8601String(),
-              },
-            )
-            .toList();
-        print('🔔 [PAZAR DEBUG] sample putnici: $sample');
-        print('🔔 [PAZAR DEBUG] vozac=$vozac, fromDate=$fromDate, toDate=$toDate');
-      } catch (_) {}
       final pazar = _calculateSimplePazarSync(putnici, vozac, fromDate, toDate);
       return pazar;
     });
@@ -148,12 +132,10 @@ class StatistikaService {
         final vremeZaProveru = putnik.vremePlacanja ?? putnik.vremeDodavanja;
         if (vremeZaProveru != null && _jeUVremenskomOpsegu(vremeZaProveru, fromDate, toDate)) {
           final iznos = putnik.iznosPlacanja!;
-          print('🔔 [PAZAR] Dodajem: ${putnik.ime} = $iznos RSD (vozac=${putnik.vozac})');
           ukupno += iznos;
         }
       }
     }
-    print('🔔 [PAZAR] UKUPNO za vozaca $vozac: $ukupno RSD');
     return ukupno;
   }
 
@@ -781,28 +763,6 @@ class StatistikaService {
           if (!grupisaniMesecniPutnici.containsKey(kljuc)) {
             grupisaniMesecniPutnici[kljuc] = putnik;
           }
-        } else {
-          // DEBUG: Zašto se Ana Cortan ne uključuje?
-          if (putnik.putnikIme.toLowerCase().contains('ana')) {
-            print(
-              '🔍 DEBUG Ana Cortan: jePlacen=${putnik.jePlacen}, vremePlacanja=${putnik.vremePlacanja}, mesecniFrom=$mesecniFrom, mesecniTo=$mesecniTo',
-            );
-            if (putnik.vremePlacanja != null) {
-              final uOpsegu = _jeUVremenskomOpsegu(
-                putnik.vremePlacanja,
-                mesecniFrom,
-                mesecniTo,
-              );
-              print('🔍 DEBUG Ana Cortan u opsegu: $uOpsegu');
-            }
-          }
-        }
-      } else {
-        // DEBUG: Ana nije plaćena?
-        if (putnik.putnikIme.toLowerCase().contains('ana')) {
-          print(
-            '🔍 DEBUG Ana Cortan NIJE PLAĆENA: jePlacen=${putnik.jePlacen}, cena=${putnik.cena}',
-          );
         }
       }
     }
