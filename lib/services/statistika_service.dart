@@ -14,6 +14,7 @@ import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
 import 'clean_statistika_service.dart'; // 🆕 DODANO za clean statistike
 import 'mesecni_putnik_service.dart'; // 🔄 DODANO za mesečne putnike
 import 'putnik_service.dart'; // 🔄 DODANO za real-time streams
+import 'vozac_mapping_service.dart'; // 🆕 DODANO za mapping ime vozača → UUID
 
 class StatistikaService {
   StatistikaService._internal();
@@ -138,7 +139,9 @@ class StatistikaService {
     for (final putnik in sviPutnici) {
       if (_jePazarValjan(putnik) && putnik.vozac == vozac) {
         // Za SVE putnike (mesečne i obične) - računaj pazar SAMO ako je plaćen u traženom opsegu
-        if (putnik.vremePlacanja != null && _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
+        // Koristi vremePlacanja ako postoji, inače vremeDodavanja za putovanje_istorija zapise
+        final vremeZaProveru = putnik.vremePlacanja ?? putnik.vremeDodavanja;
+        if (vremeZaProveru != null && _jeUVremenskomOpsegu(vremeZaProveru, fromDate, toDate)) {
           final iznos = putnik.iznosPlacanja!;
           ukupno += iznos;
         }
@@ -157,11 +160,14 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
+    // Konvertuj ime vozača u UUID jer MesecniPutnik koristi vozac_id (UUID)
+    final vozacUuid = VozacMappingService.getVozacUuidSync(vozac) ?? vozac;
+
     return MesecniPutnikService.streamAktivniMesecniPutnici().map((mesecniPutnici) {
       int brojKarata = 0;
       for (final putnik in mesecniPutnici) {
         if (putnik.jePlacen &&
-            putnik.vozac == vozac &&
+            putnik.vozac == vozacUuid &&
             putnik.vremePlacanja != null &&
             _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           brojKarata++;

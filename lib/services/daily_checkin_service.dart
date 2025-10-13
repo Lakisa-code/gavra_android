@@ -48,8 +48,8 @@ class DailyCheckInService {
 
   /// Pokušaj prvo pročitati vrednost iz Supabase; fallback na SharedPreferences
   static Future<double?> getTodayAmountRemote(String vozac) async {
-    // Daily checkins functionality removed - return 0.0
-    return 0.0;
+    // Čitaj iz SharedPreferences umesto da vraćaš 0.0
+    return await getTodayAmount(vozac);
   }
 
   /// Proveri da li je vozač već uradio check-in danas
