@@ -86,8 +86,12 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // � SAMO KOMBINOVANI STREAM - ne duplikuj mesečne putnike!
-    return PutnikService().streamKombinovaniPutniciFiltered().map((putnici) {
+    // Kreiraj ISO datum za filter
+    final isoDate =
+        '${fromDate.year.toString().padLeft(4, '0')}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
+
+    // � SAMO KOMBINOVANI STREAM SA DATUM FILTEROM - ne duplikuj mesečne putnike!
+    return PutnikService().streamKombinovaniPutniciFiltered(isoDate: isoDate).map((putnici) {
       // Debug: pokaži sample od najnovijih 6 putnika (ime, vozac, iznos, vremePlacanja)
       try {
         final sample = putnici
@@ -101,7 +105,8 @@ class StatistikaService {
               },
             )
             .toList();
-        dlog('🔔 [PAZAR DEBUG] sample putnici: $sample');
+        print('🔔 [PAZAR DEBUG] sample putnici: $sample');
+        print('🔔 [PAZAR DEBUG] vozac=$vozac, fromDate=$fromDate, toDate=$toDate');
       } catch (_) {}
       final pazar = _calculateSimplePazarSync(putnici, vozac, fromDate, toDate);
       return pazar;
@@ -143,10 +148,12 @@ class StatistikaService {
         final vremeZaProveru = putnik.vremePlacanja ?? putnik.vremeDodavanja;
         if (vremeZaProveru != null && _jeUVremenskomOpsegu(vremeZaProveru, fromDate, toDate)) {
           final iznos = putnik.iznosPlacanja!;
+          print('🔔 [PAZAR] Dodajem: ${putnik.ime} = $iznos RSD (vozac=${putnik.vozac})');
           ukupno += iznos;
         }
       }
     }
+    print('🔔 [PAZAR] UKUPNO za vozaca $vozac: $ukupno RSD');
     return ukupno;
   }
 
