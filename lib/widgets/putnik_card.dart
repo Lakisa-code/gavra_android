@@ -700,6 +700,19 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
+    // Validacija vozača pre pokušaja plaćanja
+    if (widget.currentDriver == null || widget.currentDriver!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Greška: Vozač nije definisan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     if (_putnik.mesecnaKarta == true) {
       // MESEČNI PUTNIK - CUSTOM CENA umesto fiksne
       await _handleMesecniPayment();
@@ -1031,11 +1044,30 @@ class _PutnikCardState extends State<PutnikCard> {
       builder: (ctx) {
         final controller = TextEditingController();
         return AlertDialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFFBB86FC).withOpacity(0.4)
+                  : const Color(0xFF008B8B).withOpacity(0.5),
+              width: 2,
+            ),
+          ),
           title: Row(
             children: [
-              Icon(Icons.person, color: Colors.blue[700]),
+              Icon(
+                Icons.person,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
-              const Text('Plaćanje putovanja'),
+              Text(
+                'Plaćanje putovanja',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           content: Column(
@@ -1093,7 +1125,34 @@ class _PutnikCardState extends State<PutnikCard> {
     );
 
     if (iznos != null && iznos > 0) {
-      await _executePayment(iznos, isMesecni: false);
+      // Provjeri da li putnik ima valjan ID
+      if (_putnik.id == null || _putnik.id.toString().isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Putnik nema valjan ID - ne može se naplatiti'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      try {
+        await _executePayment(iznos, isMesecni: false);
+
+        // Haptic feedback za uspešno plaćanje
+        HapticService.lightImpact();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Greška pri plaćanju: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -1104,20 +1163,10 @@ class _PutnikCardState extends State<PutnikCard> {
     String? mesec,
   }) async {
     try {
-      print('🔍 [DEBUG PAYMENT] currentDriver: "${widget.currentDriver}"');
-      print('🔍 [DEBUG PAYMENT] validDrivers: ${VozacBoja.validDrivers}');
-      print(
-        '🔍 [DEBUG PAYMENT] isValidDriver: ${VozacBoja.isValidDriver(widget.currentDriver)}',
-      );
-
-      // ⚠️ BLAŽU VALIDACIJU VOZAČA - dozvoli i null/prazan vozač sa fallback
+      // Validacija vozača sa fallback
       String finalDriver = widget.currentDriver ?? 'Nepoznat vozač';
 
       if (!VozacBoja.isValidDriver(widget.currentDriver)) {
-        print(
-          '⚠️ [DEBUG PAYMENT] Driver not valid, using fallback: "$finalDriver"',
-        );
-
         // Umesto da prekidamo plaćanje, koristimo fallback vozača
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1130,51 +1179,42 @@ class _PutnikCardState extends State<PutnikCard> {
             ),
           );
         }
-        // ⚠️ Ne prekidamo - nastavljamo sa fallback vozačem
       }
 
       // Pozovi odgovarajući service za plaćanje
       if (isMesecni && mesec != null) {
         // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
-        print(
-          '🔍 [DEBUG PAYMENT] Tražim mesečnog putnika po imenu: ${_putnik.ime}',
-        );
         final mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
         if (mesecniPutnik != null) {
-          print(
-            '🔍 [DEBUG PAYMENT] Pronašao mesečnog putnika: ${mesecniPutnik.putnikIme}, ID: ${mesecniPutnik.id}',
-          );
           // Koristi static funkciju kao u mesecni_putnici_screen.dart
           await _sacuvajPlacanjeStatic(
             putnikId: mesecniPutnik.id,
             iznos: iznos,
             mesec: mesec,
-            vozacIme: finalDriver, // ✅ Koristi finalDriver umesto currentDriver
+            vozacIme: finalDriver,
           );
         } else {
-          print(
-            '❌ [DEBUG PAYMENT] Mesečni putnik ${_putnik.ime} nije pronađen!',
-          );
           throw Exception('Mesečni putnik ${_putnik.ime} nije pronađen u bazi');
         }
       } else {
         // Za obične putnike koristi postojeći servis
+        if (_putnik.id == null) {
+          throw Exception('Putnik nema valjan ID - ne može se naplatiti');
+        }
+
         await PutnikService().oznaciPlaceno(
           _putnik.id!,
           iznos,
           finalDriver,
-        ); // ✅ Koristi finalDriver
+        );
       }
 
       if (mounted) {
         setState(() {});
 
-        // 🔄 KLJUČNO: Pozovi callback za refresh parent widget-a
+        // Pozovi callback za refresh parent widget-a
         if (widget.onChanged != null) {
-          print('🔄 [DEBUG PAYMENT] Pozivam onChanged callback za refresh');
           widget.onChanged!();
-        } else {
-          print('⚠️ [DEBUG PAYMENT] onChanged callback nije definisan!');
         }
 
         // Prikaži success poruku
