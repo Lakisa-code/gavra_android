@@ -1,7 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../utils/logging.dart';
 
 class DriverRegistrationService {
   static const String _registeredDriversKey = 'registered_drivers';
@@ -23,7 +22,6 @@ class DriverRegistrationService {
           prefs.getStringList(_registeredDriversKey) ?? [];
       return registeredDrivers.contains(driverName);
     } catch (e) {
-      dlog('❌ Greška pri proveri registracije vozača: $e');
       return false;
     }
   }
@@ -47,10 +45,8 @@ class DriverRegistrationService {
       // Sačuvaj email za vozača
       await prefs.setString('$_driverEmailKey$driverName', email);
 
-      dlog('✅ Vozač $driverName označen kao registrovan sa email-om: $email');
       return true;
     } catch (e) {
-      dlog('❌ Greška pri označavanju vozača kao registrovan: $e');
       return false;
     }
   }
@@ -61,7 +57,6 @@ class DriverRegistrationService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString('$_driverEmailKey$driverName');
     } catch (e) {
-      dlog('❌ Greška pri dohvatanju email-a vozača: $e');
       return null;
     }
   }
@@ -80,10 +75,8 @@ class DriverRegistrationService {
       // Ukloni email
       await prefs.remove('$_driverEmailKey$driverName');
 
-      dlog('🔄 Reset registracije za vozača: $driverName');
       return true;
     } catch (e) {
-      dlog('❌ Greška pri reset-u registracije vozača: $e');
       return false;
     }
   }
@@ -94,7 +87,6 @@ class DriverRegistrationService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getStringList(_registeredDriversKey) ?? [];
     } catch (e) {
-      dlog('❌ Greška pri dohvatanju registrovanih vozača: $e');
       return [];
     }
   }
@@ -105,12 +97,10 @@ class DriverRegistrationService {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         final driverName = user.userMetadata?['driver_name'] as String?;
-        dlog('🔐 Trenutno ulogovan vozač: $driverName');
         return driverName;
       }
       return null;
     } catch (e) {
-      dlog('❌ Greška pri proveri trenutno ulogovanog vozača: $e');
       return null;
     }
   }
@@ -119,10 +109,8 @@ class DriverRegistrationService {
   static Future<bool> signOutDriver() async {
     try {
       await Supabase.instance.client.auth.signOut();
-      dlog('👋 Vozač odjavljen iz Supabase');
       return true;
     } catch (e) {
-      dlog('❌ Greška pri odjavi vozača: $e');
       return false;
     }
   }

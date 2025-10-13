@@ -36,8 +36,8 @@ class FilterBar extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: Theme.of(context).brightness == Brightness.dark
-                  ? DarkSapphirePlatinumStyles.dropdownDecoration
-                  : FlutterBankStyles.dropdownDecoration,
+                  ? DarkThemeStyles.dropdownDecoration
+                  : TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
                 value: selectedDay,
                 dropdownColor:
@@ -75,8 +75,8 @@ class FilterBar extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: Theme.of(context).brightness == Brightness.dark
-                  ? DarkSapphirePlatinumStyles.dropdownDecoration
-                  : FlutterBankStyles.dropdownDecoration,
+                  ? DarkThemeStyles.dropdownDecoration
+                  : TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
                 value: selectedGrad,
                 dropdownColor:
@@ -114,8 +114,8 @@ class FilterBar extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: Theme.of(context).brightness == Brightness.dark
-                  ? DarkSapphirePlatinumStyles.dropdownDecoration
-                  : FlutterBankStyles.dropdownDecoration,
+                  ? DarkThemeStyles.dropdownDecoration
+                  : TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
                 value: selectedVreme,
                 dropdownColor:

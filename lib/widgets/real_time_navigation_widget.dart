@@ -23,8 +23,7 @@ class RealTimeNavigationWidget extends StatefulWidget {
   final bool enableVoiceInstructions;
 
   @override
-  State<RealTimeNavigationWidget> createState() =>
-      _RealTimeNavigationWidgetState();
+  State<RealTimeNavigationWidget> createState() => _RealTimeNavigationWidgetState();
 }
 
 class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
@@ -89,9 +88,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       };
 
       if (result['optimizedRoute'] != null) {
-        _currentInstructions = (result['instructions'] as List<dynamic>?)
-                ?.cast<TurnByTurnInstruction>() ??
-            [];
+        _currentInstructions = (result['instructions'] as List<dynamic>?)?.cast<TurnByTurnInstruction>() ?? [];
         _totalDistance = (result['totalDistance'] as num?)?.toDouble() ?? 0.0;
         _totalDuration = (result['totalDuration'] as num?)?.toDouble() ?? 0.0;
 
@@ -102,8 +99,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
         setState(() {
           _isLoading = false;
-          _statusMessage =
-              'Navigacija spremna - ${_currentInstructions.length} instrukcija';
+          _statusMessage = 'Navigacija spremna - ${_currentInstructions.length} instrukcija';
         });
 
         widget.onStatusUpdate?.call(
@@ -169,17 +165,10 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         final newRoute = updateResult['newRoute'];
         if (newRoute != null && newRoute['optimizedRoute'] != null) {
           setState(() {
-            _currentInstructions = (newRoute['instructions'] as List<dynamic>?)
-                    ?.cast<TurnByTurnInstruction>() ??
-                [];
-            _remainingPassengers =
-                (newRoute['optimizedRoute'] as List<dynamic>?)
-                        ?.cast<Putnik>() ??
-                    [];
+            _currentInstructions = (newRoute['instructions'] as List<dynamic>?)?.cast<TurnByTurnInstruction>() ?? [];
+            _remainingPassengers = (newRoute['optimizedRoute'] as List<dynamic>?)?.cast<Putnik>() ?? [];
             _currentInstructionIndex = 0;
-            _activeInstruction = _currentInstructions.isNotEmpty
-                ? _currentInstructions.first
-                : null;
+            _activeInstruction = _currentInstructions.isNotEmpty ? _currentInstructions.first : null;
           });
 
           widget.onRouteUpdate?.call(_remainingPassengers);
@@ -201,12 +190,10 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
               _currentInstructionIndex < _currentInstructions.length - 1) {
             setState(() {
               _currentInstructionIndex++;
-              _activeInstruction =
-                  _currentInstructions[_currentInstructionIndex];
+              _activeInstruction = _currentInstructions[_currentInstructionIndex];
             });
 
-            widget.onStatusUpdate
-                ?.call('➡️ Sledeća instrukcija: ${_activeInstruction?.text}');
+            widget.onStatusUpdate?.call('➡️ Sledeća instrukcija: ${_activeInstruction?.text}');
           }
         }
       }
@@ -282,22 +269,22 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isNavigating ? Colors.green : Colors.blue,
+        color: _isNavigating ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
       ),
       child: Row(
         children: [
           Icon(
             _isNavigating ? Icons.navigation : Icons.route,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 24,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _isNavigating ? 'Aktivna navigacija' : 'Navigacija spremna',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -307,12 +294,12 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${_currentInstructionIndex + 1}/${_currentInstructions.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
               ),
             ),
         ],
@@ -324,8 +311,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outline)),
       ),
       child: Row(
         children: [
@@ -333,12 +320,12 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
               _getInstructionIcon(_activeInstruction!.type),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: 24,
             ),
           ),
@@ -360,7 +347,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
                     Text(
                       _activeInstruction!.formattedDistance,
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -368,7 +355,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
                     Text(
                       _activeInstruction!.formattedDuration,
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -396,9 +383,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           return Container(
             decoration: BoxDecoration(
               color: isActive
-                  ? Colors.blue.shade100
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                   : isPassed
-                      ? Colors.grey.shade100
+                      ? Theme.of(context).colorScheme.surfaceVariant
                       : null,
             ),
             child: ListTile(
@@ -406,14 +393,16 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
               leading: CircleAvatar(
                 radius: 16,
                 backgroundColor: isActive
-                    ? Colors.blue
+                    ? Theme.of(context).colorScheme.primary
                     : isPassed
-                        ? Colors.green
-                        : Colors.grey.shade400,
+                        ? Theme.of(context).colorScheme.tertiary
+                        : Theme.of(context).colorScheme.outline,
                 child: Text(
                   '${index + 1}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isActive || isPassed
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -424,24 +413,24 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  color: isPassed ? Colors.grey.shade600 : null,
+                  color: isPassed ? Theme.of(context).colorScheme.onSurfaceVariant : null,
                 ),
               ),
               subtitle: Text(
                 '${instruction.formattedDistance} • ${instruction.formattedDuration}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               trailing: Icon(
                 _getInstructionIcon(instruction.type),
                 size: 20,
                 color: isActive
-                    ? Colors.blue
+                    ? Theme.of(context).colorScheme.primary
                     : isPassed
-                        ? Colors.green
-                        : Colors.grey.shade400,
+                        ? Theme.of(context).colorScheme.tertiary
+                        : Theme.of(context).colorScheme.outline,
               ),
             ),
           );
@@ -479,7 +468,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.grey.shade600, size: 20),
+        Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
         const SizedBox(height: 4),
         Text(
           value,
@@ -491,7 +480,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12,
           ),
         ),
@@ -522,8 +511,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       if (result.success) {
         // Ažuriraj rutu sa optimizovanim redosledom
         setState(() {
-          _remainingPassengers =
-              result.optimizedPutnici ?? _remainingPassengers;
+          _remainingPassengers = result.optimizedPutnici ?? _remainingPassengers;
           _statusMessage = '✅ ${result.message}';
         });
 
@@ -537,7 +525,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('🎯 Ruta optimizovana! ${result.message}'),
-              backgroundColor: Colors.green,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -550,7 +538,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ ${result.message}'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -576,8 +564,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
               icon: const Icon(Icons.route),
               label: const Text('🎯 Smart Navigation - Optimizuj rutu'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
@@ -588,13 +576,13 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed:
-                      _isNavigating ? _stopNavigation : _startGPSTracking,
+                  onPressed: _isNavigating ? _stopNavigation : _startGPSTracking,
                   icon: Icon(_isNavigating ? Icons.stop : Icons.play_arrow),
                   label: Text(_isNavigating ? 'Zaustavi' : 'Pokreni'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isNavigating ? Colors.red : Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor:
+                        _isNavigating ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),
               ),

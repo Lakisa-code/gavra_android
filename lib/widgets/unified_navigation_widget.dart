@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../models/putnik.dart';
 
 class UnifiedNavigationWidget extends StatelessWidget {
@@ -30,8 +31,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final putniciSaAdresom =
-        putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
+    final putniciSaAdresom = putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
 
     return Row(
       children: [
@@ -65,10 +65,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (isRouteOptimized
-                    ? const Color(0xFF4CAF50)
-                    : const Color(0xFF00D4FF))
-                .withOpacity(0.3),
+            color: (isRouteOptimized ? const Color(0xFF4CAF50) : const Color(0xFF00D4FF)).withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -86,7 +83,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
               children: [
                 Icon(
                   isRouteOptimized ? Icons.check_circle : Icons.sort,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   size: 18,
                 ),
                 const SizedBox(width: 4),
@@ -95,8 +92,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
                   children: [
                     Text(
                       isRouteOptimized ? 'OPTIMIZOVANO' : 'OPTIMIZUJ',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -104,8 +101,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
                     if (putniciSaAdresom.isNotEmpty)
                       Text(
                         '${putniciSaAdresom.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -141,10 +138,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (isNavigating
-                    ? const Color(0xFFFF9800)
-                    : const Color(0xFF673AB7))
-                .withOpacity(0.3),
+            color: (isNavigating ? const Color(0xFFFF9800) : const Color(0xFF673AB7)).withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -154,12 +148,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: putniciSaAdresom.isEmpty
-              ? null
-              : () => _openOSMNavigation(context, putniciSaAdresom),
-          onLongPress: putniciSaAdresom.isEmpty
-              ? null
-              : () => _showNavigationMenu(context),
+          onTap: putniciSaAdresom.isEmpty ? null : () => _openOSMNavigation(context, putniciSaAdresom),
+          onLongPress: putniciSaAdresom.isEmpty ? null : () => _showNavigationMenu(context),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
@@ -167,7 +157,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
               children: [
                 Icon(
                   isNavigating ? Icons.navigation : Icons.map,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSecondary,
                   size: 18,
                 ),
                 const SizedBox(width: 4),
@@ -176,8 +166,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
                   children: [
                     Text(
                       isNavigating ? 'NAVIGIRAM' : 'NAVIGACIJA',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSecondary,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -185,8 +175,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
                     if (putniciSaAdresom.isNotEmpty)
                       Text(
                         '${putniciSaAdresom.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSecondary,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -200,12 +190,12 @@ class UnifiedNavigationWidget extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.8),
+                        color: Theme.of(context).colorScheme.error.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.stop,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onError,
                         size: 12,
                       ),
                     ),
@@ -234,8 +224,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
       // 2. Kreiraj OpenStreetMap URL sa TRENUTNIM redosledom putnika
       String osmUrl = 'https://www.openstreetmap.org/directions?';
-      osmUrl +=
-          'from=${currentPosition.latitude}%2C${currentPosition.longitude}';
+      osmUrl += 'from=${currentPosition.latitude}%2C${currentPosition.longitude}';
 
       // 3. Dodaj poslednju destinaciju (OSM ne podržava multiple waypoints kao Google)
       if (putnici.isNotEmpty) {
@@ -260,18 +249,18 @@ class UnifiedNavigationWidget extends StatelessWidget {
         onStartGPSTracking();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🗺️ OpenStreetMap otvoren sa rutom'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('🗺️ OpenStreetMap otvoren sa rutom'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
         }
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ne mogu da otvorim navigaciju'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('Ne mogu da otvorim navigaciju'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -281,7 +270,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Greška pri pokretanju navigacije: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -305,7 +294,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: Theme.of(context).colorScheme.outline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -315,11 +304,12 @@ class UnifiedNavigationWidget extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 20),
             _buildMenuOption(
+              context: context,
               icon: Icons.map,
               title: 'Reorganizuj Listu',
               subtitle: 'Optimizuj redosled putnika u aplikaciji',
@@ -329,18 +319,18 @@ class UnifiedNavigationWidget extends StatelessWidget {
               },
             ),
             _buildMenuOption(
+              context: context,
               icon: Icons.navigation,
               title: 'Google Maps Ruta',
               subtitle: 'Otvori kompletan route u Google Maps',
               onTap: () {
                 Navigator.pop(context);
-                final putniciSaAdresom = putnici
-                    .where((p) => p.adresa != null && p.adresa!.isNotEmpty)
-                    .toList();
+                final putniciSaAdresom = putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
                 _openOSMNavigation(context, putniciSaAdresom);
               },
             ),
             _buildMenuOption(
+              context: context,
               icon: Icons.gps_fixed,
               title: 'GPS Tracking',
               subtitle: 'Pokreni realtime praćenje',
@@ -350,6 +340,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
               },
             ),
             _buildMenuOption(
+              context: context,
               icon: isRouteOptimized ? Icons.route : Icons.alt_route,
               title: 'Lokalna Optimizacija',
               subtitle: 'Optimizuj redosled putnika',
@@ -360,10 +351,11 @@ class UnifiedNavigationWidget extends StatelessWidget {
             ),
             if (isNavigating)
               _buildMenuOption(
+                context: context,
                 icon: Icons.stop,
                 title: 'Završi Navigaciju',
                 subtitle: 'Prekini trenutnu navigaciju',
-                color: Colors.red,
+                color: Theme.of(context).colorScheme.error,
                 onTap: () {
                   Navigator.pop(context);
                   onStopNavigation();
@@ -376,6 +368,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
   }
 
   Widget _buildMenuOption({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String subtitle,
@@ -383,9 +376,9 @@ class UnifiedNavigationWidget extends StatelessWidget {
     Color? color,
   }) {
     return ListTile(
-      leading: Icon(icon, color: color ?? Colors.blue[600]),
+      leading: Icon(icon, color: color ?? Theme.of(context).colorScheme.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
+      subtitle: Text(subtitle, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       onTap: onTap,
     );
   }

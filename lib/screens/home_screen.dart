@@ -47,7 +47,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  static final _logger = getLogger('HomeScreen');
+  // Logging using dlog function from logging.dart
   final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final SupabaseClient supabase = Supabase.instance.client;
 
@@ -260,9 +260,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _checkRealtimeHealth();
       });
 
-      _logger.i('🚨 Realtime monitoring setup completed');
+      dlog('🚨 Realtime monitoring setup completed');
     } catch (e) {
-      _logger.e('Failed to setup realtime monitoring: $e');
+      dlog('Failed to setup realtime monitoring: $e');
     }
   }
 
@@ -273,11 +273,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (_isRealtimeHealthy.value != isHealthy) {
         _isRealtimeHealthy.value = isHealthy;
-        _logger.i('💓 Realtime health changed: $isHealthy');
+        dlog('💓 Realtime health changed: $isHealthy');
       }
     } catch (e) {
       _isRealtimeHealthy.value = false;
-      _logger.e('Heartbeat check failed: $e');
+      dlog('Heartbeat check failed: $e');
     }
   }
 
@@ -325,32 +325,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<List<Putnik>> _getAllPutnici() async {
     try {
-      _logger.i('🔍 Getting all putnici for day: $_selectedDay');
+      dlog('🔍 Getting all putnici for day: $_selectedDay');
       // 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
       // 🎯 PROSLIJEDI SELEKTOVANI DAN umesto današnjeg
       final result = await _putnikService.getAllPutniciFromBothTables(
         targetDay: _selectedDay,
       );
-      _logger.i('✅ Got ${result.length} putnici from both tables');
+      dlog('✅ Got ${result.length} putnici from both tables');
       return result;
     } catch (e) {
-      _logger.e('❌ Error in _getAllPutnici: $e');
+      dlog('❌ Error in _getAllPutnici: $e');
       return [];
     }
   }
 
   Future<void> _loadPutnici() async {
-    _logger.i('🔄 Loading putnici started...');
+    dlog('🔄 Loading putnici started...');
     setState(() => _isLoading = true);
     try {
       final putnici = await _getAllPutnici();
-      _logger.i('✅ Loading putnici completed: ${putnici.length} putnici');
+      dlog('✅ Loading putnici completed: ${putnici.length} putnici');
       setState(() {
         _allPutnici = putnici;
         _isLoading = false;
       });
     } catch (e) {
-      _logger.e('❌ Error loading putnici: $e');
+      dlog('❌ Error loading putnici: $e');
       setState(() => _isLoading = false);
       _showErrorDialog('Greška pri učitavanju: $e');
     }

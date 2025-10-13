@@ -481,8 +481,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         vertical: 4,
                       ),
                       decoration: Theme.of(context).brightness == Brightness.dark
-                          ? DarkSapphirePlatinumStyles.dropdownDecoration
-                          : FlutterBankStyles.dropdownDecoration,
+                          ? DarkThemeStyles.dropdownDecoration
+                          : TripleBlueFashionStyles.dropdownDecoration,
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedFilter,

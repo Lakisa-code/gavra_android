@@ -1,8 +1,9 @@
-import '../models/putnik.dart';
-import 'realtime_service.dart';
 import 'package:logger/logger.dart';
+
+import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
 import '../utils/logging.dart';
+import 'realtime_service.dart';
 
 /// Kombinovani servis za putnike - koristi normalizovanu šemu ali pruža
 /// kompatibilan interfejs sa starim PutnikService-om
@@ -79,8 +80,7 @@ class CombinedPutnikService {
         }
         if (vreme != null) {
           // Normalize both times before comparison (handles 05:00 vs 5:00, seconds, etc.)
-          if (GradAdresaValidator.normalizeTime(putnik.polazak) !=
-              GradAdresaValidator.normalizeTime(vreme)) {
+          if (GradAdresaValidator.normalizeTime(putnik.polazak) != GradAdresaValidator.normalizeTime(vreme)) {
             return false;
           }
         }
@@ -88,10 +88,7 @@ class CombinedPutnikService {
       }).toList();
 
       try {
-        final sampleFiltered = filtered
-            .take(10)
-            .map((p) => '${p.ime}@${p.polazak}@${p.grad}')
-            .toList();
+        final sampleFiltered = filtered.take(10).map((p) => '${p.ime}@${p.polazak}@${p.grad}').toList();
         dlog(
           '🔎 [COMBINED] after filtering (grad=$grad, vreme=$vreme): ${filtered.length} -> sample: $sampleFiltered',
         );
@@ -120,7 +117,6 @@ class CombinedPutnikService {
       // final mesecniPutnici = await _mesecniService.getAktivniMesecniPutnici();
       // ... convert to Putnik list
     } catch (e) {
-      dlog('❌ Error in getAllPutniciFromBothTables: $e');
       return [];
     }
   }

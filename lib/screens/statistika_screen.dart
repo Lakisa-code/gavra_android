@@ -332,8 +332,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               height: 32,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: Theme.of(context).brightness == Brightness.dark
-                                  ? DarkSapphirePlatinumStyles.dropdownDecoration
-                                  : FlutterBankStyles.dropdownDecoration,
+                                  ? DarkThemeStyles.dropdownDecoration
+                                  : TripleBlueFashionStyles.dropdownDecoration,
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
@@ -387,8 +387,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 height: 32,
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: Theme.of(context).brightness == Brightness.dark
-                                    ? DarkSapphirePlatinumStyles.dropdownDecoration
-                                    : FlutterBankStyles.dropdownDecoration,
+                                    ? DarkThemeStyles.dropdownDecoration
+                                    : TripleBlueFashionStyles.dropdownDecoration,
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,

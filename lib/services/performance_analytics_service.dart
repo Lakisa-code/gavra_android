@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'advanced_caching_service.dart';
-import '../utils/logging.dart';
 
 // Use centralized logger (no local alias)
 
@@ -88,7 +87,6 @@ class PerformanceAnalyticsService {
       // Check for performance alerts
       _checkPerformanceAlert(metricName, value);
 
-      dlog('📈 Recorded metric $metricName: $value');
     } catch (e) {
       _logger.e('❌ Failed to record metric $metricName: $e');
     }
@@ -120,7 +118,6 @@ class PerformanceAnalyticsService {
         _userBehavior.remove(oldestKey);
       }
 
-      dlog('👤 Tracked behavior: $eventName - $action');
     } catch (e) {
       _logger.e('❌ Failed to track behavior $eventName: $e');
     }
@@ -149,7 +146,6 @@ class PerformanceAnalyticsService {
         metadata: metadata ?? {},
       );
 
-      dlog('🧪 A/B Test result: $testName ($variant) -> $outcome: $value');
     } catch (e) {
       _logger.e('❌ Failed to record A/B test result: $e');
     }
@@ -553,7 +549,6 @@ class PerformanceAnalyticsService {
         );
 
         // In production, send to monitoring service
-        dlog('🚨 PERFORMANCE ALERT: $metricName exceeded threshold!');
       }
     }
   }

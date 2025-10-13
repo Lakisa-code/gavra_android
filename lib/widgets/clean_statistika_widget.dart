@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gavra_android/services/clean_statistika_service.dart';
 
-import '../theme.dart';
-
 /// Widget za prikaz čistih statistika bez duplikata
 class CleanStatistikaWidget extends StatefulWidget {
   const CleanStatistikaWidget({Key? key}) : super(key: key);
@@ -133,13 +131,6 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
             ),
 
             const SizedBox(height: 16),
-
-            // Debug info button
-            ElevatedButton.icon(
-              onPressed: _pokaziDebugInfo,
-              icon: const Icon(Icons.info),
-              label: const Text('Debug informacije'),
-            ),
           ],
         ),
       ),
@@ -161,61 +152,6 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
         title: Text(naslov),
         subtitle: Text(vrednost),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      ),
-    );
-  }
-
-  void _pokaziDebugInfo() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFFBB86FC).withOpacity(0.4)
-                : const Color(0xFF008B8B).withOpacity(0.5),
-            width: 2,
-          ),
-        ),
-        title: Text(
-          'Debug informacije',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Container(
-          decoration: Theme.of(context).brightness == Brightness.dark
-              ? DarkSapphirePlatinumStyles.popupDecoration
-              : FlutterBankStyles.popupDecoration,
-          child: SingleChildScrollView(
-            child: Text(
-              _statistike.toString(),
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          Container(
-            decoration: Theme.of(context).brightness == Brightness.dark
-                ? DarkSapphirePlatinumStyles.gradientButton
-                : FlutterBankStyles.gradientButton,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Zatvori',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

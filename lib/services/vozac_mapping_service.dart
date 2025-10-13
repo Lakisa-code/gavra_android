@@ -1,4 +1,3 @@
-import '../utils/logging.dart';
 import 'vozac_service.dart';
 
 /// Servis za mapiranje imena vozača u UUID-ove i obrnuto
@@ -25,7 +24,6 @@ class VozacMappingService {
   /// Učitava mapiranje vozača iz baze podataka
   static Future<void> _loadMappingFromDatabase() async {
     try {
-      dlog('🔄 [VOZAC MAPPING] Učitavam vozače iz baze...');
       final vozaci = await _vozacService.getAllVozaci();
 
       _vozacNameToUuid = {};
@@ -42,9 +40,7 @@ class VozacMappingService {
       }
 
       _lastCacheUpdate = DateTime.now();
-      dlog('✅ [VOZAC MAPPING] Učitano ${vozaci.length} vozača iz baze');
     } catch (e) {
-      dlog('❌ [VOZAC MAPPING] Greška pri učitavanju iz baze: $e');
       // Fallback na hardkodovano mapiranje
       _vozacNameToUuid = Map.from(_fallbackMapping);
       _vozacUuidToName = {
@@ -76,7 +72,6 @@ class VozacMappingService {
     await _ensureMappingLoaded();
     final uuid = _vozacNameToUuid?[ime];
     if (uuid == null) {
-      dlog('⚠️ [VOZAC MAPPING] Nepoznato ime vozača: $ime');
     }
     return uuid;
   }
@@ -86,7 +81,6 @@ class VozacMappingService {
     await _ensureMappingLoaded();
     final ime = _vozacUuidToName?[uuid];
     if (ime == null) {
-      dlog('⚠️ [VOZAC MAPPING] Nepoznat UUID vozača: $uuid');
     }
     return ime;
   }
@@ -132,9 +126,7 @@ class VozacMappingService {
   /// Debug funkcija za ispis mapiranja
   static Future<void> printMapping() async {
     await _ensureMappingLoaded();
-    dlog('🚗 [VOZAC MAPPING] Imena -> UUID:');
     _vozacNameToUuid?.forEach((ime, uuid) {
-      dlog('  $ime -> $uuid');
     });
   }
 

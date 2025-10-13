@@ -442,10 +442,10 @@ class _PutnikCardState extends State<PutnikCard> {
       ),
       builder: (context) => Container(
         decoration: Theme.of(context).brightness == Brightness.dark
-            ? DarkSapphirePlatinumStyles.popupDecoration.copyWith(
+            ? DarkThemeStyles.popupDecoration.copyWith(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               )
-            : FlutterBankStyles.popupDecoration.copyWith(
+            : TripleBlueFashionStyles.popupDecoration.copyWith(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
         padding: const EdgeInsets.all(24),
@@ -910,8 +910,8 @@ class _PutnikCardState extends State<PutnikCard> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: Theme.of(context).brightness == Brightness.dark
-                        ? DarkSapphirePlatinumStyles.dropdownDecoration
-                        : FlutterBankStyles.dropdownDecoration,
+                        ? DarkThemeStyles.dropdownDecoration
+                        : TripleBlueFashionStyles.dropdownDecoration,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: selectedMonth,
@@ -2358,10 +2358,6 @@ class _PutnikCardState extends State<PutnikCard> {
     required String vozacIme,
   }) async {
     try {
-      print(
-        '🔍 [DEBUG SAVE PAYMENT] Started - putnikId: $putnikId, iznos: $iznos, mesec: $mesec, vozacIme: "$vozacIme"',
-      );
-
       // Parsiraj izabrani mesec (format: "Septembar 2025")
       final parts = mesec.split(' ');
       if (parts.length != 2) {
@@ -2383,8 +2379,6 @@ class _PutnikCardState extends State<PutnikCard> {
       final pocetakMeseca = DateTime(year, monthNumber);
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
-      print('🔍 [DEBUG SAVE PAYMENT] Calling azurirajPlacanjeZaMesec...');
-
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
       final uspeh = await MesecniPutnikService().azurirajPlacanjeZaMesec(
         putnikId,
@@ -2394,10 +2388,7 @@ class _PutnikCardState extends State<PutnikCard> {
         krajMeseca,
       );
 
-      print('🔍 [DEBUG SAVE PAYMENT] azurirajPlacanjeZaMesec result: $uspeh');
-
       if (uspeh) {
-        print('🔄 [DEBUG SAVE PAYMENT] Plaćanje uspešno sačuvano');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2409,7 +2400,6 @@ class _PutnikCardState extends State<PutnikCard> {
           );
         }
       } else {
-        print('❌ [DEBUG SAVE PAYMENT] Plaćanje nije uspešno sačuvano');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -2420,7 +2410,6 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       }
     } catch (e) {
-      print('❌ [DEBUG SAVE PAYMENT] Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2568,8 +2557,8 @@ class _PutnikCardState extends State<PutnikCard> {
           const SizedBox(width: 8),
           Container(
             decoration: Theme.of(context).brightness == Brightness.dark
-                ? DarkSapphirePlatinumStyles.gradientButton
-                : FlutterBankStyles.gradientButton,
+                ? DarkThemeStyles.gradientButton
+                : TripleBlueFashionStyles.gradientButton,
             child: TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text(

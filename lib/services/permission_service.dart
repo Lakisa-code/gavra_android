@@ -4,7 +4,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // foundation import not needed here
 import '../main.dart'; // Import za navigatorKey
-import '../utils/logging.dart';
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
 /// Zahteva sve dozvole pri prvom pokretanju aplikacije
@@ -149,7 +148,6 @@ class PermissionService {
 
       return allCriticalGranted;
     } catch (e) {
-      dlog('❌ Error requesting permissions: $e');
       return false;
     }
   }
@@ -176,7 +174,6 @@ class PermissionService {
           permission != LocationPermission.denied &&
           permission != LocationPermission.deniedForever;
     } catch (e) {
-      dlog('❌ Location permission error: $e');
       return false;
     }
   }
@@ -324,7 +321,6 @@ class PermissionService {
       await Permission.phone
           .request(); // Ovo će otvoriti settings ako je potrebno
     } catch (e) {
-      dlog('❌ Error opening settings: $e');
     }
   }
 
@@ -342,13 +338,11 @@ class PermissionService {
 
       // Ako Huawei blokira dozvolu, nastavi sa URL launcher pristupom
       if (result.isDenied || result.isPermanentlyDenied) {
-        dlog('🍎 HUAWEI: SMS dozvola odbijena, koristim URL launcher');
         return true; // Vraća true jer će koristiti URL launcher
       }
 
       return result.isGranted || result.isLimited;
     } catch (e) {
-      dlog('🍎 HUAWEI: SMS permission error, fallback to URL launcher: $e');
       return true; // Fallback na URL launcher
     }
   }
@@ -365,13 +359,11 @@ class PermissionService {
 
       // Huawei fallback
       if (result.isDenied || result.isPermanentlyDenied) {
-        dlog('🍎 HUAWEI: Phone dozvola odbijena, koristim tel: URI');
         return true; // Vraća true jer će koristiti tel: URI
       }
 
       return result.isGranted || result.isLimited;
     } catch (e) {
-      dlog('🍎 HUAWEI: Phone permission error, fallback to tel: URI: $e');
       return true; // Fallback na tel: URI
     }
   }

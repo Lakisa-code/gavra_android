@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../theme.dart'; // Import our new Flutter Bank theme
+import '../theme.dart'; // Import our new 3-theme system
 
 class ThemeService {
   static const String _kljucTeme = 'nocni_rezim';
@@ -25,13 +25,11 @@ class ThemeService {
     return !trenutno;
   }
 
-  /// 🎨 Kreira svetlu temu - NOVA FLUTTER BANK TEMA!
+  /// 🎨 Kreira svetlu temu - Automatska selekcija iz 3 teme!
+  /// Triple Blue Fashion / Dark Theme / Pink Svetlana
   static ThemeData svetlaTema({String? driverName}) {
-    // Ako je driver Svetlana, koristi pink temu
-    if (driverName != null && driverName.toLowerCase() == 'svetlana') {
-      return svetlanaPinkTheme;
-    }
-    return flutterBankTheme; // Using our beautiful new theme!
+    // Koristi ThemeSelector za automatsku selekciju tema
+    return ThemeSelector.getThemeForDriver(driverName);
   }
 
   /// 🌙 Kreira tamnu temu optimizovanu za vožnju noću

@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
 import '../models/mesecni_putnik.dart';
 import '../screens/danas_screen.dart';
-import '../utils/logging.dart';
 import 'supabase_safe.dart';
 
 class LocalNotificationService {
@@ -117,7 +116,6 @@ class LocalNotificationService {
       // Log the error to help diagnose issues like unsupported audio format
       try {
         // Use navigatorKey context-safe logger if available
-        dlog('❌ Greška u LocalNotificationService audio playback: $e');
       } catch (_) {}
     }
   }

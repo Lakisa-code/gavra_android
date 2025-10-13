@@ -5,13 +5,13 @@ import 'package:shimmer/shimmer.dart';
 /// Profesionalni loading effects za sve liste i kartice
 class ShimmerWidgets {
   /// 💳 Shimmer za putnik kartice
-  static Widget putnikCardShimmer() {
+  static Widget putnikCardShimmer(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: 2,
       child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+        baseColor: Theme.of(context).colorScheme.surfaceVariant,
+        highlightColor: Theme.of(context).colorScheme.surface,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -22,7 +22,7 @@ class ShimmerWidgets {
                 width: double.infinity,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -32,7 +32,7 @@ class ShimmerWidgets {
                 width: 200,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -44,7 +44,7 @@ class ShimmerWidgets {
                     width: 60,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -54,7 +54,7 @@ class ShimmerWidgets {
                     width: 80,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
@@ -63,7 +63,7 @@ class ShimmerWidgets {
                     width: 80,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
@@ -77,17 +77,17 @@ class ShimmerWidgets {
   }
 
   /// 📊 Shimmer za statistike
-  static Widget statistikaShimmer() {
+  static Widget statistikaShimmer(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: Theme.of(context).colorScheme.surfaceVariant,
+      highlightColor: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
           Container(
             width: double.infinity,
             height: 200,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -100,7 +100,7 @@ class ShimmerWidgets {
                   margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -113,23 +113,23 @@ class ShimmerWidgets {
   }
 
   /// 📋 Shimmer za liste
-  static Widget listItemShimmer() {
+  static Widget listItemShimmer(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: Theme.of(context).colorScheme.surfaceVariant,
+      highlightColor: Theme.of(context).colorScheme.surface,
       child: ListTile(
         leading: Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
           ),
         ),
         title: Container(
           height: 16,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -138,7 +138,7 @@ class ShimmerWidgets {
           width: 100,
           margin: const EdgeInsets.only(top: 4),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -150,19 +150,20 @@ class ShimmerWidgets {
   static Widget putnikListShimmer({int itemCount = 5}) {
     return ListView.builder(
       itemCount: itemCount,
-      itemBuilder: (context, index) => putnikCardShimmer(),
+      itemBuilder: (context, index) => putnikCardShimmer(context),
     );
   }
 
   /// 💎 Custom shimmer wrapper
   static Widget shimmerWrapper({
+    required BuildContext context,
     required Widget child,
     Color? baseColor,
     Color? highlightColor,
   }) {
     return Shimmer.fromColors(
-      baseColor: baseColor ?? Colors.grey[300]!,
-      highlightColor: highlightColor ?? Colors.grey[100]!,
+      baseColor: baseColor ?? Theme.of(context).colorScheme.surfaceVariant,
+      highlightColor: highlightColor ?? Theme.of(context).colorScheme.surface,
       child: child,
     );
   }

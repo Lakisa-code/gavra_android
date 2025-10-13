@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/logging.dart';
 
 /// 🚀 REALTIME PRIORITY SERVICE - FUCK BATTERY, POSAO JE BITAN!
 ///
@@ -42,13 +41,10 @@ class RealtimePriorityService {
 
   /// 🚀 INITIALIZE REALTIME PRIORITY SYSTEM
   static Future<void> initialize() async {
-    dlog('🚀 [$_tag] Inicijalizujem REALTIME PRIORITY sistem');
-    dlog('💪 [$_tag] JEBES BATERIJU - POSAO JE BITNIJI!');
 
     await _loadSettings();
     _startRealtimeChannels();
 
-    dlog('✅ [$_tag] REALTIME PRIORITY sistem spreman!');
   }
 
   /// 📡 START REALTIME CHANNELS
@@ -73,7 +69,6 @@ class RealtimePriorityService {
       (timer) => _processLowPriorityUpdates(),
     );
 
-    dlog('📡 [$_tag] Svi realtime kanali pokrenuti - BEZ BATTERY SRANJA!');
   }
 
   /// 🎯 PROCESS CRITICAL UPDATES (INSTANT)
@@ -93,7 +88,6 @@ class RealtimePriorityService {
       // HITNA OBAVEŠTENJA
       await _checkEmergencyNotifications();
     } catch (e) {
-      dlog('⚠️ [$_tag] Greška u critical updates: $e');
     }
   }
 
@@ -108,7 +102,6 @@ class RealtimePriorityService {
       // VOZAC DATA
       await _updateDriverData();
     } catch (e) {
-      dlog('⚠️ [$_tag] Greška u medium updates: $e');
     }
   }
 
@@ -121,13 +114,11 @@ class RealtimePriorityService {
       // OSTALI PODACI - uvek update bez battery sranja
       await _updateOtherData();
     } catch (e) {
-      dlog('⚠️ [$_tag] Greška u low priority updates: $e');
     }
   }
 
   /// 🎯 CHECK PASSENGER UPDATES (CRITICAL!)
   static Future<void> _checkPassengerUpdates() async {
-    dlog('🎯 [$_tag] Proveravam putnik updates...');
 
     // TODO: Implement actual passenger update check
     // Ovo mora da bude INSTANT!
@@ -141,7 +132,6 @@ class RealtimePriorityService {
 
   /// 🚗 CHECK NEW RIDES (CRITICAL!)
   static Future<void> _checkNewRides() async {
-    dlog('🚗 [$_tag] Proveravam nove vožnje...');
 
     // TODO: Implement actual new ride check
     // Ovo mora da bude INSTANT!
@@ -159,7 +149,6 @@ class RealtimePriorityService {
 
   /// 📍 UPDATE GPS LOCATIONS
   static Future<void> _updateGpsLocations() async {
-    dlog('📍 [$_tag] Ažuriram GPS pozicije...');
     // TODO: Update GPS locations every 5 seconds
   }
 
@@ -178,9 +167,6 @@ class RealtimePriorityService {
     final prefs = await SharedPreferences.getInstance();
     _isEnabled = prefs.getBool('realtime_priority_enabled') ?? true;
 
-    dlog('⚙️ [$_tag] Settings loaded:');
-    dlog('   - Enabled: $_isEnabled');
-    dlog('   - Battery optimization: FUCK IT! 🖕');
   }
 
   /// 🔧 ENABLE/DISABLE REALTIME PRIORITY
@@ -190,10 +176,8 @@ class RealtimePriorityService {
     await prefs.setBool('realtime_priority_enabled', enabled);
 
     if (enabled) {
-      dlog('✅ [$_tag] REALTIME PRIORITY omogućen');
       _startRealtimeChannels();
     } else {
-      dlog('❌ [$_tag] REALTIME PRIORITY onemogućen');
       _stopAllTimers();
     }
   }
@@ -224,7 +208,6 @@ class RealtimePriorityService {
 
   /// 💥 EMERGENCY OVERRIDE - FORCE INSTANT UPDATE
   static Future<void> forceInstantUpdate(String channel) async {
-    dlog('💥 [$_tag] EMERGENCY OVERRIDE za kanal: $channel');
 
     if (_criticalChannels.contains(channel)) {
       await _processCriticalUpdates();
@@ -237,7 +220,6 @@ class RealtimePriorityService {
 
   /// 🧹 DISPOSE
   static void dispose() {
-    dlog('🧹 [$_tag] Disposing realtime priority service');
     _stopAllTimers();
   }
 }
