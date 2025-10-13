@@ -5,12 +5,7 @@ import '../utils/mesecni_helpers.dart';
 import 'mesecni_putnik.dart';
 
 // Enum za statuse putnika
-enum PutnikStatus {
-  otkazano,
-  pokupljen,
-  bolovanje,
-  godisnji,
-}
+enum PutnikStatus { otkazano, pokupljen, bolovanje, godisnji }
 
 // Extension za konverziju između enum-a i string-a
 extension PutnikStatusExtension on PutnikStatus {
@@ -95,9 +90,7 @@ class Putnik {
     }
 
     // GREŠKA - Nepoznata struktura tabele
-    throw Exception(
-      'Nepoznata struktura podataka - nisu iz mesecni_putnici ni putovanja_istorija',
-    );
+    throw Exception('Nepoznata struktura podataka - nisu iz mesecni_putnici ni putovanja_istorija');
   }
 
   // NOVI: Factory za mesecni_putnici tabelu
@@ -124,24 +117,19 @@ class Putnik {
       vremePokupljenja: map['poslednje_putovanje'] != null
           ? DateTime.parse(map['poslednje_putovanje'] as String).toLocal()
           : (map['vreme_pokupljenja'] != null
-              ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
-              : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
+                ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
+                : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String).toLocal()
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
       placeno: MesecniHelpers.priceIsPaid(map),
       cena: _parseDouble(map['cena']), // koristi cena kolonu
       naplatioVozac: MesecniHelpers.priceIsPaid(map)
-          ? VozacMappingService.getVozacImeWithFallbackSync(
-              map['vozac_id'] as String?,
-            )
+          ? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?)
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
       dodaoVozac: map['dodao_vozac'] as String?,
-      vozac: (map['vozac'] as String?) ??
-          VozacMappingService.getVozacImeWithFallbackSync(
-            map['vozac_id'] as String?,
-          ),
+      vozac: (map['vozac'] as String?) ?? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?),
       grad: grad,
       adresa: _determineAdresaFromMesecni(map),
       obrisan: !MesecniHelpers.isActiveFromMap(map),
@@ -168,18 +156,13 @@ class Putnik {
       placeno: _parseDouble(map['cena']) > 0,
       cena: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
-          ? VozacMappingService.getVozacImeWithFallbackSync(
-              map['vozac_id'] as String?,
-            )
+          ? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?)
           : null, // ✅ Samo ako je stvarno plaćeno
       // pokupioVozac: null, // ✅ NEMA U SHEMI - default je null
       // dodaoVozac: null, // ✅ NEMA U SHEMI - default je null
       // Ako tabela sadrži ime u 'vozac' polju, koristi ga, inače pokušaj da
       // mapiramo 'vozac_id' (UUID) na ime pomoću VozacMappingService.
-      vozac: (map['vozac'] as String?) ??
-          VozacMappingService.getVozacImeWithFallbackSync(
-            map['vozac_id'] as String?,
-          ),
+      vozac: (map['vozac'] as String?) ?? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?),
       grad: map['grad'] as String? ?? map['adresa_polaska'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
       otkazaoVozac: map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
       adresa: map['adresa_polaska'] as String?,
@@ -276,14 +259,16 @@ class Putnik {
     final vremePokupljenja = map['poslednje_putovanje'] != null
         ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
-            ? DateTime.parse(map['vreme_pokupljenja'] as String)
-            : null); // ✅ FALLBACK na vreme_pokupljenja
+              ? DateTime.parse(map['vreme_pokupljenja'] as String)
+              : null); // ✅ FALLBACK na vreme_pokupljenja
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
     final iznosPlacanja = map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
-    final vozac = map['vozac'] as String?; // ✅ ČITAJ vozača
+    // ✅ ISPRAVKA: Koristi isti sistem mapiranja kao dnevni putnici
+    final vozac =
+        (map['vozac'] as String?) ?? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?);
     final obrisan = map['aktivan'] == false;
 
     // Trenutni dan u nedelji kao kratica (pon, uto, sre, cet, pet)
@@ -307,10 +292,7 @@ class Putnik {
   }
 
   // NOVA METODA: Kreira putnik objekte za SPECIFIČAN DAN (umesto trenutni dan)
-  static List<Putnik> fromMesecniPutniciMultipleForDay(
-    Map<String, dynamic> map,
-    String targetDan,
-  ) {
+  static List<Putnik> fromMesecniPutniciMultipleForDay(Map<String, dynamic> map, String targetDan) {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
@@ -318,14 +300,16 @@ class Putnik {
     final vremePokupljenja = map['poslednje_putovanje'] != null
         ? DateTime.parse(map['poslednje_putovanje'] as String)
         : (map['vreme_pokupljenja'] != null
-            ? DateTime.parse(map['vreme_pokupljenja'] as String)
-            : null); // ✅ FALLBACK na vreme_pokupljenja
+              ? DateTime.parse(map['vreme_pokupljenja'] as String)
+              : null); // ✅ FALLBACK na vreme_pokupljenja
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
     final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
     final iznosPlacanja = map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
-    final vozac = map['vozac'] as String?; // ✅ ČITAJ vozača
+    // ✅ ISPRAVKA: Koristi isti sistem mapiranja kao dnevni putnici
+    final vozac =
+        (map['vozac'] as String?) ?? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?);
     final obrisan = map['aktivan'] == false;
 
     return _createPutniciForDay(
@@ -402,9 +386,7 @@ class Putnik {
           placeno: placeno,
           cena: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? VozacMappingService.getVozacImeWithFallbackSync(
-                  map['vozac_id'] as String?,
-                )
+              ? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?)
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
           dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
@@ -446,9 +428,7 @@ class Putnik {
           placeno: placeno,
           cena: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? VozacMappingService.getVozacImeWithFallbackSync(
-                  map['vozac_id'] as String?,
-                )
+              ? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?)
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac'] as String?, // ✅ NOVA KOLONA za pokupljanje
           dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
@@ -548,7 +528,9 @@ class Putnik {
             'Ned': 'ned',
           };
           return map[dan] ?? dan.toLowerCase().substring(0, 3);
-        })(): grad == 'Bela Crkva' ? {'bc': polazak} : {'vs': polazak},
+        })(): grad == 'Bela Crkva'
+            ? {'bc': polazak}
+            : {'vs': polazak},
       }),
       'adresa_bela_crkva': grad == 'Bela Crkva' ? adresa : null,
       'adresa_vrsac': grad == 'Vršac' ? adresa : null,
