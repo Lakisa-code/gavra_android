@@ -425,14 +425,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: 2,
           ),
         ),
-        title: const Column(
+        title: Column(
           children: [
-            Icon(Icons.logout, color: Colors.red, size: 40),
-            SizedBox(height: 12),
+            Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 40),
+            const SizedBox(height: 12),
             Text(
               'Logout',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -442,7 +442,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         content: Text(
           'Da li ste sigurni da se želite odjaviti?',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
             fontSize: 16,
           ),
         ),
@@ -456,8 +456,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           HapticElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -610,11 +610,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.person,
-                                  color: Colors.green,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
-                                fillColor: Colors.white,
+                                fillColor: Theme.of(context).colorScheme.surface,
                                 filled: true,
                               ),
                               items: dozvoljenaImena
@@ -812,8 +812,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: HapticElevatedButton(
                 hapticType: HapticType.success,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -866,33 +866,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
                         if (mesecnaKarta && !dozvoljenaImena.contains(imeController.text.trim())) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
+                                  const Text(
                                     '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
-                                  Text(
+                                  const SizedBox(height: 4),
+                                  const Text(
                                     'Možete dodati samo POSTOJEĆE mesečne putnike.',
                                   ),
-                                  SizedBox(height: 4),
-                                  Text('Za NOVE mesečne putnike idite na:'),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 4),
+                                  const Text('Za NOVE mesečne putnike idite na:'),
+                                  const SizedBox(height: 2),
                                   Row(
                                     children: [
                                       Icon(
                                         Icons.arrow_forward,
                                         size: 16,
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
-                                      SizedBox(width: 4),
-                                      Text(
+                                      const SizedBox(width: 4),
+                                      const Text(
                                         'Meni → Mesečni putnici',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
@@ -903,7 +903,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ],
                               ),
                               backgroundColor: Colors.red,
-                              duration: Duration(seconds: 5),
+                              duration: const Duration(seconds: 5),
                             ),
                           );
                           return;
@@ -995,19 +995,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         }
                       },
                 child: _isAddingPutnik
-                    ? const Row(
+                    ? Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                               strokeWidth: 2,
                             ),
                           ),
-                          SizedBox(width: 8),
-                          Text('Dodaje...'),
+                          const SizedBox(width: 8),
+                          const Text('Dodaje...'),
                         ],
                       )
                     : const Row(
@@ -1071,12 +1071,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Container(
                         height: 35,
                         alignment: Alignment.centerLeft,
-                        child: const Text(
+                        child: Text(
                           'Rezervacije',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             letterSpacing: 0.5,
                             shadows: [
                               Shadow(
@@ -1100,10 +1100,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Theme.of(context).colorScheme.surface.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(18),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1112,7 +1112,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                               ),
                             ),
                             SizedBox(width: 6),
@@ -1122,7 +1122,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 12,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1205,14 +1205,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     bottomRight: Radius.circular(25),
                   ),
                 ),
-                child: const SafeArea(
+                child: SafeArea(
                   child: Center(
                     child: Text(
                       'REZERVACIJE - ERROR',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onError,
                         letterSpacing: 1.8,
                       ),
                     ),
@@ -1439,7 +1439,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: Colors.white, // Ostavljamo belo za AppBar jer je na gradijent pozadini
                             letterSpacing: 1.8,
                             shadows: [
                               Shadow(

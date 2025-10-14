@@ -24,8 +24,7 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -87,8 +86,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
       // Also request Firebase/iOS style permissions via RealtimeNotificationService
       try {
-        final granted =
-            await RealtimeNotificationService.requestNotificationPermissions();
+        final granted = await RealtimeNotificationService.requestNotificationPermissions();
         dlog('🔔 RealtimeNotificationService permission result: $granted');
       } catch (e) {
         dlog(
@@ -103,15 +101,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   // 🔄 AUTO-LOGIN BEZ PESME - Proveri da li je vozač već logovan
   Future<void> _checkAutoLogin() async {
     // PROVERI SUPABASE AUTH STATE
-    final driverFromSupabase =
-        await DriverRegistrationService.getCurrentLoggedInDriver();
+    final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
 
     final prefs = await SharedPreferences.getInstance();
     final savedDriver = prefs.getString(
       'current_driver',
     ); // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
-    if (driverFromSupabase != null &&
-        (savedDriver == null || savedDriver != driverFromSupabase)) {
+    if (driverFromSupabase != null && (savedDriver == null || savedDriver != driverFromSupabase)) {
       dlog(
         '🔄 Sinhronizujem Supabase korisnika ($driverFromSupabase) sa local storage',
       );
@@ -152,8 +148,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         return;
       }
 
-      final hasCheckedIn =
-          await DailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
@@ -203,8 +198,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
 
@@ -238,8 +232,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     dlog('🚗 Vozač $driverName kliknuo za login - proveravam registraciju...');
 
     // PROVERI DA LI JE VOZAČ VEĆ REGISTROVAN SA EMAIL-OM
-    final isRegistered =
-        await DriverRegistrationService.isDriverRegistered(driverName);
+    final isRegistered = await DriverRegistrationService.isDriverRegistered(driverName);
 
     if (isRegistered) {
       // VOZAČ JE REGISTROVAN - IDI NA EMAIL LOGIN
@@ -287,22 +280,22 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2A2A2A),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: Colors.red.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.error.withOpacity(0.5),
               width: 2,
             ),
           ),
           title: Column(
             children: [
-              const Icon(Icons.error, color: Colors.red, size: 40),
+              Icon(Icons.error, color: Theme.of(context).colorScheme.error, size: 40),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -313,7 +306,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           content: Text(
             message,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
               fontSize: 16,
             ),
             textAlign: TextAlign.center,
@@ -321,8 +314,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -435,8 +428,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical:
-                                      4.0, // Increased slightly for better visibility
+                                  vertical: 4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'] as String,
@@ -651,8 +643,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             fontSize: 13, // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
                             color: color,
-                            letterSpacing:
-                                1.0, // Further reduced to prevent overflow
+                            letterSpacing: 1.0, // Further reduced to prevent overflow
                             shadows: [
                               Shadow(
                                 color: Colors.white.withOpacity(0.5),

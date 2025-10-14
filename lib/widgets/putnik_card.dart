@@ -768,11 +768,22 @@ class _PutnikCardState extends State<PutnikCard> {
 
         return StatefulBuilder(
           builder: (context, setState) => AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outline,
+                width: 2,
+              ),
+            ),
             title: Row(
               children: [
-                Icon(Icons.card_membership, color: Colors.green[700]),
+                Icon(Icons.card_membership, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 8),
-                const Text('Mesečna karta'),
+                Text(
+                  'Mesečna karta',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
               ],
             ),
             content: SingleChildScrollView(
@@ -1035,13 +1046,11 @@ class _PutnikCardState extends State<PutnikCard> {
       builder: (ctx) {
         final controller = TextEditingController();
         return AlertDialog(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFFBB86FC).withOpacity(0.4)
-                  : const Color(0xFF008B8B).withOpacity(0.5),
+              color: Theme.of(context).colorScheme.outline,
               width: 2,
             ),
           ),
@@ -2499,13 +2508,11 @@ class _PutnikCardState extends State<PutnikCard> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFFBB86FC).withOpacity(0.4)
-                : const Color(0xFF008B8B).withOpacity(0.5),
+            color: Theme.of(context).colorScheme.outline,
             width: 2,
           ),
         ),

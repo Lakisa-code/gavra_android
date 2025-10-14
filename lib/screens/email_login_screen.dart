@@ -18,8 +18,7 @@ class EmailLoginScreen extends StatefulWidget {
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
 }
 
-class _EmailLoginScreenState extends State<EmailLoginScreen>
-    with TickerProviderStateMixin {
+class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -138,9 +137,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF1A1A2E),
-              const Color(0xFF16213E),
-              Colors.black.withOpacity(0.9),
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary,
+              Theme.of(context).colorScheme.tertiary,
             ],
           ),
         ),
@@ -176,8 +175,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue.withOpacity(0.8),
-            Colors.indigo.withOpacity(0.6),
+            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.6),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -186,7 +185,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -194,16 +193,16 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.email_rounded,
             size: 60,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Email Prijava',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 28,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -213,7 +212,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           Text(
             'Prijavite se sa email adresom',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
               fontSize: 16,
             ),
           ),
@@ -261,38 +260,38 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
         labelText: 'Email Adresa',
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
         hintText: 'vas.email@primjer.com',
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        prefixIcon: const Icon(Icons.email, color: Colors.blue),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+        prefixIcon: Icon(Icons.email, color: Theme.of(context).colorScheme.primary),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
         ),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Unesite email adresu';
         }
-        if (!EmailAuthService.isValidEmailFormat(value)) {
-          return 'Unesite validnu email adresu';
+        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+          return 'Unesite valjan email format';
         }
         return null;
       },
@@ -303,17 +302,17 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     return TextFormField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
       decoration: InputDecoration(
         labelText: 'Šifra',
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
         hintText: 'Unesite šifru',
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        prefixIcon: const Icon(Icons.lock, color: Colors.blue),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+        prefixIcon: Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
         suffixIcon: IconButton(
           icon: Icon(
             _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-            color: Colors.blue,
+            color: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () {
             setState(() {
@@ -322,22 +321,22 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           },
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
         ),
       ),
       validator: (value) {
@@ -356,22 +355,22 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleLogin,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         elevation: 8,
-        shadowColor: Colors.blue.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
       ),
       child: _isLoading
-          ? const SizedBox(
+          ? SizedBox(
               height: 24,
               width: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
               ),
             )
           : const Text(
@@ -390,7 +389,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       child: Text(
         'Zaboravili ste šifru?',
         style: TextStyle(
-          color: Colors.blue.shade300,
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -405,7 +404,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         Text(
           'Nemate nalog? ',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             fontSize: 16,
           ),
         ),
@@ -418,10 +417,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
               ),
             );
           },
-          child: const Text(
+          child: Text(
             'Registrujte se',
             style: TextStyle(
-              color: Colors.blue,
+              color: Theme.of(context).colorScheme.primary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -442,8 +441,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
 
       dlog('🔐 Pokušavam prijavu sa email-om: $email');
 
-      final driverName =
-          await EmailAuthService.signInWithEmail(email, password);
+      final driverName = await EmailAuthService.signInWithEmail(email, password);
 
       if (driverName != null) {
         dlog('✅ Uspješna prijava vozača: $driverName');
@@ -467,8 +465,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
-        final needsCheckIn =
-            !await DailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn = !await DailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Idi na daily check-in
@@ -556,16 +553,29 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 2,
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         content: Text(
           message,
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK', style: TextStyle(color: Colors.blue)),
+            child: Text(
+              'OK',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ],
       ),
@@ -576,16 +586,29 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+            width: 2,
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        ),
         content: Text(
           message,
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK', style: TextStyle(color: Colors.blue)),
+            child: Text(
+              'OK',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
           ),
         ],
       ),

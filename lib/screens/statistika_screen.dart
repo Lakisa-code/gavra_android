@@ -338,9 +338,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
-                                  dropdownColor: Theme.of(context).brightness == Brightness.dark
-                                      ? Theme.of(context).colorScheme.surface
-                                      : Theme.of(context).colorScheme.surface,
+                                  dropdownColor: Theme.of(context).colorScheme.surface,
                                   icon: Icon(
                                     Icons.arrow_drop_down,
                                     color: Theme.of(context).colorScheme.onSurface,
@@ -363,10 +361,10 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                             child: Center(
                                               child: Text(
                                                 _periodLabel(p),
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
+                                                  color: Theme.of(context).colorScheme.onSurface,
                                                 ),
                                                 textAlign: TextAlign.center,
                                               ),
@@ -393,9 +391,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
-                                    dropdownColor: Theme.of(context).brightness == Brightness.dark
-                                        ? Theme.of(context).colorScheme.surface
-                                        : Theme.of(context).colorScheme.surface,
+                                    dropdownColor: Theme.of(context).colorScheme.surface,
                                     icon: Icon(
                                       Icons.arrow_drop_down,
                                       color: Theme.of(context).colorScheme.onSurface,
