@@ -26,8 +26,7 @@ class EmailAuthService {
         email: email,
         password: password,
         data: {'driver_name': driverName},
-        emailRedirectTo:
-            'gavra013://auth/callback', // Omogući email verification
+        emailRedirectTo: 'gavra013://auth/callback', // Omogući email verification
       );
 
       if (response.user != null) {
@@ -59,8 +58,7 @@ class EmailAuthService {
       );
 
       if (response.user != null) {
-        final driverName =
-            response.user!.userMetadata?['driver_name'] as String?;
+        final driverName = response.user!.userMetadata?['driver_name'] as String?;
         dlog('✅ Prijava uspešna za vozača: $driverName');
         return driverName;
       } else {
@@ -84,6 +82,31 @@ class EmailAuthService {
       return true;
     } catch (e) {
       dlog('❌ Greška pri resetu lozinke: $e');
+      return false;
+    }
+  }
+
+  /// Pošalji ponovo email za potvrdu
+  static Future<bool> resendConfirmationEmail() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        dlog('❌ Nema ulogovanog korisnika');
+        return false;
+      }
+
+      dlog('📧 Šaljem ponovo email za potvrdu na: ${user.email}');
+
+      await _supabase.auth.resend(
+        type: OtpType.signup,
+        email: user.email,
+        emailRedirectTo: 'gavra013://auth/callback',
+      );
+
+      dlog('✅ Email za potvrdu poslat ponovo');
+      return true;
+    } catch (e) {
+      dlog('❌ Greška pri slanju potvrde: $e');
       return false;
     }
   }

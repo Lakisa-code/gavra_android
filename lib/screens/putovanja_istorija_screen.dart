@@ -486,9 +486,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedFilter,
-                          dropdownColor: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF1F2937)
-                              : const Color(0xFFF5F8FF),
+                          dropdownColor: Theme.of(context).colorScheme.surface,
                           icon: Icon(
                             Icons.arrow_drop_down,
                             color: Theme.of(context).colorScheme.onSurface,

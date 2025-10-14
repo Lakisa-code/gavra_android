@@ -6,23 +6,23 @@ import 'package:flutter/services.dart';
 // ⚡🔷💠 1. TRIPLE BLUE FASHION - Electric + Ice + Neon kombinacija!
 const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   brightness: Brightness.light,
-  // Electric Blue Shine kao glavni
-  primary: Color(0xFF021B79), // Electric Blue Shine - taman
+  // Electric Blue Shine kao glavni - OSVETLJEN!
+  primary: Color(0xFF1976D2), // Svetliji Electric Blue - Material Blue 700
   onPrimary: Colors.white,
-  primaryContainer: Color(0xFF0575E6), // Electric Blue Shine - svetao
+  primaryContainer: Color(0xFF1E88E5), // Electric Blue Shine - svetliji
   onPrimaryContainer: Colors.white,
 
-  // Blue Ice Metallic kao secondary
-  secondary: Color(0xFF1E3A78), // Blue Ice Metallic - početak
+  // Blue Ice Metallic kao secondary - OSVETLJEN!
+  secondary: Color(0xFF42A5F5), // Blue Ice Metallic - svetliji
   onSecondary: Colors.white,
-  secondaryContainer: Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
+  secondaryContainer: Color(0xFF64B5F6), // Blue Ice Metallic - još svetliji
   onSecondaryContainer: Colors.white,
 
-  // Neon Blue Glow kao tertiary
-  tertiary: Color(0xFF1FA2FF), // Neon Blue Glow - početak
-  onTertiary: Colors.white,
-  tertiaryContainer: Color(0xFF12D8FA), // Neon Blue Glow - sredina
-  onTertiaryContainer: Colors.white,
+  // Neon Blue Glow kao tertiary - TREĆA BOJA!
+  tertiary: Color(0xFF03DAC6), // Bright Teal/Cyan - treća boja za gradijent
+  onTertiary: Color(0xFF000000), // Crn tekst na svetlom cyan-u
+  tertiaryContainer: Color(0xFF4DD0E1), // Svetliji cyan
+  onTertiaryContainer: Color(0xFF000000),
 
   // Surface colors - svetla pozadina
   surface: Color(0xFFF0F9FF), // Svetla pozadina
@@ -56,6 +56,12 @@ const ColorScheme darkThemeColorScheme = ColorScheme(
   secondaryContainer: Color(0xFF6B46C1),
   onSecondaryContainer: Color(0xFFE5E7EB),
 
+  // Cyan accent kao tertiary - treća boja!
+  tertiary: Color(0xFF22D3EE), // Bright cyan za dark temu
+  onTertiary: Color(0xFF000000),
+  tertiaryContainer: Color(0xFF0891B2), // Tamniji cyan
+  onTertiaryContainer: Color(0xFFE0F7FA),
+
   // Tamne surface boje
   surface: Color(0xFF111827), // Tamna pozadina
   onSurface: Color(0xFFF9FAFB),
@@ -87,6 +93,12 @@ const ColorScheme pinkSvetlanaColorScheme = ColorScheme(
   onSecondary: Colors.white,
   secondaryContainer: Color(0xFFFCE4EC), // Svetao pink
   onSecondaryContainer: Color(0xFFAD1457),
+
+  // Rose gold kao tertiary - treća boja!
+  tertiary: Color(0xFFFFB74D), // Warm gold za pink temu
+  onTertiary: Color(0xFF000000),
+  tertiaryContainer: Color(0xFFFFF3E0), // Svetao gold
+  onTertiaryContainer: Color(0xFFE65100),
 
   // Pink surface boje
   surface: Color(0xFFFDF2F8), // Pink pozadina
@@ -137,60 +149,53 @@ extension CustomColors on ColorScheme {
 
 // 🎨 GRADIJENTI ZA 3 TEME
 
-// ⚡ Triple Blue Fashion Gradient
+// ⚡ Triple Blue Fashion Gradient - 3 GLAVNE BOJE!
 const LinearGradient tripleBlueFashionGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF021B79), // Electric Blue Shine - početak
-    Color(0xFF0575E6), // Electric Blue Shine - završetak
-    Color(0xFF1E3A78), // Blue Ice Metallic - početak
-    Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
-    Color(0xFFA8D8E8), // Blue Ice Metallic - završetak
-    Color(0xFF1FA2FF), // Neon Blue Glow - početak
-    Color(0xFF12D8FA), // Neon Blue Glow - sredina
-    Color(0xFFA6FFCB), // Neon Blue Glow - završetak
+    Color(0xFF1976D2), // Electric Blue - prva boja
+    Color(0xFF42A5F5), // Ice Blue - druga boja
+    Color(0xFF03DAC6), // Neon Cyan - treća boja
   ],
-  stops: [0.0, 0.14, 0.28, 0.42, 0.56, 0.7, 0.85, 1.0],
+  stops: [0.0, 0.5, 1.0], // Ravnomerno raspoređene 3 boje
 );
 
-// 🌙 Dark Theme Gradient
+// 🌙 Dark Theme Gradient - 3 BOJE!
 const LinearGradient darkThemeGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
   colors: [
-    Color(0xFF000000), // Pure black
-    Color(0xFF111111), // Tamno charcoal
-    Color(0xFF1F2937), // Rich dark gray
-    Color(0xFF374151), // Medium gray
-    Color(0xFF6B7280), // Light gray
+    Color(0xFF111827), // Deep dark
     Color(0xFFBB86FC), // Electric purple
+    Color(0xFF22D3EE), // Bright cyan
   ],
-  stops: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+  stops: [0.0, 0.5, 1.0],
 );
 
-// 💖 Pink Svetlana Gradient
+// 💖 Pink Svetlana Gradient - 3 BOJE!
 const LinearGradient pinkSvetlanaGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
     Color(0xFFE91E63), // Hot pink
-    Color(0xFFF06292), // Svetliji pink
     Color(0xFFFF4081), // Pink accent
-    Color(0xFFFCE4EC), // Veoma svetao pink
+    Color(0xFFFFB74D), // Warm gold
   ],
-  stops: [0.0, 0.33, 0.66, 1.0],
+  stops: [0.0, 0.5, 1.0],
 );
 
 // 🎭 THEME DATA ZA 3 TEME
 
-// ⚡ 1. Triple Blue Fashion Theme
+// ⚡ 1. Triple Blue Fashion Theme - OSVETLJENA!
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
   fontFamily: 'Inter',
-  scaffoldBackgroundColor: const Color(0xFFF0F9FF),
+  scaffoldBackgroundColor: const Color(0xFFF0F9FF), // Svetla pozadina
   appBarTheme: const AppBarTheme(
     elevation: 0,
-    backgroundColor: Color(0xFF021B79),
+    backgroundColor: Color(0xFF1976D2), // Svetliji Electric Blue umesto tamnog
     foregroundColor: Colors.white,
     systemOverlayStyle: SystemUiOverlayStyle.light,
     titleTextStyle: TextStyle(
@@ -244,24 +249,24 @@ final ThemeData pinkSvetlanaTheme = ThemeData(
 
 // 🎨 UTILITY STILOVI ZA 3 TEME
 
-// ⚡ Triple Blue Fashion Styles
+// ⚡ Triple Blue Fashion Styles - OSVETLJENI!
 class TripleBlueFashionStyles {
   static BoxDecoration cardDecoration = BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
       width: 2,
-      color: const Color(0xFF1FA2FF).withOpacity(0.4),
+      color: const Color(0xFF42A5F5).withOpacity(0.4), // Svetliji border
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.3),
+        color: const Color(0xFF1976D2).withOpacity(0.2), // Svetlija senka
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
       ),
       BoxShadow(
-        color: const Color(0xFF4F7CAC).withOpacity(0.2),
+        color: const Color(0xFF42A5F5).withOpacity(0.1), // Svetlija senka
         blurRadius: 24,
         offset: const Offset(0, 8),
       ),
@@ -277,11 +282,11 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       width: 1.5,
-      color: const Color(0xFF1FA2FF).withOpacity(0.6),
+      color: const Color(0xFF42A5F5).withOpacity(0.6), // Svetliji border
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.6),
+        color: const Color(0xFF1976D2).withOpacity(0.4), // Svetlija senka
         blurRadius: 24,
         offset: const Offset(0, 12),
         spreadRadius: 2,
@@ -293,12 +298,12 @@ class TripleBlueFashionStyles {
     color: const Color(0xFFF0F9FF), // Svetla pozadina
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: const Color(0xFF1FA2FF).withOpacity(0.4),
+      color: const Color(0xFF42A5F5).withOpacity(0.4), // Svetliji border
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.3),
+        color: const Color(0xFF1976D2).withOpacity(0.2), // Svetlija senka
         blurRadius: 16,
         offset: const Offset(0, 8),
       ),
@@ -309,12 +314,12 @@ class TripleBlueFashionStyles {
     color: Colors.white,
     borderRadius: BorderRadius.circular(24),
     border: Border.all(
-      color: const Color(0xFF1FA2FF).withOpacity(0.5),
+      color: const Color(0xFF42A5F5).withOpacity(0.5), // Svetliji border
       width: 2,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.4),
+        color: const Color(0xFF1976D2).withOpacity(0.3), // Svetlija senka
         blurRadius: 36,
         offset: const Offset(0, 16),
         spreadRadius: 6,

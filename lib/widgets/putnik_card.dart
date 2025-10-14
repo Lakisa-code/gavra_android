@@ -909,9 +909,7 @@ class _PutnikCardState extends State<PutnikCard> {
                       child: DropdownButton<String>(
                         value: selectedMonth,
                         isExpanded: true,
-                        dropdownColor: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF1F2937)
-                            : const Color(0xFFF5F8FF),
+                        dropdownColor: Theme.of(context).colorScheme.surface,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                         ),

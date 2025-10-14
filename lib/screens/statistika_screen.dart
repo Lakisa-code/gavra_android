@@ -339,8 +339,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 child: DropdownButton<String>(
                                   value: _period,
                                   dropdownColor: Theme.of(context).brightness == Brightness.dark
-                                      ? const Color(0xFF1F2937)
-                                      : const Color(0xFFF5F8FF),
+                                      ? Theme.of(context).colorScheme.surface
+                                      : Theme.of(context).colorScheme.surface,
                                   icon: Icon(
                                     Icons.arrow_drop_down,
                                     color: Theme.of(context).colorScheme.onSurface,
@@ -394,8 +394,8 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
                                     dropdownColor: Theme.of(context).brightness == Brightness.dark
-                                        ? const Color(0xFF1F2937)
-                                        : const Color(0xFFF5F8FF),
+                                        ? Theme.of(context).colorScheme.surface
+                                        : Theme.of(context).colorScheme.surface,
                                     icon: Icon(
                                       Icons.arrow_drop_down,
                                       color: Theme.of(context).colorScheme.onSurface,
