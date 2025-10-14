@@ -336,9 +336,21 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                             Container(
                               height: 32,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: Theme.of(context).brightness == Brightness.dark
-                                  ? DarkThemeStyles.dropdownDecoration
-                                  : TripleBlueFashionStyles.dropdownDecoration,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
@@ -389,9 +401,21 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               Container(
                                 height: 32,
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                                decoration: Theme.of(context).brightness == Brightness.dark
-                                    ? DarkThemeStyles.dropdownDecoration
-                                    : TripleBlueFashionStyles.dropdownDecoration,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,

@@ -100,6 +100,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   // 🔄 AUTO-LOGIN BEZ PESME - Proveri da li je vozač već logovan
   Future<void> _checkAutoLogin() async {
+    // 🎵 PREKINI PESMU ako se auto-login aktivira
+    await _stopAudio();
+
     // PROVERI SUPABASE AUTH STATE
     final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
 
@@ -218,7 +221,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     super.dispose();
   }
 
+  // Helper metoda za zaustavljanje pesme
+  Future<void> _stopAudio() async {
+    try {
+      if (_audioPlayer.playing) {
+        await _audioPlayer.stop();
+      }
+    } catch (e) {
+      // Swallow audio errors silently
+    }
+  }
+
   Future<void> _loginAsDriver(String driverName) async {
+    // 🎵 PREKINI PESMU kada korisnik počne login
+    await _stopAudio();
+
     // STRIKTNA VALIDACIJA VOZAČA
     if (!VozacBoja.isValidDriver(driverName)) {
       if (!mounted) return;
