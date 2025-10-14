@@ -683,15 +683,8 @@ class StatistikaService {
         )) {
           // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
           final vozacData = putnik.naplatioVozac ?? putnik.vozac!;
-          // Proveri da li je već ime ili UUID
-          final uuidToName = {
-            '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e': 'Bojan',
-            '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f': 'Bilevski',
-            '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f': 'Bruda',
-            '5b379394-084e-1c7d-76bf-fc193a5b6c7d': 'Svetlana',
-          };
-          // Ako je UUID konvertuj u ime, inače koristi direktno
-          final vozacIme = uuidToName[vozacData] ?? vozacData;
+          // 🔧 KORISTI DINAMIČKO MAPIRANJE umesto hardkodovane mape
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacData);
           if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
             final iznos = putnik.iznosPlacanja!;
 
@@ -816,23 +809,28 @@ class StatistikaService {
           }
         }
 
-        // ✅ MESEČNE KARTE SE DODAJU I U 'naplaceni' I U 'mesecneKarte'
-        vozaciStats[vozacIme]!['naplaceni']++; // ✅ DODANO
+        // 🔧 FIX: MESEČNE KARTE SE NE DODAJU U 'naplaceni' - to je samo za obične putnike
+        // 'naplaceni' = samo obični putnici, 'mesecneKarte' = samo mesečne karte
         vozaciStats[vozacIme]!['mesecneKarte']++;
         vozaciStats[vozacIme]!['pazarMesecne'] += iznos;
         vozaciStats[vozacIme]!['ukupnoPazar'] += iznos;
       }
     }
 
-    // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE (SINHRONO - uprošćeno)
+    // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE (ESTIMACIJA BAZIRANA NA PUTNICIMA)
     try {
-      // Za real-time stream, koristimo uprošćenu kilometražu bez database poziva
-      // jer bi to bilo previše sporo za real-time azuriranje
       for (final vozac in sviVozaci) {
-        vozaciStats[vozac]!['kilometraza'] = 0.0; // Default vrednost za real-time
+        // 🚗 ESTIMACIJA: ~15km po putniku (prosečna ruta Mladenovac-Beograd)
+        final brojPutnika = (vozaciStats[vozac]!['pokupljeni'] as int) + (vozaciStats[vozac]!['mesecneKarte'] as int);
+        final estimiranaKilometraza = brojPutnika * 15.0; // 15km po putniku
+
+        vozaciStats[vozac]!['kilometraza'] = estimiranaKilometraza;
       }
     } catch (e) {
-      // ignore: empty_catches
+      // Fallback na 0.0 ako nešto pukne
+      for (final vozac in sviVozaci) {
+        vozaciStats[vozac]!['kilometraza'] = 0.0;
+      }
     }
 
     // 🧮 KALKULIŠI PROSEČNE IZNOSE ZA SVE VOZAČE

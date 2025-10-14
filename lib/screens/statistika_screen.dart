@@ -275,21 +275,17 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                         height: 32,
                                         margin: const EdgeInsets.only(right: 4),
                                         decoration: BoxDecoration(
-                                          color: _tabController.index == 0
-                                              ? Theme.of(context).colorScheme.surface.withOpacity(0.3)
-                                              : Theme.of(context).colorScheme.surface.withOpacity(0.15),
+                                          color: Theme.of(context).colorScheme.primary, // UVEK PLAVA
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
                                             color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
                                           ),
                                         ),
-                                        child: Center(
+                                        child: const Center(
                                           child: Text(
                                             'Vozači',
                                             style: TextStyle(
-                                              color: _tabController.index == 0
-                                                  ? Theme.of(context).colorScheme.onPrimary
-                                                  : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                                              color: Colors.white, // UVEK BELA SLOVA
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -305,21 +301,17 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                         height: 32,
                                         margin: const EdgeInsets.only(left: 4),
                                         decoration: BoxDecoration(
-                                          color: _tabController.index == 1
-                                              ? Theme.of(context).colorScheme.surface.withOpacity(0.3)
-                                              : Theme.of(context).colorScheme.surface.withOpacity(0.15),
+                                          color: Theme.of(context).colorScheme.primary, // UVEK PLAVA
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
                                             color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
                                           ),
                                         ),
-                                        child: Center(
+                                        child: const Center(
                                           child: Text(
                                             'Detaljno',
                                             style: TextStyle(
-                                              color: _tabController.index == 1
-                                                  ? Theme.of(context).colorScheme.onPrimary
-                                                  : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                                              color: Colors.white, // UVEK BELA SLOVA
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -357,11 +349,11 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                   dropdownColor: Theme.of(context).colorScheme.primaryContainer,
                                   icon: Icon(
                                     Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     size: 18,
                                   ),
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
                                   ),
@@ -380,7 +372,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                                  color: Theme.of(context).colorScheme.onSurface,
                                                 ),
                                                 textAlign: TextAlign.center,
                                               ),
@@ -422,11 +414,11 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                     dropdownColor: Theme.of(context).colorScheme.primaryContainer,
                                     icon: Icon(
                                       Icons.arrow_drop_down,
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       size: 18,
                                     ),
                                     style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                     ),
@@ -445,7 +437,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                                    color: Theme.of(context).colorScheme.onSurface,
                                                   ),
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -730,37 +722,37 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                           const SizedBox(height: 12),
                           _buildStatRow(
                             'Dodati putnici',
-                            stats['dodati'],
+                            stats['dodati'] ?? 0,
                             Icons.add_circle,
                             Theme.of(context).colorScheme.primary,
                           ),
                           _buildStatRow(
                             'Otkazani',
-                            stats['otkazani'],
+                            stats['otkazani'] ?? 0,
                             Icons.cancel,
                             Theme.of(context).colorScheme.dangerPrimary,
                           ),
                           _buildStatRow(
                             'Naplaćeni',
-                            stats['naplaceni'],
+                            stats['naplaceni'] ?? 0,
                             Icons.payment,
                             Theme.of(context).colorScheme.successPrimary,
                           ),
                           _buildStatRow(
                             'Pokupljeni',
-                            stats['pokupljeni'],
+                            stats['pokupljeni'] ?? 0,
                             Icons.check_circle,
                             Theme.of(context).colorScheme.studentPrimary,
                           ),
                           _buildStatRow(
                             'Dugovi',
-                            stats['dugovi'],
+                            stats['dugovi'] ?? 0,
                             Icons.warning,
                             Theme.of(context).colorScheme.dangerPrimary,
                           ),
                           _buildStatRow(
                             'Mesečne karte',
-                            stats['mesecneKarte'],
+                            stats['mesecneKarte'] ?? 0,
                             Icons.card_membership,
                             Theme.of(context).colorScheme.smartInfo, // 🎨 Pametna plava
                           ),
@@ -773,7 +765,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                           Divider(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24)),
                           _buildStatRow(
                             'Ukupno pazar',
-                            '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
+                            '${(stats['ukupnoPazar'] ?? 0.0).toStringAsFixed(0)} RSD',
                             Icons.monetization_on,
                             Theme.of(context).colorScheme.smartWarning, // 🎨 Pametna žuta/narandžasta
                           ),
