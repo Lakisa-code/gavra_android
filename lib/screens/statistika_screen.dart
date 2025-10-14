@@ -13,6 +13,7 @@ import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend
 import '../utils/logging.dart';
 import '../utils/smart_colors.dart'; // 🎨 PAMETNE BOJE!
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
+import '../utils/xiaomi_optimizer.dart'; // 🚀 XIAOMI OPTIMIZACIJE
 import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
 
 class StatistikaScreen extends StatefulWidget {
@@ -346,7 +347,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
-                                  dropdownColor: Theme.of(context).colorScheme.primaryContainer,
+                                  dropdownColor: Theme.of(context).colorScheme.primary,
                                   icon: Icon(
                                     Icons.arrow_drop_down,
                                     color: Theme.of(context).colorScheme.onSurface,
@@ -369,10 +370,10 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                             child: Center(
                                               child: Text(
                                                 _periodLabel(p),
-                                                style: TextStyle(
+                                                style: const TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                  color: Colors.white,
                                                 ),
                                                 textAlign: TextAlign.center,
                                               ),
@@ -411,7 +412,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
-                                    dropdownColor: Theme.of(context).colorScheme.primaryContainer,
+                                    dropdownColor: Theme.of(context).colorScheme.primary,
                                     icon: Icon(
                                       Icons.arrow_drop_down,
                                       color: Theme.of(context).colorScheme.onSurface,
@@ -434,10 +435,10 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                               child: Center(
                                                 child: Text(
                                                   '$year',
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    color: Colors.white,
                                                   ),
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -466,12 +467,14 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildVozaciTab(),
-          _buildDetaljnoTab(),
-        ],
+      body: XiaomiOptimizer.antiOverflowWrapper(
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildVozaciTab(),
+            _buildDetaljnoTab(),
+          ],
+        ),
       ),
     );
   }

@@ -1,11 +1,14 @@
 // import 'services/permission_service.dart'; // Moved to WelcomeScreen
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_links/app_links.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 // Firebase imports - enabled for multi-channel notifications
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -32,10 +35,9 @@ import 'services/timer_manager.dart';
 import 'services/vozilo_service.dart';
 import 'supabase_client.dart';
 import 'utils/gbox_detector.dart';
+import 'utils/xiaomi_optimizer.dart'; // 🚀 XIAOMI OPTIMIZACIJE
 
 final _logger = Logger();
-
-// Globalni navigator key za pristup navigation iz bilo kog dela aplikacije
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 // Globalna funkcija za menjanje teme
@@ -43,7 +45,87 @@ void Function()? globalThemeToggler;
 // Globalna funkcija za osvežavanje teme kada se vozač promeni
 void Function()? globalThemeRefresher;
 
-/// 📬 GLOBALNI BACKGROUND MESSAGE HANDLER
+/// � HUAWEI/G-BOX COMPATIBILITY HELPER
+Future<void> _checkHuaweiCompatibility() async {
+  try {
+    final deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      final isHuawei = androidInfo.brand.toLowerCase().contains('huawei') ||
+          androidInfo.manufacturer.toLowerCase().contains('huawei');
+
+      if (isHuawei) {
+        _logger.i('🔧 Huawei device detected - configuring G-Box compatibility');
+
+        // Automatska G-Box konfiguracija
+        await GBoxDetector.configureForEnvironment();
+
+        // Pokušaj automatske registracije u G-Box
+        try {
+          const platform = MethodChannel('com.gavra013.gavra_android/gbox');
+          await platform
+              .invokeMethod('registerWithGBox', {'packageName': 'com.gavra013.gavra_android', 'appName': 'Gavra 013'});
+          _logger.i('✅ Successfully registered with G-Box');
+        } catch (e) {
+          _logger.w('⚠️ Could not auto-register with G-Box: $e');
+          // Pokazuje upozorenje korisniku
+          _showGBoxInstructions();
+        }
+      }
+    }
+  } catch (e) {
+    _logger.w('⚠️ Failed to check Huawei compatibility: $e');
+  }
+}
+
+/// Prikazuje instrukcije za G-Box setup
+void _showGBoxInstructions() {
+  showDialog<void>(
+    context: navigatorKey.currentContext!,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      title: const Text('🔧 Gavra 013 za Huawei'),
+      content: const SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Da bi aplikacija radila na Huawei uređaju, potrebno je da je klonirate u G-Box:'),
+            SizedBox(height: 16),
+            Text('📱 KORACI:', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text('1. Otvorite G-Box aplikaciju'),
+            Text('2. Dodajte "Gavra 013" u klonove'),
+            Text('3. Pokrenite kloniranu verziju'),
+            SizedBox(height: 16),
+            Text('⚠️ Bez G-Box-a neće raditi notifikacije!'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () async {
+            Navigator.of(context).pop();
+            // Pokušaj otvaranja G-Box-a
+            try {
+              const platform = MethodChannel('com.gavra013.gavra_android/gbox');
+              await platform.invokeMethod('openGBox');
+            } catch (e) {
+              _logger.w('Ne mogu da otvorim G-Box: $e');
+            }
+          },
+          child: const Text('OTVORI G-BOX'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('RAZUMEM'),
+        ),
+      ],
+    ),
+  );
+}
+
+/// � GLOBALNI BACKGROUND MESSAGE HANDLER
 /// Firebase background handler for multi-channel notifications
 /// Ovo mora biti top-level funkcija da bi radila kad je app zatvoren
 @pragma('vm:entry-point')
@@ -74,7 +156,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔧 Detect GBox environment for Huawei devices
+  // 🔧 Huawei/G-Box compatibility check
+  await _checkHuaweiCompatibility();
+
+  // � XIAOMI OPTIMIZACIJE
+  XiaomiOptimizer.optimizeForXiaomi();
+  XiaomiOptimizer.configureMIUI();
+
+  // �🔧 Detect GBox environment for Huawei devices
   await GBoxDetector.configureForEnvironment();
 
   // 🚀 CACHE UKLONJEN - koristi direktne Supabase pozive

@@ -28,6 +28,11 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion  // Fixed to specific version
         targetSdk = 36  // Updated for plugin compatibility
+        
+        // 🎮 XIAOMI GAMING OPTIMIZACIJE
+        ndk {
+            abiFilters += listOf("arm64-v8a") // Samo ARM64 za bolje performanse
+        }
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
