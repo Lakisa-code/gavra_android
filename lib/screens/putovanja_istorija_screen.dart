@@ -382,7 +382,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       builder: (context, isHealthy, child) {
                         return Icon(
                           isHealthy ? Icons.refresh : Icons.refresh_rounded,
-                          color: isHealthy ? Colors.white : Colors.white70,
+                          color: isHealthy ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                         );
                       },
                     ),
@@ -427,10 +427,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         : null,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.indigo.shade300),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -446,9 +446,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.indigo.shade200),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
@@ -539,9 +539,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     // Sort & Export actions
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.indigo.shade200),
+                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -734,8 +734,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             icon: const Icon(Icons.add),
             label: const Text('Dodaj putovanje'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.indigo,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
           ),
         ],
@@ -1283,7 +1283,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Podeli',
-              textColor: Colors.white,
+              textColor: Theme.of(context).colorScheme.onPrimary,
               onPressed: () {
                 // Implementiraj deljenje fajla
                 dlog('📄 Share CSV content: ${csvContent.length} characters');
