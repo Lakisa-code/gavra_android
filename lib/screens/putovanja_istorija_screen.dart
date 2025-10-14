@@ -382,7 +382,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       builder: (context, isHealthy, child) {
                         return Icon(
                           isHealthy ? Icons.refresh : Icons.refresh_rounded,
-                          color: isHealthy ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
+                          color: isHealthy
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                         );
                       },
                     ),

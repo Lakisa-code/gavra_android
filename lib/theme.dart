@@ -41,14 +41,14 @@ const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   onErrorContainer: Color(0xFF991B1B),
 );
 
-// 🌙💜 2. DARK THEME - Elegantna tamna tema
+// 🌙💜 2. DARK THEME - Normalna tamna tema
 const ColorScheme darkThemeColorScheme = ColorScheme(
   brightness: Brightness.dark,
-  // Glavni dark colors
-  primary: Color(0xFFE5E7EB), // Svetli silver
-  onPrimary: Color(0xFF000000), // Crn tekst
-  primaryContainer: Color(0xFF1F2937), // Tamni container
-  onPrimaryContainer: Color(0xFFF3F4F6),
+  // Tamni primary colors - NORMALNA DARK TEMA
+  primary: Color(0xFF1F2937), // Tamno siva za AppBar
+  onPrimary: Color(0xFFF9FAFB), // Svetli tekst na tamnoj pozadini
+  primaryContainer: Color(0xFF374151), // Tamniji container
+  onPrimaryContainer: Color(0xFFE5E7EB),
 
   // Purple accent za eleganciju
   secondary: Color(0xFFBB86FC), // Electric purple
@@ -161,14 +161,14 @@ const LinearGradient tripleBlueFashionGradient = LinearGradient(
   stops: [0.0, 0.5, 1.0], // Ravnomerno raspoređene 3 boje
 );
 
-// 🌙 Dark Theme Gradient - 3 BOJE!
+// 🌙 Dark Theme Gradient - 3 TAMNE BOJE!
 const LinearGradient darkThemeGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF111827), // Deep dark
-    Color(0xFFBB86FC), // Electric purple
-    Color(0xFF22D3EE), // Bright cyan
+    Color(0xFF1F2937), // Tamno siva - primary
+    Color(0xFFBB86FC), // Electric purple - secondary
+    Color(0xFF22D3EE), // Bright cyan - tertiary
   ],
   stops: [0.0, 0.5, 1.0],
 );

@@ -245,7 +245,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 fontWeight: FontWeight.w800,
                                 color: Theme.of(context).colorScheme.onPrimary,
                                 letterSpacing: 1.8,
-                                shadows: [
+                                shadows: const [
                                   Shadow(
                                     offset: Offset(1, 1),
                                     blurRadius: 3,

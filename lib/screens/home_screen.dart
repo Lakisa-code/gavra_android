@@ -1439,9 +1439,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onPrimary, // Tema-aware - automatski se prilagođava svim temama
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimary, // Tema-aware - automatski se prilagođava svim temama
                             letterSpacing: 1.8,
-                            shadows: [
+                            shadows: const [
                               Shadow(
                                 offset: Offset(1, 1),
                                 blurRadius: 3,
