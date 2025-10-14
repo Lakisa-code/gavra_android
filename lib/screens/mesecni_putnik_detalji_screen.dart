@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
-import '../theme.dart'; // Za theme boje
+import '../theme.dart';
 // foundation import not needed; using centralized logger
 import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
@@ -20,8 +20,7 @@ class MesecniPutnikDetaljiScreen extends StatefulWidget {
   final MesecniPutnik putnik;
 
   @override
-  State<MesecniPutnikDetaljiScreen> createState() =>
-      _MesecniPutnikDetaljiScreenState();
+  State<MesecniPutnikDetaljiScreen> createState() => _MesecniPutnikDetaljiScreenState();
 }
 
 class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
@@ -250,10 +249,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
     }
 
     // 🔄 V3.0: Check for data errors
-    if (!_dataStreamHealthy.value &&
-        _svaUkrcavanja.isEmpty &&
-        _sviOtkazi.isEmpty &&
-        _svaPlacanja.isEmpty) {
+    if (!_dataStreamHealthy.value && _svaUkrcavanja.isEmpty && _sviOtkazi.isEmpty && _svaPlacanja.isEmpty) {
       return StreamErrorWidget(
         streamName: 'MesecniPutnikDetalji',
         errorMessage: 'Greška pri učitavanju podataka o putniku',
@@ -400,25 +396,18 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.tertiary,
-                          Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withOpacity(0.8),
+                          Theme.of(context).colorScheme.tertiary.withOpacity(0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withOpacity(0.3),
+                          color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -435,25 +424,18 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.errorContainer,
-                          Theme.of(context)
-                              .colorScheme
-                              .errorContainer
-                              .withOpacity(0.8),
+                          Theme.of(context).colorScheme.errorContainer.withOpacity(0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .error
-                              .withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.error.withOpacity(0.2),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -879,14 +861,12 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
     final tipPlacanja = placanje['tip'] ?? 'redovno';
 
     // Dodatne informacije za mesečne karte
-    String subtitle =
-        'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+    String subtitle = 'Vozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     if (tipPlacanja == 'mesecna_karta') {
       final mesec = placanje['placeniMesec'] ?? 0;
       final godina = placanje['placenaGodina'] ?? 0;
       final mesecNaziv = _getNazivMeseca(mesec as int);
-      subtitle =
-          'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
+      subtitle = 'Mesečna karta: $mesecNaziv $godina\nVozač: $vozac\n${DateFormat('dd.MM.yyyy HH:mm').format(datum)}';
     }
 
     return Card(
@@ -909,9 +889,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
         ),
         subtitle: Text(subtitle),
         trailing: Icon(
-          tipPlacanja == 'mesecna_karta'
-              ? Icons.event_available
-              : Icons.receipt,
+          tipPlacanja == 'mesecna_karta' ? Icons.event_available : Icons.receipt,
           color: Colors.grey.shade600,
         ),
       ),
@@ -1060,8 +1038,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
               dan.toString(),
               style: TextStyle(
                 fontSize: 12,
-                fontWeight:
-                    aktivnost != null ? FontWeight.bold : FontWeight.normal,
+                fontWeight: aktivnost != null ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),

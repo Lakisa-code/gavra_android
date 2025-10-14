@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 🚀 REALTIME PRIORITY SERVICE - FUCK BATTERY, POSAO JE BITAN!
@@ -12,8 +13,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 3. GPS pozicija - 5s interval
 /// 4. Ostali podaci - 30s interval (NEMA BATTERY SRANJA!)
 class RealtimePriorityService {
-  static const String _tag = 'REALTIME_PRIORITY';
-
   // 🎯 CRITICAL REALTIME CHANNELS
   static const Set<String> _criticalChannels = {
     'putnici_realtime', // Dodavanje/otkazivanje putnika
@@ -41,10 +40,8 @@ class RealtimePriorityService {
 
   /// 🚀 INITIALIZE REALTIME PRIORITY SYSTEM
   static Future<void> initialize() async {
-
     await _loadSettings();
     _startRealtimeChannels();
-
   }
 
   /// 📡 START REALTIME CHANNELS
@@ -68,7 +65,6 @@ class RealtimePriorityService {
       const Duration(seconds: _lowInterval),
       (timer) => _processLowPriorityUpdates(),
     );
-
   }
 
   /// 🎯 PROCESS CRITICAL UPDATES (INSTANT)
@@ -87,8 +83,7 @@ class RealtimePriorityService {
 
       // HITNA OBAVEŠTENJA
       await _checkEmergencyNotifications();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   /// ⚡ PROCESS MEDIUM UPDATES (5s)
@@ -101,8 +96,7 @@ class RealtimePriorityService {
 
       // VOZAC DATA
       await _updateDriverData();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   /// 🔄 PROCESS LOW PRIORITY UPDATES (NO BATTERY BULLSHIT!)
@@ -113,13 +107,11 @@ class RealtimePriorityService {
     try {
       // OSTALI PODACI - uvek update bez battery sranja
       await _updateOtherData();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   /// 🎯 CHECK PASSENGER UPDATES (CRITICAL!)
   static Future<void> _checkPassengerUpdates() async {
-
     // TODO: Implement actual passenger update check
     // Ovo mora da bude INSTANT!
 
@@ -132,7 +124,6 @@ class RealtimePriorityService {
 
   /// 🚗 CHECK NEW RIDES (CRITICAL!)
   static Future<void> _checkNewRides() async {
-
     // TODO: Implement actual new ride check
     // Ovo mora da bude INSTANT!
   }
@@ -166,7 +157,6 @@ class RealtimePriorityService {
   static Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     _isEnabled = prefs.getBool('realtime_priority_enabled') ?? true;
-
   }
 
   /// 🔧 ENABLE/DISABLE REALTIME PRIORITY
@@ -208,7 +198,6 @@ class RealtimePriorityService {
 
   /// 💥 EMERGENCY OVERRIDE - FORCE INSTANT UPDATE
   static Future<void> forceInstantUpdate(String channel) async {
-
     if (_criticalChannels.contains(channel)) {
       await _processCriticalUpdates();
     } else if (_mediumChannels.contains(channel)) {

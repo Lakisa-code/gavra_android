@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'kusur_service.dart';
 import 'putnik_service.dart';
 import 'realtime_service.dart';
 import 'statistika_service.dart';
@@ -15,13 +16,38 @@ class DailyCheckInService {
 
   /// Stream za real-time ažuriranje sitnog novca u UI
   static Stream<double> streamTodayAmount(String vozac) {
-    // Odmah pošalji trenutnu vrednost (remote-first)
-    getTodayAmountRemote(vozac).then((amount) {
-      if (!_sitanNovacController.isClosed) {
-        _sitanNovacController.add(amount ?? 0.0);
+    // ✅ FIX: Koristi direktan KusurService stream za realtime ažuriranje
+    return KusurService.streamKusurForVozac(vozac).map((kusurFromBaza) {
+      // Ako nema kusura u bazi, pokušaj SharedPreferences kao fallback
+      if (kusurFromBaza > 0) {
+        return kusurFromBaza;
+      } else {
+        // Async fallback - pozovi getTodayAmount ali vrati trenutnu vrednost
+        getTodayAmount(vozac).then((localAmount) {
+          if (localAmount != null && localAmount > 0) {
+            if (!_sitanNovacController.isClosed) {
+              _sitanNovacController.add(localAmount);
+            }
+          }
+        });
+        return kusurFromBaza; // Vrati vrednost iz baze (možda 0)
       }
     });
-    return _sitanNovacController.stream;
+  }
+
+  /// Helper: Dobij kusur iz oba izvora - prioritet ima KusurService
+  static Future<double> getAmountFromBothSources(String vozac) async {
+    try {
+      // 1. Pokušaj KusurService (baza) - prioritet
+      final kusurFromBaza = await KusurService.getKusurForVozac(vozac);
+      if (kusurFromBaza > 0) return kusurFromBaza;
+    } catch (e) {
+      // Ignoriši grešku KusurService
+    }
+
+    // 2. Fallback na SharedPreferences
+    final localAmount = await getTodayAmount(vozac);
+    return localAmount ?? 0.0;
   }
 
   /// Inicijalizuj realtime stream za vozača tako da kocka prati bazu
@@ -68,8 +94,16 @@ class DailyCheckInService {
   }) async {
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+
+    // 🔄 NOVI: Ažuriraj kusur u vozaci tabeli preko KusurService
     try {
-      // Sačuvaj u Supabase (ako postoji tabela)
+      await KusurService.updateKusurForVozac(vozac, sitanNovac);
+    } catch (e) {
+      // Ignoriši grešku - nastavi sa ostalim čuvanjem
+    }
+
+    try {
+      // Sačuvaj u Supabase daily_checkins tabelu (ako postoji)
       final savedRow = await _saveToSupabase(
         vozac,
         sitanNovac,
@@ -322,56 +356,49 @@ class DailyCheckInService {
       final isoDate =
           '${targetDate.year.toString().padLeft(4, '0')}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
       final putnici = await putnikService.streamKombinovaniPutniciFiltered(isoDate: isoDate).first;
-      // Filtriraj putnice za ciljani datum i vozača
-      final putnicZaDatum = putnici.where((putnik) {
-        // Proveri datum
-        final datum = putnik.vremeDodavanja ?? putnik.vremePokupljenja;
-        final datumOk = datum != null &&
-            datum.isAfter(dayStart.subtract(const Duration(seconds: 1))) &&
-            datum.isBefore(dayEnd.add(const Duration(seconds: 1)));
-        // Proveri vozača
-        final vozacOk = putnik.vozac == vozac;
-        return datumOk && vozacOk;
-      }).toList();
-      // 3. KALKULACIJE - ISTE KAO U _showPopisDana()
-      double ukupanPazar = 0.0;
-      double sitanNovac = 0.0;
-      int dodatiPutnici = putnicZaDatum.length;
-      int otkazaniPutnici = 0;
-      int naplaceniPutnici = 0;
-      int pokupljeniPutnici = 0;
-      int dugoviPutnici = 0;
-      int mesecneKarte = 0;
-      double kilometraza = 0.0;
-      // Obradi putnice
-      for (final putnik in putnicZaDatum) {
-        // Status analize
-        if (putnik.jeOtkazan) {
-          otkazaniPutnici++;
-        } else if (putnik.jePokupljen) {
-          pokupljeniPutnici++;
-          ukupanPazar += putnik.iznosPlacanja ?? 0.0;
-        }
-        if (putnik.jePlacen) {
-          naplaceniPutnici++;
-          ukupanPazar += putnik.iznosPlacanja ?? 0.0;
-        }
-        // Dugovi (nisu naplaćeni a nisu otkazani)
-        if (!putnik.jePlacen && !putnik.jeOtkazan && !putnik.jePokupljen) {
-          dugoviPutnici++;
-        }
-        // Mesečne karte
-        if (putnik.mesecnaKarta == true) {
-          mesecneKarte++;
-        }
+      // ✅ FIX: Koristi StatistikaService umesto manuelne logike - IDENTIČNO SA _showPopisDana()
+
+      // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
+      final detaljneStats = await StatistikaService.detaljneStatistikePoVozacima(
+        putnici,
+        dayStart,
+        dayEnd,
+      );
+      final vozacStats = detaljneStats[vozac] ?? {};
+
+      // 4. REALTIME PAZAR STREAM - IDENTIČNO SA _showPopisDana()
+      double ukupanPazar;
+      try {
+        ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
+          from: dayStart,
+          to: dayEnd,
+        ).map((pazarMap) => pazarMap[vozac] ?? 0.0).first.timeout(const Duration(seconds: 10));
+      } catch (e) {
+        ukupanPazar = 0.0; // Fallback vrednost
       }
-      // 4. SITAN NOVAC (procena 10% od ukupnog pazara)
-      sitanNovac = ukupanPazar * 0.1;
-      // 5. KILOMETRAŽA (REALTIME GPS CALCULATION)
+
+      // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
+      final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
+      final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
+      final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
+      final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
+      final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
+      final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
+
+      // 5. SITAN NOVAC - UČITAJ RUČNO UNET KUSUR (ne kalkuliši automatski)
+      double sitanNovac;
+      try {
+        // Pokušaj da učitaš ručno unet kusur za taj dan
+        sitanNovac = await getAmountFromBothSources(vozac);
+      } catch (e) {
+        sitanNovac = 0.0; // Fallback ako nema unetog kusura
+      }
+      // 🚗 REALTIME GPS KILOMETRAŽA - IDENTIČNO SA _showPopisDana()
+      double kilometraza;
       try {
         kilometraza = await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
-        kilometraza = 0.0; // Fallback na 0 umesto dummy vrednost
+        kilometraza = 0.0; // Fallback vrednost
       }
       // 6. KREIRAJ POPIS OBJEKAT
       final automatskiPopis = {

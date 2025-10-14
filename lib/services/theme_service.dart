@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../theme.dart'; // Import our new 3-theme system
+import '../theme.dart';
 
 class ThemeService {
   static const String _kljucTeme = 'nocni_rezim';
@@ -29,6 +29,7 @@ class ThemeService {
   /// Triple Blue Fashion / Dark Theme / Pink Svetlana
   static ThemeData svetlaTema({String? driverName}) {
     // Koristi ThemeSelector za automatsku selekciju tema
+    // Ova funkcija uvek vraća svetlu temu, noćni režim se kontroliše kroz themeMode
     return ThemeSelector.getThemeForDriver(driverName);
   }
 

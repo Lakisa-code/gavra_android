@@ -16,7 +16,7 @@ import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog gr
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/update_service.dart'; // 🔄 Vraćeno: Update sistem
-import '../theme.dart'; // Za theme boje
+import '../theme.dart';
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju

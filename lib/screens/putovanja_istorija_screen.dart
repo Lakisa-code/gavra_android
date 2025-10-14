@@ -5,7 +5,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
-import '../theme.dart'; // Za theme boje
+import '../theme.dart';
 import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling

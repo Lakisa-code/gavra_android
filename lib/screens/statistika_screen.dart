@@ -8,9 +8,10 @@ import '../services/local_notification_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/statistika_service.dart';
-import '../theme.dart'; // DODANO za theme extensions
+import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
+import '../utils/smart_colors.dart'; // 🎨 PAMETNE BOJE!
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
 import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
 
@@ -134,7 +135,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
         children: [
           Icon(
             Icons.error_outline,
-            color: Colors.red,
+            color: Theme.of(context).colorScheme.smartError,
             size: compact ? 14 : 20,
           ),
           if (!compact) const SizedBox(height: 4),
@@ -143,7 +144,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
             style: TextStyle(
               fontSize: compact ? 8 : 10,
               fontWeight: FontWeight.w600,
-              color: Colors.red,
+              color: Theme.of(context).colorScheme.smartError,
             ),
             textAlign: TextAlign.center,
           ),
@@ -152,7 +153,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
             onTap: onRetry,
             child: Icon(
               Icons.refresh,
-              color: Colors.red,
+              color: Theme.of(context).colorScheme.smartError,
               size: compact ? 12 : 16,
             ),
           ),
@@ -697,7 +698,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey[800], // 🎨 Tamniji tekst za bolji kontrast
+                                  color: Theme.of(context).colorScheme.onSurface, // 🎨 Pametna boja teksta
                                 ),
                               ),
                             ],
@@ -737,7 +738,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                             'Mesečne karte',
                             stats['mesecneKarte'],
                             Icons.card_membership,
-                            Colors.purple,
+                            Theme.of(context).colorScheme.smartInfo, // 🎨 Pametna plava
                           ),
                           _buildStatRow(
                             'Kilometraža',
@@ -750,7 +751,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                             'Ukupno pazar',
                             '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
                             Icons.monetization_on,
-                            Colors.amber,
+                            Theme.of(context).colorScheme.smartWarning, // 🎨 Pametna žuta/narandžasta
                           ),
                         ],
                       ),
@@ -780,9 +781,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
           Text(
             '$label: ',
             style: TextStyle(
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurfaceVariant, // 🎨 Pametna boja teksta
               fontSize: 14,
-            ), // 🎨 Tamniji tekst
+            ),
           ),
           Text(
             value.toString(),

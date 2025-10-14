@@ -11,6 +11,7 @@ import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../theme.dart';
+import '../utils/smart_colors.dart'; // 🎨 PAMETNE BOJE!
 import '../utils/vozac_boja.dart';
 
 /// 🚨 PAŽNJA: Ovaj widget sada koristi nove tabele!
@@ -87,11 +88,9 @@ class _PutnikCardState extends State<PutnikCard> {
         if (_putnik.id == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Greška: ${_putnik.ime} nema validno ID za pokupljanje',
-                ),
-                backgroundColor: Colors.red,
+              SmartSnackBar.error(
+                'Greška: ${_putnik.ime} nema validno ID za pokupljanje',
+                context,
               ),
             );
           }
@@ -102,11 +101,9 @@ class _PutnikCardState extends State<PutnikCard> {
         if (!VozacBoja.isValidDriver(widget.currentDriver)) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}',
-                ),
-                backgroundColor: Colors.red,
+              SmartSnackBar.error(
+                'NEVALJAN VOZAČ! Dozvoljen je samo: ${VozacBoja.validDrivers.join(", ")}',
+                context,
               ),
             );
           }
@@ -136,11 +133,7 @@ class _PutnikCardState extends State<PutnikCard> {
             // 🎉 PRIKAZ USPEŠNE PORUKE
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('✅ ${_putnik.ime} je pokupljen'),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 1),
-                ),
+                SmartSnackBar.success('✅ ${_putnik.ime} je pokupljen', context),
               );
             }
           } else {

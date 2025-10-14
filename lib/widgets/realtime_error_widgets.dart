@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/smart_colors.dart'; // 🎨 PAMETNE BOJE!
+
 /// 🚨 REALTIME ERROR WIDGETS
 /// Specijalizovani widget-i za različite tipove realtime grešaka
 
@@ -20,8 +22,8 @@ class StreamErrorWidget extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        border: Border.all(color: Colors.red.shade200),
+        color: Theme.of(context).colorScheme.smartErrorContainer,
+        border: Border.all(color: Theme.of(context).colorScheme.smartError.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -29,7 +31,7 @@ class StreamErrorWidget extends StatelessWidget {
         children: [
           Icon(
             Icons.stream,
-            color: Colors.red.shade600,
+            color: Theme.of(context).colorScheme.smartError,
             size: 32,
           ),
           const SizedBox(height: 8),
@@ -38,7 +40,7 @@ class StreamErrorWidget extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.red.shade800,
+              color: Theme.of(context).colorScheme.smartError,
             ),
           ),
           const SizedBox(height: 4),
@@ -46,7 +48,7 @@ class StreamErrorWidget extends StatelessWidget {
             'Stream: $streamName',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.red.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontFamily: 'monospace',
             ),
           ),
