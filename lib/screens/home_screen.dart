@@ -1434,12 +1434,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Container(
                         height: 24,
                         alignment: Alignment.center,
-                        child: const Text(
+                        child: Text(
                           'R E Z E R V A C I J E',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white, // Ostavljamo belo za AppBar jer je na gradijent pozadini
+                            color: Theme.of(context).colorScheme.onPrimary, // Tema-aware - automatski se prilagođava svim temama
                             letterSpacing: 1.8,
                             shadows: [
                               Shadow(
@@ -1479,10 +1479,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 child: Center(
                                   child: Text(
                                     _currentDriver!,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.onPrimary,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                     textAlign: TextAlign.center,
@@ -1518,7 +1518,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     color: Colors.white.withOpacity(0.4),
                                   ),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: FittedBox(
                                     fit: BoxFit.scaleDown,
                                     child: Text(
@@ -1526,7 +1526,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 26,
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.onPrimary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.center,

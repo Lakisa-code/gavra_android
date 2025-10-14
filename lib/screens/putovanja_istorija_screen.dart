@@ -305,7 +305,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         Text(
                           'Istorija Putovanja',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,
@@ -322,12 +322,12 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.calendar_today, color: Colors.white),
+                    icon: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.onPrimary),
                     onPressed: () => _selectDate(),
                     tooltip: 'Izaberi datum',
                   ),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.filter_list, color: Colors.white),
+                    icon: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.onPrimary),
                     tooltip: 'Filter tip putnika',
                     color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
                     shape: RoundedRectangleBorder(

@@ -235,7 +235,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                       Container(
                         height: 32,
                         alignment: Alignment.center,
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
@@ -243,7 +243,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 letterSpacing: 1.8,
                                 shadows: [
                                   Shadow(

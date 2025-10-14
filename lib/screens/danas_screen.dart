@@ -380,10 +380,10 @@ class _DanasScreenState extends State<DanasScreen> {
                   // SREDINA - DAN
                   Text(
                     dayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
                       shadows: [
                         Shadow(
@@ -397,10 +397,10 @@ class _DanasScreenState extends State<DanasScreen> {
                   // DESNO - VREME
                   Text(
                     '$hourStr:$minuteStr:$secondStr',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
                       shadows: [
                         Shadow(
