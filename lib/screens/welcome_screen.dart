@@ -453,7 +453,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                       child: GestureDetector(
                         onTap: () async {
                           try {
-                            await _audioPlayer.setAsset('assets/gavra.mp3');
+                            await _audioPlayer.setAsset('assets/kasno_je.mp3');
                             await _audioPlayer.play();
                           } catch (e) {
                             // Swallow audio errors silently in production
