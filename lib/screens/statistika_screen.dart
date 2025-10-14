@@ -354,14 +354,14 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: _period,
-                                  dropdownColor: Theme.of(context).colorScheme.surface,
+                                  dropdownColor: Theme.of(context).colorScheme.primaryContainer,
                                   icon: Icon(
                                     Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                                     size: 18,
                                   ),
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface,
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12,
                                   ),
@@ -380,7 +380,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w600,
-                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                                                 ),
                                                 textAlign: TextAlign.center,
                                               ),
@@ -419,14 +419,14 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
-                                    dropdownColor: Theme.of(context).colorScheme.surface,
+                                    dropdownColor: Theme.of(context).colorScheme.primaryContainer,
                                     icon: Icon(
                                       Icons.arrow_drop_down,
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                                       size: 18,
                                     ),
                                     style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                     ),
@@ -445,7 +445,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w600,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                                                   ),
                                                   textAlign: TextAlign.center,
                                                 ),
