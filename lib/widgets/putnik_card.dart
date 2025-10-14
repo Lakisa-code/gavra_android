@@ -150,7 +150,7 @@ class _PutnikCardState extends State<PutnikCard> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('❌ Greška pri pokupljanju ${_putnik.ime}: $e'),
-                backgroundColor: Colors.red,
+                backgroundColor: Theme.of(context).colorScheme.error,
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -221,7 +221,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('⚡ ADMIN RESET: ${_putnik.ime} (3x tap)'),
-            backgroundColor: Colors.orange,
+            backgroundColor: Theme.of(context).colorScheme.tertiary,
             duration: const Duration(seconds: 1),
           ),
         );
@@ -276,7 +276,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Kartica resetovana u početno stanje: ${_putnik.ime}'),
-            backgroundColor: Colors.orange,
+            backgroundColor: Theme.of(context).colorScheme.warningPrimary,
           ),
         );
       }
@@ -285,7 +285,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Greška pri resetovanju kartice: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -316,12 +316,12 @@ class _PutnikCardState extends State<PutnikCard> {
         Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
           ),
           child: ListTile(
-            leading: const Icon(Icons.family_restroom, color: Colors.blue),
+            leading: Icon(Icons.family_restroom, color: Theme.of(context).colorScheme.primary),
             title: const Text(
               '💰 SMS Roditeljima - Plaćanje',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -342,7 +342,7 @@ class _PutnikCardState extends State<PutnikCard> {
     if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
       opcije.add(
         ListTile(
-          leading: const Icon(Icons.phone, color: Colors.green),
+          leading: Icon(Icons.phone, color: Theme.of(context).colorScheme.successPrimary),
           title: const Text('Pozovi putnika'),
           subtitle: Text(_putnik.brojTelefona!),
           onTap: () async {
@@ -353,7 +353,7 @@ class _PutnikCardState extends State<PutnikCard> {
       );
       opcije.add(
         ListTile(
-          leading: const Icon(Icons.sms, color: Colors.green),
+          leading: Icon(Icons.sms, color: Theme.of(context).colorScheme.successPrimary),
           title: const Text('SMS putnik'),
           subtitle: Text(_putnik.brojTelefona!),
           onTap: () async {
@@ -368,7 +368,7 @@ class _PutnikCardState extends State<PutnikCard> {
     if (mesecniPutnik != null && mesecniPutnik.brojTelefonaOca != null && mesecniPutnik.brojTelefonaOca!.isNotEmpty) {
       opcije.add(
         ListTile(
-          leading: const Icon(Icons.man, color: Colors.blue),
+          leading: Icon(Icons.man, color: Theme.of(context).colorScheme.primary),
           title: const Text('Pozovi oca'),
           subtitle: Text(mesecniPutnik.brojTelefonaOca!),
           onTap: () async {
@@ -379,7 +379,7 @@ class _PutnikCardState extends State<PutnikCard> {
       );
       opcije.add(
         ListTile(
-          leading: const Icon(Icons.sms, color: Colors.blue),
+          leading: Icon(Icons.sms, color: Theme.of(context).colorScheme.primary),
           title: const Text('SMS otac'),
           subtitle: Text(mesecniPutnik.brojTelefonaOca!),
           onTap: () async {
@@ -492,9 +492,9 @@ class _PutnikCardState extends State<PutnikCard> {
         if (!hasPermission) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ Dozvola za pozive je potrebna'),
-                backgroundColor: Colors.red,
+              SnackBar(
+                content: const Text('❌ Dozvola za pozive je potrebna'),
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
@@ -507,9 +507,9 @@ class _PutnikCardState extends State<PutnikCard> {
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('❌ Nije moguće pozivanje sa ovog uređaja'),
-                backgroundColor: Colors.red,
+              SnackBar(
+                content: const Text('❌ Nije moguće pozivanje sa ovog uređaja'),
+                backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
           }
@@ -519,7 +519,7 @@ class _PutnikCardState extends State<PutnikCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Greška pri pozivanju: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -535,9 +535,9 @@ class _PutnikCardState extends State<PutnikCard> {
       if (!hasPermission) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Dozvola za pozive je potrebna'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('❌ Dozvola za pozive je potrebna'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -550,9 +550,9 @@ class _PutnikCardState extends State<PutnikCard> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Nije moguće pozivanje sa ovog uređaja'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('❌ Nije moguće pozivanje sa ovog uređaja'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -562,7 +562,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri pozivanju: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -578,9 +578,9 @@ class _PutnikCardState extends State<PutnikCard> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Nije moguće poslati SMS'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('❌ Nije moguće poslati SMS'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -590,7 +590,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri slanju SMS: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -616,9 +616,9 @@ class _PutnikCardState extends State<PutnikCard> {
     if (roditelji.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Nema brojeva telefona roditelja za slanje SMS'),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: const Text('❌ Nema brojeva telefona roditelja za slanje SMS'),
+            backgroundColor: Theme.of(context).colorScheme.warningPrimary,
           ),
         );
       }
@@ -666,7 +666,8 @@ class _PutnikCardState extends State<PutnikCard> {
                 ? '✅ SMS za plaćanje poslat roditeljima ($poslato/${roditelji.length})'
                 : '❌ Nije moguće poslati SMS roditeljima',
           ),
-          backgroundColor: poslato > 0 ? Colors.green : Colors.red,
+          backgroundColor:
+              poslato > 0 ? Theme.of(context).colorScheme.successPrimary : Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -697,9 +698,9 @@ class _PutnikCardState extends State<PutnikCard> {
     if (widget.currentDriver == null || widget.currentDriver!.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Greška: Vozač nije definisan'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('❌ Greška: Vozač nije definisan'),
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -725,7 +726,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška: Mesečni putnik "${_putnik.ime}" nije pronađen'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -811,9 +812,9 @@ class _PutnikCardState extends State<PutnikCard> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -822,7 +823,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           children: [
                             Icon(
                               Icons.analytics,
-                              color: Colors.blue[700],
+                              color: Theme.of(context).colorScheme.primary,
                               size: 18,
                             ),
                             const SizedBox(width: 6),
@@ -831,7 +832,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                 'Statistike za trenutni mesec',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -854,10 +855,10 @@ class _PutnikCardState extends State<PutnikCard> {
                                 ),
                                 Text(
                                   '$brojPutovanja',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                                    color: Theme.of(context).colorScheme.successPrimary,
                                   ),
                                 ),
                               ],
@@ -935,13 +936,15 @@ class _PutnikCardState extends State<PutnikCard> {
                                 Icon(
                                   Icons.calendar_today,
                                   size: 16,
-                                  color: isPlacen ? Colors.green : Theme.of(context).colorScheme.primary,
+                                  color: isPlacen
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   monthYear,
                                   style: TextStyle(
-                                    color: isPlacen ? Colors.green[700] : null,
+                                    color: isPlacen ? Theme.of(context).colorScheme.primary : null,
                                     fontWeight: isPlacen ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
@@ -978,14 +981,14 @@ class _PutnikCardState extends State<PutnikCard> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.successPrimary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Colors.green[700],
+                          color: Theme.of(context).colorScheme.successPrimary,
                           size: 16,
                         ),
                         const SizedBox(width: 8),
@@ -1019,7 +1022,7 @@ class _PutnikCardState extends State<PutnikCard> {
                 icon: const Icon(Icons.payment),
                 label: const Text('Potvrdi plaćanje'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: Theme.of(context).colorScheme.successPrimary,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -1115,7 +1118,7 @@ class _PutnikCardState extends State<PutnikCard> {
               icon: const Icon(Icons.payment),
               label: const Text('Potvrdi plaćanje'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1129,9 +1132,9 @@ class _PutnikCardState extends State<PutnikCard> {
       if (_putnik.id == null || _putnik.id.toString().isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Putnik nema valjan ID - ne može se naplatiti'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('❌ Putnik nema valjan ID - ne može se naplatiti'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -1148,7 +1151,7 @@ class _PutnikCardState extends State<PutnikCard> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Greška pri plaćanju: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -1174,7 +1177,7 @@ class _PutnikCardState extends State<PutnikCard> {
               content: Text(
                 'UPOZORENJE: Nepoznat vozač! Plaćanje se evidentira kao "$finalDriver"',
               ),
-              backgroundColor: Colors.orange,
+              backgroundColor: Theme.of(context).colorScheme.warningPrimary,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -1225,7 +1228,7 @@ class _PutnikCardState extends State<PutnikCard> {
                   ? '✅ Mesečna karta plaćena: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)'
                   : '✅ Putovanje plaćeno: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)',
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: Theme.of(context).colorScheme.successPrimary,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -1235,7 +1238,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri plaćanju: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -1275,7 +1278,7 @@ class _PutnikCardState extends State<PutnikCard> {
                 icon: const Icon(Icons.beach_access),
                 label: const Text('🏖️ Godišnji odmor'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -1290,7 +1293,7 @@ class _PutnikCardState extends State<PutnikCard> {
                 icon: const Icon(Icons.sick),
                 label: const Text('🤒 Bolovanje'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Theme.of(context).colorScheme.warningPrimary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -1340,7 +1343,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri postavljanju odsustva: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -1385,16 +1388,16 @@ class _PutnikCardState extends State<PutnikCard> {
       if (!gpsReady) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
+            SnackBar(
+              content: const Row(
                 children: [
                   Icon(Icons.gps_off, color: Colors.white),
                   SizedBox(width: 8),
                   Text('❌ GPS nije dostupan - navigacija otkazana'),
                 ],
               ),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
+              backgroundColor: Theme.of(context).colorScheme.warningPrimary,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -1461,16 +1464,16 @@ class _PutnikCardState extends State<PutnikCard> {
               // 🎉 Pokaži potvrdu da je navigacija pokrenuta sa GPS-om
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Row(
+                  SnackBar(
+                    content: const Row(
                       children: [
                         Icon(Icons.navigation, color: Colors.white),
                         SizedBox(width: 8),
                         Text('🛰️ Navigacija pokrenuta sa GPS-om'),
                       ],
                     ),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
+                    backgroundColor: Theme.of(context).colorScheme.successPrimary,
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -1503,7 +1506,7 @@ class _PutnikCardState extends State<PutnikCard> {
                 const Text('• HERE WeGo ili Waze'),
               ],
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'POKUŠAJ PONOVO',
@@ -1671,7 +1674,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                   ? Colors.red[400] // 🔴 CRVENO za otkazane
                                   : isSelected
                                       ? (isMesecna || isPlaceno)
-                                          ? Colors.green[600] // 🟢 ZELENO za mesečne/plaćene
+                                          ? Theme.of(context).colorScheme.successPrimary // 🟢 ZELENO za mesečne/plaćene
                                           : const Color(
                                               0xFF0D47A1,
                                             ) // 🔵 PLAVO za pokupljene neplaćene
@@ -1687,7 +1690,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             ? Colors.red[400] // 🔴 CRVENO za otkazane
                             : isSelected
                                 ? (isMesecna || isPlaceno)
-                                    ? Colors.green[600] // 🟢 ZELENO za mesečne/plaćene
+                                    ? Theme.of(context).colorScheme.successPrimary // 🟢 ZELENO za mesečne/plaćene
                                     : const Color(
                                         0xFF0D47A1,
                                       ) // 🔵 PLAVO za pokupljene neplaćene
@@ -1711,7 +1714,9 @@ class _PutnikCardState extends State<PutnikCard> {
                                     ? Colors.red[400] // 🔴 CRVENO za otkazane
                                     : isSelected
                                         ? (isMesecna || isPlaceno)
-                                            ? Colors.green[600] // 🟢 ZELENO za mesečne/plaćene
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .successPrimary // 🟢 ZELENO za mesečne/plaćene
                                             : const Color(
                                                 0xFF0D47A1,
                                               ) // 🔵 PLAVO za pokupljene neplaćene
@@ -1772,7 +1777,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.green[700],
+                                            color: Theme.of(context).colorScheme.successPrimary,
                                             letterSpacing: 0.3,
                                           ),
                                         ),
@@ -1814,9 +1819,9 @@ class _PutnikCardState extends State<PutnikCard> {
                                               builder: (context) => AlertDialog(
                                                 title: Row(
                                                   children: [
-                                                    const Icon(
+                                                    Icon(
                                                       Icons.location_on,
-                                                      color: Colors.blue,
+                                                      color: Theme.of(context).colorScheme.primary,
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Expanded(
@@ -1846,7 +1851,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         12,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.blue.withOpacity(0.1),
+                                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                                         borderRadius: BorderRadius.circular(8),
                                                         border: Border.all(
                                                           color: Colors.blue.withOpacity(
@@ -1878,12 +1883,12 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           ScaffoldMessenger.of(
                                                             context,
                                                           ).showSnackBar(
-                                                            const SnackBar(
-                                                              content: Text(
+                                                            SnackBar(
+                                                              content: const Text(
                                                                 '❌ GPS dozvole su potrebne za navigaciju',
                                                               ),
-                                                              backgroundColor: Colors.red,
-                                                              duration: Duration(
+                                                              backgroundColor: Theme.of(context).colorScheme.error,
+                                                              duration: const Duration(
                                                                 seconds: 3,
                                                               ),
                                                             ),
@@ -1941,12 +1946,13 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           if (koordinate != null) {
                                                             // Uspešno - pokaži pozitivnu poruku
                                                             ScaffoldMessenger.of(context).showSnackBar(
-                                                              const SnackBar(
-                                                                content: Text(
+                                                              SnackBar(
+                                                                content: const Text(
                                                                   '✅ Otvaram navigaciju...',
                                                                 ),
-                                                                backgroundColor: Colors.green,
-                                                                duration: Duration(
+                                                                backgroundColor:
+                                                                    Theme.of(context).colorScheme.successPrimary,
+                                                                duration: const Duration(
                                                                   seconds: 1,
                                                                 ),
                                                               ),
@@ -1973,7 +1979,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                     ),
                                                                   ],
                                                                 ),
-                                                                backgroundColor: Colors.orange,
+                                                                backgroundColor:
+                                                                    Theme.of(context).colorScheme.warningPrimary,
                                                                 action: SnackBarAction(
                                                                   label: 'POKUŠAJ PONOVO',
                                                                   textColor: Colors.white,
@@ -2003,7 +2010,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                               content: Text(
                                                                 '💥 Greška: ${e.toString()}',
                                                               ),
-                                                              backgroundColor: Colors.red,
+                                                              backgroundColor: Theme.of(context).colorScheme.error,
                                                               duration: const Duration(
                                                                 seconds: 3,
                                                               ),
@@ -2012,15 +2019,15 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         }
                                                       }
                                                     },
-                                                    icon: const Icon(
+                                                    icon: Icon(
                                                       Icons.navigation,
-                                                      color: Colors.blue,
+                                                      color: Theme.of(context).colorScheme.primary,
                                                     ),
                                                     label: const Text(
                                                       'Navigacija',
                                                     ),
                                                     style: TextButton.styleFrom(
-                                                      foregroundColor: Colors.blue,
+                                                      foregroundColor: Theme.of(context).colorScheme.primary,
                                                     ),
                                                   ),
                                                   TextButton(
@@ -2035,12 +2042,12 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize, // Adaptive veličina
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Colors.blue.withOpacity(0.1),
+                                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
                                               Icons.location_on,
-                                              color: Colors.blue,
+                                              color: Theme.of(context).colorScheme.primary,
                                               size: iconInnerSize, // Adaptive inner size
                                             ),
                                           ),
@@ -2057,12 +2064,12 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(0.1),
+                                              color: Theme.of(context).colorScheme.successPrimary.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
                                               Icons.phone,
-                                              color: Colors.green,
+                                              color: Theme.of(context).colorScheme.successPrimary,
                                               size: iconInnerSize,
                                             ),
                                           ),
@@ -2079,12 +2086,12 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(0.1),
+                                              color: Theme.of(context).colorScheme.successPrimary.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
                                               Icons.attach_money,
-                                              color: Colors.green,
+                                              color: Theme.of(context).colorScheme.successPrimary,
                                               size: iconInnerSize,
                                             ),
                                           ),
@@ -2394,16 +2401,16 @@ class _PutnikCardState extends State<PutnikCard> {
               content: Text(
                 '✅ Plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec je sačuvano',
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: Theme.of(context).colorScheme.successPrimary,
             ),
           );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Greška pri čuvanju plaćanja'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('❌ Greška pri čuvanju plaćanja'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
         }
@@ -2413,7 +2420,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }

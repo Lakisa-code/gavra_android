@@ -1,19 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import '../utils/logging.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../utils/logging.dart';
 
 // Use centralized logger
 
 class UpdateService {
   static const String repoOwner = 'bojanbc83';
   static const String repoName = 'gavra_android';
-  static const String githubApiUrl =
-      'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
+  static const String githubApiUrl = 'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
   static const String _skippedVersionKey = 'skipped_update_version';
   static const String _lastCheckKey = 'last_update_check';
   static const String _lastInstalledVersionKey = 'last_installed_version';
@@ -228,14 +229,12 @@ class UpdateService {
         bool hasUpdate = _isNewerVersion(currentVersion, latestVersion);
 
         if (hasUpdate && publishedAt != null) {
-          final daysSincePublish =
-              DateTime.now().difference(publishedAt).inDays;
+          final daysSincePublish = DateTime.now().difference(publishedAt).inDays;
           dlog('📊 Dana od objave: $daysSincePublish');
 
           // STROŽIJA PROVERA: Ako je release stariji od 7 dana, ne prikazuj update osim ako nije major verzija
           if (daysSincePublish > 7) {
-            bool isMajorUpdate =
-                _isMajorVersionDifference(currentVersion, latestVersion);
+            bool isMajorUpdate = _isMajorVersionDifference(currentVersion, latestVersion);
             if (!isMajorUpdate) {
               dlog(
                 '🕰️ Release je prestari ($daysSincePublish dana), preskačem update',
@@ -247,9 +246,7 @@ class UpdateService {
 
           // Dodatno: Proverava da li je release "nightly" build - ne prikazuj update za nightly
           String releaseTag = (data['tag_name'] as String).toLowerCase();
-          if (releaseTag.contains('nightly') ||
-              releaseTag.contains('beta') ||
-              releaseTag.contains('alpha')) {
+          if (releaseTag.contains('nightly') || releaseTag.contains('beta') || releaseTag.contains('alpha')) {
             dlog('🌙 Nightly/Beta release - preskačem update');
             await _saveLastCheckTime();
             return false;
@@ -286,8 +283,7 @@ class UpdateService {
         String? apkDownloadUrl;
         if (data['assets'] != null && (data['assets'] as List).isNotEmpty) {
           for (var asset in data['assets'] as List) {
-            if (asset['name'] != null &&
-                asset['name'].toString().endsWith('.apk')) {
+            if (asset['name'] != null && asset['name'].toString().endsWith('.apk')) {
               apkDownloadUrl = asset['browser_download_url'] as String?;
               break;
             }
@@ -335,10 +331,8 @@ class UpdateService {
   /// Poredi da li je nova verzija novija od trenutne
   static bool _isNewerVersion(String current, String latest) {
     try {
-      List<int> currentParts =
-          current.split('.').map((e) => int.parse(e)).toList();
-      List<int> latestParts =
-          latest.split('.').map((e) => int.parse(e)).toList();
+      List<int> currentParts = current.split('.').map((e) => int.parse(e)).toList();
+      List<int> latestParts = latest.split('.').map((e) => int.parse(e)).toList();
 
       // Dopuni sa nulama ako je potrebno
       while (currentParts.length < 3) {
@@ -361,10 +355,8 @@ class UpdateService {
   /// Proverava da li je razlika u verziji major (prva cifra)
   static bool _isMajorVersionDifference(String current, String latest) {
     try {
-      List<int> currentParts =
-          current.split('.').map((e) => int.parse(e)).toList();
-      List<int> latestParts =
-          latest.split('.').map((e) => int.parse(e)).toList();
+      List<int> currentParts = current.split('.').map((e) => int.parse(e)).toList();
+      List<int> latestParts = latest.split('.').map((e) => int.parse(e)).toList();
 
       if (currentParts.isNotEmpty && latestParts.isNotEmpty) {
         return latestParts[0] > currentParts[0];
@@ -401,11 +393,11 @@ class UpdateChecker {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.system_update, color: Colors.green, size: 28),
-            SizedBox(width: 8),
-            Text('Nova verzija! 🚀'),
+            Icon(Icons.system_update, color: Theme.of(context).colorScheme.primary, size: 28),
+            const SizedBox(width: 8),
+            const Text('Nova verzija! 🚀'),
           ],
         ),
         content: Column(
