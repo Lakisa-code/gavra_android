@@ -1312,6 +1312,50 @@ class _AdminScreenState extends State<AdminScreen> {
                             ),
                           ),
                         ),
+                        // 📅 SMS SCHEDULE INFO
+                        const SizedBox(height: 4),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!, width: 1),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.schedule, color: Colors.blue[700], size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'SMS Raspored',
+                                    style: TextStyle(
+                                      color: Colors.blue[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                SMSService.getNextSMSInfo(),
+                                style: TextStyle(
+                                  color: Colors.blue[600],
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                'Krajnji rok: 1. u mesecu u 10:00',
+                                style: TextStyle(
+                                  color: Colors.blue[600],
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                       // �🗺️ GPS ADMIN MAPA - sada se prostire preko cele širine
                       GestureDetector(
