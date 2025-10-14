@@ -43,10 +43,7 @@ class SMSService {
     DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
 
     // Proverava da li je predzadnji dan u 20:00 - podsećaj da ističe sutra
-    if (now.day == secondToLastDay.day &&
-        now.hour == 20 &&
-        now.minute >= 0 &&
-        now.minute < 5) {
+    if (now.day == secondToLastDay.day && now.hour == 20 && now.minute >= 0 && now.minute < 5) {
       // 5-minutni prozor
 
       dlog('📅 Predzadnji dan meseca u 20:00 - šaljem SMS podsećaje...');
@@ -92,18 +89,15 @@ class SMSService {
       const mesecniFields = '*,'
           'polasci_po_danu';
 
-      final response = await supabase
-          .from('mesecni_putnici')
-          .select(mesecniFields)
-          .eq('datum_kraja_meseca', tomorrowStr);
+      final response =
+          await supabase.from('mesecni_putnici').select(mesecniFields).eq('datum_kraja_meseca', tomorrowStr);
 
       List<Putnik> unpaidPassengers = (response as List)
           .map(
             (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>),
           )
           .where(
-            (putnik) =>
-                putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
+            (putnik) => putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
           )
           .toList();
 
@@ -117,8 +111,7 @@ class SMSService {
       for (Putnik putnik in unpaidPassengers) {
         try {
           // Dobij statistike putovanja za putnika
-          Map<String, dynamic> stats =
-              await _getPaymentStats(putnik.id as String);
+          Map<String, dynamic> stats = await _getPaymentStats(putnik.id as String);
 
           // Kreiraj SMS poruku
           String message = _createReminderSMS(
@@ -176,18 +169,15 @@ class SMSService {
       const mesecniFields = '*,'
           'polasci_po_danu';
 
-      final response = await supabase
-          .from('mesecni_putnici')
-          .select(mesecniFields)
-          .eq('datum_kraja_meseca', yesterdayStr);
+      final response =
+          await supabase.from('mesecni_putnici').select(mesecniFields).eq('datum_kraja_meseca', yesterdayStr);
 
       List<Putnik> overduePassengers = (response as List)
           .map(
             (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>),
           )
           .where(
-            (putnik) =>
-                putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
+            (putnik) => putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
           )
           .toList();
 
@@ -201,8 +191,7 @@ class SMSService {
       for (Putnik putnik in overduePassengers) {
         try {
           // Dobij statistike putovanja za putnika
-          Map<String, dynamic> stats =
-              await _getPaymentStats(putnik.id as String);
+          Map<String, dynamic> stats = await _getPaymentStats(putnik.id as String);
 
           // Kreiraj SMS poruku za krajnji rok
           String message = _createOverdueReminderSMS(
@@ -264,8 +253,7 @@ class SMSService {
         };
       }
 
-      String lastPaymentDate =
-          lastPaymentResponse[0]['datum_i_vreme'] as String;
+      String lastPaymentDate = lastPaymentResponse[0]['datum_i_vreme'] as String;
       int lastPaymentAmount = lastPaymentResponse[0]['iznos_uplate'] as int;
 
       // 2. Putovanja od poslednje uplate
@@ -282,10 +270,8 @@ class SMSService {
       int putovanja = 0;
       int otkazivanja = 0;
       if (tripsResponse is List) {
-        putovanja =
-            tripsResponse.where((t) => t['tip_promene'] == 'putovanje').length;
-        otkazivanja =
-            tripsResponse.where((t) => t['tip_promene'] == 'otkazano').length;
+        putovanja = tripsResponse.where((t) => t['tip_promene'] == 'putovanje').length;
+        otkazivanja = tripsResponse.where((t) => t['tip_promene'] == 'otkazano').length;
       }
 
       // Formatiranje datuma
@@ -406,34 +392,11 @@ class SMSService {
     }
   }
 
-  /// Manuelno slanje SMS-a (za testiranje)
-  static Future<void> sendTestSMS() async {
-    dlog('🧪 Test SMS funkcionalnosti...');
-    await sendSMSToUnpaidMonthlyPassengers();
-  }
-
   /// Provera da li je danas predzadnji dan meseca
   static bool isSecondToLastDayOfMonth() {
     DateTime now = DateTime.now();
     DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
     return now.day == secondToLastDay.day;
-  }
-
-  /// Info o sledećem slanju SMS-a
-  static String getNextSMSInfo() {
-    DateTime now = DateTime.now();
-    DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
-    String dateStr = DateFormat('dd.MM.yyyy').format(secondToLastDay);
-
-    if (now.day <= secondToLastDay.day) {
-      return 'Sledeći SMS: $dateStr u 20:00';
-    } else {
-      // Sledeći mesec
-      DateTime nextMonth = DateTime(now.year, now.month + 1);
-      DateTime nextSecondToLast = _getSecondToLastDayOfMonth(nextMonth);
-      String nextDateStr = DateFormat('dd.MM.yyyy').format(nextSecondToLast);
-      return 'Sledeći SMS: $nextDateStr u 20:00';
-    }
   }
 
   /// 🔥 NOVA FUNKCIJA: Šalje SMS roditeljima učenika (majka i otac)
@@ -448,14 +411,10 @@ class SMSService {
       }
 
       // Učitaj mesečni putnik iz baze da dobijem podatke o roditeljima
-      const mesecniFields =
-          'tip, broj_telefona_oca, broj_telefona_majke, putnik_ime';
+      const mesecniFields = 'tip, broj_telefona_oca, broj_telefona_majke, putnik_ime';
 
-      final response = await supabase
-          .from('mesecni_putnici')
-          .select(mesecniFields)
-          .eq('id', putnik.id.toString())
-          .single();
+      final response =
+          await supabase.from('mesecni_putnici').select(mesecniFields).eq('id', putnik.id.toString()).single();
 
       // Provjeri da li je učenik (samo učenicima šaljemo roditeljima)
       final tip = response['tip'] as String?;
@@ -486,8 +445,7 @@ class SMSService {
       for (String brojTelefona in roditeljiBrojevi) {
         try {
           // Dodaj prefiks da roditelji znaju da je poruka o detetu
-          String roditeljskaPorta =
-              '📚 PORUKA O VAŠEM DETETU ${putnik.ime.toUpperCase()}: $message';
+          String roditeljskaPorta = '📚 PORUKA O VAŠEM DETETU ${putnik.ime.toUpperCase()}: $message';
 
           await _sendSMS(brojTelefona, roditeljskaPorta);
           dlog(

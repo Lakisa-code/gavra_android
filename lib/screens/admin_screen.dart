@@ -9,7 +9,6 @@ import '../services/local_notification_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
-import '../services/sms_service.dart'; // DODANO za SMS test funkcionalnost
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
@@ -227,59 +226,6 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   // Color _getVozacColor(String vozac) { ... } // unused
-
-  // 📱 TEST SMS FUNKCIONALNOST
-  Future<void> _testSMSFunctionality() async {
-    try {
-      // Prikaži loading dialog
-      if (!mounted) return;
-      showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Testiram SMS servis...'),
-            ],
-          ),
-        ),
-      );
-
-      // Pozovi test SMS funkciju
-      await SMSService.sendTestSMS();
-
-      // Zatvori loading dialog
-      if (mounted) Navigator.pop(context);
-
-      // Prikaži success snackbar
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ SMS test završen! Proveri log za rezultate.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      // Zatvori loading dialog
-      if (mounted) Navigator.pop(context);
-
-      // Prikaži error snackbar
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ SMS test greška: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-      dlog('❌ SMS test error: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1269,93 +1215,7 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                       // � SMS TEST DUGME - samo za Bojan
                       if (_currentDriver?.toLowerCase() == 'bojan') ...[
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: _testSMSFunctionality,
-                          child: Container(
-                            width: double.infinity,
-                            height: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF2E7D32), width: 1.2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF4CAF50).withOpacity(0.3),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.sms, color: Colors.white, size: 18),
-                                SizedBox(width: 6),
-                                Text(
-                                  'TEST SMS SERVIS',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                SizedBox(width: 6),
-                                Icon(Icons.send, color: Colors.white, size: 14),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // 📅 SMS SCHEDULE INFO
-                        const SizedBox(height: 4),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue[200]!, width: 1),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.schedule, color: Colors.blue[700], size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'SMS Raspored',
-                                    style: TextStyle(
-                                      color: Colors.blue[700],
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                SMSService.getNextSMSInfo(),
-                                style: TextStyle(
-                                  color: Colors.blue[600],
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Text(
-                                'Krajnji rok: 1. u mesecu u 10:00',
-                                style: TextStyle(
-                                  color: Colors.blue[600],
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // SMS test i debug funkcionalnost uklonjena - servis radi u pozadini
                       ],
                       // �🗺️ GPS ADMIN MAPA - sada se prostire preko cele širine
                       GestureDetector(
