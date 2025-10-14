@@ -1078,7 +1078,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fontWeight: FontWeight.w800,
                             color: Theme.of(context).colorScheme.onPrimary,
                             letterSpacing: 0.5,
-                            shadows: [
+                            shadows: const [
                               Shadow(
                                 offset: Offset(1, 1),
                                 blurRadius: 3,
@@ -1115,7 +1115,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                               ),
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 'Učitavam...',

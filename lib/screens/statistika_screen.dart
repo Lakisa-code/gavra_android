@@ -276,18 +276,20 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                         margin: const EdgeInsets.only(right: 4),
                                         decoration: BoxDecoration(
                                           color: _tabController.index == 0
-                                              ? Colors.white.withOpacity(0.3)
-                                              : Colors.white.withOpacity(0.15),
+                                              ? Theme.of(context).colorScheme.surface.withOpacity(0.3)
+                                              : Theme.of(context).colorScheme.surface.withOpacity(0.15),
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(0.4),
+                                            color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
                                           ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Vozači',
                                             style: TextStyle(
-                                              color: _tabController.index == 0 ? Colors.white : Colors.white70,
+                                              color: _tabController.index == 0
+                                                  ? Theme.of(context).colorScheme.onPrimary
+                                                  : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -304,18 +306,20 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                         margin: const EdgeInsets.only(left: 4),
                                         decoration: BoxDecoration(
                                           color: _tabController.index == 1
-                                              ? Colors.white.withOpacity(0.3)
-                                              : Colors.white.withOpacity(0.15),
+                                              ? Theme.of(context).colorScheme.surface.withOpacity(0.3)
+                                              : Theme.of(context).colorScheme.surface.withOpacity(0.15),
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(0.4),
+                                            color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
                                           ),
                                         ),
                                         child: Center(
                                           child: Text(
                                             'Detaljno',
                                             style: TextStyle(
-                                              color: _tabController.index == 1 ? Colors.white : Colors.white70,
+                                              color: _tabController.index == 1
+                                                  ? Theme.of(context).colorScheme.onPrimary
+                                                  : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -657,10 +661,10 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
               children: [
                 Text(
                   'Detaljne Statistike - ${_periodLabel(_period)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -742,7 +746,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                             Icons.route,
                             Theme.of(context).colorScheme.workerPrimary,
                           ),
-                          const Divider(color: Colors.white24),
+                          Divider(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24)),
                           _buildStatRow(
                             'Ukupno pazar',
                             '${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
