@@ -26,6 +26,7 @@ import 'services/realtime_notification_counter_service.dart';
 import 'services/realtime_notification_service.dart';
 import 'services/realtime_priority_service.dart';
 import 'services/realtime_service.dart';
+import 'services/sms_service.dart';
 import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
 import 'services/vozilo_service.dart';
@@ -261,6 +262,15 @@ class _MyAppState extends State<MyApp> {
       } catch (e) {
         _logger.w('⚠️ Notification system error: $e');
         // Continue without notifications if they fail
+      }
+
+      // 📱 6. POKRENI AUTOMATSKI SMS SERVIS
+      try {
+        SMSService.startAutomaticSMSService();
+        _logger.i('📱 SMS servis pokrenut uspešno');
+      } catch (e) {
+        _logger.w('⚠️ SMS servis error: $e');
+        // Continue without SMS service if it fails
       }
     });
 
