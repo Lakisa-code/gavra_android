@@ -1,25 +1,20 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+
+
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
-import 'package:logger/logger.dart';
 
 class RealtimeNotificationService {
   /// IMPORTANT: Do NOT store your OneSignal REST API key in the client app.
   ///
-  /// This client no longer contains the OneSignal REST API key. Instead,
-  /// configure a server endpoint that holds the REST API key securely and
-  /// sends notifications on behalf of the app. If you have such a server,
-  /// set its URL below (e.g. 'https://example.com/api/notify') and the client
-  /// will forward notification requests to your server.
-  // Runtime-configurable server URL that forwards OneSignal requests.
-  // Set this from your app startup (or remote config) to point to your server.
-  static String _oneSignalServerUrl = '';
-  // Example server included at: tools/onesignal_server_example
-  // Set environment variables on the server: ONE_SIGNAL_REST_KEY and ONE_SIGNAL_APP_ID
+  /// OneSignal konfiguracija direktno u aplikaciji
+  /// App ID: 4fd57af1-568a-45e0-a737-3b3918c4e92a
+  /// REST Key: dymepwhpkubkfxhqhc4mlh2x7
 
   /// Pošalji OneSignal notifikaciju putem REST API-ja
   static Future<void> sendOneSignalNotification({
@@ -29,83 +24,72 @@ class RealtimeNotificationService {
     String? segment, // Ili segment (npr. "All")
     Map<String, dynamic>? data,
   }) async {
-    // Don't send REST requests directly from the client that contain the
-    // OneSignal REST API key. Instead, forward the request to your server
-    // which will perform the authenticated call to OneSignal.
-    if (_oneSignalServerUrl.isEmpty ||
-        _oneSignalServerUrl.contains('your-server.example.com')) {
-      _logger.w(
-          '\u2757 OneSignal server URL not configured or is placeholder. Client will not send OneSignal REST requests.\n'
-          'Set RealtimeNotificationService._oneSignalServerUrl to your actual server endpoint that forwards notifications to OneSignal.');
+    // OneSignal REST API direktan poziv
+    const String appId = '4fd57af1-568a-45e0-a737-3b3918c4e92a';
+    const String restKey = 'dymepwhpkubkfxhqhc4mlh2x7';
+
+    if (appId.isEmpty || restKey.isEmpty) {
+      // Logger removed
       return;
     }
 
     try {
       final payload = {
-        'title': title,
-        'body': body,
-        if (playerId != null) 'playerId': playerId,
-        if (segment != null) 'segment': segment,
+        'app_id': appId,
+        'headings': {'en': title},
+        'contents': {'en': body},
+        if (playerId != null) 'include_player_ids': [playerId],
+        if (segment != null) 'included_segments': [segment],
         if (data != null) 'data': data,
       };
 
-      final uri = Uri.parse(_oneSignalServerUrl);
+      final uri = Uri.parse('https://onesignal.com/api/v1/notifications');
       final req = await HttpClient().postUrl(uri);
       req.headers.set('Content-Type', 'application/json');
+      req.headers.set('Authorization', 'Basic $restKey');
       req.add(utf8.encode(jsonEncode(payload)));
       final httpResponse = await req.close();
-      final responseBody = await utf8.decoder.bind(httpResponse).join();
+      await utf8.decoder.bind(httpResponse).join();
       if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
-        _logger.i('\u2705 Forwarded notification to server: $responseBody');
+        // Logger removed
       } else {
-        _logger.e(
-          '\u274c Server returned error while forwarding OneSignal notification: $responseBody',
-        );
+        
       }
     } catch (e) {
-      _logger.e(
-        '\u274c Exception while forwarding OneSignal notification to server: $e',
-      );
+      
     }
   }
 
-  /// Set the server URL used to forward OneSignal notification requests.
-  /// Example: RealtimeNotificationService.setOneSignalServerUrl('https://example.com/api/notify');
-  static void setOneSignalServerUrl(String url) {
-    _oneSignalServerUrl = url;
-    _logger.i('🔧 OneSignal server URL set to: $_oneSignalServerUrl');
+  /// OneSignal direktno konfigurisano sa REST API
+  static void initializeOneSignal() {
+    // Logger removed
   }
 
   /// Public helper to handle an initial/cold-start RemoteMessage (from getInitialMessage)
   static Future<void> handleInitialMessage(RemoteMessage? message) async {
     if (message == null) return;
     try {
-      _logger.i(
-        '🔔 Handling initial Firebase message: ${message.notification?.title}',
-      );
+      
       await _handleFirebaseNotificationTap(message);
     } catch (e) {
-      _logger.w('⚠️ Error handling initial Firebase message: $e');
+      // Logger removed
     }
   }
 
-  static final Logger _logger = Logger();
+
 
   /// Initialize service with full multi-channel support (Firebase + OneSignal + Local)
   static Future<void> initialize() async {
-    _logger.i(
-      '🔔 RealtimeNotificationService initialized - multi-channel: Firebase + OneSignal + Local',
-    );
+    
   }
 
   /// Setup foreground Firebase message listeners for real-time notifications
   static void listenForForegroundNotifications(BuildContext context) {
-    _logger.i('🔔 Setting up Firebase foreground message listeners...');
+    // Logger removed
 
     // Listen for foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _logger
-          .i('📱 Foreground Firebase message: ${message.notification?.title}');
+      // Logger removed
 
       // Filtriraj notifikacije: samo za današnji dan i za tip "dodat"/"novi_putnik" ili "otkazan"/"otkazan_putnik"
       final data = message.data;
@@ -116,34 +100,26 @@ class RealtimeNotificationService {
       if (datumString.isNotEmpty) {
         try {
           final datum = DateTime.parse(datumString);
-          isToday = datum.year == danas.year &&
-              datum.month == danas.month &&
-              datum.day == danas.day;
+          isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
         } catch (_) {
           isToday = false;
         }
       }
 
-      if ((type == 'dodat' ||
-              type == 'novi_putnik' ||
-              type == 'otkazan' ||
-              type == 'otkazan_putnik') &&
-          isToday) {
+      if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
           payload: (message.data['type'] as String?) ?? 'firebase_foreground',
         );
       } else {
-        _logger.i(
-          '🔕 Notifikacija ignorisana (nije za danas ili nije tip dodat/otkazan)',
-        );
+        
       }
     });
 
     // Listen for message taps
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      _logger.i('📱 Firebase message opened: ${message.notification?.title}');
+      // Logger removed
       // Handle navigation based on message data
       _handleFirebaseNotificationTap(message);
     });
@@ -152,23 +128,22 @@ class RealtimeNotificationService {
   /// Subscribe to Firebase topics for driver-specific notifications
   static Future<void> subscribeToDriverTopics(String? driverId) async {
     if (driverId == null || driverId.isEmpty) {
-      _logger.i('🔔 Notifikacije će biti aktivirane nakon prijave vozača');
+      // Logger removed
       return;
     }
 
     try {
-      _logger.i('🔔 Subscribing to Firebase topics for driver: $driverId');
+      // Logger removed
 
       // Subscribe to general topic
       await FirebaseMessaging.instance.subscribeToTopic('gavra_all_drivers');
 
       // Subscribe to driver-specific topic
-      await FirebaseMessaging.instance
-          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      await FirebaseMessaging.instance.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
-      _logger.i('✅ Firebase topic subscriptions completed for $driverId');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Firebase topic subscription failed: $e');
+      // Logger removed
     }
   }
 
@@ -178,7 +153,7 @@ class RealtimeNotificationService {
     String body,
     Map<String, dynamic> data,
   ) {
-    _logger.i('🔔 Sending multi-channel notification: $title - $body');
+    // Logger removed
 
     try {
       // 1. Send local notification immediately (highest priority)
@@ -190,11 +165,11 @@ class RealtimeNotificationService {
         body: body,
         payload: payloadJson,
       );
-      _logger.i('✅ Local notification sent');
+      // Logger removed
 
       // 2. Firebase Cloud Messaging (server-side implementation needed)
       // Note: FCM sending is typically done from server, not client
-      _logger.i('📡 Firebase notification would be sent from server');
+      // Logger removed
 
       // 3. OneSignal notification (REST API poziv iz klijenta)
       // Slanje svima u segmentu "All" (ili koristi playerId za pojedinačne korisnike)
@@ -205,19 +180,15 @@ class RealtimeNotificationService {
         data: data,
       );
 
-      _logger.i(
-        '🎯 Multi-channel notification completed: Firebase + OneSignal + Local',
-      );
+      
     } catch (e) {
-      _logger.e('❌ Error sending notifications: $e');
+      // Logger removed
     }
   }
 
   /// Test notification functionality with multi-channel support
   static Future<void> sendTestNotification(String message) async {
-    _logger.i(
-      '🔔 Test notification: $message (multi-channel: Firebase + OneSignal + Local)',
-    );
+    
 
     // Show local notification
     await LocalNotificationService.showRealtimeNotification(
@@ -229,40 +200,36 @@ class RealtimeNotificationService {
 
   /// Check notification permissions for Firebase
   static Future<bool> hasNotificationPermissions() async {
-    _logger.i('🔔 Checking Firebase notification permissions...');
+    // Logger removed
     try {
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
-      bool hasPermission =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
-      _logger.i('🔔 Firebase notification permission status: $hasPermission');
+      NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
+      bool hasPermission = settings.authorizationStatus == AuthorizationStatus.authorized;
+      // Logger removed
       return hasPermission;
     } catch (e) {
-      _logger.e('❌ Error checking Firebase permissions: $e');
+      // Logger removed
       return false;
     }
   }
 
   /// Request notification permissions for Firebase
   static Future<bool> requestNotificationPermissions() async {
-    _logger.i('🔔 Requesting Firebase notification permissions...');
+    // Logger removed
     try {
       // Check if Firebase is available first
       if (!Firebase.apps.isNotEmpty) {
-        _logger.w('⚠️ Firebase not initialized, skipping permission request');
+        // Logger removed
         return false;
       }
 
-      NotificationSettings settings = await FirebaseMessaging.instance
-          .requestPermission()
-          .timeout(const Duration(seconds: 10));
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.requestPermission().timeout(const Duration(seconds: 10));
 
-      bool granted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
-      _logger.i('🔔 Firebase permission request result: $granted');
+      bool granted = settings.authorizationStatus == AuthorizationStatus.authorized;
+      // Logger removed
       return granted;
     } catch (e) {
-      _logger.e('❌ Error requesting Firebase permissions: $e');
+      // Logger removed
       // Return false but don't crash the app
       return false;
     }
@@ -273,7 +240,7 @@ class RealtimeNotificationService {
     RemoteMessage message,
   ) async {
     try {
-      _logger.i('🔔 Handling Firebase notification tap...');
+      // Logger removed
 
       // Extract notification type and passenger data from Firebase message
       final notificationType = message.data['type'] ?? 'unknown';
@@ -281,8 +248,7 @@ class RealtimeNotificationService {
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData =
-            jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(
@@ -290,10 +256,13 @@ class RealtimeNotificationService {
           putnikData: putnikData,
         );
       } else {
-        _logger.w('🔔 No passenger data in Firebase notification');
+        // Logger removed
       }
     } catch (e) {
-      _logger.e('❌ Error handling Firebase notification tap: $e');
+      // Logger removed
     }
   }
 }
+
+
+

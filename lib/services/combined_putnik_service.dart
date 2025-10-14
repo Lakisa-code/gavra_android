@@ -1,4 +1,4 @@
-import 'package:logger/logger.dart';
+
 
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
@@ -8,7 +8,7 @@ import 'realtime_service.dart';
 /// Kombinovani servis za putnike - koristi normalizovanu šemu ali pruža
 /// kompatibilan interfejs sa starim PutnikService-om
 class CombinedPutnikService {
-  final Logger _logger = Logger();
+
   // final DnevniPutnikService _dnevniService = DnevniPutnikService(); // Unused
   // final MesecniPutnikService _mesecniService = MesecniPutnikService(); // Unused
   // final AdresaService _adresaService = AdresaService(); // Unused
@@ -96,7 +96,7 @@ class CombinedPutnikService {
 
       return filtered;
     } catch (e) {
-      _logger.e('Error in getKombinovaniPutnici: $e');
+      // Logger removed
       return [];
     }
   }
@@ -125,7 +125,7 @@ class CombinedPutnikService {
   Future<void> dodajPutnika(Putnik putnik) async {
     // TODO: Implementirati dodavanje u normalizovanu šemu
     // Za sada samo logujemo
-    _logger.i('🚀 DODAJ PUTNIKA: ${putnik.ime}');
+    // Logger removed
   }
 
   /// Resetuje pokupljenja za nova vremena polaska (za kompatibilnost sa starim interfejsom)
@@ -135,12 +135,13 @@ class CombinedPutnikService {
     String currentDriver,
   ) async {
     try {
-      _logger.i(
-        '🔄 RESET POKUPLJENJA - novo vreme: $novoVreme, grad: $grad, vozač: $currentDriver',
-      );
+      
       // TODO: Implementirati logiku za reset pokupljenja u normalizovanoj šemi
     } catch (e) {
-      _logger.e('❌ Error in resetPokupljenjaNaPolazak: $e');
+      // Logger removed
     }
   }
 }
+
+
+

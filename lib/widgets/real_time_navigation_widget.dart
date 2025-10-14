@@ -53,20 +53,26 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
   /// 🚀 Inicijalizuj navigaciju sa OpenRoute/Mapbox
   Future<void> _initializeNavigation() async {
+    if (!mounted) return;
+
     try {
-      setState(() {
-        _isLoading = true;
-        _statusMessage = 'Dobijam trenutnu GPS poziciju...';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _statusMessage = 'Dobijam trenutnu GPS poziciju...';
+        });
+      }
 
       // Dobij trenutnu poziciju
       _currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      setState(() {
-        _statusMessage = 'Optimizujem rutu sa OpenRouteService...';
-      });
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Optimizujem rutu sa OpenRouteService...';
+        });
+      }
 
       // Generiši optimizovanu rutu sa turn-by-turn instrukcijama - SERVIS UKLONJEN
       // final result =
@@ -97,10 +103,12 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           _currentInstructionIndex = 0;
         }
 
-        setState(() {
-          _isLoading = false;
-          _statusMessage = 'Navigacija spremna - ${_currentInstructions.length} instrukcija';
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _statusMessage = 'Navigacija spremna - ${_currentInstructions.length} instrukcija';
+          });
+        }
 
         widget.onStatusUpdate?.call(
           '✅ Navigacija inicijalizovana sa ${_currentInstructions.length} instrukcija',
@@ -112,19 +120,23 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         throw Exception('Nije moguće generisati optimizovanu rutu');
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _statusMessage = 'Greška: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = 'Greška: ${e.toString()}';
+        });
+      }
       widget.onStatusUpdate?.call('❌ Greška inicijalizacije: $e');
     }
   }
 
   /// 🛰️ Pokreni real-time GPS praćenje
   void _startGPSTracking() {
-    setState(() {
-      _isNavigating = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isNavigating = true;
+      });
+    }
 
     // GPS stream sa visokom preciznošću
     Geolocator.getPositionStream(
@@ -141,9 +153,11 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
   Future<void> _updateNavigationBasedOnGPS(Position newPosition) async {
     if (!_isNavigating || _currentInstructions.isEmpty) return;
 
-    setState(() {
-      _currentPosition = newPosition;
-    });
+    if (mounted) {
+      setState(() {
+        _currentPosition = newPosition;
+      });
+    }
 
     try {
       // Proveri da li je potrebno rerautovanje - SERVIS UKLONJEN
@@ -164,12 +178,14 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
         final newRoute = updateResult['newRoute'];
         if (newRoute != null && newRoute['optimizedRoute'] != null) {
-          setState(() {
-            _currentInstructions = (newRoute['instructions'] as List<dynamic>?)?.cast<TurnByTurnInstruction>() ?? [];
-            _remainingPassengers = (newRoute['optimizedRoute'] as List<dynamic>?)?.cast<Putnik>() ?? [];
-            _currentInstructionIndex = 0;
-            _activeInstruction = _currentInstructions.isNotEmpty ? _currentInstructions.first : null;
-          });
+          if (mounted) {
+            setState(() {
+              _currentInstructions = (newRoute['instructions'] as List<dynamic>?)?.cast<TurnByTurnInstruction>() ?? [];
+              _remainingPassengers = (newRoute['optimizedRoute'] as List<dynamic>?)?.cast<Putnik>() ?? [];
+              _currentInstructionIndex = 0;
+              _activeInstruction = _currentInstructions.isNotEmpty ? _currentInstructions.first : null;
+            });
+          }
 
           widget.onRouteUpdate?.call(_remainingPassengers);
           widget.onStatusUpdate?.call('✅ Nova ruta kalkulisana');
@@ -179,7 +195,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         final currentInstruction = updateResult['currentInstruction'];
         final distanceToNext = updateResult['distanceToNext'] ?? 0.0;
 
-        if (currentInstruction != null) {
+        if (currentInstruction != null && mounted) {
           setState(() {
             _activeInstruction = currentInstruction as TurnByTurnInstruction?;
           });
@@ -188,10 +204,12 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           if ((distanceToNext as num?) != null &&
               (distanceToNext as num) < 20.0 &&
               _currentInstructionIndex < _currentInstructions.length - 1) {
-            setState(() {
-              _currentInstructionIndex++;
-              _activeInstruction = _currentInstructions[_currentInstructionIndex];
-            });
+            if (mounted) {
+              setState(() {
+                _currentInstructionIndex++;
+                _activeInstruction = _currentInstructions[_currentInstructionIndex];
+              });
+            }
 
             widget.onStatusUpdate?.call('➡️ Sledeća instrukcija: ${_activeInstruction?.text}');
           }
@@ -215,9 +233,11 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
   /// ⏸️ Zaustavi navigaciju
   void _stopNavigation() {
-    setState(() {
-      _isNavigating = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isNavigating = false;
+      });
+    }
   }
 
   @override
@@ -491,16 +511,20 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
   /// 🎯 SMART NAVIGATION - Optimizuj rutu sa algoritmima
   Future<void> _optimizeRouteWithSmartNavigation() async {
     if (_remainingPassengers.isEmpty) {
-      setState(() {
-        _statusMessage = 'Nema putnika za optimizaciju';
-      });
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Nema putnika za optimizaciju';
+        });
+      }
       return;
     }
 
     try {
-      setState(() {
-        _statusMessage = '🎯 Optimizujem rutu sa Smart Navigation...';
-      });
+      if (mounted) {
+        setState(() {
+          _statusMessage = '🎯 Optimizujem rutu sa Smart Navigation...';
+        });
+      }
 
       // Pokreni Smart Navigation optimizaciju
       final result = await SmartNavigationService.startOptimizedNavigation(
@@ -510,10 +534,12 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
       if (result.success) {
         // Ažuriraj rutu sa optimizovanim redosledom
-        setState(() {
-          _remainingPassengers = result.optimizedPutnici ?? _remainingPassengers;
-          _statusMessage = '✅ ${result.message}';
-        });
+        if (mounted) {
+          setState(() {
+            _remainingPassengers = result.optimizedPutnici ?? _remainingPassengers;
+            _statusMessage = '✅ ${result.message}';
+          });
+        }
 
         // Obavesti parent widget o novoj ruti
         if (widget.onRouteUpdate != null) {
@@ -531,9 +557,11 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           );
         }
       } else {
-        setState(() {
-          _statusMessage = '❌ ${result.message}';
-        });
+        if (mounted) {
+          setState(() {
+            _statusMessage = '❌ ${result.message}';
+          });
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -545,9 +573,11 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         }
       }
     } catch (e) {
-      setState(() {
-        _statusMessage = '❌ Greška pri optimizaciji: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _statusMessage = '❌ Greška pri optimizaciji: $e';
+        });
+      }
     }
   }
 
@@ -622,3 +652,6 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     }
   }
 }
+
+
+

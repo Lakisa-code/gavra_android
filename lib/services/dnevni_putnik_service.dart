@@ -13,7 +13,7 @@ class DnevniPutnikService {
   final SupabaseClient _supabase;
 
   // Logger instance - koristićemo dlog funkciju iz logging.dart
-  // static final _logger = Logger();
+  // static final // Logger removed;
 
   // Cache za adrese i rute
   final Map<String, Adresa> _adresaCache = {};
@@ -304,3 +304,6 @@ class DnevniPutnikService {
     return true;
   }
 }
+
+
+

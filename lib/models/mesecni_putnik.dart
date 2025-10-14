@@ -461,3 +461,6 @@ class MesecniPutnik {
     return 'MesecniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan, status: $status, polasci: ${polasciPoDanu.length}, period: $formatiraniPeriod)';
   }
 }
+
+
+

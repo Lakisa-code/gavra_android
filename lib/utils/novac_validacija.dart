@@ -96,3 +96,6 @@ class NovcanaValidacija {
     return (modelAmount - dbAmount).abs() < 0.01;
   }
 }
+
+
+

@@ -613,3 +613,6 @@ class Putnik {
     return daniKratice[weekday - 1];
   }
 }
+
+
+

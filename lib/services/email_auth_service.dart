@@ -136,3 +136,6 @@ class EmailAuthService {
     return _supabase.auth.currentUser;
   }
 }
+
+
+

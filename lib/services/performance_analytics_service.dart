@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logger/logger.dart';
+
 import 'advanced_caching_service.dart';
 
 // Use centralized logger (no local alias)
@@ -10,7 +10,7 @@ import 'advanced_caching_service.dart';
 /// Real-time metrics, A/B testing, user behavior tracking
 /// 100% BESPLATNO - bolje od Google Analytics!
 class PerformanceAnalyticsService {
-  static final Logger _logger = Logger();
+
 
   // 📊 METRICS COLLECTORS
   static final Map<String, PerformanceMetric> _metrics = {};
@@ -37,7 +37,7 @@ class PerformanceAnalyticsService {
   /// 🚀 INITIALIZE ANALYTICS SYSTEM
   static Future<void> initialize() async {
     try {
-      _logger.i('📊 Initializing Performance Analytics...');
+      // Logger removed
 
       // Load persisted metrics
       await _loadPersistedMetrics();
@@ -48,9 +48,9 @@ class PerformanceAnalyticsService {
       // Initialize standard metrics
       _initializeStandardMetrics();
 
-      _logger.i('✅ Performance Analytics initialized');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Analytics initialization failed: $e');
+      // Logger removed
     }
   }
 
@@ -88,7 +88,7 @@ class PerformanceAnalyticsService {
       _checkPerformanceAlert(metricName, value);
 
     } catch (e) {
-      _logger.e('❌ Failed to record metric $metricName: $e');
+      // Logger removed
     }
   }
 
@@ -119,7 +119,7 @@ class PerformanceAnalyticsService {
       }
 
     } catch (e) {
-      _logger.e('❌ Failed to track behavior $eventName: $e');
+      // Logger removed
     }
   }
 
@@ -147,7 +147,7 @@ class PerformanceAnalyticsService {
       );
 
     } catch (e) {
-      _logger.e('❌ Failed to record A/B test result: $e');
+      // Logger removed
     }
   }
 
@@ -195,7 +195,7 @@ class PerformanceAnalyticsService {
       dashboard.alerts = _generateAlerts();
       dashboard.recommendations = _generateRecommendations();
     } catch (e) {
-      _logger.e('❌ Failed to generate dashboard: $e');
+      // Logger removed
     }
 
     return dashboard;
@@ -292,7 +292,7 @@ class PerformanceAnalyticsService {
           ? const JsonEncoder.withIndent('  ').convert(exportData)
           : _convertToCsv(exportData);
     } catch (e) {
-      _logger.e('❌ Failed to export analytics data: $e');
+      // Logger removed
       return '{"error": "Export failed: $e"}';
     }
   }
@@ -544,9 +544,7 @@ class PerformanceAnalyticsService {
           isHigherBetter ? value < threshold * 0.5 : value > threshold * 2;
 
       if (isAlert) {
-        _logger.w(
-          '🚨 Performance Alert: $metricName = $value (threshold: $threshold)',
-        );
+        
 
         // In production, send to monitoring service
       }
@@ -638,9 +636,9 @@ class PerformanceAnalyticsService {
         );
       }
 
-      _logger.d('📊 Analytics data flushed to persistence');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Failed to flush analytics data: $e');
+      // Logger removed
     }
   }
 
@@ -659,12 +657,12 @@ class PerformanceAnalyticsService {
                 PerformanceMetric.fromJson(metricData as Map<String, dynamic>);
             _metrics[metric.name] = metric;
           } catch (e) {
-            _logger.w('⚠️ Failed to load metric from $key: $e');
+            // Logger removed
           }
         }
       }
     } catch (e) {
-      _logger.w('⚠️ Failed to load persisted metrics: $e');
+      // Logger removed
     }
   }
 
@@ -1016,3 +1014,6 @@ class MetricDetails {
   final Map<String, double> percentiles;
   final double trend;
 }
+
+
+

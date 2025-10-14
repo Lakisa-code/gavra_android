@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logger/logger.dart';
+
 import 'cache_service.dart';
 import 'geocoding_stats_service.dart';
 
@@ -10,7 +10,7 @@ import 'geocoding_stats_service.dart';
 /// 100% BESPLATNO sa enterprise-level funkcionalnostima!
 class AdvancedGeocodingService {
   static const String _cachePrefix = 'advanced_geocoding_';
-  static final Logger _logger = Logger();
+
 
   // 🌍 MULTIPLE FREE GEOCODING PROVIDERS - failover sistem
   static const Map<String, String> _providers = {
@@ -47,9 +47,7 @@ class AdvancedGeocodingService {
   }) async {
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac opštine dozvoljene
     if (_isCityOutsideServiceArea(grad)) {
-      _logger.w(
-        '🚫 Advanced geocoding blokiran za $grad - van servisne oblasti BC/Vršac',
-      );
+      
       return null;
     }
 
@@ -64,7 +62,7 @@ class AdvancedGeocodingService {
         final cached = await _getCachedResult(cacheKey);
         if (cached != null) {
           await GeocodingStatsService.incrementCacheHits();
-          _logger.i('✅ Cache hit: $cacheKey -> ${cached.confidence}%');
+          // Logger removed
           return cached;
         }
       }
@@ -90,7 +88,7 @@ class AdvancedGeocodingService {
             if (bestScore >= 85.0) break;
           }
         } catch (e) {
-          _logger.w('⚠️ Provider $providerName failed: $e');
+          // Logger removed
           continue;
         }
       }
@@ -116,7 +114,7 @@ class AdvancedGeocodingService {
 
       return bestResult;
     } catch (e) {
-      _logger.e('❌ Advanced geocoding failed: $e');
+      // Logger removed
       return null;
     }
   }
@@ -132,9 +130,7 @@ class AdvancedGeocodingService {
 
     for (int i = 0; i < batches.length; i++) {
       final batch = batches[i];
-      _logger.i(
-        '📦 Processing batch ${i + 1}/${batches.length} (${batch.length} items)',
-      );
+      
 
       // Paralelno geocoding za batch
       final futures = batch.map((entry) async {
@@ -657,3 +653,6 @@ bool _isCityOutsideServiceArea(String grad) {
     (city) => normalizedGrad.contains(city) || city.contains(normalizedGrad),
   );
 }
+
+
+

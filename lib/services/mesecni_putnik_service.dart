@@ -218,7 +218,7 @@ class MesecniPutnikService {
     DateTime krajMeseca,
   ) async {
     try {
-      print('🔍 [AZURIRAJ PLACANJE] Input vozacId: $vozacId');
+
 
       // Validacija UUID-a pre slanja u bazu
       String? validVozacId;
@@ -226,7 +226,7 @@ class MesecniPutnikService {
         // Provjeri da li je već valid UUID
         if (_isValidUuid(vozacId)) {
           validVozacId = vozacId;
-          print('✅ [AZURIRAJ PLACANJE] Valid UUID: $validVozacId');
+
         } else {
           // Ako nije UUID, pokušaj konverziju (fallback)
           print(
@@ -235,7 +235,7 @@ class MesecniPutnikService {
           final converted = VozacMappingService.getVozacUuidSync(vozacId);
           if (converted != null) {
             validVozacId = converted;
-            print('✅ [AZURIRAJ PLACANJE] Converted to UUID: $validVozacId');
+
           } else {
             print(
               '❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null',
@@ -245,7 +245,7 @@ class MesecniPutnikService {
         }
       }
 
-      print('🔍 [AZURIRAJ PLACANJE] Final vozac_id: $validVozacId');
+
 
       // 1. PROVJERI DA LI JE VEĆ POSTOJI ZAPIS ZA OVAJ MESEC (sprečava duplikate)
       final existingPayment = await _supabase
@@ -268,7 +268,7 @@ class MesecniPutnikService {
           'cena': iznos,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', existingPayment.first['id'] as String);
-        print('✅ [AŽURIRANJE] Ažurirani postojeći zapis plaćanja');
+
       } else {
         // 2. DODAJ NOVI ZAPIS U ISTORIJU PLAĆANJA (putovanja_istorija)
         final putnik = await getMesecniPutnikById(putnikId);
@@ -284,7 +284,7 @@ class MesecniPutnikService {
             'cena': iznos,
             'napomene': 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
           });
-          print('✅ [NOVA ISTORIJA] Dodano u putovanja_istorija: $iznos din');
+
         }
       }
 
@@ -301,11 +301,11 @@ class MesecniPutnikService {
         'placena_godina': pocetakMeseca.year,
         'ukupna_cena_meseca': iznos,
       });
-      print('✅ [AZURIRAJ PLACANJE] Mesečni putnik uspešno ažuriran');
+
 
       return true;
     } catch (e) {
-      print('Greška u azurirajPlacanjeZaMesec: $e');
+
       return false;
     }
   }
@@ -474,7 +474,7 @@ class MesecniPutnikService {
 
       return svaPlacanja;
     } catch (e) {
-      print('❌ Greška pri dohvatanju plaćanja: $e');
+
       return [];
     }
   }
@@ -661,7 +661,7 @@ class MesecniPutnikService {
         results.add(created);
       } catch (e) {
         // Log error but continue with other passengers
-        print('Error creating putnik ${putnik.putnikIme}: $e');
+
       }
     }
 
@@ -680,7 +680,7 @@ class MesecniPutnikService {
         final updated = await updateMesecniPutnik(entry.key, entry.value);
         results.add(updated);
       } catch (e) {
-        print('Error updating putnik ${entry.key}: $e');
+
       }
     }
 
@@ -813,3 +813,6 @@ class MesecniPutnikService {
     return buffer.toString();
   }
 }
+
+
+

@@ -1,10 +1,11 @@
 import 'dart:convert';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:logger/logger.dart';
+
 
 class LocationService {
-  static final Logger _logger = Logger();
+
 
   /// Proverava i traži permisije za lokaciju
   static Future<bool> requestLocationPermission() async {
@@ -12,7 +13,7 @@ class LocationService {
       // Proveri da li je lokacija omogućena
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _logger.w('📍 Location services su onemogućeni');
+        // Logger removed
         return false;
       }
 
@@ -22,20 +23,20 @@ class LocationService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _logger.w('📍 Location permisije su odbačene');
+          // Logger removed
           return false;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _logger.e('📍 Location permisije su trajno odbačene');
+        // Logger removed
         return false;
       }
 
-      _logger.i('📍 Location permisije odobrene');
+      // Logger removed
       return true;
     } catch (e) {
-      _logger.e('❌ Greška kod permisija: $e');
+      // Logger removed
       return false;
     }
   }
@@ -51,12 +52,10 @@ class LocationService {
         timeLimit: const Duration(seconds: 10),
       );
 
-      _logger.i(
-        '📍 Trenutna pozicija: ${position.latitude}, ${position.longitude}',
-      );
+      
       return position;
     } catch (e) {
-      _logger.e('❌ Greška dobijanja pozicije: $e');
+      // Logger removed
       return null;
     }
   }
@@ -65,18 +64,16 @@ class LocationService {
   static Future<String?> getAddressFromPosition(Position position) async {
     try {
       // Koristi Nominatim API za reverse geocoding
-      final coords = '${position.latitude},${position.longitude}';
-      final address =
-          await _reverseGeocode(position.latitude, position.longitude);
+      final address = await _reverseGeocode(position.latitude, position.longitude);
 
       if (address != null) {
-        _logger.i('📍 Reverse geocoding: $coords -> $address');
+        // Logger removed
         return address;
       }
 
       return null;
     } catch (e) {
-      _logger.e('❌ Greška reverse geocoding: $e');
+      // Logger removed
       return null;
     }
   }
@@ -85,8 +82,7 @@ class LocationService {
   static Future<String?> _reverseGeocode(double lat, double lng) async {
     try {
       const String baseUrl = 'https://nominatim.openstreetmap.org/reverse';
-      final url =
-          '$baseUrl?lat=$lat&lon=$lng&format=json&addressdetails=1&accept-language=sr';
+      final url = '$baseUrl?lat=$lat&lon=$lng&format=json&addressdetails=1&accept-language=sr';
 
       final response = await http.get(
         Uri.parse(url),
@@ -105,7 +101,7 @@ class LocationService {
 
       return null;
     } catch (e) {
-      _logger.e('❌ Reverse geocoding API greška: $e');
+      // Logger removed
       return null;
     }
   }
@@ -127,10 +123,7 @@ class LocationService {
     }
 
     // Dodaj grad/naselje
-    final place = address['city'] ??
-        address['town'] ??
-        address['village'] ??
-        address['municipality'];
+    final place = address['city'] ?? address['town'] ?? address['village'] ?? address['municipality'];
     if (place != null) {
       if (components.isNotEmpty) {
         components.add(place as String);
@@ -139,9 +132,7 @@ class LocationService {
       }
     }
 
-    return components.isNotEmpty
-        ? components.join(', ')
-        : (data['display_name'] as String?) ?? 'Nepoznata lokacija';
+    return components.isNotEmpty ? components.join(', ') : (data['display_name'] as String?) ?? 'Nepoznata lokacija';
   }
 
   /// Dobija trenutnu adresu korisnika (GPS + reverse geocoding)
@@ -153,7 +144,7 @@ class LocationService {
       final address = await getAddressFromPosition(position);
       return address;
     } catch (e) {
-      _logger.e('❌ Greška dobijanja trenutne adrese: $e');
+      // Logger removed
       return null;
     }
   }
@@ -168,3 +159,6 @@ class LocationService {
     return Geolocator.distanceBetween(startLat, startLng, endLat, endLng);
   }
 }
+
+
+

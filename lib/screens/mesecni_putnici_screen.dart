@@ -2865,10 +2865,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
       );
 
-      print('🔄 DODAVANJE MESECNOG PUTNIKA: ${noviPutnik.putnikIme}');
-      print('   - aktivan: ${noviPutnik.aktivan}');
-      print('   - obrisan: ${noviPutnik.obrisan}');
-      print('   - tip: ${noviPutnik.tip}');
+
+
+
+
 
       final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
       print(
@@ -2878,9 +2878,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // 🔄 KRITIČNO: Refresh RealtimeService da se promene propagiraju kroz sve servise
       try {
         await RealtimeService.instance.refreshNow();
-        print('🔄 FORSIRAJ REFRESH RealtimeService');
+
       } catch (e) {
-        print('⚠️ GREŠKA pri refresh-u RealtimeService: $e');
+
       }
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
@@ -2893,7 +2893,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}',
         );
       } catch (e) {
-        print('❌ GREŠKA pri kreiranju dnevnih putovanja: $e');
+
       }
 
       // ✅ DODATO: Forsiraj refresh state-a da se novi putnik odmah prikaže
@@ -4984,3 +4984,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 }
+
+
+

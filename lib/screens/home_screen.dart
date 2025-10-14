@@ -241,12 +241,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _initializeCurrentDriver() async {
     final driver = await FirebaseService.getCurrentDriver();
-    print('🏠 [HOME SCREEN] Current driver from FirebaseService: "$driver"');
+
     setState(() {
       // Inicijalizacija driver-a
       _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
     });
-    print('🏠 [HOME SCREEN] Set _currentDriver to: "$_currentDriver"');
+
   }
 
   Future<void> _initializeRealtimeService() async {
@@ -1965,3 +1965,6 @@ class _HomeScreenButton extends StatelessWidget {
     );
   }
 }
+
+
+

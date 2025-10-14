@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:logger/logger.dart';
+
+
 import '../models/putnik.dart';
 import 'advanced_geocoding_service.dart';
 
@@ -25,11 +27,8 @@ enum VehicleType {
 /// Kombinuje Genetic Algorithm, Simulated Annealing, 2-opt, real-time data
 /// 100% BESPLATNO - bolji od Google Maps Route Optimization API!
 class AIRouteOptimizationService {
-  static final Logger _logger = Logger();
-
   // ️ EXTERNAL DATA SOURCES (free APIs)
-  static const String _weatherApiUrl =
-      'https://api.openweathermap.org/data/2.5/weather';
+  static const String _weatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather';
 
   /// � HELPER - proveri da li je putnik u servisnoj oblasti
   static bool _isPassengerInServiceArea(Putnik putnik) {
@@ -37,18 +36,10 @@ class AIRouteOptimizationService {
     final adresa = putnik.adresa?.toLowerCase().trim() ?? '';
 
     // Normalizuj srpske karaktere
-    final normalizedGrad = grad
-        .replaceAll('š', 's')
-        .replaceAll('đ', 'd')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z');
-    final normalizedAdresa = adresa
-        .replaceAll('š', 's')
-        .replaceAll('đ', 'd')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z');
+    final normalizedGrad =
+        grad.replaceAll('š', 's').replaceAll('đ', 'd').replaceAll('č', 'c').replaceAll('ć', 'c').replaceAll('ž', 'z');
+    final normalizedAdresa =
+        adresa.replaceAll('š', 's').replaceAll('đ', 'd').replaceAll('č', 'c').replaceAll('ć', 'c').replaceAll('ž', 'z');
 
     // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
     final serviceAreaCities = [
@@ -81,20 +72,14 @@ class AIRouteOptimizationService {
     int maxCalculationTime = 30, // seconds
   }) async {
     // 🚫 FILTER PUTNICI: samo oni iz BC/Vršac oblasti
-    final validPassengers = passengers
-        .where((putnik) => _isPassengerInServiceArea(putnik))
-        .toList();
+    final validPassengers = passengers.where((putnik) => _isPassengerInServiceArea(putnik)).toList();
 
     if (validPassengers.length != passengers.length) {
-      _logger.w(
-        '⚠️ Filtrisano ${passengers.length - validPassengers.length} putnika van BC/Vršac oblasti',
-      );
+      
     }
 
     final startTime = DateTime.now();
-    _logger.i(
-      '🚀 Starting AI route optimization with ${validPassengers.length} valid passengers',
-    );
+    
 
     try {
       // 1. 📍 GEOCODE ALL ADDRESSES - parallel processing
@@ -155,8 +140,7 @@ class AIRouteOptimizationService {
           break;
 
         case OptimizationAlgorithm.hybrid:
-          final result =
-              await _hybridOptimization(passengers, matrix, maxCalculationTime);
+          final result = await _hybridOptimization(passengers, matrix, maxCalculationTime);
           optimizedSequence = result.sequence;
           totalDistance = result.distance;
           metrics = result.metrics;
@@ -170,17 +154,13 @@ class AIRouteOptimizationService {
 
       // 6. 👤 APPLY DRIVER PREFERENCES
       if (driverPreferences != null) {
-        optimizedSequence =
-            _applyDriverPreferences(optimizedSequence, driverPreferences);
+        optimizedSequence = _applyDriverPreferences(optimizedSequence, driverPreferences);
       }
 
       final calculationTime = DateTime.now().difference(startTime);
 
-      _logger
-          .i('✅ Route optimization completed in ${calculationTime.inSeconds}s');
-      _logger.i(
-        '📊 Distance: ${totalDistance.toStringAsFixed(2)}km, Algorithm: ${algorithm.name}',
-      );
+      
+      
 
       return OptimizedRoute(
         optimizedSequence: optimizedSequence,
@@ -194,7 +174,7 @@ class AIRouteOptimizationService {
         coordinates: addressCoordinates,
       );
     } catch (e) {
-      _logger.e('❌ Route optimization failed: $e');
+      // Logger removed
       return OptimizedRoute.fallback(passengers);
     }
   }
@@ -206,9 +186,7 @@ class AIRouteOptimizationService {
     final addressCoordinates = <Putnik, GeocodeResult>{};
 
     // Filter passengers with addresses
-    final passengersWithAddresses = passengers
-        .where((p) => p.adresa != null && p.adresa!.isNotEmpty)
-        .toList();
+    final passengersWithAddresses = passengers.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
 
     if (passengersWithAddresses.isEmpty) return addressCoordinates;
 
@@ -258,9 +236,7 @@ class AIRouteOptimizationService {
         if (weatherApiKey.isNotEmpty) {
           final weatherUrl =
               '$_weatherApiUrl?lat=${start.latitude}&lon=${start.longitude}&appid=$weatherApiKey&units=metric';
-          final response = await http
-              .get(Uri.parse(weatherUrl))
-              .timeout(const Duration(seconds: 5));
+          final response = await http.get(Uri.parse(weatherUrl)).timeout(const Duration(seconds: 5));
 
           if (response.statusCode == 200) {
             final weatherData = json.decode(response.body);
@@ -288,12 +264,11 @@ class AIRouteOptimizationService {
             trafficMultiplier = 0.9; // 10% faster at night
           }
 
-          data['traffic']['${dest.latitude}_${dest.longitude}'] =
-              trafficMultiplier;
+          data['traffic']['${dest.latitude}_${dest.longitude}'] = trafficMultiplier;
         }
       }
     } catch (e) {
-      _logger.w('⚠️ Failed to gather external data: $e');
+      // Logger removed
     }
 
     return data;
@@ -307,8 +282,7 @@ class AIRouteOptimizationService {
     VehicleType vehicle,
   ) async {
     final passengers = coordinates.keys.toList();
-    final matrix =
-        DistanceMatrix(passengers.length + 1); // +1 for start location
+    final matrix = DistanceMatrix(passengers.length + 1); // +1 for start location
 
     // Calculate distances between all points
     for (int i = 0; i < passengers.length + 1; i++) {
@@ -443,18 +417,14 @@ class AIRouteOptimizationService {
     const maxGenerations = 1000;
 
     // Initialize population
-    var population =
-        _generateInitialPopulation(passengers.length, populationSize);
+    var population = _generateInitialPopulation(passengers.length, populationSize);
     var bestDistance = double.infinity;
     var bestRoute = <int>[];
     var generation = 0;
 
-    while (generation < maxGenerations &&
-        DateTime.now().difference(startTime).inSeconds < maxTimeSeconds) {
+    while (generation < maxGenerations && DateTime.now().difference(startTime).inSeconds < maxTimeSeconds) {
       // Evaluate fitness
-      final fitness = population
-          .map((route) => 1.0 / (1.0 + _calculateRouteDistance(route, matrix)))
-          .toList();
+      final fitness = population.map((route) => 1.0 / (1.0 + _calculateRouteDistance(route, matrix))).toList();
 
       // Find best route
       for (int i = 0; i < population.length; i++) {
@@ -494,8 +464,7 @@ class AIRouteOptimizationService {
       generation++;
     }
 
-    final optimizedSequence =
-        bestRoute.map((index) => passengers[index]).toList();
+    final optimizedSequence = bestRoute.map((index) => passengers[index]).toList();
 
     return OptimizationResult(
       sequence: optimizedSequence,
@@ -532,8 +501,7 @@ class AIRouteOptimizationService {
     const minTemperature = 0.1;
     var iteration = 0;
 
-    while (temperature > minTemperature &&
-        DateTime.now().difference(startTime).inSeconds < maxTimeSeconds) {
+    while (temperature > minTemperature && DateTime.now().difference(startTime).inSeconds < maxTimeSeconds) {
       // Generate neighbor solution
       final newRoute = List<int>.from(currentRoute);
       _twoOptSwap(newRoute);
@@ -541,8 +509,7 @@ class AIRouteOptimizationService {
 
       // Accept or reject
       if (newDistance < currentDistance ||
-          random.nextDouble() <
-              math.exp((currentDistance - newDistance) / temperature)) {
+          random.nextDouble() < math.exp((currentDistance - newDistance) / temperature)) {
         currentRoute = newRoute;
         currentDistance = newDistance;
 
@@ -556,8 +523,7 @@ class AIRouteOptimizationService {
       iteration++;
     }
 
-    final optimizedSequence =
-        bestRoute.map((index) => passengers[index]).toList();
+    final optimizedSequence = bestRoute.map((index) => passengers[index]).toList();
 
     return OptimizationResult(
       sequence: optimizedSequence,
@@ -647,8 +613,7 @@ class AIRouteOptimizationService {
         'sa_distance': results[1].distance,
         'twoopt_distance': results[2].distance,
         'final_distance': finalResult.distance,
-        'improvement': ((results.map((r) => r.distance).reduce(math.max) -
-                finalResult.distance) /
+        'improvement': ((results.map((r) => r.distance).reduce(math.max) - finalResult.distance) /
             results.map((r) => r.distance).reduce(math.max) *
             100),
       },
@@ -785,12 +750,8 @@ class AIRouteOptimizationService {
   ) {
     // Example preferences: prioritize VIP passengers, avoid certain areas, etc.
     if (preferences['prioritize_vip'] == true) {
-      final vipPassengers = passengers
-          .where((p) => p.statusVreme?.contains('VIP') ?? false)
-          .toList();
-      final regularPassengers = passengers
-          .where((p) => !(p.statusVreme?.contains('VIP') ?? false))
-          .toList();
+      final vipPassengers = passengers.where((p) => p.statusVreme?.contains('VIP') ?? false).toList();
+      final regularPassengers = passengers.where((p) => !(p.statusVreme?.contains('VIP') ?? false)).toList();
       return [...vipPassengers, ...regularPassengers];
     }
 
@@ -822,8 +783,7 @@ class AIRouteOptimizationService {
 
 /// 📊 DISTANCE MATRIX CLASS
 class DistanceMatrix {
-  DistanceMatrix(this.size)
-      : _matrix = List.generate(size, (_) => List.filled(size, 0.0));
+  DistanceMatrix(this.size) : _matrix = List.generate(size, (_) => List.filled(size, 0.0));
   final List<List<double>> _matrix;
   final int size;
 
@@ -896,3 +856,6 @@ class OptimizedRoute {
     return 'OptimizedRoute(${optimizedSequence.length} stops, ${totalDistance.toStringAsFixed(2)}km, ${estimatedTime.inMinutes}min)';
   }
 }
+
+
+

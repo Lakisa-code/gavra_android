@@ -1,4 +1,4 @@
-import 'package:logger/logger.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/adresa.dart';
@@ -30,7 +30,7 @@ class AdresaService {
   AdresaService({SupabaseClient? supabaseClient})
       : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
-  static final Logger _logger = Logger();
+
   static const String _cachePrefix = 'adresa_';
   static const String _listCacheKey = 'adrese_list';
 
@@ -54,13 +54,13 @@ class AdresaService {
           _listCacheKey,
         );
         if (cached != null) {
-          _logger.i('🎯 Cache hit: $_listCacheKey');
+          // Logger removed
           _cacheHits++;
           return cached.map((json) => Adresa.fromMap(json)).toList();
         }
       }
 
-      _logger.i('📡 Fetching all addresses from Supabase...');
+      // Logger removed
       _cacheMisses++;
 
       final response = await _supabase
@@ -79,11 +79,10 @@ class AdresaService {
         adrese.map((a) => a.toMap()).toList(),
       );
 
-      _logger
-          .i('✅ Loaded ${adrese.length} addresses (filtered for service area)');
+      // Logger removed;
       return adrese;
     } catch (e) {
-      _logger.e('❌ Error loading addresses: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -98,12 +97,12 @@ class AdresaService {
       final cached =
           await CacheService.getFromDisk<Map<String, dynamic>>(cacheKey);
       if (cached != null) {
-        _logger.i('🎯 Cache hit: $cacheKey');
+        // Logger removed
         _cacheHits++;
         return Adresa.fromMap(cached);
       }
 
-      _logger.i('📡 Fetching address $id from Supabase...');
+      // Logger removed
       _cacheMisses++;
 
       final response =
@@ -113,17 +112,17 @@ class AdresaService {
 
       // Validate service area
       if (!adresa.isInServiceArea) {
-        _logger.w('⚠️ Address $id is outside service area');
+        // Logger removed
         return null;
       }
 
       // Cache the result
       await CacheService.saveToDisk(cacheKey, adresa.toMap());
 
-      _logger.i('✅ Loaded address: ${adresa.shortAddress}');
+      // Logger removed
       return adresa;
     } catch (e) {
-      _logger.e('❌ Error loading address $id: $e');
+      // Logger removed
       return null;
     }
   }
@@ -142,7 +141,7 @@ class AdresaService {
       // Normalize the address
       final normalizedAdresa = adresa.normalize();
 
-      _logger.i('📝 Creating address: ${normalizedAdresa.displayAddress}');
+      // Logger removed
 
       final response = await _supabase
           .from('adrese')
@@ -159,10 +158,10 @@ class AdresaService {
       // Invalidate list cache
       await CacheService.clearFromDisk(_listCacheKey);
 
-      _logger.i('✅ Created address: ${createdAdresa.displayAddress}');
+      // Logger removed
       return createdAdresa;
     } catch (e) {
-      _logger.e('❌ Error creating address: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -175,7 +174,7 @@ class AdresaService {
       // Add updated_at timestamp
       updates['updated_at'] = DateTime.now().toIso8601String();
 
-      _logger.i('📝 Updating address $id with: ${updates.keys.join(', ')}');
+      // Logger removed
 
       final response = await _supabase
           .from('adrese')
@@ -188,9 +187,7 @@ class AdresaService {
 
       // Validate after update
       if (!updatedAdresa.isCompletelyValid) {
-        _logger.w(
-          '⚠️ Updated address failed validation: ${updatedAdresa.validationErrors}',
-        );
+        
       }
 
       // Update cache
@@ -200,10 +197,10 @@ class AdresaService {
       // Invalidate list cache
       await CacheService.clearFromDisk(_listCacheKey);
 
-      _logger.i('✅ Updated address: ${updatedAdresa.displayAddress}');
+      // Logger removed
       return updatedAdresa;
     } catch (e) {
-      _logger.e('❌ Error updating address $id: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -213,7 +210,7 @@ class AdresaService {
     _incrementOperation();
 
     try {
-      _logger.i('🗑️ Soft deleting address $id');
+      // Logger removed
 
       await _supabase.from('adrese').update({
         'deleted_at': DateTime.now().toIso8601String(),
@@ -225,9 +222,9 @@ class AdresaService {
       await CacheService.clearFromDisk(cacheKey);
       await CacheService.clearFromDisk(_listCacheKey);
 
-      _logger.i('✅ Soft deleted address $id');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Error deleting address $id: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -257,14 +254,14 @@ class AdresaService {
       }
 
       if (invalidAdrese.isNotEmpty) {
-        _logger.w('⚠️ ${invalidAdrese.length} addresses failed validation');
+        // Logger removed
       }
 
       if (validAdrese.isEmpty) {
         throw Exception('No valid addresses to create');
       }
 
-      _logger.i('📝 Batch creating ${validAdrese.length} addresses');
+      // Logger removed
 
       final response = await _supabase
           .from('adrese')
@@ -284,10 +281,10 @@ class AdresaService {
       // Invalidate list cache
       await CacheService.clearFromDisk(_listCacheKey);
 
-      _logger.i('✅ Batch created ${createdAdrese.length} addresses');
+      // Logger removed
       return createdAdrese;
     } catch (e) {
-      _logger.e('❌ Error batch creating addresses: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -301,7 +298,7 @@ class AdresaService {
     try {
       if (updates.isEmpty) return;
 
-      _logger.i('📝 Batch updating ${updates.length} addresses');
+      // Logger removed
 
       // Add updated_at to all updates
       final now = DateTime.now().toIso8601String();
@@ -324,9 +321,9 @@ class AdresaService {
       // Invalidate list cache
       await CacheService.clearFromDisk(_listCacheKey);
 
-      _logger.i('✅ Batch updated ${updates.length} addresses');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Error batch updating addresses: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -338,7 +335,7 @@ class AdresaService {
     try {
       if (ids.isEmpty) return;
 
-      _logger.i('🗑️ Batch deleting ${ids.length} addresses');
+      // Logger removed
 
       final now = DateTime.now().toIso8601String();
 
@@ -357,9 +354,9 @@ class AdresaService {
       // Invalidate list cache
       await CacheService.clearFromDisk(_listCacheKey);
 
-      _logger.i('✅ Batch deleted ${ids.length} addresses');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Error batch deleting addresses: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -381,7 +378,7 @@ class AdresaService {
     _incrementOperation();
 
     try {
-      _logger.i('🔍 Searching addresses with query: "$query"');
+      // Logger removed
 
       dynamic queryBuilder = _supabase.from('adrese').select();
 
@@ -448,10 +445,10 @@ class AdresaService {
         });
       }
 
-      _logger.i('✅ Found ${adrese.length} addresses matching search criteria');
+      // Logger removed
       return adrese;
     } catch (e) {
-      _logger.e('❌ Error searching addresses: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -461,7 +458,7 @@ class AdresaService {
     _incrementOperation();
 
     try {
-      _logger.i('📊 Grouping addresses by municipality');
+      // Logger removed
 
       final allAdrese = await getAllAdrese();
       final grouped = <String, List<Adresa>>{};
@@ -481,12 +478,10 @@ class AdresaService {
         });
       }
 
-      _logger.i(
-        '✅ Grouped ${allAdrese.length} addresses into ${grouped.length} municipalities',
-      );
+      
       return grouped;
     } catch (e) {
-      _logger.e('❌ Error grouping addresses by municipality: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -498,7 +493,7 @@ class AdresaService {
     _incrementOperation();
 
     try {
-      _logger.i('📊 Calculating address statistics');
+      // Logger removed
 
       final allAdrese = await getAllAdrese();
       final stats = <String, dynamic>{};
@@ -550,10 +545,10 @@ class AdresaService {
         'lastOperation': _lastOperationTime?.toIso8601String(),
       };
 
-      _logger.i('✅ Address statistics calculated');
+      // Logger removed
       return stats;
     } catch (e) {
-      _logger.e('❌ Error calculating address statistics: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -563,7 +558,7 @@ class AdresaService {
     _incrementOperation();
 
     try {
-      _logger.i('📁 Exporting addresses to CSV');
+      // Logger removed
 
       var adrese = await getAllAdrese();
 
@@ -594,10 +589,10 @@ class AdresaService {
         csv.writeln('"${adresa.updatedAt.toIso8601String()}"');
       }
 
-      _logger.i('✅ Exported ${adrese.length} addresses to CSV');
+      // Logger removed
       return csv.toString();
     } catch (e) {
-      _logger.e('❌ Error exporting addresses to CSV: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -606,7 +601,7 @@ class AdresaService {
 
   /// Real-time subscription to address changes
   Stream<List<Adresa>> watchAdrese() {
-    _logger.i('👁️ Starting real-time address subscription');
+    // Logger removed
 
     return _supabase
         .from('adrese')
@@ -622,7 +617,7 @@ class AdresaService {
 
   /// Watch specific address by ID
   Stream<Adresa?> watchAdresa(String id) {
-    _logger.i('👁️ Starting real-time subscription for address: $id');
+    // Logger removed
 
     return _supabase
         .from('adrese')
@@ -639,19 +634,19 @@ class AdresaService {
 
   /// Clear all address caches
   Future<void> clearCache() async {
-    _logger.i('🧹 Clearing all address caches');
+    // Logger removed
 
     await CacheService.clearFromDisk(_listCacheKey);
 
     // Clear individual address caches (this is a simplified approach)
     // In a real app, you might want to track cache keys or use a pattern-based clear
 
-    _logger.i('✅ Address caches cleared');
+    // Logger removed
   }
 
   /// Warm up cache with frequently accessed data
   Future<void> warmUpCache() async {
-    _logger.i('🔥 Warming up address cache');
+    // Logger removed
 
     try {
       // Pre-load all addresses
@@ -660,9 +655,9 @@ class AdresaService {
       // Pre-load municipality groups
       await getAdreseByMunicipality();
 
-      _logger.i('✅ Address cache warmed up');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Error warming up cache: $e');
+      // Logger removed
     }
   }
 
@@ -695,3 +690,6 @@ class AdresaService {
     };
   }
 }
+
+
+

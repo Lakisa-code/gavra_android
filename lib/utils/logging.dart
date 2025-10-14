@@ -21,3 +21,6 @@ void ilog(String message) {
 void wlog(String message) {
   // Ne radi ništa u produkciji - debug kod je uklonjen
 }
+
+
+

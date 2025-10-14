@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import 'package:logger/logger.dart';
 
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart';
@@ -14,8 +13,6 @@ import 'vozilo_service.dart';
 /// 🚗 REALTIME ROUTE TRACKING SERVICE
 /// Kontinuirano praćenje vozača tokom vožnje sa dinamičkim rerautovanjem
 class RealtimeRouteTrackingService {
-  static final Logger _logger = Logger();
-
   // Google APIs
   static const String _googleApiKey = 'AIzaSyBOhQKU9YoA1z_h_N_y_XhbOL5gHWZXqPY';
   static const String _directionsApiUrl = 'https://maps.googleapis.com/maps/api/directions/json';
@@ -52,7 +49,7 @@ class RealtimeRouteTrackingService {
       // Generiši valjan UUID format umesto string
       return 'a0000000-0000-4000-8000-000000000000';
     } catch (e) {
-      _logger.w('⚠️ Failed to get default vehicle: $e');
+      // Logger removed
       // Generiši valjan UUID format umesto string
       return 'a0000000-0000-4000-8000-000000000000';
     }
@@ -63,7 +60,7 @@ class RealtimeRouteTrackingService {
     required String driverId,
     required List<Putnik> route,
   }) async {
-    _logger.i('🎯 Pokretam realtime route tracking za vozača: $driverId');
+    // Logger removed
 
     _currentDriverId = driverId;
     _currentRoute = route;
@@ -75,7 +72,7 @@ class RealtimeRouteTrackingService {
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      _logger.e('❌ Greška dobijanja početne pozicije: $e');
+      // Logger removed
       return;
     }
 
@@ -92,7 +89,7 @@ class RealtimeRouteTrackingService {
       _checkTrafficConditions();
     });
 
-    _logger.i('✅ Realtime tracking pokrenut uspešno');
+    // Logger removed
 
     // Pošalji početnu notifikaciju
     await LocalNotificationService.showRealtimeNotification(
@@ -104,7 +101,7 @@ class RealtimeRouteTrackingService {
 
   /// ⏹️ Zaustavi kontinuirano praćenje
   static void stopRouteTracking() {
-    _logger.i('⏹️ Zaustavljam realtime route tracking');
+    // Logger removed
 
     _isTrackingActive = false;
     _trackingTimer?.cancel();
@@ -114,7 +111,7 @@ class RealtimeRouteTrackingService {
     _lastKnownPosition = null;
     _currentOptimalRoute = null;
 
-    _logger.i('✅ Tracking zaustavljen');
+    // Logger removed
   }
 
   /// 📍 Ažuriraj poziciju vozača i proveri da li treba rerautovanje
@@ -147,7 +144,7 @@ class RealtimeRouteTrackingService {
 
         // Ako je pomeranje veće od 500m, izračunaj novu optimalnu rutu
         if (distance > 500) {
-          _logger.i('📍 Značajno pomeranje detektovano: ${distance.toInt()}m');
+          // Logger removed
           await _recalculateRoute(currentPosition);
         }
       }
@@ -157,13 +154,13 @@ class RealtimeRouteTrackingService {
       // Ažuriraj realtime podatke
       _updateRealtimeData();
     } catch (e) {
-      _logger.e('❌ Greška ažuriranja pozicije: $e');
+      // Logger removed
     }
   }
 
   /// 🔄 Dinamičko rerautovanje na osnovu nove pozicije
   static Future<void> _recalculateRoute(Position newPosition) async {
-    _logger.i('🔄 Rekalkuišem rutu na osnovu nove pozicije...');
+    // Logger removed
 
     // Filtriraj samo ne-pokupljene putnike
     final remainingPassengers = _currentRoute
@@ -173,7 +170,7 @@ class RealtimeRouteTrackingService {
         .toList();
 
     if (remainingPassengers.isEmpty) {
-      _logger.i('✅ Svi putnici pokupljeni - nema potrebe za rerautovanjem');
+      // Logger removed
       return;
     }
 
@@ -186,7 +183,7 @@ class RealtimeRouteTrackingService {
     if (newOptimalRoute != _currentOptimalRoute) {
       _currentOptimalRoute = newOptimalRoute;
 
-      _logger.i('🚨 Nova optimalna ruta kalkulisana!');
+      // Logger removed
 
       // Pošalji notifikaciju o novoj ruti
       await LocalNotificationService.showRealtimeNotification(
@@ -204,7 +201,7 @@ class RealtimeRouteTrackingService {
   static Future<void> _checkTrafficConditions() async {
     if (!_isTrackingActive || _lastKnownPosition == null) return;
 
-    _logger.i('🚦 Proveravam saobraćajne uslove...');
+    // Logger removed
 
     try {
       final trafficAlerts = <String>[];
@@ -244,7 +241,7 @@ class RealtimeRouteTrackingService {
         );
       }
     } catch (e) {
-      _logger.e('❌ Greška proveravanja saobraćaja: $e');
+      // Logger removed
     }
   }
 
@@ -275,7 +272,7 @@ class RealtimeRouteTrackingService {
         }
       }
     } catch (e) {
-      _logger.e('❌ Greška API poziva za saobraćaj: $e');
+      // Logger removed
     }
 
     return null;
@@ -321,7 +318,7 @@ class RealtimeRouteTrackingService {
         }
       }
     } catch (e) {
-      _logger.e('❌ Greška kalkulacije optimalne rute: $e');
+      // Logger removed
     }
 
     return null;
@@ -360,3 +357,6 @@ class RealtimeRouteTrackingService {
     _trafficAlertsController.close();
   }
 }
+
+
+

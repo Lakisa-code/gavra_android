@@ -835,3 +835,6 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     }
   }
 }
+
+
+

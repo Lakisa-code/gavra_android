@@ -1,4 +1,4 @@
-import 'package:logger/logger.dart';
+
 
 import '../models/adresa.dart';
 import 'adresa_service.dart';
@@ -26,7 +26,7 @@ import 'cache_service.dart';
 class AdresaStatisticsService {
   AdresaStatisticsService({AdresaService? adresaService})
       : _adresaService = adresaService ?? AdresaService();
-  static final Logger _logger = Logger();
+
   static const String _statsCacheKey = 'adresa_statistics';
   static const Duration _statsCacheTTL = Duration(minutes: 15);
 
@@ -45,12 +45,12 @@ class AdresaStatisticsService {
           _statsCacheKey,
         );
         if (cached != null) {
-          _logger.i('🎯 Statistics cache hit');
+          // Logger removed
           return cached;
         }
       }
 
-      _logger.i('📊 Calculating comprehensive address statistics...');
+      // Logger removed
 
       final allAdrese = await _adresaService.getAllAdrese(forceRefresh: true);
       final stats = <String, dynamic>{};
@@ -77,12 +77,10 @@ class AdresaStatisticsService {
       // Cache the results
       await CacheService.saveToDisk(_statsCacheKey, stats);
 
-      _logger.i(
-        '✅ Comprehensive statistics calculated for ${allAdrese.length} addresses',
-      );
+      
       return stats;
     } catch (e) {
-      _logger.e('❌ Error calculating comprehensive statistics: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -448,8 +446,7 @@ class AdresaStatisticsService {
   /// Calculate address creation trends
   Future<Map<String, dynamic>> getCreationTrends({int daysBack = 30}) async {
     try {
-      _logger
-          .i('📈 Calculating address creation trends for last $daysBack days');
+      // Logger removed;
 
       final adrese = await _adresaService.getAllAdrese();
       final trends = <String, dynamic>{};
@@ -489,12 +486,10 @@ class AdresaStatisticsService {
       trends['analysis_period_days'] = daysBack;
       trends['generated_at'] = DateTime.now().toIso8601String();
 
-      _logger.i(
-        '✅ Creation trends calculated: ${trends['total_new_addresses']} new addresses',
-      );
+      
       return trends;
     } catch (e) {
-      _logger.e('❌ Error calculating creation trends: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -504,7 +499,7 @@ class AdresaStatisticsService {
   /// Export detailed statistics to CSV
   Future<String> exportStatisticsToCSV() async {
     try {
-      _logger.i('📁 Exporting address statistics to CSV');
+      // Logger removed
 
       final stats = await getComprehensiveStatistics();
       final csv = StringBuffer();
@@ -552,10 +547,10 @@ class AdresaStatisticsService {
         csv.writeln('$municipality,$total,$withCoords,$percentage');
       }
 
-      _logger.i('✅ Statistics exported to CSV');
+      // Logger removed
       return csv.toString();
     } catch (e) {
-      _logger.e('❌ Error exporting statistics to CSV: $e');
+      // Logger removed
       rethrow;
     }
   }
@@ -565,7 +560,7 @@ class AdresaStatisticsService {
   /// Clear statistics cache
   Future<void> clearStatisticsCache() async {
     await CacheService.clearFromDisk(_statsCacheKey);
-    _logger.i('🧹 Address statistics cache cleared');
+    // Logger removed
   }
 
   /// Get cache status
@@ -580,3 +575,6 @@ class AdresaStatisticsService {
     };
   }
 }
+
+
+

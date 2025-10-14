@@ -136,3 +136,6 @@ class GPSLokacija {
         'vreme: $vreme}';
   }
 }
+
+
+

@@ -1,11 +1,9 @@
 import 'dart:convert';
 
-import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 🚀 CACHE SERVICE - Centralizovano cache-ovanje za performanse
 class CacheService {
-  static final Logger _logger = Logger();
   static SharedPreferences? _prefs;
   static final Map<String, dynamic> _memoryCache = {};
   static final Map<String, DateTime> _cacheTimestamp = {};
@@ -14,9 +12,9 @@ class CacheService {
   static Future<void> initialize() async {
     try {
       _prefs = await SharedPreferences.getInstance();
-      _logger.i('✅ Cache service initialized');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Cache service initialization failed: $e');
+      // Logger removed
     }
   }
 
@@ -43,7 +41,7 @@ class CacheService {
   static void saveToMemory<T>(String key, T value) {
     _memoryCache[key] = value;
     _cacheTimestamp[key] = DateTime.now();
-    _logger.d('💾 Cached in memory: $key');
+    // Logger removed
   }
 
   /// 🗂️ PERSISTENT CACHE - Za dugoročno čuvanje
@@ -69,11 +67,11 @@ class CacheService {
       final cachedData = _prefs!.getString(key);
       if (cachedData != null) {
         final decoded = jsonDecode(cachedData);
-        _logger.d('📂 Retrieved from disk cache: $key');
+        // Logger removed
         return decoded as T;
       }
     } catch (e) {
-      _logger.e('❌ Error retrieving from disk cache: $e');
+      // Logger removed
     }
 
     return null;
@@ -90,9 +88,9 @@ class CacheService {
       await _prefs!.setString(key, encoded);
       await _prefs!.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
 
-      _logger.d('💾 Saved to disk cache: $key');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Error saving to disk cache: $e');
+      // Logger removed
     }
   }
 
@@ -114,7 +112,7 @@ class CacheService {
       await _prefs!.clear();
     }
 
-    _logger.i('🧹 All cache cleared');
+    // Logger removed
   }
 
   /// 📊 Cache statistike
@@ -122,9 +120,7 @@ class CacheService {
     return {
       'memory_cache_size': _memoryCache.length,
       'oldest_memory_cache': _cacheTimestamp.values.isNotEmpty
-          ? _cacheTimestamp.values
-              .reduce((a, b) => a.isBefore(b) ? a : b)
-              .toIso8601String()
+          ? _cacheTimestamp.values.reduce((a, b) => a.isBefore(b) ? a : b).toIso8601String()
           : 'N/A',
       'disk_cache_available': _prefs != null,
     };
@@ -141,8 +137,7 @@ class CacheKeys {
   static String putniksByDay(String day) => 'putnici_$day';
 
   // Statistike cache
-  static String statistikeVozac(String vozac, String period) =>
-      'stats_${vozac}_$period';
+  static String statistikeVozac(String vozac, String period) => 'stats_${vozac}_$period';
   static String ukupneStatistike(String period) => 'total_stats_$period';
 
   // Adrese cache
@@ -154,3 +149,6 @@ class CacheKeys {
   // Mesečne karte cache
   static String mesecneKarte(String mesec) => 'mesecne_karte_$mesec';
 }
+
+
+

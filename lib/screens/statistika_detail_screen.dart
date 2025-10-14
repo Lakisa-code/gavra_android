@@ -120,7 +120,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
       _kmCache[cacheKey] = ukupnoKm;
       return ukupnoKm;
     } catch (e) {
-      debugPrint('GPS calculation error for $vozac: $e');
+      
       return 0.0;
     }
   }
@@ -865,3 +865,6 @@ class _StatRow extends StatelessWidget {
     );
   }
 }
+
+
+

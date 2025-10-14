@@ -280,3 +280,6 @@ class Ruta {
     return 'Ruta(id: $id, naziv: $naziv, polazak: $polazak, dolazak: $dolazak, aktivan: $aktivan)';
   }
 }
+
+
+

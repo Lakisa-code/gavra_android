@@ -109,7 +109,10 @@ class XiaomiOptimizer {
   static void enablePerformanceMonitoring() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Log frame rendering time
-      debugPrint('🚀 Frame rendered successfully on XIAOMI');
+      // Frame rendered successfully on XIAOMI
     });
   }
 }
+
+
+

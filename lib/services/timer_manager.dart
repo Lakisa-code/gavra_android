@@ -1,10 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:logger/logger.dart';
+
 
 /// 🕐 TIMER MANAGER - Centralizovano upravljanje timer-ima za sprečavanje memory leak-ova
 class TimerManager {
-  static final Logger _logger = Logger();
+
   static final Map<String, Timer> _activeTimers = {};
   static final Map<String, DateTime> _timerStartTimes = {};
 
@@ -18,15 +19,12 @@ class TimerManager {
     // Ukloni postojeći timer sa istim imenom
     cancelTimer(name);
 
-    final timer = isPeriodic
-        ? Timer.periodic(duration, (timer) => callback())
-        : Timer(duration, callback);
+    final timer = isPeriodic ? Timer.periodic(duration, (timer) => callback()) : Timer(duration, callback);
 
     _activeTimers[name] = timer;
     _timerStartTimes[name] = DateTime.now();
 
-    _logger
-        .d('⏰ Timer "$name" kreiran (${isPeriodic ? "periodic" : "one-shot"})');
+    
 
     return timer;
   }
@@ -38,7 +36,7 @@ class TimerManager {
       timer.cancel();
       _activeTimers.remove(name);
       _timerStartTimes.remove(name);
-      _logger.d('❌ Timer "$name" otkazan');
+      // Logger removed
     }
   }
 
@@ -58,8 +56,6 @@ class TimerManager {
 
   /// 🧹 Otkaži sve timer-e
   static void cancelAllTimers() {
-    final count = _activeTimers.length;
-
     for (final entry in _activeTimers.entries) {
       entry.value.cancel();
     }
@@ -67,7 +63,7 @@ class TimerManager {
     _activeTimers.clear();
     _timerStartTimes.clear();
 
-    _logger.i('🧹 Otkazano $count timer-a');
+    // Logger removed
   }
 
   /// 📊 Dobij statistike timer-a
@@ -128,7 +124,7 @@ class TimerManager {
     }
 
     if (inactiveNames.isNotEmpty) {
-      _logger.d('🧹 Obrisano ${inactiveNames.length} neaktivnih timer-a');
+      // Logger removed
     }
   }
 
@@ -146,7 +142,7 @@ class TimerManager {
     }
 
     if (longRunning.isNotEmpty) {
-      _logger.w('⚠️ Detektovani dugotrajni timer-i: $longRunning');
+      // Logger removed
     }
 
     return longRunning;
@@ -175,3 +171,6 @@ extension TimerManagerExtension on Widget {
     TimerManager.cancelTimer('${runtimeType}_$name');
   }
 }
+
+
+

@@ -71,3 +71,6 @@ class VoziloService {
         .map((data) => data.map((json) => Vozilo.fromMap(json)).toList());
   }
 }
+
+
+

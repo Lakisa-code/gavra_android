@@ -417,3 +417,6 @@ class NavigationResult {
   final List<Putnik>? optimizedPutnici;
   final double? totalDistance;
 }
+
+
+

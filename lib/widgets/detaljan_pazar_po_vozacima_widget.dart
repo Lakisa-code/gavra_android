@@ -239,3 +239,6 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
     );
   }
 }
+
+
+

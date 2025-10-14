@@ -352,3 +352,6 @@ class DnevniPutnik {
     return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
   }
 }
+
+
+

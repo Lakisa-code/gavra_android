@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logger/logger.dart';
+
 import 'package:geolocator/geolocator.dart';
 import 'advanced_geocoding_service.dart';
 
@@ -9,7 +9,7 @@ import 'advanced_geocoding_service.dart';
 /// Enterprise-level autocomplete sa prediktivnim algoritima
 /// 100% BESPLATNO - bolji od Google Places API!
 class SmartAddressAutocompleteService {
-  static final Logger _logger = Logger();
+
   static const String _historyPrefix = 'address_history_';
   static const String _contextPrefix = 'address_context_';
   static const String _popularPrefix = 'popular_addresses_';
@@ -38,9 +38,7 @@ class SmartAddressAutocompleteService {
   }) async {
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac dozvoljeni
     if (_isCityOutsideServiceArea(currentCity)) {
-      _logger.w(
-        '🚫 Autocomplete blokiran za $currentCity - van BC/Vršac relacije',
-      );
+      
       return [];
     }
 
@@ -55,7 +53,7 @@ class SmartAddressAutocompleteService {
           : [];
     }
 
-    _logger.i('🧠 Smart autocomplete for: "$query" in $currentCity');
+    // Logger removed
 
     try {
       final suggestions = <AddressSuggestion>[];
@@ -111,10 +109,10 @@ class SmartAddressAutocompleteService {
       // 8. 📈 LEARN FROM QUERY - update ML patterns
       await _learnFromQuery(query, currentCity, currentVozac, timeContext);
 
-      _logger.i('✅ Returned ${finalSuggestions.length} smart suggestions');
+      // Logger removed
       return finalSuggestions;
     } catch (e) {
-      _logger.e('❌ Smart autocomplete failed: $e');
+      // Logger removed
       return [];
     }
   }
@@ -372,7 +370,7 @@ class SmartAddressAutocompleteService {
         ];
       }
     } catch (e) {
-      _logger.w('⚠️ Geocoding suggestions failed: $e');
+      // Logger removed
     }
 
     return [];
@@ -619,9 +617,9 @@ class SmartAddressAutocompleteService {
         await _updateTimeContext(address, timeContext, vozac);
       }
 
-      _logger.i('📈 Learned from address usage: $address');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Failed to record address usage: $e');
+      // Logger removed
     }
   }
 
@@ -631,9 +629,9 @@ class SmartAddressAutocompleteService {
       await _cleanOldHistory();
       await _compactPatternData();
       await _updateMLWeights();
-      _logger.i('🧹 Autocomplete maintenance completed');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Maintenance failed: $e');
+      // Logger removed
     }
   }
 
@@ -813,3 +811,6 @@ class AddressSuggestion {
         'metadata': metadata,
       };
 }
+
+
+

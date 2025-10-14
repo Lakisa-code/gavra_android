@@ -1,14 +1,15 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'cache_service.dart';
 import 'geocoding_stats_service.dart';
-import 'package:logger/logger.dart';
 
 class GeocodingService {
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
   static const String _cachePrefix = 'geocoding_';
-  static final Logger _logger = Logger();
 
   // Pronađi koordinate za adresu - SA CACHE OPTIMIZACIJOM
   static Future<String?> getKoordinateZaAdresu(
@@ -17,8 +18,7 @@ class GeocodingService {
   ) async {
     // 🚫 PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vršac)
     if (_isCityBlocked(grad)) {
-      _logger
-          .w('🚫 Geocoding blokiran za grad: $grad (samo BC/Vršac dozvoljeni)');
+      
       return null;
     }
 
@@ -32,8 +32,7 @@ class GeocodingService {
     if (memoryCached != null) {
       await GeocodingStatsService.incrementCacheHits();
       await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
-      _logger
-          .d('✅ Koordinate iz memory cache: $grad, $adresa -> $memoryCached');
+      
       return memoryCached;
     }
 
@@ -47,7 +46,7 @@ class GeocodingService {
       CacheService.saveToMemory(cacheKey, diskCached);
       await GeocodingStatsService.incrementCacheHits();
       await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
-      _logger.d('✅ Koordinate iz disk cache: $grad, $adresa -> $diskCached');
+      // Logger removed
       return diskCached;
     }
 
@@ -60,11 +59,11 @@ class GeocodingService {
         CacheService.saveToMemory(cacheKey, coords);
         await CacheService.saveToDisk(cacheKey, coords);
         await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
-        _logger.i('✅ Koordinate sa API: $grad, $adresa -> $coords');
+        // Logger removed
         return coords;
       }
     } catch (e) {
-      _logger.e('❌ Greška geocoding: $e');
+      // Logger removed
     }
 
     return null;
@@ -79,8 +78,7 @@ class GeocodingService {
       try {
         final query = '$adresa, $grad, Serbia';
         final encodedQuery = Uri.encodeComponent(query);
-        final url =
-            '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
+        final url = '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
 
         final response = await http.get(
           Uri.parse(url),
@@ -90,8 +88,7 @@ class GeocodingService {
         ).timeout(timeout);
 
         if (response.statusCode == 200) {
-          final List<dynamic> results =
-              json.decode(response.body) as List<dynamic>;
+          final List<dynamic> results = json.decode(response.body) as List<dynamic>;
 
           if (results.isNotEmpty) {
             final result = results[0];
@@ -122,7 +119,7 @@ class GeocodingService {
         await prefs.remove(key);
       }
     } catch (e) {
-      _logger.e('❌ Greška brisanja cache: $e');
+      // Logger removed
     }
   }
 
@@ -141,9 +138,9 @@ class GeocodingService {
         await prefs.remove(key);
       }
 
-      _logger.i('🧹 Cleared old geocoding cache');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Error clearing geocoding cache: $e');
+      // Logger removed
     }
   }
 
@@ -151,10 +148,7 @@ class GeocodingService {
   static Future<int> getCacheCount() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs
-          .getKeys()
-          .where((key) => key.startsWith(_cachePrefix))
-          .length;
+      return prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).length;
     } catch (e) {
       return 0;
     }
@@ -174,8 +168,10 @@ class GeocodingService {
       'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
     return !allowedCities.any(
-      (allowed) =>
-          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+      (allowed) => normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
     );
   }
 }
+
+
+

@@ -1301,3 +1301,6 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // (Funkcija za dijalog sa dužnicima je uklonjena - sada se koristi DugoviScreen)
 }
+
+
+

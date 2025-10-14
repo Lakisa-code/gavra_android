@@ -55,3 +55,6 @@ class Vozilo {
 
   String get punNaziv => '$marka $model ($registracija)';
 }
+
+
+

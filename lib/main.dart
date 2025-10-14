@@ -1,16 +1,12 @@
 // import 'services/permission_service.dart'; // Moved to WelcomeScreen
 import 'dart:async';
-import 'dart:io';
 
 import 'package:app_links/app_links.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 // Firebase imports - enabled for multi-channel notifications
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:logger/logger.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,96 +30,19 @@ import 'services/theme_service.dart';
 import 'services/timer_manager.dart';
 import 'services/vozilo_service.dart';
 import 'supabase_client.dart';
-import 'utils/gbox_detector.dart';
 import 'utils/xiaomi_optimizer.dart'; // 🚀 XIAOMI OPTIMIZACIJE
 
-final _logger = Logger();
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// Dummy navigatorKey for services compatibility
+class NavigatorKeyCompat {
+  BuildContext? get currentContext => null;
+}
+
+final navigatorKey = NavigatorKeyCompat();
 
 // Globalna funkcija za menjanje teme
 void Function()? globalThemeToggler;
 // Globalna funkcija za osvežavanje teme kada se vozač promeni
 void Function()? globalThemeRefresher;
-
-/// � HUAWEI/G-BOX COMPATIBILITY HELPER
-Future<void> _checkHuaweiCompatibility() async {
-  try {
-    final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      final isHuawei = androidInfo.brand.toLowerCase().contains('huawei') ||
-          androidInfo.manufacturer.toLowerCase().contains('huawei');
-
-      if (isHuawei) {
-        _logger.i('🔧 Huawei device detected - configuring G-Box compatibility');
-
-        // Automatska G-Box konfiguracija
-        await GBoxDetector.configureForEnvironment();
-
-        // Pokušaj automatske registracije u G-Box
-        try {
-          const platform = MethodChannel('com.gavra013.gavra_android/gbox');
-          await platform
-              .invokeMethod('registerWithGBox', {'packageName': 'com.gavra013.gavra_android', 'appName': 'Gavra 013'});
-          _logger.i('✅ Successfully registered with G-Box');
-        } catch (e) {
-          _logger.w('⚠️ Could not auto-register with G-Box: $e');
-          // Pokazuje upozorenje korisniku
-          _showGBoxInstructions();
-        }
-      }
-    }
-  } catch (e) {
-    _logger.w('⚠️ Failed to check Huawei compatibility: $e');
-  }
-}
-
-/// Prikazuje instrukcije za G-Box setup
-void _showGBoxInstructions() {
-  showDialog<void>(
-    context: navigatorKey.currentContext!,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      title: const Text('🔧 Gavra 013 za Huawei'),
-      content: const SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Da bi aplikacija radila na Huawei uređaju, potrebno je da je klonirate u G-Box:'),
-            SizedBox(height: 16),
-            Text('📱 KORACI:', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('1. Otvorite G-Box aplikaciju'),
-            Text('2. Dodajte "Gavra 013" u klonove'),
-            Text('3. Pokrenite kloniranu verziju'),
-            SizedBox(height: 16),
-            Text('⚠️ Bez G-Box-a neće raditi notifikacije!'),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            Navigator.of(context).pop();
-            // Pokušaj otvaranja G-Box-a
-            try {
-              const platform = MethodChannel('com.gavra013.gavra_android/gbox');
-              await platform.invokeMethod('openGBox');
-            } catch (e) {
-              _logger.w('Ne mogu da otvorim G-Box: $e');
-            }
-          },
-          child: const Text('OTVORI G-BOX'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('RAZUMEM'),
-        ),
-      ],
-    ),
-  );
-}
 
 /// � GLOBALNI BACKGROUND MESSAGE HANDLER
 /// Firebase background handler for multi-channel notifications
@@ -149,22 +68,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       payload: (message.data['type'] as String?) ?? 'firebase_background',
     );
   } catch (e) {
-    _logger.w('⚠️ Failed to show background notification: $e');
+    // Logger removed
   }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔧 Huawei/G-Box compatibility check
-  await _checkHuaweiCompatibility();
-
   // � XIAOMI OPTIMIZACIJE
   XiaomiOptimizer.optimizeForXiaomi();
   XiaomiOptimizer.configureMIUI();
-
-  // �🔧 Detect GBox environment for Huawei devices
-  await GBoxDetector.configureForEnvironment();
 
   // 🚀 CACHE UKLONJEN - koristi direktne Supabase pozive
 
@@ -177,13 +90,12 @@ void main() async {
       } catch (_) {}
     });
   } catch (e) {
-    _logger.w('\u26a0\ufe0f OneSignal initialization failed: $e');
+    // Logger removed
   }
 
-  // Firebase initialization - PRILAGOĐENO za GBox/Huawei
+  // Firebase initialization
   try {
-    final shouldOptimize = await GBoxDetector.shouldOptimizeFirebase();
-    final timeout = shouldOptimize ? const Duration(seconds: 10) : const Duration(seconds: 20);
+    const timeout = Duration(seconds: 20);
 
     // Check if Firebase is already initialized
     final alreadyInitialized = Firebase.apps.isNotEmpty;
@@ -200,23 +112,23 @@ void main() async {
       final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
       await RealtimeNotificationService.handleInitialMessage(initialMessage);
     } catch (e) {
-      _logger.w('\u26a0\ufe0f Error handling initial FCM message: $e');
+      // Logger removed
     }
 
     // Initialize notification counter service and FCM listeners
     try {
       RealtimeNotificationCounterService.initialize();
     } catch (e) {
-      _logger.w('⚠️ RealtimeNotificationCounterService init failed: $e');
+      // Logger removed
     }
 
     try {
       FirebaseService.setupFCMListeners();
     } catch (e) {
-      _logger.w('⚠️ FirebaseService.setupFCMListeners failed: $e');
+      // Logger removed
     }
   } catch (e) {
-    _logger.e('❌ Firebase initialization failed: $e');
+    // Logger removed
     // Nastavi bez Firebase ako ne može - aplikacija neće da krahira
   }
 
@@ -228,9 +140,9 @@ void main() async {
 
     // 🌐 INICIJALIZUJ CONNECTION RESILIENCE SERVICE
     await ConnectionResilienceService.initialize();
-    _logger.i('✅ Supabase i ConnectionResilience uspešno inicijalizovani');
+    // Logger removed
   } catch (e) {
-    _logger.e('❌ Supabase initialization failed: $e');
+    // Logger removed
     // Continue without Supabase if it fails
   }
 
@@ -266,7 +178,7 @@ Future<String?> getDefaultVehicleId() async {
     // In a real app, you'd want to create a vehicle here
     return 'a0000000-0000-4000-8000-000000000000';
   } catch (e) {
-    _logger.w('⚠️ Failed to get default vehicle: $e');
+    // Logger removed
     return 'a0000000-0000-4000-8000-000000000000';
   }
 }
@@ -311,9 +223,7 @@ class _MyAppState extends State<MyApp> {
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
-        // PRIVREMENO ISKLJUČENO - OneSignal server URL
-        // RealtimeNotificationService.setOneSignalServerUrl(
-        //     'http://localhost:3000/api/onesignal/notify');
+
         if (mounted) {
           RealtimeNotificationService.listenForForegroundNotifications(context);
         }
@@ -332,33 +242,33 @@ class _MyAppState extends State<MyApp> {
           // Forsiraj početno učitavanje podataka
           await RealtimeService.instance.refreshNow();
         } catch (e) {
-          _logger.w('⚠️ RealtimeService.startForDriver failed: $e');
+          // Logger removed
           // Pokušaj da pokreneš bez vozača kao fallback
           try {
             RealtimeService.instance.startForDriver(null);
             await RealtimeService.instance.refreshNow();
           } catch (fallbackError) {
-            _logger.e('❌ RealtimeService fallback failed: $fallbackError');
+            // Logger removed
           }
         }
 
         if (vozacId != null && vozacId.isNotEmpty) {
           await RealtimeNotificationService.subscribeToDriverTopics(vozacId);
         } else {
-          _logger.i('ℹ️ Čekam prijavu vozača za aktivaciju notifikacija');
+          // Logger removed
           await RealtimeNotificationService.subscribeToDriverTopics(null);
         }
       } catch (e) {
-        _logger.w('⚠️ Notification system error: $e');
+        // Logger removed
         // Continue without notifications if they fail
       }
 
       // 📱 6. POKRENI AUTOMATSKI SMS SERVIS
       try {
         SMSService.startAutomaticSMSService();
-        _logger.i('📱 SMS servis pokrenut uspešno');
+        // Logger removed
       } catch (e) {
-        _logger.w('⚠️ SMS servis error: $e');
+        // Logger removed
         // Continue without SMS service if it fails
       }
     });
@@ -425,7 +335,7 @@ class _MyAppState extends State<MyApp> {
     try {
       RealtimeService.instance.stopForDriver();
     } catch (e) {
-      _logger.w('⚠️ Error stopping RealtimeService: $e');
+      // Logger removed
     }
 
     super.dispose();
@@ -438,11 +348,11 @@ class _MyAppState extends State<MyApp> {
     // Listen for incoming deep links when app is already running
     appLinks.uriLinkStream.listen(
       (uri) {
-        _logger.i('📧 Deep link received: $uri');
+        // Logger removed
         _handleDeepLink(uri);
       },
       onError: (Object err) {
-        _logger.e('❌ Deep link error: $err');
+        // Logger removed
       },
     );
 
@@ -451,63 +361,29 @@ class _MyAppState extends State<MyApp> {
       try {
         final initialUri = await appLinks.getInitialAppLink();
         if (initialUri != null) {
-          _logger.i('📧 Initial deep link: $initialUri');
+          // Logger removed
           _handleDeepLink(initialUri);
         }
       } catch (e) {
-        _logger.e('❌ Initial deep link error: $e');
+        // Logger removed
       }
     });
   }
 
   void _handleDeepLink(Uri uri) {
-    _logger.i('🔗 Handling deep link: ${uri.toString()}');
+    // Logger removed
 
     // Check if it's a Supabase auth callback
     if (uri.host == 'gjtabtwudbrmfeyjiicu.supabase.co' && uri.path.contains('/auth/v1/callback')) {
       // Handle Supabase auth callback
       Supabase.instance.client.auth.getSessionFromUrl(uri).then((response) {
-        _logger.i('✅ Email verification successful!');
+        // Logger removed
         // Show success message and navigate
-        _showEmailVerificationSuccess();
+        // Logger removed
       }).catchError((Object error) {
-        _logger.e('❌ Auth callback error: $error');
+        // Logger removed
       });
     }
-  }
-
-  void _showEmailVerificationSuccess() {
-    // Show success dialog
-    showDialog<void>(
-      context: navigatorKey.currentContext!,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 12),
-            Text(
-              'Email potvrđen!',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Vaš email je uspešno potvrđen. Sada se možete prijaviti u aplikaciju.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Navigate to email login screen
-              Navigator.of(context).pushReplacementNamed('/email-login');
-            },
-            child: const Text('Prijaviť se', style: TextStyle(color: Colors.blue)),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _initializeApp() async {
@@ -526,7 +402,7 @@ class _MyAppState extends State<MyApp> {
         // final putnikStatistike = PutnikStatistike();
         // await putnikStatistike.proveriIResetujKartice();
       } catch (e) {
-        _logger.w('⚠️ Weekly card reset failed: $e');
+        // Logger removed
         // Ne prekidaj inicijalizaciju aplikacije zbog greške u resetovanju
       }
 
@@ -539,7 +415,7 @@ class _MyAppState extends State<MyApp> {
         });
       }
     } catch (e) {
-      _logger.e('❌ App initialization failed: $e');
+      // Logger removed
       if (mounted) {
         setState(() {
           _initError = e.toString();
@@ -594,7 +470,6 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Gavra 013',
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey, // Dodaj globalni navigator key
       theme: ThemeService.svetlaTema(
         driverName: _currentDriver,
       ), // 🎨 Svetla tema sa vozačem
@@ -622,3 +497,6 @@ class _MyAppState extends State<MyApp> {
     // return GpsDemoScreen();
   }
 }
+
+
+

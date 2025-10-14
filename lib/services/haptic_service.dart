@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:logger/logger.dart';
 
 /// 📳 HAPTIC FEEDBACK SERVICE
 /// Dodaje tactile response za bolje user experience
 class HapticService {
-  static final _logger = Logger();
-
   /// 💫 Light impact - za obične tap-ove
   static void lightImpact() {
     try {
       HapticFeedback.lightImpact();
-      _logger.d('🔸 Light haptic feedback triggered');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 
@@ -21,9 +18,9 @@ class HapticService {
   static void mediumImpact() {
     try {
       HapticFeedback.mediumImpact();
-      _logger.d('🔹 Medium haptic feedback triggered');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 
@@ -31,9 +28,9 @@ class HapticService {
   static void heavyImpact() {
     try {
       HapticFeedback.heavyImpact();
-      _logger.d('🔸 Heavy haptic feedback triggered');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 
@@ -41,9 +38,9 @@ class HapticService {
   static void selectionClick() {
     try {
       HapticFeedback.selectionClick();
-      _logger.d('🎯 Selection haptic feedback triggered');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 
@@ -55,9 +52,9 @@ class HapticService {
       Future.delayed(const Duration(milliseconds: 100), () {
         HapticFeedback.lightImpact();
       });
-      _logger.d('✅ Success haptic pattern triggered');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 
@@ -65,9 +62,9 @@ class HapticService {
   static void error() {
     try {
       HapticFeedback.heavyImpact();
-      _logger.d('❌ Error haptic feedback triggered');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 
@@ -82,9 +79,9 @@ class HapticService {
           HapticFeedback.lightImpact();
         });
       }
-      _logger.d('🎵 Custom haptic pattern triggered ($pulses pulses)');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Haptic feedback failed: $e');
+      // Logger removed
     }
   }
 }
@@ -195,3 +192,6 @@ enum HapticType {
   success,
   error,
 }
+
+
+

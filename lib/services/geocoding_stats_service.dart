@@ -1,9 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logger/logger.dart';
+
 import 'geocoding_service.dart';
 
 class GeocodingStatsService {
-  static final Logger _logger = Logger();
   static const String _apiCallsKey = 'geocoding_api_calls';
   static const String _cacheHitsKey = 'geocoding_cache_hits';
   static const String _lastResetKey = 'geocoding_last_reset';
@@ -15,9 +14,9 @@ class GeocodingStatsService {
       final prefs = await SharedPreferences.getInstance();
       final currentCalls = prefs.getInt(_apiCallsKey) ?? 0;
       await prefs.setInt(_apiCallsKey, currentCalls + 1);
-      _logger.d('📊 API pozivi: ${currentCalls + 1}');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Greška incrementing API calls: $e');
+      // Logger removed
     }
   }
 
@@ -27,9 +26,9 @@ class GeocodingStatsService {
       final prefs = await SharedPreferences.getInstance();
       final currentHits = prefs.getInt(_cacheHitsKey) ?? 0;
       await prefs.setInt(_cacheHitsKey, currentHits + 1);
-      _logger.d('📊 Cache hits: ${currentHits + 1}');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Greška incrementing cache hits: $e');
+      // Logger removed
     }
   }
 
@@ -40,8 +39,7 @@ class GeocodingStatsService {
       final locations = prefs.getStringList(_popularLocationsKey) ?? [];
 
       // Dodaj ili povećaj brojač za lokaciju
-      final existingIndex =
-          locations.indexWhere((loc) => loc.startsWith('$location:'));
+      final existingIndex = locations.indexWhere((loc) => loc.startsWith('$location:'));
 
       if (existingIndex != -1) {
         // Povećaj brojač
@@ -55,7 +53,7 @@ class GeocodingStatsService {
 
       await prefs.setStringList(_popularLocationsKey, locations);
     } catch (e) {
-      _logger.e('❌ Greška adding popular location: $e');
+      // Logger removed
     }
   }
 
@@ -82,11 +80,10 @@ class GeocodingStatsService {
         'cache_hit_rate': cacheHitRate.toStringAsFixed(1),
         'cache_entries': cacheCount,
         'last_reset': lastReset ?? 'Nikad',
-        'cache_size_estimate':
-            '${(cacheCount * 0.5).toStringAsFixed(1)} KB', // Aproksimacija
+        'cache_size_estimate': '${(cacheCount * 0.5).toStringAsFixed(1)} KB', // Aproksimacija
       };
     } catch (e) {
-      _logger.e('❌ Greška getting geocoding stats: $e');
+      // Logger removed
       return {};
     }
   }
@@ -110,12 +107,11 @@ class GeocodingStatsService {
       }
 
       // Sortiraj po broju pretrage (opadajuće)
-      popularList
-          .sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+      popularList.sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
       return popularList.take(10).toList(); // Top 10
     } catch (e) {
-      _logger.e('❌ Greška getting popular locations: $e');
+      // Logger removed
       return [];
     }
   }
@@ -130,9 +126,9 @@ class GeocodingStatsService {
       await prefs.remove(_popularLocationsKey);
       await prefs.setString(_lastResetKey, DateTime.now().toIso8601String());
 
-      _logger.i('🔄 Geocoding statistike resetovane');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Greška resetting stats: $e');
+      // Logger removed
     }
   }
 
@@ -140,9 +136,9 @@ class GeocodingStatsService {
   static Future<void> clearGeocodingCache() async {
     try {
       await GeocodingService.clearCache();
-      _logger.i('🧹 Geocoding cache obrisan');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Greška clearing cache: $e');
+      // Logger removed
     }
   }
 
@@ -175,8 +171,11 @@ class GeocodingStatsService {
         'keys': keys.take(20).toList(), // Prikaži prvih 20 ključeva
       };
     } catch (e) {
-      _logger.e('❌ Greška getting cache info: $e');
+      // Logger removed
       return {};
     }
   }
 }
+
+
+

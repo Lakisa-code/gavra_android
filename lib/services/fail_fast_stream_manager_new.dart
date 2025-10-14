@@ -28,9 +28,7 @@ class FailFastStreamManager {
   /// 🚀 REGISTER CRITICAL STREAM (must not fail)
   void registerCriticalStream(String streamName) {
     _criticalStreams.add(streamName);
-    if (kDebugMode) {
-      print('🎯 [FAIL-FAST] Critical stream registered: $streamName');
-    }
+    
   }
 
   /// 📡 ADD STREAM SUBSCRIPTION WITH FAIL-FAST
@@ -55,9 +53,7 @@ class FailFastStreamManager {
         _errorCounts[streamName] = 0;
         onData(data);
 
-        if (kDebugMode) {
-          print('✅ [FAIL-FAST] Data received: $streamName');
-        }
+        
       },
       onError: (Object error, StackTrace stackTrace) {
         _handleStreamError(streamName, error, stackTrace);
@@ -69,9 +65,7 @@ class FailFastStreamManager {
         _cleanupSubscription(streamName);
         onDone?.call();
 
-        if (kDebugMode) {
-          print('🏁 [FAIL-FAST] Stream completed: $streamName');
-        }
+        
       },
     );
 
@@ -79,11 +73,7 @@ class FailFastStreamManager {
     _subscriptionStartTimes[streamName] = DateTime.now();
     _errorCounts[streamName] = 0;
 
-    if (kDebugMode) {
-      print(
-        '📡 [FAIL-FAST] Subscription added: $streamName${isCritical ? ' (CRITICAL)' : ''}',
-      );
-    }
+    
   }
 
   /// 🚨 HANDLE STREAM ERROR WITH FAIL-FAST LOGIC
@@ -95,18 +85,12 @@ class FailFastStreamManager {
     _errorCounts[streamName] = (_errorCounts[streamName] ?? 0) + 1;
     final errorCount = _errorCounts[streamName]!;
 
-    if (kDebugMode) {
-      print('🚨 [FAIL-FAST] Error in $streamName (count: $errorCount): $error');
-    }
+    
 
     // FAIL-FAST for critical streams
     if (_criticalStreams.contains(streamName) &&
         errorCount >= maxErrorsBeforeFail) {
-      if (kDebugMode) {
-        print(
-          '💥 [FAIL-FAST] CRITICAL STREAM FAILED: $streamName - TERMINATING',
-        );
-      }
+      
 
       // Cancel all subscriptions and terminate app
       _emergencyShutdown(streamName, error, stackTrace);
@@ -115,9 +99,7 @@ class FailFastStreamManager {
 
     // Regular streams - cancel after max errors
     if (errorCount >= maxErrorsBeforeFail) {
-      if (kDebugMode) {
-        print('🛑 [FAIL-FAST] Max errors reached for $streamName - cancelling');
-      }
+      
       cancelSubscription(streamName);
     }
   }
@@ -132,13 +114,7 @@ class FailFastStreamManager {
     disposeAll();
 
     // Log critical failure
-    if (kDebugMode) {
-      print(
-        '💥💥💥 [FAIL-FAST] EMERGENCY SHUTDOWN - Critical stream $streamName failed',
-      );
-      print('Error: $error');
-      print('StackTrace: $stackTrace');
-    }
+    
 
     // In production, this could trigger app restart or emergency mode
     // For now, we just clean up everything
@@ -153,7 +129,7 @@ class FailFastStreamManager {
     _cleanupSubscription(streamName);
 
     if (kDebugMode && subscription != null) {
-      print('❌ [FAIL-FAST] Subscription cancelled: $streamName');
+
     }
   }
 
@@ -176,9 +152,7 @@ class FailFastStreamManager {
     }
 
     for (final streamName in staleStreams) {
-      if (kDebugMode) {
-        print('⏰ [FAIL-FAST] Stale subscription detected: $streamName');
-      }
+      
       cancelSubscription(streamName);
     }
   }
@@ -209,11 +183,7 @@ class FailFastStreamManager {
 
   /// 🧹 DISPOSE ALL SUBSCRIPTIONS
   void disposeAll() {
-    if (kDebugMode) {
-      print(
-        '🧹 [FAIL-FAST] Disposing all subscriptions (${_activeSubscriptions.length})',
-      );
-    }
+    
 
     for (final subscription in _activeSubscriptions.values) {
       subscription.cancel();
@@ -224,9 +194,7 @@ class FailFastStreamManager {
     _errorCounts.clear();
     _criticalStreams.clear();
 
-    if (kDebugMode) {
-      print('✅ [FAIL-FAST] All subscriptions disposed');
-    }
+    
   }
 
   /// 🔄 RESET ERROR COUNTS (called periodically)
@@ -235,7 +203,7 @@ class FailFastStreamManager {
     _errorCounts.clear();
 
     if (kDebugMode && resetCount > 0) {
-      print('🔄 [FAIL-FAST] Error counts reset for $resetCount streams');
+
     }
   }
 
@@ -261,3 +229,6 @@ class FailFastStreamManager {
     return true;
   }
 }
+
+
+

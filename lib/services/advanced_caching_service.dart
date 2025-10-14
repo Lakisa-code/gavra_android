@@ -1,22 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:crypto/crypto.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 🚀 ADVANCED CACHING SYSTEM - Enterprise Multi-Level Cache
 /// 5-nivoa keširanje sa kompresijom, prediktivnim prefetch-om
 /// Inteligentno upravljanje memorijom - bolje od Redis!
 class AdvancedCachingService {
-  static final Logger _logger = Logger();
-
   // 🧠 CACHE LEVELS HIERARCHY
-  static final Map<String, dynamic> _level1MemoryCache =
-      {}; // L1: In-memory (najbrži)
-  static final Map<String, CacheEntry> _level2LruCache =
-      {}; // L2: LRU memory cache
+  static final Map<String, dynamic> _level1MemoryCache = {}; // L1: In-memory (najbrži)
+  static final Map<String, CacheEntry> _level2LruCache = {}; // L2: LRU memory cache
   static SharedPreferences? _level3Preferences; // L3: SharedPreferences
   static Directory? _level4FileCache; // L4: File cache
   static Directory? _level5NetworkCache; // L5: Network response cache
@@ -44,7 +40,7 @@ class AdvancedCachingService {
   /// 🚀 INITIALIZE ADVANCED CACHING
   static Future<void> initialize() async {
     try {
-      _logger.i('🚀 Initializing Advanced Caching System...');
+      // Logger removed
 
       // Initialize Level 3 (SharedPreferences)
       _level3Preferences = await SharedPreferences.getInstance();
@@ -64,9 +60,9 @@ class AdvancedCachingService {
       // Start background maintenance
       _startBackgroundMaintenance();
 
-      _logger.i('✅ Advanced Caching System initialized successfully');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Cache initialization failed: $e');
+      // Logger removed
     }
   }
 
@@ -86,7 +82,7 @@ class AdvancedCachingService {
         if (updateStats) {
           _stats.recordHit(CacheLevel.level1, stopwatch.elapsedMicroseconds);
         }
-        _logger.d('🎯 L1 Cache hit: $key');
+        // Logger removed
         return value as T?;
       }
 
@@ -101,7 +97,7 @@ class AdvancedCachingService {
           if (updateStats) {
             _stats.recordHit(CacheLevel.level2, stopwatch.elapsedMicroseconds);
           }
-          _logger.d('🎯 L2 Cache hit: $key');
+          // Logger removed
           return entry.data as T?;
         } else {
           // Remove expired entry
@@ -121,7 +117,7 @@ class AdvancedCachingService {
         if (updateStats) {
           _stats.recordHit(CacheLevel.level3, stopwatch.elapsedMicroseconds);
         }
-        _logger.d('🎯 L3 Cache hit: $key');
+        // Logger removed
         return l3Result;
       }
 
@@ -138,7 +134,7 @@ class AdvancedCachingService {
         if (updateStats) {
           _stats.recordHit(CacheLevel.level4, stopwatch.elapsedMicroseconds);
         }
-        _logger.d('🎯 L4 Cache hit: $key');
+        // Logger removed
         return l4Result;
       }
 
@@ -157,7 +153,7 @@ class AdvancedCachingService {
           if (updateStats) {
             _stats.recordHit(CacheLevel.level5, stopwatch.elapsedMicroseconds);
           }
-          _logger.d('🎯 L5 Cache hit: $key');
+          // Logger removed
           return l5Result;
         }
       }
@@ -168,10 +164,10 @@ class AdvancedCachingService {
       }
 
       if (updateStats) _stats.recordMiss(stopwatch.elapsedMicroseconds);
-      _logger.d('❌ Cache miss: $key');
+      // Logger removed
       return null;
     } catch (e) {
-      _logger.e('❌ Cache get failed for $key: $e');
+      // Logger removed
       if (updateStats) _stats.recordError();
       return null;
     }
@@ -186,9 +182,8 @@ class AdvancedCachingService {
     int? customTTLSeconds,
   }) async {
     try {
-      final ttl = customTTLSeconds != null
-          ? Duration(seconds: customTTLSeconds)
-          : _cacheTTL[type] ?? const Duration(hours: 1);
+      final ttl =
+          customTTLSeconds != null ? Duration(seconds: customTTLSeconds) : _cacheTTL[type] ?? const Duration(hours: 1);
 
       // 1️⃣ LEVEL 1: Always set to memory for fastest access
       _level1MemoryCache[key] = value;
@@ -214,9 +209,9 @@ class AdvancedCachingService {
       }
 
       _stats.recordSet();
-      _logger.d('💾 Cached to all levels: $key');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Cache set failed for $key: $e');
+      // Logger removed
       _stats.recordError();
     }
   }
@@ -243,16 +238,15 @@ class AdvancedCachingService {
 
       // Remove from network cache
       if (_level5NetworkCache != null) {
-        final file =
-            File('${_level5NetworkCache!.path}/${_hashKey(key)}.cache');
+        final file = File('${_level5NetworkCache!.path}/${_hashKey(key)}.cache');
         if (file.existsSync()) {
           await file.delete();
         }
       }
 
-      _logger.d('🗑️ Deleted from all cache levels: $key');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Cache delete failed for $key: $e');
+      // Logger removed
     }
   }
 
@@ -265,10 +259,7 @@ class AdvancedCachingService {
 
       // Clear SharedPreferences cache
       if (_level3Preferences != null) {
-        final keys = _level3Preferences!
-            .getKeys()
-            .where((key) => key.startsWith('cache_'))
-            .toList();
+        final keys = _level3Preferences!.getKeys().where((key) => key.startsWith('cache_')).toList();
         for (final key in keys) {
           await _level3Preferences!.remove(key);
         }
@@ -286,9 +277,9 @@ class AdvancedCachingService {
       }
 
       _stats.reset();
-      _logger.i('🧹 All cache levels cleared');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Cache clear all failed: $e');
+      // Logger removed
     }
   }
 
@@ -302,7 +293,7 @@ class AdvancedCachingService {
     String? currentCity,
   }) async {
     try {
-      _logger.i('🔄 Preloading common cache data...');
+      // Logger removed
 
       if (commonAddresses != null) {
         for (final address in commonAddresses) {
@@ -319,9 +310,9 @@ class AdvancedCachingService {
         }
       }
 
-      _logger.i('✅ Common data preload scheduled');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Preload failed: $e');
+      // Logger removed
     }
   }
 
@@ -348,7 +339,7 @@ class AdvancedCachingService {
         }
       }
     } catch (e) {
-      _logger.w('⚠️ L3 cache read failed for $key: $e');
+      // Logger removed
     }
     return null;
   }
@@ -372,7 +363,7 @@ class AdvancedCachingService {
       await _level3Preferences?.setString('cache_$key', dataJson);
       await _level3Preferences?.setString('cache_meta_$key', metaJson);
     } catch (e) {
-      _logger.w('⚠️ L3 cache write failed for $key: $e');
+      // Logger removed
     }
   }
 
@@ -406,7 +397,7 @@ class AdvancedCachingService {
         }
       }
     } catch (e) {
-      _logger.w('⚠️ L4 cache read failed for $key: $e');
+      // Logger removed
     }
     return null;
   }
@@ -444,7 +435,7 @@ class AdvancedCachingService {
       // Maintain cache size
       await _maintainL4Size();
     } catch (e) {
-      _logger.w('⚠️ L4 cache write failed for $key: $e');
+      // Logger removed
     }
   }
 
@@ -476,7 +467,7 @@ class AdvancedCachingService {
         }
       }
     } catch (e) {
-      _logger.w('⚠️ L5 cache read failed for $key: $e');
+      // Logger removed
     }
     return null;
   }
@@ -509,7 +500,7 @@ class AdvancedCachingService {
 
       await _maintainL5Size();
     } catch (e) {
-      _logger.w('⚠️ L5 cache write failed for $key: $e');
+      // Logger removed
     }
   }
 
@@ -544,8 +535,7 @@ class AdvancedCachingService {
     if (dir == null || !dir.existsSync()) return;
 
     try {
-      final files =
-          await dir.list().where((e) => e is File).cast<File>().toList();
+      final files = await dir.list().where((e) => e is File).cast<File>().toList();
       files.sort(
         (a, b) => a.statSync().modified.compareTo(b.statSync().modified),
       );
@@ -562,7 +552,7 @@ class AdvancedCachingService {
         await oldestFile.delete();
       }
     } catch (e) {
-      _logger.w('⚠️ Directory size maintenance failed: $e');
+      // Logger removed
     }
   }
 
@@ -570,10 +560,7 @@ class AdvancedCachingService {
     try {
       // Clean expired SharedPreferences entries
       if (_level3Preferences != null) {
-        final keys = _level3Preferences!
-            .getKeys()
-            .where((key) => key.startsWith('cache_meta_'))
-            .toList();
+        final keys = _level3Preferences!.getKeys().where((key) => key.startsWith('cache_meta_')).toList();
 
         for (final key in keys) {
           final metaJson = _level3Preferences!.getString(key);
@@ -594,9 +581,9 @@ class AdvancedCachingService {
         }
       }
 
-      _logger.i('✅ Initial cache cleanup completed');
+      // Logger removed
     } catch (e) {
-      _logger.e('❌ Initial cleanup failed: $e');
+      // Logger removed
     }
   }
 
@@ -612,23 +599,21 @@ class AdvancedCachingService {
     try {
       await _maintainL4Size();
       await _maintainL5Size();
-      _logger.d('🔧 Background cache maintenance completed');
+      // Logger removed
     } catch (e) {
-      _logger.w('⚠️ Background maintenance failed: $e');
+      // Logger removed
     }
   }
 
   static void _schedulePredictivePrefetch(String key, CacheType type) {
     // Mock implementation - u produkciji implementirati ML prediktivni sistem
-    _logger.d('🤖 Scheduled predictive prefetch for: $key');
+    // Logger removed
   }
 
   // 🛠️ UTILITY METHODS
 
   static bool _shouldPersist(CacheType type) {
-    return type == CacheType.userPreferences ||
-        type == CacheType.geocoding ||
-        type == CacheType.routes;
+    return type == CacheType.userPreferences || type == CacheType.geocoding || type == CacheType.routes;
   }
 
   static bool _shouldFileCache(dynamic value, CacheType type) {
@@ -695,8 +680,7 @@ class CacheStats {
   int get totalHits => _l1Hits + _l2Hits + _l3Hits + _l4Hits + _l5Hits;
   int get totalRequests => totalHits + _misses;
   double get hitRatio => totalRequests > 0 ? totalHits / totalRequests : 0.0;
-  double get avgResponseTimeMicros =>
-      totalRequests > 0 ? _totalResponseTime / totalRequests : 0.0;
+  double get avgResponseTimeMicros => totalRequests > 0 ? _totalResponseTime / totalRequests : 0.0;
 
   void reset() {
     _l1Hits = _l2Hits = _l3Hits = _l4Hits = _l5Hits = 0;
@@ -750,3 +734,6 @@ enum CacheLevel {
   level4, // File cache
   level5, // Network cache
 }
+
+
+

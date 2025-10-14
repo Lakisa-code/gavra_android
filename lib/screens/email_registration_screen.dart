@@ -624,3 +624,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
     );
   }
 }
+
+
+
