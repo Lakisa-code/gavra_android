@@ -1389,7 +1389,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           ),
                         ),
                       ],
-                      onChanged: (value) => setState(() => _noviTip = value!),
+                      onChanged: (value) {
+                        if (mounted) setState(() => _noviTip = value!);
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -2179,7 +2181,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   ),
                                 ),
                               ],
-                              onChanged: (value) => setState(() => _noviTip = value!),
+                              onChanged: (value) {
+                                if (mounted) setState(() => _noviTip = value!);
+                              },
                             ),
                             const SizedBox(height: 12),
                             TextField(
