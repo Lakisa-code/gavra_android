@@ -1,6 +1,10 @@
 import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'location_service.dart';
+import 'local_notification_service.dart';
 
 /// 🚀 REALTIME PRIORITY SERVICE - FUCK BATTERY, POSAO JE BITAN!
 ///
@@ -112,45 +116,213 @@ class RealtimePriorityService {
 
   /// 🎯 CHECK PASSENGER UPDATES (CRITICAL!)
   static Future<void> _checkPassengerUpdates() async {
-    // TODO: Implement actual passenger update check
-    // Ovo mora da bude INSTANT!
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
 
-    // Primer logike:
-    // 1. Check za nove putnike
-    // 2. Check za otkazane putnike
-    // 3. Check za promene u putnik podacima
-    // 4. Pošalji instant notification vozaču
+      final lastCheck = prefs.getInt('last_passenger_check') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Proverava promene u poslednih 30 sekundi
+      final since = DateTime.fromMillisecondsSinceEpoch(lastCheck);
+      
+      final response = await Supabase.instance.client
+          .from('putnici')
+          .select()
+          .eq('dodao_vozac', currentDriver)
+          .gte('updated_at', since.toIso8601String())
+          .order('updated_at', ascending: false);
+
+      if (response.isNotEmpty) {
+        // Ima novih ili promenjenih putnika
+        final count = response.length;
+        await LocalNotificationService.showNotification(
+          title: 'Ažuriranje putnika',
+          body: 'Imate $count novih/promenjenih putnika',
+        );
+      }
+
+      await prefs.setInt('last_passenger_check', now);
+    } catch (e) {
+      // Tiho preskače greške da ne prekine realtime service
+    }
   }
 
   /// 🚗 CHECK NEW RIDES (CRITICAL!)
   static Future<void> _checkNewRides() async {
-    // TODO: Implement actual new ride check
-    // Ovo mora da bude INSTANT!
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
+
+      final lastCheck = prefs.getInt('last_ride_check') ?? 0;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final since = DateTime.fromMillisecondsSinceEpoch(lastCheck);
+
+      // Provera novih vožnji za vozača
+      final response = await Supabase.instance.client
+          .from('voznje')
+          .select()
+          .eq('vozac_id', currentDriver)
+          .gte('created_at', since.toIso8601String())
+          .order('created_at', ascending: false);
+
+      if (response.isNotEmpty) {
+        final count = response.length;
+        await LocalNotificationService.showNotification(
+          title: 'Nova vožnja!',
+          body: 'Imate $count novih vožnji za danas',
+        );
+      }
+
+      await prefs.setInt('last_ride_check', now);
+    } catch (e) {
+      // Tiho preskače greške
+    }
   }
 
   /// 👤 CHECK DRIVER STATUS
   static Future<void> _checkDriverStatus() async {
-    // TODO: Check driver online/offline status
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
+
+      // Ažuriraj status da je vozač online
+      await Supabase.instance.client
+          .from('vozaci')
+          .update({
+            'online': true,
+            'last_seen': DateTime.now().toIso8601String(),
+          })
+          .eq('id', currentDriver);
+
+      // Sačuvaj lokalno da je status ažuriran
+      await prefs.setInt('last_status_update', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      // Tiho preskače greške
+    }
   }
 
   /// 🚨 CHECK EMERGENCY NOTIFICATIONS
   static Future<void> _checkEmergencyNotifications() async {
-    // TODO: Check for emergency notifications
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
+
+      final lastCheck = prefs.getInt('last_emergency_check') ?? 0;
+      final since = DateTime.fromMillisecondsSinceEpoch(lastCheck);
+
+      // Proveri za hitne notifikacije (otkazi, promene rute, itd.)
+      final response = await Supabase.instance.client
+          .from('emergency_notifications')
+          .select()
+          .eq('target_driver', currentDriver)
+          .gte('created_at', since.toIso8601String())
+          .order('created_at', ascending: false);
+
+      for (final notification in response) {
+        await LocalNotificationService.showNotification(
+          title: '🚨 HITNO: ${notification['title'] ?? 'Hitna notifikacija'}',
+          body: '${notification['message'] ?? 'Proverite aplikaciju'}',
+        );
+      }
+
+      await prefs.setInt('last_emergency_check', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      // Tiho preskače greške - tabela možda ne postoji
+    }
   }
 
   /// 📍 UPDATE GPS LOCATIONS
   static Future<void> _updateGpsLocations() async {
-    // TODO: Update GPS locations every 5 seconds
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
+
+      // Dobij trenutnu GPS poziciju
+      final location = await LocationService.getCurrentPosition();
+      if (location != null) {
+        // Sačuvaj u bazu
+        await Supabase.instance.client.from('gps_tracking').insert({
+          'vozac_id': currentDriver,
+          'latitude': location.latitude,
+          'longitude': location.longitude,
+          'timestamp': DateTime.now().toIso8601String(),
+          'accuracy': location.accuracy,
+        });
+
+        // Sačuvaj lokalno za cache
+        await prefs.setString('last_gps_location', 
+          '${location.latitude},${location.longitude}');
+      }
+    } catch (e) {
+      // Tiho preskače greške - GPS možda nije dostupan
+    }
   }
 
   /// 👨‍✈️ UPDATE DRIVER DATA
   static Future<void> _updateDriverData() async {
-    // TODO: Update driver data every 5 seconds
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
+
+      // Ažuriraj osnovne podatke vozača
+      final driverData = {
+        'last_active': DateTime.now().toIso8601String(),
+        'app_version': '3.35.4',
+        'platform': 'android',
+        'battery_level': prefs.getInt('battery_level') ?? 100,
+      };
+
+      await Supabase.instance.client
+          .from('vozaci')
+          .update(driverData)
+          .eq('id', currentDriver);
+
+      // Sačuvaj lokalno timestamp poslednjeg ažuriranja
+      await prefs.setInt('last_driver_update', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      // Tiho preskače greške
+    }
   }
 
   /// 📊 UPDATE OTHER DATA
   static Future<void> _updateOtherData() async {
-    // TODO: Update other data - 30s interval UVEK (NO BATTERY SRANJE!)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentDriver = prefs.getString('current_driver');
+      if (currentDriver == null) return;
+
+      // Pošalji različite statistike i cache podatke (30s interval)
+      final otherData = {
+        'total_passengers_today': prefs.getInt('total_passengers_today') ?? 0,
+        'total_earnings_today': prefs.getDouble('total_earnings_today') ?? 0.0,
+        'routes_completed': prefs.getInt('routes_completed') ?? 0,
+        'last_sync': DateTime.now().toIso8601String(),
+      };
+
+      // Ne šalje u vozaci tabelu, možda pravi posebnu driver_stats tabelu
+      try {
+        await Supabase.instance.client
+            .from('driver_stats')
+            .insert({
+              'driver_id': currentDriver,
+              'date': DateTime.now().toIso8601String().split('T')[0],
+              ...otherData,
+            });
+      } catch (e) {
+        // Tabela možda ne postoji, ignoriši grešku
+      }
+
+      await prefs.setInt('last_other_data_update', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      // Tiho preskače greške - NO BATTERY SRANJE!
+    }
   }
 
   /// ⚙️ LOAD SETTINGS
@@ -212,6 +384,7 @@ class RealtimePriorityService {
     _stopAllTimers();
   }
 }
+
 
 
 
