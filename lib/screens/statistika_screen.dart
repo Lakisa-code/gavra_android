@@ -82,9 +82,16 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
   void _setupRealtimeMonitoring() {
     dlog('🔄 StatistikaScreen: Setting up realtime monitoring...');
 
+    // 🛡️ Cancel existing timer to prevent memory leaks
+    _healthCheckTimer?.cancel();
+
     // Health check every 30 seconds
     _healthCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _checkStreamHealth();
+      if (mounted) {
+        _checkStreamHealth();
+      } else {
+        timer.cancel(); // 🛡️ Auto-cancel if widget unmounted
+      }
     });
 
     dlog('✅ StatistikaScreen: Realtime monitoring active');
@@ -172,12 +179,19 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
       });
   }
 
+  /// 🔒 CENTRALIZOVANA AUTHORIZATION LOGIKA
+  bool _isAuthorizedForStatistics(String driver) {
+    // Dodaj logiku privilegija - možda iz Firebase/Supabase roles
+    const authorizedDrivers = ['Bojan', 'Svetlana'];
+    return authorizedDrivers.contains(driver);
+  }
+
   /// 🆕 INICIJALIZUJ DOSTUPNE GODINE IZ BAZE
   void _initializeAvailableYears() {
     // Za sada dodajem nekoliko godina (možemo kasnije proširiti da čita iz baze)
     final currentYear = DateTime.now().year;
     _availableYears = List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
-    if (mounted) if (mounted) setState(() {});
+    if (mounted) setState(() {});
   }
 
   // 🔄 RESETUJ SVE KILOMETRAŽE function is removed as unused
@@ -189,9 +203,17 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
         body: Center(child: CircularProgressIndicator()),
       );
     }
-    if (!['Bojan', 'Svetlana'].contains(_currentDriver)) {
-      // Potpuno nevidljiv: vrati prazan widget
-      return const SizedBox.shrink();
+    // 🔒 SECURITY: Proveravaj privilegije kroz servis umesto hardkoding
+    if (_currentDriver == null || !_isAuthorizedForStatistics(_currentDriver!)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Statistike')),
+        body: const Center(
+          child: Text(
+            'Nemate dozvolu za pristup statistikama',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      );
     }
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -384,7 +406,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                       )
                                       .toList(),
                                   onChanged: (v) {
-                                    if (v != null) if (mounted) setState(() => _period = v);
+                                    if (v != null && mounted) setState(() => _period = v);
                                   },
                                 ),
                               ),
@@ -844,4 +866,3 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     }
   }
 }
-

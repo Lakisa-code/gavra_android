@@ -9,8 +9,8 @@ MIGRATION HELPER - Kako zameniti postojeće StatistikaWidget-e
    
    NOVO:
    import 'package:gavra_android/services/clean_statistika_service.dart';
-   // ili
-   import 'package:gavra_android/services/statistika_service_wrapper.dart';
+   // ili koristi originalni optimizovani
+   import 'package:gavra_android/services/statistika_service.dart';
 
 3. AŽURIRAJ pozive:
    
@@ -19,7 +19,7 @@ MIGRATION HELPER - Kako zameniti postojeće StatistikaWidget-e
    
    NOVO:
    CleanStatistikaService.dohvatiUkupneStatistike()
-   // ili koristi wrapper za kompatibilnost
+   // ili koristi originalni optimizovani StatistikaService
 
 4. DODAJ no_duplicates proveru:
    
