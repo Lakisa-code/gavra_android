@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'location_service.dart';
 import 'local_notification_service.dart';
+import 'location_service.dart';
 
 /// 🚀 REALTIME PRIORITY SERVICE - FUCK BATTERY, POSAO JE BITAN!
 ///
@@ -126,7 +126,7 @@ class RealtimePriorityService {
 
       // Proverava promene u poslednih 30 sekundi
       final since = DateTime.fromMillisecondsSinceEpoch(lastCheck);
-      
+
       final response = await Supabase.instance.client
           .from('putnici')
           .select()
@@ -190,13 +190,10 @@ class RealtimePriorityService {
       if (currentDriver == null) return;
 
       // Ažuriraj status da je vozač online
-      await Supabase.instance.client
-          .from('vozaci')
-          .update({
-            'online': true,
-            'last_seen': DateTime.now().toIso8601String(),
-          })
-          .eq('id', currentDriver);
+      await Supabase.instance.client.from('vozaci').update({
+        'online': true,
+        'last_seen': DateTime.now().toIso8601String(),
+      }).eq('id', currentDriver);
 
       // Sačuvaj lokalno da je status ažuriran
       await prefs.setInt('last_status_update', DateTime.now().millisecondsSinceEpoch);
@@ -256,8 +253,10 @@ class RealtimePriorityService {
         });
 
         // Sačuvaj lokalno za cache
-        await prefs.setString('last_gps_location', 
-          '${location.latitude},${location.longitude}');
+        await prefs.setString(
+          'last_gps_location',
+          '${location.latitude},${location.longitude}',
+        );
       }
     } catch (e) {
       // Tiho preskače greške - GPS možda nije dostupan
@@ -279,10 +278,7 @@ class RealtimePriorityService {
         'battery_level': prefs.getInt('battery_level') ?? 100,
       };
 
-      await Supabase.instance.client
-          .from('vozaci')
-          .update(driverData)
-          .eq('id', currentDriver);
+      await Supabase.instance.client.from('vozaci').update(driverData).eq('id', currentDriver);
 
       // Sačuvaj lokalno timestamp poslednjeg ažuriranja
       await prefs.setInt('last_driver_update', DateTime.now().millisecondsSinceEpoch);
@@ -308,13 +304,11 @@ class RealtimePriorityService {
 
       // Ne šalje u vozaci tabelu, možda pravi posebnu driver_stats tabelu
       try {
-        await Supabase.instance.client
-            .from('driver_stats')
-            .insert({
-              'driver_id': currentDriver,
-              'date': DateTime.now().toIso8601String().split('T')[0],
-              ...otherData,
-            });
+        await Supabase.instance.client.from('driver_stats').insert({
+          'driver_id': currentDriver,
+          'date': DateTime.now().toIso8601String().split('T')[0],
+          ...otherData,
+        });
       } catch (e) {
         // Tabela možda ne postoji, ignoriši grešku
       }
@@ -384,8 +378,3 @@ class RealtimePriorityService {
     _stopAllTimers();
   }
 }
-
-
-
-
-
