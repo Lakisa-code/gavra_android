@@ -4,7 +4,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../main.dart' show globalThemeRefresher;
+// import '../main.dart' show globalThemeRefresher; // Removed - not used in simple version
 import '../services/daily_checkin_service.dart';
 import '../services/driver_registration_service.dart';
 import '../services/local_notification_service.dart';
@@ -126,10 +126,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         '🔄 AUTO-LOGIN: $activeDriver je već logovan - proveravam daily check-in',
       );
 
-      // 🎨 OSVEŽI TEMU ZA VOZAČA
-      if (globalThemeRefresher != null) {
-        globalThemeRefresher!();
-      }
+      // 🎨 Theme refresh removed in simple version
 
       // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (auto-login)
       // ignore: use_build_context_synchronously
@@ -684,7 +681,3 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 }
-
-
-
-

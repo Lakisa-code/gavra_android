@@ -103,6 +103,12 @@ class CacheService {
     await _prefs!.remove(timestampKey);
   }
 
+  /// 🧹 Očisti specifičan key iz memory cache
+  static void clearFromMemory(String key) {
+    _memoryCache.remove(key);
+    _cacheTimestamp.remove(key);
+  }
+
   /// 🧹 Očisti sav cache
   static Future<void> clearAll() async {
     _memoryCache.clear();
@@ -149,7 +155,3 @@ class CacheKeys {
   // Mesečne karte cache
   static String mesecneKarte(String mesec) => 'mesecne_karte_$mesec';
 }
-
-
-
-
