@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
 import '../services/firebase_service.dart';
-import '../services/kusur_service.dart'; // DODANO za kusur kocke - database backed
 import '../services/local_notification_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
+import '../services/simplified_kusur_service.dart'; // DODANO za kusur kocke - database backed
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
@@ -19,6 +19,7 @@ import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
+import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'statistika_screen.dart'; // DODANO za statistike
 
@@ -115,13 +116,15 @@ class _AdminScreenState extends State<AdminScreen> {
           return null;
         },
       );
-      if (mounted) setState(() {
-        _currentDriver = driver;
-      });
+      if (mounted)
+        setState(() {
+          _currentDriver = driver;
+        });
     } catch (e) {
-      if (mounted) setState(() {
-        _currentDriver = null;
-      });
+      if (mounted)
+        setState(() {
+          _currentDriver = null;
+        });
     }
   }
 
@@ -600,9 +603,10 @@ class _AdminScreenState extends State<AdminScreen> {
                                         }).toList(),
                                         onChanged: (value) {
                                           if (value != null) {
-                                            if (mounted) setState(() {
-                                              _selectedDan = value;
-                                            });
+                                            if (mounted)
+                                              setState(() {
+                                                _selectedDan = value;
+                                              });
                                           }
                                         },
                                       ),
@@ -972,7 +976,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           // Kusur za Bruda - REAL-TIME
                           Expanded(
                             child: StreamBuilder<double>(
-                              stream: KusurService.streamKusurForVozac(
+                              stream: SimplifiedKusurService.streamKusurForVozac(
                                 'Bruda',
                               ),
                               builder: (context, snapshot) {
@@ -1070,7 +1074,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           // Kusur za Bilevski - REAL-TIME
                           Expanded(
                             child: StreamBuilder<double>(
-                              stream: KusurService.streamKusurForVozac(
+                              stream: SimplifiedKusurService.streamKusurForVozac(
                                 'Bilevski',
                               ),
                               builder: (context, snapshot) {
@@ -1286,6 +1290,39 @@ class _AdminScreenState extends State<AdminScreen> {
                           ),
                         ),
                       ),
+
+                      // 📊 MONITORING DUGME
+                      Container(
+                        margin: const EdgeInsets.all(16.0),
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (context) => const MonitoringEkran(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.analytics, color: Colors.white),
+                          label: const Text(
+                            'Supabase Monitoring',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue[600],
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1301,7 +1338,3 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // (Funkcija za dijalog sa dužnicima je uklonjena - sada se koristi DugoviScreen)
 }
-
-
-
-

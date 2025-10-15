@@ -1010,10 +1010,10 @@ class _DanasScreenState extends State<DanasScreen> {
   bool _isLoading = false;
 
   Future<void> _loadPutnici() async {
-    setState(() => _isLoading = true);
+    if (mounted) if (mounted) setState(() => _isLoading = true);
     // Osloni se na stream, ali možeš ovde dodati logiku za ručno osvežavanje ako bude potrebno
     await Future<void>.delayed(const Duration(milliseconds: 100)); // simulacija
-    setState(() => _isLoading = false);
+    if (mounted) if (mounted) setState(() => _isLoading = false);
   }
 
   // _filteredDuznici već postoji, ne treba duplirati
@@ -1036,15 +1036,16 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🔄 RESET OPTIMIZACIJE RUTE
   void _resetOptimization() {
-    if (mounted) setState(() {
-      _isRouteOptimized = false;
-      _isListReordered = false;
-      _optimizedRoute.clear();
-      _currentPassengerIndex = 0;
-      _isGpsTracking = false;
-      _lastGpsUpdate = null;
-      _navigationStatus = '';
-    });
+    if (mounted)
+      setState(() {
+        _isRouteOptimized = false;
+        _isListReordered = false;
+        _optimizedRoute.clear();
+        _currentPassengerIndex = 0;
+        _isGpsTracking = false;
+        _lastGpsUpdate = null;
+        _navigationStatus = '';
+      });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -1374,25 +1375,26 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     }
 
-    if (mounted) setState(() {
-      _selectedVreme = closestTime;
-      // Određi grad na osnovu vremena - kao u home_screen
-      if ([
-        '5:00',
-        '6:00',
-        '8:00',
-        '10:00',
-        '12:00',
-        '13:00',
-        '14:00',
-        '15:30',
-        '18:00',
-      ].contains(closestTime)) {
-        _selectedGrad = 'Bela Crkva';
-      } else {
-        _selectedGrad = 'Vršac';
-      }
-    });
+    if (mounted)
+      setState(() {
+        _selectedVreme = closestTime;
+        // Određi grad na osnovu vremena - kao u home_screen
+        if ([
+          '5:00',
+          '6:00',
+          '8:00',
+          '10:00',
+          '12:00',
+          '13:00',
+          '14:00',
+          '15:30',
+          '18:00',
+        ].contains(closestTime)) {
+          _selectedGrad = 'Bela Crkva';
+        } else {
+          _selectedGrad = 'Vršac';
+        }
+      });
 
     dlog(
       '🕐 [DANAS SCREEN] Inicijalizovano vreme: $_selectedVreme, grad: $_selectedGrad',
@@ -1475,9 +1477,10 @@ class _DanasScreenState extends State<DanasScreen> {
     RealtimeRouteTrackingService.routeDataStream.listen((routeData) {
       if (mounted) {
         // Ažuriraj poslednji GPS update time
-        if (mounted) setState(() {
-          _lastGpsUpdate = routeData.timestamp;
-        });
+        if (mounted)
+          setState(() {
+            _lastGpsUpdate = routeData.timestamp;
+          });
       }
     });
 
@@ -1601,9 +1604,10 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici) async {
-    if (mounted) setState(() {
-      _isLoading = true; // ✅ POKRENI LOADING
-    });
+    if (mounted)
+      setState(() {
+        _isLoading = true; // ✅ POKRENI LOADING
+      });
 
     // Optimizacija rute
 
@@ -1634,9 +1638,10 @@ class _DanasScreenState extends State<DanasScreen> {
     );
 
     if (filtriraniPutnici.isEmpty) {
-      if (mounted) setState(() {
-        _isLoading = false; // ✅ RESETUJ LOADING
-      });
+      if (mounted)
+        setState(() {
+          _isLoading = false; // ✅ RESETUJ LOADING
+        });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1657,15 +1662,16 @@ class _DanasScreenState extends State<DanasScreen> {
         departureTime: DateTime.now(),
       );
 
-      if (mounted) setState(() {
-        _optimizedRoute = optimizedPutnici;
-        _isRouteOptimized = true;
-        _isListReordered = true; // ✅ Lista je reorderovana
-        _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
-        _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
-        _lastGpsUpdate = DateTime.now(); // 🛰️ Zapamti vreme
-        _isLoading = false; // ✅ ZAUSTAVI LOADING
-      });
+      if (mounted)
+        setState(() {
+          _optimizedRoute = optimizedPutnici;
+          _isRouteOptimized = true;
+          _isListReordered = true; // ✅ Lista je reorderovana
+          _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
+          _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
+          _lastGpsUpdate = DateTime.now(); // 🛰️ Zapamti vreme
+          _isLoading = false; // ✅ ZAUSTAVI LOADING
+        });
 
       // Prikaži rezultat reorderovanja
       final routeString = optimizedPutnici
@@ -1707,15 +1713,16 @@ class _DanasScreenState extends State<DanasScreen> {
           startAddress: _selectedGrad == 'Bela Crkva' ? 'Bela Crkva, Serbia' : 'Vršac, Serbia',
         );
 
-        if (mounted) setState(() {
-          _optimizedRoute = fallbackOptimized;
-          _isRouteOptimized = true;
-          _isListReordered = true;
-          _currentPassengerIndex = 0;
-          _isGpsTracking = true;
-          _lastGpsUpdate = DateTime.now();
-          _isLoading = false; // ✅ RESETUJ LOADING
-        });
+        if (mounted)
+          setState(() {
+            _optimizedRoute = fallbackOptimized;
+            _isRouteOptimized = true;
+            _isListReordered = true;
+            _currentPassengerIndex = 0;
+            _isGpsTracking = true;
+            _lastGpsUpdate = DateTime.now();
+            _isLoading = false; // ✅ RESETUJ LOADING
+          });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1731,11 +1738,12 @@ class _DanasScreenState extends State<DanasScreen> {
         dlog('❌ Greška i sa fallback optimizacijom: $fallbackError');
 
         // Kompletno neuspešna optimizacija - resetuj sve
-        if (mounted) setState(() {
-          _isLoading = false; // ✅ RESETUJ LOADING
-          _isRouteOptimized = false;
-          _isListReordered = false;
-        });
+        if (mounted)
+          setState(() {
+            _isLoading = false; // ✅ RESETUJ LOADING
+            _isRouteOptimized = false;
+            _isListReordered = false;
+          });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1858,9 +1866,10 @@ class _DanasScreenState extends State<DanasScreen> {
                     snapshot.error!,
                     'putnici_stream',
                     onRetry: () {
-                      if (mounted) setState(() {
-                        // Force refresh stream
-                      });
+                      if (mounted)
+                        setState(() {
+                          // Force refresh stream
+                        });
                     },
                   );
                 }
@@ -2027,9 +2036,10 @@ class _DanasScreenState extends State<DanasScreen> {
                         pazarSnapshot.error!,
                         'pazar_stream',
                         onRetry: () {
-                          if (mounted) setState(() {
-                            // Force refresh stream
-                          });
+                          if (mounted)
+                            setState(() {
+                              // Force refresh stream
+                            });
                         },
                       );
                     }
@@ -2384,9 +2394,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                       RealTimeNavigationWidget(
                                         optimizedRoute: _optimizedRoute,
                                         onStatusUpdate: (message) {
-                                          if (mounted) setState(() {
-                                            _navigationStatus = message;
-                                          });
+                                          if (mounted)
+                                            setState(() {
+                                              _navigationStatus = message;
+                                            });
                                           if (mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(
@@ -2397,9 +2408,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                           }
                                         },
                                         onRouteUpdate: (newRoute) {
-                                          if (mounted) setState(() {
-                                            _optimizedRoute = newRoute;
-                                          });
+                                          if (mounted)
+                                            setState(() {
+                                              _optimizedRoute = newRoute;
+                                            });
                                         },
                                       ),
                                     Expanded(
@@ -2518,15 +2530,16 @@ class _DanasScreenState extends State<DanasScreen> {
                   getPutnikCount: getPutnikCount,
                   isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                   onPolazakChanged: (grad, vreme) {
-                    if (mounted) setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                    });
+                    if (mounted)
+                      setState(() {
+                        _selectedGrad = grad;
+                        _selectedVreme = vreme;
+                      });
 
                     _resetDebounceTimer?.cancel();
                     _resetDebounceTimer = Timer(const Duration(milliseconds: 150), () async {
                       final key = '$grad|$vreme';
-                      setState(() => _resettingSlots.add(key));
+                      if (mounted) setState(() => _resettingSlots.add(key));
                       try {
                         await _putnikService.resetPokupljenjaNaPolazak(
                           vreme,
@@ -2538,7 +2551,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         dlog('reset error: $e');
                       } finally {
                         if (mounted) {
-                          setState(() => _resettingSlots.remove(key));
+                          if (mounted) setState(() => _resettingSlots.remove(key));
                         }
                       }
                     });
@@ -2551,15 +2564,16 @@ class _DanasScreenState extends State<DanasScreen> {
                   getPutnikCount: getPutnikCount,
                   isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                   onPolazakChanged: (grad, vreme) async {
-                    if (mounted) setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                    });
+                    if (mounted)
+                      setState(() {
+                        _selectedGrad = grad;
+                        _selectedVreme = vreme;
+                      });
 
                     _resetDebounceTimer?.cancel();
                     _resetDebounceTimer = Timer(const Duration(milliseconds: 150), () async {
                       final key = '$grad|$vreme';
-                      setState(() => _resettingSlots.add(key));
+                      if (mounted) setState(() => _resettingSlots.add(key));
                       try {
                         await _putnikService.resetPokupljenjaNaPolazak(
                           vreme,
@@ -2571,7 +2585,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         dlog('reset error: $e');
                       } finally {
                         if (mounted) {
-                          setState(() => _resettingSlots.remove(key));
+                          if (mounted) setState(() => _resettingSlots.remove(key));
                         }
                       }
                     });
@@ -2645,7 +2659,3 @@ class _DanasScreenState extends State<DanasScreen> {
     }
   }
 }
-
-
-
-

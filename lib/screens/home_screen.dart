@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../main.dart' show globalThemeToggler; // Za theme toggle
+// import '../main.dart' show globalThemeToggler; // Removed in simple version // Za theme toggle
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../services/firebase_service.dart';
@@ -242,11 +242,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeCurrentDriver() async {
     final driver = await FirebaseService.getCurrentDriver();
 
-    if (mounted) setState(() {
-      // Inicijalizacija driver-a
-      _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
-    });
-
+    if (mounted)
+      setState(() {
+        // Inicijalizacija driver-a
+        _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
+      });
   }
 
   Future<void> _initializeRealtimeService() async {
@@ -348,17 +348,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadPutnici() async {
     dlog('🔄 Loading putnici started...');
-    setState(() => _isLoading = true);
+    if (mounted) if (mounted) setState(() => _isLoading = true);
     try {
       final putnici = await _getAllPutnici();
       dlog('✅ Loading putnici completed: ${putnici.length} putnici');
-      if (mounted) setState(() {
-        _allPutnici = putnici;
-        _isLoading = false;
-      });
+      if (mounted)
+        setState(() {
+          _allPutnici = putnici;
+          _isLoading = false;
+        });
     } catch (e) {
       dlog('❌ Error loading putnici: $e');
-      setState(() => _isLoading = false);
+      if (mounted) if (mounted) setState(() => _isLoading = false);
       _showErrorDialog('Greška pri učitavanju: $e');
     }
   }
@@ -935,9 +936,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           }
 
                           // POKAZI LOADING STATE
-                          if (mounted) setState(() {
-                            _isAddingPutnik = true;
-                          });
+                          if (mounted)
+                            setState(() {
+                              _isAddingPutnik = true;
+                            });
 
                           // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
 
@@ -959,9 +961,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                           if (!mounted) return;
 
-                          if (mounted) setState(() {
-                            _isAddingPutnik = false;
-                          });
+                          if (mounted)
+                            setState(() {
+                              _isAddingPutnik = false;
+                            });
                           dlog('🔥 [HOME SCREEN] Loading state isključen');
 
                           if (mounted) {
@@ -977,9 +980,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             );
                           }
                         } catch (e) {
-                          if (mounted) setState(() {
-                            _isAddingPutnik = false;
-                          });
+                          if (mounted)
+                            setState(() {
+                              _isAddingPutnik = false;
+                            });
 
                           if (!mounted) return;
 
@@ -1154,11 +1158,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedVreme: _selectedVreme,
                 getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
-                  if (mounted) setState(() {
-                    _selectedGrad = grad;
-                    _selectedVreme = vreme;
-                    _selectedGradSubject.add(grad);
-                  });
+                  if (mounted)
+                    setState(() {
+                      _selectedGrad = grad;
+                      _selectedVreme = vreme;
+                      _selectedGradSubject.add(grad);
+                    });
                 },
               )
             : BottomNavBarLetnji(
@@ -1167,11 +1172,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedVreme: _selectedVreme,
                 getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
-                  if (mounted) setState(() {
-                    _selectedGrad = grad;
-                    _selectedVreme = vreme;
-                    _selectedGradSubject.add(grad);
-                  });
+                  if (mounted)
+                    setState(() {
+                      _selectedGrad = grad;
+                      _selectedVreme = vreme;
+                      _selectedGradSubject.add(grad);
+                    });
                 },
               ),
       );
@@ -1225,9 +1231,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 streamName: 'home_planning_stream',
                 errorMessage: snapshot.error.toString(),
                 onRetry: () {
-                  if (mounted) setState(() {
-                    // Trigger rebuild
-                  });
+                  if (mounted)
+                    setState(() {
+                      // Trigger rebuild
+                    });
                 },
               ),
             ),
@@ -1501,10 +1508,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             flex: 25,
                             child: InkWell(
                               onTap: () async {
-                                // Koristi globalnu funkciju za theme toggle
-                                if (globalThemeToggler != null) {
-                                  globalThemeToggler!();
-                                }
+                                // Theme toggle removed in simple version
+                                // TODO: Add theme toggle functionality if needed
                               },
                               borderRadius: BorderRadius.circular(14),
                               child: Container(
@@ -1612,7 +1617,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       )
                                       .toList(),
                                   onChanged: (value) {
-                                    setState(() => _selectedDay = value!);
+                                    if (mounted) setState(() => _selectedDay = value!);
                                     _loadPutnici();
                                   },
                                 ),
@@ -1725,9 +1730,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   onChanged: () {
                                     // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
                                     if (mounted) {
-                                      if (mounted) setState(() {
-                                        // Trigger rebuild-a StreamBuilder-a
-                                      });
+                                      if (mounted)
+                                        setState(() {
+                                          // Trigger rebuild-a StreamBuilder-a
+                                        });
                                     }
                                   },
                                 ),
@@ -1747,11 +1753,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   getPutnikCount: getPutnikCount,
                   onPolazakChanged: (grad, vreme) {
                     // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
-                    if (mounted) setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                      _selectedGradSubject.add(grad); // Ažuriraj stream
-                    });
+                    if (mounted)
+                      setState(() {
+                        _selectedGrad = grad;
+                        _selectedVreme = vreme;
+                        _selectedGradSubject.add(grad); // Ažuriraj stream
+                      });
                   },
                 )
               : BottomNavBarLetnji(
@@ -1760,11 +1767,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   selectedVreme: _selectedVreme,
                   getPutnikCount: getPutnikCount,
                   onPolazakChanged: (grad, vreme) async {
-                    if (mounted) setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                      _selectedGradSubject.add(grad);
-                    });
+                    if (mounted)
+                      setState(() {
+                        _selectedGrad = grad;
+                        _selectedVreme = vreme;
+                        _selectedGradSubject.add(grad);
+                      });
                   },
                 ),
         );
@@ -1849,16 +1857,16 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton> with Single
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) {
-        setState(() => _isPressed = true);
+        if (mounted) setState(() => _isPressed = true);
         _controller.forward();
       },
       onTapUp: (_) {
-        setState(() => _isPressed = false);
+        if (mounted) setState(() => _isPressed = false);
         _controller.reverse();
         widget.onTap();
       },
       onTapCancel: () {
-        setState(() => _isPressed = false);
+        if (mounted) setState(() => _isPressed = false);
         _controller.reverse();
       },
       child: AnimatedBuilder(
@@ -1965,7 +1973,3 @@ class _HomeScreenButton extends StatelessWidget {
     );
   }
 }
-
-
-
-

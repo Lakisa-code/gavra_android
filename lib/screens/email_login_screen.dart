@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../main.dart' show globalThemeRefresher;
+// import '../main.dart' show globalThemeRefresher; // Removed in simple version
 import '../services/daily_checkin_service.dart';
 import '../services/email_auth_service.dart';
 import '../services/permission_service.dart';
 import '../utils/logging.dart';
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
-import 'home_screen.dart';
+import 'home_screen_light.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({Key? key}) : super(key: key);
@@ -315,9 +315,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             color: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () {
-            if (mounted) setState(() {
-              _isPasswordVisible = !_isPasswordVisible;
-            });
+            if (mounted)
+              setState(() {
+                _isPasswordVisible = !_isPasswordVisible;
+              });
           },
         ),
         filled: true,
@@ -433,7 +434,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final email = _emailController.text.trim();
@@ -455,11 +456,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         // ignore: use_build_context_synchronously
         await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
-        // 🎨 Osveži temu za vozača
-        if (globalThemeRefresher != null) {
-          globalThemeRefresher!();
-          dlog('🎨 Tema osvežena za vozača $driverName');
-        }
+        // 🎨 Theme refresh removed in simple version
+        dlog('🎨 Theme refresh skipped in simple version');
 
         // 🎵 PUSTI PESMU NAKON EMAIL LOGIN-A
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
@@ -480,7 +478,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (context) => const HomeScreen(),
+                          builder: (context) => const HomeScreenLight(),
                         ),
                       );
                     }
@@ -495,7 +493,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             Navigator.pushReplacement(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const HomeScreen(),
+                builder: (context) => const HomeScreenLight(),
               ),
             );
           }
@@ -513,7 +511,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         'Došlo je do greške pri prijavi. Pokušajte ponovo.',
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -528,7 +526,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
       return;
     }
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final success = await EmailAuthService.resetPasswordViaEmail(email);
@@ -545,7 +543,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
       dlog('❌ Greška pri reset šifre: $e');
       _showErrorDialog('Greška', 'Došlo je do greške. Pokušajte ponovo.');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -615,7 +613,3 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
     );
   }
 }
-
-
-
-

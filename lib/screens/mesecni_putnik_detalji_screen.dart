@@ -91,7 +91,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
   }
 
   Future<void> _ucitajSveDetalje() async {
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
 
     // 🔄 V3.0: Mark data stream as healthy at start
     _dataStreamHealthy.value = true;
@@ -150,7 +150,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
       }
     } finally {
       if (mounted) {
-        setState(() => _loading = false);
+        if (mounted) setState(() => _loading = false);
         _updateHealthStatus();
       }
     }
@@ -1108,6 +1108,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
     return '${DateFormat('dd.MM').format(pocetak)} - ${DateFormat('dd.MM.yyyy').format(kraj)}';
   }
 }
+
 
 
 

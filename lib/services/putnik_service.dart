@@ -1905,20 +1905,20 @@ class PutnikService {
   Future<DnevniPutnik> _createDnevniPutnikFromPutnik(Putnik putnik) async {
     // PRIVREMENA IMPLEMENTACIJA: Koristi placeholder ID-jeve dok se ne implementira puna normalizovana šema
     // Ovim se omogućava osnovnu funkcionalnost bez bacanja greške
-    
+
     try {
       // Generiši ili nađi adresa_id na osnovu adrese
       final adresaId = await _getOrCreateAdresaId(putnik.adresa ?? 'Nepoznato');
-      
+
       // Generiši ili nađi ruta_id na osnovu grada
-      final rutaId = await _getOrCreateRutaId(putnik.grad ?? 'Nepoznato');
-      
+      final rutaId = await _getOrCreateRutaId(putnik.grad);
+
       return DnevniPutnik(
         ime: putnik.ime,
         brojTelefona: putnik.brojTelefona,
         adresaId: adresaId,
         rutaId: rutaId,
-        datumPutovanja: DateTime.parse(putnik.datum),
+        datumPutovanja: DateTime.parse(putnik.datum ?? DateTime.now().toIso8601String()),
         vremePolaska: putnik.polazak,
         cena: putnik.iznosPlacanja ?? 0.0,
         dodaoVozacId: putnik.dodaoVozac,
@@ -1936,7 +1936,7 @@ class PutnikService {
     return 'addr_${hash.hashCode.abs()}';
   }
 
-  // Privremena funkcija za mapiranje grada na ruta_id  
+  // Privremena funkcija za mapiranje grada na ruta_id
   Future<String> _getOrCreateRutaId(String grad) async {
     // PRIVREMENO: Generiši jednostavan hash od grada kao ID
     final hash = grad.toLowerCase().replaceAll(' ', '_');
@@ -1968,8 +1968,3 @@ class PutnikService {
     }
   }
 }
-
-
-
-
-

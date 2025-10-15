@@ -4,9 +4,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'kusur_service.dart';
 import 'putnik_service.dart';
 import 'realtime_service.dart';
+import 'simplified_kusur_service.dart';
 import 'statistika_service.dart';
 
 class DailyCheckInService {
@@ -16,8 +16,8 @@ class DailyCheckInService {
 
   /// Stream za real-time ažuriranje sitnog novca u UI
   static Stream<double> streamTodayAmount(String vozac) {
-    // ✅ FIX: Koristi direktan KusurService stream za realtime ažuriranje
-    return KusurService.streamKusurForVozac(vozac).map((kusurFromBaza) {
+    // ✅ FIX: Koristi direktan SimplifiedKusurService stream za realtime ažuriranje
+    return SimplifiedKusurService.streamKusurForVozac(vozac).map((kusurFromBaza) {
       // Ako nema kusura u bazi, pokušaj SharedPreferences kao fallback
       if (kusurFromBaza > 0) {
         return kusurFromBaza;
@@ -38,8 +38,8 @@ class DailyCheckInService {
   /// Helper: Dobij kusur iz oba izvora - prioritet ima KusurService
   static Future<double> getAmountFromBothSources(String vozac) async {
     try {
-      // 1. Pokušaj KusurService (baza) - prioritet
-      final kusurFromBaza = await KusurService.getKusurForVozac(vozac);
+      // 1. Pokušaj SimplifiedKusurService (baza) - prioritet
+      final kusurFromBaza = await SimplifiedKusurService.getKusurForVozac(vozac);
       if (kusurFromBaza > 0) return kusurFromBaza;
     } catch (e) {
       // Ignoriši grešku KusurService
@@ -95,9 +95,9 @@ class DailyCheckInService {
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
-    // 🔄 NOVI: Ažuriraj kusur u vozaci tabeli preko KusurService
+    // 🔄 NOVI: Ažuriraj kusur u vozaci tabeli preko SimplifiedKusurService
     try {
-      await KusurService.updateKusurForVozac(vozac, sitanNovac);
+      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac);
     } catch (e) {
       // Ignoriši grešku - nastavi sa ostalim čuvanjem
     }
@@ -454,7 +454,3 @@ class DailyCheckInService {
     }
   }
 }
-
-
-
-

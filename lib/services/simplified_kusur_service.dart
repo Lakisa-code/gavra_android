@@ -167,8 +167,13 @@ class SimplifiedKusurService {
     return await updateKusurForVozac(vozacIme, noviKusur);
   }
 
-  /// Zatvori stream controller
+  /// Zatvori stream controller - MEMORY LEAK PREVENTION
   static void dispose() {
-    _kusurController.close();
+    if (!_kusurController.isClosed) {
+      _kusurController.close();
+    }
   }
+
+  /// Proveri da li je stream controller aktivan
+  static bool get isActive => !_kusurController.isClosed;
 }

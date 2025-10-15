@@ -243,3 +243,4 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
 
 
 
+

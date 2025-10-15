@@ -443,7 +443,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
   Future<void> _handleRegistration() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     // Pokaži loading poruku
     _showLoadingDialog(
@@ -511,7 +511,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         'Došlo je do greške pri registraciji. Pokušajte ponovo.',
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -624,6 +624,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
     );
   }
 }
+
 
 
 

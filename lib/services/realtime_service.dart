@@ -20,24 +20,30 @@ class RealtimeService {
   // Raw controllers for commonly used tables
   final StreamController<List<Map<String, dynamic>>> _putovanjaController =
       StreamController<List<Map<String, dynamic>>>.broadcast();
+  final StreamController<List<Map<String, dynamic>>> _dailyCheckinsController =
+      StreamController<List<Map<String, dynamic>>>.broadcast();
 
   // Combined Putnik stream controller
   final StreamController<List<Putnik>> _combinedPutniciController = StreamController<List<Putnik>>.broadcast();
 
   Stream<List<Map<String, dynamic>>> get putovanjaStream => _putovanjaController.stream;
+  Stream<List<Map<String, dynamic>>> get dailyCheckinsStream => _dailyCheckinsController.stream;
 
   Stream<List<Putnik>> get combinedPutniciStream => _combinedPutniciController.stream;
 
   StreamSubscription<dynamic>? _putovanjaSub;
   StreamSubscription<dynamic>? _mesecniSub;
+  StreamSubscription<dynamic>? _dailySub;
 
   // Keep last known rows so we can emit combined payloads
   List<Map<String, dynamic>> _lastPutovanjaRows = [];
   List<Map<String, dynamic>> _lastMesecniRows = [];
+  List<Map<String, dynamic>> _lastDailyRows = [];
 
   // Expose read-only copies
   List<Map<String, dynamic>> get lastPutovanjaRows => List.unmodifiable(_lastPutovanjaRows);
   List<Map<String, dynamic>> get lastMesecniRows => List.unmodifiable(_lastMesecniRows);
+  List<Map<String, dynamic>> get lastDailyRows => List.unmodifiable(_lastDailyRows);
 
   // Parametric subscriptions: per-filter controllers and state
   final Map<String, StreamController<List<Putnik>>> _paramControllers = {};
@@ -96,12 +102,10 @@ class RealtimeService {
   }
 
   Future<void> unsubscribeAll() async {
-    // _dailySub je komentarisana
-    /*
+    // _dailySub je aktivna
     try {
       await _dailySub?.cancel();
     } catch (_) {}
-    */
     try {
       await _putovanjaSub?.cancel();
     } catch (_) {}
@@ -121,13 +125,12 @@ class RealtimeService {
   /// If `vozac` is provided, daily_checkins events will be filtered by driver
   /// in the handler before adding to the controller.
   void startForDriver(String? vozac) {
-    // daily_checkins - tabela možda ne postoji, preskoči za sada
-    // TODO: Omogući kada se tabela kreira u Supabase
-    /*
+    // daily_checkins - tabela kreirana, aktiviram stream
+    // ✅ AKTIVNO: daily_checkins tabela real-time stream
     _dailySub = tableStream('daily_checkins').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
-        for (final r in data) {
+        for (final r in (data as List<dynamic>)) {
           if (r is Map) {
             if (vozac == null || r['vozac'] == vozac) {
               rows.add(Map<String, dynamic>.from(r));
@@ -143,7 +146,6 @@ class RealtimeService {
         // ignore parsing errors
       }
     });
-    */
 
     // 🔄 STANDARDIZOVANO: putovanja_istorija (glavni naziv tabele)
     _putovanjaSub = tableStream('putovanja_istorija').listen(
@@ -429,44 +431,8 @@ class RealtimeService {
       } catch (_) {}
     }
 
-    // Subscribe to putovanja_istorija; daily_checkins je komentarisana jer tabela ne postoji
-    // TODO: Dodati daily_checkins kada se tabela kreira
-    /*
-    final dailySub = tableStream('daily_checkins').listen((dynamic data) {
-      try {
-        final rows = <Map<String, dynamic>>[];
-        for (final r in data) {
-          if (r is Map<String, dynamic>) {
-            // Apply client-side match by isoDate/grad/vreme
-            if (isoDate != null) {
-              if ((r['datum']?.toString() ?? '') != isoDate) {
-                continue;
-              }
-            }
-            if (grad != null) {
-              final putnikGrad = (r['grad'] ?? '').toString();
-              final putnikAdresa = (r['adresa'] ?? '').toString();
-              if (!GradAdresaValidator.isGradMatch(
-                  putnikGrad, putnikAdresa, grad)) {
-                continue;
-              }
-            }
-            if (vreme != null) {
-              final pVreme = (r['polazak'] ?? r['vreme'] ?? '').toString();
-              if (GradAdresaValidator.normalizeTime(pVreme) !=
-                  GradAdresaValidator.normalizeTime(vreme)) {
-                continue;
-              }
-            }
-
-            rows.add(Map<String, dynamic>.from(r));
-          }
-        }
-        _paramLastDaily[key] = rows;
-        emitForKey();
-      } catch (_) {}
-    });
-    */
+    // Subscribe to putovanja_istorija; daily_checkins aktiviran u startForDriver metodi
+    // ✅ DODANO: daily_checkins tabela je kreirana
 
     final putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
       try {
@@ -551,7 +517,3 @@ class RealtimeService {
     }
   }
 }
-
-
-
-

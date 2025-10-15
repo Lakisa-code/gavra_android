@@ -384,7 +384,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                       )
                                       .toList(),
                                   onChanged: (v) {
-                                    if (v != null) setState(() => _period = v);
+                                    if (v != null) if (mounted) setState(() => _period = v);
                                   },
                                 ),
                               ),
@@ -450,7 +450,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                         .toList(),
                                     onChanged: (v) {
                                       if (v != null) {
-                                        setState(() => _selectedYear = v);
+                                        if (mounted) setState(() => _selectedYear = v);
                                       }
                                     },
                                   ),
@@ -844,3 +844,4 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     }
   }
 }
+

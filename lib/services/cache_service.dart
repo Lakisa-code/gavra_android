@@ -8,6 +8,10 @@ class CacheService {
   static final Map<String, dynamic> _memoryCache = {};
   static final Map<String, DateTime> _cacheTimestamp = {};
 
+  // 📊 Cache statistike
+  static int _cacheHitCounter = 0;
+  static int _cacheMissCounter = 0;
+
   /// Inicijalizuj cache servis
   static Future<void> initialize() async {
     try {
@@ -25,6 +29,7 @@ class CacheService {
   }) {
     final timestamp = _cacheTimestamp[key];
     if (timestamp != null && DateTime.now().difference(timestamp) < maxAge) {
+      _cacheHitCounter++;
       return _memoryCache[key] as T?;
     }
 
@@ -34,7 +39,24 @@ class CacheService {
       _cacheTimestamp.remove(key);
     }
 
+    _cacheMissCounter++;
     return null;
+  }
+
+  /// 🔍 PROVERI DA LI POSTOJI U CACHE
+  static bool hasInMemory(String key) {
+    final timestamp = _cacheTimestamp[key];
+    if (timestamp != null && DateTime.now().difference(timestamp) < const Duration(minutes: 10)) {
+      return _memoryCache.containsKey(key);
+    }
+    return false;
+  }
+
+  /// 💾 POSTAVI U MEMORY CACHE sa optional duration
+  static void setMemory<T>(String key, T value, {Duration? duration}) {
+    _memoryCache[key] = value;
+    _cacheTimestamp[key] = DateTime.now();
+    // Logger removed
   }
 
   /// 💾 Sacuvaj u memory cache
@@ -109,6 +131,29 @@ class CacheService {
     _cacheTimestamp.remove(key);
   }
 
+  /// 🕐 Automatski cleanup - poziva se periodično
+  static void performAutomaticCleanup() {
+    final now = DateTime.now();
+    final expiredKeys = <String>[];
+
+    // Pronađi expired entries
+    _cacheTimestamp.forEach((key, timestamp) {
+      if (now.difference(timestamp) > const Duration(minutes: 10)) {
+        expiredKeys.add(key);
+      }
+    });
+
+    // Ukloni expired entries
+    for (final key in expiredKeys) {
+      _memoryCache.remove(key);
+      _cacheTimestamp.remove(key);
+    }
+
+    if (expiredKeys.isNotEmpty) {
+      // Logger removed - cleanup completed
+    }
+  }
+
   /// 🧹 Očisti sav cache
   static Future<void> clearAll() async {
     _memoryCache.clear();
@@ -123,13 +168,35 @@ class CacheService {
 
   /// 📊 Cache statistike
   static Map<String, dynamic> getStats() {
+    final now = DateTime.now();
+    int expiredCount = 0;
+
+    // Broji expired entries
+    _cacheTimestamp.forEach((key, timestamp) {
+      if (now.difference(timestamp) > const Duration(minutes: 10)) {
+        expiredCount++;
+      }
+    });
+
     return {
       'memory_cache_size': _memoryCache.length,
+      'expired_entries': expiredCount,
+      'cache_hit_ratio': _cacheHitCounter > 0
+          ? (_cacheHitCounter / (_cacheHitCounter + _cacheMissCounter)).toStringAsFixed(2)
+          : '0.00',
       'oldest_memory_cache': _cacheTimestamp.values.isNotEmpty
           ? _cacheTimestamp.values.reduce((a, b) => a.isBefore(b) ? a : b).toIso8601String()
           : 'N/A',
       'disk_cache_available': _prefs != null,
     };
+  }
+
+  /// 🔄 Dispose - oslobađa resurse
+  static void dispose() {
+    _memoryCache.clear();
+    _cacheTimestamp.clear();
+    _cacheHitCounter = 0;
+    _cacheMissCounter = 0;
   }
 }
 
