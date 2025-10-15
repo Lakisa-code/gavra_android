@@ -242,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeCurrentDriver() async {
     final driver = await FirebaseService.getCurrentDriver();
 
-    setState(() {
+    if (mounted) setState(() {
       // Inicijalizacija driver-a
       _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
     });
@@ -352,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final putnici = await _getAllPutnici();
       dlog('✅ Loading putnici completed: ${putnici.length} putnici');
-      setState(() {
+      if (mounted) setState(() {
         _allPutnici = putnici;
         _isLoading = false;
       });
@@ -935,7 +935,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           }
 
                           // POKAZI LOADING STATE
-                          setState(() {
+                          if (mounted) setState(() {
                             _isAddingPutnik = true;
                           });
 
@@ -959,7 +959,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                           if (!mounted) return;
 
-                          setState(() {
+                          if (mounted) setState(() {
                             _isAddingPutnik = false;
                           });
                           dlog('🔥 [HOME SCREEN] Loading state isključen');
@@ -977,7 +977,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             );
                           }
                         } catch (e) {
-                          setState(() {
+                          if (mounted) setState(() {
                             _isAddingPutnik = false;
                           });
 
@@ -1154,7 +1154,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedVreme: _selectedVreme,
                 getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
-                  setState(() {
+                  if (mounted) setState(() {
                     _selectedGrad = grad;
                     _selectedVreme = vreme;
                     _selectedGradSubject.add(grad);
@@ -1167,7 +1167,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedVreme: _selectedVreme,
                 getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
-                  setState(() {
+                  if (mounted) setState(() {
                     _selectedGrad = grad;
                     _selectedVreme = vreme;
                     _selectedGradSubject.add(grad);
@@ -1225,7 +1225,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 streamName: 'home_planning_stream',
                 errorMessage: snapshot.error.toString(),
                 onRetry: () {
-                  setState(() {
+                  if (mounted) setState(() {
                     // Trigger rebuild
                   });
                 },
@@ -1725,7 +1725,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   onChanged: () {
                                     // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
                                     if (mounted) {
-                                      setState(() {
+                                      if (mounted) setState(() {
                                         // Trigger rebuild-a StreamBuilder-a
                                       });
                                     }
@@ -1747,7 +1747,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   getPutnikCount: getPutnikCount,
                   onPolazakChanged: (grad, vreme) {
                     // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
-                    setState(() {
+                    if (mounted) setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                       _selectedGradSubject.add(grad); // Ažuriraj stream
@@ -1760,7 +1760,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   selectedVreme: _selectedVreme,
                   getPutnikCount: getPutnikCount,
                   onPolazakChanged: (grad, vreme) async {
-                    setState(() {
+                    if (mounted) setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                       _selectedGradSubject.add(grad);
@@ -1965,6 +1965,7 @@ class _HomeScreenButton extends StatelessWidget {
     );
   }
 }
+
 
 
 

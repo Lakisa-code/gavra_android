@@ -185,7 +185,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     _timeoutTimer?.cancel();
     _loadingTimer?.cancel();
 
-    setState(() {
+    if (mounted) setState(() {
       _hasError.value = true;
       _errorMessage.value = error;
     });
@@ -214,7 +214,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     _retryCount++;
 
     // Reset state
-    setState(() {
+    if (mounted) setState(() {
       _hasError.value = false;
       _errorMessage.value = null;
       _progress.value = 0.0;
@@ -734,6 +734,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     );
   }
 }
+
 
 
 

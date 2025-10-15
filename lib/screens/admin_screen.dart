@@ -115,11 +115,11 @@ class _AdminScreenState extends State<AdminScreen> {
           return null;
         },
       );
-      setState(() {
+      if (mounted) setState(() {
         _currentDriver = driver;
       });
     } catch (e) {
-      setState(() {
+      if (mounted) setState(() {
         _currentDriver = null;
       });
     }
@@ -600,7 +600,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         }).toList(),
                                         onChanged: (value) {
                                           if (value != null) {
-                                            setState(() {
+                                            if (mounted) setState(() {
                                               _selectedDan = value;
                                             });
                                           }
@@ -658,7 +658,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () {
-                      setState(() {}); // Force refresh
+                      if (mounted) setState(() {}); // Force refresh
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Osveži sada'),
@@ -683,7 +683,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {}); // Pokušaj ponovo
+                      if (mounted) setState(() {}); // Pokušaj ponovo
                     },
                     child: const Text('Pokušaj ponovo'),
                   ),
@@ -994,7 +994,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       streamName: 'kusur_bruda',
                                       errorMessage: 'Kusur stream error',
                                       onRetry: () {
-                                        setState(() {});
+                                        if (mounted) setState(() {});
                                       },
                                       compact: true,
                                     ),
@@ -1092,7 +1092,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       streamName: 'kusur_bilevski',
                                       errorMessage: 'Kusur stream error',
                                       onRetry: () {
-                                        setState(() {});
+                                        if (mounted) setState(() {});
                                       },
                                       compact: true,
                                     ),
@@ -1301,6 +1301,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // (Funkcija za dijalog sa dužnicima je uklonjena - sada se koristi DugoviScreen)
 }
+
 
 
 

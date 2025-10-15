@@ -79,7 +79,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
           textCapitalization: TextCapitalization.words,
           validator: widget.validator,
           onChanged: (value) {
-            setState(() {}); // Za suffixIcon
+            if (mounted) setState(() {}); // Za suffixIcon
             widget.onChanged?.call(value);
           },
         );
@@ -174,6 +174,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
     );
   }
 }
+
 
 
 

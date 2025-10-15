@@ -135,7 +135,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   void _initializeRealtimeStream() {
     _putovanjaSubscription?.cancel();
 
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -147,7 +147,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           _registerStreamHeartbeat('putovanja_stream');
           _putovanjaStreamHealthy.value = true;
 
-          setState(() {
+          if (mounted) setState(() {
             _cachedPutovanja = putovanja;
             _isLoading = false;
             _errorMessage = null;
@@ -161,7 +161,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       onError: (Object error) {
         if (mounted) {
           _putovanjaStreamHealthy.value = false;
-          setState(() {
+          if (mounted) setState(() {
             _isLoading = false;
             _errorMessage = error.toString();
           });
@@ -198,7 +198,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   void _performSearch(String query) {
     if (query.isEmpty) {
       // Reset to show all
-      setState(() {});
+      if (mounted) setState(() {});
       return;
     }
 
@@ -209,7 +209,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           (putovanje.brojTelefona?.contains(query) ?? false);
     }).toList();
 
-    setState(() {
+    if (mounted) setState(() {
       // This will trigger rebuild with filtered data
     });
 
@@ -340,7 +340,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       ),
                     ),
                     onSelected: (value) {
-                      setState(() {
+                      if (mounted) setState(() {
                         _selectedFilter = value;
                       });
                       _filterSubject.add(value);
@@ -499,7 +499,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                           onChanged: (value) {
-                            setState(() {
+                            if (mounted) setState(() {
                               _selectedFilter = value!;
                             });
                             _filterSubject.add(value!);
@@ -1186,7 +1186,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   // 📊 SORT DATA IMPLEMENTATION
   void _sortData(String sortBy) {
-    setState(() {
+    if (mounted) setState(() {
       switch (sortBy) {
         case 'vreme':
           _cachedPutovanja.sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
@@ -1330,7 +1330,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
 
     if (picked != null && picked != _selectedDate) {
-      setState(() {
+      if (mounted) setState(() {
         _selectedDate = picked;
       });
 
@@ -1345,7 +1345,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   // 📝 DODAJ NOVO PUTOVANJE
   void _dodajNovoPutovanje() {
     // Reset forme
-    setState(() {
+    if (mounted) setState(() {
       _noviPutnikIme = '';
       _noviPutnikTelefon = '';
       _novaCena = 0.0;
@@ -1450,7 +1450,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         );
 
         // Resetuj forme
-        setState(() {
+        if (mounted) setState(() {
           _noviPutnikIme = '';
           _noviPutnikTelefon = '';
           _novaCena = 0.0;
@@ -1469,7 +1469,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   // ✏️ EDIT PUTOVANJE
   void _editPutovanje(PutovanjaIstorija putovanje) {
     // Postavi vrednosti za edit
-    setState(() {
+    if (mounted) setState(() {
       _noviPutnikIme = putovanje.putnikIme;
       _noviPutnikTelefon = putovanje.brojTelefona ?? '';
       _novaCena = putovanje.cena;
@@ -1659,6 +1659,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     }
   }
 }
+
 
 
 

@@ -130,7 +130,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   void _initializeRealtimeStream() {
     _dugoviSubscription?.cancel();
 
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -161,7 +161,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
           // Sort dužnike
           _sortDugovi(duznici);
 
-          setState(() {
+          if (mounted) setState(() {
             _cachedDugovi = duznici;
             _isLoading = false;
             _errorMessage = null;
@@ -173,7 +173,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
       onError: (Object error) {
         if (mounted) {
           _dugoviStreamHealthy.value = false;
-          setState(() {
+          if (mounted) setState(() {
             _isLoading = false;
             _errorMessage = error.toString();
           });
@@ -208,7 +208,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   }
 
   void _performSearch(String query) {
-    setState(() {
+    if (mounted) setState(() {
       // Trigger rebuild with filtered data
     });
 
@@ -452,7 +452,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                       onChanged: (value) {
-                        setState(() {
+                        if (mounted) setState(() {
                           _selectedFilter = value!;
                         });
                         _filterSubject.add(value!);
@@ -496,7 +496,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                     onChanged: (value) {
-                      setState(() {
+                      if (mounted) setState(() {
                         _sortBy = value!;
                         _sortDugovi(_cachedDugovi);
                       });
@@ -746,6 +746,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     );
   }
 }
+
 
 
 

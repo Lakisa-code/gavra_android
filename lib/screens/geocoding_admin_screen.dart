@@ -137,7 +137,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   void _initializeRealtimeStream() {
     _statsSubscription?.cancel();
 
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -162,7 +162,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   }
 
   void _performSearch(String query) {
-    setState(() {
+    if (mounted) setState(() {
       // Trigger rebuild with filtered data
     });
 
@@ -183,7 +183,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       final popular = await GeocodingStatsService.getPopularLocations();
 
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _cachedStats = stats;
           _cachedPopularLocations = popular;
           _isLoading = false;
@@ -200,7 +200,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     } catch (e) {
       if (mounted) {
         _geocodingStreamHealthy.value = false;
-        setState(() {
+        if (mounted) setState(() {
           _isLoading = false;
           _errorMessage = e.toString();
         });
@@ -427,7 +427,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           const SizedBox(width: 8),
           IconButton(
             onPressed: () {
-              setState(() {
+              if (mounted) setState(() {
                 _autoRefreshEnabled = !_autoRefreshEnabled;
               });
               dlog(
@@ -570,7 +570,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final isSelected = _selectedFilter == value;
     return GestureDetector(
       onTap: () {
-        setState(() {
+        if (mounted) setState(() {
           _selectedFilter = value;
         });
         dlog('🔍 GeocodingAdminScreen: Filter changed to $value');
@@ -603,7 +603,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final isSelected = _sortBy == value;
     return GestureDetector(
       onTap: () {
-        setState(() {
+        if (mounted) setState(() {
           _sortBy = value;
           _sortLocations();
         });
@@ -900,6 +900,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     );
   }
 }
+
 
 
 

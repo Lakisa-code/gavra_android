@@ -52,7 +52,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   void _initializeRealtimeMonitoring() {
     _putnikSubscription?.cancel();
 
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -63,7 +63,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         .listen(
       (putnici) {
         if (mounted) {
-          setState(() {
+          if (mounted) setState(() {
             _cachedPutnici = putnici;
             _isLoading = false;
             _errorMessage = null;
@@ -73,7 +73,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
       },
       onError: (Object error) {
         if (mounted) {
-          setState(() {
+          if (mounted) setState(() {
             _isLoading = false;
             _errorMessage = 'Greška pri učitavanju: $error';
           });
@@ -782,7 +782,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     );
 
     if (picked != null) {
-      setState(() {
+      if (mounted) setState(() {
         _selectedRange = picked;
       });
       _loadData();
@@ -793,7 +793,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   Future<void> _loadData() async {
     if (!mounted) return;
 
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
@@ -804,13 +804,13 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
       // Trigger UI update
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _isLoading = false;
           _errorMessage = 'Greška pri učitavanju podataka: $e';
         });
@@ -865,6 +865,7 @@ class _StatRow extends StatelessWidget {
     );
   }
 }
+
 
 
 

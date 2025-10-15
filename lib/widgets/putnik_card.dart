@@ -125,8 +125,8 @@ class _PutnikCardState extends State<PutnikCard> {
           await Future<void>.delayed(const Duration(milliseconds: 500));
 
           final updatedPutnik = await PutnikService().getPutnikFromAnyTable(_putnik.id!);
-          if (updatedPutnik != null) {
-            setState(() {
+          if (updatedPutnik != null && mounted) {
+            if (mounted) setState(() {
               _putnik = updatedPutnik;
             });
 
@@ -139,7 +139,7 @@ class _PutnikCardState extends State<PutnikCard> {
           } else {
             // 🔥 IPAK FORSIRAJ UI AŽURIRANJE - POKUŠAJ JEDNOSTAVAN REFRESH
             if (mounted) {
-              setState(() {
+              if (mounted) setState(() {
                 // Jednostavno forsiranje rebuild-a widgeta
               });
             }
@@ -177,7 +177,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
           // 🔄 FORSIRAJ UI REFRESH za promenu boje kartice
           if (mounted) {
-            setState(() {
+            if (mounted) setState(() {
               // Forsiranje rebuild-a za ažuriranje boje
             });
           }
@@ -246,12 +246,12 @@ class _PutnikCardState extends State<PutnikCard> {
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
       if (updatedPutnik != null && mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _putnik = updatedPutnik;
         });
-      } else {
+      } else if (mounted) {
         // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
-        setState(() {
+        if (mounted) setState(() {
           _putnik = Putnik(
             id: _putnik.id,
             ime: _putnik.ime,
@@ -954,7 +954,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         }).toList(),
                         onChanged: (String? newMonth) {
                           if (newMonth != null) {
-                            setState(() {
+                            if (mounted) setState(() {
                               selectedMonth = newMonth;
                             });
                           }
@@ -1213,7 +1213,7 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       if (mounted) {
-        setState(() {});
+        if (mounted) setState(() {});
 
         // Pozovi callback za refresh parent widget-a
         if (widget.onChanged != null) {
@@ -1326,7 +1326,7 @@ class _PutnikCardState extends State<PutnikCard> {
       );
 
       if (mounted) {
-        setState(() {});
+        if (mounted) setState(() {});
         final String statusLabel = status == 'godisnji' ? 'godišnji odmor' : 'bolovanje';
         final String emoji = status == 'godisnji' ? '🏖️' : '🤒';
 
@@ -2588,7 +2588,7 @@ class _PutnikCardState extends State<PutnikCard> {
         );
 
         if (mounted) {
-          setState(() {});
+          if (mounted) setState(() {});
         }
       } catch (e) {
         // Greška pri otkazivanju putnika - ignorisana
@@ -2619,11 +2619,9 @@ class _PutnikCardState extends State<PutnikCard> {
     if (confirm == true) {
       await PutnikService().obrisiPutnika(_putnik.id!);
       if (mounted) {
-        setState(() {});
+        if (mounted) setState(() {});
       }
     }
   }
 } // kraj klase
-
-
 

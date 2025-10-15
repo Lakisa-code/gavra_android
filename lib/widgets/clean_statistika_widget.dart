@@ -22,22 +22,28 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
 
   Future<void> _ucitajStatistike() async {
     try {
-      setState(() {
-        _loading = true;
-        _error = null;
-      });
+      if (mounted) {
+        if (mounted) setState(() {
+          _loading = true;
+          _error = null;
+        });
+      }
 
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
 
-      setState(() {
-        _statistike = stats;
-        _loading = false;
-      });
+      if (mounted) {
+        if (mounted) setState(() {
+          _statistike = stats;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        if (mounted) setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -156,6 +162,4 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
     );
   }
 }
-
-
 

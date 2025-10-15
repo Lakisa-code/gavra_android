@@ -61,7 +61,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               try {
                 final gpsLokacije =
                     data.map((json) => GPSLokacija.fromMap(json)).toList();
-                setState(() {
+                if (mounted) setState(() {
                   _gpsLokacije = gpsLokacije;
                   _isLoading = false;
                   _updateMarkers();
@@ -94,7 +94,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         if (mounted) {
           try {
             final putnici = data.map((json) => Putnik.fromMap(json)).toList();
-            setState(() {
+            if (mounted) setState(() {
               _putnici = putnici;
               _updateMarkers();
             });
@@ -136,7 +136,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     try {
       final putnikService = PutnikService();
       final putnici = await putnikService.getAllPutniciFromBothTables();
-      setState(() {
+      if (mounted) setState(() {
         _putnici = putnici;
         _lastPutniciLoad = DateTime.now();
       });
@@ -160,7 +160,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      setState(() {
+      if (mounted) setState(() {
         _currentPosition = position;
       });
 
@@ -182,7 +182,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
 
     try {
-      setState(() {
+      if (mounted) setState(() {
         _isLoading = true;
       });
 
@@ -206,7 +206,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
       dlog('✅ Uspešno parsiran ${gpsLokacije.length} GPS lokacija');
 
-      setState(() {
+      if (mounted) setState(() {
         _gpsLokacije = gpsLokacije;
         _lastGpsLoad = DateTime.now();
         _updateMarkers();
@@ -221,7 +221,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     } catch (e) {
       dlog('❌ Greška učitavanja GPS lokacija: $e');
 
-      setState(() {
+      if (mounted) setState(() {
         _gpsLokacije = []; // Postavi praznu listu
         _isLoading = false;
       });
@@ -305,7 +305,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       _addPassengerMarkers(markers);
     }
 
-    setState(() {
+    if (mounted) setState(() {
       _markers = markers;
     });
   }
@@ -435,7 +435,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       color: _showDrivers ? Colors.white : Colors.white54,
                     ),
                     onPressed: () {
-                      setState(() {
+                      if (mounted) setState(() {
                         _showDrivers = !_showDrivers;
                       });
                       _updateMarkers();
@@ -449,7 +449,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       color: _showPassengers ? Colors.white : Colors.white54,
                     ),
                     onPressed: () {
-                      setState(() {
+                      if (mounted) setState(() {
                         _showPassengers = !_showPassengers;
                       });
                       _updateMarkers();
@@ -714,6 +714,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     );
   }
 }
+
 
 
 

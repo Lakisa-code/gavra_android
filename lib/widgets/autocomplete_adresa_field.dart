@@ -39,7 +39,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
 
     // Listen za connectivity changes
     Connectivity().onConnectivityChanged.listen((result) {
-      setState(() {
+      if (mounted) setState(() {
         _isOnline = !result.contains(ConnectivityResult.none);
       });
     });
@@ -47,7 +47,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
 
   Future<void> _checkConnectivity() async {
     final result = await Connectivity().checkConnectivity();
-    setState(() {
+    if (mounted) setState(() {
       _isOnline = !result.contains(ConnectivityResult.none);
     });
   }
@@ -144,19 +144,19 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
 
   Future<void> _loadAdrese() async {
     final adrese = await AdreseService.getAdreseZaGrad(widget.grad);
-    setState(() {
+    if (mounted) setState(() {
       _filteredAdrese = adrese;
     });
   }
 
   Future<void> _filterAdrese(String query) async {
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
     });
 
     try {
       final adrese = await AdreseService.pretraziAdrese(widget.grad, query);
-      setState(() {
+      if (mounted) setState(() {
         _filteredAdrese = adrese;
         _isLoading = false;
         // Prikaži overlay samo ako ima unos ili je fokusiran
@@ -167,7 +167,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
         }
       });
     } catch (e) {
-      setState(() {
+      if (mounted) setState(() {
         _isLoading = false;
       });
     }
@@ -413,7 +413,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
           ),
           textCapitalization: TextCapitalization.words,
           onChanged: (value) {
-            setState(() {}); // Refresh UI
+            if (mounted) setState(() {}); // Refresh UI
           },
           validator: (value) {
             if (value != null && value.trim().isNotEmpty) {
@@ -477,6 +477,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
     );
   }
 }
+
 
 
 

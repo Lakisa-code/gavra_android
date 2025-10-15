@@ -218,8 +218,12 @@ class _MyAppState extends State<MyApp> {
         // 1. Prvo inicijalizuj lokalne notifikacije (bez permission zahteva)
         await LocalNotificationService.initialize(context);
 
-        // 2. Zatim zatraži permissions jednom kroz Firebase sistem
-        await RealtimeNotificationService.requestNotificationPermissions().timeout(const Duration(seconds: 15));
+        // 2. Zatim zatraži permissions jednom kroz Firebase sistem (kratki timeout)
+        try {
+          await RealtimeNotificationService.requestNotificationPermissions().timeout(const Duration(seconds: 3));
+        } catch (e) {
+          // Permissions timeout - nastavi bez njih
+        }
 
         // 3. Inicijalizuj realtime notifikacije
         await RealtimeNotificationService.initialize();
@@ -230,7 +234,11 @@ class _MyAppState extends State<MyApp> {
 
         // 🚀 4. INICIJALIZUJ REALTIME PRIORITY SERVICE - NAJBITNIJI!
         // Ovaj servis GARANTUJE da putnik add/cancel stignu ODMAH!
-        await RealtimePriorityService.initialize();
+        try {
+          await RealtimePriorityService.initialize().timeout(const Duration(seconds: 3));
+        } catch (e) {
+          // Priority service timeout - nastavi bez njega
+        }
 
         // 5. Pretplati se na topike na osnovu vozača
         final vozacId = await getCurrentDriver();
@@ -239,14 +247,14 @@ class _MyAppState extends State<MyApp> {
         try {
           RealtimeService.instance.startForDriver(vozacId);
 
-          // Forsiraj početno učitavanje podataka
-          await RealtimeService.instance.refreshNow();
+          // Forsiraj početno učitavanje podataka (sa timeout)
+          await RealtimeService.instance.refreshNow().timeout(const Duration(seconds: 5));
         } catch (e) {
           // Logger removed
           // Pokušaj da pokreneš bez vozača kao fallback
           try {
             RealtimeService.instance.startForDriver(null);
-            await RealtimeService.instance.refreshNow();
+            await RealtimeService.instance.refreshNow().timeout(const Duration(seconds: 3));
           } catch (fallbackError) {
             // Logger removed
           }
@@ -410,14 +418,14 @@ class _MyAppState extends State<MyApp> {
       // await _testSchemaStructure();
 
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _isInitialized = true;
         });
       }
     } catch (e) {
       // Logger removed
       if (mounted) {
-        setState(() {
+        if (mounted) setState(() {
           _initError = e.toString();
         });
       }
@@ -427,7 +435,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeTheme() async {
     final nocniRezim = await ThemeService.isNocniRezim();
     if (mounted) {
-      setState(() {
+      if (mounted) setState(() {
         _nocniRezim = nocniRezim;
       });
     }
@@ -436,7 +444,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeCurrentDriver() async {
     final driver = await getCurrentDriver();
     if (mounted) {
-      setState(() {
+      if (mounted) setState(() {
         _currentDriver = driver;
       });
       // 💖 Tema se koristi
@@ -456,7 +464,7 @@ class _MyAppState extends State<MyApp> {
   void toggleTheme() async {
     final newTheme = await ThemeService.toggleNocniRezim();
     if (mounted) {
-      setState(() {
+      if (mounted) setState(() {
         _nocniRezim = newTheme;
       });
     }
@@ -497,6 +505,4 @@ class _MyAppState extends State<MyApp> {
     // return GpsDemoScreen();
   }
 }
-
-
 

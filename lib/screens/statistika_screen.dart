@@ -43,7 +43,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     super.initState();
     _tabController = TabController(length: 2, vsync: this); // Promenjeno sa 3 na 2
     _tabController.addListener(() {
-      setState(() {}); // Refresh UI kada se promeni tab
+      if (mounted) setState(() {}); // Refresh UI kada se promeni tab
     });
 
     // 🔄 INITIALIZE REALTIME MONITORING
@@ -165,10 +165,11 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
 
   Future<void> _checkDriver() async {
     final driver = await FirebaseService.getCurrentDriver();
-    setState(() {
-      _currentDriver = driver;
-      _checkedDriver = true;
-    });
+    if (mounted)
+      setState(() {
+        _currentDriver = driver;
+        _checkedDriver = true;
+      });
   }
 
   /// 🆕 INICIJALIZUJ DOSTUPNE GODINE IZ BAZE
@@ -176,7 +177,7 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     // Za sada dodajem nekoliko godina (možemo kasnije proširiti da čita iz baze)
     final currentYear = DateTime.now().year;
     _availableYears = List.generate(5, (i) => currentYear - i); // Poslednje 5 godina
-    if (mounted) setState(() {});
+    if (mounted) if (mounted) setState(() {});
   }
 
   // 🔄 RESETUJ SVE KILOMETRAŽE function is removed as unused
@@ -537,7 +538,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
           return StreamErrorWidget(
             streamName: 'Putnici',
             errorMessage: snapshot.error.toString(),
-            onRetry: () => setState(() {}),
+            onRetry: () {
+              if (mounted) setState(() {});
+            },
           );
         }
 
@@ -568,7 +571,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
               return StreamErrorWidget(
                 streamName: 'Pazar vozača',
                 errorMessage: pazarSnapshot.error.toString(),
-                onRetry: () => setState(() {}),
+                onRetry: () {
+                  if (mounted) setState(() {});
+                },
               );
             }
 
@@ -616,7 +621,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                           return StreamErrorWidget(
                             streamName: 'Detaljne statistike',
                             errorMessage: detaljneSnapshot.error.toString(),
-                            onRetry: () => setState(() {}),
+                            onRetry: () {
+                              if (mounted) setState(() {});
+                            },
                           );
                         }
 
@@ -663,7 +670,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
           return StreamErrorWidget(
             streamName: 'Detaljno tab statistike',
             errorMessage: statsSnapshot.error.toString(),
-            onRetry: () => setState(() {}),
+            onRetry: () {
+              if (mounted) setState(() {});
+            },
           );
         }
 
@@ -835,6 +844,3 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
     }
   }
 }
-
-
-

@@ -1036,7 +1036,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🔄 RESET OPTIMIZACIJE RUTE
   void _resetOptimization() {
-    setState(() {
+    if (mounted) setState(() {
       _isRouteOptimized = false;
       _isListReordered = false;
       _optimizedRoute.clear();
@@ -1374,7 +1374,7 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     }
 
-    setState(() {
+    if (mounted) setState(() {
       _selectedVreme = closestTime;
       // Određi grad na osnovu vremena - kao u home_screen
       if ([
@@ -1475,7 +1475,7 @@ class _DanasScreenState extends State<DanasScreen> {
     RealtimeRouteTrackingService.routeDataStream.listen((routeData) {
       if (mounted) {
         // Ažuriraj poslednji GPS update time
-        setState(() {
+        if (mounted) setState(() {
           _lastGpsUpdate = routeData.timestamp;
         });
       }
@@ -1601,7 +1601,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici) async {
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true; // ✅ POKRENI LOADING
     });
 
@@ -1634,7 +1634,7 @@ class _DanasScreenState extends State<DanasScreen> {
     );
 
     if (filtriraniPutnici.isEmpty) {
-      setState(() {
+      if (mounted) setState(() {
         _isLoading = false; // ✅ RESETUJ LOADING
       });
 
@@ -1657,7 +1657,7 @@ class _DanasScreenState extends State<DanasScreen> {
         departureTime: DateTime.now(),
       );
 
-      setState(() {
+      if (mounted) setState(() {
         _optimizedRoute = optimizedPutnici;
         _isRouteOptimized = true;
         _isListReordered = true; // ✅ Lista je reorderovana
@@ -1707,7 +1707,7 @@ class _DanasScreenState extends State<DanasScreen> {
           startAddress: _selectedGrad == 'Bela Crkva' ? 'Bela Crkva, Serbia' : 'Vršac, Serbia',
         );
 
-        setState(() {
+        if (mounted) setState(() {
           _optimizedRoute = fallbackOptimized;
           _isRouteOptimized = true;
           _isListReordered = true;
@@ -1731,7 +1731,7 @@ class _DanasScreenState extends State<DanasScreen> {
         dlog('❌ Greška i sa fallback optimizacijom: $fallbackError');
 
         // Kompletno neuspešna optimizacija - resetuj sve
-        setState(() {
+        if (mounted) setState(() {
           _isLoading = false; // ✅ RESETUJ LOADING
           _isRouteOptimized = false;
           _isListReordered = false;
@@ -1858,7 +1858,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     snapshot.error!,
                     'putnici_stream',
                     onRetry: () {
-                      setState(() {
+                      if (mounted) setState(() {
                         // Force refresh stream
                       });
                     },
@@ -2027,7 +2027,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         pazarSnapshot.error!,
                         'pazar_stream',
                         onRetry: () {
-                          setState(() {
+                          if (mounted) setState(() {
                             // Force refresh stream
                           });
                         },
@@ -2384,7 +2384,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                       RealTimeNavigationWidget(
                                         optimizedRoute: _optimizedRoute,
                                         onStatusUpdate: (message) {
-                                          setState(() {
+                                          if (mounted) setState(() {
                                             _navigationStatus = message;
                                           });
                                           if (mounted) {
@@ -2397,7 +2397,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                           }
                                         },
                                         onRouteUpdate: (newRoute) {
-                                          setState(() {
+                                          if (mounted) setState(() {
                                             _optimizedRoute = newRoute;
                                           });
                                         },
@@ -2518,7 +2518,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   getPutnikCount: getPutnikCount,
                   isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                   onPolazakChanged: (grad, vreme) {
-                    setState(() {
+                    if (mounted) setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                     });
@@ -2551,7 +2551,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   getPutnikCount: getPutnikCount,
                   isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                   onPolazakChanged: (grad, vreme) async {
-                    setState(() {
+                    if (mounted) setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                     });
@@ -2645,6 +2645,7 @@ class _DanasScreenState extends State<DanasScreen> {
     }
   }
 }
+
 
 
 

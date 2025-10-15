@@ -231,7 +231,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         );
       }).toList(),
       onChanged: (value) {
-        setState(() {
+        if (mounted) setState(() {
           _selectedDriver = value;
         });
       },
@@ -303,7 +303,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             color: Colors.blue,
           ),
           onPressed: () {
-            setState(() {
+            if (mounted) setState(() {
               _isPasswordVisible = !_isPasswordVisible;
             });
           },
@@ -356,7 +356,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             color: Colors.blue,
           ),
           onPressed: () {
-            setState(() {
+            if (mounted) setState(() {
               _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
             });
           },
@@ -624,6 +624,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
     );
   }
 }
+
 
 
 

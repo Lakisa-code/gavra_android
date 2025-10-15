@@ -606,7 +606,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   return StreamErrorWidget(
                     streamName: 'MesecniPutniciMain',
                     errorMessage: snapshot.error.toString(),
-                    onRetry: () => setState(() {}),
+                    onRetry: () {
+                      if (mounted) setState(() {});
+                    },
                   );
                 }
 
@@ -1225,40 +1227,41 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _editPutnik(MesecniPutnik putnik) {
     // Postavi vrednosti za edit
-    setState(() {
-      _novoIme = putnik.putnikIme;
-      _noviTip = putnik.tip;
-      _novaTipSkole = putnik.tipSkole ?? '';
-      _noviBrojTelefona = putnik.brojTelefona ?? '';
-      _novaAdresaBelaCrkva = putnik.adresaBelaCrkva ?? '';
-      _novaAdresaVrsac = putnik.adresaVrsac ?? '';
+    if (mounted)
+      setState(() {
+        _novoIme = putnik.putnikIme;
+        _noviTip = putnik.tip;
+        _novaTipSkole = putnik.tipSkole ?? '';
+        _noviBrojTelefona = putnik.brojTelefona ?? '';
+        _novaAdresaBelaCrkva = putnik.adresaBelaCrkva ?? '';
+        _novaAdresaVrsac = putnik.adresaVrsac ?? '';
 
-      // Učitaj vremena iz novih kolona ili fallback na stare - sa formatiranjem
-      _polazakBcPonController.text = putnik.getPolazakBelaCrkvaZaDan('pon') ?? '';
-      _polazakBcUtoController.text = putnik.getPolazakBelaCrkvaZaDan('uto') ?? '';
-      _polazakBcSreController.text = putnik.getPolazakBelaCrkvaZaDan('sre') ?? '';
-      _polazakBcCetController.text = putnik.getPolazakBelaCrkvaZaDan('cet') ?? '';
-      _polazakBcPetController.text = putnik.getPolazakBelaCrkvaZaDan('pet') ?? '';
+        // Učitaj vremena iz novih kolona ili fallback na stare - sa formatiranjem
+        _polazakBcPonController.text = putnik.getPolazakBelaCrkvaZaDan('pon') ?? '';
+        _polazakBcUtoController.text = putnik.getPolazakBelaCrkvaZaDan('uto') ?? '';
+        _polazakBcSreController.text = putnik.getPolazakBelaCrkvaZaDan('sre') ?? '';
+        _polazakBcCetController.text = putnik.getPolazakBelaCrkvaZaDan('cet') ?? '';
+        _polazakBcPetController.text = putnik.getPolazakBelaCrkvaZaDan('pet') ?? '';
 
-      _polazakVsPonController.text = putnik.getPolazakVrsacZaDan('pon') ?? '';
-      _polazakVsUtoController.text = putnik.getPolazakVrsacZaDan('uto') ?? '';
-      _polazakVsSreController.text = putnik.getPolazakVrsacZaDan('sre') ?? '';
-      _polazakVsCetController.text = putnik.getPolazakVrsacZaDan('cet') ?? '';
-      _polazakVsPetController.text = putnik.getPolazakVrsacZaDan('pet') ?? '';
+        _polazakVsPonController.text = putnik.getPolazakVrsacZaDan('pon') ?? '';
+        _polazakVsUtoController.text = putnik.getPolazakVrsacZaDan('uto') ?? '';
+        _polazakVsSreController.text = putnik.getPolazakVrsacZaDan('sre') ?? '';
+        _polazakVsCetController.text = putnik.getPolazakVrsacZaDan('cet') ?? '';
+        _polazakVsPetController.text = putnik.getPolazakVrsacZaDan('pet') ?? '';
 
-      // ✅ DODANO - učitaj postojeće radne dane
-      _setRadniDaniFromString(putnik.radniDani);
+        // ✅ DODANO - učitaj postojeće radne dane
+        _setRadniDaniFromString(putnik.radniDani);
 
-      // Postavi vrednosti u controller-e
-      _imeController.text = _novoIme;
-      _tipSkoleController.text = _novaTipSkole;
-      _brojTelefonaController.text = _noviBrojTelefona;
-      _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
-      _adresaVrsacController.text = _novaAdresaVrsac;
+        // Postavi vrednosti u controller-e
+        _imeController.text = _novoIme;
+        _tipSkoleController.text = _novaTipSkole;
+        _brojTelefonaController.text = _noviBrojTelefona;
+        _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
+        _adresaVrsacController.text = _novaAdresaVrsac;
 
-      // NAPOMENA: Controller-i su već postavljeni iz putnik model-a iznad
-      // Ne trebamo dodatno da ih premeštamo iz _novaVremenaBC/_novaVremenaVS mapa
-    });
+        // NAPOMENA: Controller-i su već postavljeni iz putnik model-a iznad
+        // Ne trebamo dodatno da ih premeštamo iz _novaVremenaBC/_novaVremenaVS mapa
+      });
 
     // Use a responsive approach: bottom sheet on small screens, dialog on larger
     Widget dialogBuilder(BuildContext ctx) {
@@ -1713,10 +1716,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              setState(() {
-                _novaVremenaBC.clear();
-                _novaVremenaVS.clear();
-              });
+              if (mounted)
+                setState(() {
+                  _novaVremenaBC.clear();
+                  _novaVremenaVS.clear();
+                });
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(
@@ -1830,10 +1834,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         );
       } catch (_) {}
       // Očisti mape izmena nakon uspešnog čuvanja
-      setState(() {
-        _novaVremenaBC.clear();
-        _novaVremenaVS.clear();
-      });
+      if (mounted)
+        setState(() {
+          _novaVremenaBC.clear();
+          _novaVremenaVS.clear();
+        });
 
       if (mounted) {
         Navigator.pop(context);
@@ -1855,55 +1860,56 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _pokaziDijalogZaDodavanje() {
     // Resetuj forme i controller-e
-    setState(() {
-      _novoIme = '';
-      _noviTip = 'radnik';
-      _novaTipSkole = '';
-      _noviBrojTelefona = '';
-      _noviBrojTelefonaOca = '';
-      _noviBrojTelefonaMajke = '';
-      _novaAdresaBelaCrkva = '';
-      _novaAdresaVrsac = '';
+    if (mounted)
+      setState(() {
+        _novoIme = '';
+        _noviTip = 'radnik';
+        _novaTipSkole = '';
+        _noviBrojTelefona = '';
+        _noviBrojTelefonaOca = '';
+        _noviBrojTelefonaMajke = '';
+        _novaAdresaBelaCrkva = '';
+        _novaAdresaVrsac = '';
 
-      // Očisti controller-e
-      _imeController.clear();
-      _tipSkoleController.clear();
-      _brojTelefonaController.clear();
-      _brojTelefonaOcaController.clear();
-      _brojTelefonaMajkeController.clear();
-      _adresaBelaCrkvaController.clear();
-      _adresaVrsacController.clear();
+        // Očisti controller-e
+        _imeController.clear();
+        _tipSkoleController.clear();
+        _brojTelefonaController.clear();
+        _brojTelefonaOcaController.clear();
+        _brojTelefonaMajkeController.clear();
+        _adresaBelaCrkvaController.clear();
+        _adresaVrsacController.clear();
 
-      // VAŽNO: Sinhronizuj controller-e sa varijablama
-      _imeController.text = _novoIme;
-      _tipSkoleController.text = _novaTipSkole;
-      _brojTelefonaController.text = _noviBrojTelefona;
-      _brojTelefonaOcaController.text = _noviBrojTelefonaOca;
-      _brojTelefonaMajkeController.text = _noviBrojTelefonaMajke;
-      _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
-      _adresaVrsacController.text = _novaAdresaVrsac;
+        // VAŽNO: Sinhronizuj controller-e sa varijablama
+        _imeController.text = _novoIme;
+        _tipSkoleController.text = _novaTipSkole;
+        _brojTelefonaController.text = _noviBrojTelefona;
+        _brojTelefonaOcaController.text = _noviBrojTelefonaOca;
+        _brojTelefonaMajkeController.text = _noviBrojTelefonaMajke;
+        _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
+        _adresaVrsacController.text = _novaAdresaVrsac;
 
-      // Očisti controller-e za vremena
-      _polazakBcPonController.clear();
-      _polazakBcUtoController.clear();
-      _polazakBcSreController.clear();
-      _polazakBcCetController.clear();
-      _polazakBcPetController.clear();
-      _polazakVsPonController.clear();
-      _polazakVsUtoController.clear();
-      _polazakVsSreController.clear();
-      _polazakVsCetController.clear();
-      _polazakVsPetController.clear();
+        // Očisti controller-e za vremena
+        _polazakBcPonController.clear();
+        _polazakBcUtoController.clear();
+        _polazakBcSreController.clear();
+        _polazakBcCetController.clear();
+        _polazakBcPetController.clear();
+        _polazakVsPonController.clear();
+        _polazakVsUtoController.clear();
+        _polazakVsSreController.clear();
+        _polazakVsCetController.clear();
+        _polazakVsPetController.clear();
 
-      // Resetuj radne dane na standardnu radnu nedelju
-      _noviRadniDani = {
-        'pon': true,
-        'uto': true,
-        'sre': true,
-        'cet': true,
-        'pet': true,
-      };
-    });
+        // Resetuj radne dane na standardnu radnu nedelju
+        _noviRadniDani = {
+          'pon': true,
+          'uto': true,
+          'sre': true,
+          'cet': true,
+          'pet': true,
+        };
+      });
     showDialog<void>(
       context: context,
       builder: (context) => Dialog(
@@ -2561,15 +2567,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   children: [
                                     TextButton(
                                       onPressed: () {
-                                        setState(() {
-                                          _noviRadniDani = {
-                                            'pon': true,
-                                            'uto': true,
-                                            'sre': true,
-                                            'cet': true,
-                                            'pet': true,
-                                          };
-                                        });
+                                        if (mounted)
+                                          setState(() {
+                                            _noviRadniDani = {
+                                              'pon': true,
+                                              'uto': true,
+                                              'sre': true,
+                                              'cet': true,
+                                              'pet': true,
+                                            };
+                                          });
                                       },
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
@@ -2589,15 +2596,16 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     ),
                                     TextButton(
                                       onPressed: () {
-                                        setState(() {
-                                          _noviRadniDani = {
-                                            'pon': false,
-                                            'uto': false,
-                                            'sre': false,
-                                            'cet': false,
-                                            'pet': false,
-                                          };
-                                        });
+                                        if (mounted)
+                                          setState(() {
+                                            _noviRadniDani = {
+                                              'pon': false,
+                                              'uto': false,
+                                              'sre': false,
+                                              'cet': false,
+                                              'pet': false,
+                                            };
+                                          });
                                       },
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(
@@ -2718,47 +2726,48 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 🧹 RESETUJ FORMU ZA DODAVANJE MESEČNOG PUTNIKA
   void _resetujFormuZaDodavanje() {
-    setState(() {
-      // Resetuj osnovne varijable
-      _novoIme = '';
-      _noviTip = 'radnik';
-      _novaTipSkole = '';
-      _noviBrojTelefona = '';
-      _noviBrojTelefonaOca = '';
-      _noviBrojTelefonaMajke = '';
-      _novaAdresaBelaCrkva = '';
-      _novaAdresaVrsac = '';
+    if (mounted)
+      setState(() {
+        // Resetuj osnovne varijable
+        _novoIme = '';
+        _noviTip = 'radnik';
+        _novaTipSkole = '';
+        _noviBrojTelefona = '';
+        _noviBrojTelefonaOca = '';
+        _noviBrojTelefonaMajke = '';
+        _novaAdresaBelaCrkva = '';
+        _novaAdresaVrsac = '';
 
-      // Očisti sve text controller-e
-      _imeController.clear();
-      _tipSkoleController.clear();
-      _brojTelefonaController.clear();
-      _brojTelefonaOcaController.clear();
-      _brojTelefonaMajkeController.clear();
-      _adresaBelaCrkvaController.clear();
-      _adresaVrsacController.clear();
+        // Očisti sve text controller-e
+        _imeController.clear();
+        _tipSkoleController.clear();
+        _brojTelefonaController.clear();
+        _brojTelefonaOcaController.clear();
+        _brojTelefonaMajkeController.clear();
+        _adresaBelaCrkvaController.clear();
+        _adresaVrsacController.clear();
 
-      // Očisti controller-e za vremena polaska
-      _polazakBcPonController.clear();
-      _polazakBcUtoController.clear();
-      _polazakBcSreController.clear();
-      _polazakBcCetController.clear();
-      _polazakBcPetController.clear();
-      _polazakVsPonController.clear();
-      _polazakVsUtoController.clear();
-      _polazakVsSreController.clear();
-      _polazakVsCetController.clear();
-      _polazakVsPetController.clear();
+        // Očisti controller-e za vremena polaska
+        _polazakBcPonController.clear();
+        _polazakBcUtoController.clear();
+        _polazakBcSreController.clear();
+        _polazakBcCetController.clear();
+        _polazakBcPetController.clear();
+        _polazakVsPonController.clear();
+        _polazakVsUtoController.clear();
+        _polazakVsSreController.clear();
+        _polazakVsCetController.clear();
+        _polazakVsPetController.clear();
 
-      // Resetuj radne dane na standardnu radnu nedelju
-      _noviRadniDani = {
-        'pon': true,
-        'uto': true,
-        'sre': true,
-        'cet': true,
-        'pet': true,
-      };
-    });
+        // Resetuj radne dane na standardnu radnu nedelju
+        _noviRadniDani = {
+          'pon': true,
+          'uto': true,
+          'sre': true,
+          'cet': true,
+          'pet': true,
+        };
+      });
   }
 
   /// 🕐 SAČUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETE
@@ -2865,11 +2874,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
       );
 
-
-
-
-
-
       final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
       print(
         '✅ USPEŠNO DODAT PUTNIK: ${dodatiPutnik.id} - ${dodatiPutnik.putnikIme}',
@@ -2878,10 +2882,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // 🔄 KRITIČNO: Refresh RealtimeService da se promene propagiraju kroz sve servise
       try {
         await RealtimeService.instance.refreshNow();
-
-      } catch (e) {
-
-      }
+      } catch (e) {}
 
       // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
       try {
@@ -2892,13 +2893,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         print(
           '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}',
         );
-      } catch (e) {
-
-      }
+      } catch (e) {}
 
       // ✅ DODATO: Forsiraj refresh state-a da se novi putnik odmah prikaže
       if (mounted) {
-        setState(() {});
+        if (mounted) setState(() {});
         Navigator.pop(context);
 
         // Prikaži uspešnu poruku
@@ -3451,9 +3450,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           ),
                           menuMaxHeight: 300, // Ograniči visinu dropdown menija
                           onChanged: (String? newValue) {
-                            setState(() {
-                              selectedMonth = newValue!;
-                            });
+                            if (mounted)
+                              setState(() {
+                                selectedMonth = newValue!;
+                              });
                           },
                           items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
                             // Proveri da li je mesec plaćen
@@ -3656,9 +3656,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ]),
                           onChanged: (String? newValue) {
                             if (newValue != null) {
-                              setState(() {
-                                selectedPeriod = newValue;
-                              });
+                              if (mounted)
+                                setState(() {
+                                  selectedPeriod = newValue;
+                                });
                             }
                           },
                         ),
@@ -3685,7 +3686,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             child: StreamErrorWidget(
                               streamName: 'MesecniPutniciStats',
                               errorMessage: snapshot.error.toString(),
-                              onRetry: () => setState(() {}),
+                              onRetry: () {
+                                if (mounted) setState(() {});
+                              },
                             ),
                           );
                         }
@@ -4437,9 +4440,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 child: Checkbox(
                   value: _noviRadniDani[danKod] ?? false,
                   onChanged: (bool? value) {
-                    setState(() {
-                      _noviRadniDani[danKod] = value ?? false;
-                    });
+                    if (mounted)
+                      setState(() {
+                        _noviRadniDani[danKod] = value ?? false;
+                      });
                   },
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
@@ -4905,19 +4909,20 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       return;
     }
 
-    setState(() {
-      // Kopiraj na sve ostale označene radne dane
-      for (final dan in _noviRadniDani.entries) {
-        if (dan.value && dan.key != izvorDan) {
-          if (bcVreme.isNotEmpty) {
-            _getControllerBelaCrkva(dan.key).text = bcVreme;
-          }
-          if (vsVreme.isNotEmpty) {
-            _getControllerVrsac(dan.key).text = vsVreme;
+    if (mounted)
+      setState(() {
+        // Kopiraj na sve ostale označene radne dane
+        for (final dan in _noviRadniDani.entries) {
+          if (dan.value && dan.key != izvorDan) {
+            if (bcVreme.isNotEmpty) {
+              _getControllerBelaCrkva(dan.key).text = bcVreme;
+            }
+            if (vsVreme.isNotEmpty) {
+              _getControllerVrsac(dan.key).text = vsVreme;
+            }
           }
         }
-      }
-    });
+      });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -4930,46 +4935,48 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 🗑️ OČISTI VREMENA ZA DAN
   void _ocistiVremenaZaDan(String dan) {
-    setState(() {
-      _getControllerBelaCrkva(dan).clear();
-      _getControllerVrsac(dan).clear();
-    });
+    if (mounted)
+      setState(() {
+        _getControllerBelaCrkva(dan).clear();
+        _getControllerVrsac(dan).clear();
+      });
   }
 
   /// ⏰ POPUNI STANDARDNA VREMENA
   void _popuniStandardnaVremena(String template) {
-    setState(() {
-      // Popuni samo označene radne dane
-      final daniZaPopunjavanje =
-          _noviRadniDani.entries.where((entry) => entry.value).map((entry) => entry.key).toList();
+    if (mounted)
+      setState(() {
+        // Popuni samo označene radne dane
+        final daniZaPopunjavanje =
+            _noviRadniDani.entries.where((entry) => entry.value).map((entry) => entry.key).toList();
 
-      switch (template) {
-        case 'jutarnja_smena':
-          for (final dan in daniZaPopunjavanje) {
-            _getControllerBelaCrkva(dan).text = '06:00';
-            _getControllerVrsac(dan).text = '14:00';
-          }
-          break;
-        case 'popodnevna_smena':
-          for (final dan in daniZaPopunjavanje) {
-            _getControllerBelaCrkva(dan).text = '14:00';
-            _getControllerVrsac(dan).text = '22:00';
-          }
-          break;
-        case 'skola':
-          for (final dan in daniZaPopunjavanje) {
-            _getControllerBelaCrkva(dan).text = '07:30';
-            _getControllerVrsac(dan).text = '14:00';
-          }
-          break;
-        case 'ocisti':
-          for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-            _getControllerBelaCrkva(dan).clear();
-            _getControllerVrsac(dan).clear();
-          }
-          break;
-      }
-    });
+        switch (template) {
+          case 'jutarnja_smena':
+            for (final dan in daniZaPopunjavanje) {
+              _getControllerBelaCrkva(dan).text = '06:00';
+              _getControllerVrsac(dan).text = '14:00';
+            }
+            break;
+          case 'popodnevna_smena':
+            for (final dan in daniZaPopunjavanje) {
+              _getControllerBelaCrkva(dan).text = '14:00';
+              _getControllerVrsac(dan).text = '22:00';
+            }
+            break;
+          case 'skola':
+            for (final dan in daniZaPopunjavanje) {
+              _getControllerBelaCrkva(dan).text = '07:30';
+              _getControllerVrsac(dan).text = '14:00';
+            }
+            break;
+          case 'ocisti':
+            for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+              _getControllerBelaCrkva(dan).clear();
+              _getControllerVrsac(dan).clear();
+            }
+            break;
+        }
+      });
 
     // Prikaži potvrdu
     final message =
@@ -4984,6 +4991,3 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 }
-
-
-

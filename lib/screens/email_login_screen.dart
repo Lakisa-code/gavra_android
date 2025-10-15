@@ -315,7 +315,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             color: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () {
-            setState(() {
+            if (mounted) setState(() {
               _isPasswordVisible = !_isPasswordVisible;
             });
           },
@@ -615,6 +615,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
     );
   }
 }
+
 
 
 
