@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/daily_checkin_service.dart';
+import '../supabase_client.dart';
 import '../theme.dart';
 import '../utils/logging.dart';
 import '../utils/smart_colors.dart';
@@ -94,7 +97,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       return;
     }
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       await DailyCheckInService.saveCheckIn(widget.vozac, iznos);
@@ -124,7 +127,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
         _showError('Greška: $e');
       }
     }
@@ -938,14 +941,71 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       automatskiPopis['offline_updated'] = true;
       automatskiPopis['offline_timestamp'] = DateTime.now().toIso8601String();
 
+      // Sačuvaj u SharedPreferences za kasnije sinhronizovanje
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'offline_kusur_data',
+        json.encode({
+          'sitanNovac': kusur,
+          'vozac': widget.vozac,
+          'datum': DateTime.now().toIso8601String().split('T')[0],
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      );
+
       dlog('💾 Kusur sačuvan lokalno: $kusur RSD');
-      // TODO: Implementiraj sync kada se vrati internet konekcija
+
+      // Pokreni sync kada se vrati internet konekcija
+      _scheduleOfflineSync();
     } catch (e) {
       dlog('❌ Greška pri lokalnom čuvanju kusura: $e');
     }
   }
+
+  // Sync offline kusur podatke kada se vrati internet
+  void _scheduleOfflineSync() {
+    Timer.periodic(const Duration(seconds: 30), (timer) async {
+      try {
+        // Proverava da li imamo internet konekciju
+        final response = await supabase.from('vozaci').select('id').limit(1);
+        if (response.isNotEmpty) {
+          // Internet je dostupan, pokreni sync
+          await _syncOfflineKusur();
+          timer.cancel();
+        }
+      } catch (e) {
+        // Još uvek nema internet, nastavi pokušaje
+        dlog('🔄 Čekam internet konekciju za sync kusura...');
+      }
+    });
+  }
+
+  // Sinhronizuj offline kusur podatke sa serverom
+  Future<void> _syncOfflineKusur() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final offlineKusurData = prefs.getString('offline_kusur_data');
+
+      if (offlineKusurData != null) {
+        final data = json.decode(offlineKusurData) as Map<String, dynamic>;
+
+        // Ažuriraj server sa offline podacima
+        await supabase
+            .from('automatski_popis')
+            .update({
+              'sitan_novac': data['sitanNovac'],
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('vozac', widget.vozac)
+            .eq('datum', DateTime.now().toIso8601String().split('T')[0]);
+
+        // Obriši offline podatke nakon uspešnog sync-a
+        await prefs.remove('offline_kusur_data');
+
+        dlog('✅ Offline kusur podaci uspešno sinhronizovani sa serverom');
+      }
+    } catch (e) {
+      dlog('❌ Greška pri sinhronizaciji offline kusur podataka: $e');
+    }
+  }
 }
-
-
-
-
