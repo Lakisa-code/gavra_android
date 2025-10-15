@@ -1903,21 +1903,44 @@ class PutnikService {
 
   // ✅ HELPER METODA: Konvertuje Putnik u DnevniPutnik
   Future<DnevniPutnik> _createDnevniPutnikFromPutnik(Putnik putnik) async {
-    // Za sada ću baciti grešku jer treba implementacija sa address/route mapping
-    throw UnimplementedError('Konverzija Putnik -> DnevniPutnik zahteva mapiranje adresa_id i ruta_id. '
-        'Ova funkcionalnost će biti implementirana u sledećoj fazi.');
+    // PRIVREMENA IMPLEMENTACIJA: Koristi placeholder ID-jeve dok se ne implementira puna normalizovana šema
+    // Ovim se omogućava osnovnu funkcionalnost bez bacanja greške
+    
+    try {
+      // Generiši ili nađi adresa_id na osnovu adrese
+      final adresaId = await _getOrCreateAdresaId(putnik.adresa ?? 'Nepoznato');
+      
+      // Generiši ili nađi ruta_id na osnovu grada
+      final rutaId = await _getOrCreateRutaId(putnik.grad ?? 'Nepoznato');
+      
+      return DnevniPutnik(
+        ime: putnik.ime,
+        brojTelefona: putnik.brojTelefona,
+        adresaId: adresaId,
+        rutaId: rutaId,
+        datumPutovanja: DateTime.parse(putnik.datum),
+        vremePolaska: putnik.polazak,
+        cena: putnik.iznosPlacanja ?? 0.0,
+        dodaoVozacId: putnik.dodaoVozac,
+      );
+    } catch (e) {
+      dlog('❌ Greška pri konverziji Putnik -> DnevniPutnik: $e');
+      rethrow;
+    }
+  }
 
-    // TODO: Implementirati kada se rešavaju adrese i rute
-    // return DnevniPutnik(
-    //   ime: putnik.ime,
-    //   brojTelefona: putnik.brojTelefona,
-    //   adresaId: 'TODO', // Treba mapirati putnik.adresa -> adresa_id
-    //   rutaId: 'TODO',   // Treba mapirati putnik.grad -> ruta_id
-    //   datumPutovanja: DateTime.parse(putnik.datum),
-    //   vremePolaska: putnik.polazak,
-    //   cena: putnik.iznosPlacanja ?? 0.0,
-    //   dodaoVozacId: putnik.dodaoVozac,
-    // );
+  // Privremena funkcija za mapiranje adrese na adresa_id
+  Future<String> _getOrCreateAdresaId(String adresa) async {
+    // PRIVREMENO: Generiši jednostavan hash od adrese kao ID
+    final hash = adresa.toLowerCase().replaceAll(' ', '_').replaceAll(',', '');
+    return 'addr_${hash.hashCode.abs()}';
+  }
+
+  // Privremena funkcija za mapiranje grada na ruta_id  
+  Future<String> _getOrCreateRutaId(String grad) async {
+    // PRIVREMENO: Generiši jednostavan hash od grada kao ID
+    final hash = grad.toLowerCase().replaceAll(' ', '_');
+    return 'ruta_${hash.hashCode.abs()}';
   }
 
   // Helper metod za dobijanje naziva dana nedelje
@@ -1945,6 +1968,7 @@ class PutnikService {
     }
   }
 }
+
 
 
 

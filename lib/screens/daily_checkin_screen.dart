@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/daily_checkin_service.dart';
-import '../supabase_client.dart';
 import '../theme.dart';
 import '../utils/logging.dart';
 import '../utils/smart_colors.dart';
@@ -828,7 +827,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           String errorMessage;
           if (e.toString().contains('internet') || e.toString().contains('mrežn')) {
             errorMessage = '⚠️ Nema internet konekcije. Kusur će biti sačuvan lokalno.';
-            // TODO: Dodaj lokalno čuvanje kusura
             await _saveKusurLocally(
               automatskiPopis,
               automatskiPopis['sitanNovac'] as double,
@@ -967,7 +965,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     Timer.periodic(const Duration(seconds: 30), (timer) async {
       try {
         // Proverava da li imamo internet konekciju
-        final response = await supabase.from('vozaci').select('id').limit(1);
+        final response = await Supabase.instance.client.from('vozaci').select('id').limit(1);
         if (response.isNotEmpty) {
           // Internet je dostupan, pokreni sync
           await _syncOfflineKusur();
@@ -990,7 +988,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         final data = json.decode(offlineKusurData) as Map<String, dynamic>;
 
         // Ažuriraj server sa offline podacima
-        await supabase
+        await Supabase.instance.client
             .from('automatski_popis')
             .update({
               'sitan_novac': data['sitanNovac'],
