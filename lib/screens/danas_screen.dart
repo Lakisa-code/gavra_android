@@ -58,7 +58,7 @@ class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
   final _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final Set<String> _resettingSlots = {};
-  Timer? _resetDebounceTimer;
+  // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnih Timer-a
 
   // 💓 HEARTBEAT MONITORING VARIABLES
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
@@ -327,10 +327,10 @@ class _DanasScreenState extends State<DanasScreen> {
     }
   }
 
-  // ✨ DIGITALNI BROJAČ DATUM WIDGET - ISTI STIL KAO REZERVACIJE
+  // ✨ DIGITALNI BROJAČ DATUM WIDGET - OPTIMIZOVANO (30s umesto 1s)
   Widget _buildDigitalDateDisplay() {
     return StreamBuilder<DateTime>(
-      stream: Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now()),
+      stream: Stream.periodic(const Duration(seconds: 30), (_) => DateTime.now()), // 🚀 PERFORMANCE: 30s umesto 1s
       initialData: DateTime.now(),
       builder: (context, snapshot) {
         final now = snapshot.data ?? DateTime.now();
@@ -1577,6 +1577,11 @@ class _DanasScreenState extends State<DanasScreen> {
   void dispose() {
     // 🛑 Zaustavi realtime tracking kad se ekran zatvori
     RealtimeRouteTrackingService.stopRouteTracking();
+
+    // 🧹 CLEANUP TIMER MEMORY LEAKS - KORISTI TIMER MANAGER
+    TimerManager.cancelTimer('danas_screen_reset_debounce');
+    TimerManager.cancelTimer('danas_screen_reset_debounce_2');
+
     // Otkaži pretplatu za daily_checkins ako postoji
     try {
       _dailyCheckinSub?.cancel();
@@ -1586,11 +1591,20 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 💓 CLEANUP HEARTBEAT MONITORING
     TimerManager.cancelTimer('danas_screen_heartbeat');
-    _isRealtimeHealthy.dispose();
+
+    // 🧹 SAFE DISPOSAL ValueNotifier-a
+    try {
+      if (mounted) {
+        _isRealtimeHealthy.dispose();
+      }
+    } catch (e) {
+      dlog('⚠️ Error disposing ValueNotifier: $e');
+    }
 
     // 🚨 FAIL-FAST CLEANUP - DISPOSE ALL STREAMS
     FailFastStreamManager.instance.disposeAll();
 
+    dlog('🧹 DanasScreen: Disposed all resources safely');
     super.dispose();
   }
 
@@ -2536,8 +2550,8 @@ class _DanasScreenState extends State<DanasScreen> {
                         _selectedVreme = vreme;
                       });
 
-                    _resetDebounceTimer?.cancel();
-                    _resetDebounceTimer = Timer(const Duration(milliseconds: 150), () async {
+                    // 🕐 KORISTI TIMER MANAGER za debounce - SPREČAVA MEMORY LEAK
+                    TimerManager.debounce('danas_screen_reset_debounce', const Duration(milliseconds: 150), () async {
                       final key = '$grad|$vreme';
                       if (mounted) setState(() => _resettingSlots.add(key));
                       try {
@@ -2570,8 +2584,8 @@ class _DanasScreenState extends State<DanasScreen> {
                         _selectedVreme = vreme;
                       });
 
-                    _resetDebounceTimer?.cancel();
-                    _resetDebounceTimer = Timer(const Duration(milliseconds: 150), () async {
+                    // 🕐 KORISTI TIMER MANAGER za debounce - SPREČAVA MEMORY LEAK
+                    TimerManager.debounce('danas_screen_reset_debounce_2', const Duration(milliseconds: 150), () async {
                       final key = '$grad|$vreme';
                       if (mounted) setState(() => _resettingSlots.add(key));
                       try {

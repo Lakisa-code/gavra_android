@@ -14,6 +14,7 @@ import '../services/permission_service.dart'; // DODANO za konzistentnu telefon 
 import '../services/real_time_statistika_service.dart';
 import '../services/realtime_service.dart';
 import '../services/smart_address_autocomplete_service.dart';
+import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme_backup.dart';
 import '../utils/filter_and_sort_putnici.dart';
@@ -50,10 +51,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   StreamSubscription<dynamic>? _connectionSubscription;
   bool _isConnected = true;
 
-  // 🔄 REALTIME MONITORING STATE (V3.0 Clean Architecture)
+  // 🔄 REALTIME MONITORING STATE (V3.0 Clean Architecture) - STANDARDIZED TIMERS
   late ValueNotifier<bool> _isRealtimeHealthy;
   late ValueNotifier<bool> _mesecniPutniciStreamHealthy;
-  Timer? _monitoringTimer;
+  // ❌ UKLONJENO: Timer? _monitoringTimer; - koristi TimerManager!
   late ValueNotifier<String> _realtimeHealthStatus;
   late ValueNotifier<bool> _isNetworkConnected;
 
@@ -194,9 +195,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _realtimeHealthStatus = ValueNotifier('healthy');
     _isNetworkConnected = ValueNotifier(_isConnected);
 
-    _monitoringTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _updateHealthStatus();
-    });
+    // 🔄 TIMER MEMORY LEAK FIX: Koristi TimerManager umesto direktnog Timer.periodic
+    TimerManager.createTimer(
+      'mesecni_putnici_monitoring',
+      const Duration(seconds: 5),
+      () => _updateHealthStatus(),
+      isPeriodic: true,
+    );
   }
 
   void _updateHealthStatus() {
@@ -218,33 +223,63 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   @override
   void dispose() {
-    // 🔄 V3.0 REALTIME MONITORING CLEANUP
-    _monitoringTimer?.cancel();
-    _isRealtimeHealthy.dispose();
-    _mesecniPutniciStreamHealthy.dispose();
-    _realtimeHealthStatus.dispose();
-    _isNetworkConnected.dispose();
+    // � CRITICAL TIMER MEMORY LEAK FIX - KORISTI TIMER MANAGER!
+    TimerManager.cancelTimer('mesecni_putnici_monitoring');
+
+    // 🔄 SAFE DISPOSAL ValueNotifier-a
+    try {
+      if (mounted) {
+        _isRealtimeHealthy.dispose();
+        _mesecniPutniciStreamHealthy.dispose();
+        _realtimeHealthStatus.dispose();
+        _isNetworkConnected.dispose();
+      }
+    } catch (e) {
+      dlog('⚠️ Warning disposing ValueNotifiers: $e');
+    }
 
     // 🔄 OPTIMIZACIJA: Cleanup resources
-    _searchSubject.close();
-    _filterSubject.close();
-    _connectionSubscription?.cancel();
-
-    _searchController.dispose();
-    _imeController.dispose();
-    _tipSkoleController.dispose();
-    _brojTelefonaController.dispose();
-    _brojTelefonaOcaController.dispose();
-    _brojTelefonaMajkeController.dispose();
-    _adresaBelaCrkvaController.dispose();
-    _adresaVrsacController.dispose();
-
-    // Dispose vremena controller-e
-    for (final controller in _vremenaBcControllers.values) {
-      controller.dispose();
+    try {
+      _searchSubject.close();
+      _filterSubject.close();
+      _connectionSubscription?.cancel();
+    } catch (e) {
+      dlog('⚠️ Warning disposing streams: $e');
     }
-    for (final controller in _vremenaVsControllers.values) {
-      controller.dispose();
+
+    // 🧹 COMPREHENSIVE TEXTCONTROLLER CLEANUP
+    try {
+      _searchController.dispose();
+      _imeController.dispose();
+      _tipSkoleController.dispose();
+      _brojTelefonaController.dispose();
+      _brojTelefonaOcaController.dispose();
+      _brojTelefonaMajkeController.dispose();
+      _adresaBelaCrkvaController.dispose();
+      _adresaVrsacController.dispose();
+
+      // 🔄 KRITIČNI FIX: Dispose ALL time controllers
+      for (final controller in _vremenaBcControllers.values) {
+        controller.dispose();
+      }
+      for (final controller in _vremenaVsControllers.values) {
+        controller.dispose();
+      }
+
+      // 🚨 DODANO: Dispose individual departure controllers
+      _polazakBcPonController.dispose();
+      _polazakBcUtoController.dispose();
+      _polazakBcSreController.dispose();
+      _polazakBcCetController.dispose();
+      _polazakBcPetController.dispose();
+
+      _polazakVsPonController.dispose();
+      _polazakVsUtoController.dispose();
+      _polazakVsSreController.dispose();
+      _polazakVsCetController.dispose();
+      _polazakVsPetController.dispose();
+    } catch (e) {
+      dlog('⚠️ Warning disposing controllers: $e');
     }
 
     super.dispose();

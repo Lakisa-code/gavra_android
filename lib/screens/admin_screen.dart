@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
+import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -10,10 +9,12 @@ import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/simplified_kusur_service.dart'; // DODANO za kusur kocke - database backed
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
+import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
+import '../widgets/integration_test_runner.dart'; // 🧪 INTEGRATION TEST
 // import '../widgets/stream_error_widget.dart'; // 🚨 STREAM ERROR HANDLING - LOKALNO IMPLEMENTIRANO
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
@@ -38,7 +39,7 @@ class _AdminScreenState extends State<AdminScreen> {
   late ValueNotifier<bool> _isRealtimeHealthy;
   late ValueNotifier<bool> _kusurStreamHealthy;
   late ValueNotifier<bool> _putnikDataHealthy;
-  Timer? _healthCheckTimer;
+  // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnog Timer-a
 
   //
   // Statistika pazara
@@ -97,14 +98,21 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   void dispose() {
-    // 🧹 CLEANUP REALTIME MONITORING
-    _healthCheckTimer?.cancel();
-    _isRealtimeHealthy.dispose();
-    _kusurStreamHealthy.dispose();
-    _putnikDataHealthy.dispose();
+    // 🧹 CLEANUP REALTIME MONITORING sa TimerManager
+    TimerManager.cancelTimer('admin_screen_health_check');
 
-    dlog('🧹 AdminScreen: Disposed realtime monitoring resources');
-    // Real-time stream se automatski zatvaraju
+    // 🧹 SAFE DISPOSAL ValueNotifier-a
+    try {
+      if (mounted) {
+        _isRealtimeHealthy.dispose();
+        _kusurStreamHealthy.dispose();
+        _putnikDataHealthy.dispose();
+      }
+    } catch (e) {
+      dlog('⚠️ Error disposing ValueNotifiers: $e');
+    }
+
+    dlog('🧹 AdminScreen: Disposed realtime monitoring resources safely');
     super.dispose();
   }
 
@@ -132,10 +140,14 @@ class _AdminScreenState extends State<AdminScreen> {
   void _setupRealtimeMonitoring() {
     dlog('🔄 AdminScreen: Setting up realtime monitoring...');
 
-    // Health check every 30 seconds
-    _healthCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _checkStreamHealth();
-    });
+    // 🕐 KORISTI TIMER MANAGER za health check - SPREČAVA MEMORY LEAK
+    TimerManager.cancelTimer('admin_screen_health_check');
+    TimerManager.createTimer(
+      'admin_screen_health_check',
+      const Duration(seconds: 30),
+      _checkStreamHealth,
+      isPeriodic: true,
+    );
 
     dlog('✅ AdminScreen: Realtime monitoring active');
   }
@@ -713,8 +725,8 @@ class _AdminScreenState extends State<AdminScreen> {
             final pokupljen = putnik.jePokupljen;
 
             // 🔥 NOVA LOGIKA: Admin vidi sve dužnike, vozači samo svoje
-            final bool isAdmin = _currentDriver == 'Bojan' || _currentDriver == 'Svetlana';
-            final jeOvajVozac = isAdmin || (putnik.pokupioVozac == _currentDriver);
+            // 🔐 KORISTI ADMIN SECURITY SERVICE umesto hard-coded privilegija
+            final jeOvajVozac = AdminSecurityService.canViewDriverData(_currentDriver, putnik.pokupioVozac ?? '');
 
             return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen && jeOvajVozac;
           }).toList();
@@ -790,18 +802,10 @@ class _AdminScreenState extends State<AdminScreen> {
               final Map<String, double> pazar = Map.from(pazarMap)..remove('_ukupno');
 
               // 👥 FILTER PO VOZAČU - Prikaži samo naplate trenutnog vozača ili sve za admin
-              final bool isAdmin = _currentDriver == 'Bojan' || _currentDriver == 'Svetlana';
-
-              Map<String, double> filteredPazar;
-              if (isAdmin) {
-                // Admin vidi sve vozače
-                filteredPazar = pazar;
-              } else {
-                // Vozač vidi samo svoj pazar
-                filteredPazar = {
-                  if (pazar.containsKey(_currentDriver)) _currentDriver!: pazar[_currentDriver!]!,
-                };
-              }
+              // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje privilegija
+              final bool isAdmin = AdminSecurityService.isAdmin(_currentDriver);
+              final Map<String, double> filteredPazar =
+                  AdminSecurityService.filterPazarByPrivileges(_currentDriver, pazar);
 
               const Map<String, Color> vozacBoje = VozacBoja.boje;
               final List<String> vozaciRedosled = [
@@ -812,8 +816,9 @@ class _AdminScreenState extends State<AdminScreen> {
               ];
 
               // Filter vozače redosled na osnovu trenutnog vozača
+              // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje vozača
               final List<String> prikazaniVozaci =
-                  isAdmin ? vozaciRedosled : vozaciRedosled.where((v) => v == _currentDriver).toList();
+                  AdminSecurityService.getVisibleDrivers(_currentDriver, vozaciRedosled);
               return SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -825,7 +830,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         child: Row(
                           children: [
                             Text(
-                              isAdmin ? 'Dnevni pazar - $_selectedDan' : 'Moj pazar - $_selectedDan',
+                              AdminSecurityService.generateTitle(_currentDriver, 'Dnevni pazar - $_selectedDan'),
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -1221,106 +1226,157 @@ class _AdminScreenState extends State<AdminScreen> {
                       if (_currentDriver?.toLowerCase() == 'bojan') ...[
                         // SMS test i debug funkcionalnost uklonjena - servis radi u pozadini
                       ],
-                      // �🗺️ GPS ADMIN MAPA - sada se prostire preko cele širine
-                      GestureDetector(
-                        onTap: () {
-                          // 🗺️ OTVORI BESPLATNU OPENSTREETMAP MAPU
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (context) => const AdminMapScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          height: 60,
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF00D4FF),
-                                Color(0xFF0077BE),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFF0077BE),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00D4FF).withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'ADMIN MAPA - GPS LOKACIJE',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              SizedBox(width: 6),
-                              Icon(
-                                Icons.my_location,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // 📊 MONITORING DUGME
+                      // 🎯 SVI ADMIN DUGMIĆI U JEDNOM REDU
                       Container(
                         margin: const EdgeInsets.all(16.0),
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (context) => const MonitoringEkran(),
+                        child: Row(
+                          children: [
+                            // 🗺️ GPS ADMIN MAPA
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => const AdminMapScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  height: 50,
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF00D4FF),
+                                        Color(0xFF0077BE),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00D4FF).withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      Text(
+                                        'GPS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            );
-                          },
-                          icon: const Icon(Icons.analytics, color: Colors.white),
-                          label: const Text(
-                            'Supabase Monitoring',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue[600],
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            // 📊 SUPABASE MONITORING
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => const MonitoringEkran(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  height: 50,
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue[600],
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.blue.withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.analytics,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      Text(
+                                        'Monitor',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                            // 🧪 SYSTEM INTEGRATION TEST
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => const IntegrationTestRunner(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  height: 50,
+                                  margin: const EdgeInsets.only(left: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[600],
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.green.withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.integration_instructions,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      Text(
+                                        'Test',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

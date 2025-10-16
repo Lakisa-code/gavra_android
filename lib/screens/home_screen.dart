@@ -15,6 +15,7 @@ import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
+import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/update_service.dart'; // 🔄 Vraćeno: Update sistem
 import '../theme.dart';
 import '../utils/animation_utils.dart';
@@ -63,8 +64,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String? _currentDriver;
 
   // CACHE UKLONJEN - nepotrebne varijable uklonjene
-  Timer? _smartNotifikacijeTimer;
-  // Timer? _updateCheckTimer; // 🔄 Uklonjeno: Timer za periodičnu proveru update-a
+  // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnih Timer-a
   List<Putnik> _allPutnici = [];
 
   // Real-time subscription variables
@@ -262,10 +262,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // 🚨 NOVO: Setup realtime monitoring system
   void _setupRealtimeMonitoring() {
     try {
-      // Setup heartbeat monitoring
-      Timer.periodic(const Duration(seconds: 30), (timer) {
-        _checkRealtimeHealth();
-      });
+      // 🕐 KORISTI TIMER MANAGER za heartbeat monitoring - STANDARDIZOVANO
+      TimerManager.cancelTimer('home_screen_realtime_health');
+      TimerManager.createTimer(
+        'home_screen_realtime_health',
+        const Duration(seconds: 30),
+        _checkRealtimeHealth,
+        isPeriodic: true,
+      );
 
       dlog('🚨 Realtime monitoring setup completed');
     } catch (e) {
@@ -302,11 +306,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _startSmartNotifikacije() {
-    // Pokreni smart notifikacije svakih 15 minuta
-    _smartNotifikacijeTimer?.cancel();
-    _smartNotifikacijeTimer = Timer.periodic(const Duration(minutes: 15), (timer) async {
-      await _pokretniSmartFunkcionalnosti();
-    });
+    // 🕐 KORISTI TIMER MANAGER umesto običnog Timer-a - SPREČAVA MEMORY LEAK
+    TimerManager.cancelTimer('home_screen_smart_notifikacije');
+
+    TimerManager.createTimer(
+      'home_screen_smart_notifikacije',
+      const Duration(minutes: 15),
+      () async {
+        await _pokretniSmartFunkcionalnosti();
+      },
+      isPeriodic: true,
+    );
 
     // Pokreni odmah prva analiza
     _pokretniSmartFunkcionalnosti();
@@ -348,18 +358,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadPutnici() async {
     dlog('🔄 Loading putnici started...');
-    if (mounted) if (mounted) setState(() => _isLoading = true);
+    // 🛡️ FIX: Pojednostavi dupli mounted check
+    if (mounted) setState(() => _isLoading = true);
     try {
       final putnici = await _getAllPutnici();
       dlog('✅ Loading putnici completed: ${putnici.length} putnici');
-      if (mounted)
+      if (mounted) {
         setState(() {
           _allPutnici = putnici;
           _isLoading = false;
         });
+      }
     } catch (e) {
       dlog('❌ Error loading putnici: $e');
-      if (mounted) if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       _showErrorDialog('Greška pri učitavanju: $e');
     }
   }
@@ -1782,20 +1794,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _smartNotifikacijeTimer?.cancel();
-    // _updateCheckTimer?.cancel(); // 🔄 Uklonjeno: Otkaži update check timer
-    _selectedGradSubject.close();
+    // 🕐 KORISTI TIMER MANAGER za cleanup - SPREČAVA MEMORY LEAK
+    TimerManager.cancelTimer('home_screen_smart_notifikacije');
+    TimerManager.cancelTimer('home_screen_realtime_health');
 
-    // Cleanup real-time subscriptions
-    _realtimeSubscription?.cancel();
+    // 🧹 KOMPLETNO ZATVARANJE STREAM CONTROLLER-A
+    try {
+      if (!_selectedGradSubject.isClosed) {
+        _selectedGradSubject.close();
+      }
+    } catch (e) {
+      dlog('⚠️ Error closing _selectedGradSubject: $e');
+    }
 
-    // 🚨 NOVO: Cleanup realtime monitoring
-    _networkStatusSubscription?.cancel();
-    _isRealtimeHealthy.dispose();
-    // Note: FailFastManager cleanup will be added later
+    // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
+    try {
+      _realtimeSubscription?.cancel();
+      _networkStatusSubscription?.cancel();
+    } catch (e) {
+      dlog('⚠️ Error cancelling subscriptions: $e');
+    }
 
-    // CACHE UKLONJEN - nema više cache listener-a
+    // 🧹 SAFE DISPOSAL ValueNotifier-a
+    try {
+      if (mounted) {
+        _isRealtimeHealthy.dispose();
+      }
+    } catch (e) {
+      dlog('⚠️ Error disposing ValueNotifier: $e');
+    }
 
+    dlog('🧹 HomeScreen: Disposed all resources safely');
     super.dispose();
   }
 }

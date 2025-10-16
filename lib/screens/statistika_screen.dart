@@ -13,7 +13,6 @@ import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend
 import '../utils/logging.dart';
 import '../utils/smart_colors.dart'; // 🎨 PAMETNE BOJE!
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje
-import '../utils/xiaomi_optimizer.dart'; // 🚀 XIAOMI OPTIMIZACIJE
 import '../widgets/detaljan_pazar_po_vozacima_widget.dart';
 
 class StatistikaScreen extends StatefulWidget {
@@ -294,22 +293,32 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 children: [
                                   Expanded(
                                     child: GestureDetector(
-                                      onTap: () => _tabController.animateTo(0),
+                                      onTap: () {
+                                        _tabController.animateTo(0);
+                                        if (mounted) setState(() {});
+                                      },
                                       child: Container(
                                         height: 32,
                                         margin: const EdgeInsets.only(right: 4),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.primary, // UVEK PLAVA
+                                          color: _tabController.index == 0
+                                              ? Theme.of(context).colorScheme.primaryContainer
+                                              : Theme.of(context).colorScheme.surface,
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
+                                            color: _tabController.index == 0
+                                                ? Theme.of(context).colorScheme.primary
+                                                : Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                            width: 1.5,
                                           ),
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                           child: Text(
                                             'Vozači',
                                             style: TextStyle(
-                                              color: Colors.white, // UVEK BELA SLOVA
+                                              color: _tabController.index == 0
+                                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                                  : Theme.of(context).colorScheme.primary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -320,22 +329,32 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                   ),
                                   Expanded(
                                     child: GestureDetector(
-                                      onTap: () => _tabController.animateTo(1),
+                                      onTap: () {
+                                        _tabController.animateTo(1);
+                                        if (mounted) setState(() {});
+                                      },
                                       child: Container(
                                         height: 32,
                                         margin: const EdgeInsets.only(left: 4),
                                         decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.primary, // UVEK PLAVA
+                                          color: _tabController.index == 1
+                                              ? Theme.of(context).colorScheme.primaryContainer
+                                              : Theme.of(context).colorScheme.surface,
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
+                                            color: _tabController.index == 1
+                                                ? Theme.of(context).colorScheme.primary
+                                                : Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                            width: 1.5,
                                           ),
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                           child: Text(
                                             'Detaljno',
                                             style: TextStyle(
-                                              color: Colors.white, // UVEK BELA SLOVA
+                                              color: _tabController.index == 1
+                                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                                  : Theme.of(context).colorScheme.primary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -353,17 +372,17 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                               height: 32,
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
+                                color: Theme.of(context).colorScheme.primary, // 🎯 PLAVA POZADINA!
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                  color: Theme.of(context).colorScheme.primary,
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
@@ -371,15 +390,15 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 child: DropdownButton<String>(
                                   value: _period,
                                   dropdownColor: Theme.of(context).colorScheme.primary,
-                                  icon: Icon(
-                                    Icons.arrow_drop_down,
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    size: 18,
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: Colors.white, // 🎯 BELA BOJA!
+                                    size: 20,
                                   ),
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
+                                  style: const TextStyle(
+                                    color: Colors.white, // 🎯 BELA SLOVA!
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
                                   ),
                                   items: _periods
                                       .map(
@@ -394,9 +413,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                               child: Text(
                                                 _periodLabel(p),
                                                 style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white, // 🎯 BELA SLOVA!
                                                 ),
                                                 textAlign: TextAlign.center,
                                               ),
@@ -418,17 +437,17 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                 height: 32,
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
+                                  color: Theme.of(context).colorScheme.primary, // 🎯 PLAVA POZADINA!
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                    color: Theme.of(context).colorScheme.primary,
                                     width: 1.5,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 8),
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
@@ -436,15 +455,15 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                   child: DropdownButton<int>(
                                     value: _selectedYear,
                                     dropdownColor: Theme.of(context).colorScheme.primary,
-                                    icon: Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                      size: 18,
+                                    icon: const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: Colors.white, // 🎯 BELA BOJA!
+                                      size: 20,
                                     ),
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onSurface,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
+                                    style: const TextStyle(
+                                      color: Colors.white, // 🎯 BELA SLOVA!
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
                                     ),
                                     items: _availableYears
                                         .map(
@@ -459,9 +478,9 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
                                                 child: Text(
                                                   '$year',
                                                   style: const TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white, // 🎯 BELA SLOVA!
                                                   ),
                                                   textAlign: TextAlign.center,
                                                 ),
@@ -490,14 +509,18 @@ class _StatistikaScreenState extends State<StatistikaScreen> with SingleTickerPr
           ),
         ),
       ),
-      body: XiaomiOptimizer.antiOverflowWrapper(
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildVozaciTab(),
-            _buildDetaljnoTab(),
-          ],
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildVozaciTab(),
+                _buildDetaljnoTab(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
