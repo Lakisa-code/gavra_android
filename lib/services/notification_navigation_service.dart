@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
-import '../main.dart';
-import '../screens/danas_screen.dart';
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
+
+import '../globals.dart';
+import '../screens/danas_screen.dart';
 
 class NotificationNavigationService {
   /// Navigate to a specific passenger when notification is tapped
@@ -26,17 +28,13 @@ class NotificationNavigationService {
             title: Row(
               children: [
                 Icon(
-                  type == 'novi_putnik'
-                      ? Icons.person_add
-                      : Icons.person_remove,
+                  type == 'novi_putnik' ? Icons.person_add : Icons.person_remove,
                   color: type == 'novi_putnik' ? Colors.green : Colors.red,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    type == 'novi_putnik'
-                        ? 'Novi putnik dodat'
-                        : 'Putnik otkazan',
+                    type == 'novi_putnik' ? 'Novi putnik dodat' : 'Putnik otkazan',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -211,8 +209,3 @@ class NotificationNavigationService {
     }
   }
 }
-
-
-
-
-

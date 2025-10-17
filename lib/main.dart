@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/cache_service.dart';
@@ -10,9 +11,6 @@ import 'services/firebase_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_service.dart';
 import 'supabase_client.dart';
-
-// Global navigator key for services compatibility
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

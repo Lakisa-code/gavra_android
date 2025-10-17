@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 // foundation import not needed here
-import '../main.dart'; // Import za navigatorKey
+import '../globals.dart'; // Import za navigatorKey
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
 /// Zahteva sve dozvole pri prvom pokretanju aplikacije
@@ -185,9 +186,7 @@ class PermissionService {
       final phone = await Permission.phone.status;
       final sms = await Permission.sms.status;
 
-      return location &&
-          (phone.isGranted || phone.isLimited) &&
-          (sms.isGranted || sms.isLimited);
+      return location && (phone.isGranted || phone.isLimited) && (sms.isGranted || sms.isLimited);
     } catch (e) {
       return false;
     }
@@ -318,10 +317,8 @@ class PermissionService {
   static Future<void> openPermissionSettings() async {
     // Otvori system settings za dozvole aplikacije
     try {
-      await Permission.phone
-          .request(); // Ovo će otvoriti settings ako je potrebno
-    } catch (e) {
-    }
+      await Permission.phone.request(); // Ovo će otvoriti settings ako je potrebno
+    } catch (e) {}
   }
 
   /// 🔧 HUAWEI SPECIFIČNA LOGIKA - Graceful handling na Huawei uređajima
@@ -368,8 +365,3 @@ class PermissionService {
     }
   }
 }
-
-
-
-
-
