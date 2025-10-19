@@ -63,5 +63,6 @@
   "sqltools.showStatusbar": false,
   // Уклањамо Project Manager "ghost" tab - екстензија је обрисана
   // Нема сачуваних пројеката, користимо File > Open Folder
-  "projectManager.showProjectNameInStatusBar": false
+  "projectManager.showProjectNameInStatusBar": false,
+  "testing.automaticallyOpenTestResults": "neverOpen"
 }
