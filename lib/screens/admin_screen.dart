@@ -10,7 +10,7 @@ import '../services/realtime_service.dart';
 import '../services/simplified_kusur_service.dart'; // DODANO za kusur kocke - database backed
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
-import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
+import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
@@ -22,7 +22,7 @@ import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
-import 'statistika_screen.dart'; // DODANO za statistike
+import 'statistika_detail_screen.dart'; // DODANO za statistike
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -50,7 +50,9 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDan = app_date_utils.DateUtils.getTodayFullName(); // ✅ KORISTI UTILS FUNKCIJU
+    final todayName = app_date_utils.DateUtils.getTodayFullName();
+    // Admin screen only supports weekdays, default to Monday for weekends
+    _selectedDan = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
 
     // 🔄 INITIALIZE REALTIME MONITORING
     _isRealtimeHealthy = ValueNotifier(true);
@@ -379,7 +381,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     onTap: () => Navigator.push(
                                       context,
                                       MaterialPageRoute<void>(
-                                        builder: (context) => const StatistikaScreen(),
+                                        builder: (context) => const StatistikaDetailScreen(),
                                       ),
                                     ),
                                     borderRadius: BorderRadius.circular(14),
@@ -768,9 +770,6 @@ class _AdminScreenState extends State<AdminScreen> {
           if (targetWeekday == currentWeekday) {
             // Isti dan kao danas - koristi današnji datum (kao danas screen)
             targetDate = now;
-          } else if (_selectedDan == 'Ponedeljak' && app_date_utils.DateUtils.isWeekend()) {
-            // Vikend + Ponedeljak = sledeći ponedeljak (koristi utils funkciju)
-            targetDate = app_date_utils.DateUtils.getWeekendTargetDate();
           } else {
             // Standardna logika za ostale dane
             final daysFromToday = targetWeekday - currentWeekday;

@@ -19,7 +19,7 @@ import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/update_service.dart'; // 🔄 Vraćeno: Update sistem
 import '../theme.dart';
 import '../utils/animation_utils.dart';
-import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
+import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/logging.dart';
 import '../utils/page_transitions.dart';
@@ -208,7 +208,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    _selectedDay = _getTodayName(); // Postavi na današnji dan
+    final todayName = _getTodayName();
+    // Home screen only supports weekdays, default to Monday for weekends
+    _selectedDay = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
     _initializeCurrentDriver();
     _initializeRealtimeService();
     _setupRealtimeMonitoring(); // 🚨 NOVO: Setup realtime monitoring

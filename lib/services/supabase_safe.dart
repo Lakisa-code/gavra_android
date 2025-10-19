@@ -1,4 +1,12 @@
+// 🛡️ SUPABASE SAFE WRAPPER
+// ✅ КОРИСТИ СЕ У АПЛИКАЦИЈИ - НЕ БРИСАТИ!
+//
+// Овај сервис "обавија" Supabase позиве у try-catch блокове
+// и спречава crash-ове ако нека табела не постоји или има грешке.
+// Користи се у: sms_service, ruta_service, realtime_service, итд.
+
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../utils/logging.dart';
 
 class SupabaseSafe {
@@ -68,8 +76,3 @@ class SupabaseSafe {
     }
   }
 }
-
-
-
-
-

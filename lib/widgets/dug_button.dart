@@ -11,6 +11,7 @@ class DugButton extends StatelessWidget {
     this.iconColor,
     this.textColor,
     this.wide = false,
+    this.isLoading = false,
   }) : super(key: key);
   final int brojDuznika;
   final VoidCallback? onTap;
@@ -18,6 +19,7 @@ class DugButton extends StatelessWidget {
   final Color? iconColor;
   final Color? textColor;
   final bool wide;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -132,8 +134,3 @@ class DugButton extends StatelessWidget {
     }
   }
 }
-
-
-
-
-

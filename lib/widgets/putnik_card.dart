@@ -126,9 +126,10 @@ class _PutnikCardState extends State<PutnikCard> {
 
           final updatedPutnik = await PutnikService().getPutnikFromAnyTable(_putnik.id!);
           if (updatedPutnik != null && mounted) {
-            if (mounted) setState(() {
-              _putnik = updatedPutnik;
-            });
+            if (mounted)
+              setState(() {
+                _putnik = updatedPutnik;
+              });
 
             // 🎉 PRIKAZ USPEŠNE PORUKE
             if (mounted) {
@@ -139,9 +140,10 @@ class _PutnikCardState extends State<PutnikCard> {
           } else {
             // 🔥 IPAK FORSIRAJ UI AŽURIRANJE - POKUŠAJ JEDNOSTAVAN REFRESH
             if (mounted) {
-              if (mounted) setState(() {
-                // Jednostavno forsiranje rebuild-a widgeta
-              });
+              if (mounted)
+                setState(() {
+                  // Jednostavno forsiranje rebuild-a widgeta
+                });
             }
           }
         } catch (e) {
@@ -167,6 +169,7 @@ class _PutnikCardState extends State<PutnikCard> {
     _longPressTimer = Timer(const Duration(milliseconds: 1500), () async {
       if (_isLongPressActive) {
         // Long press = SAMO pokupljanje
+
         if (_putnik.vremePokupljenja == null) {
           await _handlePokupljen();
 
@@ -177,9 +180,10 @@ class _PutnikCardState extends State<PutnikCard> {
 
           // 🔄 FORSIRAJ UI REFRESH za promenu boje kartice
           if (mounted) {
-            if (mounted) setState(() {
-              // Forsiranje rebuild-a za ažuriranje boje
-            });
+            if (mounted)
+              setState(() {
+                // Forsiranje rebuild-a za ažuriranje boje
+              });
           }
 
           // 📳 Haptic feedback za pokupljanje - SUCCESS pattern!
@@ -246,30 +250,32 @@ class _PutnikCardState extends State<PutnikCard> {
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
       if (updatedPutnik != null && mounted) {
-        if (mounted) setState(() {
-          _putnik = updatedPutnik;
-        });
+        if (mounted)
+          setState(() {
+            _putnik = updatedPutnik;
+          });
       } else if (mounted) {
         // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
-        if (mounted) setState(() {
-          _putnik = Putnik(
-            id: _putnik.id,
-            ime: _putnik.ime,
-            polazak: _putnik.polazak,
-            pokupljen: false,
-            vremeDodavanja: _putnik.vremeDodavanja,
-            mesecnaKarta: _putnik.mesecnaKarta,
-            dan: _putnik.dan,
-            status: _putnik.mesecnaKarta == true ? 'radi' : 'nije_se_pojavio',
-            placeno: false,
-            cena: 0,
-            dodaoVozac: _putnik.dodaoVozac,
-            grad: _putnik.grad,
-            adresa: _putnik.adresa,
-            priority: _putnik.priority,
-            brojTelefona: _putnik.brojTelefona,
-          );
-        });
+        if (mounted)
+          setState(() {
+            _putnik = Putnik(
+              id: _putnik.id,
+              ime: _putnik.ime,
+              polazak: _putnik.polazak,
+              pokupljen: false,
+              vremeDodavanja: _putnik.vremeDodavanja,
+              mesecnaKarta: _putnik.mesecnaKarta,
+              dan: _putnik.dan,
+              status: _putnik.mesecnaKarta == true ? 'radi' : 'nije_se_pojavio',
+              placeno: false,
+              cena: 0,
+              dodaoVozac: _putnik.dodaoVozac,
+              grad: _putnik.grad,
+              adresa: _putnik.adresa,
+              priority: _putnik.priority,
+              brojTelefona: _putnik.brojTelefona,
+            );
+          });
       }
 
       if (mounted) {
@@ -954,9 +960,10 @@ class _PutnikCardState extends State<PutnikCard> {
                         }).toList(),
                         onChanged: (String? newMonth) {
                           if (newMonth != null) {
-                            if (mounted) setState(() {
-                              selectedMonth = newMonth;
-                            });
+                            if (mounted)
+                              setState(() {
+                                selectedMonth = newMonth;
+                              });
                           }
                         },
                       ),
@@ -2624,5 +2631,3 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 } // kraj klase
-
-

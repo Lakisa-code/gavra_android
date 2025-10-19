@@ -24,7 +24,7 @@ import '../services/realtime_service.dart';
 import '../services/route_optimization_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
-import '../utils/date_utils.dart' as app_date_utils; // DODANO: Centralna vikend logika
+import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/logging.dart';
 import '../utils/schedule_utils.dart';

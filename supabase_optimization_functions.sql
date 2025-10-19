@@ -336,3 +336,66 @@ GRANT EXECUTE ON FUNCTION optimize_connection_settings TO authenticated;
 GRANT SELECT,
     INSERT,
     UPDATE ON query_performance_log TO authenticated;
+-- ================================================================
+-- DAILY CHECKINS TABLE CREATION FUNCTION
+-- ================================================================
+CREATE OR REPLACE FUNCTION create_daily_checkins_table_if_not_exists() RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN -- Create daily_checkins table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS public.daily_checkins (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        vozac TEXT NOT NULL,
+        datum DATE NOT NULL,
+        kusur_iznos DECIMAL(10, 2) DEFAULT 0.0,
+        dnevni_pazari DECIMAL(10, 2) DEFAULT 0.0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        -- Unique constraint to prevent duplicate entries per driver per day
+        UNIQUE(vozac, datum)
+    );
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_daily_checkins_vozac ON public.daily_checkins(vozac);
+CREATE INDEX IF NOT EXISTS idx_daily_checkins_datum ON public.daily_checkins(datum);
+CREATE INDEX IF NOT EXISTS idx_daily_checkins_vozac_datum ON public.daily_checkins(vozac, datum);
+-- Enable RLS
+ALTER TABLE public.daily_checkins ENABLE ROW LEVEL SECURITY;
+-- Create RLS policies
+-- Policy for authenticated users to read all records
+DROP POLICY IF EXISTS "daily_checkins_read_policy" ON public.daily_checkins;
+CREATE POLICY "daily_checkins_read_policy" ON public.daily_checkins FOR
+SELECT TO authenticated USING (true);
+-- Policy for authenticated users to insert their own records
+DROP POLICY IF EXISTS "daily_checkins_insert_policy" ON public.daily_checkins;
+CREATE POLICY "daily_checkins_insert_policy" ON public.daily_checkins FOR
+INSERT TO authenticated WITH CHECK (true);
+-- Policy for authenticated users to update their own records
+DROP POLICY IF EXISTS "daily_checkins_update_policy" ON public.daily_checkins;
+CREATE POLICY "daily_checkins_update_policy" ON public.daily_checkins FOR
+UPDATE TO authenticated USING (true) WITH CHECK (true);
+-- Policy for authenticated users to delete their own records
+DROP POLICY IF EXISTS "daily_checkins_delete_policy" ON public.daily_checkins;
+CREATE POLICY "daily_checkins_delete_policy" ON public.daily_checkins FOR DELETE TO authenticated USING (true);
+-- Create trigger for updated_at
+DROP TRIGGER IF EXISTS daily_checkins_updated_at_trigger ON public.daily_checkins;
+CREATE TRIGGER daily_checkins_updated_at_trigger BEFORE
+UPDATE ON public.daily_checkins FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Grant permissions to authenticated users
+GRANT SELECT,
+    INSERT,
+    UPDATE,
+    DELETE ON public.daily_checkins TO authenticated;
+EXCEPTION
+WHEN OTHERS THEN -- Log error but don't fail - table might already exist with different structure
+RAISE NOTICE 'Error creating daily_checkins table: %',
+SQLERRM;
+END;
+$$;
+-- Grant execution permission
+GRANT EXECUTE ON FUNCTION create_daily_checkins_table_if_not_exists() TO authenticated;
+-- ================================================================
+-- UPDATED_AT TRIGGER FUNCTION
+-- ================================================================
+CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = NOW();
+RETURN NEW;
+END;
+$$;
+-- Grant execution permission
+GRANT EXECUTE ON FUNCTION update_updated_at_column() TO authenticated;

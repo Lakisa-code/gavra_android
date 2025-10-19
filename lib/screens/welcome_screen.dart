@@ -133,21 +133,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final today = DateTime.now();
-
-      // 🏖️ PRESKOČI VIKENDE - ne radi se subotom i nedeljom
-      if (today.weekday == 6 || today.weekday == 7) {
-        dlog(
-          '🏖️ Preskoćem daily check-in za vikend (${today.weekday == 6 ? "Subota" : "Nedelja"}) - idem direktno na HomeScreen',
-        );
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
-        );
-        return;
-      }
-
       final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;

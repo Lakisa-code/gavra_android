@@ -1,42 +1,9 @@
-/// 🎯 JEDINSTVENA VIKEND LOGIKA ZA SVE SCREEN-OVE
+/// 🎯 JEDINSTVENA LOGIKA ZA SVE SCREEN-OVE
 ///
-/// Ova klasa sadrži centralnu logiku za rukovanje vikend datumima
+/// Ova klasa sadrži centralnu logiku za rukovanje datumima
 /// u celoj aplikaciji. Svi screen-ovi treba da koriste ove funkcije
 /// umesto da implementiraju svoju logiku.
 class DateUtils {
-  /// 🎯 GLAVNA FUNKCIJA: Vraća target datum za vikend/radni dan
-  ///
-  /// - Tokom vikenda (subota/nedelja): vraća datum SLEDEĆEG ponedeljka
-  /// - Tokom radnih dana: vraća današnji datum
-  ///
-  /// Ova logika se koristi za:
-  /// - Admin screen kada je selektovan "Ponedeljak"
-  /// - Danas screen za prikaz putnika
-  /// - Home screen za filtriranje
-  /// - Svi ostali screen-ovi koji rade sa "danas" konceptom
-  static DateTime getWeekendTargetDate([DateTime? inputDate]) {
-    final today = inputDate ?? DateTime.now();
-
-    if (today.weekday == DateTime.saturday ||
-        today.weekday == DateTime.sunday) {
-      // Vikend: traži ponedeljak koji sledi
-      final daysUntilMonday = 8 - today.weekday;
-      final targetDate = today.add(Duration(days: daysUntilMonday));
-
-      return targetDate;
-    } else {
-      // Radni dan: koristi današnji datum
-      return today;
-    }
-  }
-
-  /// 🎯 VIKEND PROVERAVAČ: Da li je danas vikend
-  static bool isWeekend([DateTime? inputDate]) {
-    final today = inputDate ?? DateTime.now();
-    return today.weekday == DateTime.saturday ||
-        today.weekday == DateTime.sunday;
-  }
-
   /// 🎯 KONVERTER DANA: Pretvara broj dana u string
   static String weekdayToString(int weekday) {
     switch (weekday) {
@@ -72,18 +39,13 @@ class DateUtils {
       'Nedelja',
     ];
 
-    // Ako je vikend (subota/nedelja), vraćamo ponedeljak
-    if (isWeekend(today)) {
-      return 'Ponedeljak';
-    }
-
     final todayName = dayNames[today.weekday - 1];
     return todayName;
   }
 
   /// 🎯 DATUM RANGE GENERATOR: Kreiranje from/to datuma za query-je
   static Map<String, DateTime> getDateRange([DateTime? targetDate]) {
-    final date = targetDate ?? getWeekendTargetDate();
+    final date = targetDate ?? DateTime.now();
 
     return {
       'from': DateTime(date.year, date.month, date.day),
@@ -91,8 +53,3 @@ class DateUtils {
     };
   }
 }
-
-
-
-
-

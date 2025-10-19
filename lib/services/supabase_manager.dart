@@ -1,3 +1,10 @@
+// 🛡️ SUPABASE CONNECTION MANAGER
+// ✅ КОРИСТИ СЕ У АПЛИКАЦИЈИ - НЕ БРИСАТИ!
+//
+// Овај сервис ограничава број истовремених конекција на Supabase
+// и спречава преоптерећење cloud база података.
+// Користи се у: simplified_kusur_service.dart
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../utils/logging.dart';

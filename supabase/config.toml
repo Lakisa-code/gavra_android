@@ -1,3 +1,10 @@
+# 🚧 ЛОКАЛНИ SUPABASE CLI КОНФИГУРАЦИЈА
+# ⚠️ ОВО СЕ НЕ КОРИСТИ ЗА CLOUD ПРОИЗВОДЊУ!
+# 
+# Овај фајл је за локални развој са `supabase start` командом.
+# За production користимо CLOUD: https://gjtabtwudbrmfeyjiicu.supabase.co
+# Погледај lib/supabase_client.dart за cloud конфугурацију.
+#
 # For detailed configuration reference documentation, visit:
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the

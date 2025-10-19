@@ -2914,9 +2914,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       );
 
       final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
-      print(
-        '✅ USPEŠNO DODAT PUTNIK: ${dodatiPutnik.id} - ${dodatiPutnik.putnikIme}',
-      );
 
       // 🔄 KRITIČNO: Refresh RealtimeService da se promene propagiraju kroz sve servise
       try {
@@ -2928,9 +2925,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
           dodatiPutnik,
           DateTime.now().add(const Duration(days: 1)),
-        );
-        print(
-          '✅ KREIRANA DNEVNA PUTOVANJA za putnika: ${dodatiPutnik.putnikIme}',
         );
       } catch (e) {}
 
@@ -4692,10 +4686,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         final bcTime = _getControllerBelaCrkva(dan).text.trim();
         final vsTime = _getControllerVrsac(dan).text.trim();
 
-        // Barem jedno vreme mora biti uneseno za radni dan
-        if (bcTime.isEmpty && vsTime.isEmpty) {
-          return 'Unesite vreme polaska za ${daniMapa[dan]} (BC ili VS)';
-        }
+        // ✅ OPCIONO: Vreme polaska može biti dodato naknadno
+        // Validiraj samo ako je uneto vreme
 
         // Validacija BC vremena
         if (bcTime.isNotEmpty) {

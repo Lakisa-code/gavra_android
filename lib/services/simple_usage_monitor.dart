@@ -34,17 +34,9 @@ class SimpleUsageMonitor {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('dnevni_pozivi', _dnevniPozivi);
 
-      // Progresivna upozorenja
-      if (_dnevniPozivi == 50) {
-        print('📊 INFO: 50 API poziva danas - sve u redu!');
-      } else if (_dnevniPozivi == 100) {
-        print('⚠️ PAŽNJA: 100 poziva danas - možda previše testiranja?');
-      } else if (_dnevniPozivi == 200) {
-        print('🔥 UPOZORENJE: 200+ poziva danas - proverite optimizaciju!');
-      }
+      // Progresivna upozorenja - uklonjena za produkciju
     } catch (e) {
       // Ignoriši greške u brojanju da ne remeti główną funkcionalnost
-      print('SimpleUsageMonitor greška: $e');
     }
   }
 

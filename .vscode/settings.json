@@ -1,29 +1,10 @@
 {
-  "files.associations": {
-    "**/migrations/*.sql": "postgres"
-  },
-  "deno.enablePaths": [
-    "supabase/functions"
-  ],
-  "deno.lint": true,
-  "deno.unstable": [
-    "bare-node-builtins",
-    "byonm",
-    "sloppy-imports",
-    "unsafe-proto",
-    "webgpu",
-    "broadcast-channel",
-    "worker-options",
-    "cron",
-    "kv",
-    "ffi",
-    "fs",
-    "http",
-    "net"
-  ],
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
+  // 🚫 SUPABASE CLI И DENO КОНФИГУРАЦИЈА УКЛОЊЕНА
+  // Ове setting-е не користимо јер радимо са Supabase Cloud преко REST API
+  // Уместо локалног CLI-ја користимо:
+  // 1. Web Dashboard (https://supabase.com/dashboard)  
+  // 2. Flutter app директно
+  // 3. test_supabase.ps1 скрипт
 
   // Dart & Flutter auto-fix settings
   "dart.enableSdkFormatter": true,
@@ -62,45 +43,9 @@
     }
   },
   
-  // SQLTools Database Connections
-  "sqltools.connections": [
-    {
-      "name": "Gavra Supabase Local",
-      "driver": "PostgreSQL",
-      "previewLimit": 50,
-      "server": "localhost",
-      "port": 5432,
-      "database": "postgres",
-      "username": "postgres",
-      "password": "postgres",
-      "pgOptions": {
-        "ssl": false
-      },
-      "connectionTimeout": 15000,
-      "group": "Local"
-    },
-    {
-      "name": "Gavra Supabase Cloud",
-      "driver": "PostgreSQL",
-      "previewLimit": 50,
-      "server": "db.gjtabtwudbrmfeyjiicu.supabase.co",
-      "port": 6543,
-      "database": "postgres",
-      "username": "postgres.gjtabtwudbrmfeyjiicu",
-      "password": "FlqfvHczUpSytgrV",
-      "pgOptions": {
-        "ssl": {
-          "rejectUnauthorized": false
-        }
-      },
-      "connectionTimeout": 15000,
-      "group": "Cloud"
-    }
-  ],
-  "sqltools.useNodeRuntime": true,
-  "sqltools.format": {
-    "language": "sql"
-  }
+  // 🚫 SQLTOOLS КОНФИГУРАЦИЈА ПОТПУНО УКЛОЊЕНА
+  // SQLTools не ради због IPv6 проблема
+  // Користи Web Dashboard уместо database GUI tools
   
   // WakaTime Configuration - API key removed for security
   // Add your personal WakaTime API key here locally

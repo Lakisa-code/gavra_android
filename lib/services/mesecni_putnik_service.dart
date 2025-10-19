@@ -218,34 +218,22 @@ class MesecniPutnikService {
     DateTime krajMeseca,
   ) async {
     try {
-
-
       // Validacija UUID-a pre slanja u bazu
       String? validVozacId;
       if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
         // Provjeri da li je već valid UUID
         if (_isValidUuid(vozacId)) {
           validVozacId = vozacId;
-
         } else {
           // Ako nije UUID, pokušaj konverziju (fallback)
-          print(
-            '⚠️ [AZURIRAJ PLACANJE] Not a UUID, attempting conversion from: $vozacId',
-          );
           final converted = VozacMappingService.getVozacUuidSync(vozacId);
           if (converted != null) {
             validVozacId = converted;
-
           } else {
-            print(
-              '❌ [AZURIRAJ PLACANJE] Failed to convert to UUID, using null',
-            );
             validVozacId = null;
           }
         }
       }
-
-
 
       // 1. PROVJERI DA LI JE VEĆ POSTOJI ZAPIS ZA OVAJ MESEC (sprečava duplikate)
       final existingPayment = await _supabase
@@ -259,16 +247,12 @@ class MesecniPutnikService {
           .limit(1);
 
       if (existingPayment.isNotEmpty) {
-        print(
-          '⚠️ [DUPLIKAT] Plaćanje za mesec ${pocetakMeseca.month}/${pocetakMeseca.year} već postoji!',
-        );
         // Ažuriraj postojeći zapis umesto kreiranja novog
         await _supabase.from('putovanja_istorija').update({
           'vozac_id': validVozacId,
           'cena': iznos,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', existingPayment.first['id'] as String);
-
       } else {
         // 2. DODAJ NOVI ZAPIS U ISTORIJU PLAĆANJA (putovanja_istorija)
         final putnik = await getMesecniPutnikById(putnikId);
@@ -284,14 +268,10 @@ class MesecniPutnikService {
             'cena': iznos,
             'napomene': 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
           });
-
         }
       }
 
       // 2. AŽURIRAJ MESEČNOG PUTNIKA (za kompatibilnost)
-      print(
-        '🔍 [AZURIRAJ PLACANJE] Ažuriram mesečnog putnika ID: $putnikId sa iznosom: $iznos',
-      );
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
         'vozac_id': validVozacId,
@@ -302,10 +282,8 @@ class MesecniPutnikService {
         'ukupna_cena_meseca': iznos,
       });
 
-
       return true;
     } catch (e) {
-
       return false;
     }
   }
@@ -474,7 +452,6 @@ class MesecniPutnikService {
 
       return svaPlacanja;
     } catch (e) {
-
       return [];
     }
   }
@@ -527,9 +504,6 @@ class MesecniPutnikService {
                   // ✅ ISPRAVLJENO: Filtriraj i po aktivan statusu i po obrisan statusu
                   final aktivan = map['aktivan'] ?? true; // default true ako nema vrednost
                   final obrisan = map['obrisan'] ?? false; // default false ako nema vrednost
-                  print(
-                    '🔍 MESECNI STREAM DEBUG: ${map['putnik_ime']} - aktivan: $aktivan, obrisan: $obrisan',
-                  );
                   return (aktivan as bool) && !(obrisan as bool);
                 } catch (_) {
                   return true;
@@ -661,7 +635,6 @@ class MesecniPutnikService {
         results.add(created);
       } catch (e) {
         // Log error but continue with other passengers
-
       }
     }
 
@@ -679,9 +652,7 @@ class MesecniPutnikService {
       try {
         final updated = await updateMesecniPutnik(entry.key, entry.value);
         results.add(updated);
-      } catch (e) {
-
-      }
+      } catch (e) {}
     }
 
     clearCache();
@@ -813,8 +784,3 @@ class MesecniPutnikService {
     return buffer.toString();
   }
 }
-
-
-
-
-
