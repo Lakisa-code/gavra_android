@@ -41,7 +41,7 @@
 
 ### **1. DATABASE GUI TOOLS**
 
-- SQLTools ❌ (IPv6 проблем)
+- SQLTools ❌ (УКЛОЊЕНА ЕКСТЕНЗИЈА - IPv6 проблем)
 - DBeaver ❌ (IPv6 проблем)
 - pgAdmin ❌ (IPv6 проблем)
 - **Решење**: Користи Web Dashboard
@@ -81,18 +81,19 @@ curl -H "apikey: ANON_KEY" "URL/rest/v1/vozaci"
 
 ## 📋 **ФАЈЛОВИ СТАТУС**
 
-| Фајл                                 | Статус           | Акција                    |
-| ------------------------------------ | ---------------- | ------------------------- |
-| `lib/supabase_client.dart`           | ✅ ГЛАВНИ КОНФИГ | КОРИСТИ                   |
-| `test_supabase.ps1`                  | ✅ ТЕСТ СКРИПТ   | КОРИСТИ                   |
-| `lib/services/supabase_safe.dart`    | ✅ WRAPPER       | КОРИСТИ                   |
-| `lib/services/supabase_manager.dart` | ✅ MANAGER       | КОРИСТИ                   |
-| `lib/services/pametni_supabase.dart` | ✅ MONITOR       | КОРИСТИ                   |
-| `.vscode/settings.json`              | ✅ ОЧИШЋЕН       | SQLTools + Deno уклоњени  |
-| `.vscode/extensions.json`            | ✅ ОЧИШЋЕН       | Deno extension уклоњена   |
-| `supabase/config.toml`               | ⚠️ ЛОКАЛНИ       | Не користи за cloud       |
-| `supabase/.env.local`                | ⚠️ ЛОКАЛНИ       | SMS config за локални CLI |
-| `SUPABASE_README.md`                 | ✅ ДОКУМЕНТАЦИЈА | КОРИСТИ                   |
+| Фајл                                 | Статус           | Акција                     |
+| ------------------------------------ | ---------------- | -------------------------- |
+| `lib/supabase_client.dart`           | ✅ ГЛАВНИ КОНФИГ | КОРИСТИ                    |
+| `test_supabase.ps1`                  | ✅ ТЕСТ СКРИПТ   | КОРИСТИ                    |
+| `lib/services/supabase_safe.dart`    | ✅ WRAPPER       | КОРИСТИ                    |
+| `lib/services/supabase_manager.dart` | ✅ MANAGER       | КОРИСТИ                    |
+| `lib/services/pametni_supabase.dart` | ✅ MONITOR       | КОРИСТИ                    |
+| `.vscode/settings.json`              | ✅ ОЧИШЋЕН       | SQLTools + Deno уклоњени   |
+| `.vscode/extensions.json`            | ✅ ОЧИШЋЕН       | Deno extension уклоњена    |
+| **SQLTools екстензија**              | ✅ УКЛОЊЕНА      | mtxr.sqltools + pg драјвер |
+| `supabase/config.toml`               | ⚠️ ЛОКАЛНИ       | Не користи за cloud        |
+| `supabase/.env.local`                | ⚠️ ЛОКАЛНИ       | SMS config за локални CLI  |
+| `SUPABASE_README.md`                 | ✅ ДОКУМЕНТАЦИЈА | КОРИСТИ                    |
 
 ---
 
