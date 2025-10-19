@@ -5,12 +5,10 @@
   // 1. Web Dashboard (https://supabase.com/dashboard)  
   // 2. Flutter app директно
   // 3. test_supabase.ps1 скрипт
-
   // Dart & Flutter auto-fix settings
   "dart.enableSdkFormatter": true,
   "dart.lineLength": 120,
   "dart.insertArgumentPlaceholders": false,
-  
   // Auto-fix on save
   "editor.formatOnSave": true,
   "editor.formatOnType": true,
@@ -19,20 +17,20 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit"
   },
-  
   // Real-time linting
   "dart.showLintNames": true,
   "dart.showTodos": true,
   "dart.previewLsp": true,
-  
   // Auto trailing commas for Dart
   "dart.automaticCommaInsertion": true,
-  
   // Format settings for Dart
   "[dart]": {
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
-    "editor.rulers": [80, 120],
+    "editor.rulers": [
+      80,
+      120
+    ],
     "editor.selectionHighlight": false,
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "editor.suggestSelection": "first",
@@ -42,11 +40,28 @@
       "source.fixAll": "explicit"
     }
   },
-  
   // 🚫 SQLTOOLS КОНФИГУРАЦИЈА ПОТПУНО УКЛОЊЕНА
   // SQLTools не ради због IPv6 проблема
   // Користи Web Dashboard уместо database GUI tools
-  
   // WakaTime Configuration - API key removed for security
   // Add your personal WakaTime API key here locally
+  // 🗑️ СКРИВЕНИ НЕПОТРЕБНИ SIDEBAR TABOVI
+  "workbench.activityBar.iconClickBehavior": "toggle",
+  "workbench.sideBar.location": "left",
+  // Скривамо Remote Explorer јер се не користи за локални Flutter развој
+  "workbench.view.extensions.hideBuiltInExtensions": true,
+  // Скривамо Testing tab јер нема правих unit testова
+  // main_test.dart је само backup app, не test suite
+  "testing.automaticallyOpenPeekView": "never",
+  "testing.openTesting": "neverOpen",
+  // Скривамо Flutter Property tab јер Flutter DevTools Inspector је бољи
+  // Duplirane funkcionalnosti, Flutter DevTools је стандард за widget debugging
+  "dart.flutterOutline": false,
+  // Скривамо SQLTools tab јер се не користи са Supabase Cloud
+  // IPv6 проблем блокира директне PostgreSQL конекције, користимо REST API
+  "sqltools.useNodeRuntime": false,
+  "sqltools.showStatusbar": false,
+  // Уклањамо Project Manager "ghost" tab - екстензија је обрисана
+  // Нема сачуваних пројеката, користимо File > Open Folder
+  "projectManager.showProjectNameInStatusBar": false
 }
