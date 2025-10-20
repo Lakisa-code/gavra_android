@@ -57,9 +57,5 @@ class DefaultFirebaseOptions {
     projectId: 'gavra-notif-20250920162521',
     storageBucket: 'gavra-notif-20250920162521.firebasestorage.app',
   );
+
 }
-
-
-
-
-

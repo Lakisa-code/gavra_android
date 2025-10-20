@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'firebase_options.dart';
 import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
+import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
 import 'services/firebase_service.dart';
 import 'services/simple_usage_monitor.dart';
@@ -24,7 +27,12 @@ void main() async {
 
   // 🔥 FIREBASE INICIJALIZACIJA
   try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     await FirebaseService.initialize();
+    await AnalyticsService.initialize();
+    FirebaseService.setupFCMListeners();
   } catch (e) {
     // Continue without Firebase if it fails
   }
@@ -100,6 +108,9 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeService.svetlaTema(),
       darkTheme: ThemeService.tamnaTema(),
       themeMode: _nocniRezim ? ThemeMode.dark : ThemeMode.light,
+      navigatorObservers: [
+        if (AnalyticsService.observer != null) AnalyticsService.observer!,
+      ],
       home: _buildHome(),
     );
   }

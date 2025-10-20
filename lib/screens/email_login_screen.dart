@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// import '../main.dart' show globalThemeRefresher; // Removed in simple version
-import '../services/daily_checkin_service.dart';
 import '../services/email_auth_service.dart';
 import '../services/permission_service.dart';
+// import '../main.dart' show globalThemeRefresher; // Removed in simple version
+import '../services/simplified_daily_checkin.dart';
 import '../utils/logging.dart';
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
@@ -463,7 +463,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
-        final needsCheckIn = !await DailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn = !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Idi na daily check-in

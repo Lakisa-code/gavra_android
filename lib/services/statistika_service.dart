@@ -86,80 +86,44 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // Kreiraj ISO datum za filter
-    final isoDate =
-        '${fromDate.year.toString().padLeft(4, '0')}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
-
-    // � SAMO KOMBINOVANI STREAM SA DATUM FILTEROM - ne duplikuj mesečne putnike!
-    return PutnikService().streamKombinovaniPutniciFiltered(isoDate: isoDate).map((putnici) {
-      final pazar = _calculateSimplePazarSync(putnici, vozac, fromDate, toDate);
-      return pazar;
-    });
+    // 🔧 SAMO STVARNI PODACI IZ putovanja_istorija - bez duplikovanja mesečnih karata!
+    return _streamStvarniPazarZaVozaca(vozac, fromDate, toDate);
   }
 
-  /// � JEDNOSTAVNA KALKULACIJA PAZARA - KORISTI KOMBINOVANI STREAM - POPRAVLJENA LOGIKA
-  static double _calculateSimplePazarSync(
-    List<Putnik> kombinovaniPutnici,
-    String vozac,
-    DateTime fromDate,
-    DateTime toDate,
-  ) {
-    double ukupno = 0.0;
+  /// � NOVI STREAM: Čita SAMO STVARNI naplaćeni novac iz putovanja_istorija tabele
+  static Stream<double> _streamStvarniPazarZaVozaca(String vozac, DateTime fromDate, DateTime toDate) {
+    final targetDate = fromDate.toIso8601String().split('T')[0];
 
-    // 🔧 GRUPIRANJE MESEČNIH PUTNIKA PO ID da se izbegne duplikovanje
-    final Map<String, Putnik> uniqueMesecni = {};
-    final List<Putnik> obicniPutnici = [];
+    return Supabase.instance.client
+        .from('putovanja_istorija')
+        .stream(primaryKey: ['id'])
+        .eq('datum_putovanja', targetDate)
+        .map((data) {
+          double ukupno = 0.0;
 
-    for (final putnik in kombinovaniPutnici) {
-      if (putnik.mesecnaKarta == true) {
-        // Za mesečne - grupiši po ID-u
-        final kljuc = (putnik.id?.toString()) ?? '${putnik.ime}_${putnik.vozac}';
-        if (!uniqueMesecni.containsKey(kljuc) && _jePazarValjan(putnik)) {
-          uniqueMesecni[kljuc] = putnik;
-        }
-      } else {
-        obicniPutnici.add(putnik);
-      }
-    }
-
-    // Kombinuj unique mesečne i obične putnike
-    final sviPutnici = [...uniqueMesecni.values, ...obicniPutnici];
-
-    for (final putnik in sviPutnici) {
-      if (_jePazarValjan(putnik)) {
-        // 🔧 MAPIRANJE: Za mesečne putnike vozac je UUID, za dnevne je ime
-        String vozacIme;
-        if (putnik.mesecnaKarta == true) {
-          vozacIme = VozacMappingService.getVozacImeWithFallbackSync(putnik.vozac);
-        } else {
-          vozacIme = putnik.naplatioVozac ?? putnik.vozac ?? '';
-        }
-
-        // Pokušaj i direktno UUID mapiranje ako ime ne radi
-        final direktnoPodudaranje = (vozacIme == vozac) || (putnik.vozac == vozac) || (putnik.naplatioVozac == vozac);
-
-        if (direktnoPodudaranje) {
-          if (putnik.mesecnaKarta == true) {
-            // Za mesečne putnike - uvek računaj pazar ako je aktivan
-            final iznos = putnik.iznosPlacanja ?? 0.0;
-            if (iznos > 0 && !putnik.jeOtkazan) {
-              ukupno += iznos;
+          for (final item in data) {
+            // Prvo mapiranje UUID vozača u ime
+            String vozacIme = '';
+            if (item['vozac_id'] != null) {
+              vozacIme = VozacMappingService.getVozacImeWithFallbackSync(item['vozac_id'] as String);
             }
-          } else {
-            // Za dnevne putnike - računaj pazar SAMO ako je plaćen u traženom opsegu
-            final vremeZaProveru = putnik.vremePlacanja ?? putnik.vremeDodavanja;
-            if (vremeZaProveru != null && _jeUVremenskomOpsegu(vremeZaProveru, fromDate, toDate)) {
-              final iznos = putnik.iznosPlacanja ?? 0.0;
-              if (iznos > 0) {
-                ukupno += iznos;
+
+            // Proveri da li je ovaj vozac
+            final direktnoPodudaranje = (vozacIme == vozac) || (item['vozac_id'] == vozac);
+
+            if (direktnoPodudaranje) {
+              final cena = item['cena'] as double? ?? 0.0;
+              if (cena > 0) {
+                ukupno += cena;
               }
             }
           }
-        }
-      }
-    }
-    return ukupno;
+
+          return ukupno;
+        });
   }
+
+  /// �💰 JEDNOSTAVNA KALKULACIJA PAZARA - SVE NAPLAĆENE PARE ZA DANAŠNJI DAN
 
   /// 🎫 STREAM BROJ MESEČNIH KARATA ZA ODREĐENOG VOZAČA
   static Stream<int> streamBrojMesecnihKarataZaVozaca(
@@ -168,11 +132,18 @@ class StatistikaService {
     DateTime? to,
   }) {
     final now = _normalizeDateTime(DateTime.now());
+
+    // 🔧 IZMENJENO: Koristi ISTI VREMENSKI OPSEG kao pazar kocka (samo danas)
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     // Konvertuj ime vozača u UUID jer MesecniPutnik koristi vozac_id (UUID)
-    final vozacUuid = VozacMappingService.getVozacUuidSync(vozac) ?? vozac;
+    final vozacUuid = VozacMappingService.getVozacUuidSync(vozac);
+
+    // 🔧 FIKSOVANO: Ako mapiranje ne uspe, vrati 0 umesto pogrešan rezultat
+    if (vozacUuid == null) {
+      return Stream.value(0);
+    }
 
     return MesecniPutnikService.streamAktivniMesecniPutnici().map((mesecniPutnici) {
       int brojKarata = 0;
@@ -236,149 +207,8 @@ class StatistikaService {
   }
 
   /// 📊 KOMBINOVANI REAL-TIME PAZAR STREAM (obični + mesečni putnici)
-  static Stream<Map<String, double>> streamKombinovanPazarSvihVozaca({
-    DateTime? from,
-    DateTime? to,
-  }) {
-    final now = _normalizeDateTime(DateTime.now());
-    final fromDate = from ?? DateTime(now.year, now.month, now.day);
-    final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // Kreiraj ISO datum za filter - isti kao u streamPazarZaVozaca
-    final isoDate =
-        '${fromDate.year.toString().padLeft(4, '0')}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}';
-
-    // Kombinuj oba stream-a koristeći async* SA DATUM FILTEROM
-    return instance._combineStreams(
-      PutnikService().streamKombinovaniPutniciFiltered(isoDate: isoDate),
-      MesecniPutnikService.streamAktivniMesecniPutnici(),
-      fromDate,
-      toDate,
-    );
-  }
-
-  /// 🔄 POMOĆNA FUNKCIJA ZA KOMBINOVANJE STREAM-OVA - SIMPLIFIKOVANO
-  Stream<Map<String, double>> _combineStreams(
-    Stream<List<Putnik>> putnicStream,
-    Stream<List<MesecniPutnik>> mesecniStream,
-    DateTime fromDate,
-    DateTime toDate,
-  ) {
-    // 🔧 POJEDNOSTAVLJENO: Koristi CombineLatest2 umesto StreamGroup
-    return CombineLatestStream.combine2(
-      putnicStream,
-      mesecniStream,
-      (List<Putnik> putnici, List<MesecniPutnik> mesecniPutnici) {
-        final rezultat = _calculateKombinovanPazarSync(
-          putnici,
-          mesecniPutnici,
-          fromDate,
-          toDate,
-        );
-
-        return rezultat;
-      },
-    );
-  }
-
-  ///  PUBLIC SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (za external usage)
-  static Map<String, double> calculateKombinovanPazarSync(
-    List<Putnik> putnici,
-    List<MesecniPutnik> mesecniPutnici,
-    DateTime fromDate,
-    DateTime toDate,
-  ) {
-    return _calculateKombinovanPazarSync(
-      putnici,
-      mesecniPutnici,
-      fromDate,
-      toDate,
-    );
-  }
-
-  /// 🔄 SINHRONA KALKULACIJA KOMBINOVANOG PAZARA (obični + mesečni)
-  static Map<String, double> _calculateKombinovanPazarSync(
-    List<Putnik> putnici,
-    List<MesecniPutnik> mesecniPutnici,
-    DateTime fromDate,
-    DateTime toDate,
-  ) {
-    // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA - RESETUJ SVE!
-    final Map<String, double> pazarObicni = {};
-    final Map<String, double> pazarMesecne = {};
-    for (final vozac in sviVozaci) {
-      pazarObicni[vozac] = 0.0; // 🔧 RESETUJ NA 0!
-      pazarMesecne[vozac] = 0.0; // 🔧 RESETUJ NA 0!
-    }
-
-    // 1. SABERI OBIČNI PAZAR iz putovanja_istorija tabele - ISKLJUČI MESEČNE KARTE
-    for (final putnik in putnici) {
-      // 🛑 PRESKAČI MESEČNE KARTE - one se računaju odvojeno iz MesecniPutnikService
-      if (putnik.mesecnaKarta == true) {
-        continue;
-      }
-
-      if (_jePazarValjan(putnik) && putnik.vremePlacanja != null) {
-        if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          final vozac = putnik.vozac!;
-          if (pazarObicni.containsKey(vozac)) {
-            pazarObicni[vozac] = pazarObicni[vozac]! + putnik.iznosPlacanja!;
-          }
-        }
-      }
-      // 2. SABERI MESEČNE KARTE - KORISTI vremePlacanja (kad je plaćeno) umesto placeniMesec
-      // 💡 SABERI SVE VALIDNE MESEČNE NAPLATE BEZ DUPLIKATA PO ID
-      final Set<String> processedMesecni = {}; // Processed IDs to avoid duplicates
-
-      for (final putnik in mesecniPutnici) {
-        if (putnik.aktivan && !putnik.obrisan && putnik.jePlacen) {
-          // Za mesečne putnike - računaj pazar SAMO AKO JE PLAĆENO DANAS!
-          final danas = DateTime.now();
-          final danasDatum = DateTime(danas.year, danas.month, danas.day);
-
-          // Proveri da li je vremePlacanja danas
-          final jeNaplacenoUDanas = putnik.vremePlacanja != null &&
-              DateTime(putnik.vremePlacanja!.year, putnik.vremePlacanja!.month, putnik.vremePlacanja!.day) ==
-                  danasDatum;
-
-          if (jeNaplacenoUDanas) {
-            // Samo jednom po ID
-            if (!processedMesecni.contains(putnik.id)) {
-              processedMesecni.add(putnik.id);
-
-              // 🔧 MAPIRANJE UUID -> IME VOZAČA
-              final vozacData = putnik.vozac ?? 'Nepoznat';
-              final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacData);
-              final iznos = putnik.iznosPlacanja ?? 0.0;
-
-              if (pazarMesecne.containsKey(vozacIme)) {
-                pazarMesecne[vozacIme] = pazarMesecne[vozacIme]! + iznos;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // 3. SABERI UKUPNO I VRATI REZULTAT
-    final Map<String, double> rezultat = {};
-    double ukupno = 0.0;
-
-    for (final vozac in sviVozaci) {
-      final ukupnoVozac = pazarObicni[vozac]! + pazarMesecne[vozac]!;
-      rezultat[vozac] = ukupnoVozac;
-      ukupno += ukupnoVozac;
-    }
-
-    // Dodaj ukupan pazar
-    rezultat['_ukupno'] = ukupno;
-    rezultat['_ukupno_obicni'] = pazarObicni.values.fold(0.0, (a, b) => a + b);
-    rezultat['_ukupno_mesecni'] = pazarMesecne.values.fold(0.0, (a, b) => a + b);
-
-    return rezultat;
-  }
-
-  ///  REAL-TIME PAZAR STREAM ZA SVE VOZAČE - POPRAVLJENA LOGIKA BEZ DUPLIKOVANJA
+  ///  REAL-TIME PAZAR STREAM ZA SVE VOZAČE - KORISTI INDIVIDUALNE STREAM-OVE
   static Stream<Map<String, double>> streamPazarSvihVozaca({
     DateTime? from,
     DateTime? to,
@@ -387,8 +217,26 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // 🔧 KORISTI KOMBINOVANI STREAM UMESTO DUPLO RAČUNANJE MESEČNIH
-    return streamKombinovanPazarSvihVozaca(from: fromDate, to: toDate);
+    // Kreiraj stream-ove za sve vozače i kombinuj ih
+    final pazarStreams = sviVozaci.map((vozac) {
+      return streamPazarZaVozaca(vozac, from: fromDate, to: toDate);
+    }).toList();
+
+    // Kombinuj sve stream-ove u jedan
+    return CombineLatestStream.list(pazarStreams).map((pazarList) {
+      final rezultat = <String, double>{};
+      double ukupno = 0.0;
+
+      for (int i = 0; i < sviVozaci.length; i++) {
+        final vozac = sviVozaci[i];
+        final pazar = pazarList[i];
+        rezultat[vozac] = pazar;
+        ukupno += pazar;
+      }
+
+      rezultat['_ukupno'] = ukupno;
+      return rezultat;
+    });
   }
 
   // Metoda za čišćenje cache-a (korisno za testiranje ili promenu datuma)

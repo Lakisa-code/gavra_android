@@ -1,6 +1,7 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'analytics_service.dart';
 
 class FirebaseService {
   static String? _currentDriver;
@@ -8,15 +9,14 @@ class FirebaseService {
   /// Inicijalizuje Firebase
   static Future<void> initialize() async {
     try {
-      // Avoid duplicate initialization when app already initialized
-      // Firebase.apps is only available on platforms that support it; use try/catch to be safe
-      final alreadyInitialized = Firebase.apps.isNotEmpty;
-      if (!alreadyInitialized) {
-        await Firebase.initializeApp();
-      }
+      // Firebase je već inicijalizovan u main.dart sa pravilnim opcijama
+      // Ova metoda se zadržava za kompatibilnost
+      final messaging = FirebaseMessaging.instance;
+
+      // Traži dozvole za notifikacije
+      await messaging.requestPermission();
     } catch (e) {
-      // If initialization fails because it's already initialized, ignore the error
-      // This makes initialization idempotent and safe to call from multiple places
+      // Ignoriši greške
     }
   }
 
@@ -34,13 +34,22 @@ class FirebaseService {
     _currentDriver = driver;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('current_driver', driver);
+
+    // 📊 Analytics - vozač se prijavio
+    await AnalyticsService.logVozacPrijavljen(driver);
   }
 
   /// Briše trenutnog vozača
   static Future<void> clearCurrentDriver() async {
+    final oldDriver = _currentDriver;
     _currentDriver = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('current_driver');
+
+    // 📊 Analytics - vozač se odjavio
+    if (oldDriver != null) {
+      await AnalyticsService.logVozacOdjavljen(oldDriver);
+    }
   }
 
   /// Dobija FCM token
@@ -60,8 +69,3 @@ class FirebaseService {
     });
   }
 }
-
-
-
-
-

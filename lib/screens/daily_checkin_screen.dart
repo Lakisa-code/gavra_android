@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../services/daily_checkin_service.dart';
+import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
 import '../utils/logging.dart';
 import '../utils/smart_colors.dart';
@@ -99,7 +99,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      await DailyCheckInService.saveCheckIn(widget.vozac, iznos);
+      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos);
 
       if (mounted) {
         // Haptic feedback
@@ -412,14 +412,14 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       }
 
       // Proveri da li postoji popis od juče
-      final lastReport = await DailyCheckInService.getLastDailyReport(widget.vozac);
+      final lastReport = await SimplifiedDailyCheckInService.getLastDailyReport(widget.vozac);
 
       if (lastReport != null && mounted) {
         // POSTOJI RUČNI POPIS - Prikaži ga
         _showPreviousDayReportDialog(lastReport);
       } else {
         // NEMA RUČNOG POPISA - Generiši automatski
-        final automatskiPopis = await DailyCheckInService.generateAutomaticReport(
+        final automatskiPopis = await SimplifiedDailyCheckInService.generateAutomaticReport(
           widget.vozac,
           yesterday,
         );

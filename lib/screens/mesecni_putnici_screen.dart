@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,7 +16,6 @@ import '../services/smart_address_autocomplete_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme_backup.dart';
-import '../utils/filter_and_sort_putnici.dart';
 import '../utils/logging.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
@@ -283,6 +281,43 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
 
     super.dispose();
+  }
+
+  /// 🚀 DIREKTNO FILTRIRANJE - umesto compute() koji blokira scroll
+  List<MesecniPutnik> _filterPutniciDirect(
+    List<MesecniPutnik> putnici,
+    String searchTerm,
+    String filterType,
+  ) {
+    var filtered = putnici.where((putnik) {
+      // Filter po aktivnosti (samo aktivni i ne obrisani)
+      if (!putnik.aktivan || putnik.obrisan) return false;
+
+      // Filter po statusu (isključi bolovanje i godišnje ako nije eksplicitno traženo)
+      if (putnik.status == 'bolovanje' || putnik.status == 'godišnje') return false;
+
+      // Filter po tipu
+      if (filterType == 'radnik' && putnik.tip != 'radnik') return false;
+      if (filterType == 'ucenik' && putnik.tip != 'ucenik') return false;
+
+      // Search filter
+      if (searchTerm.isNotEmpty) {
+        final searchLower = searchTerm.toLowerCase();
+        final imeLower = putnik.putnikIme.toLowerCase();
+        final tipSkoleLower = (putnik.tipSkole ?? '').toLowerCase();
+
+        if (!imeLower.contains(searchLower) && !tipSkoleLower.contains(searchLower)) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+
+    // Sortiranje po imenu
+    filtered.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+
+    return filtered;
   }
 
   @override
@@ -610,25 +645,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   String searchTerm,
                   String filterType,
                 ) {
-                  // Serialize putnici to List<Map<String, dynamic>> for compute
-                  final putniciMap = putnici.map((p) => p.toMap()).toList();
-                  return compute(filterAndSortPutnici, {
-                    'putnici': putniciMap,
-                    'searchTerm': searchTerm,
-                    'filterType': filterType,
-                  }).then(
-                    (resultList) =>
-                        // Deserialize result back to MesecniPutnik
-                        (resultList as List)
-                            .map(
-                              (m) => MesecniPutnik.fromMap(
-                                Map<String, dynamic>.from(m as Map),
-                              ),
-                            )
-                            .toList(),
-                  );
+                  // 🚀 DIREKTNO FILTRIRANJE - bez compute() koji blokira scroll
+                  return _filterPutniciDirect(putnici, searchTerm, filterType);
                 },
-              ).asyncExpand((future) => Stream.fromFuture(future)),
+              ),
               builder: (context, snapshot) {
                 // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
                 if (snapshot.connectionState == ConnectionState.waiting) {

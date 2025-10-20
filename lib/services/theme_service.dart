@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme.dart';
+import 'analytics_service.dart';
 
 class ThemeService {
   static const String _kljucTeme = 'nocni_rezim';
@@ -16,6 +17,9 @@ class ThemeService {
   static Future<void> setNocniRezim(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kljucTeme, enabled);
+
+    // 📊 Analytics - tema promenjena
+    await AnalyticsService.logTemaPromenjena(enabled);
   }
 
   /// Prebacuje između svetle i tamne teme
@@ -134,8 +138,3 @@ class ThemeService {
     );
   }
 }
-
-
-
-
-

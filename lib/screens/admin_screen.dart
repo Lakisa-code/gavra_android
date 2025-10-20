@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../models/putnik.dart';
 import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
@@ -10,6 +11,7 @@ import '../services/realtime_service.dart';
 import '../services/simplified_kusur_service.dart'; // DODANO za kusur kocke - database backed
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
+import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
@@ -54,7 +56,10 @@ class _AdminScreenState extends State<AdminScreen> {
     // Admin screen only supports weekdays, default to Monday for weekends
     _selectedDan = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
 
-    // 🔄 INITIALIZE REALTIME MONITORING
+    // � FORSIRANA INICIJALIZACIJA VOZAC MAPIRANJA
+    VozacMappingService.refreshMapping();
+
+    // �🔄 INITIALIZE REALTIME MONITORING
     _isRealtimeHealthy = ValueNotifier(true);
     _kusurStreamHealthy = ValueNotifier(true);
     _putnikDataHealthy = ValueNotifier(true);
@@ -185,6 +190,30 @@ class _AdminScreenState extends State<AdminScreen> {
       _kusurStreamHealthy.value = false;
       _putnikDataHealthy.value = false;
     }
+  }
+
+  // 🎯 KREIRA KOMBINOVANI PAZAR STREAM ZA SVE VOZAČE - ISTI PRISTUP KAO DANAS SCREEN
+  Stream<Map<String, double>> _createPazarStreamForAllDrivers(DateTime from, DateTime to) {
+    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana'];
+
+    // Kreiraj stream za svakog vozača
+    final streamList =
+        vozaciRedosled.map((vozac) => StatistikaService.streamPazarZaVozaca(vozac, from: from, to: to)).toList();
+
+    // Kombinuj sve stream-ove
+    return Rx.combineLatest(streamList, (List<double> values) {
+      final result = <String, double>{};
+      double ukupno = 0.0;
+
+      for (int i = 0; i < vozaciRedosled.length; i++) {
+        final vrednost = values[i];
+        result[vozaciRedosled[i]] = vrednost;
+        ukupno += vrednost;
+      }
+
+      result['_ukupno'] = ukupno;
+      return result;
+    });
   }
 
   // 🚨 STREAM ERROR WIDGET
@@ -781,12 +810,9 @@ class _AdminScreenState extends State<AdminScreen> {
           streamFrom = dateRange['from']!;
           streamTo = dateRange['to']!;
 
-          // 🎯 KORISTI KOMBINOVANI STREAM DA DOBIJEMO I POJEDINAČNE I UKUPNE VREDNOSTI
+          // 🎯 KORISTI ISTI PRISTUP KAO DANAS SCREEN - streamPazarZaVozaca ZA SVAKOG VOZAČA
           return StreamBuilder<Map<String, double>>(
-            stream: StatistikaService.streamKombinovanPazarSvihVozaca(
-              from: streamFrom,
-              to: streamTo,
-            ),
+            stream: _createPazarStreamForAllDrivers(streamFrom, streamTo),
             builder: (context, pazarSnapshot) {
               if (!pazarSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());

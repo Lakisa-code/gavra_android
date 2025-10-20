@@ -104,6 +104,30 @@ class SupabaseManager {
     });
   }
 
+  /// Optimizovano ažuriranje koje vraća podatke
+  static Future<List<Map<String, dynamic>>> safeUpdateWithReturn(
+    String table,
+    Map<String, dynamic> data,
+    Map<String, dynamic> filters, {
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    return executeWithConnectionLimit<List<Map<String, dynamic>>>((client) async {
+      try {
+        var query = client.from(table).update(data);
+
+        for (final entry in filters.entries) {
+          query = query.eq(entry.key, entry.value.toString());
+        }
+
+        final response = await query.select().timeout(timeout);
+        return List<Map<String, dynamic>>.from(response as List);
+      } catch (e) {
+        dlog('❌ SupabaseManager.safeUpdateWithReturn greška: $e');
+        return [];
+      }
+    });
+  }
+
   /// Optimizovano umetanje sa timeout-om
   static Future<Map<String, dynamic>?> safeInsert(
     String table,

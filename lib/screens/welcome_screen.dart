@@ -4,12 +4,12 @@ import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// import '../main.dart' show globalThemeRefresher; // Removed - not used in simple version
-import '../services/daily_checkin_service.dart';
 import '../services/driver_registration_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
+// import '../main.dart' show globalThemeRefresher; // Removed - not used in simple version
+import '../services/simplified_daily_checkin.dart';
 import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
@@ -133,7 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 

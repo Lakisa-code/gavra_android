@@ -9,7 +9,6 @@ import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
 import '../services/advanced_route_optimization_service.dart';
-import '../services/daily_checkin_service.dart'; // 🌅 DODANO za sitan novac
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
@@ -22,6 +21,7 @@ import '../services/realtime_notification_service.dart';
 import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
 import '../services/realtime_service.dart';
 import '../services/route_optimization_service.dart';
+import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../utils/date_utils.dart' as app_date_utils;
@@ -64,15 +64,12 @@ class _DanasScreenState extends State<DanasScreen> {
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
   final Map<String, DateTime> _streamHeartbeats = {};
 
-  // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM (ne prebacuje na ponedeljak)
-  DateTime _getTargetDateForWeekend(DateTime today) {
-    return today; // Vraća trenutni datum bez obzira na vikend
-  }
+  // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM
 
   Widget _buildPopisButton() {
     return SizedBox(
       height: 26,
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         onPressed: () => _showPopisDana(),
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.secondary,
@@ -83,16 +80,12 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        icon: const Icon(
-          Icons.assessment,
-          size: 12,
-        ),
-        label: const Text(
+        child: const Text(
           'POPIS',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
-            letterSpacing: 0.5,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            letterSpacing: 0.3,
           ),
         ),
       ),
@@ -690,13 +683,16 @@ class _DanasScreenState extends State<DanasScreen> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  speed.toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 14, // povećao sa 13 na 14
-                    fontWeight: FontWeight.bold,
-                    color: speedColor,
-                    fontFamily: 'monospace',
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    speed.toStringAsFixed(0),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: speedColor,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ),
               ],
@@ -712,7 +708,7 @@ class _DanasScreenState extends State<DanasScreen> {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
     return SizedBox(
       height: 26,
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         onPressed: hasOptimizedRoute ? () => _openOSMNavigation() : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: hasOptimizedRoute ? Theme.of(context).colorScheme.primary : Colors.grey.shade400,
@@ -723,15 +719,11 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        icon: const Icon(
-          Icons.navigation,
-          size: 12,
-        ),
-        label: Text(
-          hasOptimizedRoute ? 'Otvori navigaciju' : 'Navigacija',
+        child: Text(
+          hasOptimizedRoute ? 'NAV' : 'NAV',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 13,
+            fontSize: 12,
           ),
         ),
       ),
@@ -875,19 +867,15 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
   Future<void> _showPopisDana() async {
-    dlog('🔥 [POPIS] 1. Početak _showPopisDana funkcije');
     final vozac = _currentDriver ?? 'Nepoznat';
-    dlog('🔥 [POPIS] 2. Vozač: $vozac');
 
     try {
       // 1. OSNOVNI PODACI
       final today = DateTime.now();
       final dayStart = DateTime(today.year, today.month, today.day);
       final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-      dlog('🔥 [POPIS] 3. Datum postavljen: ${dayStart.toString()}');
 
       // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
-      dlog('🔥 [POPIS] 4. Učitavam putnike...');
       late List<Putnik> putnici;
       try {
         final isoDate = DateTime.now().toIso8601String().split('T')[0];
@@ -897,76 +885,55 @@ class _DanasScreenState extends State<DanasScreen> {
           vreme: widget.filterVreme ?? _selectedVreme,
         );
         putnici = await stream.first.timeout(const Duration(seconds: 10));
-        dlog('🔥 [POPIS] 5. Putnici učitani: ${putnici.length}');
       } catch (e) {
-        dlog('🔥 [POPIS] 5.ERROR: Greška pri učitavanju putnika: $e');
         putnici = []; // Prazan list kao fallback
-        dlog('🔥 [POPIS] 5.FALLBACK: Koristim prazan list putnika');
       }
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      dlog('🔥 [POPIS] 6. Računam detaljne statistike...');
       final detaljneStats = await StatistikaService.detaljneStatistikePoVozacima(
         putnici,
         dayStart,
         dayEnd,
       );
       final vozacStats = detaljneStats[vozac] ?? {};
-      dlog('🔥 [POPIS] 7. Statistike računate: $vozacStats');
 
-      // 4. REALTIME PAZAR STREAM
-      dlog('🔥 [POPIS] 8. Računam pazar stream...');
+      // 4. REALTIME PAZAR STREAM - PERSONALIZOVANO ZA ULOGOVANOG VOZAČA
       late double ukupanPazar;
       try {
-        ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
+        ukupanPazar = await StatistikaService.streamPazarZaVozaca(
+          vozac,
           from: dayStart,
           to: dayEnd,
-        ).map((pazarMap) => pazarMap[vozac] ?? 0.0).first.timeout(const Duration(seconds: 10));
-        dlog('🔥 [POPIS] 9. Ukupan pazar: $ukupanPazar');
+        ).first.timeout(const Duration(seconds: 10));
       } catch (e) {
-        dlog('🔥 [POPIS] 9.ERROR: Greška pri učitavanju pazara: $e');
         ukupanPazar = 0.0; // Fallback vrednost
-        dlog('🔥 [POPIS] 9.FALLBACK: Koristim pazar = 0.0');
       }
 
       // 5. SITAN NOVAC
-      dlog('🔥 [POPIS] 10. Učitavam sitan novac...');
-      final sitanNovac = await DailyCheckInService.getTodayAmount(vozac);
-      dlog('🔥 [POPIS] 11. Sitan novac: $sitanNovac');
+      final sitanNovac = await SimplifiedDailyCheckInService.getTodayAmount(vozac);
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
-      dlog('🔥 [POPIS] 12. Mapiram podatke...');
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
       final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
       final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
       final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
       final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
       final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
-      dlog(
-        '🔥 [POPIS] 13. Podaci mapirani - dodati: $dodatiPutnici, pazar: $ukupanPazar',
-      );
 
       // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
-      dlog('🔥 [POPIS] 14. Računam GPS kilometražu...');
       late double kilometraza;
       try {
         kilometraza = await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
-        dlog(
-          '🚗 GPS kilometraža za $vozac danas: ${kilometraza.toStringAsFixed(1)} km',
-        );
       } catch (e) {
-        dlog('⚠️ Greška pri GPS računanju kilometraže: $e');
         kilometraza = 0.0; // Fallback vrednost
       }
-      dlog('🔥 [POPIS] 15. Kilometraža: ${kilometraza.toStringAsFixed(1)} km');
 
       // 7. PRIKAŽI POPIS DIALOG SA REALTIME PODACIMA
-      dlog('🔥 [POPIS] 16. Pozivam _showPopisDialog...');
       final bool sacuvaj = await _showPopisDialog(
         vozac: vozac,
         datum: today,
         ukupanPazar: ukupanPazar,
-        sitanNovac: sitanNovac ?? 0.0,
+        sitanNovac: sitanNovac,
         dodatiPutnici: dodatiPutnici,
         otkazaniPutnici: otkazaniPutnici,
         naplaceniPutnici: naplaceniPutnici,
@@ -975,11 +942,9 @@ class _DanasScreenState extends State<DanasScreen> {
         mesecneKarte: mesecneKarte,
         kilometraza: kilometraza,
       );
-      dlog('🔥 [POPIS] 17. Dialog zatovoren, sačuvaj: $sacuvaj');
 
       // 8. SAČUVAJ POPIS AKO JE POTVRĐEN
       if (sacuvaj) {
-        dlog('🔥 [POPIS] 18. Čuvam popis...');
         await _sacuvajPopis(vozac, today, {
           'ukupanPazar': ukupanPazar,
           'sitanNovac': sitanNovac,
@@ -991,11 +956,8 @@ class _DanasScreenState extends State<DanasScreen> {
           'mesecneKarte': mesecneKarte,
           'kilometraza': kilometraza,
         });
-        dlog('🔥 [POPIS] 19. Popis je sačuvan!');
       }
-      dlog('🔥 [POPIS] 20. _showPopisDana završen USPEŠNO!');
     } catch (e) {
-      dlog('🔥 [POPIS] ❌ GREŠKA u _showPopisDana: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1078,14 +1040,17 @@ class _DanasScreenState extends State<DanasScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.person, color: vozacColor, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              '📊 POPIS DANA - ${datum.day}.${datum.month}.${datum.year}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+            Icon(Icons.person, color: vozacColor, size: 20),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'POPIS - ${datum.day}.${datum.month}.${datum.year}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -1263,10 +1228,10 @@ class _DanasScreenState extends State<DanasScreen> {
   ) async {
     try {
       // Sačuvaj kompletan popis
-      await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
+      await SimplifiedDailyCheckInService.saveDailyReport(vozac, datum, podaci);
 
       // Takođe sačuvaj i sitan novac (za kompatibilnost)
-      await DailyCheckInService.saveCheckIn(
+      await SimplifiedDailyCheckInService.saveCheckIn(
         vozac,
         podaci['sitanNovac'] as double,
       );
@@ -1433,7 +1398,7 @@ class _DanasScreenState extends State<DanasScreen> {
     _initializeCurrentDriver().then((_) {
       if (_currentDriver != null && _currentDriver!.isNotEmpty) {
         try {
-          _dailyCheckinSub = DailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
+          _dailyCheckinSub = SimplifiedDailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
 
           // 💓 POKRENI HEARTBEAT MONITORING
           _startHealthMonitoring();
@@ -2000,23 +1965,12 @@ class _DanasScreenState extends State<DanasScreen> {
                   return bTime.compareTo(aTime);
                 });
                 // KORISTI NOVU STANDARDIZOVANU LOGIKU ZA PAZAR 💰
-                // ✅ KORISTI ISTU VIKEND LOGIKU KAO I LISTA PUTNIKA
+                // ✅ UVEK KORISTI SAMO DANAŠNJI DAN
                 final today = DateTime.now();
-                final targetDate = _getTargetDateForWeekend(today);
-                final dayStart = DateTime(targetDate.year, targetDate.month, targetDate.day);
-                final dayEnd = DateTime(
-                  targetDate.year,
-                  targetDate.month,
-                  targetDate.day,
-                  23,
-                  59,
-                  59,
-                );
+                final dayStart = DateTime(today.year, today.month, today.day);
+                final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
-                dlog(
-                  '🎯 [PAZAR LOGIKA] Danas: ${today.weekday} (${_getDayName(today.weekday)})',
-                );
-                dlog('🎯 [PAZAR LOGIKA] Target datum: $targetDate');
+                dlog('🎯 [PAZAR LOGIKA] Danas: ${today.weekday} (${_getDayName(today.weekday)})');
 
                 return StreamBuilder<double>(
                   stream: StatistikaService.streamPazarZaVozaca(
@@ -2210,7 +2164,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                     border: Border.all(color: Colors.orange[300]!),
                                   ),
                                   child: StreamBuilder<double>(
-                                    stream: DailyCheckInService.streamTodayAmount(
+                                    stream: SimplifiedDailyCheckInService.streamTodayAmount(
                                       _currentDriver ?? '',
                                     ),
                                     builder: (context, sitanSnapshot) {
