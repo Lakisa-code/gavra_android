@@ -17,12 +17,19 @@ import '../services/smart_address_autocomplete_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme_backup.dart';
-import '../utils/logging.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
+
+// 🔄 HELPER EXTENSION za Set poređenje
+extension SetExtensions<T> on Set<T> {
+  bool isEqualTo(Set<T> other) {
+    if (length != other.length) return false;
+    return containsAll(other) && other.containsAll(this);
+  }
+}
 
 class MesecniPutniciScreen extends StatefulWidget {
   const MesecniPutniciScreen({Key? key}) : super(key: key);
@@ -76,8 +83,33 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'pet': true,
   };
 
-  // 💰 PLAĆANJE STATE - kombinovani podaci iz obe tabele
+  // 💰 PLAĆANJE STATE - kombinovani podaci iz obe tabele + DEBOUNCE
   Map<String, double> _stvarnaPlacanja = {};
+  DateTime? _lastPaymentUpdate;
+  Set<String> _lastPutnikIds = {};
+
+  // 🔄 CACHE za broj radnika da se izbegnu višestruki StreamBuilder-i
+  int _cachedBrojRadnika = 0;
+  int _cachedBrojUcenika = 0;
+
+  // 🔄 OPTIMIZACIJA: Update cache umesto StreamBuilder-a
+  void _updateCacheValues(List<MesecniPutnik> putnici) {
+    final noviRadnici = putnici
+        .where((p) => p.tip == 'radnik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje')
+        .length;
+    final noviUcenici = putnici
+        .where((p) => p.tip == 'ucenik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje')
+        .length;
+
+    if (_cachedBrojRadnika != noviRadnici || _cachedBrojUcenika != noviUcenici) {
+      if (mounted) {
+        setState(() {
+          _cachedBrojRadnika = noviRadnici;
+          _cachedBrojUcenika = noviUcenici;
+        });
+      }
+    }
+  }
 
   // Departure times controllers - Bela Crkva
   final TextEditingController _polazakBcPonController = TextEditingController();
@@ -206,17 +238,34 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  // 💰 UČITAJ STVARNA PLAĆANJA iz kombinovanih tabela
+  // 💰 UČITAJ STVARNA PLAĆANJA iz kombinovanih tabela - OPTIMIZOVANO bez setState loops
   Future<void> _ucitajStvarnaPlacanja(List<MesecniPutnik> putnici) async {
     try {
       final placanja = await PlacanjeService.getStvarnaPlacanja(putnici);
       if (mounted) {
-        setState(() {
+        // 🔄 ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
+        final existingKeys = _stvarnaPlacanja.keys.toSet();
+        final newKeys = placanja.keys.toSet();
+
+        bool hasChanges = !existingKeys.isEqualTo(newKeys);
+        if (!hasChanges) {
+          // Proveri vrednosti za postojeće ključeve
+          for (final key in existingKeys) {
+            if (_stvarnaPlacanja[key] != placanja[key]) {
+              hasChanges = true;
+              break;
+            }
+          }
+        }
+
+        if (hasChanges) {
           _stvarnaPlacanja = placanja;
-        });
+          // 🚀 SAMO JEDNOM setState() umesto kontinuiranih rebuild-a
+          if (mounted) setState(() {});
+        }
       }
     } catch (e) {
-      print('❌ Greška u učitavanju stvarnih plaćanja: $e');
+      // Greška u učitavanju stvarnih plaćanja
     }
   }
 
@@ -251,7 +300,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         _isNetworkConnected.dispose();
       }
     } catch (e) {
-      dlog('⚠️ Warning disposing ValueNotifiers: $e');
+      // Warning disposing ValueNotifiers
     }
 
     // 🔄 OPTIMIZACIJA: Cleanup resources
@@ -260,7 +309,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _filterSubject.close();
       _connectionSubscription?.cancel();
     } catch (e) {
-      dlog('⚠️ Warning disposing streams: $e');
+      // Warning disposing streams
     }
 
     // 🧹 COMPREHENSIVE TEXTCONTROLLER CLEANUP
@@ -295,7 +344,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       _polazakVsCetController.dispose();
       _polazakVsPetController.dispose();
     } catch (e) {
-      dlog('⚠️ Warning disposing controllers: $e');
+      // Warning disposing controllers
     }
 
     super.dispose();
@@ -414,58 +463,40 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       Positioned(
                         right: 0,
                         top: 0,
-                        child: StreamBuilder<List<MesecniPutnik>>(
-                          stream: _mesecniPutnikService.mesecniPutniciStream,
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const SizedBox.shrink();
-                            }
-                            final brojRadnika = snapshot.data!
-                                .where(
-                                  (p) =>
-                                      p.tip == 'radnik' &&
-                                      p.aktivan &&
-                                      !p.obrisan &&
-                                      p.status != 'bolovanje' &&
-                                      p.status != 'godišnje',
-                                )
-                                .length;
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFF6B6B),
-                                    Color(0xFFFF8E53),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.red.withOpacity(0.4),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFFFF6B6B),
+                                Color(0xFFFF8E53),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.4),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
-                              constraints: const BoxConstraints(
-                                minWidth: 24,
-                                minHeight: 24,
-                              ),
-                              child: Text(
-                                '$brojRadnika',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            );
-                          },
+                            ],
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          child: Text(
+                            '$_cachedBrojRadnika',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     ],
@@ -489,58 +520,40 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       Positioned(
                         right: 0,
                         top: 0,
-                        child: StreamBuilder<List<MesecniPutnik>>(
-                          stream: _mesecniPutnikService.mesecniPutniciStream,
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const SizedBox.shrink();
-                            }
-                            final brojUcenika = snapshot.data!
-                                .where(
-                                  (p) =>
-                                      p.tip == 'ucenik' &&
-                                      p.aktivan &&
-                                      !p.obrisan &&
-                                      p.status != 'bolovanje' &&
-                                      p.status != 'godišnje',
-                                )
-                                .length;
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF4ECDC4),
-                                    Color(0xFF44A08D),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.teal.withOpacity(0.4),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(0xFF4ECDC4),
+                                Color(0xFF44A08D),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.teal.withOpacity(0.4),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
-                              constraints: const BoxConstraints(
-                                minWidth: 24,
-                                minHeight: 24,
-                              ),
-                              child: Text(
-                                '$brojUcenika',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            );
-                          },
+                            ],
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          child: Text(
+                            '$_cachedBrojUcenika',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                     ],
@@ -687,11 +700,33 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
                 final filteredPutnici = snapshot.data ?? [];
 
-                // 💰 UČITAJ STVARNA PLAĆANJA kada se dobiju novi podaci
-                if (filteredPutnici.isNotEmpty) {
+                // � UPDATE CACHE VALUES za brojače (zamenjuje dodatne StreamBuilder-e)
+                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _ucitajStvarnaPlacanja(filteredPutnici);
+                    _updateCacheValues(snapshot.data!);
                   });
+                }
+
+                // �💰 UČITAJ STVARNA PLAĆANJA kada se dobiju novi podaci - DEBOUNCED
+                if (filteredPutnici.isNotEmpty) {
+                  final currentIds = filteredPutnici.map((p) => p.id).toSet();
+                  final now = DateTime.now();
+
+                  // 🔄 DEBOUNCE: Pozovi samo ako su se putnici promenili ili je prošlo dovoljno vremena
+                  bool shouldUpdate = false;
+                  if (_lastPaymentUpdate == null ||
+                      !_lastPutnikIds.isEqualTo(currentIds) ||
+                      now.difference(_lastPaymentUpdate!).inSeconds > 10) {
+                    shouldUpdate = true;
+                    _lastPaymentUpdate = now;
+                    _lastPutnikIds = currentIds;
+                  }
+
+                  if (shouldUpdate) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _ucitajStvarnaPlacanja(filteredPutnici);
+                    });
+                  }
                 }
 
                 // Prikaži samo prvih 50 rezultata
@@ -2892,12 +2927,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
       // Sačuvaj nazad u SharedPreferences
       await prefs.setString(key, json.encode(existingTimes));
-
-      dlog(
-        '💾 Sačuvano vreme $normalizedTime za $smer $dan (vozač: ${vozac ?? 'global'})',
-      );
     } catch (e) {
-      dlog('❌ Greška pri čuvanju vremena polaska: $e');
+      // Greška pri čuvanju vremena polaska
     }
   }
 
@@ -3047,7 +3078,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         }
       } catch (e) {
         // Greška pri snimanju adresa i vremena - ne prekidaj proces
-        dlog('❌ Greška pri snimanju adresa i vremena u istoriju: $e');
       } // 🧹 RESETUJ FORMU NAKON USPEŠNOG DODAVANJA
       _resetujFormuZaDodavanje();
 
@@ -3384,33 +3414,20 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final driverName = prefs.getString('current_driver');
-      dlog('🔍 [GET CURRENT DRIVER UUID] Driver name from prefs: $driverName');
 
       if (driverName != null && driverName.isNotEmpty) {
         // Ako je već UUID, vrati direktno
         if (VozacMappingService.isValidVozacUuidSync(driverName)) {
-          dlog('✅ [GET CURRENT DRIVER UUID] Already UUID: $driverName');
           return driverName;
         }
         // Inače konvertuj ime u UUID
         final uuid = VozacMappingService.getVozacUuidSync(driverName);
         if (uuid != null && uuid.isNotEmpty) {
-          dlog(
-            '✅ [GET CURRENT DRIVER UUID] Converted $driverName to UUID: $uuid',
-          );
           return uuid;
-        } else {
-          dlog(
-            '❌ [GET CURRENT DRIVER UUID] Failed to convert $driverName to UUID',
-          );
         }
       }
-      dlog(
-        '⚠️ [GET CURRENT DRIVER UUID] Returning empty string - no valid driver',
-      );
       return ''; // Vraća prazan string ako nije poznat
     } catch (e) {
-      dlog('❌ [GET CURRENT DRIVER UUID] Error: $e');
       return '';
     }
   }
@@ -3462,41 +3479,75 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.green.shade200),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green.shade600,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green.shade600,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Ukupno plaćeno: ${stvarniIznos.toStringAsFixed(0)} RSD',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green.shade700,
+                                        ),
+                                      ),
+                                      if (putnik.vremePlacanja != null)
+                                        Text(
+                                          'Poslednje plaćanje: ${_formatDatum(putnik.vremePlacanja!)}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green.shade600,
+                                          ),
+                                        ),
+                                      if (putnik.vozac != null && putnik.vozac!.isNotEmpty)
+                                        Text(
+                                          'Naplatio: ${putnik.vozac}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: VozacBoja.get(putnik.vozac),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    'Trenutno plaćeno: ${stvarniIznos.toStringAsFixed(0)} RSD',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade700,
+                                  Icon(
+                                    Icons.add_circle_outline,
+                                    color: Colors.blue.shade600,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Dodavanje novog plaćanja (biće dodato na postojeća)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
                                     ),
                                   ),
-                                  if (putnik.vremePlacanja != null)
-                                    Text(
-                                      'Datum: ${_formatDatum(putnik.vremePlacanja!)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.green.shade600,
-                                      ),
-                                    ),
-                                  if (putnik.vozac != null && putnik.vozac!.isNotEmpty)
-                                    Text(
-                                      'Naplatio: ${putnik.vozac}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: VozacBoja.get(putnik.vozac),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
                                 ],
                               ),
                             ),
@@ -3616,8 +3667,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       );
                     }
                   },
-                  icon: const Icon(Icons.save),
-                  label: const Text('Sačuvaj'),
+                  icon: Icon(stvarniIznos > 0 ? Icons.add : Icons.save),
+                  label: Text(stvarniIznos > 0 ? 'Dodaj plaćanje' : 'Sačuvaj'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple.shade600,
                     foregroundColor: Colors.white,
@@ -4054,7 +4105,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         // Fallback na trenutni mesec
         return await _getMesecneStatistike(putnikId);
       } catch (e) {
-        dlog('❌ Greška pri dohvatanju statistika za period $period: $e');
         return {
           'putovanja': 0,
           'otkazivanja': 0,
@@ -4064,7 +4114,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         };
       }
     }).handleError((Object error) {
-      dlog('❌ Stream error za statistike: $error');
       return {
         'putovanja': 0,
         'otkazivanja': 0,
@@ -4225,7 +4274,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '✅ Plaćanje od ${iznos.toStringAsFixed(0)} din za $mesec je sačuvano',
+                '✅ Dodato plaćanje od ${iznos.toStringAsFixed(0)} RSD za $mesec',
               ),
               backgroundColor: Colors.green,
             ),
@@ -4312,7 +4361,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         'poslednje': poslednjiDatum != null ? _formatDatum(DateTime.parse(poslednjiDatum)) : null,
       };
     } catch (e) {
-      dlog('❌ Greška pri dohvatanju statistika za $mesec/$godina: $e');
       return {
         'putovanja': 0,
         'otkazivanja': 0,
@@ -4465,7 +4513,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         'poslednje': poslednjiDatum != null ? _formatDatum(DateTime.parse(poslednjiDatum)) : null,
       };
     } catch (e) {
-      dlog('❌ Greška pri dohvatanju mesečnih statistika: $e');
       return {
         'putovanja': 0,
         'otkazivanja': 0,

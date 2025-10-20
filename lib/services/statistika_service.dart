@@ -1,43 +1,35 @@
 import 'dart:async';
-import 'dart:math'; // 🚗 DODANO za kilometražu kalkulacije
+import 'dart:math';
 
-import 'package:async/async.dart'; // Za StreamZip i StreamGroup
-// DateFormat import removed - not needed after debug cleanup
-import 'package:rxdart/rxdart.dart'; // 🔧 DODANO za share() metodu
-import 'package:supabase_flutter/supabase_flutter.dart'; // 🚗 DODANO za GPS podatke
+import 'package:async/async.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
-import '../utils/logging.dart'; // 🔧 DODANO za dlog funkciju
-import '../utils/novac_validacija.dart'; // 🆕 DODANO za centralizovanu validaciju
-import '../utils/vozac_boja.dart'; // 🎯 DODANO za listu vozača
-import 'clean_statistika_service.dart'; // 🆕 DODANO za clean statistike
-import 'mesecni_putnik_service.dart'; // 🔄 DODANO za mesečne putnike
-import 'putnik_service.dart'; // 🔄 DODANO za real-time streams
-import 'vozac_mapping_service.dart'; // 🔧 DODANO za mapiranje UUID -> imena
+import '../utils/logging.dart';
+import '../utils/novac_validacija.dart';
+import '../utils/vozac_boja.dart';
+import 'clean_statistika_service.dart';
+import 'mesecni_putnik_service.dart';
+import 'putnik_service.dart';
+import 'vozac_mapping_service.dart';
 
 class StatistikaService {
   StatistikaService._internal();
-  // Singleton pattern
   static StatistikaService? _instance;
-  static StatistikaService get instance => _instance ??= StatistikaService._internal(); // Private constructor
+  static StatistikaService get instance => _instance ??= StatistikaService._internal();
 
-  // Instance cache za stream-ove da izbegnemo duplo kreiranje
   final Map<String, Stream<Map<String, double>>> _streamCache = {};
 
-  // 🎯 CENTRALIZOVANA LISTA VOZAČA
   static List<String> get sviVozaci => VozacBoja.boje.keys.toList();
 
-  // 🕐 TIMEZONE STANDARDIZACIJA - Koristimo lokalno vreme (SAMO DATUM)
   static DateTime _normalizeDateTime(DateTime dateTime) {
     return DateTime(dateTime.year, dateTime.month, dateTime.day);
   }
 
-  // Debug logging completely removed for production build
-
   /// 💰 JEDINSTVENA LOGIKA ZA RAČUNANJE PAZARA - koristi centralizovanu validaciju
   static bool _jePazarValjan(Putnik putnik) {
-    // ✅ KORISTI CENTRALIZOVANU VALIDACIJU
     return NovcanaValidacija.isValidPayment(putnik);
   }
 
@@ -102,14 +94,38 @@ class StatistikaService {
           double ukupno = 0.0;
 
           for (final item in data) {
-            // Prvo mapiranje UUID vozača u ime
+            // 🔧 ФИКС: Проверава и име возача И UUID директно
             String vozacIme = '';
             if (item['vozac_id'] != null) {
               vozacIme = VozacMappingService.getVozacImeWithFallbackSync(item['vozac_id'] as String);
             }
 
-            // Proveri da li je ovaj vozac
-            final direktnoPodudaranje = (vozacIme == vozac) || (item['vozac_id'] == vozac);
+            // 🎯 ПОБОЉШАНО ПОКЛАПАЊЕ:
+            // 1. Директно поклапање UUID-а (најсигурније)
+            // 2. Поклапање имена возача
+            // 3. Fallback на познате UUID-јеве ако мапирање не ради
+            final vozacUuid = item['vozac_id'] as String?;
+            bool direktnoPodudaranje = false;
+
+            // Опција 1: Директно поклапање по UUID
+            if (vozacUuid != null) {
+              // Покушај мапирање UUID → име
+              direktnoPodudaranje = (vozacIme == vozac) || (vozacUuid == vozac);
+
+              // 🆘 FALLBACK: Познати UUID-јеви ако мапирање не ради
+              if (!direktnoPodudaranje && vozac == 'Bojan' && vozacUuid == '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e') {
+                direktnoPodudaranje = true;
+              }
+              if (!direktnoPodudaranje && vozac == 'Svetlana' && vozacUuid == '5b379394-084e-1c7d-76bf-fc193a5b6c7d') {
+                direktnoPodudaranje = true;
+              }
+              if (!direktnoPodudaranje && vozac == 'Bruda' && vozacUuid == '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f') {
+                direktnoPodudaranje = true;
+              }
+              if (!direktnoPodudaranje && vozac == 'Bilevski' && vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
+                direktnoPodudaranje = true;
+              }
+            }
 
             if (direktnoPodudaranje) {
               final cena = item['cena'] as double? ?? 0.0;
@@ -125,23 +141,33 @@ class StatistikaService {
 
   /// �💰 JEDNOSTAVNA KALKULACIJA PAZARA - SVE NAPLAĆENE PARE ZA DANAŠNJI DAN
 
-  /// 🎫 STREAM BROJ MESEČNIH KARATA ZA ODREĐENOG VOZAČA
+  /// 🎫 STREAM BROJ MESEČNIH KARATA ZA ODREĐENOG VOZAČA - OPTIMIZOVANO
   static Stream<int> streamBrojMesecnihKarataZaVozaca(
     String vozac, {
     DateTime? from,
     DateTime? to,
   }) {
     final now = _normalizeDateTime(DateTime.now());
-
-    // 🔧 IZMENJENO: Koristi ISTI VREMENSKI OPSEG kao pazar kocka (samo danas)
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // Konvertuj ime vozača u UUID jer MesecniPutnik koristi vozac_id (UUID)
+    // 🔧 JEDNOSTAVNA OPTIMIZACIJA: koristi fallback ako UUID mapiranje ne radi
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozac);
 
-    // 🔧 FIKSOVANO: Ako mapiranje ne uspe, vrati 0 umesto pogrešan rezultat
-    if (vozacUuid == null) {
+    // 🆘 DIREKTAN FALLBACK ako mapiranje ne radi
+    String targetUuid = vozacUuid ?? '';
+    if (targetUuid.isEmpty) {
+      if (vozac == 'Bojan')
+        targetUuid = '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e';
+      else if (vozac == 'Svetlana')
+        targetUuid = '5b379394-084e-1c7d-76bf-fc193a5b6c7d';
+      else if (vozac == 'Bruda')
+        targetUuid = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
+      else if (vozac == 'Bilevski') targetUuid = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
+    }
+
+    // Ako ni fallback ne radi, vrati 0
+    if (targetUuid.isEmpty) {
       return Stream.value(0);
     }
 
@@ -149,7 +175,7 @@ class StatistikaService {
       int brojKarata = 0;
       for (final putnik in mesecniPutnici) {
         if (putnik.jePlacen &&
-            putnik.vozac == vozacUuid &&
+            putnik.vozac == targetUuid &&
             putnik.vremePlacanja != null &&
             _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
           brojKarata++;
@@ -722,7 +748,7 @@ class StatistikaService {
     return vozaciStats;
   }
 
-  /// 🎯 PAZAR SAMO OD PUTNIKA - BEZ MESEČNIH KARATA (za admin screen filtriranje po danu)
+  /// 💰 PAZAR ZA VOZAČE - SVE NAPLATE (dnevne + mesečne) - PARE SU PARE!
   static Map<String, double> pazarSamoPutnici(List<Putnik> putnici) {
     // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA
     final Map<String, double> pazar = {};
@@ -730,7 +756,7 @@ class StatistikaService {
       pazar[vozac] = 0.0;
     }
 
-    // SABERI PAZAR SAMO IZ PUTNIKA
+    // 💰 SABERI SVE NAPLATE - PARE SU PARE BEZ OBZIRA NA TIP!
     for (final putnik in putnici) {
       if (_jePazarValjan(putnik)) {
         final vozac = putnik.vozac!;
@@ -741,17 +767,6 @@ class StatistikaService {
     }
 
     return {...pazar, '_ukupno': pazar.values.fold(0.0, (a, b) => a + b)};
-  }
-
-  /// Vraca mapu: {imeVozaca: sumaPazara} i ukupno, za dati period - STANDARDIZOVANO FILTRIRANJE
-  /// @deprecated Koristi pazarSvihVozaca() umesto ovoga za konzistentnost
-  static Future<Map<String, double>> pazarPoVozacima(
-    List<Putnik> putnici,
-    DateTime from,
-    DateTime to,
-  ) async {
-    // Preusmeri na novu standardizovanu funkciju
-    return await pazarSvihVozaca(putnici, from: from, to: to);
   }
 
   // 🚗 KILOMETRAŽA FUNKCIJE
@@ -998,30 +1013,6 @@ class StatistikaService {
       return (stats['ukupno_sve'] as num).toDouble();
     } catch (e) {
       dlog('Greška pri dohvatanju clean ukupnog iznosa: $e');
-      rethrow;
-    }
-  }
-
-  /// Debug informacije za clean statistike
-  static Future<Map<String, dynamic>> cleanDebugInfo() async {
-    try {
-      final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
-      final actualAmount = (stats['ukupno_sve'] as num).toDouble();
-
-      return {
-        'timestamp': DateTime.now().toIso8601String(),
-        'service': 'StatistikaService.cleanDebugInfo -> CleanStatistikaService',
-        'clean_stats': stats,
-        'validation': {
-          'no_duplicates': stats['no_duplicates'],
-          'actual_amount': actualAmount,
-          'total_records': stats['broj_ukupno'],
-          'mesecni_records': stats['broj_mesecnih'],
-          'standalone_records': stats['broj_standalone'],
-        },
-      };
-    } catch (e) {
-      dlog('Greška pri debug info clean statistika: $e');
       rethrow;
     }
   }

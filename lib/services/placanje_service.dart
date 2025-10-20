@@ -11,16 +11,17 @@ class PlacanjeService {
     final Map<String, double> rezultat = {};
 
     try {
-      // Preuzmi sva plaćanja iz putovanja_istorija
+      // Preuzmi sva plaćanja iz putovanja_istorija (uključujući sva plaćanja)
       final istorijaPlacanjaResponse = await _supabase
           .from('putovanja_istorija')
-          .select('putnik_ime, cena, mesecni_putnik_id')
+          .select('putnik_ime, cena, mesecni_putnik_id, datum_putovanja')
           .eq('status', 'placeno')
+          .eq('tip_putnika', 'mesecni')
           .not('cena', 'is', null);
 
       final List<dynamic> istorijaPlacanjaData = istorijaPlacanjaResponse as List;
 
-      // Mapa za brže pronalaženje po ID-u
+      // Mapa za brže pronalaženje po ID-u - sabira SVA plaćanja
       final Map<String, double> placanjaPoId = {};
       final Map<String, double> placanjaPoImenu = {};
 
@@ -79,6 +80,74 @@ class PlacanjeService {
     return placanja[putnik.id] ?? 0.0;
   }
 
+  /// Dobija plaćanja za određeni mesec i godinu
+  static Future<Map<String, double>> getPlacanjaZaMesec(
+    List<MesecniPutnik> putnici,
+    int mesec,
+    int godina,
+  ) async {
+    final Map<String, double> rezultat = {};
+
+    try {
+      // Kalkuliši početak i kraj meseca
+      final pocetakMeseca = DateTime(godina, mesec);
+      final krajMeseca = DateTime(godina, mesec + 1, 0, 23, 59, 59);
+
+      // Preuzmi plaćanja za specifičan mesec iz putovanja_istorija
+      final placanjaResponse = await _supabase
+          .from('putovanja_istorija')
+          .select('putnik_ime, cena, mesecni_putnik_id')
+          .eq('status', 'placeno')
+          .eq('tip_putnika', 'mesecni')
+          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
+          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
+          .not('cena', 'is', null);
+
+      final List<dynamic> placanjaData = placanjaResponse as List;
+
+      // Mapa za sabiranje plaćanja po ID-u
+      final Map<String, double> placanjaPoId = {};
+      final Map<String, double> placanjaPoImenu = {};
+
+      for (final placanje in placanjaData) {
+        final cena = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
+        final mesecniPutnikId = placanje['mesecni_putnik_id'] as String?;
+        final putnikIme = placanje['putnik_ime'] as String?;
+
+        if (mesecniPutnikId != null) {
+          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
+        }
+
+        if (putnikIme != null) {
+          placanjaPoImenu[putnikIme] = (placanjaPoImenu[putnikIme] ?? 0.0) + cena;
+        }
+      }
+
+      // Kombinuj podatke za svakog putnika
+      for (final putnik in putnici) {
+        double iznos = 0.0;
+
+        // Pokušaj prvo po ID-u, zatim po imenu
+        if (placanjaPoId.containsKey(putnik.id)) {
+          iznos = placanjaPoId[putnik.id]!;
+        } else if (placanjaPoImenu.containsKey(putnik.putnikIme)) {
+          iznos = placanjaPoImenu[putnik.putnikIme]!;
+        }
+
+        rezultat[putnik.id] = iznos;
+      }
+    } catch (e) {
+      print('❌ Greška u PlacanjeService.getPlacanjaZaMesec: $e');
+
+      // Fallback - vrati 0 za sve putnike
+      for (final putnik in putnici) {
+        rezultat[putnik.id] = 0.0;
+      }
+    }
+
+    return rezultat;
+  }
+
   /// Sinhronizuje cenu u mesecni_putnici sa podacima iz putovanja_istorija
   static Future<void> sinhronizujPlacanja() async {
     try {
@@ -110,6 +179,65 @@ class PlacanjeService {
       }
     } catch (e) {
       print('❌ Greška u sinhronizaciji plaćanja: $e');
+    }
+  }
+
+  /// Dobija ukupan iznos svih plaćanja za mesečnog putnika za određeni mesec
+  static Future<double> getUkupanIznosZaMesec(
+    String putnikId,
+    int mesec,
+    int godina,
+  ) async {
+    try {
+      final pocetakMeseca = DateTime(godina, mesec);
+      final krajMeseca = DateTime(godina, mesec + 1, 0);
+
+      final placanja = await _supabase
+          .from('putovanja_istorija')
+          .select('cena')
+          .eq('mesecni_putnik_id', putnikId)
+          .eq('tip_putnika', 'mesecni')
+          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
+          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
+          .eq('status', 'placeno');
+
+      double ukupno = 0.0;
+      for (final placanje in placanja) {
+        final iznos = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
+        ukupno += iznos;
+      }
+
+      return ukupno;
+    } catch (e) {
+      print('❌ Greška pri dobijanju ukupnog iznosa za mesec: $e');
+      return 0.0;
+    }
+  }
+
+  /// Dobija detaljnu listu svih plaćanja za mesečnog putnika za određeni mesec
+  static Future<List<Map<String, dynamic>>> getDetaljnaPlacanjaZaMesec(
+    String putnikId,
+    int mesec,
+    int godina,
+  ) async {
+    try {
+      final pocetakMeseca = DateTime(godina, mesec);
+      final krajMeseca = DateTime(godina, mesec + 1, 0);
+
+      final placanja = await _supabase
+          .from('putovanja_istorija')
+          .select('cena, datum_putovanja, vozac_id, created_at, napomene')
+          .eq('mesecni_putnik_id', putnikId)
+          .eq('tip_putnika', 'mesecni')
+          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
+          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
+          .eq('status', 'placeno')
+          .order('created_at', ascending: false);
+
+      return (placanja as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      print('❌ Greška pri dobijanju detaljnih plaćanja za mesec: $e');
+      return [];
     }
   }
 }

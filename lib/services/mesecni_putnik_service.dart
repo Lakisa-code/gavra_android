@@ -235,51 +235,32 @@ class MesecniPutnikService {
         }
       }
 
-      // 1. PROVJERI DA LI JE VEĆ POSTOJI ZAPIS ZA OVAJ MESEC (sprečava duplikate)
-      final existingPayment = await _supabase
-          .from('putovanja_istorija')
-          .select('id')
-          .eq('mesecni_putnik_id', putnikId)
-          .eq('tip_putnika', 'mesecni')
-          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
-          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
-          .eq('status', 'placeno')
-          .limit(1);
-
-      if (existingPayment.isNotEmpty) {
-        // Ažuriraj postojeći zapis umesto kreiranja novog
-        await _supabase.from('putovanja_istorija').update({
+      // 1. UVEK DODAJ NOVI ZAPIS ZA PLAĆANJE (omogućava višestruka plaćanja za isti mesec)
+      final putnik = await getMesecniPutnikById(putnikId);
+      if (putnik != null) {
+        await _supabase.from('putovanja_istorija').insert({
+          'mesecni_putnik_id': putnikId,
+          'putnik_ime': putnik.putnikIme,
+          'tip_putnika': 'mesecni',
+          'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
+          'vreme_polaska': 'mesecno_placanje',
+          'status': 'placeno',
           'vozac_id': validVozacId,
           'cena': iznos,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', existingPayment.first['id'] as String);
-      } else {
-        // 2. DODAJ NOVI ZAPIS U ISTORIJU PLAĆANJA (putovanja_istorija)
-        final putnik = await getMesecniPutnikById(putnikId);
-        if (putnik != null) {
-          await _supabase.from('putovanja_istorija').insert({
-            'mesecni_putnik_id': putnikId,
-            'putnik_ime': putnik.putnikIme,
-            'tip_putnika': 'mesecni',
-            'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
-            'vreme_polaska': 'mesecno_placanje',
-            'status': 'placeno',
-            'vozac_id': validVozacId,
-            'cena': iznos,
-            'napomene': 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
-          });
-        }
+          'napomene': 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
+        });
       }
 
-      // 2. AŽURIRAJ MESEČNOG PUTNIKA (za kompatibilnost)
+      // 2. AŽURIRAJ MESEČNOG PUTNIKA - izračunaj ukupnu sumu svih plaćanja za mesec
+      final ukupanIznos = await _izracunajUkupnuSumuZaMesec(putnikId, pocetakMeseca, krajMeseca);
+
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
         'vozac_id': validVozacId,
-        'cena': iznos,
-        // 'iznos_placanja': iznos, // ❌ UKLONJEN: ova kolona ne postoji u schema
+        'cena': ukupanIznos, // ukupna suma svih plaćanja
         'placeni_mesec': pocetakMeseca.month,
         'placena_godina': pocetakMeseca.year,
-        'ukupna_cena_meseca': iznos,
+        'ukupna_cena_meseca': ukupanIznos, // ukupna suma svih plaćanja
       });
 
       return true;
@@ -293,6 +274,34 @@ class MesecniPutnikService {
     return RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
     ).hasMatch(str);
+  }
+
+  /// Izračunava ukupnu sumu svih plaćanja za mesec iz tabele putovanja_istorija
+  Future<double> _izracunajUkupnuSumuZaMesec(
+    String putnikId,
+    DateTime pocetakMeseca,
+    DateTime krajMeseca,
+  ) async {
+    try {
+      final placanja = await _supabase
+          .from('putovanja_istorija')
+          .select('cena')
+          .eq('mesecni_putnik_id', putnikId)
+          .eq('tip_putnika', 'mesecni')
+          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
+          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
+          .eq('status', 'placeno');
+
+      double ukupno = 0.0;
+      for (final placanje in placanja) {
+        final iznos = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
+        ukupno += iznos;
+      }
+
+      return ukupno;
+    } catch (e) {
+      return 0.0;
+    }
   }
 
   /// Briše mesečnog putnika (soft delete)
