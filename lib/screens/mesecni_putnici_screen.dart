@@ -16,7 +16,6 @@ import '../services/realtime_service.dart';
 import '../services/smart_address_autocomplete_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
-import '../theme_backup.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
@@ -1405,15 +1404,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.1),
+                  color: _getTypeColor(_noviTip, context).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.3),
+                    color: _getTypeColor(_noviTip, context).withOpacity(0.3),
                     width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.1),
+                      color: _getTypeColor(_noviTip, context).withOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -1426,7 +1425,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       '📋 Osnovne informacije',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                        color: _getTypeColor(_noviTip, context),
                         fontSize: 16,
                       ),
                     ),
@@ -1439,13 +1438,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         border: const OutlineInputBorder(),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                            color: _getTypeColor(_noviTip, context),
                             width: 2,
                           ),
                         ),
                         prefixIcon: Icon(
                           Icons.person,
-                          color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                          color: _getTypeColor(_noviTip, context),
                         ),
                         fillColor: Colors.white,
                         filled: true,
@@ -1463,12 +1462,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           child: Icon(
                             _noviTip == 'ucenik' ? Icons.school : Icons.business,
                             key: ValueKey('${_noviTip}_dropdown'),
-                            color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                            color: _getTypeColor(_noviTip, context),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                            color: _getTypeColor(_noviTip, context),
                             width: 2,
                           ),
                         ),
@@ -1520,7 +1519,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         border: const OutlineInputBorder(),
                         focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                            color: _getTypeColor(_noviTip, context),
                             width: 2,
                           ),
                         ),
@@ -1529,7 +1528,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           child: Icon(
                             _noviTip == 'ucenik' ? Icons.school : Icons.business,
                             key: ValueKey(_noviTip),
-                            color: AppThemeHelpers.getTypeColor(_noviTip, context),
+                            color: _getTypeColor(_noviTip, context),
                           ),
                         ),
                         fillColor: Colors.white,
@@ -1851,7 +1850,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             child: ElevatedButton.icon(
               onPressed: () => _sacuvajEditPutnika(putnik),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppThemeHelpers.getTypeColor(_noviTip, context),
+                backgroundColor: _getTypeColor(_noviTip, context),
                 foregroundColor: Colors.white,
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -2046,8 +2045,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.1),
-                      AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.2),
+                      _getTypeColor(_noviTip, context).withOpacity(0.1),
+                      _getTypeColor(_noviTip, context).withOpacity(0.2),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -2055,7 +2054,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                   boxShadow: [
                     BoxShadow(
-                      color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.1),
+                      color: _getTypeColor(_noviTip, context).withOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -2069,12 +2068,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         key: ValueKey('${_noviTip}_add'),
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.2),
+                          color: _getTypeColor(_noviTip, context).withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           Icons.person_add,
-                          color: AppThemeHelpers.getTypeOnContainerColor(
+                          color: _getTypeOnContainerColor(
                             _noviTip,
                             context,
                           ),
@@ -2089,9 +2088,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 200),
                             child: Icon(
-                              AppThemeHelpers.getTypeIcon(_noviTip),
+                              _getTypeIcon(_noviTip),
                               key: ValueKey(_noviTip),
-                              color: AppThemeHelpers.getTypeOnContainerColor(
+                              color: _getTypeOnContainerColor(
                                 _noviTip,
                                 context,
                               ),
@@ -2104,7 +2103,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppThemeHelpers.getTypeOnContainerColor(
+                              color: _getTypeOnContainerColor(
                                 _noviTip,
                                 context,
                               ),
@@ -2149,15 +2148,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.1),
+                          color: _getTypeColor(_noviTip, context).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppThemeHelpers.getTypeColor(_noviTip, context).withOpacity(0.3),
+                            color: _getTypeColor(_noviTip, context).withOpacity(0.3),
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppThemeHelpers.getTypeColor(
+                              color: _getTypeColor(
                                 _noviTip,
                                 context,
                               ).withOpacity(0.1),
@@ -2174,7 +2173,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ).withOpacity(0.2),
@@ -2182,7 +2181,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   ),
                                   child: Icon(
                                     Icons.person,
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ),
@@ -2195,7 +2194,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     '📋 Osnovne informacije',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: AppThemeHelpers.getTypeColor(
+                                      color: _getTypeColor(
                                         _noviTip,
                                         context,
                                       ),
@@ -2219,7 +2218,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 border: const OutlineInputBorder(),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ),
@@ -2228,7 +2227,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 ),
                                 prefixIcon: Icon(
                                   Icons.person,
-                                  color: AppThemeHelpers.getTypeColor(
+                                  color: _getTypeColor(
                                     _noviTip,
                                     context,
                                   ),
@@ -2249,7 +2248,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   child: Icon(
                                     _noviTip == 'ucenik' ? Icons.school : Icons.business,
                                     key: ValueKey('${_noviTip}_dropdown'),
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ),
@@ -2257,7 +2256,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ),
@@ -2317,7 +2316,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 border: const OutlineInputBorder(),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ),
@@ -2329,7 +2328,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   child: Icon(
                                     _noviTip == 'ucenik' ? Icons.school : Icons.business,
                                     key: ValueKey(_noviTip),
-                                    color: AppThemeHelpers.getTypeColor(
+                                    color: _getTypeColor(
                                       _noviTip,
                                       context,
                                     ),
@@ -5115,5 +5114,39 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  // Helper funkcije za tipove putnika - zamena za AppThemeHelpers
+  Color _getTypeColor(String tip, BuildContext context) {
+    switch (tip) {
+      case 'ucenik':
+        return Colors.blue;
+      case 'radnik':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _getTypeOnContainerColor(String tip, BuildContext context) {
+    switch (tip) {
+      case 'ucenik':
+        return Colors.white;
+      case 'radnik':
+        return Colors.white;
+      default:
+        return Colors.white;
+    }
+  }
+
+  IconData _getTypeIcon(String tip) {
+    switch (tip) {
+      case 'ucenik':
+        return Icons.school;
+      case 'radnik':
+        return Icons.business;
+      default:
+        return Icons.person;
+    }
   }
 }
