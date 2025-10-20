@@ -52,31 +52,32 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   void _initializeRealtimeMonitoring() {
     _putnikSubscription?.cancel();
 
-    if (mounted) setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted)
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-    _putnikSubscription = PutnikService()
-        .streamKombinovaniPutniciFiltered()
-        .timeout(const Duration(seconds: 30))
-        .listen(
+    _putnikSubscription =
+        PutnikService().streamKombinovaniPutniciFiltered().timeout(const Duration(seconds: 30)).listen(
       (putnici) {
         if (mounted) {
-          if (mounted) setState(() {
-            _cachedPutnici = putnici;
-            _isLoading = false;
-            _errorMessage = null;
-            _hasData = putnici.isNotEmpty;
-          });
+          if (mounted)
+            setState(() {
+              _cachedPutnici = putnici;
+              _isLoading = false;
+              _errorMessage = null;
+              _hasData = putnici.isNotEmpty;
+            });
         }
       },
       onError: (Object error) {
         if (mounted) {
-          if (mounted) setState(() {
-            _isLoading = false;
-            _errorMessage = 'Greška pri učitavanju: $error';
-          });
+          if (mounted)
+            setState(() {
+              _isLoading = false;
+              _errorMessage = 'Greška pri učitavanju: $error';
+            });
         }
       },
     );
@@ -84,8 +85,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   // V3.0 Performance-Optimized GPS Calculation with Caching
   Future<double> _calculateKmForVozac(String vozac, DateTimeRange range) async {
-    final cacheKey =
-        '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
+    final cacheKey = '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
 
     if (_kmCache.containsKey(cacheKey)) {
       return _kmCache[cacheKey]!;
@@ -120,7 +120,6 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
       _kmCache[cacheKey] = ukupnoKm;
       return ukupnoKm;
     } catch (e) {
-      
       return 0.0;
     }
   }
@@ -145,11 +144,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) + cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     final distance = earthRadius * c;
@@ -443,72 +439,146 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
           return _buildNoDataState();
         }
 
-        return ListView.builder(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          itemCount: statistike.length,
-          itemBuilder: (context, index) {
-            final vozac = statistike.keys.elementAt(index);
-            final stats = statistike[vozac]!;
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 16),
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ExpansionTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                childrenPadding: const EdgeInsets.all(16),
-                leading: Hero(
-                  tag: 'avatar_$vozac',
-                  child: CircleAvatar(
-                    radius: 24,
-                    backgroundColor: _getVozacColor(vozac),
-                    child: Text(
-                      vozac[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header sa periodom
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    Text(
+                      'Detaljne statistike',
+                      style: TextStyle(
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                  ),
-                ),
-                title: Text(
-                  vozac,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ukupno: ${stats['dodati']} putnika',
-                      style: const TextStyle(fontSize: 14),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.analytics,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
                     ),
-                    Text(
-                      'Pazar: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.green[700],
-                        fontWeight: FontWeight.w600,
+                  ],
+                ),
+              ),
+
+              // Period info
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.date_range,
+                      color: Colors.blue[600],
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Period: ${_formatDate(_selectedRange!.start)} - ${_formatDate(_selectedRange!.end)}',
+                        style: TextStyle(
+                          color: Colors.blue[700],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                children: [
-                  _buildStatisticsGrid(stats),
-                  const SizedBox(height: 16),
-                  _buildKmChart(vozac, stats),
-                ],
               ),
-            );
-          },
+
+              // Vozači kartice (stil kao admin screen)
+              Column(
+                children: statistike.entries.map((entry) {
+                  final vozac = entry.key;
+                  final stats = entry.value;
+                  final vozacColor = _getVozacColor(vozac);
+
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: vozacColor.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: vozacColor.withAlpha(70),
+                      ),
+                    ),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      childrenPadding: const EdgeInsets.all(16),
+                      leading: CircleAvatar(
+                        backgroundColor: vozacColor,
+                        radius: 20,
+                        child: Text(
+                          vozac[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        vozac,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: vozacColor,
+                        ),
+                      ),
+                      subtitle: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Ukupno: ${stats['dodati']} putnika',
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.monetization_on,
+                            color: Colors.green[600],
+                            size: 14,
+                          ),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              'Pazar: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      children: [
+                        _buildStatisticsGrid(stats),
+                        const SizedBox(height: 16),
+                        _buildKmChart(vozac, stats),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -671,10 +741,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                 }
 
                 // Generate daily breakdown for visualization
-                final days = _selectedRange!.end
-                        .difference(_selectedRange!.start)
-                        .inDays +
-                    1;
+                final days = _selectedRange!.end.difference(_selectedRange!.start).inDays + 1;
                 final avgKmPerDay = totalKm / days;
 
                 return LineChart(
@@ -697,8 +764,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           getTitlesWidget: (value, meta) {
                             final dayIndex = value.toInt();
                             if (dayIndex >= 0 && dayIndex < days) {
-                              final date = _selectedRange!.start
-                                  .add(Duration(days: dayIndex));
+                              final date = _selectedRange!.start.add(Duration(days: dayIndex));
                               return Text(
                                 '${date.day}',
                                 style: const TextStyle(fontSize: 12),
@@ -782,9 +848,10 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     );
 
     if (picked != null) {
-      if (mounted) setState(() {
-        _selectedRange = picked;
-      });
+      if (mounted)
+        setState(() {
+          _selectedRange = picked;
+        });
       _loadData();
     }
   }
@@ -793,10 +860,11 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   Future<void> _loadData() async {
     if (!mounted) return;
 
-    if (mounted) setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted)
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
     try {
       // Clear cache when date range changes
@@ -804,16 +872,18 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
       // Trigger UI update
       if (mounted) {
-        if (mounted) setState(() {
-          _isLoading = false;
-        });
+        if (mounted)
+          setState(() {
+            _isLoading = false;
+          });
       }
     } catch (e) {
       if (mounted) {
-        if (mounted) setState(() {
-          _isLoading = false;
-          _errorMessage = 'Greška pri učitavanju podataka: $e';
-        });
+        if (mounted)
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Greška pri učitavanju podataka: $e';
+          });
       }
     }
   }
@@ -865,8 +935,3 @@ class _StatRow extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
