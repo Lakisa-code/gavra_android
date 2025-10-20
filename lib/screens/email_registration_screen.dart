@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/auth_manager.dart';
 import '../services/driver_registration_service.dart';
 import '../services/email_auth_service.dart';
 import '../utils/vozac_boja.dart';
@@ -12,12 +13,10 @@ class EmailRegistrationScreen extends StatefulWidget {
   final String? preselectedDriverName;
 
   @override
-  State<EmailRegistrationScreen> createState() =>
-      _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
 }
 
-class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
-    with TickerProviderStateMixin {
+class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -39,7 +38,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
     if (widget.preselectedDriverName != null) {
       _selectedDriver = widget.preselectedDriverName;
       // Debug logging removed for production
-}
+    }
 
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -230,9 +229,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         );
       }).toList(),
       onChanged: (value) {
-        if (mounted) setState(() {
-          _selectedDriver = value;
-        });
+        if (mounted)
+          setState(() {
+            _selectedDriver = value;
+          });
       },
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -302,9 +302,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             color: Colors.blue,
           ),
           onPressed: () {
-            if (mounted) setState(() {
-              _isPasswordVisible = !_isPasswordVisible;
-            });
+            if (mounted)
+              setState(() {
+                _isPasswordVisible = !_isPasswordVisible;
+              });
           },
         ),
         filled: true,
@@ -355,9 +356,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             color: Colors.blue,
           ),
           onPressed: () {
-            if (mounted) setState(() {
-              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-            });
+            if (mounted)
+              setState(() {
+                _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+              });
           },
         ),
         filled: true,
@@ -455,7 +457,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       final email = _emailController.text.trim();
       final password = _passwordController.text;
       // Debug logging removed for production
-final success = await EmailAuthService.registerDriverWithEmail(
+
+      // Koristi AuthManager umesto direktno EmailAuthService
+      final result = await AuthManager.registerWithEmail(
         driverName,
         email,
         password,
@@ -464,18 +468,19 @@ final success = await EmailAuthService.registerDriverWithEmail(
       // Sakrij loading dialog
       if (mounted) Navigator.of(context).pop();
 
-      if (success) {
-      // Debug logging removed for production
-// REGISTRUJ VOZAČA LOKALNO
-        final localRegistrationSuccess =
-            await DriverRegistrationService.markDriverAsRegistered(
+      if (result.isSuccess) {
+        // Debug logging removed for production
+
+        // REGISTRUJ VOZAČA LOKALNO
+        final localRegistrationSuccess = await DriverRegistrationService.markDriverAsRegistered(
           driverName,
           email,
         );
 
         if (localRegistrationSuccess) {
-      // Debug logging removed for production
-// Pokaži uspešnu poruku
+          // Debug logging removed for production
+
+          // Pokaži uspešnu poruku
           await _showSuccessDialog();
 
           // Vrati true da signal uspješnu registraciju
@@ -483,24 +488,24 @@ final success = await EmailAuthService.registerDriverWithEmail(
             Navigator.of(context).pop(true);
           }
         } else {
-      // Debug logging removed for production
-_showErrorDialog(
+          // Debug logging removed for production
+          _showErrorDialog(
             'Greška!',
             'Vozač je registrovan u sistemu, ali lokalna registracija nije uspešna.',
           );
         }
       } else {
-      // Debug logging removed for production
-_showErrorDialog(
+        // Debug logging removed for production
+        _showErrorDialog(
           'Registracija neuspješna',
-          'Provjerite podatke i pokušajte ponovo. Email možda već postoji.',
+          result.message,
         );
       }
     } catch (e) {
       // Sakrij loading dialog ako je otvoren
       if (mounted) Navigator.of(context).pop();
       // Debug logging removed for production
-_showErrorDialog(
+      _showErrorDialog(
         'Greška',
         'Došlo je do greške pri registraciji. Pokušajte ponovo.',
       );
@@ -603,8 +608,7 @@ _showErrorDialog(
           child: SingleChildScrollView(
             child: Text(
               'Poslali smo vam email sa linkom za potvrdu naloga. Molimo proverite vašu email poštu i kliknite na link da aktivirate nalog.',
-              style:
-                  TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
             ),
           ),
         ),
@@ -618,8 +622,3 @@ _showErrorDialog(
     );
   }
 }
-
-
-
-
-

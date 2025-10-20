@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/firebase_service.dart';
-import 'welcome_screen.dart';
+import '../services/auth_manager.dart';
 
 class HomeScreenLight extends StatefulWidget {
   const HomeScreenLight({Key? key}) : super(key: key);
@@ -28,29 +27,16 @@ class _HomeScreenLightState extends State<HomeScreenLight> {
       final prefs = await SharedPreferences.getInstance();
       _currentDriver = prefs.getString('selected_driver');
       // Debug logging removed for production
-if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       // Debug logging removed for production
-if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('selected_driver');
-
-      // ✅ FIREBASE SERVICE - CLEAR CURRENT DRIVER
-      await FirebaseService.clearCurrentDriver();
-      // Debug logging removed for production
-if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
-        );
-      }
-    } catch (e) {
-      // Debug logging removed for production
-}
+    // Koristi centralizovani AuthManager za logout
+    await AuthManager.logout(context);
   }
 
   @override

@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import '../main.dart' show globalThemeToggler; // Removed in simple version // Za theme toggle
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
+import '../services/auth_manager.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/local_notification_service.dart';
@@ -37,7 +37,6 @@ import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error wid
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
-import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -272,9 +271,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         isPeriodic: true,
       );
       // Debug logging removed for production
-} catch (e) {
+    } catch (e) {
       // Debug logging removed for production
-}
+    }
   }
 
   // 🚨 Check realtime system health
@@ -284,12 +283,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (_isRealtimeHealthy.value != isHealthy) {
         _isRealtimeHealthy.value = isHealthy;
-      // Debug logging removed for production
-}
+        // Debug logging removed for production
+      }
     } catch (e) {
       _isRealtimeHealthy.value = false;
       // Debug logging removed for production
-}
+    }
   }
 
   void _setupRealtimeListener() {
@@ -300,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _realtimeSubscription = RealtimeService.instance.subscribe('putovanja_istorija', (data) {
       // Stream will update StreamBuilder via service layers
       // Debug logging removed for production
-});
+    });
   }
 
   void _startSmartNotifikacije() {
@@ -347,21 +346,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         targetDay: _selectedDay,
       );
       // Debug logging removed for production
-return result;
+      return result;
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
   Future<void> _loadPutnici() async {
-      // Debug logging removed for production
+    // Debug logging removed for production
 // 🛡️ FIX: Pojednostavi dupli mounted check
     if (mounted) setState(() => _isLoading = true);
     try {
       final putnici = await _getAllPutnici();
       // Debug logging removed for production
-if (mounted) {
+      if (mounted) {
         setState(() {
           _allPutnici = putnici;
           _isLoading = false;
@@ -369,7 +368,7 @@ if (mounted) {
       }
     } catch (e) {
       // Debug logging removed for production
-if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
       _showErrorDialog('Greška pri učitavanju: $e');
     }
   }
@@ -482,17 +481,8 @@ if (mounted) setState(() => _isLoading = false);
     );
 
     if (shouldLogout == true) {
-      // Obriši session iz SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('current_driver');
-
-      if (!mounted) return;
-
-      // Idi nazad na WelcomeScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
-      );
+      // Koristi centralizovani AuthManager za logout
+      await AuthManager.logout(context);
     }
   }
 
@@ -963,8 +953,8 @@ if (mounted) setState(() => _isLoading = false);
                             dodaoVozac: _currentDriver,
                             adresa: adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                           );
-      // Debug logging removed for production
-await _putnikService.dodajPutnika(putnik);
+                          // Debug logging removed for production
+                          await _putnikService.dodajPutnika(putnik);
                           // ✅ FORSIRANA REFRESH LISTE
                           await _loadPutnici();
 
@@ -974,8 +964,8 @@ await _putnikService.dodajPutnika(putnik);
                             setState(() {
                               _isAddingPutnik = false;
                             });
-      // Debug logging removed for production
-if (mounted) {
+                          // Debug logging removed for production
+                          if (mounted) {
                             // ignore: use_build_context_synchronously
                             Navigator.pop(context);
                             // ignore: use_build_context_synchronously
@@ -1376,8 +1366,8 @@ if (mounted) {
             return count;
           } catch (e) {
             // Log error and continue to fallback
-      // Debug logging removed for production
-}
+            // Debug logging removed for production
+          }
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {
@@ -1799,7 +1789,7 @@ if (mounted) {
       }
     } catch (e) {
       // Debug logging removed for production
-}
+    }
 
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
     try {
@@ -1807,7 +1797,7 @@ if (mounted) {
       _networkStatusSubscription?.cancel();
     } catch (e) {
       // Debug logging removed for production
-}
+    }
 
     // 🧹 SAFE DISPOSAL ValueNotifier-a
     try {
@@ -1816,9 +1806,9 @@ if (mounted) {
       }
     } catch (e) {
       // Debug logging removed for production
-}
-      // Debug logging removed for production
-super.dispose();
+    }
+    // Debug logging removed for production
+    super.dispose();
   }
 }
 

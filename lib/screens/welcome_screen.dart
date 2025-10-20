@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/auth_manager.dart';
 import '../services/driver_registration_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
@@ -101,13 +101,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     // PROVERI SUPABASE AUTH STATE
     final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
 
-    final prefs = await SharedPreferences.getInstance();
-    final savedDriver = prefs.getString(
-      'current_driver',
-    ); // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
+    // Koristi novi AuthManager za session management
+    final savedDriver = await AuthManager.getCurrentDriver();
+
+    // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
     if (driverFromSupabase != null && (savedDriver == null || savedDriver != driverFromSupabase)) {
       // Debug logging removed for production
-      await prefs.setString('current_driver', driverFromSupabase);
+      await AuthManager.setCurrentDriver(driverFromSupabase);
     }
 
     // Koristi driver iz Supabase ako postoji, inače iz local storage
