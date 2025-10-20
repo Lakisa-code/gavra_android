@@ -505,9 +505,8 @@ class PutnikService {
           if (tabela == 'mesecni_putnici') {
             await supabase.from(tabela).update({
               'broj_putovanja': lastAction.oldData['broj_putovanja'],
-              'poslednje_putovanje': lastAction.oldData['poslednje_putovanje'], // ✅ ISPRAVKA
               'pokupljen': false, // ✅ RESETUJ pokupljen flag za mesecne putnike
-              'vreme_pokupljenja': null, // ✅ RESETUJ vreme pokupljanja
+              'vreme_pokupljenja': null, // ✅ FIXED: Resetuj vreme pokupljanja umesto poslednje_putovanje
             }).eq('id', lastAction.putnikId as String);
           } else {
             await supabase.from(tabela).update({
@@ -1073,8 +1072,7 @@ class PutnikService {
       final now = DateTime.now();
 
       await supabase.from(tabela).update({
-        'poslednje_putovanje': now.toIso8601String(), // ✅ TIMESTAMP pokupljanja
-        'vreme_pokupljenja': now.toIso8601String(), // ✅ DODATO za konzistentnost
+        'vreme_pokupljenja': now.toIso8601String(), // ✅ FIXED: Koristi samo vreme_pokupljenja
         'pokupljen': true, // ✅ BOOLEAN flag
         'vozac_id': (currentDriver.isEmpty) ? null : currentDriver, // UUID validacija
         'pokupljanje_vozac': currentDriver, // ✅ NOVA KOLONA - vozač koji je pokupljanje izvršio
@@ -1599,8 +1597,7 @@ class PutnikService {
           await supabase.from('mesecni_putnici').update({
             'aktivan': true, // ✅ KRITIČNO: VRATI na aktivan (jeOtkazan = false)
             'status': 'radi', // ✅ VRATI na radi
-            'poslednje_putovanje': null, // ✅ UKLONI pokupljanje
-            'vreme_pokupljenja': null, // ✅ UKLONI timestamp pokupljanja
+            'vreme_pokupljenja': null, // ✅ FIXED: Ukloni timestamp pokupljanja
             'vreme_placanja': null, // ✅ UKLONI timestamp plaćanja
             'pokupljen': false, // ✅ VRATI na false
             'cena': null, // ✅ UKLONI plaćanje
@@ -1699,13 +1696,13 @@ class PutnikService {
       try {
         final mesecniPutnici = await supabase
             .from('mesecni_putnici')
-            .select('id, putnik_ime, polasci_po_danu, poslednje_putovanje')
+            .select('id, putnik_ime, polasci_po_danu, vreme_pokupljenja') // ✅ FIXED: Koristi vreme_pokupljenja
             .eq('aktivan', true)
-            .not('poslednje_putovanje', 'is', null);
+            .not('vreme_pokupljenja', 'is', null); // ✅ FIXED: Koristi vreme_pokupljenja
 
         for (final putnik in mesecniPutnici) {
           final ime = putnik['putnik_ime'] as String;
-          final vremePokupljenja = DateTime.tryParse(putnik['poslednje_putovanje'] as String);
+          final vremePokupljenja = DateTime.tryParse(putnik['vreme_pokupljenja'] as String); // ✅ FIXED: Koristi vreme_pokupljenja
 
           if (vremePokupljenja == null) continue;
 
@@ -1733,7 +1730,7 @@ class PutnikService {
             );
 
             await supabase.from('mesecni_putnici').update({
-              'poslednje_putovanje': null,
+              'vreme_pokupljenja': null, // ✅ FIXED: Koristi vreme_pokupljenja
               'updated_at': DateTime.now().toIso8601String(),
             }).eq('id', putnik['id'] as String);
 

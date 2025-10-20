@@ -68,25 +68,18 @@ class MesecniPutnik {
       datumKrajaMeseca: map['datum_kraja_meseca'] != null
           ? DateTime.parse(map['datum_kraja_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-      createdAt: map['created_at'] != null
-          ? DateTime.parse(map['created_at'] as String)
-          : DateTime.now(),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
-          : DateTime.now(),
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
       status: map['status'] as String? ?? 'aktivan',
       ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble() ?? 0.0,
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjePutovanje: map['poslednje_putovanje'] != null
-          ? DateTime.parse(map['poslednje_putovanje'] as String)
-          : null,
+      poslednjePutovanje:
+          map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null, // ✅ FIXED: Koristi vreme_pokupljenja
       obrisan: map['obrisan'] as bool? ?? false,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
+      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
       vozac: map['vozac_id'] as String?,
@@ -164,8 +157,7 @@ class MesecniPutnik {
       'adresa_bela_crkva': adresaBelaCrkva,
       'adresa_vrsac': adresaVrsac,
       'radni_dani': radniDani,
-      'datum_pocetka_meseca':
-          datumPocetkaMeseca.toIso8601String().split('T')[0],
+      'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -175,7 +167,7 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'poslednje_putovanje': poslednjePutovanje?.toIso8601String(),
+      'vreme_pokupljenja': poslednjePutovanje?.toIso8601String(), // ✅ FIXED: Koristi vreme_pokupljenja umesto poslednje_putovanje
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
@@ -199,6 +191,17 @@ class MesecniPutnik {
 
   /// Iznos plaćanja - kompatibilnost sa statistika_service
   double? get iznosPlacanja => cena ?? ukupnaCenaMeseca;
+
+  /// Stvarni iznos plaćanja koji treba da se kombinuje sa putovanja_istorija
+  /// Ovo je placeholder - potrebno je da se implementira kombinovanje sa istorijom
+  double? get stvarniIznosPlacanja {
+    // Ako postoji cena u mesecni_putnici, vrati je
+    if (cena != null && cena! > 0) return cena;
+
+    // Inače treba da se pretraži putovanja_istorija tabela
+    // Za sada vraćamo cenu ili ukupnaCenaMeseca kao fallback
+    return cena ?? (ukupnaCenaMeseca > 0 ? ukupnaCenaMeseca : null);
+  }
 
   /// Polazak za Belu Crkvu za dati dan
   String? getPolazakBelaCrkvaZaDan(String dan) {
@@ -307,10 +310,7 @@ class MesecniPutnik {
 
   /// Validira da li su osnovna polja popunjena
   bool isValid() {
-    return putnikIme.isNotEmpty &&
-        tip.isNotEmpty &&
-        polasciPoDanu.isNotEmpty &&
-        id.isNotEmpty;
+    return putnikIme.isNotEmpty && tip.isNotEmpty && polasciPoDanu.isNotEmpty && id.isNotEmpty;
   }
 
   /// Validira format telefona (srpski brojevi)
@@ -329,8 +329,7 @@ class MesecniPutnik {
 
   /// Validira da li putnik ima validnu adresu
   bool hasValidAddress() {
-    return (adresaBelaCrkva != null && adresaBelaCrkva!.isNotEmpty) ||
-        (adresaVrsac != null && adresaVrsac!.isNotEmpty);
+    return (adresaBelaCrkva != null && adresaBelaCrkva!.isNotEmpty) || (adresaVrsac != null && adresaVrsac!.isNotEmpty);
   }
 
   /// Validira da li je period važenja valjan
@@ -355,8 +354,7 @@ class MesecniPutnik {
     }
 
     if (!hasValidPhoneNumbers()) {
-      errors['telefoni'] =
-          'Jedan ili više brojeva telefona nije u ispravnom formatu';
+      errors['telefoni'] = 'Jedan ili više brojeva telefona nije u ispravnom formatu';
     }
 
     if (polasciPoDanu.isEmpty) {
@@ -461,8 +459,3 @@ class MesecniPutnik {
     return 'MesecniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan, status: $status, polasci: ${polasciPoDanu.length}, period: $formatiraniPeriod)';
   }
 }
-
-
-
-
-

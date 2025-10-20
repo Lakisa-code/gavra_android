@@ -114,11 +114,9 @@ class Putnik {
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
       statusVreme: map['updated_at'] as String?,
-      vremePokupljenja: map['poslednje_putovanje'] != null
-          ? DateTime.parse(map['poslednje_putovanje'] as String).toLocal()
-          : (map['vreme_pokupljenja'] != null
-              ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
-              : null), // ✅ FALLBACK na vreme_pokupljenja kolonu
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
+          : null, // ✅ FIXED: Koristi samo vreme_pokupljenja kolonu
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String).toLocal()
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
@@ -152,9 +150,9 @@ class Putnik {
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
       // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
-      vremePlacanja: map['datum_putovanja'] != null
-          ? DateTime.parse(map['datum_putovanja'] as String)
-          : null, // ✅ KORISTI datum_putovanja za mesečne putnike
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'] as String)
+          : null, // ✅ FIXED: Koristi vreme_placanja umesto datum_putovanja
       placeno: _parseDouble(map['cena']) > 0,
       cena: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
@@ -258,11 +256,9 @@ class Putnik {
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
     final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
-    final vremePokupljenja = map['poslednje_putovanje'] != null
-        ? DateTime.parse(map['poslednje_putovanje'] as String)
-        : (map['vreme_pokupljenja'] != null
-            ? DateTime.parse(map['vreme_pokupljenja'] as String)
-            : null); // ✅ FALLBACK na vreme_pokupljenja
+    final vremePokupljenja = map['vreme_pokupljenja'] != null
+        ? DateTime.parse(map['vreme_pokupljenja'] as String)
+        : null; // ✅ FIXED: Koristi samo vreme_pokupljenja kolonu
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
@@ -299,11 +295,9 @@ class Putnik {
     final danString = map['radni_dani'] as String? ?? 'pon';
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
     final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
-    final vremePokupljenja = map['poslednje_putovanje'] != null
-        ? DateTime.parse(map['poslednje_putovanje'] as String)
-        : (map['vreme_pokupljenja'] != null
-            ? DateTime.parse(map['vreme_pokupljenja'] as String)
-            : null); // ✅ FALLBACK na vreme_pokupljenja
+    final vremePokupljenja = map['vreme_pokupljenja'] != null
+        ? DateTime.parse(map['vreme_pokupljenja'] as String)
+        : null; // ✅ FIXED: Koristi samo vreme_pokupljenja kolonu
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
@@ -543,7 +537,8 @@ class Putnik {
       'ukupna_cena_meseca': iznosPlacanja ?? 0.0, // možda treba cena umesto ovoga
       'broj_putovanja': 0, // ✅ NOVA KOLONA - default 0
       'broj_otkazivanja': 0, // ✅ NOVA KOLONA - default 0
-      'poslednje_putovanje': vremePokupljenja?.toIso8601String(), // ✅ TIMESTAMP format
+      'vreme_pokupljenja':
+          vremePokupljenja?.toIso8601String(), // ✅ FIXED: Koristi vreme_pokupljenja umesto poslednje_putovanje
       // UUID validacija za vozac_id
       'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       // Ne uključujemo 'obrisan' kolonu za putovanja_istorija tabelu
@@ -613,8 +608,3 @@ class Putnik {
     return daniKratice[weekday - 1];
   }
 }
-
-
-
-
-

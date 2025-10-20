@@ -31,6 +31,9 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   // V3.0 Performance Cache
   final Map<String, double> _kmCache = {};
 
+  // Cache za statistike da se ne pozivaju uvek iznova
+  Future<Map<String, Map<String, dynamic>>>? _statistikeFuture;
+
   @override
   void initState() {
     super.initState();
@@ -422,12 +425,15 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   }
 
   Widget _buildStatisticsContent() {
+    // Cache future da se ne poziva stalno
+    _statistikeFuture ??= StatistikaService.detaljneStatistikePoVozacima(
+      _cachedPutnici,
+      _selectedRange!.start,
+      _selectedRange!.end,
+    );
+
     return FutureBuilder<Map<String, Map<String, dynamic>>>(
-      future: StatistikaService.detaljneStatistikePoVozacima(
-        _cachedPutnici,
-        _selectedRange!.start,
-        _selectedRange!.end,
-      ),
+      future: _statistikeFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildLoadingState();
@@ -869,6 +875,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     try {
       // Clear cache when date range changes
       _kmCache.clear();
+      _statistikeFuture = null; // Reset statistike cache
 
       // Trigger UI update
       if (mounted) {

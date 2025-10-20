@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
+import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
 import '../services/real_time_statistika_service.dart';
 import '../services/realtime_service.dart';
 import '../services/smart_address_autocomplete_service.dart';
@@ -74,6 +75,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'cet': true,
     'pet': true,
   };
+
+  // 💰 PLAĆANJE STATE - kombinovani podaci iz obe tabele
+  Map<String, double> _stvarnaPlacanja = {};
 
   // Departure times controllers - Bela Crkva
   final TextEditingController _polazakBcPonController = TextEditingController();
@@ -200,6 +204,20 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       () => _updateHealthStatus(),
       isPeriodic: true,
     );
+  }
+
+  // 💰 UČITAJ STVARNA PLAĆANJA iz kombinovanih tabela
+  Future<void> _ucitajStvarnaPlacanja(List<MesecniPutnik> putnici) async {
+    try {
+      final placanja = await PlacanjeService.getStvarnaPlacanja(putnici);
+      if (mounted) {
+        setState(() {
+          _stvarnaPlacanja = placanja;
+        });
+      }
+    } catch (e) {
+      print('❌ Greška u učitavanju stvarnih plaćanja: $e');
+    }
   }
 
   void _updateHealthStatus() {
@@ -648,7 +666,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   // 🚀 DIREKTNO FILTRIRANJE - bez compute() koji blokira scroll
                   return _filterPutniciDirect(putnici, searchTerm, filterType);
                 },
-              ),
+              ).distinct().debounceTime(const Duration(milliseconds: 100)),
               builder: (context, snapshot) {
                 // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -668,6 +686,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 }
 
                 final filteredPutnici = snapshot.data ?? [];
+
+                // 💰 UČITAJ STVARNA PLAĆANJA kada se dobiju novi podaci
+                if (filteredPutnici.isNotEmpty) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _ucitajStvarnaPlacanja(filteredPutnici);
+                  });
+                }
+
                 // Prikaži samo prvih 50 rezultata
                 final prikazaniPutnici = filteredPutnici.length > 50 ? filteredPutnici.sublist(0, 50) : filteredPutnici;
 
@@ -704,7 +730,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: prikazaniPutnici.length,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   itemBuilder: (context, index) {
                     final putnik = prikazaniPutnici[index];
                     return TweenAnimationBuilder<double>(
@@ -1050,12 +1076,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   Expanded(
                     child: _buildCompactActionButton(
                       onPressed: () => _prikaziPlacanje(putnik),
-                      icon: putnik.cena != null && putnik.cena! > 0
-                          ? Icons.check_circle_outline
-                          : Icons.payments_outlined,
-                      label:
-                          putnik.cena != null && putnik.cena! > 0 ? '${putnik.cena!.toStringAsFixed(0)} RSD' : 'Plati',
-                      color: putnik.cena != null && putnik.cena! > 0 ? Colors.green : Colors.purple,
+                      icon:
+                          (_stvarnaPlacanja[putnik.id] ?? 0) > 0 ? Icons.check_circle_outline : Icons.payments_outlined,
+                      label: (_stvarnaPlacanja[putnik.id] ?? 0) > 0
+                          ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
+                          : 'Plati',
+                      color: (_stvarnaPlacanja[putnik.id] ?? 0) > 0 ? Colors.green : Colors.purple,
                     ),
                   ),
 
@@ -3401,8 +3427,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 
     // Ako je već plaćeno, prikaži postojeći iznos
-    if (putnik.cena != null && putnik.cena! > 0) {
-      iznosController.text = putnik.cena!.toStringAsFixed(0);
+    final stvarniIznos = _stvarnaPlacanja[putnik.id] ?? 0;
+    if (stvarniIznos > 0) {
+      iznosController.text = stvarniIznos.toStringAsFixed(0);
     }
 
     showDialog<void>(
@@ -3427,7 +3454,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (putnik.cena != null && putnik.cena! > 0) ...[
+                    if (stvarniIznos > 0) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -3447,7 +3474,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Trenutno plaćeno: ${putnik.cena!.toStringAsFixed(0)} RSD',
+                                    'Trenutno plaćeno: ${stvarniIznos.toStringAsFixed(0)} RSD',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: Colors.green.shade700,
@@ -3900,8 +3927,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               const SizedBox(height: 8),
               _buildStatRow(
                 '💵 Poslednje plaćanje:',
-                putnik.cena != null && putnik.cena! > 0
-                    ? '${putnik.cena!.toStringAsFixed(0)} RSD'
+                (_stvarnaPlacanja[putnik.id] ?? 0) > 0
+                    ? '${(_stvarnaPlacanja[putnik.id]!).toStringAsFixed(0)} RSD'
                     : 'Nema podataka o ceni',
               ),
               _buildStatRow(
@@ -4316,7 +4343,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 💰 PROVERI DA LI JE MESEC PLAĆEN
   bool _isMonthPaid(String monthYear, MesecniPutnik putnik) {
-    if (putnik.vremePlacanja == null || putnik.cena == null || putnik.cena! <= 0) {
+    final stvarniIznos = _stvarnaPlacanja[putnik.id] ?? 0;
+    if (putnik.vremePlacanja == null || stvarniIznos <= 0) {
       return false;
     }
 
