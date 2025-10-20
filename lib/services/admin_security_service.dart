@@ -87,12 +87,4 @@ class AdminSecurityService {
 
     return 'Moj $baseTitle'; // Vozač vidi personalizovani naslov
   }
-
-  /// ⚠️ TODO: SECURITY IMPROVEMENT
-  /// U produkciji treba implementirati:
-  /// 1. Backend API za privilegije umesto hard-coded liste
-  /// 2. JWT token validation
-  /// 3. Role-based access control (RBAC)
-  /// 4. Audit log za admin akcije
-  /// 5. Session timeout za admin funkcije
 }
