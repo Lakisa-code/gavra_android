@@ -1702,7 +1702,8 @@ class PutnikService {
 
         for (final putnik in mesecniPutnici) {
           final ime = putnik['putnik_ime'] as String;
-          final vremePokupljenja = DateTime.tryParse(putnik['vreme_pokupljenja'] as String); // ✅ FIXED: Koristi vreme_pokupljenja
+          final vremePokupljenja =
+              DateTime.tryParse(putnik['vreme_pokupljenja'] as String); // ✅ FIXED: Koristi vreme_pokupljenja
 
           if (vremePokupljenja == null) continue;
 

@@ -76,8 +76,9 @@ class MesecniPutnik {
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjePutovanje:
-          map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null, // ✅ FIXED: Koristi vreme_pokupljenja
+      poslednjePutovanje: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null, // ✅ FIXED: Koristi vreme_pokupljenja
       obrisan: map['obrisan'] as bool? ?? false,
       vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       placeniMesec: map['placeni_mesec'] as int?,
@@ -167,7 +168,8 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'vreme_pokupljenja': poslednjePutovanje?.toIso8601String(), // ✅ FIXED: Koristi vreme_pokupljenja umesto poslednje_putovanje
+      'vreme_pokupljenja':
+          poslednjePutovanje?.toIso8601String(), // ✅ FIXED: Koristi vreme_pokupljenja umesto poslednje_putovanje
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
