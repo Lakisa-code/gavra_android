@@ -7,8 +7,6 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../utils/logging.dart';
-
 class SupabaseSafe {
   static final _client = Supabase.instance.client;
 
@@ -21,11 +19,11 @@ class SupabaseSafe {
         return await _client.from(table).select(columns);
       }
       return await _client.from(table).select();
-    } on PostgrestException catch (e) {
-      dlog('❌ [SUPABASE SAFE] PostgrestException for $table: ${e.message}');
+    } on PostgrestException {
+      // Error handling - logging removed for production
       return <dynamic>[];
     } catch (e) {
-      dlog('❌ [SUPABASE SAFE] Error selecting $table: $e');
+      // Error handling - logging removed for production
       return <dynamic>[];
     }
   }
@@ -37,13 +35,11 @@ class SupabaseSafe {
   ) async {
     try {
       return await _client.from(table).delete().eq(column, value);
-    } on PostgrestException catch (e) {
-      dlog(
-        '❌ [SUPABASE SAFE] PostgrestException on delete $table: ${e.message}',
-      );
+    } on PostgrestException {
+      // Error handling - logging removed for production
       return <dynamic>[];
     } catch (e) {
-      dlog('❌ [SUPABASE SAFE] Error deleting from $table: $e');
+      // Error handling - logging removed for production
       return <dynamic>[];
     }
   }
@@ -51,11 +47,11 @@ class SupabaseSafe {
   static Future<dynamic> rpc(String fn, {Map<String, dynamic>? params}) async {
     try {
       return await _client.rpc(fn, params: params);
-    } on PostgrestException catch (e) {
-      dlog('❌ [SUPABASE SAFE] PostgrestException on rpc $fn: ${e.message}');
+    } on PostgrestException {
+      // Error handling - logging removed for production
       return <dynamic>[];
     } catch (e) {
-      dlog('❌ [SUPABASE SAFE] Error calling rpc $fn: $e');
+      // Error handling - logging removed for production
       return <dynamic>[];
     }
   }
@@ -67,11 +63,11 @@ class SupabaseSafe {
   static Future<T?> run<T>(Future<T> Function() fn, {T? fallback}) async {
     try {
       return await fn();
-    } on PostgrestException catch (e) {
-      dlog('❌ [SUPABASE SAFE] PostgrestException in run: ${e.message}');
+    } on PostgrestException {
+      // Error handling - logging removed for production
       return fallback;
     } catch (e) {
-      dlog('❌ [SUPABASE SAFE] Error in run: $e');
+      // Error handling - logging removed for production
       return fallback;
     }
   }

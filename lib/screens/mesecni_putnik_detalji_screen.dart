@@ -7,7 +7,6 @@ import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
 // foundation import not needed; using centralized logger
-import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
@@ -123,9 +122,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
       // 🔄 V3.0: Mark data stream as healthy after successful load
       _dataStreamHealthy.value = true;
     } catch (e) {
-      dlog('Greška pri učitavanju detalja: $e');
-
-      if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
+      // Debug logging removed for production
+if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
 
       // 🔄 V3.0: Mark data stream as unhealthy on error
       _dataStreamHealthy.value = false;

@@ -2,7 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../models/putovanja_istorija.dart';
-import '../utils/logging.dart';
 import 'cache_service.dart';
 import 'realtime_service.dart';
 import 'supabase_safe.dart';
@@ -52,15 +51,13 @@ class PutovanjaIstorijaService {
           });
           return list;
         } catch (e) {
-          dlog(
-            '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data: $e',
-          );
-          return <PutovanjaIstorija>[];
+      // Debug logging removed for production
+return <PutovanjaIstorija>[];
         }
       });
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream: $e');
-      return Stream.value([]);
+      // Debug logging removed for production
+return Stream.value([]);
     }
   }
 
@@ -81,15 +78,13 @@ class PutovanjaIstorijaService {
             try {
               return data.map((json) => PutovanjaIstorija.fromMap(json)).toList();
             } catch (e) {
-              dlog(
-                '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping stream data: $e',
-              );
-              return <PutovanjaIstorija>[];
+      // Debug logging removed for production
+return <PutovanjaIstorija>[];
             }
           });
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška u optimizovan stream: $e');
-      return Stream.value([]);
+      // Debug logging removed for production
+return Stream.value([]);
     }
   }
 
@@ -107,17 +102,13 @@ class PutovanjaIstorijaService {
           list.sort((a, b) => b.datum.compareTo(a.datum));
           return list;
         } catch (e) {
-          dlog(
-            '❌ [PUTOVANJA ISTORIJA SERVICE] Error mapping realtime data for mesecni: $e',
-          );
-          return <PutovanjaIstorija>[];
+      // Debug logging removed for production
+return <PutovanjaIstorija>[];
         }
       });
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška u stream za mesečnog putnika: $e',
-      );
-      return Stream.value([]);
+      // Debug logging removed for production
+return Stream.value([]);
     }
   }
 
@@ -131,8 +122,8 @@ class PutovanjaIstorijaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        dlog('📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached all data');
-        return cached
+      // Debug logging removed for production
+return cached
             .map(
               (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
             )
@@ -158,8 +149,8 @@ class PutovanjaIstorijaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju svih: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -177,10 +168,8 @@ class PutovanjaIstorijaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        dlog(
-          '📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached data for date: $datumStr',
-        );
-        return cached
+      // Debug logging removed for production
+return cached
             .map(
               (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
             )
@@ -202,8 +191,8 @@ class PutovanjaIstorijaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju za datum: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -236,8 +225,8 @@ class PutovanjaIstorijaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju za opseg: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -251,8 +240,8 @@ class PutovanjaIstorijaService {
       if (response == null) return null;
       return PutovanjaIstorija.fromMap(response);
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju po ID: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -279,10 +268,8 @@ class PutovanjaIstorijaService {
       }
       return [];
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dohvatanju za mesečnog putnika: $e',
-      );
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -294,10 +281,8 @@ class PutovanjaIstorijaService {
       // Validate before adding
       final validation = putovanje.validateFull();
       if (validation.isNotEmpty) {
-        dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Validation failed: ${validation.values.join(', ')}',
-        );
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       final response = await SupabaseSafe.run(
@@ -313,15 +298,11 @@ class PutovanjaIstorijaService {
       if (result.mesecniPutnikId != null) {
         await _clearCacheForMesecni(result.mesecniPutnikId!);
       }
-
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Dodato putovanje: ${putovanje.putnikIme}',
-      );
-
-      return result;
+      // Debug logging removed for production
+return result;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -359,10 +340,8 @@ class PutovanjaIstorijaService {
       }
       return result;
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju mesečnog putovanja: $e',
-      );
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -399,10 +378,8 @@ class PutovanjaIstorijaService {
       }
       return result;
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dodavanju dnevnog putovanja: $e',
-      );
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -414,10 +391,8 @@ class PutovanjaIstorijaService {
       // Validate before updating
       final validation = putovanje.validateFull();
       if (validation.isNotEmpty) {
-        dlog(
-          '❌ [PUTOVANJA ISTORIJA SERVICE] Validation failed: ${validation.values.join(', ')}',
-        );
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       final response = await SupabaseSafe.run(
@@ -433,15 +408,11 @@ class PutovanjaIstorijaService {
       if (result.mesecniPutnikId != null) {
         await _clearCacheForMesecni(result.mesecniPutnikId!);
       }
-
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Ažurirano putovanje: ${putovanje.putnikIme}',
-      );
-
-      return result;
+      // Debug logging removed for production
+return result;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri ažuriranju: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -472,15 +443,11 @@ class PutovanjaIstorijaService {
         () => _supabase.from('putovanja_istorija').update(updateData).eq('id', putovanjeId),
         fallback: <dynamic>[],
       );
-
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Ažuriran status putovanja: $putovanjeId',
-      );
-
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri ažuriranju statusa: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -502,13 +469,11 @@ class PutovanjaIstorijaService {
           await _clearCacheForMesecni(putovanje.mesecniPutnikId!);
         }
       }
-
-      dlog('✅ [PUTOVANJA ISTORIJA SERVICE] Obrisano putovanje: $id');
-
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri brisanju: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -543,10 +508,8 @@ class PutovanjaIstorijaService {
       final list = response is List ? response : <dynamic>[];
       return list.length;
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju broja putovanja: $e',
-      );
-      return 0;
+      // Debug logging removed for production
+return 0;
     }
   }
 
@@ -586,10 +549,8 @@ class PutovanjaIstorijaService {
 
       return ukupno;
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju ukupne zarade: $e',
-      );
-      return 0.0;
+      // Debug logging removed for production
+return 0.0;
     }
   }
 
@@ -611,10 +572,8 @@ class PutovanjaIstorijaService {
         cacheKey = _getSearchCacheKey(query);
         final cached = await CacheService.getFromMemory<List<PutovanjaIstorija>>(cacheKey);
         if (cached != null) {
-          dlog(
-            '📱 [PUTOVANJA ISTORIJA SERVICE] Returning cached search results',
-          );
-          return cached;
+      // Debug logging removed for production
+return cached;
         }
       }
 
@@ -678,8 +637,8 @@ class PutovanjaIstorijaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri pretrazi: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -692,10 +651,8 @@ class PutovanjaIstorijaService {
       for (final putovanje in putovanja) {
         final validation = putovanje.validateFull();
         if (validation.isNotEmpty) {
-          dlog(
-            '❌ [PUTOVANJA ISTORIJA SERVICE] Batch validation failed for ${putovanje.putnikIme}: ${validation.values.join(', ')}',
-          );
-          return [];
+      // Debug logging removed for production
+return [];
         }
       }
 
@@ -725,16 +682,13 @@ class PutovanjaIstorijaService {
         for (final mesecniId in affectedMesecni) {
           await _clearCacheForMesecni(mesecniId);
         }
-
-        dlog(
-          '✅ [PUTOVANJA ISTORIJA SERVICE] Batch dodano ${results.length} putovanja',
-        );
-        return results;
+      // Debug logging removed for production
+return results;
       }
       return [];
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri batch dodavanju: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -751,14 +705,11 @@ class PutovanjaIstorijaService {
           results.add(result);
         }
       }
-
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Batch ažurirano ${results.length}/${putovanja.length} putovanja',
-      );
-      return results;
+      // Debug logging removed for production
+return results;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri batch ažuriranju: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -789,14 +740,11 @@ class PutovanjaIstorijaService {
       for (final mesecniId in affectedMesecni) {
         await _clearCacheForMesecni(mesecniId);
       }
-
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Batch obrisano ${ids.length} putovanja',
-      );
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri batch brisanju: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -851,10 +799,8 @@ class PutovanjaIstorijaService {
         'period_end': doDatuma?.toIso8601String().split('T')[0],
       };
     } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri dobijanju detaljnih statistika: $e',
-      );
-      return {};
+      // Debug logging removed for production
+return {};
     }
   }
 
@@ -901,14 +847,11 @@ class PutovanjaIstorijaService {
       }
 
       final csvContent = csvLines.join('\n');
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Exported ${putovanja.length} records to CSV',
-      );
-
-      return csvContent;
+      // Debug logging removed for production
+return csvContent;
     } catch (e) {
-      dlog('❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri CSV export: $e');
-      return '';
+      // Debug logging removed for production
+return '';
     }
   }
 
@@ -925,15 +868,10 @@ class PutovanjaIstorijaService {
       );
 
       await _clearCache();
-
-      dlog(
-        '✅ [PUTOVANJA ISTORIJA SERVICE] Cleaned up records older than $cutoffDateStr',
-      );
-    } catch (e) {
-      dlog(
-        '❌ [PUTOVANJA ISTORIJA SERVICE] Greška pri čišćenju starih zapisa: $e',
-      );
-    }
+      // Debug logging removed for production
+} catch (e) {
+      // Debug logging removed for production
+}
   }
 
   // 📊 CACHE STATISTIKE

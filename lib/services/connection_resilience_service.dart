@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../utils/logging.dart';
-
 /// 🌐 CONNECTION RESILIENCE SERVICE
 /// Automatski reconnect, network monitoring, fallback strategije (FIXED VERSION)
 class ConnectionResilienceService {
@@ -79,11 +77,8 @@ class ConnectionResilienceService {
       final isConnected = await _checkNetworkConnection();
 
       if (wasOnline != isConnected) {
-        dlog(
-          '🔄 [CONNECTION RESILIENCE] Network status changed: ${isConnected ? "ONLINE" : "OFFLINE"}',
-        );
-
-        _updateConnectionState(isConnected);
+      // Debug logging removed for production
+_updateConnectionState(isConnected);
 
         if (isConnected && !_isSupabaseConnected) {
           // Network je vraćen, pokušaj reconnect na Supabase
@@ -128,23 +123,17 @@ class ConnectionResilienceService {
         await _checkSupabaseConnection();
 
         if (_isSupabaseConnected) {
-          dlog(
-            '✅ [CONNECTION RESILIENCE] Reconnect uspešan nakon $attempt pokušaja',
-          );
-          return;
+      // Debug logging removed for production
+return;
         }
       } catch (e) {
-        dlog(
-          '❌ [CONNECTION RESILIENCE] Reconnect pokušaj $attempt/$_maxRetries failed: $e',
-        );
-      }
+      // Debug logging removed for production
+}
 
       if (attempt < _maxRetries) {
         final delay = _baseRetryDelay * attempt;
-        dlog(
-          '⏳ [CONNECTION RESILIENCE] Čekam ${delay.inSeconds}s pre sledećeg pokušaja...',
-        );
-        await Future<void>.delayed(delay);
+      // Debug logging removed for production
+await Future<void>.delayed(delay);
       }
     }
   }

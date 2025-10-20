@@ -1,5 +1,3 @@
-import '../utils/logging.dart';
-
 /// 🔐 ADMIN SECURITY SERVICE
 /// Centralizovani servis za upravljanje admin privilegijama
 /// Zamenjuje hard-coded admin logiku sa sigurnijim pristupom
@@ -13,13 +11,13 @@ class AdminSecurityService {
   /// 🔍 Proveri da li je vozač admin
   static bool isAdmin(String? driverName) {
     if (driverName == null || driverName.isEmpty) {
-      dlog('⚠️ AdminSecurityService: Driver name is null or empty');
-      return false;
+      // Debug logging removed for production
+return false;
     }
 
     final isAdminUser = _adminUsers.contains(driverName);
-    dlog('🔐 AdminSecurityService: Driver "$driverName" admin status: $isAdminUser');
-    return isAdminUser;
+      // Debug logging removed for production
+return isAdminUser;
   }
 
   /// 🛡️ Proveri da li vozač može da vidi podatke drugog vozača

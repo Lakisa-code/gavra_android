@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../services/geocoding_stats_service.dart';
-import '../utils/logging.dart';
 
 class GeocodingAdminScreen extends StatefulWidget {
   const GeocodingAdminScreen({Key? key}) : super(key: key);
@@ -25,10 +24,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject =
-      BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject =
-      BehaviorSubject<String>.seeded('svi');
+  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
+  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
   late Stream<String> _debouncedSearchStream;
   final TextEditingController _searchController = TextEditingController();
 
@@ -64,8 +61,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     _searchSubject.close();
     _filterSubject.close();
     _searchController.dispose();
-
-    dlog('🧹 GeocodingAdminScreen: Disposed realtime monitoring resources');
+    // Debug logging removed for production
     super.dispose();
   }
 
@@ -88,7 +84,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     }
 
     _initializeRealtimeStream();
-    dlog('✅ GeocodingAdminScreen: V3.0 realtime monitoring initialized');
+    // Debug logging removed for production
   }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
@@ -105,9 +101,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       if (timeSinceLastHeartbeat.inSeconds > 90) {
         // 90 seconds timeout for admin stats
         isHealthy = false;
-        dlog(
-          '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',
-        );
+        // Debug logging removed for production
         break;
       }
     }
@@ -127,20 +121,18 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     } else if (isHealthy) {
       _realtimeHealthStatus.value = 'healthy';
     }
-
-    dlog(
-      '🩺 GeocodingAdminScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',
-    );
+    // Debug logging removed for production
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
   void _initializeRealtimeStream() {
     _statsSubscription?.cancel();
 
-    if (mounted) setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted)
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
     // Simulate stream-like behavior with periodic updates
     _loadData();
@@ -148,9 +140,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
 
   // 🔍 DEBOUNCED SEARCH SETUP
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject
-        .debounceTime(const Duration(milliseconds: 300))
-        .distinct();
+    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
 
     _debouncedSearchStream.listen((query) {
       _performSearch(query);
@@ -162,12 +152,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   }
 
   void _performSearch(String query) {
-    if (mounted) setState(() {
-      // Trigger rebuild with filtered data
-    });
+    if (mounted)
+      setState(() {
+        // Trigger rebuild with filtered data
+      });
 
-    final filtered = _getFilteredLocations();
-    dlog('🔍 Search query: "$query" - Found ${filtered.length} results');
+    // Debug logging removed for production
   }
 
   void _loadInitialData() {
@@ -183,34 +173,31 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       final popular = await GeocodingStatsService.getPopularLocations();
 
       if (mounted) {
-        if (mounted) setState(() {
-          _cachedStats = stats;
-          _cachedPopularLocations = popular;
-          _isLoading = false;
-          _errorMessage = null;
-        });
+        if (mounted)
+          setState(() {
+            _cachedStats = stats;
+            _cachedPopularLocations = popular;
+            _isLoading = false;
+            _errorMessage = null;
+          });
 
         // Sort locations
         _sortLocations();
-
-        dlog(
-          '✅ GeocodingAdminScreen: Loaded stats with ${popular.length} locations',
-        );
+        // Debug logging removed for production
       }
     } catch (e) {
       if (mounted) {
         _geocodingStreamHealthy.value = false;
-        if (mounted) setState(() {
-          _isLoading = false;
-          _errorMessage = e.toString();
-        });
-
-        dlog('❌ GeocodingAdminScreen data load error: $e');
-
-        // 🔄 AUTO RETRY after 10 seconds for admin screens
+        if (mounted)
+          setState(() {
+            _isLoading = false;
+            _errorMessage = e.toString();
+          });
+        // Debug logging removed for production
+// 🔄 AUTO RETRY after 10 seconds for admin screens
         Timer(const Duration(seconds: 10), () {
           if (mounted && _autoRefreshEnabled) {
-            dlog('🔄 GeocodingAdminScreen: Auto-retrying data load...');
+            // Debug logging removed for production
             _loadData();
           }
         });
@@ -223,21 +210,18 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     switch (_sortBy) {
       case 'count':
         _cachedPopularLocations.sort(
-          (a, b) =>
-              ((b['count'] ?? 0) as int).compareTo((a['count'] ?? 0) as int),
+          (a, b) => ((b['count'] ?? 0) as int).compareTo((a['count'] ?? 0) as int),
         );
         break;
       case 'location':
         _cachedPopularLocations.sort(
-          (a, b) => ((a['location'] ?? '') as String)
-              .compareTo((b['location'] ?? '') as String),
+          (a, b) => ((a['location'] ?? '') as String).compareTo((b['location'] ?? '') as String),
         );
         break;
       case 'recent':
         // Sort by most recently accessed (if timestamp available)
         _cachedPopularLocations.sort(
-          (a, b) => ((b['last_accessed'] ?? 0) as int)
-              .compareTo((a['last_accessed'] ?? 0) as int),
+          (a, b) => ((b['last_accessed'] ?? 0) as int).compareTo((a['last_accessed'] ?? 0) as int),
         );
         break;
     }
@@ -251,8 +235,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final searchQuery = _searchController.text.toLowerCase();
     if (searchQuery.isNotEmpty) {
       locations = locations.where((location) {
-        final locationName =
-            (location['location'] ?? '').toString().toLowerCase();
+        final locationName = (location['location'] ?? '').toString().toLowerCase();
         return locationName.contains(searchQuery);
       }).toList();
     }
@@ -404,8 +387,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           // Back button
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon:
-                const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           ),
 
           // Title
@@ -427,12 +409,11 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           const SizedBox(width: 8),
           IconButton(
             onPressed: () {
-              if (mounted) setState(() {
-                _autoRefreshEnabled = !_autoRefreshEnabled;
-              });
-              dlog(
-                '🔄 GeocodingAdminScreen: Auto-refresh ${_autoRefreshEnabled ? 'enabled' : 'disabled'}',
-              );
+              if (mounted)
+                setState(() {
+                  _autoRefreshEnabled = !_autoRefreshEnabled;
+                });
+              // Debug logging removed for production
             },
             icon: Icon(
               _autoRefreshEnabled ? Icons.sync : Icons.sync_disabled,
@@ -502,8 +483,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               decoration: InputDecoration(
                 hintText: 'Pretraži lokacije...',
                 hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                prefixIcon:
-                    Icon(Icons.search, color: Colors.white.withOpacity(0.6)),
+                prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.6)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         onPressed: () {
@@ -517,8 +497,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                       )
                     : null,
                 border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -570,17 +549,16 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final isSelected = _selectedFilter == value;
     return GestureDetector(
       onTap: () {
-        if (mounted) setState(() {
-          _selectedFilter = value;
-        });
-        dlog('🔍 GeocodingAdminScreen: Filter changed to $value');
+        if (mounted)
+          setState(() {
+            _selectedFilter = value;
+          });
+        // Debug logging removed for production
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
@@ -603,17 +581,17 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final isSelected = _sortBy == value;
     return GestureDetector(
       onTap: () {
-        if (mounted) setState(() {
-          _sortBy = value;
-          _sortLocations();
-        });
-        dlog('📊 GeocodingAdminScreen: Sort changed to $value');
+        if (mounted)
+          setState(() {
+            _sortBy = value;
+            _sortLocations();
+          });
+        // Debug logging removed for production
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color:
-              isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+          color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -900,8 +878,3 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     );
   }
 }
-
-
-
-
-

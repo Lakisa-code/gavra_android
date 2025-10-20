@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
-import '../utils/logging.dart';
 import '../utils/novac_validacija.dart';
 import '../utils/vozac_boja.dart';
 import 'clean_statistika_service.dart';
@@ -964,8 +963,8 @@ class StatistikaService {
     try {
       return await CleanStatistikaService.dohvatiUkupneStatistike();
     } catch (e) {
-      dlog('Greška pri dohvatanju clean statistika: $e');
-      rethrow;
+      // Debug logging removed for production
+rethrow;
     }
   }
 
@@ -975,8 +974,8 @@ class StatistikaService {
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
       return stats['no_duplicates'] as bool;
     } catch (e) {
-      dlog('Greška pri proveri duplikata: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -991,8 +990,8 @@ class StatistikaService {
         godina,
       );
     } catch (e) {
-      dlog('Greška pri dohvatanju clean mesečnih statistika: $e');
-      rethrow;
+      // Debug logging removed for production
+rethrow;
     }
   }
 
@@ -1001,8 +1000,8 @@ class StatistikaService {
     try {
       return await CleanStatistikaService.dohvatiSvePutnikeClean();
     } catch (e) {
-      dlog('Greška pri dohvatanju clean liste putnika: $e');
-      rethrow;
+      // Debug logging removed for production
+rethrow;
     }
   }
 
@@ -1012,8 +1011,8 @@ class StatistikaService {
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
       return (stats['ukupno_sve'] as num).toDouble();
     } catch (e) {
-      dlog('Greška pri dohvatanju clean ukupnog iznosa: $e');
-      rethrow;
+      // Debug logging removed for production
+rethrow;
     }
   }
 
@@ -1024,8 +1023,8 @@ class StatistikaService {
       await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
       return true;
     } catch (e) {
-      dlog('Greška pri kreiranju daily_checkins tabele: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -1041,8 +1040,9 @@ class StatistikaService {
       //   await kreirajDailyCheckinsTabelu();
       // } catch (e) {
       //   // Ignoraj greške pri kreiranju tabele
-      //   dlog('Info: Tabela možda već postoji: $e');
-      // }
+      //
+      // Debug logging removed for production
+// }
 
       // Učitaj sve mesečne putnike
       final mesecniService = MesecniPutnikService();

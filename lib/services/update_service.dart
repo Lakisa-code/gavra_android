@@ -7,9 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../utils/logging.dart';
-
-// Use centralized logger
+// Update service for checking GitHub releases
 
 class UpdateService {
   static const String repoOwner = 'bojanbc83';
@@ -27,8 +25,7 @@ class UpdateService {
   static void startBackgroundUpdateCheck() {
     // Zaustavi postojeći timer ako postoji
     _backgroundTimer?.cancel();
-
-    dlog('🔄 Pokretanje background update provere (svakih 60 min)');
+    // Starting background update check
 
     // Prva provera odmah
     _checkUpdateInBackground();
@@ -43,13 +40,13 @@ class UpdateService {
   static void stopBackgroundUpdateCheck() {
     _backgroundTimer?.cancel();
     _backgroundTimer = null;
-    dlog('⏹️ Background update provera zaustavljena');
+    // Background update check stopped
   }
 
   /// Tiha provera u pozadini bez UI-ja
   static Future<void> _checkUpdateInBackground() async {
     try {
-      dlog('🔍 Background provera update-a...');
+      // Background update check started
 
       // Trenutna verzija aplikacije
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -66,17 +63,16 @@ class UpdateService {
 
         // Proveri da li release postoji i nije draft
         if (data['draft'] == true) {
-          dlog('📝 Release je draft - nema update-a');
+          // Release is draft - no update
           return;
         }
 
         String latestVersion = (data['tag_name'] as String).replaceAll('v', '');
 
-        dlog('🔍 Background: Current: $currentVersion, Latest: $latestVersion');
-
+        // Version comparison
         // Ako su verzije iste, nema update-a
         if (currentVersion == latestVersion) {
-          dlog('✅ Background: Verzije su iste - nema update-a');
+          // Versions are same - no update
           return;
         }
 
@@ -87,17 +83,11 @@ class UpdateService {
           // Pamti poslednju pronađenu verziju (za buduće UI implementacije)
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString(_lastFoundVersionKey, latestVersion);
-
-          dlog('🚀 Background: Nova verzija pronađena: $latestVersion');
-          dlog('💾 Verzija sačuvana u SharedPreferences');
-        } else {
-          dlog('📊 Background: Nema novije verzije');
+          // New version found and saved
         }
-      } else {
-        dlog('❌ Background: GitHub API greška: ${response.statusCode}');
       }
     } catch (e) {
-      dlog('❌ Background: Greška pri proveri: $e');
+      // Error handling - logging removed for production
     }
   }
 
@@ -111,14 +101,14 @@ class UpdateService {
   static Future<void> skipVersion(String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_skippedVersionKey, version);
-    dlog('📝 Preskočena verzija: $version');
+    // Version skipped
   }
 
   /// Pamti verziju koja je instalirana (kada korisnik klikne Download)
   static Future<void> markVersionAsInstalled(String version) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastInstalledVersionKey, version);
-    dlog('✅ Verzija označena kao instalirana: $version');
+    // Version marked as installed
   }
 
   /// Proverava da li je verzija već instalirana
@@ -151,8 +141,8 @@ class UpdateService {
     final now = DateTime.now();
     final hoursSinceLastCheck = now.difference(lastCheckTime).inHours;
 
-    dlog('🕐 Sati od poslednje provere: $hoursSinceLastCheck');
-    return hoursSinceLastCheck >= 1; // Proveravaj svakih sat vremena
+    // Check every hour
+    return hoursSinceLastCheck >= 1;
   }
 
   /// Proverava da li je dostupna nova verzija
@@ -160,7 +150,7 @@ class UpdateService {
     try {
       // Proverava da li je prošlo dovoljno vremena od poslednje provere
       if (!await _shouldCheckForUpdate()) {
-        dlog('⏰ Prerano za novu proveru update-a');
+        // Too early for new check
         return false;
       }
 
@@ -179,37 +169,31 @@ class UpdateService {
 
         // Proveri da li release postoji i nije draft
         if (data['draft'] == true) {
-          dlog('📝 Release je draft - nema update-a');
+          // Release is draft - no update
           return false;
         }
 
         String latestVersion = (data['tag_name'] as String).replaceAll('v', '');
 
-        dlog('🚀 Najnovija verzija na GitHub: $latestVersion');
-        dlog('� Raw tag_name: ${data['tag_name']}');
-        dlog('�🔍 Trenutna verzija aplikacije: $currentVersion');
-        dlog('⚖️ String comparison: "$currentVersion" == "$latestVersion"');
-        dlog('📊 Are equal? ${currentVersion == latestVersion}');
+        // Version comparison completed
 
         // DIREKTNA PROVERA: Ako su verzije iste, NEMA UPDATE-a!
         if (currentVersion == latestVersion) {
-          dlog(
-            '✅ VERZIJE SU ISTE ($currentVersion == $latestVersion) - NEMA UPDATE-A!',
-          );
+          // Versions are same - no update
           await _saveLastCheckTime();
           return false;
         }
 
         // Proverava da li je korisnik već preskočio ovu verziju
         if (await isVersionSkipped(latestVersion)) {
-          dlog('⏭️ Verzija $latestVersion je već preskočena');
+          // Version already skipped
           await _saveLastCheckTime();
           return false;
         }
 
         // Proverava da li je ova verzija već "instalirana" (korisnik je već kliknuo Download)
         if (await isVersionInstalled(latestVersion)) {
-          dlog('💿 Verzija $latestVersion je već instalirana/download-ovana');
+          // Version already installed/downloaded
           await _saveLastCheckTime();
           return false;
         }
@@ -218,11 +202,10 @@ class UpdateService {
         try {
           publishedAt = DateTime.parse(data['published_at'] as String);
         } catch (e) {
-          dlog('⚠️ Nemože da parsira datum objave');
+          // Cannot parse publish date
         }
 
-        dlog('🚀 Najnovija verzija na GitHub: $latestVersion');
-        dlog('📅 Objavljena: ${publishedAt ?? "Nepoznato"}');
+        // Version information processed
 
         // Dodatna provera - samo ako je release stvarno objavljen u poslednjih 7 dana
         // ili je verzija značajno veća (major update)
@@ -230,15 +213,12 @@ class UpdateService {
 
         if (hasUpdate && publishedAt != null) {
           final daysSincePublish = DateTime.now().difference(publishedAt).inDays;
-          dlog('📊 Dana od objave: $daysSincePublish');
 
           // STROŽIJA PROVERA: Ako je release stariji od 7 dana, ne prikazuj update osim ako nije major verzija
           if (daysSincePublish > 7) {
             bool isMajorUpdate = _isMajorVersionDifference(currentVersion, latestVersion);
             if (!isMajorUpdate) {
-              dlog(
-                '🕰️ Release je prestari ($daysSincePublish dana), preskačem update',
-              );
+              // Release is too old, skipping update
               await _saveLastCheckTime();
               return false;
             }
@@ -247,23 +227,17 @@ class UpdateService {
           // Dodatno: Proverava da li je release "nightly" build - ne prikazuj update za nightly
           String releaseTag = (data['tag_name'] as String).toLowerCase();
           if (releaseTag.contains('nightly') || releaseTag.contains('beta') || releaseTag.contains('alpha')) {
-            dlog('🌙 Nightly/Beta release - preskačem update');
+            // Nightly/Beta release - skip update
             await _saveLastCheckTime();
             return false;
           }
         }
 
-        dlog('📊 Ima update: $hasUpdate');
-        dlog(
-          '🔍 DETALJNO: $currentVersion vs $latestVersion = ${hasUpdate ? "TREBA UPDATE" : "NEMA UPDATE"}',
-        );
-
+        // Update check completed
         return hasUpdate;
-      } else {
-        dlog('❌ GitHub API greška: ${response.statusCode}');
       }
     } catch (e) {
-      dlog('❌ Greška pri proveri update-a: $e');
+      // Error handling - logging removed for production
     }
     return false;
   }
@@ -293,7 +267,7 @@ class UpdateService {
         // Fallback na GitHub release stranicu ako nema APK
         apkDownloadUrl ??= data['html_url'] as String?;
 
-        dlog('🔗 Download URL: $apkDownloadUrl');
+        // Download URL found
 
         return {
           'version': (data['tag_name'] as String).replaceAll('v', ''),
@@ -304,7 +278,7 @@ class UpdateService {
         };
       }
     } catch (e) {
-      dlog('❌ Greška pri dobijanju info o verziji: $e');
+      // Error handling - logging removed for production
     }
     return null;
   }
@@ -347,7 +321,7 @@ class UpdateService {
         if (latestParts[i] < currentParts[i]) return false;
       }
     } catch (e) {
-      dlog('❌ Greška pri poređenju verzija: $e');
+      // Error handling - logging removed for production
     }
     return false;
   }
@@ -362,7 +336,7 @@ class UpdateService {
         return latestParts[0] > currentParts[0];
       }
     } catch (e) {
-      dlog('❌ Greška pri proveri major verzije: $e');
+      // Error handling - logging removed for production
     }
     return false;
   }
@@ -381,7 +355,7 @@ class UpdateChecker {
         }
       }
     } catch (e) {
-      dlog('❌ Greška u automatskoj proveri: $e');
+      // Error handling - logging removed for production
     }
   }
 
@@ -516,8 +490,3 @@ class UpdateChecker {
     }
   }
 }
-
-
-
-
-

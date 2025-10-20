@@ -1,7 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../utils/logging.dart';
-
 class EmailAuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -18,11 +16,8 @@ class EmailAuthService {
     String password,
   ) async {
     try {
-      dlog(
-        '📧 Registrujem vozača $driverName sa email-om: $email (bez verification)',
-      );
-
-      final AuthResponse response = await _supabase.auth.signUp(
+      // Debug logging removed for production
+final AuthResponse response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'driver_name': driverName},
@@ -30,15 +25,15 @@ class EmailAuthService {
       );
 
       if (response.user != null) {
-        dlog('✅ Vozač registrovan uspešno (bez email verifikacije)');
-        return true;
+      // Debug logging removed for production
+return true;
       } else {
-        dlog('❌ Registracija vozača nije uspela');
-        return false;
+      // Debug logging removed for production
+return false;
       }
     } catch (e) {
-      dlog('❌ Greška pri registraciji vozača: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -50,39 +45,36 @@ class EmailAuthService {
   /// Prijavi se sa email-om i lozinkom
   static Future<String?> signInWithEmail(String email, String password) async {
     try {
-      dlog('🔐 Prijavljujem se sa email-om: $email');
-
-      final AuthResponse response = await _supabase.auth.signInWithPassword(
+      // Debug logging removed for production
+final AuthResponse response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       if (response.user != null) {
         final driverName = response.user!.userMetadata?['driver_name'] as String?;
-        dlog('✅ Prijava uspešna za vozača: $driverName');
-        return driverName;
+      // Debug logging removed for production
+return driverName;
       } else {
-        dlog('❌ Prijava nije uspela');
-        return null;
+      // Debug logging removed for production
+return null;
       }
     } catch (e) {
-      dlog('❌ Greška pri prijavi: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
   /// Resetuj lozinku preko email-a
   static Future<bool> resetPasswordViaEmail(String email) async {
     try {
-      dlog('🔑 Resetujem lozinku za email: $email');
-
-      await _supabase.auth.resetPasswordForEmail(email);
-
-      dlog('✅ Email za reset lozinke poslat');
-      return true;
+      // Debug logging removed for production
+await _supabase.auth.resetPasswordForEmail(email);
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ Greška pri resetu lozinke: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -91,38 +83,33 @@ class EmailAuthService {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        dlog('❌ Nema ulogovanog korisnika');
-        return false;
+      // Debug logging removed for production
+return false;
       }
-
-      dlog('📧 Šaljem ponovo email za potvrdu na: ${user.email}');
-
-      await _supabase.auth.resend(
+      // Debug logging removed for production
+await _supabase.auth.resend(
         type: OtpType.signup,
         email: user.email,
         emailRedirectTo: 'gavra013://auth/callback',
       );
-
-      dlog('✅ Email za potvrdu poslat ponovo');
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ Greška pri slanju potvrde: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
   /// Odjavi se
   static Future<bool> signOut() async {
     try {
-      dlog('🚪 Odjavljujem se');
-
-      await _supabase.auth.signOut();
-
-      dlog('✅ Odjava uspešna');
-      return true;
+      // Debug logging removed for production
+await _supabase.auth.signOut();
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ Greška pri odjavi: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 

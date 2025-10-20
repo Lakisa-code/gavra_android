@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import '../services/optimized_kusur_service.dart';
-import '../utils/logging.dart';
-
 /// 🚀 SIMPLIFIKOVANI DAILY CHECK-IN SERVIS
 /// Rešava problem duplog čuvanja i kompleksnosti
 class SimplifiedDailyCheckInService {
@@ -19,19 +17,19 @@ class SimplifiedDailyCheckInService {
       final success = await OptimizedKusurService.updateKusurForVozac(vozac, iznos);
 
       if (success) {
-        dlog('✅ SimplifiedDailyCheckIn: Saved $vozac: $iznos');
-        // Emituj update za stream
+      // Debug logging removed for production
+// Emituj update za stream
         if (!_streamController.isClosed) {
           _streamController.add(iznos);
         }
         return true;
       } else {
-        dlog('🔄 SimplifiedDailyCheckIn: Saved locally $vozac: $iznos');
-        return false; // Samo lokalno sačuvano
+      // Debug logging removed for production
+return false; // Samo lokalno sačuvano
       }
     } catch (e) {
-      dlog('❌ SimplifiedDailyCheckIn error $vozac: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -55,30 +53,28 @@ class SimplifiedDailyCheckInService {
   /// 📊 LEGACY SUPPORT - getLastDailyReport wrapper
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
     // Optimizovani servis ne čuva kompleksne dnevne popise - vraćamo null
-    dlog('📊 SimplifiedDailyCheckIn: getLastDailyReport za $vozac - vraćamo null (optimizovano)');
-    return null;
+      // Debug logging removed for production
+return null;
   }
 
   /// 📊 LEGACY SUPPORT - generateAutomaticReport wrapper
   static Future<Map<String, dynamic>?> generateAutomaticReport(String vozac, DateTime targetDate) async {
     // Optimizovani servis ne generiše automatske popise - vraćamo null
-    dlog(
-      '📊 SimplifiedDailyCheckIn: generateAutomaticReport za $vozac na ${targetDate.day}.${targetDate.month}.${targetDate.year} - vraćamo null (optimizovano)',
-    );
-    return null;
+      // Debug logging removed for production
+return null;
   }
 
   /// 📊 LEGACY SUPPORT - saveDailyReport wrapper
   static Future<void> saveDailyReport(String vozac, DateTime datum, Map<String, dynamic> podaci) async {
     // Za sada samo logujemo - možda implementirati u budućnosti
-    dlog('📊 SimplifiedDailyCheckIn: Daily report za $vozac na ${datum.day}.${datum.month}.${datum.year}');
-  }
+      // Debug logging removed for production
+}
 
   /// 🔗 LEGACY SUPPORT - initializeRealtimeForDriver wrapper
   static StreamSubscription<dynamic>? initializeRealtimeForDriver(String vozac) {
     // Vraćamo null jer optimizovani servis ne treba realtime init
-    dlog('📊 SimplifiedDailyCheckIn: Legacy initializeRealtimeForDriver pozvan za $vozac - vraćamo null');
-    return null;
+      // Debug logging removed for production
+return null;
   }
 
   /// 🔄 SYNC OFFLINE CHANGES

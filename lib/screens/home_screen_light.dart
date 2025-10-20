@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/firebase_service.dart';
-import '../utils/logging.dart';
 import 'welcome_screen.dart';
 
 class HomeScreenLight extends StatefulWidget {
@@ -28,12 +27,11 @@ class _HomeScreenLightState extends State<HomeScreenLight> {
     try {
       final prefs = await SharedPreferences.getInstance();
       _currentDriver = prefs.getString('selected_driver');
-      dlog('🚗 Trenutni vozač: $_currentDriver');
-
-      if (mounted) setState(() => _isLoading = false);
+      // Debug logging removed for production
+if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      dlog('❌ Greška pri učitavanju vozača: $e');
-      if (mounted) setState(() => _isLoading = false);
+      // Debug logging removed for production
+if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -44,17 +42,15 @@ class _HomeScreenLightState extends State<HomeScreenLight> {
 
       // ✅ FIREBASE SERVICE - CLEAR CURRENT DRIVER
       await FirebaseService.clearCurrentDriver();
-
-      dlog('✅ Logout uspešan za vozača: $_currentDriver');
-
-      if (mounted) {
+      // Debug logging removed for production
+if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
         );
       }
     } catch (e) {
-      dlog('❌ Greška pri logout-u: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   @override

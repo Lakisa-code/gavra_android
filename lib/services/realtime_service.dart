@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart';
-import '../utils/logging.dart';
 import '../utils/slot_utils.dart';
 import 'supabase_safe.dart';
 
@@ -58,23 +57,21 @@ class RealtimeService {
   Stream<dynamic> tableStream(String table) {
     final client = Supabase.instance.client;
     try {
-      dlog('🔌 [REALTIME SERVICE] Creating stream for table: $table');
+      // Debug logging removed for production
       final stream = client.from(table).stream(primaryKey: ['id']).timeout(
         const Duration(seconds: 30),
         onTimeout: (sink) {
-          dlog('⏰ [REALTIME SERVICE] Stream timeout for $table - retrying...');
+          // Debug logging removed for production
           sink.close();
         },
       );
       return stream.map((data) {
-        dlog(
-          '🔔 [REALTIME SERVICE] Stream event for $table: ${(data as List?)?.length ?? 0} rows',
-        );
+        // Debug logging removed for production
         return data;
       });
     } catch (e) {
-      dlog('❌ [REALTIME SERVICE] Failed to create stream for $table: $e');
-      // Return an empty list stream so callers can subscribe safely.
+      // Debug logging removed for production
+// Return an empty list stream so callers can subscribe safely.
       return Stream.value(<dynamic>[]);
     }
   }
@@ -88,7 +85,7 @@ class RealtimeService {
     bool? cancelOnError,
   }) {
     void loggedOnData(dynamic data) {
-      dlog('🔄 Realtime event for $table: ${data?.length ?? 0} records');
+      // Debug logging removed for production
       onData(data);
     }
 
@@ -159,28 +156,20 @@ class RealtimeService {
           }
           _lastPutovanjaRows = rows;
           try {
-            final sample = rows
-                .take(5)
-                .map(
-                  (r) => r['putnik_ime'] ?? r['id']?.toString() ?? r.toString(),
-                )
-                .toList();
-            dlog(
-              '🔔 [REALTIME] putovanja_istorija rows: ${rows.length}; sample: $sample',
-            );
+            // Debug logging removed for production
           } catch (_) {}
           if (!_putovanjaController.isClosed) {
             _putovanjaController.add(rows);
           }
           _emitCombinedPutnici();
         } catch (e) {
-          dlog('❌ [REALTIME] Error processing putovanja_istorija: $e');
-          // Nastavi rad bez prekidanja
+          // Debug logging removed for production
+// Nastavi rad bez prekidanja
         }
       },
       onError: (Object error) {
-        dlog('❌ [REALTIME] putovanja_istorija stream error: $error');
-        // Pokušaj reconnect preko ConnectionResilience
+        // Debug logging removed for production
+// Pokušaj reconnect preko ConnectionResilience
       },
     );
 
@@ -196,25 +185,17 @@ class RealtimeService {
           }
           _lastMesecniRows = rows;
           try {
-            final sample = rows
-                .take(5)
-                .map(
-                  (r) => r['putnik_ime'] ?? r['ime'] ?? r['id'] ?? r.toString(),
-                )
-                .toList();
-            dlog(
-              '🔔 [REALTIME] mesecni_putnici rows: ${rows.length}; sample: $sample',
-            );
+            // Debug logging removed for production
           } catch (_) {}
           _emitCombinedPutnici();
         } catch (e) {
-          dlog('❌ [REALTIME] Error processing mesecni_putnici: $e');
-          // Nastavi rad bez prekidanja
+          // Debug logging removed for production
+// Nastavi rad bez prekidanja
         }
       },
       onError: (Object error) {
-        dlog('❌ [REALTIME] mesecni_putnici stream error: $error');
-        // Pokušaj reconnect preko ConnectionResilience
+        // Debug logging removed for production
+// Pokušaj reconnect preko ConnectionResilience
       },
     );
 
@@ -224,20 +205,19 @@ class RealtimeService {
 
   /// Stop any centralized subscriptions started with [startForDriver]
   Future<void> stopForDriver() async {
-    dlog('🛑 [REALTIME SERVICE] Stopping realtime subscriptions...');
-
-    // Zaustavi sve aktivne subscription-e sa proper error handling
+    // Debug logging removed for production
+// Zaustavi sve aktivne subscription-e sa proper error handling
     try {
       await _putovanjaSub?.cancel();
       _putovanjaSub = null;
     } catch (e) {
-      dlog('⚠️ [REALTIME SERVICE] Error canceling putovanja subscription: $e');
+      // Debug logging removed for production
     }
     try {
       await _mesecniSub?.cancel();
       _mesecniSub = null;
     } catch (e) {
-      dlog('⚠️ [REALTIME SERVICE] Error canceling mesecni subscription: $e');
+      // Debug logging removed for production
     }
 
     // Clear internal state
@@ -251,19 +231,16 @@ class RealtimeService {
     if (!_combinedPutniciController.isClosed) {
       _combinedPutniciController.add([]);
     }
-
-    dlog('✅ [REALTIME SERVICE] All subscriptions stopped');
+    // Debug logging removed for production
   }
 
   /// 🔄 EMERGENCY RESTART REALTIME CONNECTIONS
   Future<void> restartConnections(String? vozac) async {
-    dlog('🔄 [REALTIME SERVICE] Emergency restart requested...');
-
+    // Debug logging removed for production
     await stopForDriver();
     await Future<void>.delayed(const Duration(seconds: 2)); // Brief pause
     startForDriver(vozac);
-
-    dlog('✅ [REALTIME SERVICE] Emergency restart completed');
+    // Debug logging removed for production
   }
 
   void _emitCombinedPutnici() {
@@ -311,7 +288,7 @@ class RealtimeService {
           );
           combined.add(putnik);
         } catch (e) {
-          dlog('❌ Error converting dnevni_putnici row: $e, data: $r');
+          // Debug logging removed for production
         }
       }
 
@@ -335,20 +312,18 @@ class RealtimeService {
           }
           continue;
         } catch (e) {
-          dlog('❌ Error converting mesecni row: $e, data: $map');
+          // Debug logging removed for production
         }
       }
-
-      dlog('📊 Emitting ${combined.length} combined putnici');
+      // Debug logging removed for production
       try {
-        final sample = combined.take(10).map((p) => '${p.ime}@${p.polazak}@${p.grad}').toList();
-        dlog('📋 Combined sample: $sample');
+        // Debug logging removed for production
       } catch (_) {}
       if (!_combinedPutniciController.isClosed) {
         _combinedPutniciController.add(combined);
       }
     } catch (e) {
-      dlog('❌ Error in _emitCombinedPutnici: $e');
+      // Debug logging removed for production
     }
   }
 
@@ -393,7 +368,7 @@ class RealtimeService {
         });
       }
       final result = filtered.toList();
-      dlog('✅ Filtered result: ${result.length} putnici');
+      // Debug logging removed for production
       return result;
     });
   }
@@ -490,9 +465,8 @@ class RealtimeService {
   /// and emit the latest combined set.
   Future<void> refreshNow() async {
     try {
-      dlog('🔄 [REFRESH NOW] Starting manual refresh...');
-
-      // 🔄 STANDARDIZOVANO: koristi putovanja_istorija i mesecni_putnici
+      // Debug logging removed for production
+// 🔄 STANDARDIZOVANO: koristi putovanja_istorija i mesecni_putnici
       final putovanjaData = await SupabaseSafe.select('putovanja_istorija');
       final mesecniData = await SupabaseSafe.select('mesecni_putnici');
 
@@ -503,17 +477,11 @@ class RealtimeService {
           (mesecniData is List) ? mesecniData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
 
       try {
-        final pSample =
-            _lastPutovanjaRows.take(3).map((r) => r['putnik_ime'] ?? r['id']?.toString() ?? 'unknown').toList();
-        final mSample =
-            _lastMesecniRows.take(3).map((r) => r['putnik_ime'] ?? r['id']?.toString() ?? 'unknown').toList();
-        dlog(
-          '🔄 [REFRESH NOW] fetched putovanja: ${_lastPutovanjaRows.length}, mesecni: ${_lastMesecniRows.length}; samples: putovanja=$pSample, mesecni=$mSample',
-        );
+        // Debug logging removed for production
       } catch (_) {}
       _emitCombinedPutnici();
     } catch (e) {
-      dlog('❌ [REFRESH NOW] Error: $e');
+      // Debug logging removed for production
     }
   }
 }

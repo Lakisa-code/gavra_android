@@ -5,7 +5,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart';
-import '../utils/logging.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/text_utils.dart';
@@ -23,9 +22,8 @@ class PrintingService {
     BuildContext context,
   ) async {
     try {
-      dlog('📄 Priprema spiska putnika za štampanje...');
-
-      // ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
+      // Debug logging removed for production
+// ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
       // Try to compute isoDate from selectedDay (if present) - otherwise leave null
       String? isoDate;
       try {
@@ -164,11 +162,10 @@ class PrintingService {
         name:
             'Spisak_putnika_${selectedDay}_${selectedVreme}_${selectedGrad}_${DateFormat('dd_MM_yyyy').format(DateTime.now())}.pdf',
       );
-
-      dlog('✅ PDF kreiran uspešno!');
-    } catch (e) {
-      dlog('❌ Greška pri štampanju: $e');
-      if (context.mounted) {
+      // Debug logging removed for production
+} catch (e) {
+      // Debug logging removed for production
+if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri štampanju: $e'),

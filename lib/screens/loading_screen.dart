@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../utils/logging.dart';
 import 'welcome_screen.dart';
 
 // 🔄 V3.0 Loading Stages
@@ -67,9 +66,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     _initializeAnimations();
     _setupTimeout();
     _startLoadingProcess();
-
-    dlog('🔄 LoadingScreen V3.0: Starting enhanced loading process');
-  }
+      // Debug logging removed for production
+}
 
   void _initializeAnimations() {
     // Pulsing animation for enhanced visual feedback
@@ -107,8 +105,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   void _setupTimeout() {
     _timeoutTimer = Timer(timeoutDuration, () {
       if (mounted && !_hasError.value) {
-        dlog('⏱️ LoadingScreen: Timeout reached, showing error');
-        _handleLoadingError('Učitavanje traje predugo. Pokušajte ponovo.');
+      // Debug logging removed for production
+_handleLoadingError('Učitavanje traje predugo. Pokušajte ponovo.');
       }
     });
   }
@@ -121,8 +119,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
         _navigateToMainApp();
       }
     } catch (e) {
-      dlog('❌ LoadingScreen error: $e');
-      _handleLoadingError(e.toString());
+      // Debug logging removed for production
+_handleLoadingError(e.toString());
     }
   }
 
@@ -133,10 +131,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       // Update current stage
       _currentStage.value = stage;
       _statusMessage.value = stage.message;
-
-      dlog('📋 LoadingScreen: ${stage.name} - ${stage.message}');
-
-      // Simulate realistic loading with progressive delay
+      // Debug logging removed for production
+// Simulate realistic loading with progressive delay
       final delay = stageDelay.inMilliseconds + (_retryCount * 200);
       await Future<void>.delayed(Duration(milliseconds: delay));
 
@@ -188,17 +184,14 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
         _hasError.value = true;
         _errorMessage.value = error;
       });
-
-    dlog('❌ LoadingScreen: Error handled - $error');
-  }
+      // Debug logging removed for production
+}
 
   void _navigateToMainApp() {
     _timeoutTimer?.cancel();
     _loadingTimer?.cancel();
-
-    dlog('✅ LoadingScreen: Navigating to WelcomeScreen');
-
-    if (mounted) {
+      // Debug logging removed for production
+if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (context) => const WelcomeScreen(),
@@ -224,9 +217,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
         _currentStage.value = LoadingStage.initializing;
         _statusMessage.value = LoadingStage.initializing.message;
       });
-    dlog('🔄 LoadingScreen: Retry attempt $_retryCount/$maxRetries');
-
-    // Restart the process
+      // Debug logging removed for production
+// Restart the process
     _initializeV3Loading();
   }
 
@@ -641,8 +633,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        dlog('🚪 LoadingScreen: User requested exit');
-                        SystemNavigator.pop();
+      // Debug logging removed for production
+SystemNavigator.pop();
                       },
                       icon: const Icon(
                         Icons.close,

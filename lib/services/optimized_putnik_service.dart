@@ -2,7 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/dnevni_putnik.dart';
 import '../models/mesecni_putnik.dart';
-import '../utils/logging.dart';
 import 'database_optimizer.dart';
 import 'query_performance_monitor.dart';
 
@@ -190,8 +189,8 @@ class OptimizedPutnikService {
 
           return true;
         } catch (e) {
-          dlog('❌ [OPTIMIZED PUTNIK SERVICE] Batch insert failed: $e');
-          return false;
+      // Debug logging removed for production
+return false;
         }
       },
       metadata: {'count': putovanja.length},
@@ -218,8 +217,8 @@ class OptimizedPutnikService {
 
           return true;
         } catch (e) {
-          dlog('❌ [OPTIMIZED PUTNIK SERVICE] Update failed: $e');
-          return false;
+      // Debug logging removed for production
+return false;
         }
       },
       metadata: {

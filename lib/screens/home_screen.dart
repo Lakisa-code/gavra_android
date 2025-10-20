@@ -21,7 +21,6 @@ import '../theme.dart';
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
-import '../utils/logging.dart';
 import '../utils/page_transitions.dart';
 import '../utils/schedule_utils.dart';
 import '../utils/slot_utils.dart';
@@ -272,11 +271,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _checkRealtimeHealth,
         isPeriodic: true,
       );
-
-      dlog('🚨 Realtime monitoring setup completed');
-    } catch (e) {
-      dlog('Failed to setup realtime monitoring: $e');
-    }
+      // Debug logging removed for production
+} catch (e) {
+      // Debug logging removed for production
+}
   }
 
   // 🚨 Check realtime system health
@@ -286,12 +284,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (_isRealtimeHealthy.value != isHealthy) {
         _isRealtimeHealthy.value = isHealthy;
-        dlog('💓 Realtime health changed: $isHealthy');
-      }
+      // Debug logging removed for production
+}
     } catch (e) {
       _isRealtimeHealthy.value = false;
-      dlog('Heartbeat check failed: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   void _setupRealtimeListener() {
@@ -301,10 +299,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 🔄 STANDARDIZOVANO: koristi putovanja_istorija (glavni naziv tabele)
     _realtimeSubscription = RealtimeService.instance.subscribe('putovanja_istorija', (data) {
       // Stream will update StreamBuilder via service layers
-      dlog(
-        '🔄 [HOME SCREEN] Received realtime update: ${data?.length ?? 0} records',
-      );
-    });
+      // Debug logging removed for production
+});
   }
 
   void _startSmartNotifikacije() {
@@ -344,36 +340,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<List<Putnik>> _getAllPutnici() async {
     try {
-      dlog('🔍 Getting all putnici for day: $_selectedDay');
-      // 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
+      // Debug logging removed for production
+// 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
       // 🎯 PROSLIJEDI SELEKTOVANI DAN umesto današnjeg
       final result = await _putnikService.getAllPutniciFromBothTables(
         targetDay: _selectedDay,
       );
-      dlog('✅ Got ${result.length} putnici from both tables');
-      return result;
+      // Debug logging removed for production
+return result;
     } catch (e) {
-      dlog('❌ Error in _getAllPutnici: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
   Future<void> _loadPutnici() async {
-    dlog('🔄 Loading putnici started...');
-    // 🛡️ FIX: Pojednostavi dupli mounted check
+      // Debug logging removed for production
+// 🛡️ FIX: Pojednostavi dupli mounted check
     if (mounted) setState(() => _isLoading = true);
     try {
       final putnici = await _getAllPutnici();
-      dlog('✅ Loading putnici completed: ${putnici.length} putnici');
-      if (mounted) {
+      // Debug logging removed for production
+if (mounted) {
         setState(() {
           _allPutnici = putnici;
           _isLoading = false;
         });
       }
     } catch (e) {
-      dlog('❌ Error loading putnici: $e');
-      if (mounted) setState(() => _isLoading = false);
+      // Debug logging removed for production
+if (mounted) setState(() => _isLoading = false);
       _showErrorDialog('Greška pri učitavanju: $e');
     }
   }
@@ -967,9 +963,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             dodaoVozac: _currentDriver,
                             adresa: adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                           );
-
-                          dlog('🔥 [HOME SCREEN] Pozivam dodajPutnika...');
-                          await _putnikService.dodajPutnika(putnik);
+      // Debug logging removed for production
+await _putnikService.dodajPutnika(putnik);
                           // ✅ FORSIRANA REFRESH LISTE
                           await _loadPutnici();
 
@@ -979,9 +974,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             setState(() {
                               _isAddingPutnik = false;
                             });
-                          dlog('🔥 [HOME SCREEN] Loading state isključen');
-
-                          if (mounted) {
+      // Debug logging removed for production
+if (mounted) {
                             // ignore: use_build_context_synchronously
                             Navigator.pop(context);
                             // ignore: use_build_context_synchronously
@@ -1382,10 +1376,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return count;
           } catch (e) {
             // Log error and continue to fallback
-            dlog(
-              '⚠️ [GET PUTNIK COUNT] Greška pri računanju broja putnika: $e',
-            );
-          }
+      // Debug logging removed for production
+}
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {
@@ -1806,16 +1798,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _selectedGradSubject.close();
       }
     } catch (e) {
-      dlog('⚠️ Error closing _selectedGradSubject: $e');
-    }
+      // Debug logging removed for production
+}
 
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
     try {
       _realtimeSubscription?.cancel();
       _networkStatusSubscription?.cancel();
     } catch (e) {
-      dlog('⚠️ Error cancelling subscriptions: $e');
-    }
+      // Debug logging removed for production
+}
 
     // 🧹 SAFE DISPOSAL ValueNotifier-a
     try {
@@ -1823,11 +1815,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _isRealtimeHealthy.dispose();
       }
     } catch (e) {
-      dlog('⚠️ Error disposing ValueNotifier: $e');
-    }
-
-    dlog('🧹 HomeScreen: Disposed all resources safely');
-    super.dispose();
+      // Debug logging removed for production
+}
+      // Debug logging removed for production
+super.dispose();
   }
 }
 

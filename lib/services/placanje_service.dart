@@ -63,8 +63,6 @@ class PlacanjeService {
         rezultat[putnik.id] = iznos;
       }
     } catch (e) {
-      print('❌ Greška u PlacanjeService.getStvarnaPlacanja: $e');
-
       // Fallback - koristi podatke iz mesecni_putnici
       for (final putnik in putnici) {
         rezultat[putnik.id] = putnik.cena ?? putnik.ukupnaCenaMeseca;
@@ -137,8 +135,6 @@ class PlacanjeService {
         rezultat[putnik.id] = iznos;
       }
     } catch (e) {
-      print('❌ Greška u PlacanjeService.getPlacanjaZaMesec: $e');
-
       // Fallback - vrati 0 za sve putnike
       for (final putnik in putnici) {
         rezultat[putnik.id] = 0.0;
@@ -178,7 +174,7 @@ class PlacanjeService {
         }
       }
     } catch (e) {
-      print('❌ Greška u sinhronizaciji plaćanja: $e');
+      // Ignoriši greške u sinhronizaciji
     }
   }
 
@@ -209,7 +205,6 @@ class PlacanjeService {
 
       return ukupno;
     } catch (e) {
-      print('❌ Greška pri dobijanju ukupnog iznosa za mesec: $e');
       return 0.0;
     }
   }
@@ -236,7 +231,6 @@ class PlacanjeService {
 
       return (placanja as List).cast<Map<String, dynamic>>();
     } catch (e) {
-      print('❌ Greška pri dobijanju detaljnih plaćanja za mesec: $e');
       return [];
     }
   }

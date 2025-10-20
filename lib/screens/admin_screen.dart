@@ -13,10 +13,8 @@ import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pa
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
 import '../utils/date_utils.dart' as app_date_utils;
-import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
-import '../widgets/integration_test_runner.dart'; // 🧪 INTEGRATION TEST
 // import '../widgets/stream_error_widget.dart'; // 🚨 STREAM ERROR HANDLING - LOKALNO IMPLEMENTIRANO
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
@@ -72,7 +70,7 @@ class _AdminScreenState extends State<AdminScreen> {
       LocalNotificationService.initialize(context);
       RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (e) {
-      dlog('⚠️ Admin screen notification init error: $e');
+      // Error handling - logging removed for production
     }
 
     FirebaseService.getCurrentDriver().then((driver) {
@@ -80,25 +78,25 @@ class _AdminScreenState extends State<AdminScreen> {
         RealtimeNotificationService.initialize();
       }
     }).catchError((Object e) {
-      dlog('⚠️ Admin screen getCurrentDriver error: $e');
+      // Error handling - logging removed for production
     });
 
     // Osiguraj da je RealtimeService pokrenut
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      dlog('🔄 Admin screen - proveravam RealtimeService status');
+      // Initialize realtime service
       try {
         // Forsiraj refresh RealtimeService
         await RealtimeService.instance.refreshNow();
-        dlog('✅ Admin screen - RealtimeService refresh završen');
+        // RealtimeService refresh completed
 
         // Pokreni refresh da osiguramo podatke
         _putnikService.getAllPutniciFromBothTables().then((data) {
-          dlog('✅ Admin screen - dobio ${data.length} putnika');
+          // Successfully retrieved passenger data
         }).catchError((Object e) {
-          dlog('❌ Admin screen - greška pri dobijanju putnika: $e');
+          // Error handling - logging removed for production
         });
       } catch (e) {
-        dlog('❌ Admin screen - inicijalizacija greška: $e');
+        // Error handling - logging removed for production
       }
     });
   }
@@ -116,10 +114,10 @@ class _AdminScreenState extends State<AdminScreen> {
         _putnikDataHealthy.dispose();
       }
     } catch (e) {
-      dlog('⚠️ Error disposing ValueNotifiers: $e');
+      // Error handling - logging removed for production
     }
 
-    dlog('🧹 AdminScreen: Disposed realtime monitoring resources safely');
+    // AdminScreen disposed realtime monitoring resources safely
     super.dispose();
   }
 
@@ -145,7 +143,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // 🔄 REALTIME MONITORING SETUP
   void _setupRealtimeMonitoring() {
-    dlog('🔄 AdminScreen: Setting up realtime monitoring...');
+    // Setting up realtime monitoring
 
     // 🕐 KORISTI TIMER MANAGER za health check - SPREČAVA MEMORY LEAK
     TimerManager.cancelTimer('admin_screen_health_check');
@@ -156,7 +154,7 @@ class _AdminScreenState extends State<AdminScreen> {
       isPeriodic: true,
     );
 
-    dlog('✅ AdminScreen: Realtime monitoring active');
+    // AdminScreen: Realtime monitoring active
   }
 
   // 🩺 STREAM HEALTH CHECK
@@ -171,21 +169,17 @@ class _AdminScreenState extends State<AdminScreen> {
       // Putnik data health check
       _putnikDataHealthy.value = true; // Assume healthy unless FutureBuilder reports error
 
-      dlog(
-        '🩺 AdminScreen health check: Realtime=${_isRealtimeHealthy.value}, Kusur=${_kusurStreamHealthy.value}, Putnik=${_putnikDataHealthy.value}',
-      );
+      // Health check completed
 
       // 🚨 COMPREHENSIVE HEALTH REPORT
       final overallHealth = _isRealtimeHealthy.value && _kusurStreamHealthy.value && _putnikDataHealthy.value;
 
       if (!overallHealth) {
-        dlog('⚠️ AdminScreen health issues detected:');
-        if (!_isRealtimeHealthy.value) dlog('  - Realtime service disconnected');
-        if (!_kusurStreamHealthy.value) dlog('  - Kusur streams failing');
-        if (!_putnikDataHealthy.value) dlog('  - Putnik data loading issues');
+        // AdminScreen health issues detected
+        // Implementation removed for production
       }
     } catch (e) {
-      dlog('⚠️ AdminScreen health check error: $e');
+      // Error handling - logging removed for production
       _isRealtimeHealthy.value = false;
       _kusurStreamHealthy.value = false;
       _putnikDataHealthy.value = false;
@@ -676,7 +670,7 @@ class _AdminScreenState extends State<AdminScreen> {
         future: _putnikService.getAllPutniciFromBothTables().timeout(
           const Duration(seconds: 8),
           onTimeout: () {
-            dlog('⏰ Admin screen timeout nakon 8s - vraćam praznu listu');
+            // Timeout handling - logging removed for production
             return <Putnik>[];
           },
         ),
@@ -689,7 +683,7 @@ class _AdminScreenState extends State<AdminScreen> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            dlog('🔄 Admin screen učitava podatke...');
+            // Loading state - logging removed for production
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -719,7 +713,7 @@ class _AdminScreenState extends State<AdminScreen> {
             );
           }
           if (snapshot.hasError) {
-            dlog('❌ Admin screen greška: ${snapshot.error}');
+            // Error handling - logging removed for production
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1344,52 +1338,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                       ),
                                       Text(
                                         'Monitor',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // 🧪 SYSTEM INTEGRATION TEST
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) => const IntegrationTestRunner(),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  height: 50,
-                                  margin: const EdgeInsets.only(left: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green[600],
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.green.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.integration_instructions,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                      Text(
-                                        'Test',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,

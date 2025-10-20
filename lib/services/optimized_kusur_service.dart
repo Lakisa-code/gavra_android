@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../utils/logging.dart';
 import 'cache_service.dart';
 import 'supabase_manager.dart';
 
@@ -20,8 +19,8 @@ class OptimizedKusurService {
       final cached = CacheService.getFromMemory<double>(cacheKey);
 
       if (cached != null) {
-        dlog('🎯 OptimizedKusur: Cache HIT $vozacIme: $cached');
-        return cached;
+      // Debug logging removed for production
+return cached;
       }
 
       // 2. BAZA DRUGI (autoritativni izvor)
@@ -36,9 +35,8 @@ class OptimizedKusurService {
 
         // Sačuvaj u cache za buduće pozive
         CacheService.saveToMemory(cacheKey, kusur);
-
-        dlog('✅ OptimizedKusur: DB $vozacIme: $kusur');
-        return kusur;
+      // Debug logging removed for production
+return kusur;
       }
 
       // 3. SHARED PREFERENCES FALLBACK (offline mode)
@@ -46,15 +44,14 @@ class OptimizedKusurService {
       final fallback = prefs.getDouble('kusur_$vozacIme') ?? 0.0;
 
       if (fallback > 0) {
-        dlog('🔄 OptimizedKusur: Fallback $vozacIme: $fallback');
-        return fallback;
+      // Debug logging removed for production
+return fallback;
       }
 
       return 0.0;
     } catch (e) {
-      dlog('❌ OptimizedKusur greška $vozacIme: $e');
-
-      // EMERGENCY FALLBACK
+      // Debug logging removed for production
+// EMERGENCY FALLBACK
       try {
         final prefs = await SharedPreferences.getInstance();
         return prefs.getDouble('kusur_$vozacIme') ?? 0.0;
@@ -85,23 +82,20 @@ class OptimizedKusurService {
 
         // Emituj stream update
         _kusurController.add({vozacIme: novKusur});
-
-        dlog('✅ OptimizedKusur: Saved $vozacIme: $novKusur');
-        return true;
+      // Debug logging removed for production
+return true;
       }
 
       throw Exception('Database update failed');
     } catch (e) {
-      dlog('❌ OptimizedKusur save error $vozacIme: $e');
-
-      // FALLBACK: Sačuvaj samo lokalno
+      // Debug logging removed for production
+// FALLBACK: Sačuvaj samo lokalno
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setDouble('kusur_$vozacIme', novKusur);
         await prefs.setBool('kusur_${vozacIme}_pending_sync', true);
-
-        dlog('🔄 OptimizedKusur: Saved locally $vozacIme: $novKusur');
-        return false; // Označava da je samo lokalno sačuvano
+      // Debug logging removed for production
+return false; // Označava da je samo lokalno sačuvano
       } catch (_) {
         return false;
       }
@@ -123,13 +117,13 @@ class OptimizedKusurService {
           if (success) {
             // Ukloni pending flag ako je sync uspešan
             await prefs.remove(key);
-            dlog('✅ OptimizedKusur: Synced $vozacIme: $pendingValue');
-          }
+      // Debug logging removed for production
+}
         }
       }
     } catch (e) {
-      dlog('❌ OptimizedKusur sync error: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   /// 📡 STREAM ZA REAL-TIME UPDATES

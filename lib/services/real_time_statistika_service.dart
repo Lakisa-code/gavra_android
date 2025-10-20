@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
-import '../utils/logging.dart';
 import 'mesecni_putnik_service.dart';
 import 'putnik_service.dart';
 import 'realtime_service.dart';
@@ -30,9 +29,8 @@ class RealTimeStatistikaService {
   /// 🔄 GLAVNI KOMBINOVANI STREAM - koristi se svugde
   Stream<List<dynamic>> get kombinovaniPutniciStream {
     if (_kombinovaniStream == null) {
-      dlog('🆕 KREIRANJE NOVOG KOMBINOVANOG STREAM-A');
-
-      _kombinovaniStream = CombineLatestStream.combine2(
+      // Debug logging removed for production
+_kombinovaniStream = CombineLatestStream.combine2(
         PutnikService().streamKombinovaniPutniciFiltered(),
         MesecniPutnikService.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
@@ -56,9 +54,8 @@ class RealTimeStatistikaService {
     final cacheKey = 'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
-      dlog('🆕 KREIRANJE PAZAR STREAM-A: $cacheKey');
-
-      // 🔄 Koristi novi simplifikovani pristup direktno iz StatistikaService
+      // Debug logging removed for production
+// 🔄 Koristi novi simplifikovani pristup direktno iz StatistikaService
       _streamCache[cacheKey] = StatistikaService.streamPazarSvihVozaca(
         from: fromDate,
         to: toDate,
@@ -82,9 +79,8 @@ class RealTimeStatistikaService {
     final cacheKey = 'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
-      dlog('🆕 KREIRANJE DETALJNE STATISTIKE STREAM-A: $cacheKey');
-
-      _streamCache[cacheKey] = kombinovaniPutniciStream
+      // Debug logging removed for production
+_streamCache[cacheKey] = kombinovaniPutniciStream
           .map((data) {
             final putnici = data[0] as List<Putnik>;
             final mesecniPutnici = data[1] as List<MesecniPutnik>;
@@ -108,9 +104,8 @@ class RealTimeStatistikaService {
     final cacheKey = 'putnik_$putnikId';
 
     if (!_streamCache.containsKey(cacheKey)) {
-      dlog('🆕 KREIRANJE PUTNIK STATISTIKE STREAM-A: $putnikId');
-
-      // Kombinuj centralizovani putovanja_istorija stream i filtriraj lokalno po putnikId
+      // Debug logging removed for production
+// Kombinuj centralizovani putovanja_istorija stream i filtriraj lokalno po putnikId
       _streamCache[cacheKey] = RealtimeService.instance
           .tableStream('putovanja_istorija')
           .map((data) {
@@ -137,8 +132,8 @@ class RealTimeStatistikaService {
 
   /// 🧹 OČISTI CACHE
   void clearCache() {
-    dlog('🧹 BRISANJE REAL-TIME STATISTIKA CACHE-A');
-    _streamCache.clear();
+      // Debug logging removed for production
+_streamCache.clear();
     _kombinovaniStream = null;
   }
 
@@ -184,8 +179,8 @@ class RealTimeStatistikaService {
         'poslednje': putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
       };
     } catch (e) {
-      dlog('❌ Greška pri računanju statistika za putnika $putnikId: $e');
-      return {
+      // Debug logging removed for production
+return {
         'ukupnoPutovanja': 0,
         'otkazi': 0,
         'ukupanPrihod': 0.0,

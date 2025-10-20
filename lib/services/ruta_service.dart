@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/ruta.dart';
-import '../utils/logging.dart';
 import 'cache_service.dart';
 import 'supabase_safe.dart';
 
@@ -45,8 +44,8 @@ class RutaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        dlog('📱 [RUTA SERVICE] Vraćam keširane sve rute');
-        return cached
+      // Debug logging removed for production
+return cached
             .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
             .toList();
       }
@@ -66,8 +65,8 @@ class RutaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri dohvatanju svih ruta: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -81,8 +80,8 @@ class RutaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        dlog('📱 [RUTA SERVICE] Vraćam keširane aktivne rute');
-        return cached
+      // Debug logging removed for production
+return cached
             .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
             .toList();
       }
@@ -103,8 +102,8 @@ class RutaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri dohvatanju aktivnih ruta: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -115,8 +114,8 @@ class RutaService {
       final cacheKey = _getByIdCacheKey(id);
       final cached = await CacheService.getFromMemory<Ruta>(cacheKey);
       if (cached != null) {
-        dlog('📱 [RUTA SERVICE] Vraćam keširanu rutu: $id');
-        return cached;
+      // Debug logging removed for production
+return cached;
       }
 
       final response = await SupabaseSafe.run(
@@ -124,8 +123,8 @@ class RutaService {
       );
 
       if (response == null) {
-        dlog('⚠️ [RUTA SERVICE] Ruta sa ID $id ne postoji');
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       final ruta = Ruta.fromMap(response);
@@ -135,8 +134,8 @@ class RutaService {
 
       return ruta;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri dohvatanju rute $id: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -146,18 +145,16 @@ class RutaService {
       // Validacija pre dodavanja
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
-        dlog(
-          '❌ [RUTA SERVICE] Validacija neuspešna: ${validation.values.join(', ')}',
-        );
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       // Proveri duplikate
       final existingRute =
           await _checkForDuplicates(ruta.polazak, ruta.dolazak, ruta.naziv);
       if (existingRute.isNotEmpty) {
-        dlog('❌ [RUTA SERVICE] Duplikat rute već postoji');
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       final response = await SupabaseSafe.run(
@@ -170,12 +167,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCache();
-
-      dlog('✅ [RUTA SERVICE] Kreirana nova ruta: ${novaRuta.naziv}');
-      return novaRuta;
+      // Debug logging removed for production
+return novaRuta;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri kreiranju rute: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -201,8 +197,8 @@ class RutaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri proveravanju duplikata: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -222,8 +218,8 @@ class RutaService {
       );
 
       if (response == null) {
-        dlog('⚠️ [RUTA SERVICE] Ruta sa ID $id ne postoji za ažuriranje');
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       final azuriranaRuta = Ruta.fromMap(response);
@@ -231,20 +227,17 @@ class RutaService {
       // Validacija nakon ažuriranja
       final validation = azuriranaRuta.validateFull();
       if (validation.isNotEmpty) {
-        dlog(
-          '❌ [RUTA SERVICE] Ažurirana ruta nije validna: ${validation.values.join(', ')}',
-        );
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       // Očisti cache
       await _clearCacheForId(id);
-
-      dlog('✅ [RUTA SERVICE] Ažurirana ruta: ${azuriranaRuta.naziv}');
-      return azuriranaRuta;
+      // Debug logging removed for production
+return azuriranaRuta;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri ažuriranju rute $id: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -254,10 +247,8 @@ class RutaService {
       // Validacija
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
-        dlog(
-          '❌ [RUTA SERVICE] Validacija neuspešna: ${validation.values.join(', ')}',
-        );
-        return null;
+      // Debug logging removed for production
+return null;
       }
 
       final updatedRuta = ruta.withUpdatedTime();
@@ -277,12 +268,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCacheForId(ruta.id);
-
-      dlog('✅ [RUTA SERVICE] Ažurirana ruta objekat: ${result.naziv}');
-      return result;
+      // Debug logging removed for production
+return result;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri ažuriranju rute objekta: $e');
-      return null;
+      // Debug logging removed for production
+return null;
     }
   }
 
@@ -298,12 +288,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCacheForId(id);
-
-      dlog('✅ [RUTA SERVICE] Deaktivirana ruta: $id');
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri deaktiviranju rute $id: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -319,12 +308,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCacheForId(id);
-
-      dlog('✅ [RUTA SERVICE] Aktivirana ruta: $id');
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri aktiviranju rute $id: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -334,10 +322,8 @@ class RutaService {
       // Prvo proveri da li postoje povezani putnici
       final hasDependencies = await _checkRutaDependencies(id);
       if (hasDependencies) {
-        dlog(
-          '❌ [RUTA SERVICE] Ne može se obrisati ruta $id - ima povezane putnike',
-        );
-        return false;
+      // Debug logging removed for production
+return false;
       }
 
       await SupabaseSafe.run(
@@ -346,12 +332,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCacheForId(id);
-
-      dlog('✅ [RUTA SERVICE] Obrisana ruta: $id');
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri brisanju rute $id: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -369,8 +354,8 @@ class RutaService {
 
       return response is List && response.isNotEmpty;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri proveravanju zavisnosti: $e');
-      return true; // Sigurnost - pretpostavi da ima zavisnosti
+      // Debug logging removed for production
+return true; // Sigurnost - pretpostavi da ima zavisnosti
     }
   }
 
@@ -397,8 +382,8 @@ class RutaService {
         cacheKey = _getSearchCacheKey(query);
         final cached = await CacheService.getFromMemory<List<Ruta>>(cacheKey);
         if (cached != null) {
-          dlog('📱 [RUTA SERVICE] Vraćam keširane rezultate pretrage');
-          return cached;
+      // Debug logging removed for production
+return cached;
         }
       }
 
@@ -461,8 +446,8 @@ class RutaService {
       }
       return [];
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri pretrazi ruta: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -502,10 +487,8 @@ class RutaService {
       }
       return [];
     } catch (e) {
-      dlog(
-        '❌ [RUTA SERVICE] Greška pri dohvatanju ruta između $polazak i $destinacija: $e',
-      );
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -566,10 +549,8 @@ class RutaService {
       for (final ruta in rute) {
         final validation = ruta.validateFull();
         if (validation.isNotEmpty) {
-          dlog(
-            '❌ [RUTA SERVICE] Batch validacija neuspešna za ${ruta.naziv}: ${validation.values.join(', ')}',
-          );
-          return [];
+      // Debug logging removed for production
+return [];
         }
       }
 
@@ -587,14 +568,13 @@ class RutaService {
 
         // Očisti cache
         await _clearCache();
-
-        dlog('✅ [RUTA SERVICE] Batch kreirano ${results.length} ruta');
-        return results;
+      // Debug logging removed for production
+return results;
       }
       return [];
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri batch kreiranju ruta: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -609,14 +589,11 @@ class RutaService {
           results.add(result);
         }
       }
-
-      dlog(
-        '✅ [RUTA SERVICE] Batch ažurirano ${results.length}/${rute.length} ruta',
-      );
-      return results;
+      // Debug logging removed for production
+return results;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri batch ažuriranju ruta: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -632,12 +609,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCache();
-
-      dlog('✅ [RUTA SERVICE] Batch deaktivirano ${ids.length} ruta');
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri batch deaktiviranju ruta: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -653,12 +629,11 @@ class RutaService {
 
       // Očisti cache
       await _clearCache();
-
-      dlog('✅ [RUTA SERVICE] Batch aktivirano ${ids.length} ruta');
-      return true;
+      // Debug logging removed for production
+return true;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri batch aktiviranju ruta: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 
@@ -673,8 +648,8 @@ class RutaService {
         maxAge: const Duration(minutes: 30),
       );
       if (cached != null) {
-        dlog('📱 [RUTA SERVICE] Vraćam keširane statistike');
-        return cached;
+      // Debug logging removed for production
+return cached;
       }
 
       final rute = await getAllRute();
@@ -747,8 +722,8 @@ class RutaService {
 
       return stats;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri dobijanju statistika: $e');
-      return {};
+      // Debug logging removed for production
+return {};
     }
   }
 
@@ -805,10 +780,8 @@ class RutaService {
         'generirano': DateTime.now().toIso8601String(),
       };
     } catch (e) {
-      dlog(
-        '❌ [RUTA SERVICE] Greška pri dobijanju statistika za rutu $rutaId: $e',
-      );
-      return {};
+      // Debug logging removed for production
+return {};
     }
   }
 
@@ -858,12 +831,11 @@ class RutaService {
       }
 
       final csvContent = csvLines.join('\n');
-      dlog('✅ [RUTA SERVICE] Exportovano ${rute.length} ruta u CSV');
-
-      return csvContent;
+      // Debug logging removed for production
+return csvContent;
     } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri CSV export: $e');
-      return '';
+      // Debug logging removed for production
+return '';
     }
   }
 
@@ -883,13 +855,10 @@ class RutaService {
       );
 
       await _clearCache();
-
-      dlog(
-        '✅ [RUTA SERVICE] Očišćene stare neaktivne rute starije od $cutoffDateStr',
-      );
-    } catch (e) {
-      dlog('❌ [RUTA SERVICE] Greška pri čišćenju starih ruta: $e');
-    }
+      // Debug logging removed for production
+} catch (e) {
+      // Debug logging removed for production
+}
   }
 
   /// Cache statistike

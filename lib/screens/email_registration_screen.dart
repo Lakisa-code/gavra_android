@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../services/driver_registration_service.dart';
 import '../services/email_auth_service.dart';
-import '../utils/logging.dart';
 import '../utils/vozac_boja.dart';
 
 class EmailRegistrationScreen extends StatefulWidget {
@@ -39,8 +38,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
     // Postavi preselected driver ako je proslećen
     if (widget.preselectedDriverName != null) {
       _selectedDriver = widget.preselectedDriverName;
-      dlog('🚗 Preselected driver: ${widget.preselectedDriverName}');
-    }
+      // Debug logging removed for production
+}
 
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -455,10 +454,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       final driverName = _selectedDriver!;
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-
-      dlog('📧 Registrujem vozača $driverName sa email-om: $email');
-
-      final success = await EmailAuthService.registerDriverWithEmail(
+      // Debug logging removed for production
+final success = await EmailAuthService.registerDriverWithEmail(
         driverName,
         email,
         password,
@@ -468,9 +465,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       if (mounted) Navigator.of(context).pop();
 
       if (success) {
-        dlog('✅ Registracija uspješna u Supabase');
-
-        // REGISTRUJ VOZAČA LOKALNO
+      // Debug logging removed for production
+// REGISTRUJ VOZAČA LOKALNO
         final localRegistrationSuccess =
             await DriverRegistrationService.markDriverAsRegistered(
           driverName,
@@ -478,9 +474,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         );
 
         if (localRegistrationSuccess) {
-          dlog('✅ Vozač $driverName lokalno registrovan');
-
-          // Pokaži uspešnu poruku
+      // Debug logging removed for production
+// Pokaži uspešnu poruku
           await _showSuccessDialog();
 
           // Vrati true da signal uspješnu registraciju
@@ -488,15 +483,15 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             Navigator.of(context).pop(true);
           }
         } else {
-          dlog('❌ Greška pri lokalnoj registraciji vozača');
-          _showErrorDialog(
+      // Debug logging removed for production
+_showErrorDialog(
             'Greška!',
             'Vozač je registrovan u sistemu, ali lokalna registracija nije uspešna.',
           );
         }
       } else {
-        dlog('❌ Registracija nije uspješna');
-        _showErrorDialog(
+      // Debug logging removed for production
+_showErrorDialog(
           'Registracija neuspješna',
           'Provjerite podatke i pokušajte ponovo. Email možda već postoji.',
         );
@@ -504,9 +499,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
     } catch (e) {
       // Sakrij loading dialog ako je otvoren
       if (mounted) Navigator.of(context).pop();
-
-      dlog('❌ Greška pri registraciji: $e');
-      _showErrorDialog(
+      // Debug logging removed for production
+_showErrorDialog(
         'Greška',
         'Došlo je do greške pri registraciji. Pokušajte ponovo.',
       );

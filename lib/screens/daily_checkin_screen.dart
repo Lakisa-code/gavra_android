@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
-import '../utils/logging.dart';
 import '../utils/smart_colors.dart';
 import '../utils/vozac_boja.dart';
 
@@ -405,10 +404,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
       // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
       if (yesterday.weekday == 6 || yesterday.weekday == 7) {
-        dlog(
-          '🚫 Preskačem automatski popis za vikend (${yesterday.weekday == 6 ? "Subota" : "Nedelja"})',
-        );
-        return;
+      // Debug logging removed for production
+return;
       }
 
       // Proveri da li postoji popis od juče
@@ -430,8 +427,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         }
       }
     } catch (e) {
-      dlog('Greška pri proveri prethodnog popisa: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   // 📊 DIALOG ZA PRIKAZ POPISA IZ PRETHODNOG DANA
@@ -909,22 +906,21 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           seconds: 10,
         ),
       );
-
-      dlog('✅ Kusur uspešno ažuriran u daily_reports tabeli');
-    } on TimeoutException {
-      dlog('⏰ Timeout pri ažuriranju kusura - nema internet konekcije');
-      throw Exception(
+      // Debug logging removed for production
+} on TimeoutException {
+      // Debug logging removed for production
+throw Exception(
         'Nema internet konekcije. Kusur neće biti sačuvan u bazi.',
       );
     } on SocketException {
-      dlog('🌐 SocketException pri ažuriranju kusura - nema mrežne konekcije');
-      throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
+      // Debug logging removed for production
+throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
     } on PostgrestException catch (e) {
-      dlog('❌ PostgrestException pri ažuriranju kusura: ${e.message}');
-      throw Exception('Greška u bazi podataka: ${e.message}');
+      // Debug logging removed for production
+throw Exception('Greška u bazi podataka: ${e.message}');
     } catch (e) {
-      dlog('❌ Neočekivana greška pri ažuriranju kusura: $e');
-      throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
+      // Debug logging removed for production
+throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
     }
   }
 
@@ -950,14 +946,12 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           'timestamp': DateTime.now().toIso8601String(),
         }),
       );
-
-      dlog('💾 Kusur sačuvan lokalno: $kusur RSD');
-
-      // Pokreni sync kada se vrati internet konekcija
+      // Debug logging removed for production
+// Pokreni sync kada se vrati internet konekcija
       _scheduleOfflineSync();
     } catch (e) {
-      dlog('❌ Greška pri lokalnom čuvanju kusura: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   // Sync offline kusur podatke kada se vrati internet
@@ -973,8 +967,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         }
       } catch (e) {
         // Još uvek nema internet, nastavi pokušaje
-        dlog('🔄 Čekam internet konekciju za sync kusura...');
-      }
+      // Debug logging removed for production
+}
     });
   }
 
@@ -999,11 +993,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
         // Obriši offline podatke nakon uspešnog sync-a
         await prefs.remove('offline_kusur_data');
-
-        dlog('✅ Offline kusur podaci uspešno sinhronizovani sa serverom');
-      }
+      // Debug logging removed for production
+}
     } catch (e) {
-      dlog('❌ Greška pri sinhronizaciji offline kusur podataka: $e');
-    }
+      // Debug logging removed for production
+}
   }
 }

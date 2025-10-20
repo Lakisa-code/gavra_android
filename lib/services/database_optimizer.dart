@@ -1,7 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../utils/logging.dart';
-
 /// 🚀 DATABASE QUERY OPTIMIZER
 /// Optimizuje Supabase query-jeve za bolju performance
 class DatabaseOptimizer {
@@ -23,8 +21,8 @@ class DatabaseOptimizer {
 
     // Proveri cache prvo
     if (_isCacheValid(cacheKey)) {
-      dlog('🎯 [DB OPTIMIZER] Cache hit za $cacheKey');
-      final cached = _queryCache[cacheKey];
+      // Debug logging removed for production
+final cached = _queryCache[cacheKey];
       if (cached is List) {
         return cached.cast<Map<String, dynamic>>();
       }
@@ -67,12 +65,11 @@ class DatabaseOptimizer {
       // Cache rezultate
       _queryCache[cacheKey] = allResults;
       _cacheTimestamps[cacheKey] = DateTime.now();
-
-      dlog('✅ [DB OPTIMIZER] Optimized putnici query: ${allResults.length} rezultata');
-      return allResults;
+      // Debug logging removed for production
+return allResults;
     } catch (e) {
-      dlog('❌ [DB OPTIMIZER] Greška u optimized putnici query: $e');
-      return [];
+      // Debug logging removed for production
+return [];
     }
   }
 
@@ -94,14 +91,12 @@ class DatabaseOptimizer {
           'target_table': tabela,
         },
       );
-
-      dlog('✅ [DB OPTIMIZER] Bulk update uspešan: ${ids.length} putnika');
-      _clearCacheForTable(tabela);
+      // Debug logging removed for production
+_clearCacheForTable(tabela);
       return true;
     } catch (e) {
-      dlog('❌ [DB OPTIMIZER] Greška u bulk update: $e');
-
-      // Fallback na individual updates
+      // Debug logging removed for production
+// Fallback na individual updates
       return await _fallbackIndividualUpdates(ids, updates, tabela);
     }
   }
@@ -136,8 +131,8 @@ class DatabaseOptimizer {
 
       return results;
     } catch (e) {
-      dlog('❌ [DB OPTIMIZER] Greška u optimized statistics: $e');
-      return {};
+      // Debug logging removed for production
+return {};
     }
   }
 
@@ -166,8 +161,8 @@ class DatabaseOptimizer {
         'totalCount': await _getSearchCount(query, searchTables),
       };
     } catch (e) {
-      dlog('❌ [DB OPTIMIZER] Greška u optimized search: $e');
-      return {'results': <dynamic>[], 'hasMore': false, 'totalCount': 0};
+      // Debug logging removed for production
+return {'results': <dynamic>[], 'hasMore': false, 'totalCount': 0};
     }
   }
 
@@ -218,8 +213,8 @@ class DatabaseOptimizer {
       _queryCache.clear();
       _cacheTimestamps.clear();
     }
-    dlog('🧹 [DB OPTIMIZER] Cache cleared: ${pattern ?? 'all'}');
-  }
+      // Debug logging removed for production
+}
 
   /// 📈 CONNECTION POOL OPTIMIZATION
   static Future<void> optimizeConnectionPool() async {
@@ -236,11 +231,10 @@ class DatabaseOptimizer {
           'idle_timeout': 300,
         },
       );
-
-      dlog('✅ [DB OPTIMIZER] Connection pool optimized');
-    } catch (e) {
-      dlog('❌ [DB OPTIMIZER] Greška u connection pool optimization: $e');
-    }
+      // Debug logging removed for production
+} catch (e) {
+      // Debug logging removed for production
+}
   }
 
   /// PRIVATE HELPER METHODS
@@ -277,8 +271,8 @@ class DatabaseOptimizer {
       }
       return true;
     } catch (e) {
-      dlog('❌ [DB OPTIMIZER] Fallback individual updates failed: $e');
-      return false;
+      // Debug logging removed for production
+return false;
     }
   }
 

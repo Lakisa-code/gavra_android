@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
-import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
 
 class AdminMapScreen extends StatefulWidget {
@@ -67,8 +66,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   _updateMarkers();
                 });
               } catch (e) {
-                dlog('GPS Data parsing error: $e');
-                // Fallback to cached data
+      // Debug logging removed for production
+// Fallback to cached data
                 if (_gpsLokacije.isEmpty) {
                   _loadGpsLokacije();
                 }
@@ -76,8 +75,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             }
           },
           onError: (Object error) {
-            dlog('GPS Stream Error: $error');
-            // V3.0 Resilience - Auto retry after 5 seconds
+      // Debug logging removed for production
+// V3.0 Resilience - Auto retry after 5 seconds
             Timer(const Duration(seconds: 5), () {
               if (mounted) {
                 _initializeRealtimeMonitoring();
@@ -99,8 +98,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               _updateMarkers();
             });
           } catch (e) {
-            dlog('Putnik Data parsing error: $e');
-            // Fallback to cached data
+      // Debug logging removed for production
+// Fallback to cached data
             if (_putnici.isEmpty) {
               _loadPutnici();
             }
@@ -108,8 +107,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         }
       },
       onError: (Object error) {
-        dlog('Putnik Stream Error: $error');
-        // V3.0 Resilience - Auto retry after 3 seconds
+      // Debug logging removed for production
+// V3.0 Resilience - Auto retry after 3 seconds
         Timer(const Duration(seconds: 3), () {
           if (mounted) {
             _initializeRealtimeMonitoring();
@@ -142,8 +141,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       });
       _updateMarkers();
     } catch (e) {
-      dlog('Greška učitavanja putnika: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   Future<void> _getCurrentLocation() async {
@@ -170,8 +169,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         13.0,
       );
     } catch (e) {
-      dlog('Greška dobavljanja trenutne lokacije: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   Future<void> _loadGpsLokacije() async {
@@ -191,22 +190,19 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
           .from('gps_lokacije')
           .select()
           .limit(10); // Uzmi samo 10 da vidimo strukturu
-
-      dlog('🗺️ GPS Response: ${response.length} lokacija dobijeno');
-
-      final gpsLokacije = <GPSLokacija>[];
+      // Debug logging removed for production
+final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {
           gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
         } catch (e) {
-          dlog('⚠️ Greška parsiranja GPS lokacije: $e');
-          dlog('📍 JSON: $json');
-        }
+      // Debug logging removed for production
+
+      // Debug logging removed for production
+}
       }
-
-      dlog('✅ Uspešno parsiran ${gpsLokacije.length} GPS lokacija');
-
-      if (mounted) setState(() {
+      // Debug logging removed for production
+if (mounted) setState(() {
         _gpsLokacije = gpsLokacije;
         _lastGpsLoad = DateTime.now();
         _updateMarkers();
@@ -219,9 +215,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         _fitAllMarkers();
       }
     } catch (e) {
-      dlog('❌ Greška učitavanja GPS lokacija: $e');
-
-      if (mounted) setState(() {
+      // Debug logging removed for production
+if (mounted) setState(() {
         _gpsLokacije = []; // Postavi praznu listu
         _isLoading = false;
       });

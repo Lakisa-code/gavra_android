@@ -1,5 +1,3 @@
-import '../utils/logging.dart';
-
 /// 📊 QUERY PERFORMANCE MONITOR
 /// Prati performance database query-jeva u realnom vremenu
 class QueryPerformanceMonitor {
@@ -39,27 +37,24 @@ class QueryPerformanceMonitor {
   static void _recordSuccess(String queryName, int duration, Map<String, dynamic>? metadata) {
     final stats = _stats.putIfAbsent(queryName, () => QueryStats(queryName));
     stats.addSuccess(duration);
-
-    dlog('📊 [QUERY MONITOR] $queryName: ${duration}ms ${metadata != null ? metadata.toString() : ''}');
-  }
+      // Debug logging removed for production
+}
 
   /// Beleži query sa greškom
   static void _recordError(String queryName, int duration, dynamic error, Map<String, dynamic>? metadata) {
     final stats = _stats.putIfAbsent(queryName, () => QueryStats(queryName));
     stats.addError(duration, error);
-
-    dlog('❌ [QUERY MONITOR] $queryName ERROR (${duration}ms): $error');
-  }
+      // Debug logging removed for production
+}
 
   /// Upozorava na spore query-jeve
   static void _alertSlowQuery(String queryName, int duration, Map<String, dynamic>? metadata) {
-    dlog('🐌 [SLOW QUERY ALERT] $queryName: ${duration}ms (threshold: ${slowQueryThreshold}ms)');
-
-    // Možda dodati notifikaciju ili log u Supabase
+      // Debug logging removed for production
+// Možda dodati notifikaciju ili log u Supabase
     final stats = _stats[queryName];
     if (stats != null && stats.averageDuration > slowQueryThreshold) {
-      dlog('⚠️ [PATTERN ALERT] $queryName consistently slow: ${stats.averageDuration.toInt()}ms avg');
-    }
+      // Debug logging removed for production
+}
   }
 
   /// Dobija statistike za sve query-jeve
@@ -75,8 +70,8 @@ class QueryPerformanceMonitor {
   /// Reset statistike
   static void resetStats() {
     _stats.clear();
-    dlog('🧹 [QUERY MONITOR] Stats reset');
-  }
+      // Debug logging removed for production
+}
 
   /// Dobija top 10 najsporijih query-jeva
   static List<QueryStats> getTopSlowQueries({int limit = 10}) {
@@ -139,8 +134,8 @@ class QueryPerformanceMonitor {
   /// Enable/disable monitoring
   static void setEnabled(bool enabled) {
     _isEnabled = enabled;
-    dlog('📊 [QUERY MONITOR] ${enabled ? 'Enabled' : 'Disabled'}');
-  }
+      // Debug logging removed for production
+}
 }
 
 /// 📊 Query statistike za jedan query tip

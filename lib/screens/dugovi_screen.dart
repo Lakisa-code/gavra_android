@@ -5,7 +5,6 @@ import 'package:rxdart/rxdart.dart';
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
-import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
@@ -29,10 +28,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject =
-      BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject =
-      BehaviorSubject<String>.seeded('svi');
+  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
+  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
   late Stream<String> _debouncedSearchStream;
   final TextEditingController _searchController = TextEditingController();
 
@@ -65,8 +62,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     _searchSubject.close();
     _filterSubject.close();
     _searchController.dispose();
-
-    dlog('🧹 DugoviScreen: Disposed realtime monitoring resources');
+    // Debug logging removed for production
     super.dispose();
   }
 
@@ -82,7 +78,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     });
 
     _initializeRealtimeStream();
-    dlog('✅ DugoviScreen: V3.0 realtime monitoring initialized');
+    // Debug logging removed for production
   }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
@@ -98,9 +94,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
       final timeSinceLastHeartbeat = now.difference(entry.value);
       if (timeSinceLastHeartbeat.inSeconds > 60) {
         isHealthy = false;
-        dlog(
-          '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',
-        );
+        // Debug logging removed for production
         break;
       }
     }
@@ -120,20 +114,18 @@ class _DugoviScreenState extends State<DugoviScreen> {
     } else if (isHealthy) {
       _realtimeHealthStatus.value = 'healthy';
     }
-
-    dlog(
-      '🩺 DugoviScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',
-    );
+    // Debug logging removed for production
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
   void _initializeRealtimeStream() {
     _dugoviSubscription?.cancel();
 
-    if (mounted) setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted)
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
     _dugoviSubscription = PutnikService()
         .streamKombinovaniPutniciFiltered(
@@ -152,8 +144,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 (p) =>
                     (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
                     (p.jePokupljen) &&
-                    (p.status == null ||
-                        (p.status != 'Otkazano' && p.status != 'otkazan')) &&
+                    (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')) &&
                     (p.mesecnaKarta != true),
               )
               .toList();
@@ -161,29 +152,28 @@ class _DugoviScreenState extends State<DugoviScreen> {
           // Sort dužnike
           _sortDugovi(duznici);
 
-          if (mounted) setState(() {
-            _cachedDugovi = duznici;
-            _isLoading = false;
-            _errorMessage = null;
-          });
-
-          dlog('✅ DugoviScreen: Received ${duznici.length} dužnika');
+          if (mounted)
+            setState(() {
+              _cachedDugovi = duznici;
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          // Debug logging removed for production
         }
       },
       onError: (Object error) {
         if (mounted) {
           _dugoviStreamHealthy.value = false;
-          if (mounted) setState(() {
-            _isLoading = false;
-            _errorMessage = error.toString();
-          });
-
-          dlog('❌ DugoviScreen stream error: $error');
-
-          // 🔄 AUTO RETRY after 5 seconds
+          if (mounted)
+            setState(() {
+              _isLoading = false;
+              _errorMessage = error.toString();
+            });
+          // Debug logging removed for production
+// 🔄 AUTO RETRY after 5 seconds
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
-              dlog('🔄 DugoviScreen: Auto-retrying stream connection...');
+              // Debug logging removed for production
               _initializeRealtimeStream();
             }
           });
@@ -194,9 +184,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 🔍 DEBOUNCED SEARCH SETUP
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject
-        .debounceTime(const Duration(milliseconds: 300))
-        .distinct();
+    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
 
     _debouncedSearchStream.listen((query) {
       _performSearch(query);
@@ -208,12 +196,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
   }
 
   void _performSearch(String query) {
-    if (mounted) setState(() {
-      // Trigger rebuild with filtered data
-    });
+    if (mounted)
+      setState(() {
+        // Trigger rebuild with filtered data
+      });
 
-    final filtered = _getFilteredDugovi();
-    dlog('🔍 Search query: "$query" - Found ${filtered.length} results');
+    // Debug logging removed for production
   }
 
   void _loadInitialData() {
@@ -261,8 +249,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
     if (searchQuery.isNotEmpty) {
       dugovi = dugovi.where((duznik) {
         return duznik.ime.toLowerCase().contains(searchQuery) ||
-            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ??
-                false) ||
+            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ?? false) ||
             (duznik.grad.toLowerCase().contains(searchQuery));
       }).toList();
     }
@@ -432,8 +419,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
               // Filter dropdown
               Expanded(
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
@@ -452,9 +438,10 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                       onChanged: (value) {
-                        if (mounted) setState(() {
-                          _selectedFilter = value!;
-                        });
+                        if (mounted)
+                          setState(() {
+                            _selectedFilter = value!;
+                          });
                         _filterSubject.add(value!);
                       },
                       items: const [
@@ -479,8 +466,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
               // Sort dropdown
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
@@ -496,10 +482,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                     onChanged: (value) {
-                      if (mounted) setState(() {
-                        _sortBy = value!;
-                        _sortDugovi(_cachedDugovi);
-                      });
+                      if (mounted)
+                        setState(() {
+                          _sortBy = value!;
+                          _sortDugovi(_cachedDugovi);
+                        });
                     },
                     items: const [
                       DropdownMenuItem(
@@ -537,14 +524,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isHealthy
-                            ? 'Prikazano: $filteredCount od $totalCount dužnika'
-                            : 'Podaci se učitavaju...',
+                        isHealthy ? 'Prikazano: $filteredCount od $totalCount dužnika' : 'Podaci se učitavaju...',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.indigo.shade600,
-                          fontStyle:
-                              isHealthy ? FontStyle.normal : FontStyle.italic,
+                          fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
                         ),
                       ),
                       if (isHealthy) ...[
@@ -571,8 +555,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 💰 CALCULATE TOTAL DEBT
   double _calculateTotalDebt() {
-    return _getFilteredDugovi()
-        .fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
+    return _getFilteredDugovi().fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
   }
 
   // 🚀 V3.0 REALTIME CONTENT BUILDER
@@ -609,8 +592,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -720,18 +702,14 @@ class _DugoviScreenState extends State<DugoviScreen> {
       );
     }
 
-    if (errorString.contains('network') ||
-        errorString.contains('socket') ||
-        errorString.contains('connection')) {
+    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
       return NetworkErrorWidget(
         message: 'Problem sa mrežom u $streamName',
         onRetry: onRetry ?? _initializeRealtimeStream,
       );
     }
 
-    if (errorString.contains('data') ||
-        errorString.contains('parse') ||
-        errorString.contains('format')) {
+    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
       return DataErrorWidget(
         dataType: streamName,
         reason: error.toString(),
@@ -746,8 +724,3 @@ class _DugoviScreenState extends State<DugoviScreen> {
     );
   }
 }
-
-
-
-
-

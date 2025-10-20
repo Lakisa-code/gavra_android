@@ -7,8 +7,6 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../utils/logging.dart';
-
 /// SINGLETON MANAGER ZA SUPABASE KONEKCIJE
 /// Kontroliše broj istovremenih konekcija i optimizuje performanse
 class SupabaseManager {
@@ -31,8 +29,8 @@ class SupabaseManager {
   /// Dobij optimizovani Supabase klijent
   static SupabaseClient get client {
     if (_client == null) {
-      dlog('🔗 SupabaseManager: Kreiranje novog klijenta');
-      _client = Supabase.instance.client;
+      // Debug logging removed for production
+_client = Supabase.instance.client;
     }
     return _client!;
   }
@@ -43,20 +41,19 @@ class SupabaseManager {
   ) async {
     // Čekaj da se oslobodi konekcija ako je dostignut limit
     while (_activeConnections >= _maxConnections) {
-      dlog('⏳ SupabaseManager: Čeka se oslobađanje konekcije ($_activeConnections/$_maxConnections)');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // Debug logging removed for production
+await Future<void>.delayed(const Duration(milliseconds: 100));
     }
 
     _activeConnections++;
-    dlog('📈 SupabaseManager: Aktivne konekcije: $_activeConnections/$_maxConnections');
-
-    try {
+      // Debug logging removed for production
+try {
       final result = await operation(client);
       return result;
     } finally {
       _activeConnections--;
-      dlog('📉 SupabaseManager: Aktivne konekcije: $_activeConnections/$_maxConnections');
-    }
+      // Debug logging removed for production
+}
   }
 
   /// Optimizovano čitanje sa timeout-om
@@ -98,8 +95,8 @@ class SupabaseManager {
         await query.timeout(timeout);
         return true;
       } catch (e) {
-        dlog('❌ SupabaseManager.safeUpdate greška: $e');
-        return false;
+      // Debug logging removed for production
+return false;
       }
     });
   }
@@ -122,8 +119,8 @@ class SupabaseManager {
         final response = await query.select().timeout(timeout);
         return List<Map<String, dynamic>>.from(response as List);
       } catch (e) {
-        dlog('❌ SupabaseManager.safeUpdateWithReturn greška: $e');
-        return [];
+      // Debug logging removed for production
+return [];
       }
     });
   }
@@ -139,8 +136,8 @@ class SupabaseManager {
         final response = await client.from(table).insert(data).select().single().timeout(timeout);
         return response;
       } catch (e) {
-        dlog('❌ SupabaseManager.safeInsert greška: $e');
-        return null;
+      // Debug logging removed for production
+return null;
       }
     });
   }
@@ -157,6 +154,6 @@ class SupabaseManager {
   /// Resetuj connection pool (za testiranje)
   static void resetConnectionPool() {
     _activeConnections = 0;
-    dlog('🔄 SupabaseManager: Connection pool resetovan');
-  }
+      // Debug logging removed for production
+}
 }

@@ -6,7 +6,6 @@ import 'package:rxdart/rxdart.dart';
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
 import '../theme.dart';
-import '../utils/logging.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
@@ -69,8 +68,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     _searchSubject.close();
     _filterSubject.close();
     _searchController.dispose();
-
-    dlog('🧹 PutovanjaIstorijaScreen: Disposed realtime monitoring resources');
+    // Debug logging removed for production
     super.dispose();
   }
 
@@ -86,7 +84,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     });
 
     _initializeRealtimeStream();
-    dlog('✅ PutovanjaIstorijaScreen: V3.0 realtime monitoring initialized');
+    // Debug logging removed for production
   }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
@@ -103,9 +101,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       if (timeSinceLastHeartbeat.inSeconds > 60) {
         // 60 seconds timeout
         isHealthy = false;
-        dlog(
-          '⚠️ Stream ${entry.key} heartbeat stale: ${timeSinceLastHeartbeat.inSeconds}s',
-        );
+        // Debug logging removed for production
         break;
       }
     }
@@ -125,20 +121,18 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     } else if (isHealthy) {
       _realtimeHealthStatus.value = 'healthy';
     }
-
-    dlog(
-      '🩺 PutovanjaIstorijaScreen health: Network=$networkHealthy, Stream=$streamHealthy, Heartbeat=$isHealthy',
-    );
+    // Debug logging removed for production
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
   void _initializeRealtimeStream() {
     _putovanjaSubscription?.cancel();
 
-    if (mounted) setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted)
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
     _putovanjaSubscription =
         PutovanjaIstorijaService.streamPutovanjaZaDatum(_selectedDate).timeout(const Duration(seconds: 30)).listen(
@@ -147,33 +141,28 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           _registerStreamHeartbeat('putovanja_stream');
           _putovanjaStreamHealthy.value = true;
 
-          if (mounted) setState(() {
-            _cachedPutovanja = putovanja;
-            _isLoading = false;
-            _errorMessage = null;
-          });
-
-          dlog(
-            '✅ PutovanjaIstorijaScreen: Received ${putovanja.length} putovanja',
-          );
+          if (mounted)
+            setState(() {
+              _cachedPutovanja = putovanja;
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          // Debug logging removed for production
         }
       },
       onError: (Object error) {
         if (mounted) {
           _putovanjaStreamHealthy.value = false;
-          if (mounted) setState(() {
-            _isLoading = false;
-            _errorMessage = error.toString();
-          });
-
-          dlog('❌ PutovanjaIstorijaScreen stream error: $error');
-
-          // 🔄 AUTO RETRY after 5 seconds
+          if (mounted)
+            setState(() {
+              _isLoading = false;
+              _errorMessage = error.toString();
+            });
+          // Debug logging removed for production
+// 🔄 AUTO RETRY after 5 seconds
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
-              dlog(
-                '🔄 PutovanjaIstorijaScreen: Auto-retrying stream connection...',
-              );
+              // Debug logging removed for production
               _initializeRealtimeStream();
             }
           });
@@ -202,18 +191,18 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       return;
     }
 
-    // Filter cached data
-    final filtered = _cachedPutovanja.where((putovanje) {
+    // Filter cached data - results used implicitly through _getFilteredPutovanja()
+    _cachedPutovanja.where((putovanje) {
       return putovanje.putnikIme.toLowerCase().contains(query.toLowerCase()) ||
           putovanje.adresaPolaska.toLowerCase().contains(query.toLowerCase()) ||
           (putovanje.brojTelefona?.contains(query) ?? false);
     }).toList();
 
-    if (mounted) setState(() {
-      // This will trigger rebuild with filtered data
-    });
-
-    dlog('🔍 Search query: "$query" - Found ${filtered.length} results');
+    if (mounted)
+      setState(() {
+        // This will trigger rebuild with filtered data
+      });
+    // Debug logging removed for production
   }
 
   void _loadInitialData() {
@@ -340,9 +329,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       ),
                     ),
                     onSelected: (value) {
-                      if (mounted) setState(() {
-                        _selectedFilter = value;
-                      });
+                      if (mounted)
+                        setState(() {
+                          _selectedFilter = value;
+                        });
                       _filterSubject.add(value);
                     },
                     itemBuilder: (context) => [
@@ -499,9 +489,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                           onChanged: (value) {
-                            if (mounted) setState(() {
-                              _selectedFilter = value!;
-                            });
+                            if (mounted)
+                              setState(() {
+                                _selectedFilter = value!;
+                              });
                             _filterSubject.add(value!);
                           },
                           items: [
@@ -1186,24 +1177,24 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   // 📊 SORT DATA IMPLEMENTATION
   void _sortData(String sortBy) {
-    if (mounted) setState(() {
-      switch (sortBy) {
-        case 'vreme':
-          _cachedPutovanja.sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
-          break;
-        case 'ime':
-          _cachedPutovanja.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
-          break;
-        case 'cena':
-          _cachedPutovanja.sort((a, b) => b.cena.compareTo(a.cena));
-          break;
-        case 'status':
-          _cachedPutovanja.sort((a, b) => a.status.compareTo(b.status));
-          break;
-      }
-    });
-
-    dlog('📊 PutovanjaIstorijaScreen: Sorted data by $sortBy');
+    if (mounted)
+      setState(() {
+        switch (sortBy) {
+          case 'vreme':
+            _cachedPutovanja.sort((a, b) => a.vremePolaska.compareTo(b.vremePolaska));
+            break;
+          case 'ime':
+            _cachedPutovanja.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+            break;
+          case 'cena':
+            _cachedPutovanja.sort((a, b) => b.cena.compareTo(a.cena));
+            break;
+          case 'status':
+            _cachedPutovanja.sort((a, b) => a.status.compareTo(b.status));
+            break;
+        }
+      });
+    // Debug logging removed for production
   }
 
   // 📄 EXPORT DATA FUNCTIONALITY
@@ -1288,7 +1279,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               textColor: Theme.of(context).colorScheme.onPrimary,
               onPressed: () {
                 // Implementiraj deljenje fajla
-                dlog('📄 Share CSV content: ${csvContent.length} characters');
+                // Debug logging removed for production
               },
             ),
           ),
@@ -1314,7 +1305,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
 
     // Ovde bi bila implementacija za print preview
-    dlog('🖨️ Preparing print data for ${data.length} items');
+    // Debug logging removed for production
   }
 
   // 📅 DATE SELECTION
@@ -1330,14 +1321,13 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
 
     if (picked != null && picked != _selectedDate) {
-      if (mounted) setState(() {
-        _selectedDate = picked;
-      });
+      if (mounted)
+        setState(() {
+          _selectedDate = picked;
+        });
 
       // 🔄 REINITIALIZE STREAM FOR NEW DATE
-      dlog(
-        '📅 PutovanjaIstorijaScreen: Date changed to ${_selectedDate.toIso8601String().split('T')[0]}',
-      );
+      // Debug logging removed for production
       _initializeRealtimeStream();
     }
   }
@@ -1345,12 +1335,13 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   // 📝 DODAJ NOVO PUTOVANJE
   void _dodajNovoPutovanje() {
     // Reset forme
-    if (mounted) setState(() {
-      _noviPutnikIme = '';
-      _noviPutnikTelefon = '';
-      _novaCena = 0.0;
-      _noviTipPutnika = 'regularni';
-    });
+    if (mounted)
+      setState(() {
+        _noviPutnikIme = '';
+        _noviPutnikTelefon = '';
+        _novaCena = 0.0;
+        _noviTipPutnika = 'regularni';
+      });
 
     showDialog<void>(
       context: context,
@@ -1450,12 +1441,13 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         );
 
         // Resetuj forme
-        if (mounted) setState(() {
-          _noviPutnikIme = '';
-          _noviPutnikTelefon = '';
-          _novaCena = 0.0;
-          _noviTipPutnika = 'regularni';
-        });
+        if (mounted)
+          setState(() {
+            _noviPutnikIme = '';
+            _noviPutnikTelefon = '';
+            _novaCena = 0.0;
+            _noviTipPutnika = 'regularni';
+          });
       }
     } catch (e) {
       if (mounted) {
@@ -1469,12 +1461,13 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   // ✏️ EDIT PUTOVANJE
   void _editPutovanje(PutovanjaIstorija putovanje) {
     // Postavi vrednosti za edit
-    if (mounted) setState(() {
-      _noviPutnikIme = putovanje.putnikIme;
-      _noviPutnikTelefon = putovanje.brojTelefona ?? '';
-      _novaCena = putovanje.cena;
-      _noviTipPutnika = putovanje.tipPutnika;
-    });
+    if (mounted)
+      setState(() {
+        _noviPutnikIme = putovanje.putnikIme;
+        _noviPutnikTelefon = putovanje.brojTelefona ?? '';
+        _novaCena = putovanje.cena;
+        _noviTipPutnika = putovanje.tipPutnika;
+      });
 
     showDialog<void>(
       context: context,
@@ -1659,8 +1652,3 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     }
   }
 }
-
-
-
-
-

@@ -6,7 +6,6 @@ import '../services/email_auth_service.dart';
 import '../services/permission_service.dart';
 // import '../main.dart' show globalThemeRefresher; // Removed in simple version
 import '../services/simplified_daily_checkin.dart';
-import '../utils/logging.dart';
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
 import 'home_screen_light.dart';
@@ -45,40 +44,32 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         case 'svetlana':
           // 🎺 SVETLANINA SPECIJALNA PESMA - "Hiljson Mandela & Miach - Anđeo"
           assetPath = 'assets/svetlana.mp3';
-          dlog(
-            '🎺 🎵 SVETLANA EMAIL LOGIN: Puštam "Hiljson Mandela & Miach - Anđeo" kao dobrodošlicu - CELA PESMA! 🎵 🎺',
-          );
-          break;
+      // Debug logging removed for production
+break;
 
         case 'bruda':
           // 🎵 BRUDINA SPECIJALNA PESMA
           assetPath = 'assets/bruda.mp3';
-          dlog(
-            '🎵 BRUDA EMAIL LOGIN: Puštam Brudinu specijalnu pesmu - CELA PESMA!',
-          );
-          break;
+      // Debug logging removed for production
+break;
 
         case 'bilevski':
           // 🎵 BILEVSKIJEVA SPECIJALNA PESMA
           assetPath = 'assets/bilevski.mp3';
-          dlog(
-            '🎵 BILEVSKI EMAIL LOGIN: Puštam Bilevskijevu specijalnu pesmu - CELA PESMA!',
-          );
-          break;
+      // Debug logging removed for production
+break;
 
         case 'bojan':
           // 🎵 BOJANOVA SPECIJALNA PESMA
           assetPath = 'assets/gavra.mp3';
-          dlog(
-            '🎵 BOJAN EMAIL LOGIN: Puštam Gavrinu specijalnu pesmu - CELA PESMA!',
-          );
-          break;
+      // Debug logging removed for production
+break;
 
         default:
           // 🎵 Default pesma za ostale vozače
           assetPath = 'assets/gavra.mp3';
-          dlog('🎵 Puštam default welcome song za $driverName - CELA PESMA!');
-          break;
+      // Debug logging removed for production
+break;
       }
 
       // Postavi i pokreni pesmu - CELA PESMA
@@ -86,22 +77,18 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
       await _globalAudioPlayer!.setVolume(volume);
       await _globalAudioPlayer!.setLoopMode(LoopMode.off); // Bez ponavljanja
       await _globalAudioPlayer!.play();
-
-      dlog(
-        '🎵 ✓ EMAIL LOGIN: Pesma pokrenuta u pozadini za $driverName - neće se prekinuti!',
-      );
-
-      // Postaviti listener da se audio player očisti kad pesma završi
+      // Debug logging removed for production
+// Postaviti listener da se audio player očisti kad pesma završi
       _globalAudioPlayer!.playerStateStream.listen((state) {
         if (state.processingState == ProcessingState.completed) {
-          dlog('🎵 ✓ EMAIL LOGIN: Pesma završena, čistim audio player...');
-          _globalAudioPlayer?.dispose();
+      // Debug logging removed for production
+_globalAudioPlayer?.dispose();
           _globalAudioPlayer = null;
         }
       });
     } catch (e) {
-      dlog('❌ EMAIL LOGIN: Greška pri puštanju pesme: $e');
-    }
+      // Debug logging removed for production
+}
   }
 
   late AnimationController _fadeController;
@@ -439,27 +426,22 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-
-      dlog('🔐 Pokušavam prijavu sa email-om: $email');
-
-      final driverName = await EmailAuthService.signInWithEmail(email, password);
+      // Debug logging removed for production
+final driverName = await EmailAuthService.signInWithEmail(email, password);
 
       if (driverName != null) {
-        dlog('✅ Uspješna prijava vozača: $driverName');
-
-        // 💾 Sačuvaj vozača u SharedPreferences za auto-login
+      // Debug logging removed for production
+// 💾 Sačuvaj vozača u SharedPreferences za auto-login
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('current_driver', driverName);
-        dlog('💾 Vozač $driverName sačuvan u SharedPreferences');
-
-        // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
+      // Debug logging removed for production
+// 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
         // ignore: use_build_context_synchronously
         await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
         // 🎨 Theme refresh removed in simple version
-        dlog('🎨 Theme refresh skipped in simple version');
-
-        // 🎵 PUSTI PESMU NAKON EMAIL LOGIN-A
+      // Debug logging removed for production
+// 🎵 PUSTI PESMU NAKON EMAIL LOGIN-A
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
@@ -505,8 +487,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         );
       }
     } catch (e) {
-      dlog('❌ Greška pri prijavi: $e');
-      _showErrorDialog(
+      // Debug logging removed for production
+_showErrorDialog(
         'Greška',
         'Došlo je do greške pri prijavi. Pokušajte ponovo.',
       );
@@ -540,8 +522,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         _showErrorDialog('Greška', 'Nije moguće poslati email za reset šifre.');
       }
     } catch (e) {
-      dlog('❌ Greška pri reset šifre: $e');
-      _showErrorDialog('Greška', 'Došlo je do greške. Pokušajte ponovo.');
+      // Debug logging removed for production
+_showErrorDialog('Greška', 'Došlo je do greške. Pokušajte ponovo.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

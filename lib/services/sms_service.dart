@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
-import '../utils/logging.dart';
 import 'firebase_service.dart';
 import 'supabase_safe.dart';
 
@@ -19,11 +18,8 @@ class SMSService {
     if (_isServiceRunning) return;
 
     _isServiceRunning = true;
-    dlog('🚀 SMS servis pokrenut - dupli sistem:\n'
-        '   📅 Predzadnji dan meseca u 20:00 - podsećaj da ističe sutra\n'
-        '   📅 Prvi dan meseca u 10:00 - krajnji rok za prethodni mesec');
-
-    // Provera svakih sat vremena
+    // Debug logging removed for production
+// Provera svakih sat vremena
     _monthlyTimer = Timer.periodic(const Duration(hours: 1), (timer) async {
       await _checkAndSendMonthlySMS();
     });
@@ -34,7 +30,7 @@ class SMSService {
     _monthlyTimer?.cancel();
     _monthlyTimer = null;
     _isServiceRunning = false;
-    dlog('🛑 SMS servis zaustavljen');
+    // Debug logging removed for production
   }
 
   /// Provera da li je vreme za slanje SMS-a
@@ -45,16 +41,14 @@ class SMSService {
     // Proverava da li je predzadnji dan u 20:00 - podsećaj da ističe sutra
     if (now.day == secondToLastDay.day && now.hour == 20 && now.minute >= 0 && now.minute < 5) {
       // 5-minutni prozor
-
-      dlog('📅 Predzadnji dan meseca u 20:00 - šaljem SMS podsećaje...');
+      // Debug logging removed for production
       await sendSMSToUnpaidMonthlyPassengers();
     }
 
     // Proverava da li je prvi dan meseca u 10:00 - krajnji rok upozorenje
     if (now.day == 1 && now.hour == 10 && now.minute >= 0 && now.minute < 5) {
       // 5-minutni prozor
-
-      dlog('📅 Prvi dan meseca u 10:00 - šaljem SMS krajnji rok...');
+      // Debug logging removed for production
       await sendSMSToOverdueMonthlyPassengers();
     }
   }
@@ -74,15 +68,11 @@ class SMSService {
       final currentDriver = await FirebaseService.getCurrentDriver();
 
       if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
-        dlog(
-          '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver',
-        );
+        // Debug logging removed for production
         return;
       }
-
-      dlog('📱 Učitavam neplaćene mesečne putnike... (Vozač: $currentDriver)');
-
-      // Učitaj sve mesečne putnike kojima ističe karta sutra
+      // Debug logging removed for production
+// Učitaj sve mesečne putnike kojima ističe karta sutra
       DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
       String tomorrowStr = DateFormat('yyyy-MM-dd').format(tomorrow);
 
@@ -100,13 +90,7 @@ class SMSService {
             (putnik) => putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
           )
           .toList();
-
-      dlog(
-        '📋 Pronađeno ${unpaidPassengers.length} putnika kojima ističe karta sutra',
-      );
-
-      int successCount = 0;
-      int errorCount = 0;
+      // Debug logging removed for production
 
       for (Putnik putnik in unpaidPassengers) {
         try {
@@ -124,24 +108,19 @@ class SMSService {
 
           // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
-          successCount++;
-
-          dlog('✅ SMS poslat: ${putnik.ime} (${putnik.brojTelefona})');
-
-          // 🔥 NOVO: Pošalji SMS i roditeljima za učenike
+          // Debug logging removed for production
+// 🔥 NOVO: Pošalji SMS i roditeljima za učenike
           await _sendSMSToParents(putnik, message);
 
           // Pauza između SMS-ova (da se izbegne spam)
           await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
-          errorCount++;
-          dlog('❌ Greška slanja SMS: ${putnik.ime} - $e');
+          // Debug logging removed for production
         }
       }
-
-      dlog('📊 SMS rezultati: $successCount uspešno, $errorCount greška');
+      // Debug logging removed for production
     } catch (e) {
-      dlog('💥 Greška u SMS servisu: $e');
+      // Debug logging removed for production
     }
   }
 
@@ -152,17 +131,11 @@ class SMSService {
       final currentDriver = await FirebaseService.getCurrentDriver();
 
       if (currentDriver == null || currentDriver.toLowerCase() != 'bojan') {
-        dlog(
-          '🚫 SMS servis dostupan samo za vozača Bojan. Trenutni vozač: $currentDriver',
-        );
+        // Debug logging removed for production
         return;
       }
-
-      dlog(
-        '📱 Učitavam putnike koji nisu platili za prethodni mesec... (Vozač: $currentDriver)',
-      );
-
-      // Učitaj sve mesečne putnike kojima je istekla karta jučer (nisu platili za prethodni mesec)
+      // Debug logging removed for production
+// Učitaj sve mesečne putnike kojima je istekla karta jučer (nisu platili za prethodni mesec)
       DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
       String yesterdayStr = DateFormat('yyyy-MM-dd').format(yesterday);
 
@@ -180,13 +153,7 @@ class SMSService {
             (putnik) => putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
           )
           .toList();
-
-      dlog(
-        '📋 Pronađeno ${overduePassengers.length} putnika koji nisu platili za prethodni mesec',
-      );
-
-      int successCount = 0;
-      int errorCount = 0;
+      // Debug logging removed for production
 
       for (Putnik putnik in overduePassengers) {
         try {
@@ -204,28 +171,19 @@ class SMSService {
 
           // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
-          successCount++;
-
-          dlog(
-            '✅ Krajnji rok SMS poslat: ${putnik.ime} (${putnik.brojTelefona})',
-          );
-
-          // 🔥 NOVO: Pošalji SMS i roditeljima za učenike (krajnji rok)
+          // Debug logging removed for production
+// 🔥 NOVO: Pošalji SMS i roditeljima za učenike (krajnji rok)
           await _sendSMSToParents(putnik, message);
 
           // Pauza između SMS-ova (da se izbegne spam)
           await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
-          errorCount++;
-          dlog('❌ Greška slanja krajnji rok SMS: ${putnik.ime} - $e');
+          // Debug logging removed for production
         }
       }
-
-      dlog(
-        '📊 Krajnji rok SMS rezultati: $successCount uspešno, $errorCount greška',
-      );
+      // Debug logging removed for production
     } catch (e) {
-      dlog('💥 Greška u krajnji rok SMS servisu: $e');
+      // Debug logging removed for production
     }
   }
 
@@ -285,7 +243,7 @@ class SMSService {
         'cancellationsSincePayment': otkazivanja,
       };
     } catch (e) {
-      dlog('⚠️ Greška dobijanja statistika za putnika $putnikId: $e');
+      // Debug logging removed for production
       return {
         'lastPaymentDate': 'Greška',
         'lastPaymentAmount': 0,
@@ -381,13 +339,14 @@ class SMSService {
 
       if (await canLaunchUrl(smsUri)) {
         await launchUrl(smsUri);
-        dlog('📤 SMS aplikacija otvorena za: $phoneNumber');
-        dlog('📝 Poruka pripremljena, korisnik mora ručno da pošalje');
+        // Debug logging removed for production
+
+        // Debug logging removed for production
       } else {
         throw Exception('Ne mogu da pokrenemo SMS aplikaciju');
       }
     } catch (e) {
-      dlog('📵 Greška otvaranja SMS aplikacije za $phoneNumber: $e');
+      // Debug logging removed for production
       rethrow;
     }
   }
@@ -406,7 +365,7 @@ class SMSService {
       // Pošto Putnik model ne sadrži podatke o roditeljima, trebamo ih učitati iz baze
 
       if (putnik.id == null) {
-        dlog('⚠️ Nema ID za putnika: ${putnik.ime}');
+        // Debug logging removed for production
         return;
       }
 
@@ -437,7 +396,7 @@ class SMSService {
       }
 
       if (roditeljiBrojevi.isEmpty) {
-        dlog('⚠️ Nema brojeva telefona roditelja za učenika: ${putnik.ime}');
+        // Debug logging removed for production
         return;
       }
 
@@ -448,23 +407,15 @@ class SMSService {
           String roditeljskaPorta = '📚 PORUKA O VAŠEM DETETU ${putnik.ime.toUpperCase()}: $message';
 
           await _sendSMS(brojTelefona, roditeljskaPorta);
-          dlog(
-            '✅ SMS poslat roditelju: $brojTelefona za učenika ${putnik.ime}',
-          );
-
-          // Pauza između SMS-ova roditeljima
+          // Debug logging removed for production
+// Pauza između SMS-ova roditeljima
           await Future<void>.delayed(const Duration(seconds: 1));
         } catch (e) {
-          dlog('❌ Greška slanja SMS roditelju $brojTelefona: $e');
+          // Debug logging removed for production
         }
       }
     } catch (e) {
-      dlog('❌ Greška u _sendSMSToParents za ${putnik.ime}: $e');
+      // Debug logging removed for production
     }
   }
 }
-
-
-
-
-

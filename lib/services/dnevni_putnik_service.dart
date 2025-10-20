@@ -4,7 +4,6 @@ import '../models/adresa.dart';
 import '../models/dnevni_putnik.dart';
 import '../models/putnik.dart';
 import '../models/ruta.dart';
-import '../utils/logging.dart';
 import 'adresa_service.dart';
 
 /// Servis za upravljanje dnevnim putnicima
@@ -209,11 +208,8 @@ class DnevniPutnikService {
           putnici.add(putnik);
         }
       }
-
-      dlog(
-        '✅ Converted ${putnici.length}/${dnevniPutnici.length} dnevni putnici to Putnik objects',
-      );
-      return putnici;
+      // Debug logging removed for production
+return putnici;
     } catch (e) {
       return [];
     }
@@ -295,10 +291,8 @@ class DnevniPutnikService {
     );
 
     if (duplikat) {
-      dlog(
-        '⚠️ Duplicate putnik detected: ${putnik.ime} at ${putnik.vremePolaska}',
-      );
-      return false;
+      // Debug logging removed for production
+return false;
     }
 
     return true;
