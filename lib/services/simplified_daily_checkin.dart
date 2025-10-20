@@ -63,7 +63,8 @@ class SimplifiedDailyCheckInService {
   static Future<Map<String, dynamic>?> generateAutomaticReport(String vozac, DateTime targetDate) async {
     // Optimizovani servis ne generiše automatske popise - vraćamo null
     dlog(
-        '📊 SimplifiedDailyCheckIn: generateAutomaticReport za $vozac na ${targetDate.day}.${targetDate.month}.${targetDate.year} - vraćamo null (optimizovano)');
+      '📊 SimplifiedDailyCheckIn: generateAutomaticReport za $vozac na ${targetDate.day}.${targetDate.month}.${targetDate.year} - vraćamo null (optimizovano)',
+    );
     return null;
   }
 
