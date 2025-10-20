@@ -569,20 +569,15 @@ class PutnikService {
   /// ✅ DODAJ PUTNIKA (dnevni ili mesečni) - 🏘️ SA VALIDACIJOM GRADOVA
   Future<void> dodajPutnika(Putnik putnik) async {
     try {
-      dlog('🚀 [DODAJ PUTNIKA] Početak dodavanja putnika: ${putnik.ime}');
-
       // 🚫 STRIKTNA VALIDACIJA VOZAČA
       if (!VozacBoja.isValidDriver(putnik.dodaoVozac)) {
-        dlog('❌ [DODAJ PUTNIKA] Nevaljan vozač: ${putnik.dodaoVozac}');
         throw Exception(
           'NEVALJAN VOZAČ: "${putnik.dodaoVozac}". Dozvoljeni su samo: ${VozacBoja.validDrivers.join(", ")}',
         );
       }
-      dlog('✅ [DODAJ PUTNIKA] Vozač valjan: ${putnik.dodaoVozac}');
 
       // 🚫 VALIDACIJA GRADA
       if (GradAdresaValidator.isCityBlocked(putnik.grad)) {
-        dlog('❌ [DODAJ PUTNIKA] Grad blokiran: ${putnik.grad}');
         throw Exception(
           'Grad "${putnik.grad}" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
         );
@@ -1131,23 +1126,15 @@ class PutnikService {
     double iznos,
     String naplatioVozac,
   ) async {
-    dlog(
-      '🚀 [OZNACI PLACENO] START - ID: $id, Iznos: $iznos, Vozač: $naplatioVozac',
-    );
-
     // 🚫 DUPLICATE PREVENTION
     final actionKey = 'payment_$id';
     if (_isDuplicateAction(actionKey)) {
-      dlog('🚫 Duplikat plaćanja blokiran za ID: $id');
       return;
     }
 
     // ✅ dynamic umesto int
     // ⚠️ BLAŽU VALIDACIJU VOZAČA - dozvoli fallback umesto greške
     if (!VozacBoja.isValidDriver(naplatioVozac)) {
-      dlog(
-        '⚠️ [OZNACI PLACENO] NEVALJAN VOZAČ: $naplatioVozac - koristi se fallback',
-      );
       // ✅ Umesto da bacamo grešku, koristimo vozača kao jeste
       // Aplikacija će se nositi sa fallback vozačem
     }

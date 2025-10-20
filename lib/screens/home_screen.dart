@@ -1523,7 +1523,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             child: InkWell(
                               onTap: () async {
                                 // Theme toggle removed in simple version
-                                // TODO: Add theme toggle functionality if needed
+                                // Theme toggle placeholder
                               },
                               borderRadius: BorderRadius.circular(14),
                               child: Container(

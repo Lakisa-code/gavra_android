@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../tests/integration_test.dart';
-import '../utils/logging.dart';
 
 /// 🧪 INTEGRATION TEST RUNNER
 /// Widget koji može da pokrene integration test iz Admin Screen-a
@@ -28,7 +27,7 @@ class _IntegrationTestRunnerState extends State<IntegrationTestRunner> {
     });
 
     try {
-      dlog('🧪 Pokretam System Integration Test...');
+      // Pokretam System Integration Test
 
       final results = await SystemIntegrationTest.runFullTest();
 

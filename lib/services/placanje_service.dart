@@ -174,7 +174,7 @@ class PlacanjeService {
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('id', putnik.id);
 
-          print('✅ Sinhronizovano plaćanje za ${putnik.putnikIme}: $trenutnaCena → $stvarniIznos RSD');
+          // Sinhronizovano plaćanje - silent update
         }
       }
     } catch (e) {
