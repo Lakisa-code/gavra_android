@@ -58,7 +58,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     super.dispose();
   }
 
-  /// 🚀 Inicijalizuj navigaciju sa OpenRoute/Mapbox
+  /// Inicijalizuj navigaciju sa OpenRoute/Mapbox
   Future<void> _initializeNavigation() async {
     if (!mounted) return;
 
@@ -526,7 +526,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     );
   }
 
-  /// 🎯 SMART NAVIGATION - Optimizuj rutu sa algoritmima
+  /// SMART NAVIGATION - Optimizuj rutu sa algoritmima
   Future<void> _optimizeRouteWithSmartNavigation() async {
     if (_remainingPassengers.isEmpty) {
       if (mounted) {

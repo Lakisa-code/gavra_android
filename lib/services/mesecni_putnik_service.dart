@@ -103,6 +103,9 @@ class MesecniPutnikService {
           *
         ''').single();
 
+    // Očisti cache nakon kreiranja da se novi putnik odmah vidi
+    clearCache();
+
     return MesecniPutnik.fromMap(response);
   }
 
@@ -116,6 +119,9 @@ class MesecniPutnikService {
     final response = await _supabase.from('mesecni_putnici').update(updates).eq('id', id).select('''
           *
         ''').single();
+
+    // Očisti cache nakon update-a da se promene odmah vide
+    clearCache();
 
     return MesecniPutnik.fromMap(response);
   }
@@ -134,6 +140,9 @@ class MesecniPutnikService {
       'aktivan': false,
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', id);
+
+    // Očisti cache nakon deaktivacije da se promene odmah vide
+    clearCache();
   }
 
   /// Toggle aktivnost mesečnog putnika
@@ -143,6 +152,10 @@ class MesecniPutnikService {
         'aktivan': aktivnost,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
+
+      // Očisti cache nakon promene aktivnosti da se promene odmah vide
+      clearCache();
+
       return true;
     } catch (e) {
       return false;
@@ -152,9 +165,10 @@ class MesecniPutnikService {
   /// Ažurira mesečnog putnika (legacy metoda name)
   Future<MesecniPutnik?> azurirajMesecnogPutnika(MesecniPutnik putnik) async {
     try {
-      return await updateMesecniPutnik(putnik.id, putnik.toMap());
+      final result = await updateMesecniPutnik(putnik.id, putnik.toMap());
+      return result;
     } catch (e) {
-      return null;
+      rethrow; // Prebaci grešku da caller može da je uhvati
     }
   }
 
@@ -186,6 +200,9 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
+      // Očisti cache nakon sinhronizacije da se promene odmah vide
+      clearCache();
+
       return true;
     } catch (e) {
       return false;
@@ -202,6 +219,9 @@ class MesecniPutnikService {
         'broj_otkazivanja': brojIzIstorije,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
+
+      // Očisti cache nakon sinhronizacije da se promene odmah vide
+      clearCache();
 
       return true;
     } catch (e) {
@@ -311,6 +331,10 @@ class MesecniPutnikService {
         'obrisan': true,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
+
+      // Očisti cache nakon brisanja da se promene odmah vide
+      clearCache();
+
       return true;
     } catch (e) {
       return false;

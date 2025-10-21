@@ -146,7 +146,7 @@ class ShimmerWidgets {
     );
   }
 
-  /// 🎯 Shimmer za cele liste putnika
+  /// Shimmer za cele liste putnika
   static Widget putnikListShimmer({int itemCount = 5}) {
     return ListView.builder(
       itemCount: itemCount,
@@ -182,8 +182,3 @@ class ShimmerState {
     );
   }
 }
-
-
-
-
-

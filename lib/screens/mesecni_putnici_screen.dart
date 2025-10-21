@@ -4391,28 +4391,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 💰 PROVERI DA LI JE MESEC PLAĆEN
   bool _isMonthPaid(String monthYear, MesecniPutnik putnik) {
     final stvarniIznos = _stvarnaPlacanja[putnik.id] ?? 0;
-    if (putnik.vremePlacanja == null || stvarniIznos <= 0) {
+    if (stvarniIznos <= 0) {
       return false;
     }
 
-    // Ako imamo precizne podatke o plaćenom mesecu, koristi ih
-    if (putnik.placeniMesec != null && putnik.placenaGodina != null) {
-      // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
-      final parts = monthYear.split(' ');
-      if (parts.length != 2) return false;
-
-      final monthName = parts[0];
-      final year = int.tryParse(parts[1]);
-      if (year == null) return false;
-
-      final monthNumber = _getMonthNumber(monthName);
-      if (monthNumber == 0) return false;
-
-      // Proveri da li se plaćeni mesec i godina poklapaju
-      return putnik.placeniMesec == monthNumber && putnik.placenaGodina == year;
-    }
-
-    // Fallback na staru logiku (za postojeće podatke)
+    // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
     final parts = monthYear.split(' ');
     if (parts.length != 2) return false;
 
@@ -4423,9 +4406,27 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final monthNumber = _getMonthNumber(monthName);
     if (monthNumber == 0) return false;
 
-    // Proveri da li se vreme plaćanja poklapaju sa ovim mesecom
-    final paymentDate = putnik.vremePlacanja!;
-    return paymentDate.year == year && paymentDate.month == monthNumber;
+    // 1. PRIORITET: Precizni podaci o plaćenom mesecu
+    if (putnik.placeniMesec != null && putnik.placenaGodina != null) {
+      return putnik.placeniMesec == monthNumber && putnik.placenaGodina == year;
+    }
+
+    // 2. FALLBACK: Koristi vreme plaćanja ako postoji
+    if (putnik.vremePlacanja != null) {
+      final paymentDate = putnik.vremePlacanja!;
+      return paymentDate.year == year && paymentDate.month == monthNumber;
+    }
+
+    // 3. DODATNA LOGIKA: Ako putnik ima pozitivan iznos plaćanja, možda je plaćen za više meseci
+    // Proverava da li je ukupan iznos dovoljno veliki da pokrije ovaj mesec
+    final mesecnaCena = putnik.cena ?? 0;
+    if (mesecnaCena > 0 && stvarniIznos >= mesecnaCena) {
+      // Ako je iznos plaćanja bar jednako mesečnoj ceni, smatra se da je ovaj mesec plaćen
+      // Ova logika radi za slučajeve gde korisnik plati za celu godinu ili više meseci odjednom
+      return true;
+    }
+
+    return false;
   }
 
   // 📅 HELPER: DOBIJ BROJ MESECA IZ IMENA

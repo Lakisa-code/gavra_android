@@ -35,7 +35,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
     return Row(
       children: [
-        // 🎯 DUGME 1: OPTIMIZUJ (samo reorganizuj listu)
+        // DUGME 1: OPTIMIZUJ (samo reorganizuj listu)
         _buildOptimizeButton(context, putniciSaAdresom),
         const SizedBox(width: 8),
         // 🗺️ DUGME 2: NAVIGACIJA (otvori Google Maps)
@@ -44,7 +44,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
     );
   }
 
-  /// 🎯 OPTIMIZUJ dugme - samo reorganizuje listu putnika
+  /// OPTIMIZUJ dugme - samo reorganizuje listu putnika
   Widget _buildOptimizeButton(
     BuildContext context,
     List<Putnik> putniciSaAdresom,
@@ -214,7 +214,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
     if (putnici.isEmpty) return;
 
     try {
-      // 🚨 VAŽNO: Koristi TRENUTNI redosled putnika (ne optimizuj ponovo!)
+      // VAŽNO: Koristi TRENUTNI redosled putnika (ne optimizuj ponovo!)
       // Direktno kreiraj Google Maps URL sa trenutnim redosledom
 
       // 1. Dobij trenutnu poziciju
@@ -383,8 +383,3 @@ class UnifiedNavigationWidget extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
