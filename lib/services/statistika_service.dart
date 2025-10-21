@@ -692,8 +692,7 @@ class StatistikaService {
       }
     }
 
-    // TODO: Mesečna plaćanja se čuvaju u putovanja_istorija i trebaju asinhroni poziv
-    // Za sada preskačemo mesečne karte u stream-u jer se ne mogu učitati sinhrono
+    // 📝 NAPOMENA: Mesečne karte se ne uključuju u stream jer zahtevaju async pristup do putovanja_istorija
 
     // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE (ESTIMACIJA BAZIRANA NA PUTNICIMA)
     try {
@@ -1048,8 +1047,9 @@ class StatistikaService {
       final Map<String, Map<String, dynamic>> poVozacima = {};
 
       for (final putnik in placeniOvajMesec) {
-        // TODO: Treba čitati vozača iz poslednjeg plaćanja iz putovanja_istorija
-        final vozacIme = 'Nepoznat'; // Placeholder
+        // 📝 NAPOMENA: Vozač se ne prikazuje jer zahteva async pristup do putovanja_istorija
+        // Za detaljnu analizu po vozačima koristi detaljneStatistikePoVozacima()
+        final vozacIme = 'Ukupno'; // Grupirati sve kao ukupno umesto po vozačima
 
         if (!poVozacima.containsKey(vozacIme)) {
           poVozacima[vozacIme] = {

@@ -19,6 +19,7 @@ import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory 
 import '../services/vozac_mapping_service.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
+import '../utils/vozac_boja.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
@@ -3503,15 +3504,35 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                             color: Colors.green.shade600,
                                           ),
                                         ),
-                                      // TODO: Čitati vozača iz poslednjeg plaćanja iz putovanja_istorija
+                                      // 🔍 Vozač poslednjeg plaćanja
                                       if (putnik.vremePlacanja != null)
-                                        Text(
-                                          'Plaćeno: ${DateFormat('dd.MM').format(putnik.vremePlacanja!)}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.green.shade600,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                        FutureBuilder<String?>(
+                                          future: MesecniPutnikService.getVozacPoslednjegPlacanja(putnik.id),
+                                          builder: (context, snapshot) {
+                                            final vozacIme = snapshot.data;
+                                            return Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Plaćeno: ${DateFormat('dd.MM').format(putnik.vremePlacanja!)}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.green.shade600,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                if (vozacIme != null)
+                                                  Text(
+                                                    'Naplatio: $vozacIme',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: VozacBoja.get(vozacIme),
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                              ],
+                                            );
+                                          },
                                         ),
                                     ],
                                   ),
@@ -3982,7 +4003,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 '📅 Datum plaćanja:',
                 putnik.vremePlacanja != null ? _formatDatum(putnik.vremePlacanja!) : 'Nema podataka o datumu',
               ),
-              // TODO: Čitati vozača iz poslednjeg plaćanja iz putovanja_istorija
+              // 🔍 Vozač koji je naplatio - async loading
+              FutureBuilder<String?>(
+                future: MesecniPutnikService.getVozacPoslednjegPlacanja(putnik.id),
+                builder: (context, snapshot) {
+                  final vozacIme = snapshot.data ?? 'Učitava...';
+                  return _buildStatRow('🚗 Vozač (naplata):', vozacIme);
+                },
+              ),
             ],
           ),
         ),

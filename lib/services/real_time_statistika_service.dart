@@ -30,7 +30,7 @@ class RealTimeStatistikaService {
   Stream<List<dynamic>> get kombinovaniPutniciStream {
     if (_kombinovaniStream == null) {
       // Debug logging removed for production
-_kombinovaniStream = CombineLatestStream.combine2(
+      _kombinovaniStream = CombineLatestStream.combine2(
         PutnikService().streamKombinovaniPutniciFiltered(),
         MesecniPutnikService.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
@@ -80,7 +80,7 @@ _kombinovaniStream = CombineLatestStream.combine2(
 
     if (!_streamCache.containsKey(cacheKey)) {
       // Debug logging removed for production
-_streamCache[cacheKey] = kombinovaniPutniciStream
+      _streamCache[cacheKey] = kombinovaniPutniciStream
           .map((data) {
             final putnici = data[0] as List<Putnik>;
             final mesecniPutnici = data[1] as List<MesecniPutnik>;
@@ -132,8 +132,8 @@ _streamCache[cacheKey] = kombinovaniPutniciStream
 
   /// 🧹 OČISTI CACHE
   void clearCache() {
-      // Debug logging removed for production
-_streamCache.clear();
+    // Debug logging removed for production
+    _streamCache.clear();
     _kombinovaniStream = null;
   }
 
@@ -180,7 +180,7 @@ _streamCache.clear();
       };
     } catch (e) {
       // Debug logging removed for production
-return {
+      return {
         'ukupnoPutovanja': 0,
         'otkazi': 0,
         'ukupanPrihod': 0.0,

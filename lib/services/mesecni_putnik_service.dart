@@ -807,4 +807,52 @@ class MesecniPutnikService {
 
     return buffer.toString();
   }
+
+  /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
+  static Future<String?> getVozacPoslednjegPlacanja(String putnikId) async {
+    try {
+      final placanja = await Supabase.instance.client
+          .from('putovanja_istorija')
+          .select('vozac_id')
+          .eq('mesecni_putnik_id', putnikId)
+          .eq('tip_putnika', 'mesecni')
+          .eq('status', 'placeno')
+          .order('created_at', ascending: false)
+          .limit(1) as List<dynamic>;
+
+      if (placanja.isNotEmpty) {
+        final vozacId = placanja.first['vozac_id'] as String?;
+        if (vozacId != null && vozacId.isNotEmpty) {
+          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 🔍 Dobija vozača iz poslednjeg plaćanja po imenu putnika (fallback)
+  static Future<String?> getVozacPoslednjegPlacanjaPoImenu(String putnikIme) async {
+    try {
+      final placanja = await Supabase.instance.client
+          .from('putovanja_istorija')
+          .select('vozac_id')
+          .eq('putnik_ime', putnikIme)
+          .eq('tip_putnika', 'mesecni')
+          .eq('status', 'placeno')
+          .order('created_at', ascending: false)
+          .limit(1) as List<dynamic>;
+
+      if (placanja.isNotEmpty) {
+        final vozacId = placanja.first['vozac_id'] as String?;
+        if (vozacId != null && vozacId.isNotEmpty) {
+          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 }
