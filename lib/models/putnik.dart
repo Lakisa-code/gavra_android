@@ -127,7 +127,6 @@ class Putnik {
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
       dodaoVozac: map['dodao_vozac'] as String?,
-      vozac: (map['vozac'] as String?) ?? VozacMappingService.getVozacImeWithFallbackSync(map['vozac_id'] as String?),
       grad: grad,
       adresa: _determineAdresaFromMesecni(map),
       obrisan: !MesecniHelpers.isActiveFromMap(map),

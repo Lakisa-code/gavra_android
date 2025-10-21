@@ -426,7 +426,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   Widget _buildStatisticsContent() {
     // Cache future da se ne poziva stalno
-    _statistikeFuture ??= StatistikaService.detaljneStatistikePoVozacima(
+    _statistikeFuture ??= StatistikaService.instance.detaljneStatistikePoVozacima(
       _cachedPutnici,
       _selectedRange!.start,
       _selectedRange!.end,

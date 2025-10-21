@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,7 +19,6 @@ import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory 
 import '../services/vozac_mapping_service.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
-import '../utils/vozac_boja.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
@@ -2954,9 +2954,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final adresaVrsac = _adresaVrsacController.text.trim();
 
     try {
-      // Dobij trenutnog vozača kao UUID
-      final currentDriverUuid = await _getCurrentDriverUuid();
-
       // Pripremi mapu polazaka po danima (JSON)
       final Map<String, List<String>> polasciPoDanu = {};
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -2985,7 +2982,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         datumKrajaMeseca: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        vozac: currentDriverUuid.isNotEmpty ? currentDriverUuid : null,
         // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
       );
 
@@ -3507,12 +3503,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                             color: Colors.green.shade600,
                                           ),
                                         ),
-                                      if (putnik.vozac != null && putnik.vozac!.isNotEmpty)
+                                      // TODO: Čitati vozača iz poslednjeg plaćanja iz putovanja_istorija
+                                      if (putnik.vremePlacanja != null)
                                         Text(
-                                          'Naplatio: ${putnik.vozac}',
+                                          'Plaćeno: ${DateFormat('dd.MM').format(putnik.vremePlacanja!)}',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: VozacBoja.get(putnik.vozac),
+                                            color: Colors.green.shade600,
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
@@ -3985,7 +3982,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 '📅 Datum plaćanja:',
                 putnik.vremePlacanja != null ? _formatDatum(putnik.vremePlacanja!) : 'Nema podataka o datumu',
               ),
-              _buildStatRow('🚗 Vozač (naplata):', putnik.vozacIme),
+              // TODO: Čitati vozača iz poslednjeg plaćanja iz putovanja_istorija
             ],
           ),
         ),

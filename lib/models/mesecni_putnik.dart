@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../services/vozac_mapping_service.dart';
 import '../utils/mesecni_helpers.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
@@ -33,7 +32,6 @@ class MesecniPutnik {
     this.vremePlacanja,
     this.placeniMesec,
     this.placenaGodina,
-    this.vozac,
     this.statistics = const {},
   });
 
@@ -83,7 +81,6 @@ class MesecniPutnik {
       vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
-      vozac: map['vozac_id'] as String?,
       statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
     );
   }
@@ -114,13 +111,7 @@ class MesecniPutnik {
   final DateTime? vremePlacanja;
   final int? placeniMesec;
   final int? placenaGodina;
-  final String? vozac;
   final Map<String, dynamic> statistics;
-
-  /// Dobij ime vozača iz UUID-a sa fallback na 'Nepoznat'
-  String get vozacIme {
-    return VozacMappingService.getVozacImeWithFallbackSync(vozac);
-  }
 
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
@@ -174,7 +165,6 @@ class MesecniPutnik {
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
       'placena_godina': placenaGodina,
-      'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
       'statistics': stats,
     };
 
@@ -245,7 +235,6 @@ class MesecniPutnik {
     DateTime? vremePlacanja,
     int? placeniMesec,
     int? placenaGodina,
-    String? vozac,
     int? brojPutovanja,
     int? brojOtkazivanja,
     DateTime? poslednjePutovanje,
@@ -275,7 +264,6 @@ class MesecniPutnik {
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       placeniMesec: placeniMesec ?? this.placeniMesec,
       placenaGodina: placenaGodina ?? this.placenaGodina,
-      vozac: vozac ?? this.vozac,
       statistics: statistics ?? this.statistics,
     );
   }

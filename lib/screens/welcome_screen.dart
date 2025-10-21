@@ -30,26 +30,26 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Lista vozača za email sistem - bez hardcoded šifara
+  // Lista vozača za email sistem - koristi VozacBoja utility
   final List<Map<String, dynamic>> _drivers = [
     {
       'name': 'Bilevski',
-      'color': const Color(0xFFFF9800), // narandžasta
+      'color': VozacBoja.get('Bilevski'),
       'icon': Icons.directions_car,
     },
     {
       'name': 'Bruda',
-      'color': const Color(0xFF7C4DFF), // ljubičasta
+      'color': VozacBoja.get('Bruda'),
       'icon': Icons.local_taxi,
     },
     {
       'name': 'Bojan',
-      'color': const Color(0xFF00E5FF), // svetla cyan plava
+      'color': VozacBoja.get('Bojan'),
       'icon': Icons.airport_shuttle,
     },
     {
       'name': 'Svetlana',
-      'color': const Color(0xFFFF1493), // deep pink
+      'color': VozacBoja.get('Svetlana'),
       'icon': Icons.favorite,
     },
   ];

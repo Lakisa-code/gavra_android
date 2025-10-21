@@ -85,7 +85,7 @@ _streamCache[cacheKey] = kombinovaniPutniciStream
             final putnici = data[0] as List<Putnik>;
             final mesecniPutnici = data[1] as List<MesecniPutnik>;
 
-            return StatistikaService.calculateDetaljneStatistikeSinhronno(
+            return StatistikaService.instance.calculateDetaljneStatistikeSinhronno(
               putnici,
               mesecniPutnici,
               fromDate,

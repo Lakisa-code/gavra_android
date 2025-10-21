@@ -126,14 +126,6 @@ class MesecniPutnikService {
     return MesecniPutnik.fromMap(response);
   }
 
-  /// Označava putnika kao plaćenog
-  Future<void> oznaciKaoPlacen(String id, String vozacId) async {
-    await updateMesecniPutnik(id, {
-      'vreme_placanja': DateTime.now().toIso8601String(),
-      'vozac_id': (vozacId.isEmpty) ? null : vozacId, // koristi postojeću vozac_id kolonu
-    });
-  }
-
   /// Deaktivira mesečnog putnika
   Future<void> deactivateMesecniPutnik(String id) async {
     await _supabase.from('mesecni_putnici').update({
@@ -276,7 +268,6 @@ class MesecniPutnikService {
 
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
-        'vozac_id': validVozacId,
         'cena': ukupanIznos, // ukupna suma svih plaćanja
         'placeni_mesec': pocetakMeseca.month,
         'placena_godina': pocetakMeseca.year,

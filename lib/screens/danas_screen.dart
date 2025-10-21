@@ -883,7 +883,7 @@ class _DanasScreenState extends State<DanasScreen> {
       }
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      final detaljneStats = await StatistikaService.detaljneStatistikePoVozacima(
+      final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(
         putnici,
         dayStart,
         dayEnd,
@@ -916,7 +916,7 @@ class _DanasScreenState extends State<DanasScreen> {
       // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
       late double kilometraza;
       try {
-        kilometraza = await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
+        kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
         kilometraza = 0.0; // Fallback vrednost
       }

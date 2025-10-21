@@ -170,17 +170,21 @@ class StatistikaService {
       return Stream.value(0);
     }
 
-    return MesecniPutnikService.streamAktivniMesecniPutnici().map((mesecniPutnici) {
-      int brojKarata = 0;
-      for (final putnik in mesecniPutnici) {
-        if (putnik.jePlacen &&
-            putnik.vozac == targetUuid &&
-            putnik.vremePlacanja != null &&
-            _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-          brojKarata++;
-        }
-      }
-      return brojKarata;
+    // 🔧 NOVO: Broji mesečne karte na osnovu plaćanja iz putovanja_istorija, ne po vozaču koji vozi
+    return Supabase.instance.client
+        .from('putovanja_istorija')
+        .stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
+      return data.where((item) {
+        return item['tip_putnika'] == 'mesecni' &&
+            item['status'] == 'placeno' &&
+            item['vozac_id'] == targetUuid &&
+            item['created_at'] != null &&
+            _jeUVremenskomOpsegu(
+              DateTime.parse(item['created_at'] as String),
+              fromDate,
+              toDate,
+            );
+      }).length;
     });
   }
 
@@ -304,24 +308,26 @@ class StatistikaService {
 
     // 2. SABERI MESEČNE KARTE - STVARNI PODACI
     try {
-      // Učitaj sve mesečne putnike
-      final mesecniPutnici = await MesecniPutnikService().getAktivniMesecniPutnici();
+      // 🔧 NOVO: Čitaj plaćanja iz putovanja_istorija umesto iz mesečnih putnika
+      final mesecnaPlacanja = await Supabase.instance.client
+          .from('putovanja_istorija')
+          .select('vozac_id, cena')
+          .eq('tip_putnika', 'mesecni')
+          .eq('status', 'placeno')
+          .gte('created_at', fromDate.toIso8601String())
+          .lte('created_at', toDate.toIso8601String()) as List<dynamic>;
 
-      for (final putnik in mesecniPutnici) {
-        // Proveri da li je putnik platio u ovom periodu
-        if (putnik.vremePlacanja != null &&
-            putnik.iznosPlacanja != null &&
-            putnik.iznosPlacanja! > 0 &&
-            putnik.vozac != null &&
-            putnik.vozac!.isNotEmpty) {
+      for (final placanje in mesecnaPlacanja) {
+        final vozacId = placanje['vozac_id'] as String?;
+        final iznos = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
+
+        if (vozacId != null && vozacId.isNotEmpty && iznos > 0) {
           // 🔧 KONVERTUJ UUID u ime vozača
-          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(putnik.vozac);
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
           if (VozacBoja.isValidDriver(vozacIme)) {
-            if (_jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate)) {
-              // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike
-              if (pazarMesecne.containsKey(vozacIme)) {
-                pazarMesecne[vozacIme] = pazarMesecne[vozacIme]! + putnik.iznosPlacanja!;
-              }
+            // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike
+            if (pazarMesecne.containsKey(vozacIme)) {
+              pazarMesecne[vozacIme] = pazarMesecne[vozacIme]! + iznos;
             }
           }
         }
@@ -349,7 +355,7 @@ class StatistikaService {
   }
 
   /// Vraca detaljne statistike po vozacu - STVARNI MESEČNI PUTNICI
-  static Future<Map<String, Map<String, dynamic>>> detaljneStatistikePoVozacima(
+  Future<Map<String, Map<String, dynamic>>> detaljneStatistikePoVozacima(
     List<Putnik> putnici,
     DateTime from,
     DateTime to,
@@ -450,29 +456,35 @@ class StatistikaService {
       uniqueMesecniPutnici[putnik.id] = putnik;
     }
 
-    for (final putnik in uniqueMesecniPutnici.values) {
-      if (putnik.jePlacen) {
-        // ✅ UNIFIKOVANA LOGIKA: koristi vremePlacanja umesto updatedAt
-        // Proveri da li je mesečna karta plaćena u datom periodu
-        if (putnik.vremePlacanja != null &&
-            _jeUVremenskomOpsegu(
-              putnik.vremePlacanja,
-              normalizedFrom,
-              normalizedTo,
-            )) {
-          // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike (BEZ FALLBACK-a)
+    // 🔧 NOVO: Čitaj plaćanja mesečnih iz putovanja_istorija
+    try {
+      final mesecnaPlacanja = await Supabase.instance.client
+          .from('putovanja_istorija')
+          .select('vozac_id, cena, created_at')
+          .eq('tip_putnika', 'mesecni')
+          .eq('status', 'placeno')
+          .gte('created_at', normalizedFrom.toIso8601String())
+          .lte('created_at', normalizedTo.toIso8601String()) as List<dynamic>;
+
+      for (final placanje in mesecnaPlacanja) {
+        final vozacId = placanje['vozac_id'] as String?;
+        final iznos = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
+
+        if (vozacId != null && vozacId.isNotEmpty) {
           // 🔧 KONVERTUJ UUID u ime vozača
-          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(putnik.vozac);
-          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme)) {
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          if (vozaciStats.containsKey(vozacIme) && VozacBoja.isValidDriver(vozacIme) && iznos > 0) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[vozacIme]!['mesecneKarte']++;
             // ✅ DODANO: mesečne karte se TAKOĐER računaju u 'naplaceni' - ukupan broj naplaćenih
             vozaciStats[vozacIme]!['naplaceni']++;
-            vozaciStats[vozacIme]!['pazarMesecne'] += (putnik.iznosPlacanja ?? 0.0);
-            vozaciStats[vozacIme]!['ukupnoPazar'] += (putnik.iznosPlacanja ?? 0.0);
+            vozaciStats[vozacIme]!['pazarMesecne'] += iznos;
+            vozaciStats[vozacIme]!['ukupnoPazar'] += iznos;
           }
         }
       }
+    } catch (e) {
+      // ignore: empty_catches
     }
 
     // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE
@@ -482,7 +494,7 @@ class StatistikaService {
   }
 
   /// 🔄 REAL-TIME DETALJNE STATISTIKE STREAM ZA SVE VOZAČE
-  static Stream<Map<String, Map<String, dynamic>>> streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
+  Stream<Map<String, Map<String, dynamic>>> streamDetaljneStatistikePoVozacima(DateTime from, DateTime to) {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
       PutnikService().streamKombinovaniPutniciFiltered(),
@@ -500,7 +512,7 @@ class StatistikaService {
   }
 
   /// 🔄 PUBLIC SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za external usage)
-  static Map<String, Map<String, dynamic>> calculateDetaljneStatistikeSinhronno(
+  Map<String, Map<String, dynamic>> calculateDetaljneStatistikeSinhronno(
     List<Putnik> putnici,
     List<MesecniPutnik> mesecniPutnici,
     DateTime from,
@@ -515,7 +527,7 @@ class StatistikaService {
   }
 
   /// 🔄 SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za stream)
-  static Map<String, Map<String, dynamic>> _calculateDetaljneStatistikeSinhronno(
+  Map<String, Map<String, dynamic>> _calculateDetaljneStatistikeSinhronno(
     List<Putnik> putnici,
     List<MesecniPutnik> mesecniPutnici,
     DateTime from,
@@ -680,41 +692,8 @@ class StatistikaService {
       }
     }
 
-    // 🎫 PROCES GRUPISANIH MESEČNIH PUTNIKA
-    for (final putnik in grupisaniMesecniPutnici.values) {
-      final vozacIme = putnik.vozac ?? 'Nepoznat'; // ✅ KORISTI vozac umesto naplatioVozac
-      if (vozaciStats.containsKey(vozacIme)) {
-        final iznos = putnik.iznosPlacanja ?? 0.0;
-
-        // Dodaj detalj naplate za mesečnu kartu
-        if (putnik.vremePlacanja != null) {
-          final detalj = {
-            'ime': putnik.putnikIme,
-            'iznos': iznos,
-            'vreme': putnik.vremePlacanja!.millisecondsSinceEpoch,
-            'tip': 'Mesečna',
-          };
-
-          (vozaciStats[vozacIme]!['detaljiNaplata'] as List<Map<String, dynamic>>).add(detalj);
-
-          // Ažuriraj poslednju naplatu
-          if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
-              putnik.vremePlacanja!.isAfter(
-                DateTime.fromMillisecondsSinceEpoch(
-                  vozaciStats[vozacIme]!['poslednjaNaplata']['vreme'] as int,
-                ),
-              )) {
-            vozaciStats[vozacIme]!['poslednjaNaplata'] = detalj;
-          }
-        }
-
-        // 🔧 FIX: MESEČNE KARTE SE NE DODAJU U 'naplaceni' - to je samo za obične putnike
-        // 'naplaceni' = samo obični putnici, 'mesecneKarte' = samo mesečne karte
-        vozaciStats[vozacIme]!['mesecneKarte']++;
-        vozaciStats[vozacIme]!['pazarMesecne'] += iznos;
-        vozaciStats[vozacIme]!['ukupnoPazar'] += iznos;
-      }
-    }
+    // TODO: Mesečna plaćanja se čuvaju u putovanja_istorija i trebaju asinhroni poziv
+    // Za sada preskačemo mesečne karte u stream-u jer se ne mogu učitati sinhrono
 
     // 🚗 DODAJ KILOMETRAŽU ZA SVE VOZAČE (ESTIMACIJA BAZIRANA NA PUTNICIMA)
     try {
@@ -748,7 +727,7 @@ class StatistikaService {
   }
 
   /// 💰 PAZAR ZA VOZAČE - SVE NAPLATE (dnevne + mesečne) - PARE SU PARE!
-  static Map<String, double> pazarSamoPutnici(List<Putnik> putnici) {
+  Map<String, double> pazarSamoPutnici(List<Putnik> putnici) {
     // 🎯 DINAMIČKA INICIJALIZACIJA VOZAČA
     final Map<String, double> pazar = {};
     for (final vozac in sviVozaci) {
@@ -771,7 +750,7 @@ class StatistikaService {
   // 🚗 KILOMETRAŽA FUNKCIJE
 
   /// Dodaje kilometražu za sve vozače u vozaciStats
-  static Future<void> _dodajKilometrazu(
+  Future<void> _dodajKilometrazu(
     Map<String, Map<String, dynamic>> vozaciStats,
     DateTime from,
     DateTime to,
@@ -798,7 +777,7 @@ class StatistikaService {
   }
 
   /// Računa kilometražu za vozača u datom periodu (SA PAMETNIM FILTRIRANJEM)
-  static Future<double> _kmZaVozaca(
+  Future<double> _kmZaVozaca(
     String vozac,
     DateTime from,
     DateTime to,
@@ -839,7 +818,7 @@ class StatistikaService {
   }
 
   /// � JAVNA METODA: Dobij kilometražu za vozača u određenom periodu
-  static Future<double> getKilometrazu(
+  Future<double> getKilometrazu(
     String vozac,
     DateTime from,
     DateTime to,
@@ -848,7 +827,7 @@ class StatistikaService {
   }
 
   /// �🔄 RESETUJ SVE KILOMETRAŽE NA 0 - briše sve GPS pozicije
-  static Future<bool> resetujSveKilometraze() async {
+  Future<bool> resetujSveKilometraze() async {
     try {
       final supabase = Supabase.instance.client;
 
@@ -861,7 +840,7 @@ class StatistikaService {
   }
 
   /// 💰 RESETUJ PAZAR ZA ODREĐENOG VOZAČA - briše podatke o naplatama
-  static Future<bool> resetujPazarZaVozaca(
+  Future<bool> resetujPazarZaVozaca(
     String vozac, {
     DateTime? from,
     DateTime? to,
@@ -898,7 +877,7 @@ class StatistikaService {
   }
 
   /// 💰 RESETUJ SAMO DANAS PAZAR ZA VOZAČA - brži reset za današnji dan
-  static Future<bool> resetujDanasPazarZaVozaca(String vozac) async {
+  Future<bool> resetujDanasPazarZaVozaca(String vozac) async {
     final now = DateTime.now();
     final danasStart = DateTime(now.year, now.month, now.day);
     final danasEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -907,7 +886,7 @@ class StatistikaService {
   }
 
   /// 🚨 RESETUJ PAZAR ZA SVE VOZAČE - briše SVE podatke o naplatama za sve vozače
-  static Future<bool> resetujPazarZaSveVozace({
+  Future<bool> resetujPazarZaSveVozace({
     DateTime? from,
     DateTime? to,
   }) async {
@@ -929,7 +908,7 @@ class StatistikaService {
   }
 
   /// 🚨 RESETUJ DANAŠNJI PAZAR ZA SVE VOZAČE - brži reset samo za današnji dan
-  static Future<bool> resetujDanasPazarZaSveVozace() async {
+  Future<bool> resetujDanasPazarZaSveVozace() async {
     final now = DateTime.now();
     final danasStart = DateTime(now.year, now.month, now.day);
     final danasEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
@@ -938,12 +917,12 @@ class StatistikaService {
   }
 
   /// 🚨 NUKLEARNI RESET - briše SVE podatke o naplatama za sve vozače (cela istorija!)
-  static Future<bool> nuklearniResetSvihPazara() async {
+  Future<bool> nuklearniResetSvihPazara() async {
     return await resetujPazarZaSveVozace(); // Bez from/to parametara = briše sve
   }
 
   /// Računa rastojanje između dve GPS koordinate u kilometrima (Haversine formula)
-  static double _distanceKm(
+  double _distanceKm(
     double lat1,
     double lon1,
     double lat2,
@@ -959,28 +938,28 @@ class StatistikaService {
   // 🆕 CLEAN STATISTIKE METODE - bez duplikata
 
   /// Dohvati clean statistike bez duplikata
-  static Future<Map<String, dynamic>> dohvatiCleanStatistike() async {
+  Future<Map<String, dynamic>> dohvatiCleanStatistike() async {
     try {
       return await CleanStatistikaService.dohvatiUkupneStatistike();
     } catch (e) {
       // Debug logging removed for production
-rethrow;
+      rethrow;
     }
   }
 
   /// Proveri da li podaci nemaju duplikate
-  static Future<bool> proveriBezDuplikata() async {
+  Future<bool> proveriBezDuplikata() async {
     try {
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
       return stats['no_duplicates'] as bool;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
   /// Dohvati clean mesečne statistike bez duplikata
-  static Future<Map<String, dynamic>> getCleanMesecneStatistike(
+  Future<Map<String, dynamic>> getCleanMesecneStatistike(
     int mesec,
     int godina,
   ) async {
@@ -991,45 +970,45 @@ return false;
       );
     } catch (e) {
       // Debug logging removed for production
-rethrow;
+      rethrow;
     }
   }
 
   /// Dohvati clean listu svih putnika bez duplikata
-  static Future<List<Map<String, dynamic>>> dohvatiCleanSvePutnike() async {
+  Future<List<Map<String, dynamic>>> dohvatiCleanSvePutnike() async {
     try {
       return await CleanStatistikaService.dohvatiSvePutnikeClean();
     } catch (e) {
       // Debug logging removed for production
-rethrow;
+      rethrow;
     }
   }
 
   /// Dohvati clean ukupan iznos bez duplikata
-  static Future<double> dohvatiCleanUkupanIznos() async {
+  Future<double> dohvatiCleanUkupanIznos() async {
     try {
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
       return (stats['ukupno_sve'] as num).toDouble();
     } catch (e) {
       // Debug logging removed for production
-rethrow;
+      rethrow;
     }
   }
 
   /// � KREIRAJ DAILY_CHECKINS TABELU AKO NE POSTOJI
-  static Future<bool> kreirajDailyCheckinsTabelu() async {
+  Future<bool> kreirajDailyCheckinsTabelu() async {
     try {
       final supabase = Supabase.instance.client;
       await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
       return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
   /// �🔍 DUBOKA ANALIZA MESEČNIH KARATA ZA DANAŠNJI DAN
-  static Future<Map<String, dynamic>> dubokaAnalizaMesecnihKarata() async {
+  Future<Map<String, dynamic>> dubokaAnalizaMesecnihKarata() async {
     final danas = DateTime.now();
     final rezultat = <String, dynamic>{};
 
@@ -1069,15 +1048,15 @@ return false;
       final Map<String, Map<String, dynamic>> poVozacima = {};
 
       for (final putnik in placeniOvajMesec) {
-        final vozacUuid = putnik.vozac ?? 'Nepoznat';
-        final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacUuid);
+        // TODO: Treba čitati vozača iz poslednjeg plaćanja iz putovanja_istorija
+        final vozacIme = 'Nepoznat'; // Placeholder
 
         if (!poVozacima.containsKey(vozacIme)) {
           poVozacima[vozacIme] = {
             'broj_putnika': 0,
             'ukupan_iznos': 0.0,
             'putnici': <Map<String, dynamic>>[],
-            'vozac_uuid': vozacUuid,
+            'vozac_uuid': null,
           };
         }
 
@@ -1116,15 +1095,15 @@ return false;
         if (putnik.placeniMesec != danas.month) problemi.add('POGRESAN_MESEC');
         if (putnik.placenaGodina != danas.year) problemi.add('POGRESNA_GODINA');
         if ((putnik.iznosPlacanja ?? 0.0) <= 0) problemi.add('NEMA_IZNOS');
-        if (putnik.vozac == null || putnik.vozac!.isEmpty) problemi.add('NEMA_VOZACA');
+        // Vozač se više ne čuva na mesečnom putniku
 
         if (problemi.isNotEmpty) {
           problematicni.add({
             'ime': putnik.putnikIme,
             'id': putnik.id,
             'problemi': problemi,
-            'vozac_uuid': putnik.vozac,
-            'vozac_ime': VozacMappingService.getVozacImeWithFallbackSync(putnik.vozac),
+            'vozac_uuid': null,
+            'vozac_ime': 'Nepoznat',
             'placeni_mesec': putnik.placeniMesec,
             'placena_godina': putnik.placenaGodina,
             'iznos': putnik.iznosPlacanja,

@@ -452,7 +452,7 @@ class DailyCheckInService {
       // ✅ FIX: Koristi StatistikaService umesto manuelne logike - IDENTIČNO SA _showPopisDana()
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      final detaljneStats = await StatistikaService.detaljneStatistikePoVozacima(
+      final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(
         putnici,
         dayStart,
         dayEnd,
@@ -489,7 +489,7 @@ class DailyCheckInService {
       // 🚗 REALTIME GPS KILOMETRAŽA - IDENTIČNO SA _showPopisDana()
       double kilometraza;
       try {
-        kilometraza = await StatistikaService.getKilometrazu(vozac, dayStart, dayEnd);
+        kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
         kilometraza = 0.0; // Fallback vrednost
       }

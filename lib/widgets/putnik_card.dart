@@ -10,7 +10,6 @@ import '../services/haptic_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
-import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/smart_colors.dart';
 import '../utils/vozac_boja.dart';
@@ -2249,7 +2248,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Plaćeno',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(VozacMappingService.getVozacImeWithFallbackSync(_putnik.vozac)),
+                              color: VozacBoja.get(_putnik.naplatioVozac ?? 'Nepoznat'),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2257,8 +2256,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             '${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(VozacMappingService.getVozacImeWithFallbackSync(_putnik.vozac))
-                                  .withOpacity(0.8),
+                              color: VozacBoja.get(_putnik.naplatioVozac ?? 'Nepoznat').withOpacity(0.8),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
