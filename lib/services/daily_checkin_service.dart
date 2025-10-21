@@ -167,6 +167,25 @@ class DailyCheckInService {
     };
   }
 
+  /// Dohvati kompletne podatke za danas kao Map<String, dynamic> (za kompatibilnost)
+  static Future<Map<String, dynamic>> getTodayCheckIn(String vozac) async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    
+    final sitanNovac = prefs.getDouble('${todayKey}_amount') ?? 0.0;
+    final dnevniPazari = prefs.getDouble('${todayKey}_pazari') ?? 0.0;
+    final hasCheckedIn = prefs.getBool(todayKey) ?? false;
+    final timestampStr = prefs.getString('${todayKey}_timestamp');
+    
+    return {
+      'sitan_novac': sitanNovac,
+      'dnevni_pazari': dnevniPazari,
+      'has_checked_in': hasCheckedIn,
+      'timestamp': timestampStr != null ? DateTime.parse(timestampStr) : null,
+    };
+  }
+
   /// Sačuvaj u Supabase tabelu daily_checkins
   static Future<Map<String, dynamic>?> _saveToSupabase(
     String vozac,
