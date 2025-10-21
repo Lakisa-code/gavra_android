@@ -65,8 +65,8 @@ class AuthManager {
       );
 
       if (response.user != null) {
-        final driverName = (response.user!.userMetadata?['driver_name'] as String?) ?? 
-                          response.user!.email?.split('@')[0] ?? 'Vozač';
+        final driverName =
+            (response.user!.userMetadata?['driver_name'] as String?) ?? response.user!.email?.split('@')[0] ?? 'Vozač';
 
         await _saveDriverSession(driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);

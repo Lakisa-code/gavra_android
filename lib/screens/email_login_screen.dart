@@ -436,8 +436,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
 
         // Dobij ime vozača iz trenutne auth session
         final user = AuthManager.getCurrentUser();
-        final driverName = (user?.userMetadata?['driver_name'] as String?) ?? 
-                          user?.email?.split('@')[0] ?? 'Vozač';
+        final driverName = (user?.userMetadata?['driver_name'] as String?) ?? user?.email?.split('@')[0] ?? 'Vozač';
 
         // Debug logging removed for production
 

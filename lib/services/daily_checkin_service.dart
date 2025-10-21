@@ -172,12 +172,12 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-    
+
     final sitanNovac = prefs.getDouble('${todayKey}_amount') ?? 0.0;
     final dnevniPazari = prefs.getDouble('${todayKey}_pazari') ?? 0.0;
     final hasCheckedIn = prefs.getBool(todayKey) ?? false;
     final timestampStr = prefs.getString('${todayKey}_timestamp');
-    
+
     return {
       'sitan_novac': sitanNovac,
       'dnevni_pazari': dnevniPazari,
@@ -246,6 +246,80 @@ class DailyCheckInService {
       await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
     } catch (e) {
       // Ne bacaj grešku jer tabela možda postoji ali RPC ne radi
+    }
+  }
+
+  /// 🛠️ FORSIRAJ KREIRANJE TABELE - za ekstremne slučajeve
+  static Future<bool> forceCreateTable() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // 1. Test da li tabela postoji
+      try {
+        await supabase.from('daily_checkins').select('id').limit(1);
+        return true; // Tabela već postoji
+      } catch (e) {
+        // Tabela ne postoji, nastavi sa kreiranjem
+      }
+
+      // 2. Pokušaj RPC kreiranje
+      try {
+        await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
+
+        // Test ponovo
+        await Future<void>.delayed(const Duration(seconds: 2));
+        await supabase.from('daily_checkins').select('id').limit(1);
+        return true;
+      } catch (e) {
+        // RPC neuspešan
+      }
+
+      // 3. Pokušaj direktno SQL preko exec_sql
+      try {
+        const sqlCreate = '''
+          CREATE TABLE IF NOT EXISTS public.daily_checkins (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            vozac TEXT NOT NULL,
+            datum DATE NOT NULL,
+            sitan_novac DECIMAL(10,2) DEFAULT 0.0,
+            dnevni_pazari DECIMAL(10,2) DEFAULT 0.0,
+            ukupno DECIMAL(10,2) DEFAULT 0.0,
+            checkin_vreme TIMESTAMPTZ DEFAULT now(),
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now(),
+            UNIQUE(vozac, datum)
+          );
+          
+          CREATE INDEX IF NOT EXISTS idx_daily_checkins_vozac ON public.daily_checkins(vozac);
+          CREATE INDEX IF NOT EXISTS idx_daily_checkins_datum ON public.daily_checkins(datum);
+          
+          ALTER TABLE public.daily_checkins ENABLE ROW LEVEL SECURITY;
+          
+          DROP POLICY IF EXISTS "daily_checkins_read_policy" ON public.daily_checkins;
+          CREATE POLICY "daily_checkins_read_policy" ON public.daily_checkins FOR SELECT TO authenticated USING (true);
+          
+          DROP POLICY IF EXISTS "daily_checkins_insert_policy" ON public.daily_checkins;
+          CREATE POLICY "daily_checkins_insert_policy" ON public.daily_checkins FOR INSERT TO authenticated WITH CHECK (true);
+          
+          DROP POLICY IF EXISTS "daily_checkins_update_policy" ON public.daily_checkins;
+          CREATE POLICY "daily_checkins_update_policy" ON public.daily_checkins FOR UPDATE TO authenticated USING (true);
+          
+          GRANT SELECT, INSERT, UPDATE, DELETE ON public.daily_checkins TO authenticated;
+        ''';
+
+        await supabase.rpc<void>('exec_sql', params: {'query': sqlCreate});
+
+        // Test ponovo
+        await Future<void>.delayed(const Duration(seconds: 2));
+        await supabase.from('daily_checkins').select('id').limit(1);
+        return true;
+      } catch (e) {
+        // SQL neuspešan
+      }
+
+      return false; // Sve je neuspešno
+    } catch (e) {
+      return false;
     }
   }
 
