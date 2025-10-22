@@ -66,8 +66,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     _initializeAnimations();
     _setupTimeout();
     _startLoadingProcess();
-      // Debug logging removed for production
-}
+    // Debug logging removed for production
+  }
 
   void _initializeAnimations() {
     // Pulsing animation for enhanced visual feedback
@@ -105,8 +105,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   void _setupTimeout() {
     _timeoutTimer = Timer(timeoutDuration, () {
       if (mounted && !_hasError.value) {
-      // Debug logging removed for production
-_handleLoadingError('Učitavanje traje predugo. Pokušajte ponovo.');
+        // Debug logging removed for production
+        _handleLoadingError('Učitavanje traje predugo. Pokušajte ponovo.');
       }
     });
   }
@@ -120,7 +120,7 @@ _handleLoadingError('Učitavanje traje predugo. Pokušajte ponovo.');
       }
     } catch (e) {
       // Debug logging removed for production
-_handleLoadingError(e.toString());
+      _handleLoadingError(e.toString());
     }
   }
 
@@ -184,14 +184,14 @@ _handleLoadingError(e.toString());
         _hasError.value = true;
         _errorMessage.value = error;
       });
-      // Debug logging removed for production
-}
+    // Debug logging removed for production
+  }
 
   void _navigateToMainApp() {
     _timeoutTimer?.cancel();
     _loadingTimer?.cancel();
-      // Debug logging removed for production
-if (mounted) {
+    // Debug logging removed for production
+    if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (context) => const WelcomeScreen(),
@@ -217,7 +217,7 @@ if (mounted) {
         _currentStage.value = LoadingStage.initializing;
         _statusMessage.value = LoadingStage.initializing.message;
       });
-      // Debug logging removed for production
+    // Debug logging removed for production
 // Restart the process
     _initializeV3Loading();
   }
@@ -388,7 +388,6 @@ if (mounted) {
             height: 80,
             child: CircularProgressIndicator(
               value: progress,
-              strokeWidth: 4,
               backgroundColor: Colors.white.withOpacity(0.2),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
@@ -633,8 +632,8 @@ if (mounted) {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-      // Debug logging removed for production
-SystemNavigator.pop();
+                        // Debug logging removed for production
+                        SystemNavigator.pop();
                       },
                       icon: const Icon(
                         Icons.close,
