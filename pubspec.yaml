@@ -44,7 +44,7 @@ dependencies:
   # Vraćam se na URL launcher pristup - jedini koji radi
   printing: ^5.14.2
   pdf: ^3.11.3
-  geolocator: ^10.1.1
+  geolocator: ^14.0.2
   crypto: ^3.0.3
   graphql: ^5.1.2
   graphql_flutter: ^5.1.2
@@ -52,7 +52,7 @@ dependencies:
   supabase: ^2.0.8
 
   # 🛰️ BACKGROUND GPS TRACKING (BESPLATNO)
-  flutter_background_service: ^5.0.6
+  flutter_background_service: ^5.0.8
 
   # 🔊 VOICE NAVIGATION (BESPLATNO)
   flutter_tts: ^4.0.2
