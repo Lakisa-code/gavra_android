@@ -30,8 +30,11 @@ jobs:
             - name: 📦 Get Flutter dependencies
               run: flutter pub get
 
-            - name: 🔍 Analyze code quality
-              run: flutter analyze
+            - name: 🔍 Dart analyze (strict)
+              run: dart analyze --fatal-infos --fatal-warnings
+
+            - name: 🔍 Flutter analyze (comprehensive)
+              run: flutter analyze --fatal-infos --fatal-warnings
 
             - name: 🧪 Run tests
               run: flutter test
@@ -58,7 +61,7 @@ jobs:
                   fi
 
             - name: 📤 Upload App Bundle artifact
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: gavra-android-release
                   path: |
@@ -78,8 +81,8 @@ jobs:
                   echo "" >> $GITHUB_STEP_SUMMARY
                   if [ "$KEYSTORE_DECODED" == "true" ]; then
                     echo "### ✅ Ready for Play Store!" >> $GITHUB_STEP_SUMMARY
-                    echo "Download the `.aab` file from artifacts above." >> $GITHUB_STEP_SUMMARY
+                    echo "Download the \`.aab\` file from artifacts above." >> $GITHUB_STEP_SUMMARY
                   else
                     echo "### ⚠️ Setup Required:" >> $GITHUB_STEP_SUMMARY
-                    echo "Add `KEYSTORE_BASE64` secret for signed builds." >> $GITHUB_STEP_SUMMARY
+                    echo "Add \`KEYSTORE_BASE64\` secret for signed builds." >> $GITHUB_STEP_SUMMARY
                   fi
