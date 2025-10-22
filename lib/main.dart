@@ -9,10 +9,13 @@ import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
+import 'services/background_gps_service.dart';
 import 'services/cache_service.dart';
 import 'services/firebase_service.dart';
+import 'services/offline_map_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_service.dart';
+import 'services/voice_navigation_service.dart';
 import 'supabase_client.dart';
 
 void main() async {
@@ -45,6 +48,27 @@ void main() async {
     ).timeout(const Duration(seconds: 5));
   } catch (e) {
     // Continue without Supabase if it fails
+  }
+
+  // 🛰️ INITIALIZE BACKGROUND GPS SERVICE
+  try {
+    await BackgroundGpsService.initialize();
+  } catch (e) {
+    // Ignoriši greške u background GPS - optional feature
+  }
+
+  // 🗺️ INITIALIZE OFFLINE MAPS
+  try {
+    await OfflineMapService.initialize();
+  } catch (e) {
+    // Ignoriši greške u offline maps - optional feature
+  }
+
+  // 🔊 INITIALIZE VOICE NAVIGATION
+  try {
+    await VoiceNavigationService.initialize();
+  } catch (e) {
+    // Ignoriši greške u voice navigation - optional feature
   }
 
   runApp(const MyApp());

@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
 
   <!-- 🗺️ GPS/Location permissions -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -17,6 +18,16 @@
   <!-- 📞 Phone/Call permissions -->
   <uses-permission android:name="android.permission.CALL_PHONE" />
   <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+  <!-- 🛰️ BACKGROUND GPS TRACKING PERMISSIONS -->
+  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+  <!-- 🔊 VOICE NAVIGATION PERMISSIONS -->
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
   <application android:label="Gavra 013" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:largeHeap="true" android:enableOnBackInvokedCallback="true" android:requestLegacyExternalStorage="true">
     <!-- 🎮 MIUI Gaming optimizations -->
@@ -53,6 +64,9 @@
     <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
     <meta-data android:name="flutterEmbedding" android:value="2" />
+
+    <!-- 🛰️ BACKGROUND GPS SERVICE -->
+    <service android:name="id.flutter.flutter_background_service.BackgroundService" android:exported="false" android:foregroundServiceType="location" tools:replace="android:exported" />
 
   </application>
   <!-- Required to query activities that can process text, see:

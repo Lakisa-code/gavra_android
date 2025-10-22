@@ -51,6 +51,16 @@ dependencies:
   uuid: ^4.4.0
   supabase: ^2.0.8
 
+  # 🛰️ BACKGROUND GPS TRACKING (BESPLATNO)
+  flutter_background_service: ^5.0.6
+
+  # 🔊 VOICE NAVIGATION (BESPLATNO)
+  flutter_tts: ^4.0.2
+  audio_session: ^0.1.19
+
+  # 🗺️ OFFLINE MAPS DATABASE
+  sqflite: ^2.3.3
+
   app_links: any
 
 flutter:
