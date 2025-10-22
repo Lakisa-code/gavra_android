@@ -38,10 +38,7 @@ android {
         minSdk = flutter.minSdkVersion  // Fixed to specific version
         targetSdk = 36  // Updated for plugin compatibility
         
-        // 🎮 XIAOMI GAMING OPTIMIZACIJE
-        ndk {
-            abiFilters += listOf("arm64-v8a") // Samo ARM64 za bolje performanse
-        }
+        // 🎮 XIAOMI GAMING OPTIMIZACIJE - Flutter handles ABI filtering automatically
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
