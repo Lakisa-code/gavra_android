@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 36  // Updated for plugin compatibility (requires SDK 34+)
+    compileSdk = 34
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -35,12 +35,12 @@ android {
         applicationId = "com.gavra013.gavra_android"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion  // Fixed to specific version
-        targetSdk = 36  // Updated for plugin compatibility
+        minSdk = 21
+        targetSdk = 34
         
         // 🎮 XIAOMI GAMING OPTIMIZACIJE - Flutter handles ABI filtering automatically
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 1
+        versionName = "6.0.0"
     }
 
     // 🔐 PRODUCTION SIGNING CONFIGURATION
