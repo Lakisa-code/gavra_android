@@ -256,14 +256,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         preferredSize: const Size.fromHeight(80),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),

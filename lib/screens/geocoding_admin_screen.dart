@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../services/geocoding_stats_service.dart';
+import '../theme.dart';
 
 class GeocodingAdminScreen extends StatefulWidget {
   const GeocodingAdminScreen({Key? key}) : super(key: key);
@@ -340,16 +341,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1E3A8A), // Blue-900
-              Color(0xFF3B82F6), // Blue-500
-              Color(0xFF1D4ED8), // Blue-600
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
+          gradient: tripleBlueFashionGradient,
         ),
         child: SafeArea(
           child: Column(

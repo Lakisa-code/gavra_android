@@ -2156,9 +2156,9 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Dodao:',
                           style: TextStyle(
                             fontSize: 13,
-                            color: () {
-                              return VozacBoja.get(_putnik.dodaoVozac);
-                            }(),
+                            color: VozacBoja.isValidDriver(_putnik.dodaoVozac)
+                                ? VozacBoja.get(_putnik.dodaoVozac)
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2168,7 +2168,9 @@ class _PutnikCardState extends State<PutnikCard> {
                               : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem'),
                           style: TextStyle(
                             fontSize: 13,
-                            color: VozacBoja.get(_putnik.dodaoVozac),
+                            color: VozacBoja.isValidDriver(_putnik.dodaoVozac)
+                                ? VozacBoja.get(_putnik.dodaoVozac)
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2182,7 +2184,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Otkazao:',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(_putnik.otkazaoVozac),
+                              color: VozacBoja.isValidDriver(_putnik.otkazaoVozac)
+                                  ? VozacBoja.get(_putnik.otkazaoVozac)
+                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -2190,8 +2194,10 @@ class _PutnikCardState extends State<PutnikCard> {
                             _putnik.otkazaoVozac?.isNotEmpty == true ? _putnik.otkazaoVozac! : 'sistem',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(_putnik.otkazaoVozac),
-                              fontWeight: FontWeight.w700,
+                              color: VozacBoja.isValidDriver(_putnik.otkazaoVozac)
+                                  ? VozacBoja.get(_putnik.otkazaoVozac).withOpacity(0.8)
+                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           if (_putnik.statusVreme != null)
@@ -2234,9 +2240,9 @@ class _PutnikCardState extends State<PutnikCard> {
                         }(),
                         style: TextStyle(
                           fontSize: 13,
-                          color: VozacBoja.get(
-                            _putnik.pokupioVozac ?? widget.currentDriver,
-                          ), // ✅ KORISTI pokupioVozac!
+                          color: VozacBoja.isValidDriver(_putnik.pokupioVozac ?? widget.currentDriver)
+                              ? VozacBoja.get(_putnik.pokupioVozac ?? widget.currentDriver)
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -2248,7 +2254,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Plaćeno',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(_putnik.naplatioVozac ?? 'Nepoznat'),
+                              color: VozacBoja.isValidDriver(_putnik.naplatioVozac)
+                                  ? VozacBoja.get(_putnik.naplatioVozac)
+                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2256,7 +2264,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             '${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.get(_putnik.naplatioVozac ?? 'Nepoznat').withOpacity(0.8),
+                              color: VozacBoja.isValidDriver(_putnik.naplatioVozac)
+                                  ? VozacBoja.get(_putnik.naplatioVozac).withOpacity(0.8)
+                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                               fontStyle: FontStyle.italic,
                             ),
                           ),

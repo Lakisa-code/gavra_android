@@ -24,6 +24,7 @@ import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
+import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/schedule_utils.dart';
 import '../utils/slot_utils.dart';
@@ -1726,14 +1727,7 @@ class _DanasScreenState extends State<DanasScreen> {
         preferredSize: const Size.fromHeight(80),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),

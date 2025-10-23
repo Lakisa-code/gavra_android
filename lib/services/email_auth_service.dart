@@ -17,23 +17,23 @@ class EmailAuthService {
   ) async {
     try {
       // Debug logging removed for production
-final AuthResponse response = await _supabase.auth.signUp(
+      final AuthResponse response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'driver_name': driverName},
-        emailRedirectTo: 'gavra013://auth/callback', // Omogući email verification
+        emailRedirectTo: 'gavra://auth/callback', // Uskladi sa AndroidManifest.xml
       );
 
       if (response.user != null) {
-      // Debug logging removed for production
-return true;
+        // Debug logging removed for production
+        return true;
       } else {
-      // Debug logging removed for production
-return false;
+        // Debug logging removed for production
+        return false;
       }
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -46,22 +46,22 @@ return false;
   static Future<String?> signInWithEmail(String email, String password) async {
     try {
       // Debug logging removed for production
-final AuthResponse response = await _supabase.auth.signInWithPassword(
+      final AuthResponse response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
       if (response.user != null) {
         final driverName = response.user!.userMetadata?['driver_name'] as String?;
-      // Debug logging removed for production
-return driverName;
+        // Debug logging removed for production
+        return driverName;
       } else {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -69,12 +69,12 @@ return null;
   static Future<bool> resetPasswordViaEmail(String email) async {
     try {
       // Debug logging removed for production
-await _supabase.auth.resetPasswordForEmail(email);
+      await _supabase.auth.resetPasswordForEmail(email);
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -83,20 +83,20 @@ return false;
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-      // Debug logging removed for production
-return false;
+        // Debug logging removed for production
+        return false;
       }
       // Debug logging removed for production
-await _supabase.auth.resend(
+      await _supabase.auth.resend(
         type: OtpType.signup,
         email: user.email,
-        emailRedirectTo: 'gavra013://auth/callback',
+        emailRedirectTo: 'gavra://auth/callback',
       );
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -104,12 +104,12 @@ return false;
   static Future<bool> signOut() async {
     try {
       // Debug logging removed for production
-await _supabase.auth.signOut();
+      await _supabase.auth.signOut();
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -123,8 +123,3 @@ return false;
     return _supabase.auth.currentUser;
   }
 }
-
-
-
-
-

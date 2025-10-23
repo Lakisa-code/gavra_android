@@ -6,6 +6,7 @@ import '../services/email_auth_service.dart';
 import '../services/permission_service.dart';
 // import '../main.dart' show globalThemeRefresher; // Removed in simple version
 import '../services/simplified_daily_checkin.dart';
+import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
 import 'home_screen_light.dart';
@@ -119,16 +120,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-              Theme.of(context).colorScheme.tertiary,
-            ],
-          ),
+        decoration: const BoxDecoration(
+          gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
         ),
         child: SafeArea(
           child: FadeTransition(

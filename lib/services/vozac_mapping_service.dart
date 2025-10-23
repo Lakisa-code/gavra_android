@@ -70,12 +70,12 @@ class VozacMappingService {
     return _vozacUuidToName?[uuid];
   }
 
-  /// Dobij ime vozača sa fallback na 'Nepoznat'
-  static Future<String> getVozacImeWithFallback(String? uuid) async {
+  /// Dobij ime vozača sa fallback na null (trebalo bi da se koristi samo u debug slučajevima)
+  static Future<String?> getVozacImeWithFallback(String? uuid) async {
     if (uuid == null || uuid.isEmpty) {
-      return 'Nepoznat';
+      return null; // Ne vraćaj 'Nepoznat', već null
     }
-    return await getVozacIme(uuid) ?? 'Nepoznat';
+    return await getVozacIme(uuid); // Može biti null
   }
 
   /// Provjeri da li je ime vozača validno
@@ -116,10 +116,10 @@ class VozacMappingService {
     return _vozacNameToUuid?[ime];
   }
 
-  /// Dobij ime vozača sa fallback sinhron (koristi cache ili 'Nepoznat')
-  static String getVozacImeWithFallbackSync(String? uuid) {
-    if (uuid == null || uuid.isEmpty) return 'Nepoznat';
-    return _vozacUuidToName?[uuid] ?? 'Nepoznat';
+  /// Dobij ime vozača sa fallback sinhron (koristi cache ili null)
+  static String? getVozacImeWithFallbackSync(String? uuid) {
+    if (uuid == null || uuid.isEmpty) return null;
+    return _vozacUuidToName?[uuid]; // Može biti null
   }
 
   /// Proveri da li je UUID vozača valjan sinhron

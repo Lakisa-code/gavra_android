@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_manager.dart';
 import '../services/driver_registration_service.dart';
 import '../services/email_auth_service.dart';
+import '../theme.dart';
 import '../utils/vozac_boja.dart';
 
 class EmailRegistrationScreen extends StatefulWidget {
@@ -63,16 +65,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF1A1A2E),
-              const Color(0xFF16213E),
-              Colors.black.withOpacity(0.9),
-            ],
-          ),
+        decoration: const BoxDecoration(
+          gradient: tripleBlueFashionGradient,
         ),
         child: SafeArea(
           child: FadeTransition(
@@ -102,14 +96,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
       width: double.infinity,
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.blue.withOpacity(0.8),
-            Colors.indigo.withOpacity(0.6),
-          ],
-        ),
+        gradient: tripleBlueFashionGradient,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(30),
@@ -160,12 +147,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
         children: [
           const SizedBox(height: 32),
 
-          // Driver Selection
-          _buildDriverSelection(),
-
-          const SizedBox(height: 24),
-
-          // Email Field
+          // Email Field (automatski prepoznaje vozača)
           _buildEmailField(),
 
           const SizedBox(height: 24),
@@ -192,96 +174,98 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
     );
   }
 
-  Widget _buildDriverSelection() {
-    final drivers = VozacBoja.validDrivers;
-
-    return DropdownButtonFormField<String>(
-      value: _selectedDriver,
-      decoration: InputDecoration(
-        labelText: 'Izaberite vozača',
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-        prefixIcon: const Icon(Icons.person, color: Colors.blue),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-      ),
-      dropdownColor: const Color(0xFF1A1A2E),
-      style: const TextStyle(color: Colors.white),
-      items: drivers.map((driver) {
-        return DropdownMenuItem<String>(
-          value: driver,
-          child: Text(driver),
-        );
-      }).toList(),
-      onChanged: (value) {
-        if (mounted)
-          setState(() {
-            _selectedDriver = value;
-          });
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Izaberite vozača';
-        }
-        return null;
-      },
-    );
-  }
-
   Widget _buildEmailField() {
-    return TextFormField(
-      controller: _emailController,
-      keyboardType: TextInputType.emailAddress,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: 'Email Adresa',
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-        hintText: 'vas.email@primjer.com',
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        prefixIcon: const Icon(Icons.email, color: Colors.blue),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Colors.white),
+          onChanged: (value) {
+            // 🎯 AUTOMATSKI PREPOZNAJ VOZAČA NA OSNOVU EMAIL-A
+            final vozac = VozacBoja.getVozacForEmail(value.trim());
+            if (mounted) {
+              setState(() {
+                _selectedDriver = vozac;
+              });
+            }
+          },
+          decoration: InputDecoration(
+            labelText: 'Email Adresa',
+            labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+            hintText: 'Unesite vašu email adresu',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            prefixIcon: const Icon(Icons.email, color: Colors.blue),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.1),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.blue, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Unesite email adresu';
+            }
+            if (!EmailAuthService.isValidEmailFormat(value)) {
+              return 'Unesite validnu email adresu';
+            }
+
+            // 🔒 AUTOMATSKA VALIDACIJA: Email mora biti iz liste dozvoljenih
+            if (!VozacBoja.isDozvoljenEmail(value.trim())) {
+              return 'Email adresa nije registrovana za nijednog vozača.\nDozvoljeni emailovi:\n${VozacBoja.sviDozvoljenEmails.join('\n')}';
+            }
+
+            return null;
+          },
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.red, width: 2),
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Unesite email adresu';
-        }
-        if (!EmailAuthService.isValidEmailFormat(value)) {
-          return 'Unesite validnu email adresu';
-        }
-        return null;
-      },
+
+        // 🎯 PRIKAZ PREPOZNATOG VOZAČA
+        if (_selectedDriver != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: VozacBoja.get(_selectedDriver).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: VozacBoja.get(_selectedDriver).withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: VozacBoja.get(_selectedDriver),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Prepoznat vozač: $_selectedDriver',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -453,9 +437,16 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
     );
 
     try {
-      final driverName = _selectedDriver!;
+      // 🎯 AUTOMATSKA DETEKCIJA VOZAČA IZ EMAIL ADRESE
       final email = _emailController.text.trim();
       final password = _passwordController.text;
+
+      // Proveri da li je vozač automatski detektovan
+      if (_selectedDriver == null) {
+        throw Exception('Vozač nije automatski prepoznat iz email adrese');
+      }
+
+      final driverName = _selectedDriver!;
       // Debug logging removed for production
 
       // Koristi AuthManager umesto direktno EmailAuthService
@@ -470,6 +461,24 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
 
       if (result.isSuccess) {
         // Debug logging removed for production
+
+        // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
+        final currentUser = Supabase.instance.client.auth.currentUser;
+        final needsVerification = EmailAuthService.isEmailVerificationRequired(currentUser);
+
+        if (needsVerification) {
+          // Sakrij loading dialog
+          if (mounted) Navigator.of(context).pop();
+
+          // Pokaži poruku o email verification
+          await _showEmailVerificationDialog(email);
+
+          // Vrati false da signalizira da verifikacija čeka
+          if (mounted) {
+            Navigator.of(context).pop(false);
+          }
+          return;
+        }
 
         // REGISTRUJ VOZAČA LOKALNO
         final localRegistrationSuccess = await DriverRegistrationService.markDriverAsRegistered(
@@ -607,7 +616,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           ),
           child: SingleChildScrollView(
             child: Text(
-              'Poslali smo vam email sa linkom za potvrdu naloga. Molimo proverite vašu email poštu i kliknite na link da aktivirate nalog.',
+              'Vaš nalog je uspešno kreiran i možete se prijaviti.',
               style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
             ),
           ),
@@ -616,6 +625,52 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('U redu', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEmailVerificationDialog(String email) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Row(
+          children: [
+            Icon(Icons.email, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Potvrda email adrese', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Poslali smo vam konfirmacioni email na:',
+              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              email,
+              style: const TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Molimo kliknite na link u email-u da potvrdite vašu adresu. Nakon toga se možete prijaviti u aplikaciju.',
+              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Razumem', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),

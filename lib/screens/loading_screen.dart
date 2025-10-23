@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme.dart';
 import 'welcome_screen.dart';
 
 // 🔄 V3.0 Loading Stages
@@ -259,16 +260,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   Widget _buildV3LoadingState() {
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E3A8A), // V3.0 Blue-900
-            Color(0xFF3B82F6), // V3.0 Blue-500
-            Color(0xFF1D4ED8), // V3.0 Blue-600
-          ],
-          stops: [0.0, 0.5, 1.0],
-        ),
+        gradient: tripleBlueFashionGradient,
       ),
       child: Center(
         child: Column(
@@ -666,9 +658,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                     flex: 2,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
-                        ),
+                        gradient: tripleBlueFashionGradient,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(

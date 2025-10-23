@@ -10,6 +10,7 @@ import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 // import '../main.dart' show globalThemeRefresher; // Removed - not used in simple version
 import '../services/simplified_daily_checkin.dart';
+import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
@@ -100,6 +101,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     // PROVERI SUPABASE AUTH STATE
     final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
+
+    // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
+    if (AuthManager.isEmailAuthenticated() && !AuthManager.isEmailVerified()) {
+      // Korisnik je ulogovan ali email nije verifikovan - odjavi ga
+      await AuthManager.logout(context);
+      return;
+    }
 
     // Koristi novi AuthManager za session management
     final savedDriver = await AuthManager.getCurrentDriver();
@@ -322,11 +330,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF232526), Color(0xFF414345)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: tripleBlueFashionGradient,
         ),
         child: SafeArea(
           child: Padding(
@@ -448,11 +452,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             vertical: 10, // Reduced padding
                           ),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFF2979FF)],
-                              begin: Alignment.topRight,
-                              end: Alignment.bottomLeft,
-                            ),
+                            gradient: tripleBlueFashionGradient,
                             borderRadius: BorderRadius.circular(28),
                             boxShadow: [
                               BoxShadow(

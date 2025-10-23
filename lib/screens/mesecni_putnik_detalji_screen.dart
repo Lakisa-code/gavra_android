@@ -123,7 +123,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
       _dataStreamHealthy.value = true;
     } catch (e) {
       // Debug logging removed for production
-if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
+      if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
 
       // 🔄 V3.0: Mark data stream as unhealthy on error
       _dataStreamHealthy.value = false;
@@ -182,14 +182,7 @@ if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
         toolbarHeight: 80,
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),
@@ -1106,8 +1099,3 @@ if (!mounted) return; // 🔄 RESILIENCE: Check before updating state
     return '${DateFormat('dd.MM').format(pocetak)} - ${DateFormat('dd.MM.yyyy').format(kraj)}';
   }
 }
-
-
-
-
-

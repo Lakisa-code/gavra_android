@@ -17,6 +17,7 @@ import '../services/realtime_service.dart';
 import '../services/smart_address_autocomplete_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
+import '../theme.dart';
 import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
@@ -395,14 +396,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         preferredSize: const Size.fromHeight(80),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),
@@ -3431,7 +3425,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // Čuva legacy funkciju za kompatibilnost
   Future<String> _getCurrentDriver() async {
     final uuid = await _getCurrentDriverUuid();
-    return VozacMappingService.getVozacImeWithFallbackSync(uuid);
+    return VozacMappingService.getVozacImeWithFallbackSync(uuid) ?? 'Nepoznat';
   }
 
   // �💰 PRIKAZ DIJALOGA ZA PLAĆANJE

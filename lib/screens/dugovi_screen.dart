@@ -5,6 +5,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
+import '../theme.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
@@ -287,14 +288,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
         preferredSize: const Size.fromHeight(80),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),

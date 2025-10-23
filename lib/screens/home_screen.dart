@@ -17,7 +17,7 @@ import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/update_service.dart'; // 🔄 Vraćeno: Update sistem
-import '../theme.dart';
+import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
@@ -1037,14 +1037,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           preferredSize: const Size.fromHeight(80),
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                ],
-              ),
+              gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
@@ -1195,16 +1188,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(95),
               child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
+                decoration: const BoxDecoration(
+                  gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
+                  borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
                   ),
@@ -1402,14 +1388,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ), // Povećano sa 80 na 95 zbog sezonskog indikatora
             child: Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                  ],
-                ),
+                gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(25),
                   bottomRight: Radius.circular(25),
@@ -1944,14 +1923,7 @@ class _HomeScreenButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(6), // Smanjeno sa 12 na 6
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            ],
-          ),
+          gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(

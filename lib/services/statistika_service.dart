@@ -96,7 +96,7 @@ class StatistikaService {
             // 🔧 ФИКС: Проверава и име возача И UUID директно
             String vozacIme = '';
             if (item['vozac_id'] != null) {
-              vozacIme = VozacMappingService.getVozacImeWithFallbackSync(item['vozac_id'] as String);
+              vozacIme = VozacMappingService.getVozacImeWithFallbackSync(item['vozac_id'] as String) ?? '';
             }
 
             // 🎯 ПОБОЉШАНО ПОКЛАПАЊЕ:
@@ -324,7 +324,7 @@ class StatistikaService {
         if (vozacId != null && vozacId.isNotEmpty && iznos > 0) {
           // 🔧 KONVERTUJ UUID u ime vozača
           final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
-          if (VozacBoja.isValidDriver(vozacIme)) {
+          if (vozacIme != null && VozacBoja.isValidDriver(vozacIme)) {
             // ✅ SAMO REGISTROVANI VOZAČI za mesečne putnike
             if (pazarMesecne.containsKey(vozacIme)) {
               pazarMesecne[vozacIme] = pazarMesecne[vozacIme]! + iznos;

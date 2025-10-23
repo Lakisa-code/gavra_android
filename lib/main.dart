@@ -9,7 +9,7 @@ import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
-import 'services/background_gps_service.dart';
+// import 'services/background_gps_service.dart'; // Disabled for stability
 import 'services/cache_service.dart';
 import 'services/firebase_service.dart';
 import 'services/offline_map_service.dart';
@@ -50,12 +50,12 @@ void main() async {
     // Continue without Supabase if it fails
   }
 
-  // 🛰️ INITIALIZE BACKGROUND GPS SERVICE
-  try {
-    await BackgroundGpsService.initialize();
-  } catch (e) {
-    // Ignoriši greške u background GPS - optional feature
-  }
+  // 🛰️ INITIALIZE BACKGROUND GPS SERVICE (OPTIONAL - Disabled for stability)
+  // try {
+  //   await BackgroundGpsService.initialize();
+  // } catch (e) {
+  //   // Ignoriši greške u background GPS - optional feature
+  // }
 
   // 🗺️ INITIALIZE OFFLINE MAPS
   try {
@@ -90,6 +90,26 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _initializeApp();
+    _setupAuthListener();
+  }
+
+  // 🔐 SETUP AUTH STATE LISTENER ZA EMAIL VERIFICATION
+  void _setupAuthListener() {
+    try {
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        final AuthChangeEvent event = data.event;
+        final Session? session = data.session;
+
+        // Debug logging removed for production
+
+        if (event == AuthChangeEvent.signedIn && session != null) {
+          // Korisnik je uspešno ulogovan nakon email verification
+          // Debug logging removed for production
+        }
+      });
+    } catch (e) {
+      // Debug logging removed for production
+    }
   }
 
   Future<void> _initializeApp() async {

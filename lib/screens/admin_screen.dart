@@ -12,6 +12,7 @@ import '../services/simplified_kusur_service.dart'; // DODANO za kusur kocke - d
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
+import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
@@ -275,14 +276,7 @@ class _AdminScreenState extends State<AdminScreen> {
         preferredSize: const Size.fromHeight(80),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),

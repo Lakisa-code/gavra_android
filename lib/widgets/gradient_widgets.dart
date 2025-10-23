@@ -215,14 +215,7 @@ class FlutterBankButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // 🎨 Create theme-aware gradient decoration
     final gradientDecoration = BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Theme.of(context).colorScheme.primary,
-          Theme.of(context).colorScheme.primaryContainer,
-        ],
-      ),
+      gradient: tripleBlueFashionGradient,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
@@ -285,8 +278,3 @@ class FlutterBankButton extends StatelessWidget {
     );
   }
 }
-
-
-
-
-

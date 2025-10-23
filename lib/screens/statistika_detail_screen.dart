@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../services/statistika_service.dart';
+import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/custom_back_button.dart';
 
@@ -170,16 +171,9 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         elevation: 0,
         toolbarHeight: 80,
         flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
-            borderRadius: const BorderRadius.only(
+          decoration: const BoxDecoration(
+            gradient: tripleBlueFashionGradient,
+            borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),
             ),

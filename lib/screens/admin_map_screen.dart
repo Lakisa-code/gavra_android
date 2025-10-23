@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
+import '../theme.dart';
 import '../widgets/custom_back_button.dart';
 
 class AdminMapScreen extends StatefulWidget {
@@ -50,55 +51,51 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   // V3.0 Clean - Setup realtime monitoring with resilience
   void _initializeRealtimeMonitoring() {
     // GPS Realtime Stream with error recovery
-    _gpsSubscription = Supabase.instance.client
-        .from('gps_lokacije')
-        .stream(primaryKey: ['id'])
-        .order('timestamp')
-        .listen(
-          (data) {
-            if (mounted) {
-              try {
-                final gpsLokacije =
-                    data.map((json) => GPSLokacija.fromMap(json)).toList();
-                if (mounted) setState(() {
-                  _gpsLokacije = gpsLokacije;
-                  _isLoading = false;
-                  _updateMarkers();
-                });
-              } catch (e) {
-      // Debug logging removed for production
+    _gpsSubscription =
+        Supabase.instance.client.from('gps_lokacije').stream(primaryKey: ['id']).order('timestamp').listen(
+              (data) {
+                if (mounted) {
+                  try {
+                    final gpsLokacije = data.map((json) => GPSLokacija.fromMap(json)).toList();
+                    if (mounted)
+                      setState(() {
+                        _gpsLokacije = gpsLokacije;
+                        _isLoading = false;
+                        _updateMarkers();
+                      });
+                  } catch (e) {
+                    // Debug logging removed for production
 // Fallback to cached data
-                if (_gpsLokacije.isEmpty) {
-                  _loadGpsLokacije();
+                    if (_gpsLokacije.isEmpty) {
+                      _loadGpsLokacije();
+                    }
+                  }
                 }
-              }
-            }
-          },
-          onError: (Object error) {
-      // Debug logging removed for production
+              },
+              onError: (Object error) {
+                // Debug logging removed for production
 // V3.0 Resilience - Auto retry after 5 seconds
-            Timer(const Duration(seconds: 5), () {
-              if (mounted) {
-                _initializeRealtimeMonitoring();
-              }
-            });
-          },
-        );
+                Timer(const Duration(seconds: 5), () {
+                  if (mounted) {
+                    _initializeRealtimeMonitoring();
+                  }
+                });
+              },
+            );
 
     // Putnik Realtime Stream with error recovery
-    _putnikSubscription = Supabase.instance.client
-        .from('putnik')
-        .stream(primaryKey: ['id']).listen(
+    _putnikSubscription = Supabase.instance.client.from('putnik').stream(primaryKey: ['id']).listen(
       (data) {
         if (mounted) {
           try {
             final putnici = data.map((json) => Putnik.fromMap(json)).toList();
-            if (mounted) setState(() {
-              _putnici = putnici;
-              _updateMarkers();
-            });
+            if (mounted)
+              setState(() {
+                _putnici = putnici;
+                _updateMarkers();
+              });
           } catch (e) {
-      // Debug logging removed for production
+            // Debug logging removed for production
 // Fallback to cached data
             if (_putnici.isEmpty) {
               _loadPutnici();
@@ -107,7 +104,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         }
       },
       onError: (Object error) {
-      // Debug logging removed for production
+        // Debug logging removed for production
 // V3.0 Resilience - Auto retry after 3 seconds
         Timer(const Duration(seconds: 3), () {
           if (mounted) {
@@ -127,22 +124,22 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _loadPutnici() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastPutniciLoad != null &&
-        DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
+    if (_lastPutniciLoad != null && DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
       return;
     }
 
     try {
       final putnikService = PutnikService();
       final putnici = await putnikService.getAllPutniciFromBothTables();
-      if (mounted) setState(() {
-        _putnici = putnici;
-        _lastPutniciLoad = DateTime.now();
-      });
+      if (mounted)
+        setState(() {
+          _putnici = putnici;
+          _lastPutniciLoad = DateTime.now();
+        });
       _updateMarkers();
     } catch (e) {
       // Debug logging removed for production
-}
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -159,9 +156,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      if (mounted) setState(() {
-        _currentPosition = position;
-      });
+      if (mounted)
+        setState(() {
+          _currentPosition = position;
+        });
 
       // Centriraj mapu na trenutnu poziciju
       _mapController.move(
@@ -170,44 +168,43 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       );
     } catch (e) {
       // Debug logging removed for production
-}
+    }
   }
 
   Future<void> _loadGpsLokacije() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastGpsLoad != null &&
-        DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
+    if (_lastGpsLoad != null && DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
       return;
     }
 
     try {
-      if (mounted) setState(() {
-        _isLoading = true;
-      });
+      if (mounted)
+        setState(() {
+          _isLoading = true;
+        });
 
       // Prvo pokušaj da dobiješ strukturu tabele
-      final response = await Supabase.instance.client
-          .from('gps_lokacije')
-          .select()
-          .limit(10); // Uzmi samo 10 da vidimo strukturu
+      final response =
+          await Supabase.instance.client.from('gps_lokacije').select().limit(10); // Uzmi samo 10 da vidimo strukturu
       // Debug logging removed for production
-final gpsLokacije = <GPSLokacija>[];
+      final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {
           gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
         } catch (e) {
-      // Debug logging removed for production
+          // Debug logging removed for production
 
-      // Debug logging removed for production
-}
+          // Debug logging removed for production
+        }
       }
       // Debug logging removed for production
-if (mounted) setState(() {
-        _gpsLokacije = gpsLokacije;
-        _lastGpsLoad = DateTime.now();
-        _updateMarkers();
-        _isLoading = false;
-      });
+      if (mounted)
+        setState(() {
+          _gpsLokacije = gpsLokacije;
+          _lastGpsLoad = DateTime.now();
+          _updateMarkers();
+          _isLoading = false;
+        });
 
       // Automatski fokusiraj na sve vozače nakon učitavanja
       if (_markers.isNotEmpty) {
@@ -216,10 +213,11 @@ if (mounted) setState(() {
       }
     } catch (e) {
       // Debug logging removed for production
-if (mounted) setState(() {
-        _gpsLokacije = []; // Postavi praznu listu
-        _isLoading = false;
-      });
+      if (mounted)
+        setState(() {
+          _gpsLokacije = []; // Postavi praznu listu
+          _isLoading = false;
+        });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -245,8 +243,7 @@ if (mounted) setState(() {
       Map<String, GPSLokacija> najnovijeLokacije = {};
       for (final lokacija in _gpsLokacije) {
         final vozacKey = lokacija.vozacId ?? 'nepoznat';
-        if (!najnovijeLokacije.containsKey(vozacKey) ||
-            najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
+        if (!najnovijeLokacije.containsKey(vozacKey) || najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
           najnovijeLokacije[vozacKey] = lokacija;
         }
       }
@@ -300,9 +297,10 @@ if (mounted) setState(() {
       _addPassengerMarkers(markers);
     }
 
-    if (mounted) setState(() {
-      _markers = markers;
-    });
+    if (mounted)
+      setState(() {
+        _markers = markers;
+      });
   }
 
   Color _getDriverColor(GPSLokacija lokacija) {
@@ -372,14 +370,7 @@ if (mounted) setState(() {
         preferredSize: const Size.fromHeight(80),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              ],
-            ),
+            gradient: tripleBlueFashionGradient,
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(25),
               bottomRight: Radius.circular(25),
@@ -424,15 +415,14 @@ if (mounted) setState(() {
                   // 🚗 Vozači toggle
                   IconButton(
                     icon: Icon(
-                      _showDrivers
-                          ? Icons.directions_car
-                          : Icons.directions_car_outlined,
+                      _showDrivers ? Icons.directions_car : Icons.directions_car_outlined,
                       color: _showDrivers ? Colors.white : Colors.white54,
                     ),
                     onPressed: () {
-                      if (mounted) setState(() {
-                        _showDrivers = !_showDrivers;
-                      });
+                      if (mounted)
+                        setState(() {
+                          _showDrivers = !_showDrivers;
+                        });
                       _updateMarkers();
                     },
                     tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
@@ -444,13 +434,13 @@ if (mounted) setState(() {
                       color: _showPassengers ? Colors.white : Colors.white54,
                     ),
                     onPressed: () {
-                      if (mounted) setState(() {
-                        _showPassengers = !_showPassengers;
-                      });
+                      if (mounted)
+                        setState(() {
+                          _showPassengers = !_showPassengers;
+                        });
                       _updateMarkers();
                     },
-                    tooltip:
-                        _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
+                    tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
                   ),
                   // 🔄 Refresh dugme
                   TextButton(
@@ -633,12 +623,10 @@ if (mounted) setState(() {
                     _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                     _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
                   ],
-                  if (_showPassengers)
-                    _buildLegendItem(Colors.green, '👤 Putnici'),
+                  if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
                   const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -709,8 +697,3 @@ if (mounted) setState(() {
     );
   }
 }
-
-
-
-
-

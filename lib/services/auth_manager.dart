@@ -35,6 +35,7 @@ class AuthManager {
           'driver_name': driverName,
           'display_name': driverName,
         },
+        emailRedirectTo: 'gavra://auth/callback',
       );
 
       if (response.user != null) {
@@ -65,6 +66,11 @@ class AuthManager {
       );
 
       if (response.user != null) {
+        // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
+        if (response.user!.emailConfirmedAt == null) {
+          return AuthResult.error('Email nije potvrđen. Proverite email i kliknite na link za potvrdu.');
+        }
+
         final driverName =
             (response.user!.userMetadata?['driver_name'] as String?) ?? response.user!.email?.split('@')[0] ?? 'Vozač';
 
@@ -136,6 +142,12 @@ class AuthManager {
   /// Da li je korisnik ulogovan preko email-a
   static bool isEmailAuthenticated() {
     return _supabase.auth.currentUser != null;
+  }
+
+  /// 🔒 Da li je email potvrđen
+  static bool isEmailVerified() {
+    final user = _supabase.auth.currentUser;
+    return user != null && user.emailConfirmedAt != null;
   }
 
   /// Da li je postavljan bilo koji vozač

@@ -8,14 +8,30 @@ class VozacBoja {
     'Svetlana': Color(0xFFFF1493), // drecava pink (DeepPink)
   };
 
+  // 🔒 DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
+  static const Map<String, String> dozvoljenEmails = {
+    'Bojan': 'gavriconi19@gmail.com',
+    'Bruda': 'igor.jovanovic.1984@icloud.com',
+    'Bilevski': 'bilyboy1983@gmail.com',
+    'Svetlana': 'risticsvetlana2911@yahoo.com',
+  };
+
+  // 🔒 VALIDACIJA: email -> vozač mapiranje
+  static const Map<String, String> emailToVozac = {
+    'gavriconi19@gmail.com': 'Bojan',
+    'igor.jovanovic.1984@icloud.com': 'Bruda',
+    'bilyboy1983@gmail.com': 'Bilevski',
+    'risticsvetlana2911@yahoo.com': 'Svetlana',
+  };
+
   static Color get(String? ime) {
-    // STRIKTNO: SAMO 4 vozača imaju boje - ostalo se ne prikazuje!
+    // STRIKTNO: SAMO 4 vozača imaju boje
     if (ime != null && boje.containsKey(ime)) {
       return boje[ime]!;
     }
 
-    // Za nevalidne vozače, vrati transparentnu boju (neće se videti)
-    return Colors.transparent;
+    // Za nevalidne vozače vrati crvenu boju
+    return Colors.red;
   }
 
   /// Alias za get() metodu - za kompatibilnost
@@ -27,6 +43,26 @@ class VozacBoja {
 
   static List<String> get validDrivers => boje.keys.toList();
 
+  // 🔒 HELPER FUNKCIJE ZA EMAIL VALIDACIJU
+  static String? getDozvoljenEmailForVozac(String? vozac) {
+    return vozac != null ? dozvoljenEmails[vozac] : null;
+  }
+
+  static String? getVozacForEmail(String? email) {
+    return email != null ? emailToVozac[email.toLowerCase()] : null;
+  }
+
+  static bool isEmailDozvoljenForVozac(String? email, String? vozac) {
+    if (email == null || vozac == null) return false;
+    return dozvoljenEmails[vozac]?.toLowerCase() == email.toLowerCase();
+  }
+
+  static bool isDozvoljenEmail(String? email) {
+    return email != null && emailToVozac.containsKey(email.toLowerCase());
+  }
+
+  static List<String> get sviDozvoljenEmails => dozvoljenEmails.values.toList();
+
   /// Helper za striktnu validaciju vozača sa error handling
   static bool validateDriver(String? driver, {void Function(String)? onError}) {
     final isValid = isValidDriver(driver);
@@ -36,8 +72,3 @@ class VozacBoja {
     return isValid;
   }
 }
-
-
-
-
-
