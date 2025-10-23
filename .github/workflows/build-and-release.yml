@@ -59,42 +59,67 @@ jobs:
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         run: flutter build apk --release --no-shrink
 
-      - name: 📊 APK Info
+      - name: 🏪 Build App Bundle (AAB) for Play Store
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        run: flutter build appbundle --release
+
+      - name: 📊 Build Info
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         run: |
           APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          AAB_PATH="build/app/outputs/bundle/release/app-release.aab"
           APK_SIZE=$(stat -c%s "$APK_PATH" | numfmt --to=iec)
+          AAB_SIZE=$(stat -c%s "$AAB_PATH" | numfmt --to=iec)
           echo "📱 APK Size: $APK_SIZE"
+          echo "📦 AAB Size: $AAB_SIZE"
           echo "📂 APK Path: $APK_PATH"
+          echo "📂 AAB Path: $AAB_PATH"
 
       - name: 📤 Upload Release APK
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
-          name: gavra-android-release
+          name: gavra-android-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 90
+
+      - name: 📤 Upload App Bundle (AAB)
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: gavra-android-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 90
 
       - name: 🏷️ Create Release (on tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
           name: Gavra Android ${{ github.ref_name }}
           body: |
             🚀 **Gavra Android App - Release ${{ github.ref_name }}**
 
             ### 📱 What's Included:
-            - ✅ Android APK (Release build)
+            - ✅ **APK** - Direct install (app-release.apk)
+            - ✅ **AAB** - Play Store upload (app-release.aab)
             - ✅ OpenStreetMap navigation (zero Google costs)
             - ✅ Multi-platform navigation support
             - ✅ Real-time notifications
             - ✅ Optimized for Huawei/GBox compatibility
 
-            ### 📋 Installation:
+            ### 📋 Installation Options:
+            **Option 1: Direct APK Install**
             1. Download `app-release.apk` directly from this release
             2. Enable "Install from unknown sources" in Android settings
             3. Install the APK file
+
+            **Option 2: Play Store (AAB)**
+            1. Download `app-release.aab` for Play Store upload
+            2. Upload to Google Play Console
+            3. Distribute through Play Store
 
             ### 🔄 Auto-Update:
             The app will automatically check for updates and offer direct APK download.
@@ -113,13 +138,17 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: nightly-${{ github.run_number }}
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
           name: Gavra Android Nightly Build #${{ github.run_number }}
           body: |
             🌙 **Gavra Android App - Nightly Build #${{ github.run_number }}**
 
             ### 📱 Development Build:
             - ✅ Latest changes from main branch
+            - ✅ **APK** - Direct install testing
+            - ✅ **AAB** - Play Store testing
             - ✅ OpenStreetMap navigation
             - ✅ Automatic build from commit ${{ github.sha }}
 

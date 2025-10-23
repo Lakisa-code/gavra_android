@@ -1,73 +1,71 @@
 name: 🚀 Build Android Release
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
-    workflow_dispatch: # Manual trigger
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Manual trigger
 
 jobs:
-    build:
-        name: 📱 Build Android App Bundle
-        runs-on: ubuntu-latest
+  build:
+    name: 📱 Build Android App Bundle
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: 📥 Checkout repository
-              uses: actions/checkout@v4
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
 
-            - name: ☕ Setup Java 17
-              uses: actions/setup-java@v3
-              with:
-                  distribution: "zulu"
-                  java-version: "17"
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: "zulu"
+          java-version: "17"
 
-            - name: 🎯 Setup Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  flutter-version: "3.24.0"
-                  channel: "stable"
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: "stable"      - name: 📦 Get Flutter dependencies
+        run: flutter pub get
 
-            - name: 📦 Get Flutter dependencies
-              run: flutter pub get
+      - name: 🔍 Dart analyze (strict)
+        run: dart analyze --fatal-infos --fatal-warnings
 
-            - name: 🔍 Dart analyze (strict)
-              run: dart analyze --fatal-infos --fatal-warnings
+      - name: 🔍 Flutter analyze (comprehensive)
+        run: flutter analyze --fatal-infos --fatal-warnings
 
-            - name: 🔍 Flutter analyze (comprehensive)
-              run: flutter analyze --fatal-infos --fatal-warnings
+      - name: 🧪 Run tests
+        run: flutter test
+        continue-on-error: true # Don't fail if no tests
 
-            - name: 🧪 Run tests
-              run: flutter test
-              continue-on-error: true # Don't fail if no tests
+      - name: 🔐 Decode keystore (if secrets available)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          if [ ! -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/gavra-release-key-production.keystore
+            echo "KEYSTORE_DECODED=true" >> $GITHUB_ENV
+          else
+            echo "KEYSTORE_DECODED=false" >> $GITHUB_ENV
+          fi
 
-            - name: 🔐 Decode keystore (if secrets available)
-              if: ${{ github.ref == 'refs/heads/main' }}
-              run: |
-                  if [ ! -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-                    echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/gavra-release-key-production.keystore
-                    echo "KEYSTORE_DECODED=true" >> $GITHUB_ENV
-                  else
-                    echo "KEYSTORE_DECODED=false" >> $GITHUB_ENV
-                  fi
+      - name: 🏗️ Build Android App Bundle (Release)
+        run: |
+          if [ "$KEYSTORE_DECODED" == "true" ]; then
+            echo "Building signed release..."
+            flutter build appbundle --release
+          else
+            echo "Building unsigned debug (no keystore secrets)..."
+            flutter build apk --debug
+          fi
 
-            - name: 🏗️ Build Android App Bundle (Release)
-              run: |
-                  if [ "$KEYSTORE_DECODED" == "true" ]; then
-                    echo "Building signed release..."
-                    flutter build appbundle --release
-                  else
-                    echo "Building unsigned debug (no keystore secrets)..."
-                    flutter build apk --debug
-                  fi
-
-            - name: 📤 Upload App Bundle artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: gavra-android-release
-                  path: |
-                      build/app/outputs/bundle/release/*.aab
-                      build/app/outputs/apk/debug/*.apk
-                  retention-days: 30
+      - name: 📤 Upload App Bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gavra-android-release
+          path: |
+            build/app/outputs/bundle/release/*.aab
+            build/app/outputs/apk/debug/*.apk
+          retention-days: 30
 
             - name: 📋 Build Summary
               if: success()

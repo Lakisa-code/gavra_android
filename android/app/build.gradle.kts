@@ -18,8 +18,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 34
-    ndkVersion = "27.0.12077973"
+    compileSdk = 36
+    ndkVersion = "25.2.9519653"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -31,16 +31,24 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    packagingOptions {
+        pickFirst("**/libc++_shared.so")
+        pickFirst("**/libjsc.so")
+    }
+
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21
-        targetSdk = 34
+        minSdk = flutter.minSdkVersion
+        targetSdk = 36
         
         // 🎮 XIAOMI GAMING OPTIMIZACIJE - Flutter handles ABI filtering automatically
         versionCode = 1
         versionName = "6.0.0"
+        
+        // 🔧 Multidex support for large APKs
+        multiDexEnabled = true
     }
 
     // 🔐 PRODUCTION SIGNING CONFIGURATION
@@ -57,9 +65,9 @@ android {
 
     buildTypes {
         release {
-            // 🚀 PRODUCTION OPTIMIZATIONS
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // 🚀 PRODUCTION OPTIMIZATIONS - Temporarily disabled minification for debugging
+            isMinifyEnabled = false
+            isShrinkResources = false
             
             // ProGuard configuration for code obfuscation
             proguardFiles(
@@ -75,6 +83,9 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // 🔧 Multidex support
+    implementation("androidx.multidex:multidex:2.0.1")
 
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
