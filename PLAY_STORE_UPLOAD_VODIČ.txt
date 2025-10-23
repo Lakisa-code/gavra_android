@@ -1,0 +1,90 @@
+🎯 KORAK-PO-KORAK VODIČ ZA PLAY STORE UPLOAD
+
+═══════════════════════════════════════════════════════════════
+
+📋 PRIPREMA (ovo je već gotovo):
+✅ AAB fajl: https://github.com/bojanbc83/gavra_android/releases/download/v6.0.1-test/app-release.aab
+✅ Release notes: PISANE DOLE!
+✅ Privacy policy: Ako treba URL
+
+═══════════════════════════════════════════════════════════════
+
+🚀 UPLOAD PROCES - SLEDITE OVAKO:
+
+1️⃣ OTVORITE BROWSER:
+   - Idite na: https://play.google.com/console/
+   - Ulogujte se sa vašim Google nalogom
+
+2️⃣ ODABERITE APLIKACIJU:
+   - Kliknite na "Gavra 013" aplikaciju
+   - Trebalo bi da vidite dashboard
+
+3️⃣ IDITE NA TESTING:
+   - U levom meniju: "Testing" → "Closed testing"
+   - Kliknite "Create new release"
+
+4️⃣ UPLOAD AAB FAJL:
+   - Kliknite "Browse files" ili "Upload"
+   - Download prvo: https://github.com/bojanbc83/gavra_android/releases/download/v6.0.1-test/app-release.aab
+   - Odaberite downloaded AAB fajl
+   - SAČEKAJTE upload (2-5 minuta)
+
+5️⃣ POPUNITE RELEASE INFO:
+   Release name: 6.0.1
+   
+   Release notes (kopirajte dole):
+
+🚀 GAVRA ANDROID v6.0.1
+
+✅ NOVO U OVOJ VERZIJI:
+• Poboljšana navigacija sa OpenStreetMap
+• Optimizovane performanse za Android 14+
+• Ispravke bagova u notifikacijama
+• Bolja kompatibilnost sa Huawei uređajima
+• Ažurirane sigurnosne biblioteke
+
+🔧 TEHNIČKA POBOLJŠANJA:
+• Target SDK ažuriran na 36
+• Smanjena veličina aplikacije
+• Brže pokretanje aplikacije
+• Stabilniji rad u pozadini
+
+🛡️ SIGURNOST:
+• Ažurirane bezbednosne mere
+• Poboljšana zaštita korisničkih podataka
+• Optimizovane dozvole aplikacije
+
+📱 KOMPATIBILNOST:
+• Android 7.0+ (API 24+)
+• Svi Android uređaji
+• Optimizovano za tablete i telefone
+
+6️⃣ SAČUVAJTE:
+   - Kliknite "Save"
+   - Zatim "Review release"
+   - Na kraju "Start rollout to Closed testing"
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ AKO GOOGLE TRAŽI DODATNE INFORMACIJE:
+
+📝 Content Rating:
+   - Idite na "Content" → "Content rating"
+   - Popunite upitnik (aplikacija je EVERYONE/3+)
+
+🛡️ Data Safety:
+   - "Privacy" → "Data safety"
+   - Označite koje podatke skupljate
+   - Većina može biti "NO" ako ne skupljate podatke
+
+🔗 Privacy Policy:
+   - Ako traži URL: https://bojanbc83.github.io/gavra_android/privacy-policy.html
+
+═══════════════════════════════════════════════════════════════
+
+🎉 KADA ZAVRŠITE:
+- Google će pregledati aplikaciju (1-3 dana)
+- Dobaćete email kada bude odobrena
+- Testeri mogu da preuzmu aplikaciju iz Play Store-a
+
+USPEH! 🚀
