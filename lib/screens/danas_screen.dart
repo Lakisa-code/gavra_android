@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreet
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
-import '../models/realtime_route_data.dart'; // 🛰️ DODANO za realtime tracking
+// import '../models/realtime_route_data.dart'; // 🛰️ REMOVED - Google APIs disabled
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
@@ -17,7 +17,7 @@ import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS trackin
 import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network status service
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_notification_service.dart';
-import '../services/realtime_route_tracking_service.dart'; // 🚗 NOVO
+// import '../services/realtime_route_tracking_service.dart'; // 🚗 REMOVED - Google APIs too expensive
 import '../services/realtime_service.dart';
 import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
@@ -982,7 +982,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Praćenje navigacije
   bool _isGpsTracking = false;
-  DateTime? _lastGpsUpdate;
+  // DateTime? _lastGpsUpdate; // REMOVED - Google APIs disabled
 
   // Lista varijable - zadržavam zbog UI
   int _currentPassengerIndex = 0;
@@ -997,7 +997,7 @@ class _DanasScreenState extends State<DanasScreen> {
         _optimizedRoute.clear();
         _currentPassengerIndex = 0;
         _isGpsTracking = false;
-        _lastGpsUpdate = null;
+        // _lastGpsUpdate = null; // REMOVED - Google APIs disabled
         _navigationStatus = '';
       });
 
@@ -1418,39 +1418,7 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   void _initializeRealtimeTracking() {
-    // Slušaj realtime route data updates
-    RealtimeRouteTrackingService.routeDataStream.listen((routeData) {
-      if (mounted) {
-        // Ažuriraj poslednji GPS update time
-        if (mounted)
-          setState(() {
-            _lastGpsUpdate = routeData.timestamp;
-          });
-      }
-    });
-
-    // Slušaj traffic alerts
-    RealtimeRouteTrackingService.trafficAlertsStream.listen((alerts) {
-      if (mounted && alerts.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '🚨 SAOBRAĆAJNI ALERT!',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                ...alerts.map((alert) => Text('• $alert')),
-              ],
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    });
+    // DISABLED: Google APIs removed to keep app 100% FREE - method does nothing now
   }
 
   // 🔔 SHOW NOTIFICATION MESSAGE WHEN OPENED FROM NOTIFICATION
@@ -1521,7 +1489,8 @@ class _DanasScreenState extends State<DanasScreen> {
   @override
   void dispose() {
     // 🛑 Zaustavi realtime tracking kad se ekran zatvori
-    RealtimeRouteTrackingService.stopRouteTracking();
+    // DISABLED: Google APIs removed
+    // RealtimeRouteTrackingService.stopRouteTracking();
 
     // 🧹 CLEANUP TIMER MEMORY LEAKS - KORISTI TIMER MANAGER
     TimerManager.cancelTimer('danas_screen_reset_debounce');
@@ -1614,7 +1583,7 @@ class _DanasScreenState extends State<DanasScreen> {
           _isListReordered = true; // ✅ Lista je reorderovana
           _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
           _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
-          _lastGpsUpdate = DateTime.now(); // 🛰️ Zapamti vreme
+          // _lastGpsUpdate = DateTime.now(); // 🛰️ REMOVED - Google APIs disabled
           _isLoading = false; // ✅ ZAUSTAVI LOADING
         });
 
@@ -1663,7 +1632,7 @@ class _DanasScreenState extends State<DanasScreen> {
             _isListReordered = true;
             _currentPassengerIndex = 0;
             _isGpsTracking = true;
-            _lastGpsUpdate = DateTime.now();
+            // _lastGpsUpdate = DateTime.now(); // REMOVED - Google APIs disabled
             _isLoading = false; // ✅ RESETUJ LOADING
           });
 
@@ -2224,55 +2193,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                                         fontStyle: FontStyle.italic,
                                                       ),
                                                     ),
-                                                  if (_isGpsTracking && _lastGpsUpdate != null)
-                                                    StreamBuilder<RealtimeRouteData>(
-                                                      stream: RealtimeRouteTrackingService.routeDataStream,
-                                                      builder: (
-                                                        context,
-                                                        realtimeSnapshot,
-                                                      ) {
-                                                        if (realtimeSnapshot.hasData) {
-                                                          final data = realtimeSnapshot.data!;
-                                                          final speed = data.currentSpeed?.toStringAsFixed(
-                                                                1,
-                                                              ) ??
-                                                              '0.0';
-                                                          final completion =
-                                                              data.routeCompletionPercentage.toStringAsFixed(
-                                                            0,
-                                                          );
-                                                          return Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                              Text(
-                                                                'REALTIME: $speed km/h • $completion% završeno',
-                                                                style: TextStyle(
-                                                                  fontSize: 10,
-                                                                  color: Colors.blue[700],
-                                                                  fontWeight: FontWeight.bold,
-                                                                ),
-                                                              ),
-                                                              if (data.nextDestination != null)
-                                                                Text(
-                                                                  'Sledeći: ${data.nextDestination!.ime}',
-                                                                  style: TextStyle(
-                                                                    fontSize: 9,
-                                                                    color: Colors.blue[600],
-                                                                  ),
-                                                                ),
-                                                            ],
-                                                          );
-                                                        } else {
-                                                          return Text(
-                                                            'Poslednji update: ${_lastGpsUpdate!.hour}:${_lastGpsUpdate!.minute.toString().padLeft(2, '0')}',
-                                                            style: TextStyle(
-                                                              fontSize: 10,
-                                                              color: Colors.blue[700],
-                                                            ),
-                                                          );
-                                                        }
-                                                      },
-                                                    ),
+                                                  // DISABLED: Google APIs removed - StreamBuilder completely removed
+                                                  // REMOVED: Complete StreamBuilder block - Google APIs disabled
                                                   // 🔄 REAL-TIME ROUTE STRING
                                                   StreamBuilder<String>(
                                                     stream: Stream.fromIterable([
