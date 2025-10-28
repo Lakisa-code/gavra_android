@@ -81,3 +81,4 @@ android/build/
 **/.env
 service-account.json
 **/service-account.json
+mcp_server/serviceAccountKey.json

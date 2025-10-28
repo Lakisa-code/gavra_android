@@ -404,7 +404,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
       // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
       if (yesterday.weekday == 6 || yesterday.weekday == 7) {
-      // Debug logging removed for production
 return;
       }
 
@@ -427,7 +426,6 @@ return;
         }
       }
     } catch (e) {
-      // Debug logging removed for production
 }
   }
 
@@ -906,20 +904,15 @@ return;
           seconds: 10,
         ),
       );
-      // Debug logging removed for production
 } on TimeoutException {
-      // Debug logging removed for production
 throw Exception(
         'Nema internet konekcije. Kusur neće biti sačuvan u bazi.',
       );
     } on SocketException {
-      // Debug logging removed for production
 throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
     } on PostgrestException catch (e) {
-      // Debug logging removed for production
 throw Exception('Greška u bazi podataka: ${e.message}');
     } catch (e) {
-      // Debug logging removed for production
 throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
     }
   }
@@ -946,11 +939,9 @@ throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
           'timestamp': DateTime.now().toIso8601String(),
         }),
       );
-      // Debug logging removed for production
 // Pokreni sync kada se vrati internet konekcija
       _scheduleOfflineSync();
     } catch (e) {
-      // Debug logging removed for production
 }
   }
 
@@ -967,7 +958,6 @@ throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
         }
       } catch (e) {
         // Još uvek nema internet, nastavi pokušaje
-      // Debug logging removed for production
 }
     });
   }
@@ -993,10 +983,8 @@ throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
 
         // Obriši offline podatke nakon uspešnog sync-a
         await prefs.remove('offline_kusur_data');
-      // Debug logging removed for production
 }
     } catch (e) {
-      // Debug logging removed for production
 }
   }
 }

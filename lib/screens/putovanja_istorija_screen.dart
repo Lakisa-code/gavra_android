@@ -68,7 +68,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     _searchSubject.close();
     _filterSubject.close();
     _searchController.dispose();
-    // Debug logging removed for production
     super.dispose();
   }
 
@@ -84,7 +83,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     });
 
     _initializeRealtimeStream();
-    // Debug logging removed for production
   }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
@@ -101,7 +99,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       if (timeSinceLastHeartbeat.inSeconds > 60) {
         // 60 seconds timeout
         isHealthy = false;
-        // Debug logging removed for production
         break;
       }
     }
@@ -121,7 +118,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     } else if (isHealthy) {
       _realtimeHealthStatus.value = 'healthy';
     }
-    // Debug logging removed for production
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
@@ -147,7 +143,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               _isLoading = false;
               _errorMessage = null;
             });
-          // Debug logging removed for production
         }
       },
       onError: (Object error) {
@@ -158,11 +153,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               _isLoading = false;
               _errorMessage = error.toString();
             });
-          // Debug logging removed for production
 // 🔄 AUTO RETRY after 5 seconds
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
-              // Debug logging removed for production
               _initializeRealtimeStream();
             }
           });
@@ -202,7 +195,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       setState(() {
         // This will trigger rebuild with filtered data
       });
-    // Debug logging removed for production
   }
 
   void _loadInitialData() {
@@ -1187,7 +1179,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             break;
         }
       });
-    // Debug logging removed for production
   }
 
   // 📄 EXPORT DATA FUNCTIONALITY
@@ -1272,7 +1263,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               textColor: Theme.of(context).colorScheme.onPrimary,
               onPressed: () {
                 // Implementiraj deljenje fajla
-                // Debug logging removed for production
               },
             ),
           ),
@@ -1298,7 +1288,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
 
     // Ovde bi bila implementacija za print preview
-    // Debug logging removed for production
   }
 
   // 📅 DATE SELECTION
@@ -1320,7 +1309,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         });
 
       // 🔄 REINITIALIZE STREAM FOR NEW DATE
-      // Debug logging removed for production
       _initializeRealtimeStream();
     }
   }

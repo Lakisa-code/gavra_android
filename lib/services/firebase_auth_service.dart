@@ -175,7 +175,7 @@ class FirebaseAuthService {
       });
     } catch (e) {
       // Log greška ali ne prekidaj registraciju
-      print('Greška pri kreiranju Supabase profila: $e');
+      // Tiha greška - Supabase sync nije kritičan za registraciju
     }
   }
 
@@ -199,7 +199,7 @@ class FirebaseAuthService {
         }).eq('firebase_uid', user.uid);
       }
     } catch (e) {
-      print('Greška pri sinhronizaciji Supabase profila: $e');
+      // Tiha greška - Supabase sync nije kritičan
     }
   }
 
@@ -213,7 +213,7 @@ class FirebaseAuthService {
 
       return response;
     } catch (e) {
-      print('Greška pri dobijanju Supabase profila: $e');
+      // Tiha greška - vraća null ako nema profila
       return null;
     }
   }

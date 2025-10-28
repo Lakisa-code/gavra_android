@@ -63,7 +63,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
     _searchSubject.close();
     _filterSubject.close();
     _searchController.dispose();
-    // Debug logging removed for production
     super.dispose();
   }
 
@@ -79,7 +78,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
     });
 
     _initializeRealtimeStream();
-    // Debug logging removed for production
   }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
@@ -95,7 +93,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
       final timeSinceLastHeartbeat = now.difference(entry.value);
       if (timeSinceLastHeartbeat.inSeconds > 60) {
         isHealthy = false;
-        // Debug logging removed for production
         break;
       }
     }
@@ -115,7 +112,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
     } else if (isHealthy) {
       _realtimeHealthStatus.value = 'healthy';
     }
-    // Debug logging removed for production
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
@@ -159,7 +155,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
               _isLoading = false;
               _errorMessage = null;
             });
-          // Debug logging removed for production
         }
       },
       onError: (Object error) {
@@ -170,11 +165,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
               _isLoading = false;
               _errorMessage = error.toString();
             });
-          // Debug logging removed for production
 // 🔄 AUTO RETRY after 5 seconds
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
-              // Debug logging removed for production
               _initializeRealtimeStream();
             }
           });
@@ -202,7 +195,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
         // Trigger rebuild with filtered data
       });
 
-    // Debug logging removed for production
   }
 
   void _loadInitialData() {

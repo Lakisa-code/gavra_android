@@ -26,10 +26,8 @@ class _HomeScreenLightState extends State<HomeScreenLight> {
     try {
       final prefs = await SharedPreferences.getInstance();
       _currentDriver = prefs.getString('selected_driver');
-      // Debug logging removed for production
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      // Debug logging removed for production
       if (mounted) setState(() => _isLoading = false);
     }
   }

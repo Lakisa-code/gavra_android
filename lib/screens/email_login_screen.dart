@@ -4,7 +4,6 @@ import 'package:just_audio/just_audio.dart';
 import '../services/auth_manager.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/permission_service.dart';
-// import '../main.dart' show globalThemeRefresher; // Removed in simple version
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/vozac_boja.dart'; // 🎨 Import za boje vozača
@@ -46,31 +45,26 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         case 'svetlana':
           // 🎺 SVETLANINA SPECIJALNA PESMA - "Hiljson Mandela & Miach - Anđeo"
           assetPath = 'assets/svetlana.mp3';
-          // Debug logging removed for production
           break;
 
         case 'bruda':
           // 🎵 BRUDINA SPECIJALNA PESMA
           assetPath = 'assets/bruda.mp3';
-          // Debug logging removed for production
           break;
 
         case 'bilevski':
           // 🎵 BILEVSKIJEVA SPECIJALNA PESMA
           assetPath = 'assets/bilevski.mp3';
-          // Debug logging removed for production
           break;
 
         case 'bojan':
           // 🎵 BOJANOVA SPECIJALNA PESMA
           assetPath = 'assets/gavra.mp3';
-          // Debug logging removed for production
           break;
 
         default:
           // 🎵 Default pesma za ostale vozače
           assetPath = 'assets/gavra.mp3';
-          // Debug logging removed for production
           break;
       }
 
@@ -79,17 +73,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
       await _globalAudioPlayer!.setVolume(volume);
       await _globalAudioPlayer!.setLoopMode(LoopMode.off); // Bez ponavljanja
       await _globalAudioPlayer!.play();
-      // Debug logging removed for production
 // Postaviti listener da se audio player očisti kad pesma završi
       _globalAudioPlayer!.playerStateStream.listen((state) {
         if (state.processingState == ProcessingState.completed) {
-          // Debug logging removed for production
           _globalAudioPlayer?.dispose();
           _globalAudioPlayer = null;
         }
       });
     } catch (e) {
-      // Debug logging removed for production
     }
   }
 
@@ -420,27 +411,23 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-      // Debug logging removed for production
 
       // Koristi AuthManager umesto direktno EmailAuthService
       final result = await AuthManager.signInWithEmail(email, password);
 
       if (result.isSuccess) {
-        // Debug logging removed for production
 
         // Dobij ime vozača iz trenutne auth session
         final user = AuthManager.getCurrentUser();
         final email = user?.email;
         final driverName = VozacBoja.getVozacForEmail(email) ?? 'Vozač';
 
-        // Debug logging removed for production
 
         // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
         // ignore: use_build_context_synchronously
         await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
         // 🎨 Theme refresh removed in simple version
-        // Debug logging removed for production
 
         // 🎵 PUSTI PESMU NAKON EMAIL LOGIN-A
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
@@ -488,7 +475,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         );
       }
     } catch (e) {
-      // Debug logging removed for production
       _showErrorDialog(
         'Greška',
         'Došlo je do greške pri prijavi. Pokušajte ponovo.',
@@ -523,7 +509,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         _showErrorDialog('Greška', 'Nije moguće poslati email za reset šifre.');
       }
     } catch (e) {
-      // Debug logging removed for production
       _showErrorDialog('Greška', 'Došlo je do greške. Pokušajte ponovo.');
     } finally {
       if (mounted) setState(() => _isLoading = false);

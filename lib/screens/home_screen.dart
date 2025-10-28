@@ -270,9 +270,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _checkRealtimeHealth,
         isPeriodic: true,
       );
-      // Debug logging removed for production
     } catch (e) {
-      // Debug logging removed for production
     }
   }
 
@@ -283,11 +281,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (_isRealtimeHealthy.value != isHealthy) {
         _isRealtimeHealthy.value = isHealthy;
-        // Debug logging removed for production
       }
     } catch (e) {
       _isRealtimeHealthy.value = false;
-      // Debug logging removed for production
     }
   }
 
@@ -298,7 +294,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 🔄 STANDARDIZOVANO: koristi putovanja_istorija (glavni naziv tabele)
     _realtimeSubscription = RealtimeService.instance.subscribe('putovanja_istorija', (data) {
       // Stream will update StreamBuilder via service layers
-      // Debug logging removed for production
     });
   }
 
@@ -339,27 +334,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<List<Putnik>> _getAllPutnici() async {
     try {
-      // Debug logging removed for production
 // 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
       // 🎯 PROSLIJEDI SELEKTOVANI DAN umesto današnjeg
       final result = await _putnikService.getAllPutniciFromBothTables(
         targetDay: _selectedDay,
       );
-      // Debug logging removed for production
       return result;
     } catch (e) {
-      // Debug logging removed for production
       return [];
     }
   }
 
   Future<void> _loadPutnici() async {
-    // Debug logging removed for production
 // 🛡️ FIX: Pojednostavi dupli mounted check
     if (mounted) setState(() => _isLoading = true);
     try {
       final putnici = await _getAllPutnici();
-      // Debug logging removed for production
       if (mounted) {
         setState(() {
           _allPutnici = putnici;
@@ -367,7 +357,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      // Debug logging removed for production
       if (mounted) setState(() => _isLoading = false);
       _showErrorDialog('Greška pri učitavanju: $e');
     }
@@ -953,7 +942,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             dodaoVozac: _currentDriver,
                             adresa: adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                           );
-                          // Debug logging removed for production
                           await _putnikService.dodajPutnika(putnik);
                           // ✅ FORSIRANA REFRESH LISTE
                           await _loadPutnici();
@@ -964,7 +952,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             setState(() {
                               _isAddingPutnik = false;
                             });
-                          // Debug logging removed for production
                           if (mounted) {
                             // ignore: use_build_context_synchronously
                             Navigator.pop(context);
@@ -1352,7 +1339,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             return count;
           } catch (e) {
             // Log error and continue to fallback
-            // Debug logging removed for production
           }
 
           // Fallback: brzo prebroj ako grad nije standardan
@@ -1767,7 +1753,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _selectedGradSubject.close();
       }
     } catch (e) {
-      // Debug logging removed for production
     }
 
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
@@ -1775,7 +1760,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _realtimeSubscription?.cancel();
       _networkStatusSubscription?.cancel();
     } catch (e) {
-      // Debug logging removed for production
     }
 
     // 🧹 SAFE DISPOSAL ValueNotifier-a
@@ -1784,9 +1768,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _isRealtimeHealthy.dispose();
       }
     } catch (e) {
-      // Debug logging removed for production
     }
-    // Debug logging removed for production
     super.dispose();
   }
 }

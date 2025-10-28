@@ -77,7 +77,6 @@ class ConnectionResilienceService {
       final isConnected = await _checkNetworkConnection();
 
       if (wasOnline != isConnected) {
-      // Debug logging removed for production
 _updateConnectionState(isConnected);
 
         if (isConnected && !_isSupabaseConnected) {
@@ -123,16 +122,13 @@ _updateConnectionState(isConnected);
         await _checkSupabaseConnection();
 
         if (_isSupabaseConnected) {
-      // Debug logging removed for production
 return;
         }
       } catch (e) {
-      // Debug logging removed for production
 }
 
       if (attempt < _maxRetries) {
         final delay = _baseRetryDelay * attempt;
-      // Debug logging removed for production
 await Future<void>.delayed(delay);
       }
     }

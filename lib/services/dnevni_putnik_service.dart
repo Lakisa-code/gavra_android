@@ -208,7 +208,6 @@ class DnevniPutnikService {
           putnici.add(putnik);
         }
       }
-      // Debug logging removed for production
 return putnici;
     } catch (e) {
       return [];
@@ -291,7 +290,6 @@ return putnici;
     );
 
     if (duplikat) {
-      // Debug logging removed for production
 return false;
     }
 

@@ -316,7 +316,6 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
               },
             ),
 
-            // Test Voice Button
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -399,7 +398,7 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
     }
   }
 
-  /// 🔊 TEST VOICE
+  /// 🔊 Voice test functionality
   Future<void> _testVoice() async {
     await VoiceNavigationService.speak(
       'Gavra navigacija je spremna. Broj putnika na listi: ${widget.putnici.length}.',

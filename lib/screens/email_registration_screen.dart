@@ -37,7 +37,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
     // Postavi preselected driver ako je proslećen
     if (widget.preselectedDriverName != null) {
       _selectedDriver = widget.preselectedDriverName;
-      // Debug logging removed for production
     }
 
     _fadeController = AnimationController(
@@ -445,7 +444,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
       }
 
       final driverName = _selectedDriver!;
-      // Debug logging removed for production
 
       // Koristi AuthManager umesto direktno EmailAuthService
       final result = await AuthManager.registerWithEmail(
@@ -458,7 +456,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
       if (mounted) Navigator.of(context).pop();
 
       if (result.isSuccess) {
-        // Debug logging removed for production
 
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
         final currentUser = FirebaseAuthService.currentUser;
@@ -487,7 +484,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           Navigator.of(context).pop(true);
         }
       } else {
-        // Debug logging removed for production
         _showErrorDialog(
           'Registracija neuspješna',
           result.message,
@@ -496,7 +492,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
     } catch (e) {
       // Sakrij loading dialog ako je otvoren
       if (mounted) Navigator.of(context).pop();
-      // Debug logging removed for production
       _showErrorDialog(
         'Greška',
         'Došlo je do greške pri registraciji. Pokušajte ponovo.',

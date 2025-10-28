@@ -14,17 +14,8 @@ class PieChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Osiguraj da su sve vrednosti double i non-null
-    // Osiguraj da su sve vrednosti double i non-null
-    // Ako je neka vrednost null, tretiraj je kao 0.0
-    // Prava null-safe verzija: koristi .toDouble() i null kao 0.0
-    // Konačno robustno: ako je b null, koristi 0.0
-    // Najsigurnije: mapiraj sve vrednosti na double, null kao 0.0
-    // Najsigurnije: mapiraj sve vrednosti na double, null kao 0.0, a+b kao double
-    // Konačno: sve vrednosti su double, fold radi na double
-    // Konačno: sve vrednosti su double, fold radi na double, a+b je double
-    final total =
-        data.values.fold(0.0, (double a, double? b) => a + (b ?? 0.0));
+    // Null-safe konverzija vrednosti u double
+    final total = data.values.fold(0.0, (double a, double? b) => a + (b ?? 0.0));
     final entries = data.entries.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,9 +37,7 @@ class PieChartWidget extends StatelessWidget {
                   PieChartSectionData(
                     color: colors[i % colors.length],
                     value: entries[i].value,
-                    title: total == 0
-                        ? ''
-                        : '${((entries[i].value / total) * 100).toStringAsFixed(1)}%',
+                    title: total == 0 ? '' : '${((entries[i].value / total) * 100).toStringAsFixed(1)}%',
                     radius: 50,
                     titleStyle: const TextStyle(
                       fontSize: 14,
@@ -85,8 +74,3 @@ class PieChartWidget extends StatelessWidget {
     );
   }
 }
-
-
-
-
-

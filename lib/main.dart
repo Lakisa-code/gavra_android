@@ -100,15 +100,12 @@ class _MyAppState extends State<MyApp> {
         final AuthChangeEvent event = data.event;
         final Session? session = data.session;
 
-        // Debug logging removed for production
 
         if (event == AuthChangeEvent.signedIn && session != null) {
           // Korisnik je uspešno ulogovan nakon email verification
-          // Debug logging removed for production
         }
       });
     } catch (e) {
-      // Debug logging removed for production
     }
   }
 

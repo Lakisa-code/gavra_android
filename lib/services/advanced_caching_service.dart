@@ -40,8 +40,6 @@ class AdvancedCachingService {
   /// 🚀 INITIALIZE ADVANCED CACHING
   static Future<void> initialize() async {
     try {
-      // Logger removed
-
       // Initialize Level 3 (SharedPreferences)
       _level3Preferences = await SharedPreferences.getInstance();
 
@@ -59,10 +57,8 @@ class AdvancedCachingService {
 
       // Start background maintenance
       _startBackgroundMaintenance();
-
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // Initialization failed silently
     }
   }
 
@@ -734,8 +730,3 @@ enum CacheLevel {
   level4, // File cache
   level5, // Network cache
 }
-
-
-
-
-

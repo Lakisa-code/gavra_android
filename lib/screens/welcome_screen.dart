@@ -4,7 +4,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../services/auth_manager.dart';
-import '../services/driver_registration_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
@@ -76,22 +75,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         final status = await Permission.notification.status;
         if (!status.isGranted) {
           await Permission.notification.request();
-          // Debug logging removed for production
-        } else {
-          // Debug logging removed for production
-        }
+        } else {}
       }
 
       // Also request Firebase/iOS style permissions via RealtimeNotificationService
       try {
         await RealtimeNotificationService.requestNotificationPermissions();
-        // Debug logging removed for production
-      } catch (e) {
-        // Debug logging removed for production
-      }
-    } catch (e) {
-      // Debug logging removed for production
-    }
+      } catch (e) {}
+    } catch (e) {}
   }
 
   // 🔄 AUTO-LOGIN BEZ PESME - Proveri da li je vozač već logovan
@@ -99,8 +90,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     // 🎵 PREKINI PESMU ako se auto-login aktivira
     await _stopAudio();
 
-    // PROVERI SUPABASE AUTH STATE
-    final driverFromSupabase = await DriverRegistrationService.getCurrentLoggedInDriver();
+    // PROVERI FIREBASE AUTH STATE
+    final firebaseUser = AuthManager.getCurrentUser();
+    final driverFromFirebase = firebaseUser?.displayName;
 
     // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
     if (AuthManager.isEmailAuthenticated() && !AuthManager.isEmailVerified()) {
@@ -112,18 +104,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     // Koristi novi AuthManager za session management
     final savedDriver = await AuthManager.getCurrentDriver();
 
-    // Ako je neko ulogovan u Supabase ALI nema saved driver, sinhronizuj
-    if (driverFromSupabase != null && (savedDriver == null || savedDriver != driverFromSupabase)) {
-      // Debug logging removed for production
-      await AuthManager.setCurrentDriver(driverFromSupabase);
+    // Ako je neko ulogovan u Firebase ALI nema saved driver, sinhronizuj
+    if (driverFromFirebase != null && (savedDriver == null || savedDriver != driverFromFirebase)) {
+      await AuthManager.setCurrentDriver(driverFromFirebase);
     }
 
-    // Koristi driver iz Supabase ako postoji, inače iz local storage
-    final activeDriver = driverFromSupabase ?? savedDriver;
+    // Koristi driver iz Firebase ako postoji, inače iz local storage
+    final activeDriver = driverFromFirebase ?? savedDriver;
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN
-      // Debug logging removed for production
 // 🎨 Theme refresh removed in simple version
 
       // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (auto-login)
@@ -137,7 +127,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
       if (!hasCheckedIn) {
         // POŠALJI NA DAILY CHECK-IN SCREEN
-        // Debug logging removed for production
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
@@ -157,7 +146,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         );
       } else {
         // DIREKTNO NA HOME SCREEN
-        // Debug logging removed for production
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
@@ -225,13 +213,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       );
       return;
     }
-    // Debug logging removed for production
-// PROVERI DA LI JE VOZAČ VEĆ REGISTROVAN SA EMAIL-OM
-    final isRegistered = await DriverRegistrationService.isDriverRegistered(driverName);
+    // PROVERI DA LI JE VOZAČ VEĆ REGISTROVAN SA FIREBASE AUTH
+    // Jednostavno - ako je neko ulogovan u Firebase, onda je registrovan
+    final isRegistered = AuthManager.isEmailAuthenticated();
 
     if (isRegistered) {
       // VOZAČ JE REGISTROVAN - IDI NA EMAIL LOGIN
-      // Debug logging removed for production
       if (!mounted) return;
       Navigator.push(
         context,
@@ -241,7 +228,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       );
     } else {
       // VOZAČ NIJE REGISTROVAN - IDI NA EMAIL REGISTRACIJU
-      // Debug logging removed for production
       if (!mounted) return;
       final result = await Navigator.push<bool>(
         context,
@@ -254,7 +240,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
       // Ako je registracija uspešna, automatski idi na login
       if (result == true) {
-        // Debug logging removed for production
         if (!mounted) return;
         Navigator.push(
           context,

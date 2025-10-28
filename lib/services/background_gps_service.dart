@@ -100,8 +100,6 @@ void onStart(ServiceInstance service) async {
       // Pošalji na Supabase (ako je moguće)
       await _sendLocationToSupabase(position);
 
-      print('🛰️ GPS Location: ${position.latitude}, ${position.longitude}');
-
       // Invoke frontend sa novom pozicijom
       service.invoke('update', {
         'latitude': position.latitude,
@@ -109,7 +107,7 @@ void onStart(ServiceInstance service) async {
         'timestamp': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      print('❌ GPS Error: $e');
+      // GPS greška - tiho ignoriši
     }
   });
 
@@ -140,6 +138,6 @@ Future<void> _sendLocationToSupabase(Position position) async {
     }
   } catch (e) {
     // Ignoriši Supabase greške u background service
-    print('⚠️ Supabase send failed (background): $e');
+    // Tiha greška - background GPS nastavlja rad
   }
 }

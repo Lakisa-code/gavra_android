@@ -64,7 +64,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         _updateMarkers();
                       });
                   } catch (e) {
-                    // Debug logging removed for production
 // Fallback to cached data
                     if (_gpsLokacije.isEmpty) {
                       _loadGpsLokacije();
@@ -73,7 +72,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 }
               },
               onError: (Object error) {
-                // Debug logging removed for production
 // V3.0 Resilience - Auto retry after 5 seconds
                 Timer(const Duration(seconds: 5), () {
                   if (mounted) {
@@ -95,7 +93,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 _updateMarkers();
               });
           } catch (e) {
-            // Debug logging removed for production
 // Fallback to cached data
             if (_putnici.isEmpty) {
               _loadPutnici();
@@ -104,7 +101,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         }
       },
       onError: (Object error) {
-        // Debug logging removed for production
 // V3.0 Resilience - Auto retry after 3 seconds
         Timer(const Duration(seconds: 3), () {
           if (mounted) {
@@ -138,7 +134,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         });
       _updateMarkers();
     } catch (e) {
-      // Debug logging removed for production
     }
   }
 
@@ -167,7 +162,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         13.0,
       );
     } catch (e) {
-      // Debug logging removed for production
     }
   }
 
@@ -186,18 +180,14 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       // Prvo pokušaj da dobiješ strukturu tabele
       final response =
           await Supabase.instance.client.from('gps_lokacije').select().limit(10); // Uzmi samo 10 da vidimo strukturu
-      // Debug logging removed for production
       final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {
           gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
         } catch (e) {
-          // Debug logging removed for production
 
-          // Debug logging removed for production
         }
       }
-      // Debug logging removed for production
       if (mounted)
         setState(() {
           _gpsLokacije = gpsLokacije;
@@ -212,7 +202,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         _fitAllMarkers();
       }
     } catch (e) {
-      // Debug logging removed for production
       if (mounted)
         setState(() {
           _gpsLokacije = []; // Postavi praznu listu

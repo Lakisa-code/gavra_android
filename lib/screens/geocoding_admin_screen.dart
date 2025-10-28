@@ -62,7 +62,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     _searchSubject.close();
     _filterSubject.close();
     _searchController.dispose();
-    // Debug logging removed for production
     super.dispose();
   }
 
@@ -85,7 +84,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     }
 
     _initializeRealtimeStream();
-    // Debug logging removed for production
   }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
@@ -102,7 +100,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       if (timeSinceLastHeartbeat.inSeconds > 90) {
         // 90 seconds timeout for admin stats
         isHealthy = false;
-        // Debug logging removed for production
         break;
       }
     }
@@ -122,7 +119,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     } else if (isHealthy) {
       _realtimeHealthStatus.value = 'healthy';
     }
-    // Debug logging removed for production
   }
 
   // 🚀 ENHANCED REALTIME STREAM INITIALIZATION
@@ -158,7 +154,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
         // Trigger rebuild with filtered data
       });
 
-    // Debug logging removed for production
   }
 
   void _loadInitialData() {
@@ -184,7 +179,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
 
         // Sort locations
         _sortLocations();
-        // Debug logging removed for production
       }
     } catch (e) {
       if (mounted) {
@@ -194,11 +188,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             _isLoading = false;
             _errorMessage = e.toString();
           });
-        // Debug logging removed for production
 // 🔄 AUTO RETRY after 10 seconds for admin screens
         Timer(const Duration(seconds: 10), () {
           if (mounted && _autoRefreshEnabled) {
-            // Debug logging removed for production
             _loadData();
           }
         });
@@ -405,7 +397,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                 setState(() {
                   _autoRefreshEnabled = !_autoRefreshEnabled;
                 });
-              // Debug logging removed for production
             },
             icon: Icon(
               _autoRefreshEnabled ? Icons.sync : Icons.sync_disabled,
@@ -545,7 +536,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           setState(() {
             _selectedFilter = value;
           });
-        // Debug logging removed for production
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -578,7 +568,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             _sortBy = value;
             _sortLocations();
           });
-        // Debug logging removed for production
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
