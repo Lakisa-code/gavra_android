@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_manager.dart';
-import '../services/driver_registration_service.dart';
-import '../services/email_auth_service.dart';
+import '../services/firebase_auth_service.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
 
@@ -220,7 +218,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             if (value == null || value.isEmpty) {
               return 'Unesite email adresu';
             }
-            if (!EmailAuthService.isValidEmailFormat(value)) {
+            if (!FirebaseAuthService.isValidEmailFormat(value)) {
               return 'Unesite validnu email adresu';
             }
 
@@ -463,8 +461,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
         // Debug logging removed for production
 
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
-        final currentUser = Supabase.instance.client.auth.currentUser;
-        final needsVerification = EmailAuthService.isEmailVerificationRequired(currentUser);
+        final currentUser = FirebaseAuthService.currentUser;
+        final needsVerification = currentUser != null && !currentUser.emailVerified;
 
         if (needsVerification) {
           // Sakrij loading dialog
@@ -480,28 +478,13 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           return;
         }
 
-        // REGISTRUJ VOZAČA LOKALNO
-        final localRegistrationSuccess = await DriverRegistrationService.markDriverAsRegistered(
-          driverName,
-          email,
-        );
+        // REGISTRACIJA USPEŠNA - POKAŽI PORUKU
+        // Pokaži uspešnu poruku
+        await _showSuccessDialog();
 
-        if (localRegistrationSuccess) {
-          // Debug logging removed for production
-
-          // Pokaži uspešnu poruku
-          await _showSuccessDialog();
-
-          // Vrati true da signal uspješnu registraciju
-          if (mounted) {
-            Navigator.of(context).pop(true);
-          }
-        } else {
-          // Debug logging removed for production
-          _showErrorDialog(
-            'Greška!',
-            'Vozač je registrovan u sistemu, ali lokalna registracija nije uspešna.',
-          );
+        // Vrati true da signal uspješnu registraciju
+        if (mounted) {
+          Navigator.of(context).pop(true);
         }
       } else {
         // Debug logging removed for production

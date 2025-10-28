@@ -1,16 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/welcome_screen.dart';
 import 'analytics_service.dart';
+import 'firebase_auth_service.dart';
 import 'firebase_service.dart';
 
-/// 🔐 CENTRALIZOVANI AUTH MANAGER
-/// Upravlja svim auth operacijama kroz Supabase Auth
+/// � CENTRALIZOVANI AUTH MANAGER - FIREBASE EDITION
+/// Upravlja svim auth operacijama kroz Firebase Auth + Supabase podatke
 class AuthManager {
-  static final SupabaseClient _supabase = Supabase.instance.client;
-
   // Unified SharedPreferences key
   static const String _driverKey = 'current_driver';
   static const String _authSessionKey = 'auth_session';
@@ -28,22 +27,18 @@ class AuthManager {
         return AuthResult.error('Nevaljan format email-a');
       }
 
-      final AuthResponse response = await _supabase.auth.signUp(
+      final authResult = await FirebaseAuthService.registerWithEmail(
         email: email,
         password: password,
-        data: {
-          'driver_name': driverName,
-          'display_name': driverName,
-        },
-        emailRedirectTo: 'gavra://auth/callback',
+        vozacName: driverName,
       );
 
-      if (response.user != null) {
+      if (authResult.isSuccess) {
         await _saveDriverSession(driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
-        return AuthResult.success('Uspešna registracija');
+        return AuthResult.success(authResult.message);
       } else {
-        return AuthResult.error('Registracija neuspešna');
+        return AuthResult.error(authResult.message);
       }
     } catch (e) {
       return AuthResult.error('Greška pri registraciji: ${e.toString()}');
@@ -60,25 +55,19 @@ class AuthManager {
         return AuthResult.error('Nevaljan format email-a');
       }
 
-      final AuthResponse response = await _supabase.auth.signInWithPassword(
+      final authResult = await FirebaseAuthService.signInWithEmail(
         email: email,
         password: password,
       );
 
-      if (response.user != null) {
-        // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
-        if (response.user!.emailConfirmedAt == null) {
-          return AuthResult.error('Email nije potvrđen. Proverite email i kliknite na link za potvrdu.');
-        }
-
-        final driverName =
-            (response.user!.userMetadata?['driver_name'] as String?) ?? response.user!.email?.split('@')[0] ?? 'Vozač';
+      if (authResult.isSuccess && authResult.user != null) {
+        final driverName = authResult.user!.displayName ?? authResult.user!.email?.split('@')[0] ?? 'Vozač';
 
         await _saveDriverSession(driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
-        return AuthResult.success('Uspešna prijava');
+        return AuthResult.success(authResult.message);
       } else {
-        return AuthResult.error('Prijava neuspešna');
+        return AuthResult.error(authResult.message);
       }
     } catch (e) {
       return AuthResult.error('Greška pri prijavi: ${e.toString()}');
@@ -108,8 +97,8 @@ class AuthManager {
       final prefs = await SharedPreferences.getInstance();
       final currentDriver = prefs.getString(_driverKey);
 
-      // 1. Obriši Supabase session
-      await _supabase.auth.signOut();
+      // 1. Obriši Firebase Auth session
+      await FirebaseAuthService.signOut();
 
       // 2. Obriši SharedPreferences
       await prefs.remove(_driverKey);
@@ -141,13 +130,12 @@ class AuthManager {
 
   /// Da li je korisnik ulogovan preko email-a
   static bool isEmailAuthenticated() {
-    return _supabase.auth.currentUser != null;
+    return FirebaseAuthService.isLoggedIn;
   }
 
   /// 🔒 Da li je email potvrđen
   static bool isEmailVerified() {
-    final user = _supabase.auth.currentUser;
-    return user != null && user.emailConfirmedAt != null;
+    return FirebaseAuthService.isEmailVerified;
   }
 
   /// Da li je postavljan bilo koji vozač
@@ -157,8 +145,20 @@ class AuthManager {
   }
 
   /// Dobij trenutnog auth korisnika
-  static User? getCurrentUser() {
-    return _supabase.auth.currentUser;
+  static firebase_auth.User? getCurrentUser() {
+    return FirebaseAuthService.currentUser;
+  }
+
+  /// 📧 EMAIL VERIFICATION METHODS
+
+  /// Ponovno slanje email verifikacije
+  static Future<AuthResult> resendEmailVerification() async {
+    try {
+      final result = await FirebaseAuthService.resendEmailVerification();
+      return result.isSuccess ? AuthResult.success(result.message) : AuthResult.error(result.message);
+    } catch (e) {
+      return AuthResult.error('Greška pri slanju verifikacije: ${e.toString()}');
+    }
   }
 
   /// 🛠️ HELPER METHODS
