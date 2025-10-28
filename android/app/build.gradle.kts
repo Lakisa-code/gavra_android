@@ -31,9 +31,9 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
-    packagingOptions {
-        pickFirst("**/libc++_shared.so")
-        pickFirst("**/libjsc.so")
+    packaging {
+        jniLibs.pickFirsts.add("**/libc++_shared.so")
+        jniLibs.pickFirsts.add("**/libjsc.so")
     }
 
     defaultConfig {
@@ -90,9 +90,6 @@ dependencies {
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
 
-    // Add Firebase Cloud Messaging
-    implementation("com.google.firebase:firebase-messaging")
-
     // 🚀 OneSignal Dependency Resolution - Force compatible versions
     implementation("androidx.work:work-runtime:2.8.1") {
         because("OneSignal requires work-runtime")
@@ -104,14 +101,22 @@ dependencies {
         because("OneSignal in-app-messages requires browser")
     }
 
-    // Force Firebase messaging version for OneSignal compatibility
+    // Force Firebase messaging version for OneSignal compatibility (only one needed)
     implementation("com.google.firebase:firebase-messaging:23.4.0") {
         because("OneSignal requires firebase-messaging [21.0.0, 23.4.99]")
     }
 
-    // 🚀 Google Play Core for production features (R8 fix)
-    implementation("com.google.android.play:core:1.10.3") {
-        because("Required for Flutter Play Store integration and R8 compatibility")
+    // 🚀 Google Play Core - Resolved dependency conflict
+    configurations.all {
+        resolutionStrategy {
+            // Force all Google Play Core dependencies to use the same version
+            force("com.google.android.play:core-common:2.0.3")
+            force("com.google.android.play:feature-delivery:2.1.0")
+            // Completely exclude the conflicting old version
+            exclude(group = "com.google.android.play", module = "core")
+        }
+        // Exclude all transitive dependencies of the old core library
+        exclude(group = "com.google.android.play", module = "core")
     }
 }
 
