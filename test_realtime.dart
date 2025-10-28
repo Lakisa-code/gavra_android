@@ -15,11 +15,11 @@ void main() async {
 
     // Test realtime stream
     final subscription = Supabase.instance.client.from('putnik').stream(primaryKey: ['id']).listen(
-      (data) {
+      (List<Map<String, dynamic>> data) {
         print('✅ REALTIME RADI! Primljeni podaci: ${data.length} zapisa');
         print('🎯 Prvo 3 zapisa: ${data.take(3).toList()}');
       },
-      onError: (error) {
+      onError: (Object error) {
         print('❌ REALTIME ERROR: $error');
       },
       onDone: () {
@@ -28,7 +28,7 @@ void main() async {
     );
 
     print('⏰ Čekam 10 sekundi za test...');
-    await Future.delayed(const Duration(seconds: 10));
+    await Future<void>.delayed(const Duration(seconds: 10));
 
     subscription.cancel();
     print('🏁 Test završen');
