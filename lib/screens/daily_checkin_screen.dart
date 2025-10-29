@@ -154,6 +154,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   Widget build(BuildContext context) {
     // 🎨 KORISTI BOJU VOZAČA KAO GLAVNU TEMU
     final vozacColor = VozacBoja.get(widget.vozac);
+    
+    // 🔍 DEBUG: Prikaži informacije o vozaču i boji
+    print('🔍 DEBUG DailyCheckIn: vozac="${widget.vozac}", boja=${vozacColor.value.toRadixString(16)}');
 
     // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
     final lightVozacColor = Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija
