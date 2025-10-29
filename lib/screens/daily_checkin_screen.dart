@@ -101,6 +101,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos);
 
       if (mounted) {
+        // Reset loading state first
+        setState(() => _isLoading = false);
+
         // Haptic feedback
         HapticFeedback.lightImpact();
 
@@ -125,7 +128,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       }
     } catch (e) {
       if (mounted) {
-        if (mounted) setState(() => _isLoading = false);
+        setState(() => _isLoading = false);
         _showError('Greška: $e');
       }
     }
@@ -404,7 +407,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
       // 🚫 PRESKAČI VIKENDE - ne radi se subotom i nedeljom
       if (yesterday.weekday == 6 || yesterday.weekday == 7) {
-return;
+        return;
       }
 
       // Proveri da li postoji popis od juče
@@ -425,8 +428,7 @@ return;
           _showAutomaticReportDialog(automatskiPopis);
         }
       }
-    } catch (e) {
-}
+    } catch (e) {}
   }
 
   // 📊 DIALOG ZA PRIKAZ POPISA IZ PRETHODNOG DANA
@@ -904,16 +906,16 @@ return;
           seconds: 10,
         ),
       );
-} on TimeoutException {
-throw Exception(
+    } on TimeoutException {
+      throw Exception(
         'Nema internet konekcije. Kusur neće biti sačuvan u bazi.',
       );
     } on SocketException {
-throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
+      throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
     } on PostgrestException catch (e) {
-throw Exception('Greška u bazi podataka: ${e.message}');
+      throw Exception('Greška u bazi podataka: ${e.message}');
     } catch (e) {
-throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
+      throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
     }
   }
 
@@ -941,8 +943,7 @@ throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
       );
 // Pokreni sync kada se vrati internet konekcija
       _scheduleOfflineSync();
-    } catch (e) {
-}
+    } catch (e) {}
   }
 
   // Sync offline kusur podatke kada se vrati internet
@@ -958,7 +959,7 @@ throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
         }
       } catch (e) {
         // Još uvek nema internet, nastavi pokušaje
-}
+      }
     });
   }
 
@@ -983,8 +984,7 @@ throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
 
         // Obriši offline podatke nakon uspešnog sync-a
         await prefs.remove('offline_kusur_data');
-}
-    } catch (e) {
-}
+      }
+    } catch (e) {}
   }
 }
