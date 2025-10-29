@@ -6,23 +6,23 @@ import 'package:flutter/services.dart';
 // ⚡🔷💠 1. TRIPLE BLUE FASHION - Electric + Ice + Neon kombinacija!
 const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   brightness: Brightness.light,
-  // Electric Blue Shine kao glavni - OSVETLJEN!
-  primary: Color(0xFF1976D2), // Svetliji Electric Blue - Material Blue 700
+  // Electric Blue Shine kao glavni
+  primary: Color(0xFF021B79), // Electric Blue Shine - taman
   onPrimary: Colors.white,
-  primaryContainer: Color(0xFF1E88E5), // Electric Blue Shine - svetliji
+  primaryContainer: Color(0xFF0575E6), // Electric Blue Shine - svetao
   onPrimaryContainer: Colors.white,
 
-  // Blue Ice Metallic kao secondary - OSVETLJEN!
-  secondary: Color(0xFF42A5F5), // Blue Ice Metallic - svetliji
+  // Blue Ice Metallic kao secondary
+  secondary: Color(0xFF1E3A78), // Blue Ice Metallic - početak
   onSecondary: Colors.white,
-  secondaryContainer: Color(0xFF64B5F6), // Blue Ice Metallic - još svetliji
+  secondaryContainer: Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
   onSecondaryContainer: Colors.white,
 
-  // Neon Blue Glow kao tertiary - TREĆA BOJA!
-  tertiary: Color(0xFF03DAC6), // Bright Teal/Cyan - treća boja za gradijent
-  onTertiary: Color(0xFF000000), // Crn tekst na svetlom cyan-u
-  tertiaryContainer: Color(0xFF4DD0E1), // Svetliji cyan
-  onTertiaryContainer: Color(0xFF000000),
+  // Neon Blue Glow kao tertiary
+  tertiary: Color(0xFF1FA2FF), // Neon Blue Glow - početak
+  onTertiary: Colors.white,
+  tertiaryContainer: Color(0xFF12D8FA), // Neon Blue Glow - sredina
+  onTertiaryContainer: Colors.white,
 
   // Surface colors - svetla pozadina
   surface: Color(0xFFF0F9FF), // Svetla pozadina
@@ -149,16 +149,21 @@ extension CustomColors on ColorScheme {
 
 // 🎨 GRADIJENTI ZA 3 TEME
 
-// ⚡ Triple Blue Fashion Gradient - 3 GLAVNE BOJE!
+// ⚡ Triple Blue Fashion Gradient
 const LinearGradient tripleBlueFashionGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF1976D2), // Electric Blue - prva boja
-    Color(0xFF42A5F5), // Ice Blue - druga boja
-    Color(0xFF03DAC6), // Neon Cyan - treća boja
+    Color(0xFF021B79), // Electric Blue Shine - početak
+    Color(0xFF0575E6), // Electric Blue Shine - završetak
+    Color(0xFF1E3A78), // Blue Ice Metallic - početak
+    Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
+    Color(0xFFA8D8E8), // Blue Ice Metallic - završetak
+    Color(0xFF1FA2FF), // Neon Blue Glow - početak
+    Color(0xFF12D8FA), // Neon Blue Glow - sredina
+    Color(0xFFA6FFCB), // Neon Blue Glow - završetak
   ],
-  stops: [0.0, 0.5, 1.0], // Ravnomerno raspoređene 3 boje
+  stops: [0.0, 0.14, 0.28, 0.42, 0.56, 0.7, 0.85, 1.0],
 );
 
 // 🌙 Dark Theme Gradient - 3 TAMNE BOJE!
@@ -187,15 +192,15 @@ const LinearGradient pinkSvetlanaGradient = LinearGradient(
 
 // 🎭 THEME DATA ZA 3 TEME
 
-// ⚡ 1. Triple Blue Fashion Theme - OSVETLJENA!
+// ⚡ 1. Triple Blue Fashion Theme
 final ThemeData tripleBlueFashionTheme = ThemeData(
   colorScheme: tripleBlueFashionColorScheme,
   useMaterial3: true,
   fontFamily: 'Inter',
-  scaffoldBackgroundColor: const Color(0xFFF0F9FF), // Svetla pozadina
+  scaffoldBackgroundColor: const Color(0xFFF0F9FF),
   appBarTheme: const AppBarTheme(
     elevation: 0,
-    backgroundColor: Color(0xFF1976D2), // Svetliji Electric Blue umesto tamnog
+    backgroundColor: Color(0xFF021B79), // Originalna tamna Electric Blue boja
     foregroundColor: Colors.white,
     systemOverlayStyle: SystemUiOverlayStyle.light,
     titleTextStyle: TextStyle(
@@ -256,19 +261,25 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
       width: 2,
-      color: const Color(0xFF42A5F5).withOpacity(0.4), // Svetliji border
+      color: const Color(0xFF1FA2FF).withOpacity(0.4),
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF1976D2).withOpacity(0.2), // Svetlija senka
+        color: const Color(0xFF021B79).withOpacity(0.3),
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
       ),
       BoxShadow(
-        color: const Color(0xFF42A5F5).withOpacity(0.1), // Svetlija senka
+        color: const Color(0xFF4F7CAC).withOpacity(0.2),
         blurRadius: 24,
         offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: const Color(0xFFE91E63).withOpacity(0.4),
+        blurRadius: 36,
+        offset: const Offset(0, 16),
+        spreadRadius: 6,
       ),
     ],
   );
@@ -282,11 +293,11 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       width: 1.5,
-      color: const Color(0xFF42A5F5).withOpacity(0.6), // Svetliji border
+      color: const Color(0xFF1FA2FF).withOpacity(0.6),
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF1976D2).withOpacity(0.4), // Svetlija senka
+        color: const Color(0xFF021B79).withOpacity(0.4),
         blurRadius: 24,
         offset: const Offset(0, 12),
         spreadRadius: 2,
