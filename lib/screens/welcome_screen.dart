@@ -12,7 +12,6 @@ import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
-import 'email_registration_screen.dart';
 import 'home_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -22,7 +21,7 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -56,6 +55,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Dodano za lifecycle
 
     _setupAnimations();
     // Inicijalizacija lokalnih notifikacija
@@ -88,6 +88,49 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   Future<void> _checkAutoLogin() async {
     // 🎵 PREKINI PESMU ako se auto-login aktivira
     await _stopAudio();
+
+    // 📱 PRVO PROVERI REMEMBERED DEVICE
+    final rememberedDevice = await AuthManager.getRememberedDevice();
+    if (rememberedDevice != null) {
+      // Auto-login sa zapamćenim uređajem
+      final driverName = rememberedDevice['driverName']!;
+      final email = rememberedDevice['email']!;
+
+      // Postavi driver session
+      await AuthManager.setCurrentDriver(driverName);
+
+      if (!mounted) return;
+
+      // Direktno na Daily Check-in ili Home Screen
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+
+      if (!hasCheckedIn) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute<void>(
+            builder: (context) => DailyCheckInScreen(
+              vozac: driverName,
+              onCompleted: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => const HomeScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute<void>(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+      }
+      return;
+    }
 
     // PROVERI FIREBASE AUTH STATE
     final firebaseUser = AuthManager.getCurrentUser();
@@ -178,12 +221,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   }
 
   @override
-  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Uklanjamo observer
     _fadeController.dispose();
     _slideController.dispose();
     _audioPlayer.dispose(); // Dodano za cleanup audio player-a
     super.dispose();
+  }
+
+  // Dodano za praćenje lifecycle-a aplikacije
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.paused:
+        // Aplikacija ide u pozadinu - zaustavi muziku
+        _stopAudio();
+        break;
+      case AppLifecycleState.resumed:
+        // Aplikacija se vraća u foreground - ne radi ništa
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        // Zaustavi muziku i u ovim stanjima
+        _stopAudio();
+        break;
+      case AppLifecycleState.hidden:
+        // Zaustavi muziku kada je skrivena
+        _stopAudio();
+        break;
+    }
   }
 
   // Helper metoda za zaustavljanje pesme
@@ -210,42 +278,54 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       );
       return;
     }
-    // PROVERI DA LI JE VOZAČ VEĆ REGISTROVAN SA FIREBASE AUTH
-    // Jednostavno - ako je neko ulogovan u Firebase, onda je registrovan
-    final isRegistered = AuthManager.isEmailAuthenticated();
 
-    if (isRegistered) {
-      // VOZAČ JE REGISTROVAN - IDI NA EMAIL LOGIN
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute<void>(
-          builder: (context) => const EmailLoginScreen(),
-        ),
-      );
-    } else {
-      // VOZAČ NIJE REGISTROVAN - IDI NA EMAIL REGISTRACIJU
-      if (!mounted) return;
-      final result = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute<bool>(
-          builder: (context) => EmailRegistrationScreen(
-            preselectedDriverName: driverName,
-          ),
-        ),
-      );
+    // 📱 PRVO PROVERI REMEMBERED DEVICE za ovog vozača
+    final rememberedDevice = await AuthManager.getRememberedDevice();
+    if (rememberedDevice != null && rememberedDevice['driverName'] == driverName) {
+      // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
+      await AuthManager.setCurrentDriver(driverName);
 
-      // Ako je registracija uspešna, automatski idi na login
-      if (result == true) {
-        if (!mounted) return;
-        Navigator.push(
+      if (!mounted) return;
+
+      // Direktno na Daily Check-in ili Home Screen
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+
+      if (!hasCheckedIn) {
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
-            builder: (context) => const EmailLoginScreen(),
+            builder: (context) => DailyCheckInScreen(
+              vozac: driverName,
+              onCompleted: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (context) => const HomeScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute<void>(
+            builder: (context) => const HomeScreen(),
           ),
         );
       }
+      return;
     }
+
+    // AKO NIJE REMEMBERED DEVICE - IDI NA EMAIL LOGIN PRVO
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (context) => const EmailLoginScreen(),
+      ),
+    );
   }
 
   void _showErrorDialog(String title, String message) {
@@ -434,6 +514,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         onTap: () async {
                           try {
                             await _audioPlayer.setAsset('assets/kasno_je.mp3');
+                            await _audioPlayer.setVolume(0.5); // 50% jačine
                             await _audioPlayer.play();
                           } catch (e) {
                             // Swallow audio errors silently in production

@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +16,8 @@ class AuthManager {
   // Unified SharedPreferences key
   static const String _driverKey = 'current_driver';
   static const String _authSessionKey = 'auth_session';
+  static const String _deviceIdKey = 'device_id';
+  static const String _rememberedDevicesKey = 'remembered_devices';
 
   /// 📧 EMAIL AUTHENTICATION
 
@@ -35,6 +40,8 @@ class AuthManager {
 
       if (authResult.isSuccess) {
         await _saveDriverSession(driverName);
+        // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešne registracije
+        await rememberDevice(email, driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
         return AuthResult.success(authResult.message);
       } else {
@@ -64,6 +71,8 @@ class AuthManager {
         final driverName = authResult.user!.displayName ?? authResult.user!.email?.split('@')[0] ?? 'Vozač';
 
         await _saveDriverSession(driverName);
+        // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a
+        await rememberDevice(email, driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
         return AuthResult.success(authResult.message);
       } else {
@@ -186,6 +195,82 @@ class AuthManager {
       await prefs.setString(_driverKey, oldDriver);
       await prefs.remove('selected_driver');
     }
+  }
+
+  /// 📱 DEVICE RECOGNITION
+
+  /// Generiše jedinstveni device ID
+  static Future<String> _getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceId = prefs.getString(_deviceIdKey);
+
+    if (deviceId == null) {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceId = '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceId = '${iosInfo.identifierForVendor}_${iosInfo.model}';
+      } else {
+        deviceId = 'unknown_${DateTime.now().millisecondsSinceEpoch}';
+      }
+
+      await prefs.setString(_deviceIdKey, deviceId);
+    }
+
+    return deviceId;
+  }
+
+  /// Zapamti ovaj uređaj za automatski login
+  static Future<void> rememberDevice(String email, String driverName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final deviceId = await _getDeviceId();
+
+    // Format: "deviceId:email:driverName"
+    final deviceInfo = '$deviceId:$email:$driverName';
+
+    // Sačuvaj u listi zapamćenih uređaja
+    final rememberedDevices = prefs.getStringList(_rememberedDevicesKey) ?? [];
+
+    // Ukloni stari entry za isti email ako postoji
+    rememberedDevices.removeWhere((device) => device.contains(':$email:'));
+
+    // Dodaj novi
+    rememberedDevices.add(deviceInfo);
+
+    await prefs.setStringList(_rememberedDevicesKey, rememberedDevices);
+  }
+
+  /// Proveri da li je ovaj uređaj zapamćen
+  static Future<Map<String, String>?> getRememberedDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final deviceId = await _getDeviceId();
+    final rememberedDevices = prefs.getStringList(_rememberedDevicesKey) ?? [];
+
+    for (final deviceInfo in rememberedDevices) {
+      final parts = deviceInfo.split(':');
+      if (parts.length == 3 && parts[0] == deviceId) {
+        return {
+          'email': parts[1],
+          'driverName': parts[2],
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /// Zaboravi ovaj uređaj
+  static Future<void> forgetDevice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final deviceId = await _getDeviceId();
+    final rememberedDevices = prefs.getStringList(_rememberedDevicesKey) ?? [];
+
+    // Ukloni sve entries za ovaj device ID
+    rememberedDevices.removeWhere((device) => device.startsWith('$deviceId:'));
+
+    await prefs.setStringList(_rememberedDevicesKey, rememberedDevices);
   }
 }
 
