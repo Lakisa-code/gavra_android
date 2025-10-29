@@ -344,29 +344,40 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                     ),
                     child: Column(
                       children: [
-                        ShaderMask(
-                          shaderCallback: (Rect bounds) {
-                            return const LinearGradient(
-                              colors: [Color(0xFF00E5FF), Color(0xFFB388FF)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ).createShader(bounds);
-                          },
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'DOBRODOŠLI',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 3.5,
-                                color: Colors.white,
-                                shadows: [
-                                  Shadow(color: Colors.black26, blurRadius: 12),
-                                ],
-                              ),
-                              textAlign: TextAlign.center,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'DOBRODOŠLI',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 3.5,
+                              color: Colors.white,
+                              shadows: [
+                                // Glavni glow efekat - plavi
+                                Shadow(
+                                  color: const Color(0xFF12D8FA).withOpacity(0.8),
+                                  blurRadius: 20,
+                                ),
+                                // Dodatni glow - svetliji plavi
+                                Shadow(
+                                  color: const Color(0xFF00E5FF).withOpacity(0.6),
+                                  blurRadius: 15,
+                                ),
+                                // Treći glow - još svetliji
+                                Shadow(
+                                  color: Colors.cyan.withOpacity(0.4),
+                                  blurRadius: 10,
+                                ),
+                                // Osnovna senka za dubinu
+                                const Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -434,50 +445,44 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             vertical: 10, // Reduced padding
                           ),
                           decoration: BoxDecoration(
-                            gradient: tripleBlueFashionGradient,
-                            borderRadius: BorderRadius.circular(28),
+                            color: Colors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(32),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(
-                                  0xFF2979FF,
-                                ).withOpacity(0.22),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6),
+                                color: Colors.black.withOpacity(0.22),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
                               ),
                             ],
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.18),
-                              width: 1.5,
+                              color: Colors.white.withOpacity(0.13),
+                              width: 1.8,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.directions_bus,
-                                color: Colors.white.withOpacity(0.92),
-                                size: 24, // Reduced size
+                          child: ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return const LinearGradient(
+                                colors: [Color(0xFF0575E6), Color(0xFF12D8FA)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds);
+                            },
+                            child: const Text(
+                              'GAVRA 013',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 3,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black38,
+                                    blurRadius: 10,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8), // Reduced spacing
-                              Text(
-                                'GAVRA 013',
-                                style: TextStyle(
-                                  fontSize: 24, // Reduced size
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  letterSpacing: 2,
-                                  shadows: [
-                                    Shadow(
-                                      color: const Color(
-                                        0xFF00E5FF,
-                                      ).withOpacity(0.7),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -604,6 +609,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         fit: BoxFit.scaleDown,
                         child: Text(
                           name,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13, // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
@@ -616,9 +624,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               ),
                             ],
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          textAlign: TextAlign.center,
                         ),
                       ),
                     ],
