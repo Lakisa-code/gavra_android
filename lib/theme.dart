@@ -476,60 +476,90 @@ class PinkSvetlanaStyles {
   );
 }
 
-// 🎭 THEME SELECTOR - Bira temu na osnovu vozača
+// 🎭 THEME SELECTOR - Fleksibilni sistem tema za sve vozače
 class ThemeSelector {
-  /// Vraća odgovarajuću temu na osnovu imena vozača
-  static ThemeData getThemeForDriver(String? driverName) {
-    switch (driverName?.toLowerCase()) {
-      case 'svetlana':
-        return pinkSvetlanaTheme; // 💖 Pink tema za Svetlanu
-      case 'admin':
-      case 'bojan':
-      case 'vip':
-        return tripleBlueFashionTheme; // ⚡ Triple Blue za VIP
+  // 🎨 DOSTUPNE TEME - sve teme su dostupne svim vozačima
+  static const Map<String, String> availableThemes = {
+    'triple_blue': '⚡ Triple Blue Fashion',
+    'dark': '🌙 Dark Theme',
+    'pink': '💖 Pink Svetlana',
+  };
+
+  // 🎨 DEFAULT PREFERENCE - koje teme vozači preferiraju (ali mogu menjati)
+  static const Map<String, String> driverDefaultThemes = {
+    'Svetlana': 'pink', // Svetlana voli pink, ali može menjati
+    'Bojan': 'triple_blue', // Bojan voli blue, ali može menjati
+    'Bruda': 'dark', // Bruda voli dark, ali može menjati
+    'Bilevski': 'triple_blue', // Bilevski voli blue, ali može menjati
+  };
+
+  /// Vraća temu na osnovu ID-ja teme
+  static ThemeData getThemeById(String themeId) {
+    switch (themeId) {
+      case 'triple_blue':
+        return tripleBlueFashionTheme;
       case 'dark':
-      case 'midnight':
-        return darkTheme; // 🌙 Dark tema
+        return darkTheme;
+      case 'pink':
+        return pinkSvetlanaTheme;
       default:
-        return tripleBlueFashionTheme; // ⚡ Default Triple Blue Fashion
+        return tripleBlueFashionTheme; // Default fallback
     }
   }
 
-  /// Vraća odgovarajuće stilove na osnovu vozača
-  static Type getStylesForTheme(String? driverName) {
-    switch (driverName?.toLowerCase()) {
-      case 'svetlana':
+  /// Vraća default temu za vozača (ali vozač može menjati)
+  static ThemeData getThemeForDriver(String? driverName) {
+    if (driverName == null) return tripleBlueFashionTheme;
+
+    final defaultThemeId = driverDefaultThemes[driverName] ?? 'triple_blue';
+    return getThemeById(defaultThemeId);
+  }
+
+  /// Vraća stilove na osnovu ID-ja teme
+  static Type getStylesForThemeId(String themeId) {
+    switch (themeId) {
+      case 'pink':
         return PinkSvetlanaStyles;
       case 'dark':
-      case 'midnight':
         return DarkThemeStyles;
+      case 'triple_blue':
       default:
         return TripleBlueFashionStyles;
     }
   }
 
-  /// Provera da li je dark tema
+  /// Vraća stilove na osnovu vozača (default preference)
+  static Type getStylesForTheme(String? driverName) {
+    if (driverName == null) return TripleBlueFashionStyles;
+
+    final defaultThemeId = driverDefaultThemes[driverName] ?? 'triple_blue';
+    return getStylesForThemeId(defaultThemeId);
+  }
+
+  /// Helper za vozače - vraća default theme ID
+  static String getDefaultThemeIdForDriver(String? driverName) {
+    if (driverName == null) return 'triple_blue';
+    return driverDefaultThemes[driverName] ?? 'triple_blue';
+  }
+
+  /// LEGACY SUPPORT - stare metode za kompatibilnost (uzima driver name)
   static bool isDarkTheme(String? driverName) {
-    return driverName?.toLowerCase() == 'dark' || driverName?.toLowerCase() == 'midnight';
+    final themeId = getDefaultThemeIdForDriver(driverName);
+    return themeId == 'dark';
   }
 
-  /// Provera da li je Triple Blue tema
   static bool isTripleBlueFashion(String? driverName) {
-    return driverName?.toLowerCase() == 'admin' ||
-        driverName?.toLowerCase() == 'bojan' ||
-        driverName?.toLowerCase() == 'vip' ||
-        (driverName?.toLowerCase() != 'svetlana' &&
-            driverName?.toLowerCase() != 'dark' &&
-            driverName?.toLowerCase() != 'midnight');
+    final themeId = getDefaultThemeIdForDriver(driverName);
+    return themeId == 'triple_blue';
   }
 
-  /// Provera da li je Pink Svetlana tema
   static bool isPinkSvetlana(String? driverName) {
-    return driverName?.toLowerCase() == 'svetlana';
+    final themeId = getDefaultThemeIdForDriver(driverName);
+    return themeId == 'pink';
   }
+
+  /// Provera teme na osnovu ID-ja teme (uzima theme ID)
+  static bool isDarkThemeById(String themeId) => themeId == 'dark';
+  static bool isTripleBlueFashionById(String themeId) => themeId == 'triple_blue';
+  static bool isPinkSvetlanaById(String themeId) => themeId == 'pink';
 }
-
-
-
-
-

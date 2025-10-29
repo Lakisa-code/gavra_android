@@ -152,25 +152,36 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
+    // 🎨 KORISTI BOJU VOZAČA KAO GLAVNU TEMU
     final vozacColor = VozacBoja.get(widget.vozac);
 
-    // Mekše jutarnje boje - pastelne verzije vozačevih boja
-    final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!;
-    final warmBackground = Color.lerp(vozacColor, const Color(0xFFFFF8E1), 0.8)!;
+    // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
+    final lightVozacColor = Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija
+    final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
+    final deepVozacColor = Color.lerp(vozacColor, Colors.black, 0.2)!; // Tamnija verzija
 
+    // 🎨 Background - svetla verzija vozačeve boje
+    final scaffoldBackground = Color.lerp(vozacColor, const Color(0xFFFFFAFA), 0.92)!;
+
+    // 🎨 Text boje bazirane na vozačevoj boji
+    final primaryTextColor = deepVozacColor; // Tamni tekst na svetloj pozadini
+    final secondaryTextColor = Color.lerp(vozacColor, Colors.black, 0.5)!;
+
+    // 🎨 Gradijent sa vozačevom bojom
+    final gradientColors = [
+      scaffoldBackground,
+      lightVozacColor.withOpacity(0.6),
+      softVozacColor.withOpacity(0.3),
+      scaffoldBackground,
+    ];
     return Scaffold(
-      backgroundColor: warmBackground, // Svetliji background
+      backgroundColor: scaffoldBackground,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              warmBackground,
-              softVozacColor.withOpacity(0.3),
-              Colors.white.withOpacity(0.9),
-              warmBackground,
-            ],
+            colors: gradientColors,
             stops: const [0.0, 0.3, 0.7, 1.0],
           ),
         ),
@@ -214,7 +225,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         child: Icon(
                           Icons.light_mode_outlined, // Mekša jutarnja ikona
                           size: 60,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withOpacity(0.95),
                         ),
                       ),
 
@@ -226,10 +237,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w300,
-                          color: Colors.black87,
+                          color: primaryTextColor,
                           shadows: [
                             Shadow(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withOpacity(0.8),
                               blurRadius: 2,
                             ),
                           ],
@@ -247,7 +258,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           letterSpacing: 1.2,
                           shadows: [
                             Shadow(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withOpacity(0.8),
                               blurRadius: 2,
                             ),
                           ],
@@ -260,14 +271,14 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
+                          color: lightVozacColor.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: vozacColor.withOpacity(0.3),
+                            color: vozacColor.withOpacity(0.4),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: vozacColor.withOpacity(0.15),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -281,11 +292,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               size: 24,
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Unesite iznos sitnog novca za kusur',
                                 style: TextStyle(
-                                  color: Colors.black87,
+                                  color: secondaryTextColor,
                                   fontSize: 16,
                                 ),
                               ),
@@ -312,8 +323,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           controller: _kusurController,
                           focusNode: _kusurFocusNode,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(
-                            color: Colors.black87,
+                          style: TextStyle(
+                            color: primaryTextColor,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
@@ -322,7 +333,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           decoration: InputDecoration(
                             hintText: '0',
                             hintStyle: TextStyle(
-                              color: Colors.black.withOpacity(0.3),
+                              color: primaryTextColor.withOpacity(0.4),
                               fontSize: 24,
                             ),
                             suffixText: 'RSD',
@@ -332,7 +343,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               fontWeight: FontWeight.w600,
                             ),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.8),
+                            fillColor: lightVozacColor.withOpacity(0.6),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide.none,
