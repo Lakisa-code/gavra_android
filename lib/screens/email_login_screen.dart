@@ -9,7 +9,7 @@ import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/vozac_boja.dart'; // 🎨 Import za boje vozača
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
-import 'home_screen_light.dart';
+import 'home_screen.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({Key? key}) : super(key: key);
@@ -80,8 +80,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
           _globalAudioPlayer = null;
         }
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   late AnimationController _fadeController;
@@ -416,12 +415,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
       final result = await AuthManager.signInWithEmail(email, password);
 
       if (result.isSuccess) {
-
         // Dobij ime vozača iz trenutne auth session
         final user = AuthManager.getCurrentUser();
         final email = user?.email;
         final driverName = VozacBoja.getVozacForEmail(email) ?? 'Vozač';
-
 
         // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
         // ignore: use_build_context_synchronously
@@ -448,7 +445,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (context) => const HomeScreenLight(),
+                          builder: (context) => const HomeScreen(),
                         ),
                       );
                     }
@@ -463,7 +460,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             Navigator.pushReplacement(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const HomeScreenLight(),
+                builder: (context) => const HomeScreen(),
               ),
             );
           }
