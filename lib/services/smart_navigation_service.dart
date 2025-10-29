@@ -3,7 +3,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
 import 'geocoding_service.dart';
-// import 'traffic_aware_routing_service.dart'; // REMOVED - Google APIs too expensive
 
 /// 🎯 SMART NAVIGATION SERVICE
 /// Implementira pravu GPS navigaciju sa optimizovanim redosledom putnika

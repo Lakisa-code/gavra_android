@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// import '../main.dart' show globalThemeToggler; // Removed in simple version // Za theme toggle
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
@@ -29,9 +28,7 @@ import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
-// import '../widgets/supabase_analysis_widget.dart'; // REMOVED - file not found
 import '../widgets/bottom_nav_bar_zimski.dart';
-// import '../widgets/network_status_widget.dart'; // REMOVED - file not found
 import '../widgets/putnik_card.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
 import '../widgets/shimmer_widgets.dart';
@@ -270,8 +267,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _checkRealtimeHealth,
         isPeriodic: true,
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   // 🚨 Check realtime system health
@@ -1752,23 +1748,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (!_selectedGradSubject.isClosed) {
         _selectedGradSubject.close();
       }
-    } catch (e) {
-    }
+    } catch (e) {}
 
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
     try {
       _realtimeSubscription?.cancel();
       _networkStatusSubscription?.cancel();
-    } catch (e) {
-    }
+    } catch (e) {}
 
     // 🧹 SAFE DISPOSAL ValueNotifier-a
     try {
       if (mounted) {
         _isRealtimeHealthy.dispose();
       }
-    } catch (e) {
-    }
+    } catch (e) {}
     super.dispose();
   }
 }

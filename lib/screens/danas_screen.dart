@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreet
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
-// import '../models/realtime_route_data.dart'; // 🛰️ REMOVED - Google APIs disabled
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
@@ -17,7 +16,6 @@ import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS trackin
 import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network status service
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_notification_service.dart';
-// import '../services/realtime_route_tracking_service.dart'; // 🚗 REMOVED - Google APIs too expensive
 import '../services/realtime_service.dart';
 import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur

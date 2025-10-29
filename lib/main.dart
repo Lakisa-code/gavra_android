@@ -9,7 +9,6 @@ import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
-// import 'services/background_gps_service.dart'; // Disabled for stability
 import 'services/cache_service.dart';
 import 'services/firebase_service.dart';
 import 'services/offline_map_service.dart';
@@ -100,13 +99,11 @@ class _MyAppState extends State<MyApp> {
         final AuthChangeEvent event = data.event;
         final Session? session = data.session;
 
-
         if (event == AuthChangeEvent.signedIn && session != null) {
           // Korisnik je uspešno ulogovan nakon email verification
         }
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _initializeApp() async {

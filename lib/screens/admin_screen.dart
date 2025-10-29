@@ -16,7 +16,6 @@ import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
-// import '../widgets/stream_error_widget.dart'; // 🚨 STREAM ERROR HANDLING - LOKALNO IMPLEMENTIRANO
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin

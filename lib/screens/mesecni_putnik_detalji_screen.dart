@@ -37,7 +37,6 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
   // 🔄 PERFORMANCE: Cached computed values
   Map<String, List<Map<String, dynamic>>>? _cachedNedeljniPodaci;
   Map<String, List<Map<String, dynamic>>>? _cachedMesecniPodaci;
-  // Note: _cachedGodisnjiPodaci removed as unused
 
   // 🔄 V3.0 REALTIME MONITORING STATE (Clean Architecture - bez heartbeat)
   late ValueNotifier<bool> _isRealtimeHealthy;
@@ -98,7 +97,6 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
     // 🔄 PERFORMANCE: Clear cached data when reloading
     _cachedNedeljniPodaci = null;
     _cachedMesecniPodaci = null;
-    // Note: _cachedGodisnjiPodaci removed as unused
 
     try {
       // 🔄 RESILIENCE: Check network before loading
