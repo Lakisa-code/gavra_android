@@ -459,29 +459,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                               width: 1.8,
                             ),
                           ),
-                          child: ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return const LinearGradient(
-                                colors: [Color(0xFF0575E6), Color(0xFF12D8FA)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ).createShader(bounds);
-                            },
-                            child: const Text(
-                              'GAVRA 013',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: 3,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black38,
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
+                          child: Text(
+                            'GAVRA 013',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 3,
+                              color: Colors.white,
+                              shadows: [
+                                // Glavni glow efekat - plavi
+                                Shadow(
+                                  color: const Color(0xFF12D8FA).withOpacity(0.8),
+                                  blurRadius: 20,
+                                ),
+                                // Dodatni glow - svetliji plavi
+                                Shadow(
+                                  color: const Color(0xFF00E5FF).withOpacity(0.6),
+                                  blurRadius: 15,
+                                ),
+                                // Treći glow - još svetliji
+                                Shadow(
+                                  color: Colors.cyan.withOpacity(0.4),
+                                  blurRadius: 10,
+                                ),
+                                // Osnovna senka za dubinu
+                                const Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 3),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -493,14 +501,68 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                 // Footer
                 FadeTransition(
                   opacity: _fadeAnimation,
-                  child: Text(
-                    '05. 07. 2025  •  Made by Bojan Gavrilovic',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
-                      fontSize: 12, // Reduced from 14
-                      letterSpacing: 1.0, // Reduced from 1.2
-                    ),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      Text(
+                        'Developed • Designed • Crafted with balls',
+                        style: TextStyle(
+                          fontSize: 13,
+                          letterSpacing: 1.0,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFF12D8FA).withOpacity(0.6),
+                              blurRadius: 15,
+                            ),
+                            Shadow(
+                              color: Colors.cyan.withOpacity(0.3),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'by Bojan Gavrilovic',
+                        style: TextStyle(
+                          fontSize: 12,
+                          letterSpacing: 1.0,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFF00E5FF).withOpacity(0.5),
+                              blurRadius: 12,
+                            ),
+                            Shadow(
+                              color: Colors.cyan.withOpacity(0.3),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '03.2025 - 11.2025',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 1.2,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFF12D8FA).withOpacity(0.4),
+                              blurRadius: 10,
+                            ),
+                            Shadow(
+                              color: Colors.cyan.withOpacity(0.2),
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8), // Reduced from 12
