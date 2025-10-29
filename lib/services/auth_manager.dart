@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../screens/welcome_screen.dart';
+import '../utils/vozac_boja.dart';
 import 'analytics_service.dart';
 import 'firebase_auth_service.dart';
 import 'firebase_service.dart';
@@ -68,7 +69,11 @@ class AuthManager {
       );
 
       if (authResult.isSuccess && authResult.user != null) {
-        final driverName = authResult.user!.displayName ?? authResult.user!.email?.split('@')[0] ?? 'Vozač';
+        // 🔄 PRIORITET: Koristi VozacBoja mapiranje za email -> vozač ime
+        String driverName = VozacBoja.getVozacForEmail(authResult.user!.email) ??
+            authResult.user!.displayName ??
+            authResult.user!.email?.split('@')[0] ??
+            'Vozač';
 
         await _saveDriverSession(driverName);
         // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a

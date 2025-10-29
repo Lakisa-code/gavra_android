@@ -49,7 +49,7 @@ class VozacBoja {
   }
 
   static String? getVozacForEmail(String? email) {
-    return email != null ? emailToVozac[email.toLowerCase()] : null;
+    return email != null ? emailToVozac[email] : null;
   }
 
   static bool isEmailDozvoljenForVozac(String? email, String? vozac) {
@@ -58,7 +58,7 @@ class VozacBoja {
   }
 
   static bool isDozvoljenEmail(String? email) {
-    return email != null && emailToVozac.containsKey(email.toLowerCase());
+    return email != null && emailToVozac.containsKey(email);
   }
 
   static List<String> get sviDozvoljenEmails => dozvoljenEmails.values.toList();

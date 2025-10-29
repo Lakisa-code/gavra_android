@@ -154,16 +154,13 @@ const LinearGradient tripleBlueFashionGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF021B79), // Electric Blue Shine - početak
     Color(0xFF0575E6), // Electric Blue Shine - završetak
     Color(0xFF1E3A78), // Blue Ice Metallic - početak
     Color(0xFF4F7CAC), // Blue Ice Metallic - sredina
     Color(0xFFA8D8E8), // Blue Ice Metallic - završetak
-    Color(0xFF1FA2FF), // Neon Blue Glow - početak
     Color(0xFF12D8FA), // Neon Blue Glow - sredina
-    Color(0xFFA6FFCB), // Neon Blue Glow - završetak
   ],
-  stops: [0.0, 0.14, 0.28, 0.42, 0.56, 0.7, 0.85, 1.0],
+  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
 // 🌙 Dark Theme Gradient - 3 TAMNE BOJE!

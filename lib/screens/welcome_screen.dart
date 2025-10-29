@@ -93,8 +93,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     final rememberedDevice = await AuthManager.getRememberedDevice();
     if (rememberedDevice != null) {
       // Auto-login sa zapamćenim uređajem
-      final driverName = rememberedDevice['driverName']!;
       final email = rememberedDevice['email']!;
+
+      // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
+      final driverName = VozacBoja.getVozacForEmail(email) ?? rememberedDevice['driverName']!;
 
       // Postavi driver session
       await AuthManager.setCurrentDriver(driverName);
@@ -134,7 +136,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     // PROVERI FIREBASE AUTH STATE
     final firebaseUser = AuthManager.getCurrentUser();
-    final driverFromFirebase = firebaseUser?.displayName;
+    // 🔄 MAPIRANJE: email -> vozač ime umesto displayName
+    final driverFromFirebase = firebaseUser?.email != null
+        ? VozacBoja.getVozacForEmail(firebaseUser!.email) ?? firebaseUser.displayName
+        : firebaseUser?.displayName;
 
     // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
     if (AuthManager.isEmailAuthenticated() && !AuthManager.isEmailVerified()) {
@@ -281,41 +286,48 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     // 📱 PRVO PROVERI REMEMBERED DEVICE za ovog vozača
     final rememberedDevice = await AuthManager.getRememberedDevice();
-    if (rememberedDevice != null && rememberedDevice['driverName'] == driverName) {
-      // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
-      await AuthManager.setCurrentDriver(driverName);
+    if (rememberedDevice != null) {
+      final rememberedEmail = rememberedDevice['email']!;
+      final rememberedName = rememberedDevice['driverName']!;
 
-      if (!mounted) return;
+      // 🔄 FORSIRAJ REFRESH: Koristi VozacBoja mapiranje za ispravno ime
+      final correctName = VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
 
-      // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+      if (correctName == driverName) {
+        // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
+        await AuthManager.setCurrentDriver(correctName);
 
-      if (!hasCheckedIn) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(
-            builder: (context) => DailyCheckInScreen(
-              vozac: driverName,
-              onCompleted: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (context) => const HomeScreen(),
-                  ),
-                );
-              },
+        if (!mounted) return;
+
+        // Direktno na Daily Check-in ili Home Screen
+        final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
+
+        if (!hasCheckedIn) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => DailyCheckInScreen(
+                vozac: correctName,
+                onCompleted: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (context) => const HomeScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute<void>(
-            builder: (context) => const HomeScreen(),
-          ),
-        );
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => const HomeScreen(),
+            ),
+          );
+        }
       }
-      return;
     }
 
     // AKO NIJE REMEMBERED DEVICE - IDI NA EMAIL LOGIN PRVO

@@ -1123,7 +1123,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
         ),
-        body: ShimmerWidgets.putnikListShimmer(itemCount: 8),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: tripleBlueFashionGradient, // 🎨 Ceo ekran gradijent
+          ),
+          child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
+        ),
         // 🔧 DODAJ BOTTOM NAVIGATION BAR I U LOADING STANJU!
         bottomNavigationBar: isZimski(DateTime.now())
             ? BottomNavBarZimski(
@@ -1589,118 +1594,123 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          body: Column(
-            children: [
-              // Action buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    // Dugmad za akcije
-                    Expanded(
-                      child: _HomeScreenButton(
-                        label: 'Dodaj',
-                        icon: Icons.person_add,
-                        onTap: _showAddPutnikDialog,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    if (_currentDriver == 'Bruda' ||
-                        _currentDriver == 'Bilevski' ||
-                        _currentDriver == 'Bojan' ||
-                        _currentDriver == 'Svetlana')
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: tripleBlueFashionGradient, // 🎨 Ceo ekran gradijent
+            ),
+            child: Column(
+              children: [
+                // Action buttons
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Dugmad za akcije
                       Expanded(
                         child: _HomeScreenButton(
-                          label: 'Danas',
-                          icon: Icons.today,
-                          onTap: () {
-                            AnimatedNavigation.pushSmooth(
-                              context,
-                              const DanasScreen(),
-                            );
-                          },
+                          label: 'Dodaj',
+                          icon: Icons.person_add,
+                          onTap: _showAddPutnikDialog,
                         ),
                       ),
-                    if (['Bojan', 'Svetlana'].contains(_currentDriver)) const SizedBox(width: 4),
-                    if (['Bojan', 'Svetlana'].contains(_currentDriver))
-                      Expanded(
-                        child: _HomeScreenButton(
-                          label: 'Admin',
-                          icon: Icons.admin_panel_settings,
-                          onTap: () {
-                            AnimatedNavigation.pushSmooth(
-                              context,
-                              const AdminScreen(),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: _HomeScreenButton(
-                        label: 'Štampaj',
-                        icon: Icons.print,
-                        onTap: () async {
-                          await PrintingService.printPutniksList(
-                            _selectedDay,
-                            _selectedVreme,
-                            _selectedGrad,
-                            context,
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: _HomeScreenButton(
-                        label: 'Logout',
-                        icon: Icons.logout,
-                        onTap: _logout,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Lista putnika
-              Expanded(
-                child: Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: putniciZaPrikaz.isEmpty
-                        ? const Center(
-                            child: Text('Nema putnika za ovaj polazak.'),
-                          )
-                        : ListView.builder(
-                            itemCount: putniciZaPrikaz.length,
-                            itemBuilder: (context, index) {
-                              final putnik = putniciZaPrikaz[index];
-                              return AnimatedCard(
-                                delay: index * 100, // Staggered animation
-                                child: PutnikCard(
-                                  putnik: putnik,
-                                  currentDriver: _currentDriver,
-                                  redniBroj: index + 1,
-                                  selectedVreme: _selectedVreme, // 🆕 Proslijedi trenutno vreme
-                                  selectedGrad: _selectedGrad, // 🆕 Proslijedi trenutni grad
-                                  onChanged: () {
-                                    // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
-                                    if (mounted) {
-                                      if (mounted)
-                                        setState(() {
-                                          // Trigger rebuild-a StreamBuilder-a
-                                        });
-                                    }
-                                  },
-                                ),
+                      const SizedBox(width: 4),
+                      if (_currentDriver == 'Bruda' ||
+                          _currentDriver == 'Bilevski' ||
+                          _currentDriver == 'Bojan' ||
+                          _currentDriver == 'Svetlana')
+                        Expanded(
+                          child: _HomeScreenButton(
+                            label: 'Danas',
+                            icon: Icons.today,
+                            onTap: () {
+                              AnimatedNavigation.pushSmooth(
+                                context,
+                                const DanasScreen(),
                               );
                             },
                           ),
+                        ),
+                      if (['Bojan', 'Svetlana'].contains(_currentDriver)) const SizedBox(width: 4),
+                      if (['Bojan', 'Svetlana'].contains(_currentDriver))
+                        Expanded(
+                          child: _HomeScreenButton(
+                            label: 'Admin',
+                            icon: Icons.admin_panel_settings,
+                            onTap: () {
+                              AnimatedNavigation.pushSmooth(
+                                context,
+                                const AdminScreen(),
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: _HomeScreenButton(
+                          label: 'Štampaj',
+                          icon: Icons.print,
+                          onTap: () async {
+                            await PrintingService.printPutniksList(
+                              _selectedDay,
+                              _selectedVreme,
+                              _selectedGrad,
+                              context,
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: _HomeScreenButton(
+                          label: 'Logout',
+                          icon: Icons.logout,
+                          onTap: _logout,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+
+                // Lista putnika
+                Expanded(
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: putniciZaPrikaz.isEmpty
+                          ? const Center(
+                              child: Text('Nema putnika za ovaj polazak.'),
+                            )
+                          : ListView.builder(
+                              itemCount: putniciZaPrikaz.length,
+                              itemBuilder: (context, index) {
+                                final putnik = putniciZaPrikaz[index];
+                                return AnimatedCard(
+                                  delay: index * 100, // Staggered animation
+                                  child: PutnikCard(
+                                    putnik: putnik,
+                                    currentDriver: _currentDriver,
+                                    redniBroj: index + 1,
+                                    selectedVreme: _selectedVreme, // 🆕 Proslijedi trenutno vreme
+                                    selectedGrad: _selectedGrad, // 🆕 Proslijedi trenutni grad
+                                    onChanged: () {
+                                      // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
+                                      if (mounted) {
+                                        if (mounted)
+                                          setState(() {
+                                            // Trigger rebuild-a StreamBuilder-a
+                                          });
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           bottomNavigationBar: isZimski(DateTime.now())
               ? BottomNavBarZimski(
