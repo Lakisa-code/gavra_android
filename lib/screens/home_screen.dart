@@ -1567,10 +1567,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       color: Theme.of(context).colorScheme.onPrimary,
                                     ),
                                     dropdownColor: Theme.of(context).colorScheme.primary.withOpacity(0.95),
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onPrimary,
+                                    style: const TextStyle(
+                                      color: Colors.white,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15,
+                                      shadows: [
+                                        Shadow(
+                                          blurRadius: 8,
+                                          color: Colors.black87,
+                                        ),
+                                        Shadow(
+                                          offset: Offset(1, 1),
+                                          blurRadius: 4,
+                                          color: Colors.black54,
+                                        ),
+                                      ],
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     isExpanded: true,
@@ -1579,10 +1590,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         return Center(
                                           child: Text(
                                             value,
-                                            style: TextStyle(
-                                              color: Theme.of(context).colorScheme.onPrimary,
+                                            style: const TextStyle(
+                                              color: Colors.white,
                                               fontWeight: FontWeight.w700,
                                               fontSize: 15,
+                                              shadows: [
+                                                Shadow(
+                                                  blurRadius: 8,
+                                                  color: Colors.black87,
+                                                ),
+                                                Shadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 4,
+                                                  color: Colors.black54,
+                                                ),
+                                              ],
                                             ),
                                             textAlign: TextAlign.center,
                                             overflow: TextOverflow.ellipsis,
