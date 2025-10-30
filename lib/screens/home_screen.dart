@@ -1461,10 +1461,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   child: Center(
                                     child: Text(
                                       _currentDriver!,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 16,
-                                        color: Theme.of(context).colorScheme.onPrimary,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                            blurRadius: 8,
+                                            color: Colors.black87,
+                                          ),
+                                          Shadow(
+                                            offset: Offset(1, 1),
+                                            blurRadius: 4,
+                                            color: Colors.black54,
+                                          ),
+                                        ],
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.center,
@@ -1498,7 +1509,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       color: Colors.white.withOpacity(0.4),
                                     ),
                                   ),
-                                  child: Center(
+                                  child: const Center(
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
                                       child: Text(
@@ -1506,7 +1517,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 26,
-                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          color: Colors.white,
+                                          shadows: [
+                                            Shadow(
+                                              blurRadius: 8,
+                                              color: Colors.black87,
+                                            ),
+                                            Shadow(
+                                              offset: Offset(1, 1),
+                                              blurRadius: 4,
+                                              color: Colors.black54,
+                                            ),
+                                          ],
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                         textAlign: TextAlign.center,
