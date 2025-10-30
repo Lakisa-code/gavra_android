@@ -107,6 +107,15 @@ class AuthManager {
 
   /// Centralizovan logout - briše sve session podatke
   static Future<void> logout(BuildContext context) async {
+    // Prikaži loading
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentDriver = prefs.getString(_driverKey);
@@ -114,21 +123,28 @@ class AuthManager {
       // 1. Obriši Firebase Auth session
       await FirebaseAuthService.signOut();
 
-      // 2. Obriši SharedPreferences
-      await prefs.remove(_driverKey);
-      await prefs.remove('selected_driver'); // Legacy key cleanup
-      await prefs.remove(_authSessionKey);
+      // 2. Obriši SharedPreferences - SVE
+      await prefs.clear();
 
       // 3. Očisti Firebase session
-      await FirebaseService.clearCurrentDriver();
+      try {
+        await FirebaseService.clearCurrentDriver();
+      } catch (e) {
+        print('Firebase clear greška: $e');
+      }
 
       // 4. Analytics
       if (currentDriver != null) {
-        await AnalyticsService.logVozacOdjavljen(currentDriver);
+        try {
+          await AnalyticsService.logVozacOdjavljen(currentDriver);
+        } catch (e) {
+          print('Analytics greška: $e');
+        }
       }
 
-      // 5. Navigiraj na WelcomeScreen
+      // 5. Zatvori loading i navigiraj
       if (context.mounted) {
+        Navigator.of(context).pop(); // Zatvori loading
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
@@ -136,7 +152,17 @@ class AuthManager {
         );
       }
     } catch (e) {
-      // Ignoriši greške u logout-u da ne blokira korisnika
+      print('Logout greška: $e');
+      // Zatvori loading čak i ako ima greška
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        // Forsiraj navigaciju na welcome screen
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
+          (route) => false,
+        );
+      }
     }
   }
 

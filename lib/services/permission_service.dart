@@ -38,74 +38,86 @@ class PermissionService {
           barrierDismissible: false,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Row(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              title: Row(
                 children: [
-                  Icon(Icons.security, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Text('Podešavanje aplikacije'),
+                  Icon(Icons.security, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Podešavanje aplikacije',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              content: const Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, color: Colors.green, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '📍 GPS lokacija - za navigaciju do putnika',
-                        ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.phone, color: Colors.blue, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text('📞 Pozivi - za kontaktiranje putnika'),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildPermissionRow(
+                      context,
+                      Icons.location_on,
+                      Colors.green,
+                      '📍 GPS lokacija - za navigaciju do putnika',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPermissionRow(
+                      context,
+                      Icons.phone,
+                      Colors.blue,
+                      '📞 Pozivi - za kontaktiranje putnika',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPermissionRow(
+                      context,
+                      Icons.message,
+                      Colors.orange,
+                      '📱 SMS poruke - za obaveštenja',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildPermissionRow(
+                      context,
+                      Icons.notifications,
+                      Colors.purple,
+                      '🔔 Notifikacije - za nova putovanja',
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.message, color: Colors.orange, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(child: Text('📱 SMS poruke - za obaveštenja')),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.notifications, color: Colors.purple, size: 20),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text('🔔 Notifikacije - za nova putovanja'),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('PRESKOČI'),
+                  child: Text(
+                    'PRESKOČI',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+                  ),
                 ),
                 ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  ),
                   onPressed: () async {
                     // Pozovi zahtevanje dozvola kada korisnik klikne dugme
                     final success = await requestAllPermissions();
@@ -121,6 +133,29 @@ class PermissionService {
           },
         ) ??
         false;
+  }
+
+  /// Helper funkcija za permission row
+  static Widget _buildPermissionRow(
+    BuildContext context,
+    IconData icon,
+    Color iconColor,
+    String text,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, color: iconColor, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   /// ✅ ZAHTEVANJE SVIH DOZVOLA ODJEDNOM

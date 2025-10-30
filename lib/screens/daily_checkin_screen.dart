@@ -587,6 +587,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   // 🤖 DIALOG ZA AUTOMATSKI GENERISAN POPIS
   void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
+    final vozacColor = VozacBoja.get(widget.vozac); // DODANO: Koristi boju vozača
     final controller = TextEditingController(
       text: (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0',
     );
@@ -595,11 +596,12 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: Row(
           children: [
             Icon(
               Icons.auto_awesome,
-              color: Theme.of(context).colorScheme.studentPrimary,
+              color: vozacColor, // PROMENJEN: Koristi boju vozača
               size: 24,
             ),
             const SizedBox(width: 8),
@@ -609,7 +611,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.studentPrimary,
+                  color: vozacColor, // PROMENJEN: Koristi boju vozača
                 ),
               ),
             ),
@@ -621,7 +623,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
             child: Card(
               margin: const EdgeInsets.all(0),
               elevation: 0,
-              color: Colors.grey[50],
+              color: Theme.of(context).colorScheme.surface.withOpacity(0.5), // PROMENJEN: Prati temu
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -631,17 +633,17 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.studentPrimary.withOpacity(0.1),
+                        color: vozacColor.withOpacity(0.1), // PROMENJEN: Koristi boju vozača
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.studentPrimary.withOpacity(0.3),
+                          color: vozacColor.withOpacity(0.3), // PROMENJEN: Koristi boju vozača
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.info_outline,
-                            color: Theme.of(context).colorScheme.studentPrimary,
+                            color: vozacColor, // PROMENJEN: Koristi boju vozača
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -650,7 +652,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               'Pošto niste uradili ručni popis juče, aplikacija je automatski generisala popis.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Theme.of(context).colorScheme.studentPrimary,
+                                color: vozacColor, // PROMENJEN: Koristi boju vozača
                               ),
                             ),
                           ),
@@ -663,10 +665,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.studentPrimary.withOpacity(0.1),
+                        color: vozacColor.withOpacity(0.1), // PROMENJEN: Koristi boju vozača
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.studentPrimary,
+                          color: vozacColor, // PROMENJEN: Koristi boju vozača
                           width: 2,
                         ),
                       ),
@@ -676,7 +678,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.studentPrimary,
+                            color: vozacColor, // PROMENJEN: Koristi boju vozača
                           ),
                         ),
                       ),
@@ -692,7 +694,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                     _buildStatistikaRow(
                       '👥 Dodati putnici',
                       '${automatskiPopis['dodatiPutnici'] ?? 0}',
-                      Theme.of(context).colorScheme.primary,
+                      vozacColor, // PROMENJEN: Koristi boju vozača
                     ),
                     _buildStatistikaRow(
                       '✅ Pokupljeni putnici',

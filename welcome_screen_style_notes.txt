@@ -1,0 +1,78 @@
+WELCOME SCREEN STIL🎨 WELCOME SCREEN STYLE ANALIZA
+
+========================================================
+
+
+
+STA HOCES:📍 TRENUTNO STANJE:
+
+- Default tema kao Welcome Screen- Welcome Screen koristi tripleBlueFashionGradient (fiksni)
+
+- Gradijent pozadina (gore-levo → dole-desno)  - Home Screen sada koristi Theme.of(context) (nakon promene)
+
+- Providni dugmad sa glow efektom- Ostali screen-ovi = mešavina
+
+
+
+KAKO:🎯 CILJ: Welcome Screen stil kao default tema
+
+1. Promenim theme.dart da koristi gradijent
+
+2. Napravim sve komponente providne📋 POTREBNE IZMENE:
+
+3. Dodam glow na tekstove
+
+1. THEME.DART PROMENE:
+
+REZULTAT:   - Dodati gradijent u ColorScheme extension
+
+- Cela aplikacija izgleda kao Welcome Screen   - Background = dijagonalni gradijent umesto solid
+
+- Prelepo i konzistentno   - Pravac: topLeft → bottomRight
+   - 3 boje sa stops [0.0, 0.5, 1.0]
+
+2. TRANSPARENTNI KONTEJNERI:
+   - Colors.white.withOpacity(0.06) za pozadine
+   - Border sa white.withOpacity(0.13)
+   - BoxShadow sa black.withOpacity(0.22)
+
+3. GLOW TEKSTOVI:
+   - Layered shadows:
+     * Shadow(color: plava.withOpacity(0.8), blurRadius: 20)
+     * Shadow(color: svetla.withOpacity(0.6), blurRadius: 15) 
+     * Shadow(color: cyan.withOpacity(0.4), blurRadius: 10)
+
+4. DUGMAD GLASSMORPHISM:
+   - Transparentna pozadina
+   - Blur efekat
+   - Glow border
+   - Shadow ispod
+
+5. CARD/CONTAINER STIL:
+   - elevation: 8+ za dubinu
+   - color: surface.withOpacity(0.7)
+   - borderRadius: 12-25
+   - blur pozadina
+
+📝 IMPLEMENTACIJA PLAN:
+1. Kreirati gradijent extension za Theme
+2. Dodati glow text style helper
+3. Kreirati glassmorphism container widget
+4. Ažurirati sve screen-ove da koriste nove stilove
+
+🔧 KOD PATTERN:
+```
+decoration: BoxDecoration(
+  gradient: LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: theme.gradientColors,
+    stops: [0.0, 0.5, 1.0],
+  ),
+)
+```
+
+⚠️ NAPOMENA: 
+- Sačuvati postojeći tripleBlueFashionGradient kao fallback
+- Testirati na svetloj i tamnoj temi
+- Proveriti contrast ratio za accessibility

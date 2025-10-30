@@ -175,6 +175,26 @@ const LinearGradient darkThemeGradient = LinearGradient(
   stops: [0.0, 0.5, 1.0],
 );
 
+// 🎨 TEMA EKSTENZIJA - dodaje gradijent pozadinu
+extension ThemeGradients on ThemeData {
+  LinearGradient get backgroundGradient {
+    if (brightness == Brightness.dark) {
+      return darkThemeGradient;
+    } else {
+      return tripleBlueFashionGradient; // Welcome Screen stil kao default!
+    }
+  }
+
+  // Glassmorphism kontejner boje
+  Color get glassContainer => Colors.white.withOpacity(0.06);
+  Color get glassBorder => Colors.white.withOpacity(0.13);
+  BoxShadow get glassShadow => BoxShadow(
+        color: Colors.black.withOpacity(0.22),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+      );
+}
+
 // 💖 Pink Svetlana Gradient - 3 BOJE!
 const LinearGradient pinkSvetlanaGradient = LinearGradient(
   begin: Alignment.topLeft,
@@ -495,10 +515,10 @@ class ThemeSelector {
 
   // 🎨 DEFAULT PREFERENCE - koje teme vozači preferiraju (ali mogu menjati)
   static const Map<String, String> driverDefaultThemes = {
-    'Svetlana': 'pink', // Svetlana voli pink, ali može menjati
-    'Bojan': 'triple_blue', // Bojan voli blue, ali može menjati
-    'Bruda': 'dark', // Bruda voli dark, ali može menjati
-    'Bilevski': 'triple_blue', // Bilevski voli blue, ali može menjati
+    'Svetlana': 'triple_blue', // Triple Blue Fashion kao default
+    'Bojan': 'triple_blue', // Triple Blue Fashion kao default
+    'Bruda': 'triple_blue', // Triple Blue Fashion kao default
+    'Bilevski': 'triple_blue', // Triple Blue Fashion kao default
   };
 
   /// Vraća temu na osnovu ID-ja teme

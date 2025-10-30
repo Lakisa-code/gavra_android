@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../theme.dart';
 import '../utils/slot_utils.dart';
 
 class BottomNavBarLetnji extends StatefulWidget {
@@ -37,8 +39,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
   @override
   void didUpdateWidget(BottomNavBarLetnji oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedVreme != widget.selectedVreme ||
-        oldWidget.selectedGrad != widget.selectedGrad) {
+    if (oldWidget.selectedVreme != widget.selectedVreme || oldWidget.selectedGrad != widget.selectedGrad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToSelected();
       });
@@ -74,8 +75,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _bcScrollController.hasClients) {
-        final targetOffset =
-            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _bcScrollController.animateTo(
           targetOffset.clamp(0.0, _bcScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -85,8 +85,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
     } else if (widget.selectedGrad == 'Vršac') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
-        final targetOffset =
-            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _vsScrollController.animateTo(
           targetOffset.clamp(0.0, _vsScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -105,42 +104,58 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     const List<String> bcVremena = SlotUtils.bcVremena;
     const List<String> vsVremena = SlotUtils.vsVremena;
-    return Material(
-      color: isDarkMode ? Theme.of(context).cardColor : Colors.white,
-      elevation: 8,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // top-right total removed (per user request)
-            _PolazakRow(
-              label: 'BC',
-              vremena: bcVremena,
-              selectedGrad: widget.selectedGrad,
-              selectedVreme: widget.selectedVreme,
-              grad: 'Bela Crkva',
-              onPolazakChanged: widget.onPolazakChanged,
-              getPutnikCount: widget.getPutnikCount,
-              isSlotLoading: widget.isSlotLoading,
-              scrollController: _bcScrollController,
-            ),
-            _PolazakRow(
-              label: 'VS',
-              vremena: vsVremena,
-              selectedGrad: widget.selectedGrad,
-              selectedVreme: widget.selectedVreme,
-              grad: 'Vršac',
-              onPolazakChanged: widget.onPolazakChanged,
-              getPutnikCount: widget.getPutnikCount,
-              isSlotLoading: widget.isSlotLoading,
-              scrollController: _vsScrollController,
-            ),
-          ],
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        border: Border.all(
+          color: Theme.of(context).glassBorder,
+          width: 1.5,
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // top-right total removed (per user request)
+              _PolazakRow(
+                label: 'BC',
+                vremena: bcVremena,
+                selectedGrad: widget.selectedGrad,
+                selectedVreme: widget.selectedVreme,
+                grad: 'Bela Crkva',
+                onPolazakChanged: widget.onPolazakChanged,
+                getPutnikCount: widget.getPutnikCount,
+                isSlotLoading: widget.isSlotLoading,
+                scrollController: _bcScrollController,
+              ),
+              _PolazakRow(
+                label: 'VS',
+                vremena: vsVremena,
+                selectedGrad: widget.selectedGrad,
+                selectedVreme: widget.selectedVreme,
+                grad: 'Vršac',
+                onPolazakChanged: widget.onPolazakChanged,
+                getPutnikCount: widget.getPutnikCount,
+                isSlotLoading: widget.isSlotLoading,
+                scrollController: _vsScrollController,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -194,8 +209,7 @@ class _PolazakRow extends StatelessWidget {
               controller: scrollController,
               child: Row(
                 children: vremena.map((vreme) {
-                  final bool selected =
-                      selectedGrad == grad && selectedVreme == vreme;
+                  final bool selected = selectedGrad == grad && selectedVreme == vreme;
                   return GestureDetector(
                     onTap: () => onPolazakChanged(grad, vreme),
                     child: Container(
@@ -206,17 +220,11 @@ class _PolazakRow extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: selected
-                            ? (isDarkMode
-                                ? Colors.blueAccent.withOpacity(0.3)
-                                : Colors.blueAccent.withOpacity(0.15))
+                            ? (isDarkMode ? Colors.blueAccent.withOpacity(0.3) : Colors.blueAccent.withOpacity(0.15))
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: selected
-                              ? Colors.blue
-                              : (isDarkMode
-                                  ? Colors.grey[600]!
-                                  : Colors.grey[300]!),
+                          color: selected ? Colors.blue : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!),
                           width: selected ? 2 : 1,
                         ),
                       ),
@@ -226,33 +234,25 @@ class _PolazakRow extends StatelessWidget {
                             vreme,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: selected
-                                  ? Colors.blue
-                                  : (isDarkMode ? Colors.white : Colors.black),
+                              color: selected ? Colors.blue : (isDarkMode ? Colors.white : Colors.black),
                             ),
                           ),
                           const SizedBox(height: 2),
                           Builder(
                             builder: (ctx) {
-                              final loading =
-                                  isSlotLoading?.call(grad, vreme) ?? false;
+                              final loading = isSlotLoading?.call(grad, vreme) ?? false;
                               if (loading) {
                                 return const SizedBox(
                                   height: 12,
                                   width: 12,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
                                 );
                               }
                               return Text(
                                 getPutnikCount(grad, vreme).toString(),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: selected
-                                      ? Colors.blue
-                                      : (isDarkMode
-                                          ? Colors.grey[300]
-                                          : Colors.grey[700]),
+                                  color: selected ? Colors.blue : (isDarkMode ? Colors.grey[300] : Colors.grey[700]),
                                 ),
                               );
                             },
@@ -270,8 +270,3 @@ class _PolazakRow extends StatelessWidget {
     );
   }
 }
-
-
-
-
-

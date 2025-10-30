@@ -143,7 +143,7 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       title: 'Gavra 013',
       debugShowCheckedModeBanner: false,
-      theme: ThemeService.svetlaTema(),
+      theme: ThemeService.svetlaTema(), // Triple Blue Fashion kao default
       darkTheme: ThemeService.tamnaTema(),
       themeMode: _nocniRezim ? ThemeMode.dark : ThemeMode.light,
       navigatorObservers: [

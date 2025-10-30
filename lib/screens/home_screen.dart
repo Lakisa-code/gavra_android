@@ -1368,133 +1368,102 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         // (totalFilteredCount removed)
 
-        return Scaffold(
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(
-              95,
-            ), // Povećano sa 80 na 95 zbog sezonskog indikatora
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(25),
-                  bottomRight: Radius.circular(25),
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent, // Transparentna pozadina
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(
+                95,
+              ), // Povećano sa 80 na 95 zbog sezonskog indikatora
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+                  border: Border.all(
+                    color: Theme.of(context).glassBorder,
+                    width: 1.5,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // PRVI RED - Rezervacije
-                      Container(
-                        height: 24,
-                        alignment: Alignment.center,
-                        child: Text(
-                          'R E Z E R V A C I J E',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimary, // Tema-aware - automatski se prilagođava svim temama
-                            letterSpacing: 1.8,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // PRVI RED - Rezervacije
+                        Container(
+                          height: 24,
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'R E Z E R V A C I J E',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white, // Bela boja za bolju vidljivost
+                              letterSpacing: 1.8,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 12,
+                                  color: Colors.black87,
+                                ),
+                                Shadow(
+                                  offset: Offset(2, 2),
+                                  blurRadius: 6,
+                                  color: Colors.black54,
+                                ),
+                                Shadow(
+                                  blurRadius: 20,
+                                  color: Color(0xFF1976D2),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      // DRUGI RED - Driver, Tema, Update i Dropdown
-                      Row(
-                        children: [
-                          // DRIVER - levo
-                          if (_currentDriver != null && _currentDriver!.isNotEmpty)
-                            Expanded(
-                              flex: 35,
-                              child: Container(
-                                height: 32,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: VozacBoja.get(_currentDriver),
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: VozacBoja.get(_currentDriver).withOpacity(0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    _currentDriver!,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16,
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
+                        const SizedBox(height: 4),
+                        // DRUGI RED - Driver, Tema, Update i Dropdown
+                        Row(
+                          children: [
+                            // DRIVER - levo
+                            if (_currentDriver != null && _currentDriver!.isNotEmpty)
+                              Expanded(
+                                flex: 35,
+                                child: Container(
+                                  height: 32,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
                                   ),
-                                ),
-                              ),
-                            ),
-
-                          const SizedBox(width: 2),
-
-                          // TEMA - levo-sredina
-                          Expanded(
-                            flex: 25,
-                            child: InkWell(
-                              onTap: () async {
-                                // Theme toggle removed in simple version
-                                // Theme toggle placeholder
-                              },
-                              borderRadius: BorderRadius.circular(14),
-                              child: Container(
-                                height: 32,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
+                                  decoration: BoxDecoration(
+                                    color: VozacBoja.get(_currentDriver),
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: VozacBoja.get(_currentDriver).withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
+                                  child: Center(
                                     child: Text(
-                                      'Tema',
+                                      _currentDriver!,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 26,
+                                        fontSize: 16,
                                         color: Theme.of(context).colorScheme.onPrimary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -1504,101 +1473,139 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
 
-                          const SizedBox(width: 2),
+                            const SizedBox(width: 2),
 
-                          // DROPDOWN - desno
-                          Expanded(
-                            flex: 35,
-                            child: Container(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
+                            // TEMA - levo-sredina
+                            Expanded(
+                              flex: 25,
+                              child: InkWell(
+                                onTap: () async {
+                                  // Theme toggle removed in simple version
+                                  // Theme toggle placeholder
+                                },
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
+                                child: Container(
+                                  height: 32,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.4),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'Tema',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 26,
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _selectedDay,
-                                  icon: Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 14,
-                                    color: Theme.of(context).colorScheme.onPrimary,
+                            ),
+
+                            const SizedBox(width: 2),
+
+                            // DROPDOWN - desno
+                            Expanded(
+                              flex: 35,
+                              child: Container(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
                                   ),
-                                  dropdownColor: Theme.of(context).colorScheme.primary.withOpacity(0.95),
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  isExpanded: true,
-                                  selectedItemBuilder: (BuildContext context) {
-                                    return _dani.map<Widget>((String value) {
-                                      return Center(
-                                        child: Text(
-                                          value,
-                                          style: TextStyle(
-                                            color: Theme.of(context).colorScheme.onPrimary,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15,
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedDay,
+                                    icon: Icon(
+                                      Icons.keyboard_arrow_down_rounded,
+                                      size: 14,
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                    ),
+                                    dropdownColor: Theme.of(context).colorScheme.primary.withOpacity(0.95),
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    isExpanded: true,
+                                    selectedItemBuilder: (BuildContext context) {
+                                      return _dani.map<Widget>((String value) {
+                                        return Center(
+                                          child: Text(
+                                            value,
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onPrimary,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
-                                          textAlign: TextAlign.center,
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
-                                        ),
-                                      );
-                                    }).toList();
-                                  },
-                                  items: _dani
-                                      .map(
-                                        (dan) => DropdownMenuItem(
-                                          value: dan,
-                                          child: Center(
-                                            child: Text(
-                                              dan,
-                                              style: TextStyle(
-                                                color: Theme.of(context).colorScheme.onPrimary,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 14,
+                                        );
+                                      }).toList();
+                                    },
+                                    items: _dani
+                                        .map(
+                                          (dan) => DropdownMenuItem(
+                                            value: dan,
+                                            child: Center(
+                                              child: Text(
+                                                dan,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onPrimary,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 14,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
                                               ),
-                                              textAlign: TextAlign.center,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
                                             ),
                                           ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (mounted) setState(() => _selectedDay = value!);
-                                    _loadPutnici();
-                                  },
+                                        )
+                                        .toList(),
+                                    onChanged: (value) {
+                                      if (mounted) setState(() => _selectedDay = value!);
+                                      _loadPutnici();
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: tripleBlueFashionGradient, // 🎨 Ceo ekran gradijent
-            ),
-            child: Column(
+            body: Column(
               children: [
                 // Action buttons
                 Padding(
@@ -1710,38 +1717,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ],
-            ),
-          ),
-          bottomNavigationBar: isZimski(DateTime.now())
-              ? BottomNavBarZimski(
-                  sviPolasci: _sviPolasci,
-                  selectedGrad: _selectedGrad,
-                  selectedVreme: _selectedVreme,
-                  getPutnikCount: getPutnikCount,
-                  onPolazakChanged: (grad, vreme) {
-                    // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
-                    if (mounted)
-                      setState(() {
-                        _selectedGrad = grad;
-                        _selectedVreme = vreme;
-                        _selectedGradSubject.add(grad); // Ažuriraj stream
-                      });
-                  },
-                )
-              : BottomNavBarLetnji(
-                  sviPolasci: _sviPolasci,
-                  selectedGrad: _selectedGrad,
-                  selectedVreme: _selectedVreme,
-                  getPutnikCount: getPutnikCount,
-                  onPolazakChanged: (grad, vreme) async {
-                    if (mounted)
-                      setState(() {
-                        _selectedGrad = grad;
-                        _selectedVreme = vreme;
-                        _selectedGradSubject.add(grad);
-                      });
-                  },
-                ),
+            ), // Zatvaranje Column
+            bottomNavigationBar: isZimski(DateTime.now())
+                ? BottomNavBarZimski(
+                    sviPolasci: _sviPolasci,
+                    selectedGrad: _selectedGrad,
+                    selectedVreme: _selectedVreme,
+                    getPutnikCount: getPutnikCount,
+                    onPolazakChanged: (grad, vreme) {
+                      // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
+                      if (mounted)
+                        setState(() {
+                          _selectedGrad = grad;
+                          _selectedVreme = vreme;
+                          _selectedGradSubject.add(grad); // Ažuriraj stream
+                        });
+                    },
+                  )
+                : BottomNavBarLetnji(
+                    sviPolasci: _sviPolasci,
+                    selectedGrad: _selectedGrad,
+                    selectedVreme: _selectedVreme,
+                    getPutnikCount: getPutnikCount,
+                    onPolazakChanged: (grad, vreme) async {
+                      if (mounted)
+                        setState(() {
+                          _selectedGrad = grad;
+                          _selectedVreme = vreme;
+                          _selectedGradSubject.add(grad);
+                        });
+                    },
+                  ),
+          ), // Zatvaranje Container wrapper-a
         );
       }, // Zatvaranje StreamBuilder builder funkcije
     ); // Zatvaranje StreamBuilder widgeta
@@ -1908,13 +1915,18 @@ class _HomeScreenButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(6), // Smanjeno sa 12 na 6
         decoration: BoxDecoration(
-          gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
+          color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+          border: Border.all(
+            color: Theme.of(context).glassBorder,
+            width: 1.5,
+          ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
-              blurRadius: 8,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              blurRadius: 12,
               offset: const Offset(0, 4),
+              spreadRadius: 1,
             ),
           ],
         ),
@@ -1933,6 +1945,17 @@ class _HomeScreenButton extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 12, // Povećano sa 11 na 12
                 fontWeight: FontWeight.w600,
+                shadows: [
+                  Shadow(
+                    blurRadius: 8,
+                    color: Colors.black87,
+                  ),
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 4,
+                    color: Colors.black54,
+                  ),
+                ],
               ),
               textAlign: TextAlign.center,
             ),
