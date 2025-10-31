@@ -162,84 +162,112 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: const GradientBackButton(),
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 80,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: tripleBlueFashionGradient,
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
-            ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x304F7EFC),
-                blurRadius: 16,
-                offset: Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Color(0x204F7EFC),
-                blurRadius: 24,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-        ),
-        title: const Text(
-          'Detaljne statistike',
-          style: TextStyle(color: Colors.white),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.date_range, color: Colors.white),
-            onPressed: _selectDateRange,
-          ),
-        ],
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
       ),
-      body: Column(
-        children: [
-          // Period selector
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _selectedRange != null
-                          ? 'Period: ${_formatDate(_selectedRange!.start)} - ${_formatDate(_selectedRange!.end)}'
-                          : 'Izaberite period',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: _selectDateRange,
-                    child: const Text('Promeni'),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Transparentna pozadina
+        appBar: AppBar(
+          leading: const GradientBackButton(),
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer, // Glassmorphism
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+                width: 1.5,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+          ),
+          title: const Text(
+            'Detaljne statistike',
+            style: TextStyle(
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(
+                Icons.date_range,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 3,
+                    color: Colors.black54,
                   ),
                 ],
               ),
+              onPressed: _selectDateRange,
             ),
-          ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Period selector
+            Card(
+              margin: const EdgeInsets.all(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedRange != null
+                            ? 'Period: ${_formatDate(_selectedRange!.start)} - ${_formatDate(_selectedRange!.end)}'
+                            : 'Izaberite period',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: _selectDateRange,
+                      child: const Text('Promeni'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
-          // V3.0 State-Driven Content with Error Handling
-          Expanded(
-            child: _buildMainContent(),
-          ),
-        ],
-      ),
-    );
+            // V3.0 State-Driven Content with Error Handling
+            Expanded(
+              child: _buildMainContent(),
+            ),
+          ],
+        ),
+      ), // Zatvaranje Scaffold
+    ); // Zatvaranje Container
   }
 
   // V3.0 Main Content Builder with State Management

@@ -133,8 +133,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
           _lastPutniciLoad = DateTime.now();
         });
       _updateMarkers();
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _getCurrentLocation() async {
@@ -161,8 +160,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         LatLng(position.latitude, position.longitude),
         13.0,
       );
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   Future<void> _loadGpsLokacije() async {
@@ -184,9 +182,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       for (final json in response as List<dynamic>) {
         try {
           gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
-        } catch (e) {
-
-        }
+        } catch (e) {}
       }
       if (mounted)
         setState(() {
@@ -354,297 +350,294 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: tripleBlueFashionGradient,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const GradientBackButton(),
-                  Expanded(
-                    child: Text(
-                      '🗺️ Admin GPS Mapa',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                        shadows: [
-                          Shadow(
-                            offset: const Offset(1, 1),
-                            blurRadius: 3,
-                            color: Colors.black.withOpacity(0.3),
-                          ),
-                        ],
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const GradientBackButton(),
+                    const Expanded(
+                      child: Text(
+                        '🗺️ Admin GPS Mapa',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 3,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  // 🚗 Vozači toggle
-                  IconButton(
-                    icon: Icon(
-                      _showDrivers ? Icons.directions_car : Icons.directions_car_outlined,
-                      color: _showDrivers ? Colors.white : Colors.white54,
+                    // 🚗 Vozači toggle
+                    IconButton(
+                      icon: Icon(
+                        _showDrivers ? Icons.directions_car : Icons.directions_car_outlined,
+                        color: _showDrivers ? Colors.white : Colors.white54,
+                      ),
+                      onPressed: () {
+                        if (mounted)
+                          setState(() {
+                            _showDrivers = !_showDrivers;
+                          });
+                        _updateMarkers();
+                      },
+                      tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
                     ),
-                    onPressed: () {
-                      if (mounted)
-                        setState(() {
-                          _showDrivers = !_showDrivers;
-                        });
-                      _updateMarkers();
-                    },
-                    tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
-                  ),
-                  // 👥 Putnici toggle
-                  IconButton(
-                    icon: Icon(
-                      _showPassengers ? Icons.people : Icons.people_outline,
-                      color: _showPassengers ? Colors.white : Colors.white54,
+                    // 👥 Putnici toggle
+                    IconButton(
+                      icon: Icon(
+                        _showPassengers ? Icons.people : Icons.people_outline,
+                        color: _showPassengers ? Colors.white : Colors.white54,
+                      ),
+                      onPressed: () {
+                        if (mounted)
+                          setState(() {
+                            _showPassengers = !_showPassengers;
+                          });
+                        _updateMarkers();
+                      },
+                      tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
                     ),
-                    onPressed: () {
-                      if (mounted)
-                        setState(() {
-                          _showPassengers = !_showPassengers;
-                        });
-                      _updateMarkers();
-                    },
-                    tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
-                  ),
-                  // 🔄 Refresh dugme
-                  TextButton(
-                    onPressed: () {
-                      _loadGpsLokacije();
-                      _loadPutnici();
-                    },
-                    child: const Text(
-                      'Osveži',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    // 🔄 Refresh dugme
+                    TextButton(
+                      onPressed: () {
+                        _loadGpsLokacije();
+                        _loadPutnici();
+                      },
+                      child: const Text(
+                        'Osveži',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  // 🗺️ Zoom out dugme
-                  IconButton(
-                    icon: const Icon(Icons.zoom_out_map, color: Colors.white),
-                    onPressed: _fitAllMarkers,
-                    tooltip: 'Prikaži sve vozače',
-                  ),
-                ],
+                    // 🗺️ Zoom out dugme
+                    IconButton(
+                      icon: const Icon(Icons.zoom_out_map, color: Colors.white),
+                      onPressed: _fitAllMarkers,
+                      tooltip: 'Prikaži sve vozače',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      body: Stack(
-        children: [
-          // 🗺️ OpenStreetMap sa flutter_map
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _currentPosition != null
-                  ? LatLng(
-                      _currentPosition!.latitude,
-                      _currentPosition!.longitude,
-                    )
-                  : _initialCenter,
-              minZoom: 8.0,
-              maxZoom: 18.0,
+        body: Stack(
+          children: [
+            // 🗺️ OpenStreetMap sa flutter_map
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _currentPosition != null
+                    ? LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      )
+                    : _initialCenter,
+                minZoom: 8.0,
+                maxZoom: 18.0,
+              ),
+              children: [
+                // 🌍 OpenStreetMap tile layer - POTPUNO BESPLATNO!
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'rs.gavra.transport',
+                  maxZoom: 19,
+                ),
+                // 📍 Markeri
+                MarkerLayer(markers: _markers),
+              ],
             ),
-            children: [
-              // 🌍 OpenStreetMap tile layer - POTPUNO BESPLATNO!
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'rs.gavra.transport',
-                maxZoom: 19,
-              ),
-              // 📍 Markeri
-              MarkerLayer(markers: _markers),
-            ],
-          ),
-          // 📊 V3.0 Loading State - Elegant design
-          if (_isLoading)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.4),
-                    Colors.black.withOpacity(0.2),
-                  ],
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  margin: const EdgeInsets.symmetric(horizontal: 32),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 25,
-                        offset: const Offset(0, 15),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Theme.of(context).primaryColor,
-                              Theme.of(context).primaryColor.withOpacity(0.8),
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        '🗺️ Učitavam GPS podatke...',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Realtime monitoring aktiviran',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+            // 📊 V3.0 Loading State - Elegant design
+            if (_isLoading)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.4),
+                      Colors.black.withOpacity(0.2),
                     ],
                   ),
                 ),
-              ),
-            ),
-          // 📋 V3.0 Enhanced Legend
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withOpacity(0.95),
-                    Colors.white.withOpacity(0.85),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.2),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.legend_toggle,
-                        size: 16,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Legenda',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Theme.of(context).primaryColor,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (_showDrivers) ...[
-                    _buildLegendItem(const Color(0xFF00E5FF), '🚗 Bojan'),
-                    _buildLegendItem(const Color(0xFFFF1493), '🚗 Svetlana'),
-                    _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
-                    _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
-                  ],
-                  if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    margin: const EdgeInsets.symmetric(horizontal: 32),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 25,
+                          offset: const Offset(0, 15),
+                        ),
+                      ],
                     ),
-                    child: Row(
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.eco,
-                          size: 12,
-                          color: Colors.green[700],
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).primaryColor,
+                                Theme.of(context).primaryColor.withOpacity(0.8),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(height: 20),
                         Text(
-                          'OpenStreetMap',
+                          '🗺️ Učitavam GPS podatke...',
                           style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.w500,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Realtime monitoring aktiviran',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
+              ),
+            // 📋 V3.0 Enhanced Legend
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.95),
+                      Colors.white.withOpacity(0.85),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.grey.withOpacity(0.2),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.legend_toggle,
+                          size: 16,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Legenda',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Theme.of(context).primaryColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_showDrivers) ...[
+                      _buildLegendItem(const Color(0xFF00E5FF), '🚗 Bojan'),
+                      _buildLegendItem(const Color(0xFFFF1493), '🚗 Svetlana'),
+                      _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
+                      _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
+                    ],
+                    if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.eco,
+                            size: 12,
+                            color: Colors.green[700],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'OpenStreetMap',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

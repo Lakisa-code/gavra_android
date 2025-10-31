@@ -235,16 +235,21 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: ValueListenableBuilder<bool>(
-        valueListenable: _hasError,
-        builder: (context, hasError, child) {
-          if (hasError) {
-            return _buildV3ErrorState();
-          }
-          return _buildV3LoadingState();
-        },
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: ValueListenableBuilder<bool>(
+          valueListenable: _hasError,
+          builder: (context, hasError, child) {
+            if (hasError) {
+              return _buildV3ErrorState();
+            }
+            return _buildV3LoadingState();
+          },
+        ),
       ),
     );
   }

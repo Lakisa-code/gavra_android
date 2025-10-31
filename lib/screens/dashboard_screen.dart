@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
@@ -63,30 +65,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadDashboardData,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSummaryCards(),
-                    const SizedBox(height: 24),
-                    _buildChartsSection(),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(),
-                  ],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            'Dashboard',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
                 ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
               ),
             ),
+          ),
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadDashboardData,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSummaryCards(),
+                      const SizedBox(height: 24),
+                      _buildChartsSection(),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(),
+                    ],
+                  ),
+                ),
+              ),
+      ),
     );
   }
 

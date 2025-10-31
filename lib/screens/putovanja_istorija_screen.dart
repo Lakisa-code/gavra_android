@@ -242,356 +242,377 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: tripleBlueFashionGradient,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  const GradientBackButton(),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Istorija Putovanja',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            shadows: [
-                              Shadow(
-                                offset: const Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black.withOpacity(0.3),
-                              ),
-                            ],
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    const GradientBackButton(),
+                    const Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Istorija Putovanja',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(1, 1),
+                                  blurRadius: 3,
+                                  color: Colors.black54,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.calendar_today,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                      onPressed: () => _selectDate(),
+                      tooltip: 'Izaberi datum',
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.filter_list,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                      tooltip: 'Filter tip putnika',
+                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFFBB86FC).withOpacity(0.4)
+                              : const Color(0xFF008B8B).withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                      ),
+                      onSelected: (value) {
+                        if (mounted)
+                          setState(() {
+                            _selectedFilter = value;
+                          });
+                        _filterSubject.add(value);
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'svi',
+                          child: Text(
+                            'Svi putnici',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'mesecni',
+                          child: Text(
+                            'Mesečni putnici',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'dnevni',
+                          child: Text(
+                            'Dnevni putnici',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.onPrimary),
-                    onPressed: () => _selectDate(),
-                    tooltip: 'Izaberi datum',
-                  ),
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.onPrimary),
-                    tooltip: 'Filter tip putnika',
-                    color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111111) : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFFBB86FC).withOpacity(0.4)
-                            : const Color(0xFF008B8B).withOpacity(0.5),
-                        width: 1.5,
+                    // 🔄 MANUAL REFRESH BUTTON
+                    IconButton(
+                      icon: ValueListenableBuilder<bool>(
+                        valueListenable: _isRealtimeHealthy,
+                        builder: (context, isHealthy, child) {
+                          return Icon(
+                            isHealthy ? Icons.refresh : Icons.refresh_rounded,
+                            color: Colors.white,
+                            shadows: const [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    onSelected: (value) {
-                      if (mounted)
-                        setState(() {
-                          _selectedFilter = value;
-                        });
-                      _filterSubject.add(value);
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'svi',
-                        child: Text(
-                          'Svi putnici',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'mesecni',
-                        child: Text(
-                          'Mesečni putnici',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'dnevni',
-                        child: Text(
-                          'Dnevni putnici',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  // 🔄 MANUAL REFRESH BUTTON
-                  IconButton(
-                    icon: ValueListenableBuilder<bool>(
-                      valueListenable: _isRealtimeHealthy,
-                      builder: (context, isHealthy, child) {
-                        return Icon(
-                          isHealthy ? Icons.refresh : Icons.refresh_rounded,
-                          color: isHealthy
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.onPrimary.withOpacity(0.7),
-                        );
+                      onPressed: () {
+                        _initializeRealtimeStream();
                       },
+                      tooltip: 'Osveži podatke',
                     ),
-                    onPressed: () {
-                      _initializeRealtimeStream();
-                    },
-                    tooltip: 'Osveži podatke',
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          // 🔍 ENHANCED SEARCH AND FILTER BAR
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.indigo.shade50,
-              border: Border(
-                bottom: BorderSide(color: Colors.indigo.shade200),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Search field
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Pretraži po imenu, adresi ili telefonu...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              _searchSubject.add('');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-                    ),
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                  ),
+        body: Column(
+          children: [
+            // 🔍 ENHANCED SEARCH AND FILTER BAR
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                border: Border(
+                  bottom: BorderSide(color: Colors.indigo.shade200),
                 ),
-                const SizedBox(height: 12),
+              ),
+              child: Column(
+                children: [
+                  // Search field
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Pretraži po imenu, adresi ili telefonu...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                _searchSubject.add('');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
-                // Advanced filters row
-                Row(
-                  children: [
-                    // Date info
-                    Expanded(
-                      child: Container(
+                  // Advanced filters row
+                  Row(
+                    children: [
+                      // Date info
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: Colors.indigo.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _formatDate(_selectedDate),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.indigo.shade800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Filter dropdown
+                      Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
-                          vertical: 8,
+                          vertical: 4,
                         ),
+                        decoration: Theme.of(context).brightness == Brightness.dark
+                            ? DarkThemeStyles.dropdownDecoration
+                            : TripleBlueFashionStyles.dropdownDecoration,
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedFilter,
+                            dropdownColor: Theme.of(context).colorScheme.surface,
+                            icon: Icon(
+                              Icons.arrow_drop_down,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            onChanged: (value) {
+                              if (mounted)
+                                setState(() {
+                                  _selectedFilter = value!;
+                                });
+                              _filterSubject.add(value!);
+                            },
+                            items: [
+                              DropdownMenuItem(
+                                value: 'svi',
+                                child: Text(
+                                  'Svi',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'mesecni',
+                                child: Text(
+                                  'Mesečni',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'dnevni',
+                                child: Text(
+                                  'Dnevni',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Sort & Export actions
+                      Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 16,
-                              color: Colors.indigo.shade600,
+                            IconButton(
+                              icon: Icon(
+                                Icons.sort,
+                                size: 20,
+                                color: Colors.indigo.shade600,
+                              ),
+                              onPressed: _showSortOptions,
+                              tooltip: 'Sortiraj',
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _formatDate(_selectedDate),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.indigo.shade800,
-                                ),
+                            Container(
+                              width: 1,
+                              height: 24,
+                              color: Colors.indigo.shade200,
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.file_download,
+                                size: 20,
+                                color: Colors.indigo.shade600,
+                              ),
+                              onPressed: _exportData,
+                              tooltip: 'Eksportuj',
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
+                    ],
+                  ),
 
-                    // Filter dropdown
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: Theme.of(context).brightness == Brightness.dark
-                          ? DarkThemeStyles.dropdownDecoration
-                          : TripleBlueFashionStyles.dropdownDecoration,
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedFilter,
-                          dropdownColor: Theme.of(context).colorScheme.surface,
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          onChanged: (value) {
-                            if (mounted)
-                              setState(() {
-                                _selectedFilter = value!;
-                              });
-                            _filterSubject.add(value!);
-                          },
-                          items: [
-                            DropdownMenuItem(
-                              value: 'svi',
-                              child: Text(
-                                'Svi',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'mesecni',
-                              child: Text(
-                                'Mesečni',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 'dnevni',
-                              child: Text(
-                                'Dnevni',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                  // Results counter
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _putovanjaStreamHealthy,
+                        builder: (context, isHealthy, child) {
+                          final filteredCount = _getFilteredPutovanja().length;
+                          final totalCount = _cachedPutovanja.length;
 
-                    // Sort & Export actions
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              Icons.sort,
-                              size: 20,
+                          return Text(
+                            isHealthy ? 'Prikazano: $filteredCount od $totalCount putovanja' : 'Podaci se učitavaju...',
+                            style: TextStyle(
+                              fontSize: 12,
                               color: Colors.indigo.shade600,
+                              fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
                             ),
-                            onPressed: _showSortOptions,
-                            tooltip: 'Sortiraj',
-                            constraints: const BoxConstraints(
-                              minWidth: 40,
-                              minHeight: 40,
-                            ),
-                          ),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: Colors.indigo.shade200,
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.file_download,
-                              size: 20,
-                              color: Colors.indigo.shade600,
-                            ),
-                            onPressed: _exportData,
-                            tooltip: 'Eksportuj',
-                            constraints: const BoxConstraints(
-                              minWidth: 40,
-                              minHeight: 40,
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ],
-                ),
-
-                // Results counter
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    ValueListenableBuilder<bool>(
-                      valueListenable: _putovanjaStreamHealthy,
-                      builder: (context, isHealthy, child) {
-                        final filteredCount = _getFilteredPutovanja().length;
-                        final totalCount = _cachedPutovanja.length;
-
-                        return Text(
-                          isHealthy ? 'Prikazano: $filteredCount od $totalCount putovanja' : 'Podaci se učitavaju...',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.indigo.shade600,
-                            fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // 📋 LISTA PUTOVANJA - V3.0 REALTIME DATA
-          Expanded(
-            child: _buildRealtimeContent(),
-          ),
-        ],
+            // 📋 LISTA PUTOVANJA - V3.0 REALTIME DATA
+            Expanded(
+              child: _buildRealtimeContent(),
+            ),
+          ],
+        ),
       ),
     );
   }

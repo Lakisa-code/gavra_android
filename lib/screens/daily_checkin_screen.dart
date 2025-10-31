@@ -160,32 +160,48 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
     final deepVozacColor = Color.lerp(vozacColor, Colors.black, 0.2)!; // Tamnija verzija
 
-    // 🎨 Background - svetla verzija vozačeve boje
-    final scaffoldBackground = Color.lerp(vozacColor, const Color(0xFFFFFAFA), 0.92)!;
-
     // 🎨 Text boje bazirane na vozačevoj boji
     final primaryTextColor = deepVozacColor; // Tamni tekst na svetloj pozadini
     final secondaryTextColor = Color.lerp(vozacColor, Colors.black, 0.5)!;
 
-    // 🎨 Gradijent sa vozačevom bojom
-    final gradientColors = [
-      scaffoldBackground,
-      lightVozacColor.withOpacity(0.6),
-      softVozacColor.withOpacity(0.3),
-      scaffoldBackground,
-    ];
-    return Scaffold(
-      backgroundColor: scaffoldBackground,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
-            stops: const [0.0, 0.3, 0.7, 1.0],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(
+            'Dnevna Prijava - ${widget.vozac}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+            ),
           ),
         ),
-        child: SafeArea(
+        body: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: SlideTransition(

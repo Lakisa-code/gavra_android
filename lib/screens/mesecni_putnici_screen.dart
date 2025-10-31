@@ -390,399 +390,430 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: tripleBlueFashionGradient,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const GradientBackButton(),
-                  Expanded(
-                    child: Text(
-                      'Mesečni Putnici',
-                      style: TextStyle(
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const GradientBackButton(),
+                    const Expanded(
+                      child: Text(
+                        'Mesečni Putnici',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 3,
+                              color: Colors.black54,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Filter za radnike sa brojem
+                    Stack(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.engineering,
+                            color: _selectedFilter == 'radnik' ? Colors.white : Colors.white70,
+                            shadows: const [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          onPressed: () {
+                            // 🔄 OPTIMIZOVANO: Stream update umesto setState
+                            final newFilter = _selectedFilter == 'radnik' ? 'svi' : 'radnik';
+                            _selectedFilter = newFilter;
+                            _filterSubject.add(newFilter);
+                          },
+                          tooltip: 'Filtriraj radnike',
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFFFF6B6B),
+                                  Color(0xFFFF8E53),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 24,
+                              minHeight: 24,
+                            ),
+                            child: Text(
+                              '$_cachedBrojRadnika',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Filter za učenike sa brojem
+                    Stack(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.school,
+                            color: _selectedFilter == 'ucenik' ? Colors.white : Colors.white70,
+                            shadows: const [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          onPressed: () {
+                            // 🔄 OPTIMIZOVANO: Stream update umesto setState
+                            final newFilter = _selectedFilter == 'ucenik' ? 'svi' : 'ucenik';
+                            _selectedFilter = newFilter;
+                            _filterSubject.add(newFilter);
+                          },
+                          tooltip: 'Filtriraj učenike',
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF4ECDC4),
+                                  Color(0xFF44A08D),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.teal.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 24,
+                              minHeight: 24,
+                            ),
+                            child: Text(
+                              '$_cachedBrojUcenika',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(
+                        Icons.more_vert,
                         color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
                         shadows: [
                           Shadow(
-                            offset: const Offset(1, 1),
+                            offset: Offset(1, 1),
                             blurRadius: 3,
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black54,
                           ),
                         ],
                       ),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'export':
+                            _exportPutnici();
+                            break;
+                          case 'import':
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Import funkcionalnost će biti dodana uskoro',
+                                ),
+                              ),
+                            );
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'export',
+                          child: Row(
+                            children: [
+                              Icon(Icons.download, size: 20),
+                              SizedBox(width: 8),
+                              Text('Export u CSV'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'import',
+                          child: Row(
+                            children: [
+                              Icon(Icons.upload, size: 20),
+                              SizedBox(width: 8),
+                              Text('Import iz CSV'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  // Filter za radnike sa brojem
-                  Stack(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.engineering,
-                          color: _selectedFilter == 'radnik' ? Colors.white : Colors.white70,
-                        ),
-                        onPressed: () {
-                          // 🔄 OPTIMIZOVANO: Stream update umesto setState
-                          final newFilter = _selectedFilter == 'radnik' ? 'svi' : 'radnik';
-                          _selectedFilter = newFilter;
-                          _filterSubject.add(newFilter);
-                        },
-                        tooltip: 'Filtriraj radnike',
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFFFF6B6B),
-                                Color(0xFFFF8E53),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withOpacity(0.4),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                    IconButton(
+                      icon: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54,
                           ),
-                          constraints: const BoxConstraints(
-                            minWidth: 24,
-                            minHeight: 24,
-                          ),
-                          child: Text(
-                            '$_cachedBrojRadnika',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  // Filter za učenike sa brojem
-                  Stack(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.school,
-                          color: _selectedFilter == 'ucenik' ? Colors.white : Colors.white70,
-                        ),
-                        onPressed: () {
-                          // 🔄 OPTIMIZOVANO: Stream update umesto setState
-                          final newFilter = _selectedFilter == 'ucenik' ? 'svi' : 'ucenik';
-                          _selectedFilter = newFilter;
-                          _filterSubject.add(newFilter);
-                        },
-                        tooltip: 'Filtriraj učenike',
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF4ECDC4),
-                                Color(0xFF44A08D),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.teal.withOpacity(0.4),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 24,
-                            minHeight: 24,
-                          ),
-                          child: Text(
-                            '$_cachedBrojUcenika',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'export':
-                          _exportPutnici();
-                          break;
-                        case 'import':
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Import funkcionalnost će biti dodana uskoro',
-                              ),
-                            ),
-                          );
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'export',
-                        child: Row(
-                          children: [
-                            Icon(Icons.download, size: 20),
-                            SizedBox(width: 8),
-                            Text('Export u CSV'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'import',
-                        child: Row(
-                          children: [
-                            Icon(Icons.upload, size: 20),
-                            SizedBox(width: 8),
-                            Text('Import iz CSV'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    onPressed: () => _pokaziDijalogZaDodavanje(),
-                    tooltip: 'Dodaj novog putnika',
-                  ),
-                ],
+                      onPressed: () => _pokaziDijalogZaDodavanje(),
+                      tooltip: 'Dodaj novog putnika',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          // 🔍 SEARCH BAR
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 3),
+        body: Column(
+          children: [
+            // 🔍 SEARCH BAR
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor.withOpacity(0.2),
                   ),
-                ],
-                border: Border.all(
-                  color: Theme.of(context).primaryColor.withOpacity(0.2),
                 ),
-              ),
-              child: TextField(
-                controller: _searchController,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  hintText: 'Pretraži putnike...',
-                  hintStyle: TextStyle(color: Colors.grey[600]),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Theme.of(context).primaryColor,
+                child: TextField(
+                  controller: _searchController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'Pretraži putnike...',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.clear,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                          )
+                        : null,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            color: Colors.grey[600],
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
                 ),
               ),
             ),
-          ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // 📋 LISTA PUTNIKA - 🔄 OPTIMIZOVANO: CombineLatest streams za reaktivno filtriranje
-          Expanded(
-            child: StreamBuilder<List<MesecniPutnik>>(
-              stream: Rx.combineLatest3(
-                _mesecniPutnikService.mesecniPutniciStream,
-                _debouncedSearchStream,
-                _filterSubject.stream,
-                (
-                  List<MesecniPutnik> putnici,
-                  String searchTerm,
-                  String filterType,
-                ) {
-                  // 🚀 DIREKTNO FILTRIRANJE - bez compute() koji blokira scroll
-                  return _filterPutniciDirect(putnici, searchTerm, filterType);
-                },
-              ).distinct().debounceTime(const Duration(milliseconds: 100)),
-              builder: (context, snapshot) {
-                // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return StreamErrorWidget(
-                    streamName: 'MesecniPutniciMain',
-                    errorMessage: snapshot.error.toString(),
-                    onRetry: () {
-                      if (mounted) setState(() {});
-                    },
-                  );
-                }
-
-                final filteredPutnici = snapshot.data ?? [];
-
-                // � UPDATE CACHE VALUES za brojače (zamenjuje dodatne StreamBuilder-e)
-                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _updateCacheValues(snapshot.data!);
-                  });
-                }
-
-                // �💰 UČITAJ STVARNA PLAĆANJA kada se dobiju novi podaci - DEBOUNCED
-                if (filteredPutnici.isNotEmpty) {
-                  final currentIds = filteredPutnici.map((p) => p.id).toSet();
-                  final now = DateTime.now();
-
-                  // 🔄 DEBOUNCE: Pozovi samo ako su se putnici promenili ili je prošlo dovoljno vremena
-                  bool shouldUpdate = false;
-                  if (_lastPaymentUpdate == null ||
-                      !_lastPutnikIds.isEqualTo(currentIds) ||
-                      now.difference(_lastPaymentUpdate!).inSeconds > 10) {
-                    shouldUpdate = true;
-                    _lastPaymentUpdate = now;
-                    _lastPutnikIds = currentIds;
+            // 📋 LISTA PUTNIKA - 🔄 OPTIMIZOVANO: CombineLatest streams za reaktivno filtriranje
+            Expanded(
+              child: StreamBuilder<List<MesecniPutnik>>(
+                stream: Rx.combineLatest3(
+                  _mesecniPutnikService.mesecniPutniciStream,
+                  _debouncedSearchStream,
+                  _filterSubject.stream,
+                  (
+                    List<MesecniPutnik> putnici,
+                    String searchTerm,
+                    String filterType,
+                  ) {
+                    // 🚀 DIREKTNO FILTRIRANJE - bez compute() koji blokira scroll
+                    return _filterPutniciDirect(putnici, searchTerm, filterType);
+                  },
+                ).distinct().debounceTime(const Duration(milliseconds: 100)),
+                builder: (context, snapshot) {
+                  // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
                   }
 
-                  if (shouldUpdate) {
+                  if (snapshot.hasError) {
+                    return StreamErrorWidget(
+                      streamName: 'MesecniPutniciMain',
+                      errorMessage: snapshot.error.toString(),
+                      onRetry: () {
+                        if (mounted) setState(() {});
+                      },
+                    );
+                  }
+
+                  final filteredPutnici = snapshot.data ?? [];
+
+                  // � UPDATE CACHE VALUES za brojače (zamenjuje dodatne StreamBuilder-e)
+                  if (snapshot.hasData && snapshot.data!.isNotEmpty) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _ucitajStvarnaPlacanja(filteredPutnici);
+                      _updateCacheValues(snapshot.data!);
                     });
                   }
-                }
 
-                // Prikaži samo prvih 50 rezultata
-                final prikazaniPutnici = filteredPutnici.length > 50 ? filteredPutnici.sublist(0, 50) : filteredPutnici;
+                  // �💰 UČITAJ STVARNA PLAĆANJA kada se dobiju novi podaci - DEBOUNCED
+                  if (filteredPutnici.isNotEmpty) {
+                    final currentIds = filteredPutnici.map((p) => p.id).toSet();
+                    final now = DateTime.now();
 
-                if (prikazaniPutnici.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _searchController.text.isNotEmpty ? Icons.search_off : Icons.group_off,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchController.text.isNotEmpty ? 'Nema rezultata pretrage' : 'Nema mesečnih putnika',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade600,
+                    // 🔄 DEBOUNCE: Pozovi samo ako su se putnici promenili ili je prošlo dovoljno vremena
+                    bool shouldUpdate = false;
+                    if (_lastPaymentUpdate == null ||
+                        !_lastPutnikIds.isEqualTo(currentIds) ||
+                        now.difference(_lastPaymentUpdate!).inSeconds > 10) {
+                      shouldUpdate = true;
+                      _lastPaymentUpdate = now;
+                      _lastPutnikIds = currentIds;
+                    }
+
+                    if (shouldUpdate) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _ucitajStvarnaPlacanja(filteredPutnici);
+                      });
+                    }
+                  }
+
+                  // Prikaži samo prvih 50 rezultata
+                  final prikazaniPutnici =
+                      filteredPutnici.length > 50 ? filteredPutnici.sublist(0, 50) : filteredPutnici;
+
+                  if (prikazaniPutnici.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _searchController.text.isNotEmpty ? Icons.search_off : Icons.group_off,
+                            size: 64,
+                            color: Colors.grey.shade400,
                           ),
-                        ),
-                        if (_searchController.text.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           Text(
-                            'Pokušajte sa drugim terminom',
-                            style: TextStyle(color: Colors.grey.shade500),
+                            _searchController.text.isNotEmpty ? 'Nema rezultata pretrage' : 'Nema mesečnih putnika',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
+                          if (_searchController.text.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Pokušajte sa drugim terminom',
+                              style: TextStyle(color: Colors.grey.shade500),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: prikazaniPutnici.length,
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                  itemBuilder: (context, index) {
-                    final putnik = prikazaniPutnici[index];
-                    return TweenAnimationBuilder<double>(
-                      duration: Duration(milliseconds: 300 + (index * 50)),
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return Transform.translate(
-                          offset: Offset(0, 30 * (1 - value)),
-                          child: Opacity(
-                            opacity: value,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: _buildPutnikCard(putnik, index + 1),
+                      ),
                     );
-                  },
-                );
-              },
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: prikazaniPutnici.length,
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    itemBuilder: (context, index) {
+                      final putnik = prikazaniPutnici[index];
+                      return TweenAnimationBuilder<double>(
+                        duration: Duration(milliseconds: 300 + (index * 50)),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) {
+                          return Transform.translate(
+                            offset: Offset(0, 30 * (1 - value)),
+                            child: Opacity(
+                              opacity: value,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _buildPutnikCard(putnik, index + 1),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

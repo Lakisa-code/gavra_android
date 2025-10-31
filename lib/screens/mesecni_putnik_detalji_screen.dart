@@ -170,46 +170,62 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
       context,
     ); // 🔄 PERFORMANCE: Required for AutomaticKeepAliveClientMixin
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const GradientBackButton(),
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 80,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: tripleBlueFashionGradient,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-        ),
-        title: Text(
-          'Detalji - ${widget.putnik.putnikIme}',
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _ucitajSveDetalje,
-            icon: const Icon(Icons.refresh, color: Colors.white),
-          ),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
       ),
-      body: _buildBody(),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          leading: const GradientBackButton(),
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+            ),
+          ),
+          title: Text(
+            'Detalji - ${widget.putnik.putnikIme}',
+            style: const TextStyle(
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            IconButton(
+              onPressed: _ucitajSveDetalje,
+              icon: const Icon(
+                Icons.refresh,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 3,
+                    color: Colors.black54,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        body: _buildBody(),
+      ),
     );
   }
 

@@ -60,12 +60,46 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: tripleBlueFashionGradient,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+            ),
+          ),
+          title: const Text(
+            'Registracija',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
+          ),
+          centerTitle: true,
         ),
-        child: SafeArea(
+        body: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: Column(
@@ -456,7 +490,6 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
       if (mounted) Navigator.of(context).pop();
 
       if (result.isSuccess) {
-
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
         final currentUser = FirebaseAuthService.currentUser;
         final needsVerification = currentUser != null && !currentUser.emailVerified;
