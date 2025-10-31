@@ -329,7 +329,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final dayName = dayNames[now.weekday - 1];
         final dayStr = now.day.toString().padLeft(2, '0');
         final monthStr = now.month.toString().padLeft(2, '0');
-        final yearStr = now.year.toString();
+        final yearStr = now.year.toString().substring(2);
 
         final hourStr = now.hour.toString().padLeft(2, '0');
         final minuteStr = now.minute.toString().padLeft(2, '0');
