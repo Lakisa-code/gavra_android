@@ -345,29 +345,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
                 // Success indicator
                 if (widget.controller.text.trim().isNotEmpty && !_isLoading)
                   const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: widget.grad.toLowerCase() == 'bela crkva'
-                        ? Colors.blue.withOpacity(0.1)
-                        : Colors.purple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: widget.grad.toLowerCase() == 'bela crkva'
-                          ? Colors.blue.withOpacity(0.3)
-                          : Colors.purple.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    widget.grad == 'Bela Crkva' ? 'BC' : 'VS',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: widget.grad.toLowerCase() == 'bela crkva' ? Colors.blue[700] : Colors.purple[700],
-                    ),
-                  ),
-                ),
+                const SizedBox(width: 8),
               ],
             ),
             border: OutlineInputBorder(
@@ -385,18 +363,12 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: widget.controller.text.trim().isNotEmpty
-                    ? Colors.green
-                    : (widget.grad.toLowerCase() == 'bela crkva' ? Colors.blue : Colors.purple),
+                color: widget.controller.text.trim().isNotEmpty ? Colors.green : Colors.blue,
                 width: 2,
               ),
             ),
             filled: true,
-            fillColor: widget.controller.text.trim().isNotEmpty
-                ? Colors.green.withOpacity(0.1)
-                : (widget.grad.toLowerCase() == 'bela crkva'
-                    ? Colors.blue.withOpacity(0.1)
-                    : Colors.purple.withOpacity(0.1)),
+            fillColor: Colors.white,
           ),
           textCapitalization: TextCapitalization.words,
           onChanged: (value) {
@@ -416,44 +388,6 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
         ),
         // GPS dugme za trenutnu lokaciju
         // Uklonjen 'Trenutna lokacija' dugme po korisnikovom zahtevu
-        // Info widget
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: widget.grad.toLowerCase() == 'bela crkva'
-                ? Colors.blue.withOpacity(0.1)
-                : Colors.purple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: widget.grad.toLowerCase() == 'bela crkva'
-                  ? Colors.blue.withOpacity(0.3)
-                  : Colors.purple.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                widget.controller.text.trim().isNotEmpty ? Icons.location_on : Icons.info_outline,
-                color: widget.grad.toLowerCase() == 'bela crkva' ? Colors.blue[700] : Colors.purple[700],
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.controller.text.trim().isNotEmpty
-                      ? '📍 Filtriraju se adrese samo za ${widget.grad}'
-                      : '💡 Adresa je opciona - možete ostaviti prazno',
-                  style: TextStyle(
-                    color: widget.grad.toLowerCase() == 'bela crkva' ? Colors.blue[700] : Colors.purple[700],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
