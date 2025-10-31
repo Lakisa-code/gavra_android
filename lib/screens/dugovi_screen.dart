@@ -194,7 +194,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
       setState(() {
         // Trigger rebuild with filtered data
       });
-
   }
 
   void _loadInitialData() {
@@ -274,92 +273,101 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: tripleBlueFashionGradient,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(25),
-              bottomRight: Radius.circular(25),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Transparentna pozadina
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(80),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+                width: 1.5,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  const GradientBackButton(),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Dužnici',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            shadows: [
-                              Shadow(
-                                offset: const Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black.withOpacity(0.3),
-                              ),
-                            ],
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    const GradientBackButton(),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Dužnici',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              shadows: [
+                                Shadow(
+                                  offset: const Offset(1, 1),
+                                  blurRadius: 3,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  // 🔄 MANUAL REFRESH BUTTON
-                  IconButton(
-                    icon: ValueListenableBuilder<bool>(
-                      valueListenable: _isRealtimeHealthy,
-                      builder: (context, isHealthy, child) {
-                        return Icon(
-                          isHealthy ? Icons.refresh : Icons.refresh_rounded,
-                          color: isHealthy ? Colors.white : Colors.white70,
-                        );
+                    // 🔄 MANUAL REFRESH BUTTON
+                    IconButton(
+                      icon: ValueListenableBuilder<bool>(
+                        valueListenable: _isRealtimeHealthy,
+                        builder: (context, isHealthy, child) {
+                          return Icon(
+                            isHealthy ? Icons.refresh : Icons.refresh_rounded,
+                            color: isHealthy ? Colors.white : Colors.white70,
+                          );
+                        },
+                      ),
+                      onPressed: () {
+                        _initializeRealtimeStream();
                       },
+                      tooltip: 'Osveži podatke',
                     ),
-                    onPressed: () {
-                      _initializeRealtimeStream();
-                    },
-                    tooltip: 'Osveži podatke',
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          // 🔍 ENHANCED SEARCH AND FILTER BAR
-          _buildSearchAndFilterBar(),
-          // 📋 LISTA DUGOVA - V3.0 REALTIME DATA
-          Expanded(
-            child: _buildRealtimeContent(),
-          ),
-        ],
-      ),
-    );
+        body: Column(
+          children: [
+            // 🔍 ENHANCED SEARCH AND FILTER BAR
+            _buildSearchAndFilterBar(),
+            // 📋 LISTA DUGOVA - V3.0 REALTIME DATA
+            Expanded(
+              child: _buildRealtimeContent(),
+            ),
+          ],
+        ),
+      ), // Zatvaranje Scaffold
+    ); // Zatvaranje Container
   }
 
   // 🔍 ENHANCED SEARCH AND FILTER BAR

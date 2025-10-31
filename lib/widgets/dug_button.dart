@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart'; // Dodato za glassmorphism
+
 class DugButton extends StatelessWidget {
   // novi parametar za prikaz kao kocka
 
@@ -75,9 +77,19 @@ class DugButton extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 4),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.red[50],
+            color: backgroundColor ?? Theme.of(context).glassContainer, // Glassmorphism
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.red[300]!),
+            border: Border.all(
+              color: Theme.of(context).glassBorder, // Transparentni border
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
