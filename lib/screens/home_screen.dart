@@ -14,6 +14,7 @@ import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
+import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/update_service.dart'; // 🔄 Vraćeno: Update sistem
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
@@ -1760,8 +1761,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               flex: 25,
                               child: InkWell(
                                 onTap: () async {
-                                  // Theme toggle removed in simple version
-                                  // Theme toggle placeholder
+                                  // 🎨 TEMA CYCLING - jednostavno
+                                  await ThemeManager().nextTheme();
+                                  if (mounted) setState(() {});
                                 },
                                 borderRadius: BorderRadius.circular(14),
                                 child: Container(

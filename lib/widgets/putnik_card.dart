@@ -438,7 +438,7 @@ class _PutnikCardState extends State<PutnikCard> {
       ),
       builder: (context) => Container(
         decoration: Theme.of(context).brightness == Brightness.dark
-            ? DarkThemeStyles.popupDecoration.copyWith(
+            ? TripleBlueFashionStyles.popupDecoration.copyWith(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               )
             : TripleBlueFashionStyles.popupDecoration.copyWith(
@@ -918,7 +918,7 @@ class _PutnikCardState extends State<PutnikCard> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: Theme.of(context).brightness == Brightness.dark
-                        ? DarkThemeStyles.dropdownDecoration
+                        ? TripleBlueFashionStyles.dropdownDecoration
                         : TripleBlueFashionStyles.dropdownDecoration,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -2575,7 +2575,7 @@ class _PutnikCardState extends State<PutnikCard> {
           const SizedBox(width: 8),
           Container(
             decoration: Theme.of(context).brightness == Brightness.dark
-                ? DarkThemeStyles.gradientButton
+                ? TripleBlueFashionStyles.gradientButton
                 : TripleBlueFashionStyles.gradientButton,
             child: TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),

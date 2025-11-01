@@ -13,7 +13,7 @@ import 'services/cache_service.dart';
 import 'services/firebase_service.dart';
 import 'services/offline_map_service.dart';
 import 'services/simple_usage_monitor.dart';
-import 'services/theme_service.dart';
+import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/voice_navigation_service.dart';
 import 'supabase_client.dart';
 
@@ -83,7 +83,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _isInitialized = false;
   String? _initError;
-  bool _nocniRezim = false;
 
   @override
   void initState() {
@@ -111,8 +110,8 @@ class _MyAppState extends State<MyApp> {
       // 🚀 OPTIMIZOVANA INICIJALIZACIJA SA CACHE CLEANUP
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
-      // Učitaj temu
-      final nocniRezim = await ThemeService.isNocniRezim();
+      // 🎨 Inicijalizuj ThemeManager
+      await ThemeManager().initialize();
 
       // 🧹 PERIODIČKI CLEANUP - svaki put kada se app pokrene
       CacheService.performAutomaticCleanup();
@@ -124,7 +123,6 @@ class _MyAppState extends State<MyApp> {
 
       if (mounted) {
         setState(() {
-          _nocniRezim = nocniRezim;
           _isInitialized = true;
         });
       }
@@ -143,9 +141,9 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       title: 'Gavra 013',
       debugShowCheckedModeBanner: false,
-      theme: ThemeService.svetlaTema(), // Triple Blue Fashion kao default
-      darkTheme: ThemeService.tamnaTema(),
-      themeMode: _nocniRezim ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeManager().currentThemeData, // Koristi ThemeManager
+      darkTheme: ThemeManager().currentThemeData, // Ista tema
+      themeMode: ThemeMode.light, // Uvek light tema
       navigatorObservers: [
         if (AnalyticsService.observer != null) AnalyticsService.observer!,
       ],

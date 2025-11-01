@@ -478,7 +478,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           vertical: 4,
                         ),
                         decoration: Theme.of(context).brightness == Brightness.dark
-                            ? DarkThemeStyles.dropdownDecoration
+                            ? TripleBlueFashionStyles.dropdownDecoration
                             : TripleBlueFashionStyles.dropdownDecoration,
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
