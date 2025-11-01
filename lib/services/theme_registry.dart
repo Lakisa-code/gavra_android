@@ -16,6 +16,16 @@ class ThemeRegistry {
       gradient: tripleBlueFashionGradient,
       isDefault: true,
     ),
+    'black_sapphire_metallic': ThemeDefinition(
+      id: 'black_sapphire_metallic',
+      name: '🖤 Black Sapphire Metallic',
+      description: 'Dark seksi crni safir sa metalik šimmerima',
+      colorScheme: blackSapphireMetallicColorScheme,
+      themeData: blackSapphireMetallicTheme,
+      styles: BlackSapphireMetallicStyles,
+      gradient: blackSapphireMetallicGradient,
+      tags: ['dark', 'metallic', 'elegant', 'sapphire'],
+    ),
     // 🆕 Ovde ćemo dodavati nove teme...
   };
 
