@@ -1,0 +1,23 @@
+{
+    "name": "gavra-dashboard-mcp",
+    "version": "1.0.0",
+    "description": "MCP Server za brz pristup Google Cloud i Play Console dashboard-ovima",
+    "main": "mcp-dashboard-server.js",
+    "type": "module",
+    "scripts": {
+        "start": "node mcp-dashboard-server.js",
+        "dev": "node --inspect mcp-dashboard-server.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0"
+    },
+    "keywords": [
+        "mcp",
+        "google-cloud",
+        "firebase",
+        "play-console",
+        "dashboard"
+    ],
+    "author": "Bojan",
+    "license": "MIT"
+}
