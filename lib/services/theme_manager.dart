@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'theme_registry.dart';
+
 import 'analytics_service.dart';
+import 'theme_registry.dart';
 
 // 🎯 THEME MANAGER - Upravljanje trenutnom temom
 class ThemeManager extends ChangeNotifier {
@@ -13,9 +14,13 @@ class ThemeManager extends ChangeNotifier {
 
   String _currentThemeId = 'triple_blue_fashion';
   ThemeDefinition? _currentTheme;
+  final ValueNotifier<ThemeData> _themeNotifier = ValueNotifier(ThemeRegistry.defaultTheme.themeData);
 
   /// Trenutna tema ID
   String get currentThemeId => _currentThemeId;
+
+  /// ValueNotifier za reaktivno slušanje tema
+  ValueNotifier<ThemeData> get themeNotifier => _themeNotifier;
 
   /// Trenutna tema definicija
   ThemeDefinition get currentTheme {
@@ -44,6 +49,7 @@ class ThemeManager extends ChangeNotifier {
       _currentTheme = defaultTheme;
     }
 
+    _themeNotifier.value = currentThemeData; // Ažuriraj ValueNotifier
     notifyListeners();
   }
 
@@ -65,6 +71,7 @@ class ThemeManager extends ChangeNotifier {
     await _logThemeChange(oldThemeId, themeId);
 
     // Obavesti listenere
+    _themeNotifier.value = currentThemeData; // Ažuriraj ValueNotifier
     notifyListeners();
 
     debugPrint('🎨 Tema promenjena: $oldThemeId → $themeId');

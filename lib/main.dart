@@ -137,17 +137,22 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Gavra 013',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeManager().currentThemeData, // Koristi ThemeManager
-      darkTheme: ThemeManager().currentThemeData, // Ista tema
-      themeMode: ThemeMode.light, // Uvek light tema
-      navigatorObservers: [
-        if (AnalyticsService.observer != null) AnalyticsService.observer!,
-      ],
-      home: _buildHome(),
+    return ValueListenableBuilder<ThemeData>(
+      valueListenable: ThemeManager().themeNotifier,
+      builder: (context, themeData, child) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: 'Gavra 013',
+          debugShowCheckedModeBanner: false,
+          theme: themeData, // Reaktivno menjanje teme
+          darkTheme: themeData, // Ista tema
+          themeMode: ThemeMode.light, // Uvek light tema
+          navigatorObservers: [
+            if (AnalyticsService.observer != null) AnalyticsService.observer!,
+          ],
+          home: _buildHome(),
+        );
+      },
     );
   }
 
