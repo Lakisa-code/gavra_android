@@ -97,8 +97,7 @@ class DailyCheckInService {
 
     // 🔄 OPTIMIZOVANO: Ažuriraj kusur sa timeout-om
     try {
-      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac)
-          .timeout(const Duration(seconds: 5));
+      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac).timeout(const Duration(seconds: 5));
     } catch (e) {
       // Ignoriši grešku - nastavi sa ostalim čuvanjem
     }
@@ -110,7 +109,7 @@ class DailyCheckInService {
       await prefs.setDouble('${todayKey}_amount', sitanNovac);
       await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
       await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
-      
+
       // Emituj update za stream
       if (!_sitanNovacController.isClosed) {
         _sitanNovacController.add(sitanNovac);
@@ -122,8 +121,7 @@ class DailyCheckInService {
 
     // 🌐 REMOTE ČUVANJE - asinhrono u pozadini sa timeout-om
     try {
-      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari)
-          .timeout(const Duration(seconds: 8));
+      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 8));
     } catch (e) {
       // Ignoriši remote greške - lokalno čuvanje je dovoljno
     }

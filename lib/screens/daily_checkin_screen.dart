@@ -99,8 +99,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
     try {
       // Dodaj timeout da sprečiš hanging
-      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos)
-          .timeout(const Duration(seconds: 10));
+      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos).timeout(const Duration(seconds: 10));
 
       if (mounted) {
         // Reset loading state first
@@ -120,13 +119,16 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.smartSuccess,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(milliseconds: 800),
           ),
         );
 
-        // Čekaj malo pa zatvori
-        await Future<void>.delayed(const Duration(milliseconds: 500));
-        widget.onCompleted();
+        // Pozovi callback posle kratkog delay-a
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            widget.onCompleted();
+          }
+        });
       }
     } on TimeoutException catch (_) {
       if (mounted) {
