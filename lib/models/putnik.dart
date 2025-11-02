@@ -582,8 +582,8 @@ class Putnik {
   } // NOVI: Mapiranje za putovanja_istorija tabelu
 
   Map<String, dynamic> toPutovanjaIstorijaMap() {
-    // Za dnevne putnike koristi današnji datum, ne computovani datum iz dana nedelje
-    final datumZaUpis = mesecnaKarta == true ? _getDateForDay(dan) : DateTime.now().toIso8601String().split('T')[0];
+    // ✅ ISPRAVKA: Uvek koristi _getDateForDay da izračuna pravi datum na osnovu dan vrednosti
+    final datumZaUpis = _getDateForDay(dan);
 
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
@@ -606,9 +606,8 @@ class Putnik {
       'created_at': vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
-  }
+  } // Helper metoda za dobijanje kratice dana u nedelji
 
-  // Helper metoda za dobijanje kratice dana u nedelji
   static String _getDanNedeljeKratica(int weekday) {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     return daniKratice[weekday - 1];
