@@ -282,24 +282,26 @@ class PermissionService {
   static Future<bool> requestAllPermissions() async {
     try {
       // Sequential requests sa delay-om između - sprečava Android freeze
-      
+
       // 1. 📍 LOKACIJA (prvo, najvažnija) - sa timeout-om
-      final locationStatus = await _requestLocationPermission()
-          .timeout(const Duration(seconds: 30), onTimeout: () => false);
-      await Future.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
-      
+      final locationStatus =
+          await _requestLocationPermission().timeout(const Duration(seconds: 30), onTimeout: () => false);
+      await Future<void>.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
+
       // 2. 📞 POZIVI (za kontakt sa putnicima) - sa timeout-om
-      final phoneStatus = await Permission.phone.request()
+      final phoneStatus = await Permission.phone
+          .request()
           .timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
-      await Future.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
+      await Future<void>.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
 
       // 3. 📱 SMS (za slanje poruka) - sa timeout-om
-      final smsStatus = await Permission.sms.request()
-          .timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
-      await Future.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
+      final smsStatus =
+          await Permission.sms.request().timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
+      await Future<void>.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
 
       // 4. 🔔 NOTIFIKACIJE (poslednje, manje kritično) - sa timeout-om
-      await Permission.notification.request()
+      await Permission.notification
+          .request()
           .timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
 
       // Sačuvaj da su dozvole zatražene
