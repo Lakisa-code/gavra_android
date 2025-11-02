@@ -2017,13 +2017,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                 // Lista putnika
                 Expanded(
-                  child: Card(
+                  child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
+                      border: Border.all(
+                        color: Theme.of(context).glassBorder,
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        Theme.of(context).glassShadow,
+                      ],
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: putniciZaPrikaz.isEmpty
                           ? const Center(
-                              child: Text('Nema putnika za ovaj polazak.'),
+                              child: Text(
+                                'Nema putnika za ovaj polazak.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: 8,
+                                      color: Colors.black87,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             )
                           : ListView.builder(
                               itemCount: putniciZaPrikaz.length,

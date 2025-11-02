@@ -25,6 +25,15 @@ class ThemeRegistry {
       styles: TripleBlueFashionStyles, // ISTI STILOVI!
       gradient: darkSteelGreyGradient, // SAMO GRADIJENT DRUGAČIJI!
     ),
+    'passionate_rose': ThemeDefinition(
+      id: 'passionate_rose',
+      name: '❤️ Passionate Rose',
+      description: 'Electric Red + Ruby + Crimson + Pink Ice kombinacija',
+      colorScheme: tripleBlueFashionColorScheme, // ISTA TEMA!
+      themeData: tripleBlueFashionTheme, // ISTA TEMA!
+      styles: TripleBlueFashionStyles, // ISTI STILOVI!
+      gradient: passionateRoseGradient, // SAMO GRADIJENT DRUGAČIJI!
+    ),
     // 🆕 Ovde ćemo dodavati nove teme...
   };
 

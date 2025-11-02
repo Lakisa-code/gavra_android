@@ -237,7 +237,11 @@ class _PolazakRow extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: selected
-                                  ? (currentThemeId == 'dark_steel_grey' ? const Color(0xFF4A4A4A) : Colors.blue)
+                                  ? (currentThemeId == 'dark_steel_grey'
+                                      ? const Color(0xFF4A4A4A) // Crna tema
+                                      : currentThemeId == 'passionate_rose'
+                                          ? const Color(0xFFDC143C) // Pink tema - Crimson
+                                          : Colors.blue) // Plava tema
                                   : Colors.white,
                             ),
                           ),
@@ -257,7 +261,11 @@ class _PolazakRow extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: selected
-                                      ? (currentThemeId == 'dark_steel_grey' ? const Color(0xFF4A4A4A) : Colors.blue)
+                                      ? (currentThemeId == 'dark_steel_grey'
+                                          ? const Color(0xFF4A4A4A) // Crna tema
+                                          : currentThemeId == 'passionate_rose'
+                                              ? const Color(0xFFDC143C) // Pink tema - Crimson
+                                              : Colors.blue) // Plava tema
                                       : Colors.white70,
                                 ),
                               );

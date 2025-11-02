@@ -3,6 +3,7 @@ ZABRANJENO
 - TESTOVI
 - BILDOVI
 - NE MENJAJ KOD BEZ PITANJA
+- dugacki odgovori + kod
 
 
 REDOSLED    PLAVA 🔵              CRNA/SIVA ⚫           PINK/CRVENA ❤️

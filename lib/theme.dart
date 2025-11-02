@@ -101,6 +101,20 @@ const LinearGradient darkSteelGreyGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
+// ❤️ PASSIONATE ROSE GRADIENT - Electric Red + Ruby + Crimson + Pink Ice + Neon Rose!
+const LinearGradient passionateRoseGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    Color(0xFF8B0000), // Electric Red
+    Color(0xFFB22222), // Ruby Metallic
+    Color(0xFFDC143C), // Crimson Metallic
+    Color(0xFFFF69B4), // Pink Ice Glow
+    Color(0xFFFFC0CB), // Neon Rose Shine
+  ],
+  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+);
+
 // 🎨 TEMA EKSTENZIJA - dodaje gradijent pozadinu
 extension ThemeGradients on ThemeData {
   LinearGradient get backgroundGradient => ThemeManager().currentGradient;
