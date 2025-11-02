@@ -144,45 +144,51 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🌙 Create Nightly Release (for main branch)
+      - name: 🚀 Auto-Update Latest Release (for main branch)
         if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: nightly-${{ github.run_number }}
+          tag_name: latest
           files: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
-          name: Gavra Android Nightly Build #${{ github.run_number }}
+          name: Gavra Android - Latest Build
           body: |
-            🌙 **Gavra Android App - Nightly Build #${{ github.run_number }}**
+            🚀 **Gavra Android App - Latest Build (Auto-Updated)**
 
-            ### 📱 Development Build:
-            - ✅ Latest changes from main branch
-            - ✅ **APK** - Direct install testing
-            - ✅ **AAB** - Play Store testing
+            ### 📱 Always Current Version:
+            - ✅ **APK** - Direct install (always latest)
+            - ✅ **AAB** - Play Store upload (always latest)
             - ✅ OpenStreetMap navigation
+            - ✅ Auto-updated from every commit to main
             - ✅ Automatic build from commit ${{ github.sha }}
 
             ### 📱 **QR CODE DOWNLOAD:**
-            **Direct APK Download:** 
+            **Direct APK Download (Always Latest):** 
             ```
-            https://github.com/bojanbc83/gavra_android/releases/download/nightly-${{ github.run_number }}/app-release.apk
+            https://github.com/bojanbc83/gavra_android/releases/latest/download/app-release.apk
             ```
             
             **🔗 Quick Links:**
-            - [📱 Download APK](https://github.com/bojanbc83/gavra_android/releases/download/nightly-${{ github.run_number }}/app-release.apk)
-            - [📦 Download AAB](https://github.com/bojanbc83/gavra_android/releases/download/nightly-${{ github.run_number }}/app-release.aab)
-            - ✅ **AAB** - Play Store testing
-            - ✅ OpenStreetMap navigation
-            - ✅ Automatic build from commit ${{ github.sha }}
+            - [📱 Download APK](https://github.com/bojanbc83/gavra_android/releases/latest/download/app-release.apk)
+            - [📦 Download AAB](https://github.com/bojanbc83/gavra_android/releases/latest/download/app-release.aab)
 
-            ### ⚠️ Note:
-            This is a development build. For stable releases, use tagged versions.
+            ### 🔄 Auto-Update System:
+            - **QR Code** always points to this release
+            - **App update checker** automatically detects new versions
+            - **No manual version management** needed
 
+            ### 📋 Latest Changes:
+            **Last Commit:** ${{ github.event.head_commit.message }}
             **Built on:** ${{ github.event.head_commit.timestamp }}
-            **Commit:** ${{ github.event.head_commit.message }}
+            **Commit SHA:** ${{ github.sha }}
+
+            **Built with Flutter 3.35.2** 📱
           draft: false
-          prerelease: true
+          prerelease: false
+          allowUpdates: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 🏪 PLAY STORE DEPLOY (Opcional - radi samo ako su secrets podešeni)
       - name: 🔍 Check Play Store secrets
