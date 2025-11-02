@@ -1,12 +1,10 @@
 name: 🚀 Unified Build & Release
 
 on:
-  # Automatic builds on every push to main
+  # Automatic builds on every push to main + tagged releases
   push:
     branches:
       - main
-  # Tagged releases for stable versions
-  push:
     tags:
       - "v*"
   # Manual trigger for testing
