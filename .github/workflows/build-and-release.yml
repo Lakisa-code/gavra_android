@@ -1,12 +1,11 @@
 name: 🚀 Unified Build & Release
 
 on:
+  # Only build on tagged releases - no more nightly builds
   push:
-    branches: [main]
     tags:
       - "v*"
-  pull_request:
-    branches: [main]
+  # Manual trigger for testing
   workflow_dispatch:
 
 jobs:
