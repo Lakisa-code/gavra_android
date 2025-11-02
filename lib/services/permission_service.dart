@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // foundation import not needed here
 import '../globals.dart'; // Import za navigatorKey
+import '../services/theme_manager.dart';
+import '../theme.dart';
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
 /// Zahteva sve dozvole pri prvom pokretanju aplikacije
@@ -37,125 +39,237 @@ class PermissionService {
           context: context,
           barrierDismissible: false,
           builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              title: Row(
-                children: [
-                  Icon(Icons.security, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Podešavanje aplikacije',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildPermissionRow(
-                      context,
-                      Icons.location_on,
-                      Colors.green,
-                      '📍 GPS lokacija - za navigaciju do putnika',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPermissionRow(
-                      context,
-                      Icons.phone,
-                      Colors.blue,
-                      '📞 Pozivi - za kontaktiranje putnika',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPermissionRow(
-                      context,
-                      Icons.message,
-                      Colors.orange,
-                      '📱 SMS poruke - za obaveštenja',
-                    ),
-                    const SizedBox(height: 8),
-                    _buildPermissionRow(
-                      context,
-                      Icons.notifications,
-                      Colors.purple,
-                      '🔔 Notifikacije - za nova putovanja',
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                      ),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: ThemeManager().currentGradient,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header sa ikonom
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.security_rounded,
+                          size: 48,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Naslov
+                      const Text(
+                        'Podešavanje aplikacije',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      Text(
+                        'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Permission lista
+                      ..._buildPermissionList(),
+                      
+                      const SizedBox(height: 20),
+                      
+                      Text(
+                        'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Dugmići
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text(
+                                  'PRESKOČI',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.4),
+                                  width: 1,
+                                ),
+                              ),
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                onPressed: () async {
+                                  final success = await requestAllPermissions();
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop(success);
+                                  }
+                                },
+                                icon: const Icon(Icons.check_circle_rounded),
+                                label: const Text(
+                                  'ODOBRI DOZVOLE',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                    'PRESKOČI',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  onPressed: () async {
-                    // Pozovi zahtevanje dozvola kada korisnik klikne dugme
-                    final success = await requestAllPermissions();
-                    if (context.mounted) {
-                      Navigator.of(context).pop(success);
-                    }
-                  },
-                  icon: const Icon(Icons.check),
-                  label: const Text('ODOBRI DOZVOLE'),
-                ),
-              ],
             );
           },
         ) ??
         false;
   }
 
-  /// Helper funkcija za permission row
-  static Widget _buildPermissionRow(
-    BuildContext context,
-    IconData icon,
-    Color iconColor,
-    String text,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, color: iconColor, size: 20),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
+  /// 🎨 LISTA DOZVOLA SA LEPŠIM DIZAJNOM
+  static List<Widget> _buildPermissionList() {
+    final permissions = [
+      {
+        'icon': Icons.location_on_rounded,
+        'color': const Color(0xFF4CAF50),
+        'title': 'GPS lokacija',
+        'subtitle': 'za navigaciju do putnika',
+      },
+      {
+        'icon': Icons.phone_rounded,
+        'color': const Color(0xFF2196F3),
+        'title': 'Pozivi',
+        'subtitle': 'za kontaktiranje putnika',
+      },
+      {
+        'icon': Icons.message_rounded,
+        'color': const Color(0xFFFF9800),
+        'title': 'SMS poruke',
+        'subtitle': 'za obaveštenja',
+      },
+      {
+        'icon': Icons.notifications_rounded,
+        'color': const Color(0xFF9C27B0),
+        'title': 'Notifikacije',
+        'subtitle': 'za nova putovanja',
+      },
+    ];
+
+    return permissions.map((permission) => Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (permission['color'] as Color).withOpacity(0.8),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              permission['icon'] as IconData,
+              color: Colors.white,
+              size: 20,
             ),
           ),
-        ),
-      ],
-    );
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  permission['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  permission['subtitle'] as String,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    )).toList();
   }
 
   /// ✅ ZAHTEVANJE SVIH DOZVOLA ODJEDNOM
@@ -258,28 +372,121 @@ class PermissionService {
         if (context != null && context.mounted) {
           final shouldOpen = await showDialog<bool>(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.gps_off, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Text('GPS je isključen'),
-                ],
-              ),
-              content: const Text(
-                'Za navigaciju treba da uključite GPS u podešavanjima.\n\n'
-                'Tapnite "Uključi GPS" da otvorite podešavanja.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Otkaži'),
+            builder: (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: ThemeManager().currentGradient,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Uključi GPS'),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.gps_off_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'GPS je isključen',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Za navigaciju treba da uključite GPS u podešavanjima.\n\nTapnite "Uključi GPS" da otvorite podešavanja.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text(
+                                  'Otkaži',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.4),
+                                  width: 1,
+                                ),
+                              ),
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shadowColor: Colors.transparent,
+                                ),
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text(
+                                  'Uključi GPS',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
           );
 
