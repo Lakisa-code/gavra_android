@@ -278,20 +278,29 @@ class PermissionService {
         .toList();
   }
 
-  /// ✅ ZAHTEVANJE SVIH DOZVOLA ODJEDNOM
+  /// ✅ ZAHTEVANJE SVIH DOZVOLA SEQUENTIAL (jedna po jedna)
   static Future<bool> requestAllPermissions() async {
     try {
-      // 1. 📍 LOKACIJA (obavezno za navigaciju)
-      final locationStatus = await _requestLocationPermission();
+      // Sequential requests sa delay-om između - sprečava Android freeze
+      
+      // 1. 📍 LOKACIJA (prvo, najvažnija) - sa timeout-om
+      final locationStatus = await _requestLocationPermission()
+          .timeout(const Duration(seconds: 30), onTimeout: () => false);
+      await Future.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
+      
+      // 2. 📞 POZIVI (za kontakt sa putnicima) - sa timeout-om
+      final phoneStatus = await Permission.phone.request()
+          .timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
+      await Future.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
 
-      // 2. 📞 POZIVI (za kontakt sa putnicima)
-      final phoneStatus = await Permission.phone.request();
+      // 3. 📱 SMS (za slanje poruka) - sa timeout-om
+      final smsStatus = await Permission.sms.request()
+          .timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
+      await Future.delayed(const Duration(milliseconds: 500)); // Anti-freeze delay
 
-      // 3. 📱 SMS (za slanje poruka)
-      final smsStatus = await Permission.sms.request();
-
-      // 4. 🔔 NOTIFIKACIJE (za obaveštenja)
-      await Permission.notification.request();
+      // 4. 🔔 NOTIFIKACIJE (poslednje, manje kritično) - sa timeout-om
+      await Permission.notification.request()
+          .timeout(const Duration(seconds: 15), onTimeout: () => PermissionStatus.denied);
 
       // Sačuvaj da su dozvole zatražene
       final prefs = await SharedPreferences.getInstance();
@@ -304,6 +313,9 @@ class PermissionService {
 
       return allCriticalGranted;
     } catch (e) {
+      // Graceful fallback - čak i ako se nešto zakuca, aplikacija nastavlja
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_firstLaunchKey, false);
       return false;
     }
   }
