@@ -95,49 +95,37 @@ class DailyCheckInService {
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
-    // 🔄 NOVI: Ažuriraj kusur u vozaci tabeli preko SimplifiedKusurService
+    // 🔄 OPTIMIZOVANO: Ažuriraj kusur sa timeout-om
     try {
-      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac);
+      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac)
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
       // Ignoriši grešku - nastavi sa ostalim čuvanjem
     }
 
+    // 📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
     try {
-      // Sačuvaj u Supabase daily_checkins tabelu (ako postoji)
-      final savedRow = await _saveToSupabase(
-        vozac,
-        sitanNovac,
-        today,
-        dnevniPazari: dnevniPazari,
-      );
-      // Ako smo dobili potvrdu sa servera, emituj vrednost iz servera
-      if (savedRow != null) {
-        final serverVal = savedRow['kusur_iznos'];
-        double emitVal = 0.0;
-        if (serverVal is num) emitVal = serverVal.toDouble();
-        if (serverVal is String) emitVal = double.tryParse(serverVal) ?? 0.0;
-        if (!_sitanNovacController.isClosed) {
-          _sitanNovacController.add(emitVal);
-        }
-      }
-    } catch (e) {
-      // Ako je RLS blokirao ili tabela ne postoji, nastavi sa lokalnim čuvanjem
-      // Ne prosleđuj grešku dalje - lokalno čuvanje je dovoljno
-    }
-    try {
-      // Sačuvaj lokalno u SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(todayKey, true);
       await prefs.setDouble('${todayKey}_amount', sitanNovac);
       await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
       await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
-      // 🔄 Ako remote nije potvrdio ranije, emitujemo lokalnu vrednost
+      
+      // Emituj update za stream
       if (!_sitanNovacController.isClosed) {
         _sitanNovacController.add(sitanNovac);
       }
     } catch (e) {
-      // Ovo je ozbiljna greška - lokalno čuvanje mora da radi
-      rethrow; // Proslijedi grešku jer je kritična
+      // Ovo je kritična greška - lokalno čuvanje mora da radi
+      rethrow;
+    }
+
+    // 🌐 REMOTE ČUVANJE - asinhrono u pozadini sa timeout-om
+    try {
+      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari)
+          .timeout(const Duration(seconds: 8));
+    } catch (e) {
+      // Ignoriši remote greške - lokalno čuvanje je dovoljno
     }
   }
 

@@ -98,7 +98,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos);
+      // Dodaj timeout da sprečiš hanging
+      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos)
+          .timeout(const Duration(seconds: 10));
 
       if (mounted) {
         // Reset loading state first
@@ -126,10 +128,15 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         await Future<void>.delayed(const Duration(milliseconds: 500));
         widget.onCompleted();
       }
+    } on TimeoutException catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showError('Čuvanje je previše dugo trajalo. Pokušajte ponovo.');
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('Greška: $e');
+        _showError('Greška pri čuvanju: $e');
       }
     }
   }
