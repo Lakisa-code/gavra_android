@@ -35,9 +35,7 @@ class FilterBar extends StatelessWidget {
           // Dan
           Expanded(
             child: Container(
-              decoration: Theme.of(context).brightness == Brightness.dark
-                  ? TripleBlueFashionStyles.dropdownDecoration
-                  : TripleBlueFashionStyles.dropdownDecoration,
+              decoration: TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
                 value: selectedDay,
                 dropdownColor: Theme.of(context).colorScheme.surface,
@@ -73,9 +71,7 @@ class FilterBar extends StatelessWidget {
           // Grad
           Expanded(
             child: Container(
-              decoration: Theme.of(context).brightness == Brightness.dark
-                  ? TripleBlueFashionStyles.dropdownDecoration
-                  : TripleBlueFashionStyles.dropdownDecoration,
+              decoration: TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
                 value: selectedGrad,
                 dropdownColor: Theme.of(context).colorScheme.surface,
@@ -111,9 +107,7 @@ class FilterBar extends StatelessWidget {
           // Vreme
           Expanded(
             child: Container(
-              decoration: Theme.of(context).brightness == Brightness.dark
-                  ? TripleBlueFashionStyles.dropdownDecoration
-                  : TripleBlueFashionStyles.dropdownDecoration,
+              decoration: TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
                 value: selectedVreme,
                 dropdownColor: Theme.of(context).colorScheme.surface,

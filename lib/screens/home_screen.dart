@@ -398,11 +398,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Greška'),
-        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+            width: 1.5,
+          ),
+        ),
+        title: Text(
+          'Greška',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.error,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('OK'),
           ),
         ],
@@ -693,6 +715,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     const SizedBox(height: 8),
                                     DropdownButtonFormField<String>(
                                       isExpanded: true,
+                                      dropdownColor: Theme.of(context).colorScheme.surface,
                                       value: imeController.text.trim().isEmpty
                                           ? null
                                           : (dozvoljenaImena.contains(imeController.text.trim())
@@ -1289,7 +1312,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           preferredSize: const Size.fromHeight(80),
           child: Container(
             decoration: BoxDecoration(
-              gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
+              gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
@@ -1393,8 +1416,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: tripleBlueFashionGradient, // 🎨 Ceo ekran gradijent
+          decoration: BoxDecoration(
+            gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
           ),
           child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
         ),
@@ -1445,9 +1468,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(95),
               child: Container(
-                decoration: const BoxDecoration(
-                  gradient: tripleBlueFashionGradient, // 🎨 Koristi prelepi predefinisani gradijent
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
                   ),
@@ -1638,8 +1661,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // (totalFilteredCount removed)
 
         return Container(
-          decoration: const BoxDecoration(
-            gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+          decoration: BoxDecoration(
+            gradient: ThemeManager().currentGradient, // Dinamički gradijent iz tema
           ),
           child: Scaffold(
             backgroundColor: Colors.transparent, // Transparentna pozadina

@@ -16,15 +16,14 @@ class ThemeRegistry {
       gradient: tripleBlueFashionGradient,
       isDefault: true,
     ),
-    'black_sapphire_metallic': ThemeDefinition(
-      id: 'black_sapphire_metallic',
-      name: '🖤 Black Sapphire Metallic',
-      description: 'Dark seksi crni safir sa metalik šimmerima',
-      colorScheme: blackSapphireMetallicColorScheme,
-      themeData: blackSapphireMetallicTheme,
-      styles: BlackSapphireMetallicStyles,
-      gradient: blackSapphireMetallicGradient,
-      tags: ['dark', 'metallic', 'elegant', 'sapphire'],
+    'dark_steel_grey': ThemeDefinition(
+      id: 'dark_steel_grey',
+      name: '🖤 Dark Steel Grey',
+      description: 'Triple Blue Fashion sa crno-sivim gradijentom',
+      colorScheme: tripleBlueFashionColorScheme, // ISTA TEMA!
+      themeData: tripleBlueFashionTheme, // ISTA TEMA!
+      styles: TripleBlueFashionStyles, // ISTI STILOVI!
+      gradient: darkSteelGreyGradient, // SAMO GRADIJENT DRUGAČIJI!
     ),
     // 🆕 Ovde ćemo dodavati nove teme...
   };

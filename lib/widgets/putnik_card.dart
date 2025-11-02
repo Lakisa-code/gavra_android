@@ -437,13 +437,9 @@ class _PutnikCardState extends State<PutnikCard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => Container(
-        decoration: Theme.of(context).brightness == Brightness.dark
-            ? TripleBlueFashionStyles.popupDecoration.copyWith(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              )
-            : TripleBlueFashionStyles.popupDecoration.copyWith(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              ),
+        decoration: TripleBlueFashionStyles.popupDecoration.copyWith(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -917,9 +913,7 @@ class _PutnikCardState extends State<PutnikCard> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: Theme.of(context).brightness == Brightness.dark
-                        ? TripleBlueFashionStyles.dropdownDecoration
-                        : TripleBlueFashionStyles.dropdownDecoration,
+                    decoration: TripleBlueFashionStyles.dropdownDecoration,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: selectedMonth,
@@ -2574,9 +2568,7 @@ class _PutnikCardState extends State<PutnikCard> {
           ),
           const SizedBox(width: 8),
           Container(
-            decoration: Theme.of(context).brightness == Brightness.dark
-                ? TripleBlueFashionStyles.gradientButton
-                : TripleBlueFashionStyles.gradientButton,
+            decoration: TripleBlueFashionStyles.gradientButton,
             child: TextButton(
               onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text(

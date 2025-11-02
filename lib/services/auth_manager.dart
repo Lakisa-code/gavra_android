@@ -130,7 +130,7 @@ class AuthManager {
       try {
         await FirebaseService.clearCurrentDriver();
       } catch (e) {
-        print('Firebase clear greška: $e');
+        // Firebase clear greška
       }
 
       // 4. Analytics
@@ -138,7 +138,7 @@ class AuthManager {
         try {
           await AnalyticsService.logVozacOdjavljen(currentDriver);
         } catch (e) {
-          print('Analytics greška: $e');
+          // Analytics greška
         }
       }
 
@@ -152,7 +152,7 @@ class AuthManager {
         );
       }
     } catch (e) {
-      print('Logout greška: $e');
+      // Logout greška
       // Zatvori loading čak i ako ima greška
       if (context.mounted) {
         Navigator.of(context).pop();

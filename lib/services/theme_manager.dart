@@ -34,6 +34,9 @@ class ThemeManager extends ChangeNotifier {
   /// Trenutni gradient
   LinearGradient get currentGradient => currentTheme.gradient;
 
+  /// Trenutni gradijent za pozadinu (shortcut)
+  LinearGradient get backgroundGradient => currentGradient;
+
   /// Initialize - učitaj poslednju selekciju
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,8 +76,6 @@ class ThemeManager extends ChangeNotifier {
     // Obavesti listenere
     _themeNotifier.value = currentThemeData; // Ažuriraj ValueNotifier
     notifyListeners();
-
-    debugPrint('🎨 Tema promenjena: $oldThemeId → $themeId');
   }
 
   /// Promeni temu po display imenu
@@ -118,7 +119,7 @@ class ThemeManager extends ChangeNotifier {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
-      debugPrint('❌ Greška pri logovanju promene teme: $e');
+      // Greška pri logovanju promene teme
     }
   }
 }

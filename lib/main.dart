@@ -144,9 +144,8 @@ class _MyAppState extends State<MyApp> {
           navigatorKey: navigatorKey,
           title: 'Gavra 013',
           debugShowCheckedModeBanner: false,
-          theme: themeData, // Reaktivno menjanje teme
-          darkTheme: themeData, // Ista tema
-          themeMode: ThemeMode.light, // Uvek light tema
+          theme: themeData, // Light tema
+          // Samo jedna tema - nema dark mode
           navigatorObservers: [
             if (AnalyticsService.observer != null) AnalyticsService.observer!,
           ],

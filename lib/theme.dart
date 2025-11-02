@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'services/theme_manager.dart';
+
 // 🎨 SAMO TRIPLE BLUE FASHION TEMA!
 
 // ⚡🔷💠 TRIPLE BLUE FASHION - Electric + Ice + Neon kombinacija!
@@ -39,44 +41,6 @@ const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   onError: Colors.white,
   errorContainer: Color(0xFFFEF2F2),
   onErrorContainer: Color(0xFF991B1B),
-);
-
-// 🖤💎 BLACK SAPPHIRE METALLIC - DARK SEKSI TEMA!
-const ColorScheme blackSapphireMetallicColorScheme = ColorScheme(
-  brightness: Brightness.dark,
-  // Deep Black Steel kao glavni
-  primary: Color(0xFF0A0A0A), // Deep Black Steel - najcrnja
-  onPrimary: Color(0xFFE8E8E8), // svetlo siva za kontrast
-  primaryContainer: Color(0xFF1A1A2E), // Midnight Sapphire
-  onPrimaryContainer: Color(0xFFD1D5DB),
-
-  // Dark Sapphire kao secondary
-  secondary: Color(0xFF16213E), // Dark Sapphire Core
-  onSecondary: Color(0xFFE8E8E8),
-  secondaryContainer: Color(0xFF3D52A0), // Electric Sapphire
-  onSecondaryContainer: Color(0xFFE8E8E8),
-
-  // Purple Metallic kao tertiary
-  tertiary: Color(0xFF7209B7), // Purple Metallic Glow
-  onTertiary: Color(0xFFE8E8E8),
-  tertiaryContainer: Color(0xFF9333EA), // Svetliji purple
-  onTertiaryContainer: Color(0xFFE8E8E8),
-
-  // Dark surface colors
-  surface: Color(0xFF0F0F0F), // Tamna pozadina
-  onSurface: Color(0xFFE8E8E8),
-  surfaceVariant: Color(0xFF1A1A1A),
-  onSurfaceVariant: Color(0xFFB8BCC8),
-  surfaceContainerHighest: Color(0xFF2A2A2A),
-
-  outline: Color(0xFF6B7280),
-  outlineVariant: Color(0xFF374151),
-
-  // Error colors za dark
-  error: Color(0xFFEF4444),
-  onError: Color(0xFFE8E8E8),
-  errorContainer: Color(0xFF7F1D1D),
-  onErrorContainer: Color(0xFFF87171),
 );
 
 // 🎨 CUSTOM COLOR EXTENSIONS za dodatne boje
@@ -123,23 +87,23 @@ const LinearGradient tripleBlueFashionGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
-// 🖤💎 BLACK SAPPHIRE METALLIC GRADIENT - SEKSI DARK!
-const LinearGradient blackSapphireMetallicGradient = LinearGradient(
+// 🖤 Dark Steel Grey Gradient - SAMO GRADIJENT!
+const LinearGradient darkSteelGreyGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF0A0A0A), // ⚫ Deep Black Steel (0% - GORE) - najcrnja
-    Color(0xFF1A1A2E), // 🌑 Midnight Sapphire (25%) - tamno safir
-    Color(0xFF16213E), // 💎 Dark Sapphire Core (50% - CENTAR) - metalik safir
-    Color(0xFF3D52A0), // ✨ Electric Sapphire (75%) - svetliji safir
-    Color(0xFF7209B7), // 🔮 Purple Metallic Glow (100% - DOLE) - seksi purple shine
+    Color(0xFF000000), // Čisto crna
+    Color(0xFF2C2C2C), // Tamno siva
+    Color(0xFF404040), // Srednja siva
+    Color(0xFF6A6A6A), // Svetlija siva
+    Color(0xFF8A8A8A), // Najsvetlija siva
   ],
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
 // 🎨 TEMA EKSTENZIJA - dodaje gradijent pozadinu
 extension ThemeGradients on ThemeData {
-  LinearGradient get backgroundGradient => tripleBlueFashionGradient;
+  LinearGradient get backgroundGradient => ThemeManager().currentGradient;
 
   // Glassmorphism kontejner boje
   Color get glassContainer => Colors.white.withOpacity(0.06);
@@ -166,26 +130,6 @@ final ThemeData tripleBlueFashionTheme = ThemeData(
       fontSize: 20,
       fontWeight: FontWeight.w600,
       color: Colors.white,
-      letterSpacing: 0.5,
-    ),
-  ),
-);
-
-// 🖤💎 Black Sapphire Metallic Theme - DARK SEKSI!
-final ThemeData blackSapphireMetallicTheme = ThemeData(
-  colorScheme: blackSapphireMetallicColorScheme,
-  useMaterial3: true,
-  fontFamily: 'Inter',
-  scaffoldBackgroundColor: const Color(0xFF0F0F0F), // Tamno crna pozadina
-  appBarTheme: const AppBarTheme(
-    elevation: 0,
-    backgroundColor: Color(0xFF0A0A0A), // Deep Black Steel
-    foregroundColor: Color(0xFFE8E8E8), // Svetlo siva
-    systemOverlayStyle: SystemUiOverlayStyle.light,
-    titleTextStyle: TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      color: Color(0xFFE8E8E8),
       letterSpacing: 0.5,
     ),
   ),
@@ -246,12 +190,12 @@ class TripleBlueFashionStyles {
     color: const Color(0xFFF0F9FF), // Svetla pozadina
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: const Color(0xFF42A5F5).withOpacity(0.4), // Svetliji border
+      color: const Color(0xFF1FA2FF).withOpacity(0.4), // Plavi border
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF1976D2).withOpacity(0.2), // Svetlija senka
+        color: const Color(0xFF021B79).withOpacity(0.2), // Plava senka
         blurRadius: 16,
         offset: const Offset(0, 8),
       ),
@@ -262,105 +206,14 @@ class TripleBlueFashionStyles {
     color: Colors.white,
     borderRadius: BorderRadius.circular(24),
     border: Border.all(
-      color: const Color(0xFF42A5F5).withOpacity(0.5), // Svetliji border
+      color: const Color(0xFF1FA2FF).withOpacity(0.5), // Plavi border
       width: 2,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF1976D2).withOpacity(0.3), // Svetlija senka
+        color: const Color(0xFF021B79).withOpacity(0.3), // Plava senka
         blurRadius: 36,
         offset: const Offset(0, 16),
-        spreadRadius: 6,
-      ),
-    ],
-  );
-}
-
-// 🖤💎 Black Sapphire Metallic Styles - DARK SEKSI STILOVI!
-class BlackSapphireMetallicStyles {
-  static BoxDecoration cardDecoration = BoxDecoration(
-    color: const Color(0xFF1A1A1A), // Tamna karta
-    borderRadius: BorderRadius.circular(20),
-    border: Border.all(
-      width: 2,
-      color: const Color(0xFF7209B7).withOpacity(0.6), // Purple glow border
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: const Color(0xFF0A0A0A).withOpacity(0.8), // Deep black shadow
-        blurRadius: 32,
-        offset: const Offset(0, 12),
-        spreadRadius: 4,
-      ),
-      BoxShadow(
-        color: const Color(0xFF7209B7).withOpacity(0.3), // Purple glow
-        blurRadius: 24,
-        offset: const Offset(0, 8),
-      ),
-      BoxShadow(
-        color: const Color(0xFF3D52A0).withOpacity(0.4), // Sapphire glow
-        blurRadius: 36,
-        offset: const Offset(0, 16),
-        spreadRadius: 6,
-      ),
-    ],
-  );
-
-  static BoxDecoration gradientBackground = const BoxDecoration(
-    gradient: blackSapphireMetallicGradient,
-  );
-
-  static BoxDecoration gradientButton = BoxDecoration(
-    gradient: blackSapphireMetallicGradient,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(
-      width: 1.5,
-      color: const Color(0xFF7209B7).withOpacity(0.8), // Purple metallic border
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: const Color(0xFF0A0A0A).withOpacity(0.6),
-        blurRadius: 24,
-        offset: const Offset(0, 12),
-        spreadRadius: 2,
-      ),
-    ],
-  );
-
-  static BoxDecoration dropdownDecoration = BoxDecoration(
-    color: const Color(0xFF1A1A1A), // Tamna pozadina
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(
-      color: const Color(0xFF3D52A0).withOpacity(0.6), // Electric sapphire border
-      width: 1.5,
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: const Color(0xFF16213E).withOpacity(0.4), // Dark sapphire shadow
-        blurRadius: 16,
-        offset: const Offset(0, 8),
-      ),
-    ],
-  );
-
-  static BoxDecoration popupDecoration = BoxDecoration(
-    color: const Color(0xFF0F0F0F), // Najcrnja pozadina
-    borderRadius: BorderRadius.circular(24),
-    border: Border.all(
-      color: const Color(0xFF7209B7).withOpacity(0.7), // Purple metallic border
-      width: 2,
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: const Color(0xFF0A0A0A).withOpacity(0.8), // Deep black shadow
-        blurRadius: 36,
-        offset: const Offset(0, 16),
-        spreadRadius: 6,
-      ),
-      BoxShadow(
-        color: const Color(0xFF7209B7).withOpacity(0.3), // Purple glow
-        blurRadius: 48,
-        offset: const Offset(0, 20),
         spreadRadius: 8,
       ),
     ],

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../services/geocoding_stats_service.dart';
-import '../theme.dart';
+import '../services/theme_manager.dart';
 
 class GeocodingAdminScreen extends StatefulWidget {
   const GeocodingAdminScreen({Key? key}) : super(key: key);
@@ -153,7 +153,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       setState(() {
         // Trigger rebuild with filtered data
       });
-
   }
 
   void _loadInitialData() {
@@ -332,8 +331,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: tripleBlueFashionGradient,
+        decoration: BoxDecoration(
+          gradient: ThemeManager().currentGradient,
         ),
         child: SafeArea(
           child: Column(

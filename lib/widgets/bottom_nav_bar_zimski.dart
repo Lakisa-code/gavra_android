@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/theme_manager.dart';
 import '../theme.dart';
 import '../utils/slot_utils.dart';
 
@@ -110,6 +111,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   Widget build(BuildContext context) {
     const List<String> bcVremena = SlotUtils.bcVremena;
     const List<String> vsVremena = SlotUtils.vsVremena;
+    final currentThemeId = ThemeManager().currentThemeId;
 
     return Container(
       decoration: BoxDecoration(
@@ -146,6 +148,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
                 getPutnikCount: widget.getPutnikCount,
                 isSlotLoading: widget.isSlotLoading,
                 scrollController: _bcScrollController,
+                currentThemeId: currentThemeId,
               ),
               _PolazakRow(
                 label: 'VS',
@@ -157,6 +160,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
                 getPutnikCount: widget.getPutnikCount,
                 isSlotLoading: widget.isSlotLoading,
                 scrollController: _vsScrollController,
+                currentThemeId: currentThemeId,
               ),
             ],
           ),
@@ -175,6 +179,7 @@ class _PolazakRow extends StatelessWidget {
     required this.grad,
     required this.onPolazakChanged,
     required this.getPutnikCount,
+    required this.currentThemeId,
     this.isSlotLoading,
     this.scrollController,
     Key? key,
@@ -188,11 +193,10 @@ class _PolazakRow extends StatelessWidget {
   final int Function(String grad, String vreme) getPutnikCount;
   final bool Function(String grad, String vreme)? isSlotLoading;
   final ScrollController? scrollController;
+  final String currentThemeId;
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -201,9 +205,9 @@ class _PolazakRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black,
+                color: Colors.black,
               ),
             ),
           ),
@@ -223,12 +227,10 @@ class _PolazakRow extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: selected
-                            ? (isDarkMode ? Colors.blueAccent.withOpacity(0.3) : Colors.blueAccent.withOpacity(0.15))
-                            : Colors.transparent,
+                        color: selected ? Colors.blueAccent.withOpacity(0.15) : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: selected ? Colors.blue : (isDarkMode ? Colors.grey[600]! : Colors.grey[300]!),
+                          color: selected ? Colors.blue : Colors.grey[300]!,
                           width: selected ? 2 : 1,
                         ),
                       ),
@@ -238,7 +240,9 @@ class _PolazakRow extends StatelessWidget {
                             vreme,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: selected ? Colors.blue : (isDarkMode ? Colors.white : Colors.black),
+                              color: selected
+                                  ? (currentThemeId == 'dark_steel_grey' ? const Color(0xFF4A4A4A) : Colors.blue)
+                                  : Colors.white,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -256,7 +260,9 @@ class _PolazakRow extends StatelessWidget {
                                 getPutnikCount(grad, vreme).toString(),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: selected ? Colors.blue : (isDarkMode ? Colors.grey[300] : Colors.grey[700]),
+                                  color: selected
+                                      ? (currentThemeId == 'dark_steel_grey' ? const Color(0xFF4A4A4A) : Colors.blue)
+                                      : Colors.white70,
                                 ),
                               );
                             },

@@ -20,6 +20,7 @@ import '../services/realtime_service.dart';
 import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
+import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
@@ -1668,8 +1669,8 @@ class _DanasScreenState extends State<DanasScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient, // Theme-aware gradijent
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent, // Transparentna pozadina

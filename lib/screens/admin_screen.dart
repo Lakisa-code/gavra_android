@@ -10,6 +10,7 @@ import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/simplified_kusur_service.dart'; // DODANO za kusur kocke - database backed
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
+import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
 import '../theme.dart';
@@ -270,8 +271,8 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient, // Theme-aware gradijent
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent, // Transparentna pozadina
