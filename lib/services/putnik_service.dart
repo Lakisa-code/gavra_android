@@ -1,12 +1,10 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/dnevni_putnik.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 import '../utils/mesecni_helpers.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
-import 'dnevni_putnik_service.dart'; // DODANO za normalizovanu arhitekturu
 import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_notification_service.dart';
 import 'realtime_service.dart';
@@ -29,9 +27,6 @@ class UndoAction {
 
 class PutnikService {
   final supabase = Supabase.instance.client;
-
-  // ✅ DODANO: Instance DnevniPutnikService za normalizovanu arhitekturu
-  late final DnevniPutnikService _dnevniPutnikService = DnevniPutnikService();
 
   // Stream caching: map of active filter keys to BehaviorSubject streams
   final Map<String, BehaviorSubject<List<Putnik>>> _streams = {};
@@ -1584,47 +1579,6 @@ class PutnikService {
     } catch (e) {
       return <Map<String, dynamic>>[];
     }
-  }
-
-  // ✅ HELPER METODA: Konvertuje Putnik u DnevniPutnik
-  Future<DnevniPutnik> _createDnevniPutnikFromPutnik(Putnik putnik) async {
-    // PRIVREMENA IMPLEMENTACIJA: Koristi placeholder ID-jeve dok se ne implementira puna normalizovana šema
-    // Ovim se omogućava osnovnu funkcionalnost bez bacanja greške
-
-    try {
-      // Generiši ili nađi adresa_id na osnovu adrese
-      final adresaId = await _getOrCreateAdresaId(putnik.adresa ?? 'Nepoznato');
-
-      // Generiši ili nađi ruta_id na osnovu grada
-      final rutaId = await _getOrCreateRutaId(putnik.grad);
-
-      return DnevniPutnik(
-        ime: putnik.ime,
-        brojTelefona: putnik.brojTelefona,
-        adresaId: adresaId,
-        rutaId: rutaId,
-        datumPutovanja: DateTime.parse(putnik.datum ?? DateTime.now().toIso8601String()),
-        vremePolaska: putnik.polazak,
-        cena: putnik.iznosPlacanja ?? 0.0,
-        dodaoVozacId: putnik.dodaoVozac,
-      );
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  // Privremena funkcija za mapiranje adrese na adresa_id
-  Future<String> _getOrCreateAdresaId(String adresa) async {
-    // PRIVREMENO: Generiši jednostavan hash od adrese kao ID
-    final hash = adresa.toLowerCase().replaceAll(' ', '_').replaceAll(',', '');
-    return 'addr_${hash.hashCode.abs()}';
-  }
-
-  // Privremena funkcija za mapiranje grada na ruta_id
-  Future<String> _getOrCreateRutaId(String grad) async {
-    // PRIVREMENO: Generiši jednostavan hash od grada kao ID
-    final hash = grad.toLowerCase().replaceAll(' ', '_');
-    return 'ruta_${hash.hashCode.abs()}';
   }
 
   // Helper metod za dobijanje naziva dana nedelje
