@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 // foundation import not needed here
 import '../globals.dart'; // Import za navigatorKey
 import '../services/theme_manager.dart';
-import '../theme.dart';
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
 /// Zahteva sve dozvole pri prvom pokretanju aplikacije
