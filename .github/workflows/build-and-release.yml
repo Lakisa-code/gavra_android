@@ -1,7 +1,11 @@
 name: 🚀 Unified Build & Release
 
 on:
-  # Only build on tagged releases - no more nightly builds
+  # Automatic builds on every push to main
+  push:
+    branches:
+      - main
+  # Tagged releases for stable versions
   push:
     tags:
       - "v*"
