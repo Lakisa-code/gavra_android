@@ -1554,7 +1554,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         0xFF7FB3D3,
                       )) // PLAVO za pokupljene neplaćene - ČETVRTI PRIORITET
                 : Colors.white.withOpacity(
-                    0.96,
+                    0.70,
                   )); // ⚪ BELO za nepokupljene - PETI PRIORITET (default)
 
     // Prava po vozaču
