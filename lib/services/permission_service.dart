@@ -282,15 +282,15 @@ class PermissionService {
   static Future<bool> requestAllPermissions() async {
     try {
       // 🚀 BATCH REQUEST - brži flow sa manje delay-ova
-      
+
       // 1. 📍 LOKACIJA (prvo, najvažnija)
-      final locationStatus = await _requestLocationPermission()
-          .timeout(const Duration(seconds: 30), onTimeout: () => false);
-      
+      final locationStatus =
+          await _requestLocationPermission().timeout(const Duration(seconds: 30), onTimeout: () => false);
+
       // 2. � BATCH REQUEST za ostale dozvole (brže od sequential)
       final permissions = [Permission.phone, Permission.sms, Permission.notification];
       final Map<Permission, PermissionStatus> statuses = await permissions.request();
-      
+
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
       final smsStatus = statuses[Permission.sms] ?? PermissionStatus.denied;
 

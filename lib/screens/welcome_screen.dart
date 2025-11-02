@@ -101,10 +101,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       // Postavi driver session
       await AuthManager.setCurrentDriver(driverName);
 
+      // 🔐 ZAHTEVAJ DOZVOLE I ZA REMEMBERED DEVICE (sa timeout)
+      try {
+        // ignore: use_build_context_synchronously
+        await PermissionService.requestAllPermissionsOnFirstLaunch(context)
+            .timeout(const Duration(seconds: 10));
+      } catch (e) {
+        // Ako permission zahtev pukne ili se zamrzne, nastavi dalje
+      }
+
       if (!mounted) return;
 
       // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName)
+          .timeout(const Duration(seconds: 5), onTimeout: () => false);
 
       if (!hasCheckedIn) {
         Navigator.pushReplacement(
@@ -161,12 +171,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN
-      // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (auto-login)
-      // ignore: use_build_context_synchronously
-      await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+      
+      // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (sa timeout za anti-freeze)
+      try {
+        // ignore: use_build_context_synchronously
+        await PermissionService.requestAllPermissionsOnFirstLaunch(context)
+            .timeout(const Duration(seconds: 10));
+      } catch (e) {
+        // Ako permission zahtev pukne ili se zamrzne, nastavi dalje
+        // Korisnik može ručno odobriti dozvole kasnije
+      }
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver)
+          .timeout(const Duration(seconds: 5), onTimeout: () => false);
 
       if (!mounted) return;
 

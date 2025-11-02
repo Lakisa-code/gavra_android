@@ -457,9 +457,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         // 💾 SAČUVAJ PRAVO IME VOZAČA (ne email!)
         await AuthManager.setCurrentDriver(driverName);
 
-        // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU
-        // ignore: use_build_context_synchronously
-        await PermissionService.requestAllPermissionsOnFirstLaunch(context);
+        // 🔐 ZAHTEVAJ DOZVOLE PRI PRVOM POKRETANJU (sa timeout za anti-freeze)
+        try {
+          // ignore: use_build_context_synchronously
+          await PermissionService.requestAllPermissionsOnFirstLaunch(context)
+              .timeout(const Duration(seconds: 10));
+        } catch (e) {
+          // Ako permission zahtev pukne ili se zamrzne, nastavi dalje
+          // Korisnik može ručno odobriti dozvole kasnije
+        }
 
         // 🎨 Theme refresh removed in simple version
 
@@ -467,7 +473,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
-        final needsCheckIn = !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn = !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName)
+            .timeout(const Duration(seconds: 5), onTimeout: () => false);
 
         if (needsCheckIn) {
           // Idi na daily check-in
