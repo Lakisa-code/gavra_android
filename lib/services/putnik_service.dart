@@ -579,32 +579,10 @@ class PutnikService {
         }
 
         // 🎯 NOVA LOGIKA: NE DODAVAJ NOVO PUTOVANJE, već samo označi da se pojavio// ℹ️ Za mesečne putnike, njihovo prisustvo se već evidentira kroz mesecni_putnici tabelu
-        // Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike      } else {// ✅ REFAKTORISANO: Kreiraj DnevniPutnik objekat i dodaj preko DnevniPutnikService
-        try {
-          // Konvertuj Putnik u DnevniPutnik - potrebne su adresa_id i ruta_id
-          final dnevniPutnik = await _createDnevniPutnikFromPutnik(putnik);
-
-          // Validiraj pre dodavanja
-          final isValid = await _dnevniPutnikService.validateNoviPutnik(dnevniPutnik);
-          if (!isValid) {
-            throw Exception('Validacija dnevnog putnika neuspešna');
-          }
-
-          // Dodaj preko normalizovanog servisa
-          await _dnevniPutnikService.createDnevniPutnik(dnevniPutnik);
-        } catch (e) {
-          // FALLBACK: Koristi legacy putovanja_istorija pristup
-          final insertData = putnik.toPutovanjaIstorijaMap();
-          final insertRes = await SupabaseSafe.run(
-            () => supabase.from('putovanja_istorija').insert(insertData),
-            fallback: <dynamic>[],
-          );
-          if (insertRes == null) {
-            // Handle error case
-          } else {
-            // Success case
-          }
-        }
+        // Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike      } else {
+        // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
+        final insertData = putnik.toPutovanjaIstorijaMap();
+        await supabase.from('putovanja_istorija').insert(insertData);
       }
 
       // 🔔 REAL-TIME NOTIFIKACIJA - Novi putnik dodat (samo za današnji dan)

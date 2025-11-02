@@ -144,8 +144,8 @@ class Putnik {
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
       dan: _determineDanFromDatum(
-        map['datum_putovanja'] as String?, // ✅ ISPRAVKA: koristiti datum_putovanja iz baze
-      ), // ✅ Izvlači dan iz datum_putovanja
+        map['datum'] as String? ?? map['datum_putovanja'] as String?, // ✅ Pokušaj obe kolone za compatibility
+      ), // ✅ Izvlači dan iz datum/datum_putovanja kolone
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
       // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
@@ -582,20 +582,27 @@ class Putnik {
   } // NOVI: Mapiranje za putovanja_istorija tabelu
 
   Map<String, dynamic> toPutovanjaIstorijaMap() {
+    // Za dnevne putnike koristi današnji datum, ne computovani datum iz dana nedelje
+    final datumZaUpis = mesecnaKarta == true ? _getDateForDay(dan) : DateTime.now().toIso8601String().split('T')[0];
+
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
       'mesecni_putnik_id': mesecnaKarta == true ? id : null,
       'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
-      'datum_putovanja': _getDateForDay(dan), // ✅ ISPRAVKA: koristiti datum_putovanja
+      'datum': datumZaUpis, // ✅ Za danas_screen.dart compatibility
+      'datum_putovanja': datumZaUpis, // ✅ Za PutovanjaIstorijaService compatibility
       'vreme_polaska': polazak,
       'putnik_ime': ime,
+      'adresa_polaska': adresa ?? grad, // DODANO: adresa polaska
+      'broj_telefona': brojTelefona,
       'cena': iznosPlacanja ?? 0.0,
       'status': status ?? 'nije_se_pojavio',
       'obrisan': obrisan,
-      'vozac_id': naplatioVozac, // ✅ ISPRAVKA: koristiti vozac_id
+      'vozac_id': dodaoVozac, // ✅ ISPRAVKA: koristiti dodaoVozac umesto naplatioVozac
       'napomene': 'Putovanje dodato ${DateTime.now().toIso8601String()}',
       'placeni_mesec': null, // ✅ Za dnevne putnike
       'placena_godina': null, // ✅ Za dnevne putnike
+      'vreme_akcije': vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'created_at': vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
