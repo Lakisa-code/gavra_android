@@ -43,7 +43,7 @@ class PermissionService {
               child: Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: ThemeManager().currentGradient,
+                  gradient: _getSafeGradient(),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
@@ -397,7 +397,7 @@ class PermissionService {
               child: Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: ThemeManager().currentGradient,
+                  gradient: _getSafeGradient(),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -621,6 +621,26 @@ class PermissionService {
       return result.isGranted || result.isLimited;
     } catch (e) {
       return true; // Fallback na tel: URI
+    }
+  }
+
+  /// 🎨 SAFE GRADIENT - Fallback za startup kad ThemeManager nije inicijalizovan
+  static LinearGradient _getSafeGradient() {
+    try {
+      return ThemeManager().currentGradient;
+    } catch (e) {
+      // Fallback na default gradient ako ThemeManager nije spreman
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF1E3A8A), // Plava
+          Color(0xFF3B82F6), // Svetlija plava
+          Color(0xFF60A5FA), // Još svetlija
+          Color(0xFF93C5FD), // Svetla plava
+          Color(0xFFDBEAFE), // Najsvetlija
+        ],
+      );
     }
   }
 }
