@@ -1879,10 +1879,10 @@ class _DanasScreenState extends State<DanasScreen> {
                     final jesteMesecni = putnik.mesecnaKarta == true;
                     final pokupljen = putnik.jePokupljen;
 
-                    // 🔥 NOVA LOGIKA: Samo dužnici koje je ovaj vozač pokupljao
-                    final jeOvajVozac = (putnik.pokupioVozac == _currentDriver);
+                    // ✅ NOVA LOGIKA: Vozači vide SVE dužnike (mogu naplatiti bilo koji dug)
+                    // Uklonjeno filtriranje po vozaču - jeOvajVozac filter
 
-                    return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen && jeOvajVozac;
+                    return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
                   }).toList();
 
                   // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)

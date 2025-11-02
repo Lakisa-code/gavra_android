@@ -779,11 +779,11 @@ class _AdminScreenState extends State<AdminScreen> {
               final jesteMesecni = putnik.mesecnaKarta == true;
               final pokupljen = putnik.jePokupljen;
 
-              // 🔥 NOVA LOGIKA: Admin vidi sve dužnike, vozači samo svoje
-              // 🔐 KORISTI ADMIN SECURITY SERVICE umesto hard-coded privilegija
-              final jeOvajVozac = AdminSecurityService.canViewDriverData(_currentDriver, putnik.pokupioVozac ?? '');
+              // ✅ NOVA LOGIKA: SVI (admin i vozači) vide SVE dužnike
+              // Omogućava vozačima da naplate dugove drugih vozača
+              // Uklonjeno AdminSecurityService.canViewDriverData filtriranje
 
-              return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen && jeOvajVozac;
+              return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
             }).toList();
 
             // Izračunaj pazar po vozačima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA 💰
