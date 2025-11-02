@@ -966,8 +966,6 @@ class PutnikService {
       // Statistike se računaju dinamički kroz StatistikaService
       // bez potrebe za dodatnim ažuriranjem
     }
-
-    // (Uklonjeno slanje notifikacije za pokupljenog putnika)
   }
 
   /// ✅ OZNAČI KAO PLAĆENO

@@ -121,6 +121,16 @@ jobs:
             2. Upload to Google Play Console
             3. Distribute through Play Store
 
+            ### 📱 **QR CODE DOWNLOAD:**
+            **Direct APK Download:** 
+            ```
+            https://github.com/bojanbc83/gavra_android/releases/download/${{ github.ref_name }}/app-release.apk
+            ```
+            
+            **🔗 Quick Links:**
+            - [📱 Download APK](https://github.com/bojanbc83/gavra_android/releases/download/${{ github.ref_name }}/app-release.apk)
+            - [📦 Download AAB](https://github.com/bojanbc83/gavra_android/releases/download/${{ github.ref_name }}/app-release.aab)
+
             ### 🔄 Auto-Update:
             The app will automatically check for updates and offer direct APK download.
 
@@ -148,6 +158,19 @@ jobs:
             ### 📱 Development Build:
             - ✅ Latest changes from main branch
             - ✅ **APK** - Direct install testing
+            - ✅ **AAB** - Play Store testing
+            - ✅ OpenStreetMap navigation
+            - ✅ Automatic build from commit ${{ github.sha }}
+
+            ### 📱 **QR CODE DOWNLOAD:**
+            **Direct APK Download:** 
+            ```
+            https://github.com/bojanbc83/gavra_android/releases/download/nightly-${{ github.run_number }}/app-release.apk
+            ```
+            
+            **🔗 Quick Links:**
+            - [📱 Download APK](https://github.com/bojanbc83/gavra_android/releases/download/nightly-${{ github.run_number }}/app-release.apk)
+            - [📦 Download AAB](https://github.com/bojanbc83/gavra_android/releases/download/nightly-${{ github.run_number }}/app-release.aab)
             - ✅ **AAB** - Play Store testing
             - ✅ OpenStreetMap navigation
             - ✅ Automatic build from commit ${{ github.sha }}
