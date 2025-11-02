@@ -61,7 +61,6 @@ class PermissionService {
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.2),
-                      width: 1,
                     ),
                   ),
                   child: Column(
@@ -81,7 +80,7 @@ class PermissionService {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Naslov
                       const Text(
                         'Podešavanje aplikacije',
@@ -93,7 +92,7 @@ class PermissionService {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      
+
                       Text(
                         'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
                         style: TextStyle(
@@ -103,12 +102,12 @@ class PermissionService {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Permission lista
                       ..._buildPermissionList(),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       Text(
                         'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
                         style: TextStyle(
@@ -118,7 +117,7 @@ class PermissionService {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Dugmići
                       Row(
                         children: [
@@ -129,7 +128,6 @@ class PermissionService {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.3),
-                                  width: 1,
                                 ),
                               ),
                               child: TextButton(
@@ -153,7 +151,6 @@ class PermissionService {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.4),
-                                  width: 1,
                                 ),
                               ),
                               child: ElevatedButton.icon(
@@ -219,57 +216,60 @@ class PermissionService {
       },
     ];
 
-    return permissions.map((permission) => Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
+    return permissions
+        .map(
+          (permission) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: (permission['color'] as Color).withOpacity(0.8),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+              ),
             ),
-            child: Icon(
-              permission['icon'] as IconData,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  permission['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (permission['color'] as Color).withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    permission['icon'] as IconData,
                     color: Colors.white,
+                    size: 20,
                   ),
                 ),
-                Text(
-                  permission['subtitle'] as String,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.8),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        permission['title'] as String,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        permission['subtitle'] as String,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    )).toList();
+        )
+        .toList();
   }
 
   /// ✅ ZAHTEVANJE SVIH DOZVOLA ODJEDNOM
@@ -394,7 +394,6 @@ class PermissionService {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.2),
-                      width: 1,
                     ),
                   ),
                   child: Column(
@@ -440,7 +439,6 @@ class PermissionService {
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.3),
-                                  width: 1,
                                 ),
                               ),
                               child: TextButton(
@@ -463,7 +461,6 @@ class PermissionService {
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: Colors.white.withOpacity(0.4),
-                                  width: 1,
                                 ),
                               ),
                               child: ElevatedButton(
