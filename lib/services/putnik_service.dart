@@ -284,11 +284,15 @@ class PutnikService {
     try {
       final targetDate = targetDay ?? _getTodayName();
       final datum = _parseDateFromDayName(targetDate);
-      final danas = datum
-          .toIso8601String()
-          .split('T')[0]; // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - povlači iz putovanja_istorija
-      final dnevniResponse =
-          await supabase.from('putovanja_istorija').select().eq('datum', danas).eq('tip_putnika', 'dnevni');
+      final danas = datum.toIso8601String().split('T')[0];
+
+      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - povlači iz putovanja_istorija
+      final dnevniResponse = await supabase
+          .from('putovanja_istorija')
+          .select()
+          .eq('datum_putovanja', danas) // ✅ FIXED: datum_putovanja umesto datum
+          .eq('tip_putnika', 'dnevni')
+          .timeout(const Duration(seconds: 5));
 
       final List<Putnik> dnevniPutnici =
           dnevniResponse.map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item)).where((putnik) {
@@ -301,29 +305,37 @@ class PutnikService {
             normalizedStatus != 'obrisan';
       }).toList();
 
-      allPutnici.addAll(
-        dnevniPutnici,
-      ); // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz mesecni_putnici za selektovani dan
-      final danKratica = _getDayAbbreviationFromName(
-        targetDate,
-      ); // Explicitly request polasci_po_danu and common per-day columns
+      allPutnici.addAll(dnevniPutnici);
+
+      // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz mesecni_putnici za selektovani dan
+      final danKratica = _getDayAbbreviationFromName(targetDate);
+
+      // Explicitly request polasci_po_danu and common per-day columns
       const mesecniFields = '*,'
           'polasci_po_danu';
 
       final mesecniResponse = await supabase
           .from('mesecni_putnici')
           .select(mesecniFields)
-          // ✅ DODATO: filtriraj samo aktivne i neobrisane mesečne putnike
           .eq('aktivan', true)
           .eq('obrisan', false)
-          // Use case-insensitive match to handle 'Pon' vs 'pon' variants
-          .ilike('radni_dani', '%$danKratica%')
-          .order('created_at', ascending: false);
+          .like('radni_dani', '%$danKratica%') // ✅ FIXED: like umesto ilike za bolje performance
+          .order('created_at', ascending: false)
+          .timeout(const Duration(seconds: 5));
+
       for (final data in mesecniResponse) {
         // KORISTI fromMesecniPutniciMultipleForDay da kreira putnike samo za selektovani dan
         final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(data, danKratica);
-        allPutnici.addAll(mesecniPutnici);
+
+        // ✅ VALIDACIJA: Prikaži samo putnike sa validnim vremenima polazaka
+        final validPutnici = mesecniPutnici.where((putnik) {
+          final polazak = putnik.polazak.trim();
+          return polazak.isNotEmpty && polazak != '00:00:00' && polazak != '00:00' && polazak != 'null';
+        }).toList();
+
+        allPutnici.addAll(validPutnici);
       }
+
       return allPutnici;
     } catch (e) {
       return [];

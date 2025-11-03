@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -46,20 +45,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Logging using dlog function from logging.dart
-  final PutnikService _putnikService =
-      PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
+  final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final SupabaseClient supabase = Supabase.instance.client;
 
   bool _isLoading = true;
   bool _isAddingPutnik = false; // DODANO za loading state kad se dodaje putnik
-  String _selectedDay =
-      'Ponedeljak'; // Biće postavljeno na današnji dan u initState
+  String _selectedDay = 'Ponedeljak'; // Biće postavljeno na današnji dan u initState
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
 
   // Stream kontroleri za reaktivno ažuriranje
-  final StreamController<String> _selectedGradSubject =
-      StreamController<String>.broadcast();
+  final StreamController<String> _selectedGradSubject = StreamController<String>.broadcast();
 
   String? _currentDriver;
 
@@ -154,9 +150,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     // Inače traži sledeći put kada će biti taj dan
-    int daysToAdd = targetDayIndex > currentDayIndex
-        ? targetDayIndex - currentDayIndex
-        : (7 - currentDayIndex) + targetDayIndex;
+    int daysToAdd =
+        targetDayIndex > currentDayIndex ? targetDayIndex - currentDayIndex : (7 - currentDayIndex) + targetDayIndex;
     final targetDate = now.add(Duration(days: daysToAdd));
     return targetDate.toIso8601String().split('T')[0];
   }
@@ -211,39 +206,59 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     final todayName = _getTodayName();
     // Home screen only supports weekdays, default to Monday for weekends
-    _selectedDay =
-        ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
-    _initializeCurrentDriver();
+    _selectedDay = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
 
-    // 🚨 POPRAVLJENO: Async inicijalizacija bez blokiranje UI
-    _initializeRealtimeService().catchError((e) => <String, dynamic>{});
-    _setupRealtimeMonitoring(); // 🚨 NOVO: Setup realtime monitoring
-    // StreamBuilder će automatski učitati data - ne treba eksplicitno _loadPutnici()
-    _setupRealtimeListener();
-    _startSmartNotifikacije();
+    // 🔧 POPRAVLJENO: Inicijalizacija bez blokiranja UI
+    _initializeAsync();
+  }
 
-    // CACHE UKLONJEN - koristimo direktne Supabase pozive
+  Future<void> _initializeAsync() async {
+    try {
+      await _initializeCurrentDriver();
 
-    // Inicijalizuj lokalne notifikacije za heads-up i zvuk
-    LocalNotificationService.initialize(context);
-    RealtimeNotificationService.listenForForegroundNotifications(context);
+      // 🚨 POPRAVLJENO: Async inicijalizacija bez blokiranje UI
+      _initializeRealtimeService().catchError((e) => <String, dynamic>{});
+      _setupRealtimeMonitoring(); // 🚨 NOVO: Setup realtime monitoring
+      // StreamBuilder će automatski učitati data - ne treba eksplicitno _loadPutnici()
+      _setupRealtimeListener();
+      _startSmartNotifikacije();
 
-    // 🔄 Pokreni automatski update sistem
-    UpdateService.startBackgroundUpdateCheck();
+      // CACHE UKLONJEN - koristimo direktne Supabase pozive
 
-    // Inicijalizuj realtime notifikacije za aktivnog vozača
-    FirebaseService.getCurrentDriver().then((driver) {
-      if (driver != null && driver.isNotEmpty) {
-        // First request notification permissions
-        RealtimeNotificationService.requestNotificationPermissions()
-            .then((hasPermissions) {
-          RealtimeNotificationService.initialize().then((_) {
-            // Subscribe to Firebase topics for this driver
-            RealtimeNotificationService.subscribeToDriverTopics(driver);
+      // Inicijalizuj lokalne notifikacije za heads-up i zvuk
+      LocalNotificationService.initialize(context);
+      RealtimeNotificationService.listenForForegroundNotifications(context);
+
+      // 🔄 Pokreni automatski update sistem
+      UpdateService.startBackgroundUpdateCheck();
+
+      // Inicijalizuj realtime notifikacije za aktivnog vozača
+      FirebaseService.getCurrentDriver().then((driver) {
+        if (driver != null && driver.isNotEmpty) {
+          // First request notification permissions
+          RealtimeNotificationService.requestNotificationPermissions().then((hasPermissions) {
+            RealtimeNotificationService.initialize().then((_) {
+              // Subscribe to Firebase topics for this driver
+              RealtimeNotificationService.subscribeToDriverTopics(driver);
+            });
           });
+        }
+      });
+
+      // 🔧 KONAČNO UKLONI LOADING STATE
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      // Ako se dogodi greška, i dalje ukloni loading
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _initializeCurrentDriver() async {
@@ -298,8 +313,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _realtimeSubscription?.cancel();
 
     // 🔄 STANDARDIZOVANO: koristi putovanja_istorija (glavni naziv tabele)
-    _realtimeSubscription =
-        RealtimeService.instance.subscribe('putovanja_istorija', (data) {
+    _realtimeSubscription = RealtimeService.instance.subscribe('putovanja_istorija', (data) {
       // Stream will update StreamBuilder via service layers
     });
   }
@@ -663,8 +677,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     const SizedBox(height: 8),
                                     DropdownButtonFormField<String>(
                                       isExpanded: true,
-                                      dropdownColor:
-                                          Theme.of(context).colorScheme.surface,
+                                      dropdownColor: Theme.of(context).colorScheme.surface,
                                       value: imeController.text.trim().isEmpty
                                           ? null
                                           : (dozvoljenaImena.contains(
@@ -676,18 +689,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         labelText: 'Mesečni putnik',
                                         hintText: 'Izaberite putnika...',
                                         border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(8),
                                         ),
                                         prefixIcon: Icon(
                                           Icons.person,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                                          color: Theme.of(context).colorScheme.primary,
                                         ),
-                                        fillColor: Theme.of(context)
-                                            .colorScheme
-                                            .surface,
+                                        fillColor: Theme.of(context).colorScheme.surface,
                                         filled: true,
                                       ),
                                       items: dozvoljenaImena
@@ -717,8 +725,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   dozvoljenaImena: dozvoljenaImena,
                                   onChanged: (ime) {
                                     // Automatski označi mesečnu kartu ako je pronađen mesečni putnik
-                                    final isMesecniPutnik =
-                                        dozvoljenaImena.contains(ime.trim());
+                                    final isMesecniPutnik = dozvoljenaImena.contains(ime.trim());
                                     if (isMesecniPutnik != mesecnaKarta) {
                                       setStateDialog(() {
                                         // 🔧 SAMO ažuriraj checkbox ako NIJE manuelno označeno
@@ -825,8 +832,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ],
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       'Mesečna karta',
@@ -844,27 +850,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         });
                                       },
                                       child: AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 200),
+                                        duration: const Duration(milliseconds: 200),
                                         width: 50,
                                         height: 28,
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             colors: mesecnaKarta
                                                 ? [
-                                                    Colors.green
-                                                        .withOpacity(0.8),
+                                                    Colors.green.withOpacity(0.8),
                                                     Colors.green,
                                                   ]
                                                 : [
-                                                    Colors.white
-                                                        .withOpacity(0.3),
-                                                    Colors.white
-                                                        .withOpacity(0.1),
+                                                    Colors.white.withOpacity(0.3),
+                                                    Colors.white.withOpacity(0.1),
                                                   ],
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(14),
+                                          borderRadius: BorderRadius.circular(14),
                                           border: Border.all(
                                             color: mesecnaKarta
                                                 ? Colors.green.withOpacity(0.6)
@@ -872,23 +873,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           ),
                                         ),
                                         child: AnimatedAlign(
-                                          duration:
-                                              const Duration(milliseconds: 200),
-                                          alignment: mesecnaKarta
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft,
+                                          duration: const Duration(milliseconds: 200),
+                                          alignment: mesecnaKarta ? Alignment.centerRight : Alignment.centerLeft,
                                           child: Container(
                                             width: 22,
                                             height: 22,
                                             margin: const EdgeInsets.all(3),
                                             decoration: BoxDecoration(
                                               color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(11),
+                                              borderRadius: BorderRadius.circular(11),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.2),
+                                                  color: Colors.black.withOpacity(0.2),
                                                   blurRadius: 4,
                                                   offset: const Offset(0, 2),
                                                 ),
@@ -915,8 +911,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   child: const Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -1033,11 +1028,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ? null
                                 : () async {
                                     if (imeController.text.trim().isEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content:
-                                              Text('❌ Ime putnika je obavezno'),
+                                          content: Text('❌ Ime putnika je obavezno'),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -1048,8 +1041,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     if (GradAdresaValidator.isCityBlocked(
                                       _selectedGrad,
                                     )) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             '❌ Grad "$_selectedGrad" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
@@ -1063,13 +1055,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     // 🏘️ VALIDACIJA ADRESE
                                     final adresa = adresaController.text.trim();
                                     if (adresa.isNotEmpty &&
-                                        !GradAdresaValidator
-                                            .validateAdresaForCity(
+                                        !GradAdresaValidator.validateAdresaForCity(
                                           adresa,
                                           _selectedGrad,
                                         )) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             '❌ Adresa "$adresa" nije validna za grad "$_selectedGrad". Dozvoljene su samo adrese iz Bele Crkve i Vršca.',
@@ -1085,13 +1075,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         !dozvoljenaImena.contains(
                                           imeController.text.trim(),
                                         )) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Column(
                                             mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               const Text(
                                                 '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
@@ -1113,16 +1101,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   Icon(
                                                     Icons.arrow_forward,
                                                     size: 16,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurface,
+                                                    color: Theme.of(context).colorScheme.onSurface,
                                                   ),
                                                   const SizedBox(width: 4),
                                                   const Text(
                                                     'Meni → Mesečni putnici',
                                                     style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
                                                   ),
                                                 ],
@@ -1136,10 +1121,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       return;
                                     }
 
-                                    if (_selectedVreme.isEmpty ||
-                                        _selectedGrad.isEmpty) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                    if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             '❌ Greška: Nije odabrano vreme polaska',
@@ -1151,13 +1134,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     }
 
                                     try {
-                                      // STRIKTNA VALIDACIJA VOZAČA
-                                      if (!VozacBoja.isValidDriver(
-                                        _currentDriver,
-                                      )) {
+                                      // STRIKTNA VALIDACIJA VOZAČA - PRVO PROVERI DA NIJE NULL
+                                      if (_currentDriver == null || _currentDriver!.isEmpty) {
                                         if (!mounted) return;
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              '❌ GREŠKA: Niste ulogovani! Molimo ponovo pokrenite aplikaciju.',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      if (!VozacBoja.isValidDriver(_currentDriver)) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               'NEPOZNAT VOZAČ! Morate biti ulogovani kao jedan od: ${VozacBoja.validDrivers.join(", ")}',
@@ -1183,18 +1176,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         dan: _getDayAbbreviation(_selectedDay),
                                         mesecnaKarta: mesecnaKarta,
                                         vremeDodavanja: DateTime.now(),
-                                        dodaoVozac: _currentDriver,
+                                        dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                         adresa:
-                                            adresaController.text.trim().isEmpty
-                                                ? null
-                                                : adresaController.text.trim(),
+                                            adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                                       );
                                       await _putnikService.dodajPutnika(putnik);
 
                                       // 🔄 FORSIRAJ REALTIME REFRESH da se stream ažurira
                                       try {
-                                        await RealtimeService.instance
-                                            .refreshNow();
+                                        await RealtimeService.instance.refreshNow();
                                       } catch (e) {
                                         // Ignoriši greške u refresh-u
                                       }
@@ -1209,8 +1199,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // ignore: use_build_context_synchronously
                                         Navigator.pop(context);
                                         // ignore: use_build_context_synchronously
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
                                             content: Text(
                                               '✅ Putnik je uspešno dodat',
@@ -1230,8 +1219,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                       if (mounted) {
                                         // ignore: use_build_context_synchronously
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
+                                        ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(
                                               '❌ Greška pri dodavanju: $e',
@@ -1325,8 +1313,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           preferredSize: const Size.fromHeight(80),
           child: Container(
             decoration: BoxDecoration(
-              gradient: ThemeManager()
-                  .currentGradient, // 🎨 Dinamički gradijent iz tema
+              gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
@@ -1346,8 +1333,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             child: SafeArea(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     // REZERVACIJE - levo
@@ -1385,10 +1371,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surface
-                              .withOpacity(0.25),
+                          color: Theme.of(context).colorScheme.surface.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Row(
@@ -1412,8 +1395,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 12,
-                                  color:
-                                      Theme.of(context).colorScheme.onPrimary,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -1438,8 +1420,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         body: Container(
           decoration: BoxDecoration(
-            gradient: ThemeManager()
-                .currentGradient, // 🎨 Dinamički gradijent iz tema
+            gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
           ),
           child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
         ),
@@ -1449,8 +1430,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 sviPolasci: _sviPolasci,
                 selectedGrad: _selectedGrad,
                 selectedVreme: _selectedVreme,
-                getPutnikCount: (grad, vreme) =>
-                    0, // Loading state - nema putnika
+                getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
                   if (mounted)
                     setState(() {
@@ -1464,8 +1444,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 sviPolasci: _sviPolasci,
                 selectedGrad: _selectedGrad,
                 selectedVreme: _selectedVreme,
-                getPutnikCount: (grad, vreme) =>
-                    0, // Loading state - nema putnika
+                getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
                   if (mounted)
                     setState(() {
@@ -1478,32 +1457,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // 🚨 HITNO: FutureBuilder umesto StreamBuilder
-    return FutureBuilder<List<Putnik>>(
-      future: _putnikService.getAllPutniciFromBothTables(
-        targetDay: _selectedDay,
-      ),
+    // � POPRAVLJENO: StreamBuilder umesto FutureBuilder za reaktivno ažuriranje
+    return StreamBuilder<List<Putnik>>(
+      stream: Stream.fromFuture(
+        _putnikService.getAllPutniciFromBothTables(
+          targetDay: _selectedDay,
+        ),
+      ).asBroadcastStream(),
       builder: (context, snapshot) {
         // 🚨 DEBUG: Log state information
-        if (kDebugMode) {
-          final isoDate = _getTargetDateIsoFromSelectedDay(_selectedDay);
-          print(
-            '📊 HOME STREAM DEBUG: selectedDay=$_selectedDay, isoDate=$isoDate, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}, connectionState=${snapshot.connectionState}, data length=${snapshot.data?.length ?? 'null'}',
-          );
-        }
-
         // 🚨 NOVO: Error handling sa specialized widgets
         if (snapshot.hasError) {
-          if (kDebugMode) {
-            print('❌ HOME STREAM ERROR: ${snapshot.error}');
-          }
           return Scaffold(
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(95),
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: ThemeManager()
-                      .currentGradient, // 🎨 Dinamički gradijent iz tema
+                  gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
@@ -1539,39 +1509,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           );
         }
 
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            snapshot.data == null) {
-          if (kDebugMode) {
-            print('⏳ HOME STREAM: Waiting for initial data...');
-          }
-          return Scaffold(
-            appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(95),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: ThemeManager().currentGradient,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
-                  ),
-                ),
-                child: const SafeArea(
-                  child: Center(
-                    child: Text(
-                      'REZERVACIJE - UČITAVANJE',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: 1.8,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            body: const Center(child: CircularProgressIndicator()),
-          );
+        // 🔧 POPRAVLJENO: Prikažemo prazan UI umesto beskonačnog loading-a
+        if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
+          // Umesto beskonačnog čekanja, nastavi sa praznom listom
+          // StreamBuilder će se ažurirati kada podaci stignu
         }
 
         final allPutnici = snapshot.data ?? [];
@@ -1583,9 +1524,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // Additional client-side filtering like danas_screen
         Iterable<Putnik> filtered = allPutnici.where((p) {
           // Dan u nedelji filter za mesečne putnike
-          final dayMatch = p.datum != null
-              ? p.datum == targetDateIso
-              : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+          final dayMatch =
+              p.datum != null ? p.datum == targetDateIso : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
 
           // Vremski filter - samo poslednja nedelja za dnevne putnike
           bool timeMatch = true;
@@ -1603,20 +1543,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final imaGrad = putnik.grad.toString().trim().isNotEmpty;
           final imaDan = putnik.dan.toString().trim().isNotEmpty;
           final danBaza = _selectedDay;
-          final normalizedPutnikDan =
-              GradAdresaValidator.normalizeString(putnik.dan);
-          final normalizedDanBaza =
-              GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
-          final odgovarajuciDan =
-              normalizedPutnikDan.contains(normalizedDanBaza);
+          final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
+          final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
+          final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
           final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
             putnik.grad,
             putnik.adresa,
             _selectedGrad,
           );
           final odgovarajuceVreme =
-              GradAdresaValidator.normalizeTime(putnik.polazak) ==
-                  GradAdresaValidator.normalizeTime(_selectedVreme);
+              GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
           final prikazi = imaVreme &&
               imaGrad &&
               imaDan &&
@@ -1639,12 +1575,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN
         // Brojač pokazuje ukupan broj putnika po slotovima za ceo dan
         // NEZAVISAN od trenutno selektovanog grada/vremena
-        final slotCounts =
-            SlotUtils.computeSlotCountsForDayAbbr(allPutnici, targetDayAbbr);
-        final Map<String, int> brojPutnikaBC =
-            Map<String, int>.from(slotCounts['BC'] ?? {});
-        final Map<String, int> brojPutnikaVS =
-            Map<String, int>.from(slotCounts['VS'] ?? {});
+        final slotCounts = SlotUtils.computeSlotCountsForDayAbbr(allPutnici, targetDayAbbr);
+        final Map<String, int> brojPutnikaBC = Map<String, int>.from(slotCounts['BC'] ?? {});
+        final Map<String, int> brojPutnikaVS = Map<String, int>.from(slotCounts['VS'] ?? {});
 
         // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
         List<Putnik> sortiraniPutnici(List<Putnik> lista) {
@@ -1672,12 +1605,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
             // Dnevni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
             if (p.vremePokupljenja == null) return 0; // bela
-            if (p.vremePokupljenja != null &&
-                (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
+            if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
               return 1; // plava
             }
-            if (p.vremePokupljenja != null &&
-                (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
+            if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
               return 2; // zelena
             }
             return 99;
@@ -1703,9 +1634,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         // je prikaz svuda 0.
         int getPutnikCount(String grad, String vreme) {
           try {
-            final count = grad == 'Bela Crkva'
-                ? brojPutnikaBC[vreme] ?? 0
-                : brojPutnikaVS[vreme] ?? 0;
+            final count = grad == 'Bela Crkva' ? brojPutnikaBC[vreme] ?? 0 : brojPutnikaVS[vreme] ?? 0;
             return count;
           } catch (e) {
             // Log error and continue to fallback
@@ -1713,17 +1642,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {
-            final normalizedStatus =
-                TextUtils.normalizeText(putnik.status ?? '');
+            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
             final gradMatch = GradAdresaValidator.isGradMatch(
               putnik.grad,
               putnik.adresa,
               grad,
             );
-            final vremeMatch =
-                _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
-            final normalizedPutnikDan =
-                GradAdresaValidator.normalizeString(putnik.dan);
+            final vremeMatch = _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
+            final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
             final normalizedDanBaza = GradAdresaValidator.normalizeString(
               _getDayAbbreviation(_selectedDay),
             );
@@ -1742,8 +1668,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         return Container(
           decoration: BoxDecoration(
-            gradient:
-                ThemeManager().currentGradient, // Dinamički gradijent iz tema
+            gradient: ThemeManager().currentGradient, // Dinamički gradijent iz tema
           ),
           child: Scaffold(
             backgroundColor: Colors.transparent, // Transparentna pozadina
@@ -1753,8 +1678,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ), // Povećano sa 80 na 95 zbog sezonskog indikatora
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .glassContainer, // Transparentni glassmorphism
+                  color: Theme.of(context).glassContainer, // Transparentni glassmorphism
                   border: Border.all(
                     color: Theme.of(context).glassBorder,
                     width: 1.5,
@@ -1765,10 +1689,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                       spreadRadius: 2,
@@ -1777,8 +1698,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1791,8 +1711,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
-                              color:
-                                  Colors.white, // Bela boja za bolju vidljivost
+                              color: Colors.white, // Bela boja za bolju vidljivost
                               letterSpacing: 1.8,
                               shadows: [
                                 Shadow(
@@ -1817,8 +1736,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Row(
                           children: [
                             // DRIVER - levo
-                            if (_currentDriver != null &&
-                                _currentDriver!.isNotEmpty)
+                            if (_currentDriver != null && _currentDriver!.isNotEmpty)
                               Expanded(
                                 flex: 35,
                                 child: Container(
@@ -1832,8 +1750,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     borderRadius: BorderRadius.circular(14),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: VozacBoja.get(_currentDriver)
-                                            .withOpacity(0.3),
+                                        color: VozacBoja.get(_currentDriver).withOpacity(0.3),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
@@ -1946,14 +1863,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     icon: Icon(
                                       Icons.keyboard_arrow_down_rounded,
                                       size: 14,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary,
+                                      color: Theme.of(context).colorScheme.onPrimary,
                                     ),
-                                    dropdownColor: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withOpacity(0.95),
+                                    dropdownColor: Theme.of(context).colorScheme.primary.withOpacity(0.95),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,
@@ -1972,8 +1884,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     isExpanded: true,
-                                    selectedItemBuilder:
-                                        (BuildContext context) {
+                                    selectedItemBuilder: (BuildContext context) {
                                       return _dani.map<Widget>((String value) {
                                         return Center(
                                           child: Text(
@@ -2009,9 +1920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                               child: Text(
                                                 dan,
                                                 style: TextStyle(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimary,
+                                                  color: Theme.of(context).colorScheme.onPrimary,
                                                   fontWeight: FontWeight.w700,
                                                   fontSize: 14,
                                                 ),
@@ -2024,8 +1933,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         )
                                         .toList(),
                                     onChanged: (value) {
-                                      if (mounted)
-                                        setState(() => _selectedDay = value!);
+                                      if (mounted) setState(() => _selectedDay = value!);
                                       // 🔄 Stream će se automatski ažurirati preko StreamBuilder-a
                                       // Ne treba eksplicitno pozivati _loadPutnici()
                                     },
@@ -2045,8 +1953,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               children: [
                 // Action buttons
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
                       // Dugmad za akcije
@@ -2074,8 +1981,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             },
                           ),
                         ),
-                      if (['Bojan', 'Svetlana'].contains(_currentDriver))
-                        const SizedBox(width: 4),
+                      if (['Bojan', 'Svetlana'].contains(_currentDriver)) const SizedBox(width: 4),
                       if (['Bojan', 'Svetlana'].contains(_currentDriver))
                         Expanded(
                           child: _HomeScreenButton(
@@ -2119,11 +2025,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 // Lista putnika
                 Expanded(
                   child: Container(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
+                      color: Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
                       border: Border.all(
                         color: Theme.of(context).glassBorder,
                         width: 1.5,
@@ -2162,10 +2066,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     putnik: putnik,
                                     currentDriver: _currentDriver,
                                     redniBroj: index + 1,
-                                    selectedVreme:
-                                        _selectedVreme, // 🆕 Proslijedi trenutno vreme
-                                    selectedGrad:
-                                        _selectedGrad, // 🆕 Proslijedi trenutni grad
+                                    selectedVreme: _selectedVreme, // 🆕 Proslijedi trenutno vreme
+                                    selectedGrad: _selectedGrad, // 🆕 Proslijedi trenutni grad
                                     onChanged: () {
                                       // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
                                       if (mounted) {
@@ -2273,8 +2175,7 @@ class AnimatedActionButton extends StatefulWidget {
   State<AnimatedActionButton> createState() => _AnimatedActionButtonState();
 }
 
-class _AnimatedActionButtonState extends State<AnimatedActionButton>
-    with SingleTickerProviderStateMixin {
+class _AnimatedActionButtonState extends State<AnimatedActionButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
@@ -2382,8 +2283,7 @@ class _HomeScreenButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(6), // Smanjeno sa 12 na 6
         decoration: BoxDecoration(
-          color:
-              Theme.of(context).glassContainer, // Transparentni glassmorphism
+          color: Theme.of(context).glassContainer, // Transparentni glassmorphism
           border: Border.all(
             color: Theme.of(context).glassBorder,
             width: 1.5,

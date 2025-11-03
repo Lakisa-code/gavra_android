@@ -52,7 +52,6 @@ void main() async {
     try {
       await VozacMappingService.initialize();
     } catch (e) {
-      print('⚠️ Greška pri inicijalizaciji VozacMappingService: $e');
       // Nastavi bez vozac mapping-a ako ne uspe
     }
   } catch (e) {

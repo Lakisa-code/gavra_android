@@ -79,7 +79,6 @@ class SimplifiedKusurService {
       }
     } catch (e) {
       // Debug logging removed for production
-      print('KUSUR UPDATE TIMEOUT/ERROR: $e');
       return false;
     }
   }

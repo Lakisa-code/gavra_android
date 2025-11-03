@@ -7,8 +7,7 @@ import 'daily_checkin_service.dart';
 /// 🚀 SIMPLIFIKOVANI DAILY CHECK-IN SERVIS
 /// Wrapper oko DailyCheckInService za kompatibilnost
 class SimplifiedDailyCheckInService {
-  static final StreamController<double> _streamController =
-      StreamController<double>.broadcast();
+  static final StreamController<double> _streamController = StreamController<double>.broadcast();
 
   /// 📡 GLAVNI STREAM ZA KUSUR KOCKU
   static Stream<double> streamTodayAmount(String vozac) {
@@ -58,20 +57,17 @@ class SimplifiedDailyCheckInService {
         dnevniPazari: dnevniPazari,
       ).timeout(const Duration(seconds: 8));
     } catch (e) {
-      print('SIMPLIFIED DAILY CHECK-IN TIMEOUT/ERROR: $e');
       // Ne bacaj grešku dalje - app treba da nastavi da radi!
       // Ali ipak pokušaj lokalno čuvanje kao fallback
       try {
         final prefs = await SharedPreferences.getInstance();
         final today = DateTime.now();
-        final todayKey =
-            'daily_checkin_${vozac}_${today.year}_${today.month}_${today.day}';
+        final todayKey = 'daily_checkin_${vozac}_${today.year}_${today.month}_${today.day}';
         await prefs.setBool(todayKey, true);
         await prefs.setDouble('${todayKey}_amount', sitanNovac);
         await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
-        print('EMERGENCY LOCAL SAVE SUCCESSFUL');
       } catch (localError) {
-        print('EMERGENCY LOCAL SAVE FAILED: $localError');
+        // Emergency save failed - ignore silently
       }
     }
   }

@@ -19,9 +19,7 @@ class VozacMappingService {
     try {
       await _loadMappingFromDatabase();
       _isInitialized = true;
-      print('✅ VozacMappingService inicijalizovan uspešno');
     } catch (e) {
-      print('❌ Greška pri inicijalizaciji VozacMappingService: $e');
       // Postavi prazan cache da ne crashuje aplikaciju
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
@@ -132,9 +130,6 @@ class VozacMappingService {
 
     // ⚠️ WARN: Ako cache nije učitan, vrati null umesto crash
     if (!_isInitialized || _vozacUuidToName == null) {
-      print(
-        '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.',
-      );
       return null;
     }
 
@@ -144,9 +139,6 @@ class VozacMappingService {
   /// Dobij UUID vozača sinhron (koristi cache ili null)
   static String? getVozacUuidSync(String ime) {
     if (!_isInitialized || _vozacNameToUuid == null) {
-      print(
-        '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.',
-      );
       return null;
     }
     return _vozacNameToUuid?[ime];
@@ -155,7 +147,6 @@ class VozacMappingService {
   /// Proveri da li je UUID vozača valjan sinhron
   static bool isValidVozacUuidSync(String uuid) {
     if (!_isInitialized || _vozacUuidToName == null) {
-      print('⚠️ WARNING: VozacMappingService cache nije inicijalizovan!');
       return false;
     }
     return _vozacUuidToName?.containsKey(uuid) ?? false;

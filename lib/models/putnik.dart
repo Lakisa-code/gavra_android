@@ -148,8 +148,9 @@ class Putnik {
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
       dan: _determineDanFromDatum(
-        map['datum'] as String? ?? map['datum_putovanja'] as String?, // ✅ Pokušaj obe kolone za compatibility
-      ), // ✅ Izvlači dan iz datum/datum_putovanja kolone
+        map['datum_putovanja'] as String? ?? // ✅ FIXED: datum_putovanja umesto datum
+            map['datum_putovanja'] as String?, // ✅ Pokušaj obe kolone za compatibility
+      ), // ✅ Izvlači dan iz datum_putovanja kolone
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
       // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
@@ -306,6 +307,7 @@ class Putnik {
   ) {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
+
     final status = map['status'] as String? ?? 'radi'; // ✅ JEDNOSTAVNO
     final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
     final vremePokupljenja = map['vreme_pokupljenja'] != null
@@ -323,7 +325,7 @@ class Putnik {
         );
     final obrisan = map['aktivan'] == false;
 
-    return _createPutniciForDay(
+    final result = _createPutniciForDay(
       map,
       ime,
       danString,
@@ -337,6 +339,8 @@ class Putnik {
       obrisan,
       targetDan,
     );
+
+    return result;
   }
 
   // Helper metoda za kreiranje putnika za određen dan
@@ -360,6 +364,7 @@ class Putnik {
     // Određi da li putnik radi za targetDan
     final radniDani = danString.split(',').map((s) => s.trim().toLowerCase()).where((s) => s.isNotEmpty).toList();
     final normalizedTarget = targetDan.trim().toLowerCase();
+
     if (!radniDani.contains(normalizedTarget)) {
       return putnici; // Putnik ne radi za targetDan
     }

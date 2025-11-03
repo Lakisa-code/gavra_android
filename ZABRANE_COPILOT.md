@@ -1,5 +1,5 @@
+- NE flutter run/debug/build
 - NE test
-- NE run
 - NE debug
 - NE dugacki odgovori + kod
 - DA mcp serveri
