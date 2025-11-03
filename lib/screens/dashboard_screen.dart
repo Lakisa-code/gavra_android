@@ -163,7 +163,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryCard(
+      String title, String value, IconData icon, Color color) {
     return Card(
       elevation: 4,
       child: Container(
@@ -320,7 +321,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPieChart() {
-    final passengerTypes = dashboardData!['passenger_types'] as Map<String, dynamic>;
+    final passengerTypes =
+        dashboardData!['passenger_types'] as Map<String, dynamic>;
     final colors = [Colors.blue, Colors.green, Colors.orange];
 
     return PieChart(
@@ -404,7 +406,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+      String label, IconData icon, Color color, VoidCallback onTap) {
     return Card(
       child: InkWell(
         onTap: onTap,

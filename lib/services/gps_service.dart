@@ -21,7 +21,8 @@ class GpsService {
       // Avoid using `.single()` because it throws when 0 or multiple rows are
       // returned. Instead fetch the rows and handle empty/multiple results
       // gracefully.
-      final dynamic response = await supabase.from('vozaci').select('id').eq('ime', vozacIme);
+      final dynamic response =
+          await supabase.from('vozaci').select('id').eq('ime', vozacIme);
 
       // The SDK normally returns a List for select() without .single().
       if (response is List) {
@@ -143,5 +144,3 @@ class GpsService {
     }
   }
 }
-
-

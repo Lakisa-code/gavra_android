@@ -46,7 +46,6 @@ class RealtimeGpsService {
         final speedKmh = speedMps * 3.6; // convert to km/h
         _speedController.add(speedKmh);
       });
-
     } catch (e) {
       rethrow;
     }
@@ -97,8 +96,3 @@ class RealtimeGpsService {
     _speedController.close();
   }
 }
-
-
-
-
-

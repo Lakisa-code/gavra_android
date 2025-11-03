@@ -68,23 +68,25 @@ class Vozac {
 
   /// Validira telefon format (srpski broj)
   bool get isValidTelefon {
-    if (brojTelefona == null || brojTelefona!.isEmpty) return true; // Optional field
-    
+    if (brojTelefona == null || brojTelefona!.isEmpty)
+      return true; // Optional field
+
     final telefon = brojTelefona!.replaceAll(RegExp(r'[^\d+]'), '');
-    
+
     // Srpski mobilni: +381 6x xxx xxxx ili 06x xxx xxxx
     // Srpski fiksni: +381 1x xxx xxxx ili 01x xxx xxxx
-    return telefon.startsWith('+3816') || 
-           telefon.startsWith('06') ||
-           telefon.startsWith('+3811') ||
-           telefon.startsWith('01') ||
-           telefon.length == 8 || telefon.length == 9; // lokalni brojevi
+    return telefon.startsWith('+3816') ||
+        telefon.startsWith('06') ||
+        telefon.startsWith('+3811') ||
+        telefon.startsWith('01') ||
+        telefon.length == 8 ||
+        telefon.length == 9; // lokalni brojevi
   }
 
   /// Validira email format
   bool get isValidEmail {
     if (email == null || email!.isEmpty) return true; // Optional field
-    
+
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email!);
   }
@@ -97,23 +99,23 @@ class Vozac {
   /// Lista grešaka validacije
   List<String> get validationErrors {
     final errors = <String>[];
-    
+
     if (!isValidIme) {
       errors.add('Ime vozača mora imati najmanje 2 karaktera');
     }
-    
+
     if (!isValidKusur) {
       errors.add('Kusur ne može biti negativan');
     }
-    
+
     if (!isValidTelefon) {
       errors.add('Nevaljan format telefona');
     }
-    
+
     if (!isValidEmail) {
       errors.add('Nevaljan format email adrese');
     }
-    
+
     return errors;
   }
 

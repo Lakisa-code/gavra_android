@@ -419,8 +419,3 @@ class RouteOptimizationService {
     return !imaAktivnihNaKraju; // True ako otkazani NISU između aktivnih
   }
 }
-
-
-
-
-

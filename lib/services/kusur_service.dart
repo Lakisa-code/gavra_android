@@ -21,7 +21,11 @@ class KusurService {
         return 0.0;
       }
 
-      final response = await _supabase.from('vozaci').select('kusur').eq('id', vozacUuid).maybeSingle();
+      final response = await _supabase
+          .from('vozaci')
+          .select('kusur')
+          .eq('id', vozacUuid)
+          .maybeSingle();
 
       if (response != null && response['kusur'] != null) {
         return (response['kusur'] as num).toDouble();
@@ -34,7 +38,8 @@ class KusurService {
   }
 
   /// Ažuriraj kusur za određenog vozača u bazi
-  static Future<bool> updateKusurForVozac(String vozacIme, double noviKusur) async {
+  static Future<bool> updateKusurForVozac(
+      String vozacIme, double noviKusur) async {
     try {
       // Mapiranje ime -> UUID
       final vozacUuid = await VozacMappingService.getVozacUuid(vozacIme);
@@ -42,7 +47,9 @@ class KusurService {
         return false;
       }
 
-      await _supabase.from('vozaci').update({'kusur': noviKusur}).eq('id', vozacUuid);
+      await _supabase
+          .from('vozaci')
+          .update({'kusur': noviKusur}).eq('id', vozacUuid);
 
       // Emituj ažuriranje preko stream-a
       _emitKusurUpdate(vozacIme, noviKusur);
@@ -117,8 +124,3 @@ class KusurService {
     _kusurController.close();
   }
 }
-
-
-
-
-

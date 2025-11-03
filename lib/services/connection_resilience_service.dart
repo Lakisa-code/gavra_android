@@ -9,8 +9,10 @@ class ConnectionResilienceService {
   static final _supabase = Supabase.instance.client;
 
   // Stream kontroleri
-  static final StreamController<bool> _connectionStateController = StreamController<bool>.broadcast();
-  static final StreamController<String> _connectionStatusController = StreamController<String>.broadcast();
+  static final StreamController<bool> _connectionStateController =
+      StreamController<bool>.broadcast();
+  static final StreamController<String> _connectionStatusController =
+      StreamController<String>.broadcast();
 
   // Stanje konekcije
   static bool _isOnline = true;
@@ -26,8 +28,10 @@ class ConnectionResilienceService {
   static const Duration _networkCheckInterval = Duration(seconds: 10);
 
   // Getteri za stream-ove
-  static Stream<bool> get connectionStateStream => _connectionStateController.stream;
-  static Stream<String> get connectionStatusStream => _connectionStatusController.stream;
+  static Stream<bool> get connectionStateStream =>
+      _connectionStateController.stream;
+  static Stream<String> get connectionStatusStream =>
+      _connectionStatusController.stream;
 
   // Getteri za trenutno stanje
   static bool get isOnline => _isOnline;
@@ -77,7 +81,7 @@ class ConnectionResilienceService {
       final isConnected = await _checkNetworkConnection();
 
       if (wasOnline != isConnected) {
-_updateConnectionState(isConnected);
+        _updateConnectionState(isConnected);
 
         if (isConnected && !_isSupabaseConnected) {
           // Network je vraćen, pokušaj reconnect na Supabase
@@ -100,7 +104,11 @@ _updateConnectionState(isConnected);
   static Future<void> _checkSupabaseConnection() async {
     try {
       // Jednostavan test query
-      await _supabase.from('mesecni_putnici').select('id').limit(1).timeout(const Duration(seconds: 10));
+      await _supabase
+          .from('mesecni_putnici')
+          .select('id')
+          .limit(1)
+          .timeout(const Duration(seconds: 10));
 
       if (!_isSupabaseConnected) {
         _updateSupabaseState(true);
@@ -122,14 +130,13 @@ _updateConnectionState(isConnected);
         await _checkSupabaseConnection();
 
         if (_isSupabaseConnected) {
-return;
+          return;
         }
-      } catch (e) {
-}
+      } catch (e) {}
 
       if (attempt < _maxRetries) {
         final delay = _baseRetryDelay * attempt;
-await Future<void>.delayed(delay);
+        await Future<void>.delayed(delay);
       }
     }
   }
@@ -158,7 +165,8 @@ await Future<void>.delayed(delay);
     if (_isSupabaseConnected != isConnected) {
       _isSupabaseConnected = isConnected;
 
-      final status = isConnected ? 'Supabase Connected' : 'Supabase Disconnected';
+      final status =
+          isConnected ? 'Supabase Connected' : 'Supabase Disconnected';
       _connectionStatusController.add(status);
     }
   }
@@ -184,8 +192,3 @@ await Future<void>.delayed(delay);
     _connectionStatusController.close();
   }
 }
-
-
-
-
-

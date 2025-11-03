@@ -11,11 +11,11 @@ class AdminSecurityService {
   /// 🔍 Proveri da li je vozač admin
   static bool isAdmin(String? driverName) {
     if (driverName == null || driverName.isEmpty) {
-return false;
+      return false;
     }
 
     final isAdminUser = _adminUsers.contains(driverName);
-return isAdminUser;
+    return isAdminUser;
   }
 
   /// 🛡️ Proveri da li vozač može da vidi podatke drugog vozača
@@ -49,7 +49,8 @@ return isAdminUser;
 
     // Vozač vidi samo svoj pazar
     return {
-      if (pazarData.containsKey(currentDriver)) currentDriver: pazarData[currentDriver]!,
+      if (pazarData.containsKey(currentDriver))
+        currentDriver: pazarData[currentDriver]!,
     };
   }
 

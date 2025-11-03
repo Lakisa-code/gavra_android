@@ -23,7 +23,8 @@ class RealtimeNetworkStatusService {
   }
 
   // 🚥 STATUS TRACKING
-  final ValueNotifier<NetworkStatus> _networkStatus = ValueNotifier(NetworkStatus.excellent);
+  final ValueNotifier<NetworkStatus> _networkStatus =
+      ValueNotifier(NetworkStatus.excellent);
   ValueNotifier<NetworkStatus> get networkStatus => _networkStatus;
 
   // 📊 METRICS TRACKING
@@ -52,7 +53,8 @@ class RealtimeNetworkStatusService {
 
   /// 🔌 CONNECTIVITY MONITORING
   void _startConnectivityMonitoring() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((result) {
       _isConnected = !result.contains(ConnectivityResult.none);
       _updateNetworkStatus();
 
@@ -110,7 +112,9 @@ class RealtimeNetworkStatusService {
 
       // Calculate average response time
       if (_recentResponseTimes.isNotEmpty) {
-        final total = _recentResponseTimes.map((d) => d.inMilliseconds).reduce((a, b) => a + b);
+        final total = _recentResponseTimes
+            .map((d) => d.inMilliseconds)
+            .reduce((a, b) => a + b);
         _averageResponseTime = total / _recentResponseTimes.length;
       }
     }
@@ -122,12 +126,9 @@ class RealtimeNetworkStatusService {
   void _performHealthCheck() {
     final now = DateTime.now();
 
-
-
     // Check for stale streams (older than 60 seconds)
     for (final entry in _lastResponseTimes.entries) {
       if (now.difference(entry.value).inSeconds > 60) {
-        
         break;
       }
     }
@@ -135,12 +136,9 @@ class RealtimeNetworkStatusService {
     // Check for frequent errors (more than 3 per stream)
     for (final errorCount in _errorCounts.values) {
       if (errorCount > 3) {
-        
         break;
       }
     }
-
-    
 
     _updateNetworkStatus();
   }
@@ -161,8 +159,6 @@ class RealtimeNetworkStatusService {
         _lastSuccessfulPing = DateTime.now();
         final pingTime = stopwatch.elapsedMilliseconds;
 
-        
-
         // Add ping time to response times for overall health
         _recentResponseTimes.add(Duration(milliseconds: pingTime));
         if (_recentResponseTimes.length > 10) {
@@ -172,7 +168,6 @@ class RealtimeNetworkStatusService {
         throw Exception('No address found');
       }
     } catch (e) {
-      
       _lastSuccessfulPing = null;
     }
 
@@ -190,7 +185,8 @@ class RealtimeNetworkStatusService {
     }
 
     // If no successful ping in last 2 minutes, consider offline
-    if (_lastSuccessfulPing == null || now.difference(_lastSuccessfulPing!).inMinutes > 2) {
+    if (_lastSuccessfulPing == null ||
+        now.difference(_lastSuccessfulPing!).inMinutes > 2) {
       _networkStatus.value = NetworkStatus.offline;
       return;
     }
@@ -212,15 +208,17 @@ class RealtimeNetworkStatusService {
     // Determine status based on metrics
     if (recentErrors == 0 && staleStreams == 0 && _averageResponseTime < 2000) {
       _networkStatus.value = NetworkStatus.excellent;
-    } else if (recentErrors <= 1 && staleStreams <= 1 && _averageResponseTime < 5000) {
+    } else if (recentErrors <= 1 &&
+        staleStreams <= 1 &&
+        _averageResponseTime < 5000) {
       _networkStatus.value = NetworkStatus.good;
-    } else if (recentErrors <= 2 && staleStreams <= 2 && _averageResponseTime < 10000) {
+    } else if (recentErrors <= 2 &&
+        staleStreams <= 2 &&
+        _averageResponseTime < 10000) {
       _networkStatus.value = NetworkStatus.poor;
     } else {
       _networkStatus.value = NetworkStatus.offline;
     }
-
-    
   }
 
   /// 📊 GET DETAILED STATUS INFO
@@ -233,7 +231,8 @@ class RealtimeNetworkStatusService {
       'lastSuccessfulPing': _lastSuccessfulPing?.toIso8601String(),
       'streamCount': _lastResponseTimes.length,
       'errorCounts': Map<String, dynamic>.from(_errorCounts),
-      'lastResponseTimes': _lastResponseTimes.map((k, v) => MapEntry(k, v.toIso8601String())),
+      'lastResponseTimes':
+          _lastResponseTimes.map((k, v) => MapEntry(k, v.toIso8601String())),
     };
   }
 
@@ -245,8 +244,3 @@ class RealtimeNetworkStatusService {
     _networkStatus.dispose();
   }
 }
-
-
-
-
-

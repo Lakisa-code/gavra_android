@@ -32,7 +32,9 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('📊 Quick Status:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('📊 Quick Status:',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     _buildQuickStatus(),
                   ],
@@ -50,7 +52,8 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
                     onPressed: _isLoading ? null : _validateComplete,
                     icon: const Icon(Icons.search),
                     label: const Text('Kompletna Validacija'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -59,7 +62,8 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
                     onPressed: _isLoading ? null : _autoFix,
                     icon: const Icon(Icons.build),
                     label: const Text('Auto Fix'),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange),
                   ),
                 ),
               ],
@@ -97,7 +101,8 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
           ],
         ),
         Text('Hardcoded vozači: $driverCount'),
-        Text('Email mapiranje: ${quickCheck['emailMappingComplete'] == true ? "✅" : "❌"}'),
+        Text(
+            'Email mapiranje: ${quickCheck['emailMappingComplete'] == true ? "✅" : "❌"}'),
       ],
     );
   }
@@ -112,19 +117,23 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('🔍 Rezultati Validacije:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('🔍 Rezultati Validacije:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
 
               // Summary
-              if (_validationResults!['summary'] != null && _validationResults!['summary'] is Map<String, dynamic>)
-                _buildSummarySection(_validationResults!['summary'] as Map<String, dynamic>),
+              if (_validationResults!['summary'] != null &&
+                  _validationResults!['summary'] is Map<String, dynamic>)
+                _buildSummarySection(
+                    _validationResults!['summary'] as Map<String, dynamic>),
 
               const SizedBox(height: 16),
 
               // Vozac Mapping Details
               if (_validationResults!['vozacMapping'] != null &&
                   _validationResults!['vozacMapping'] is Map<String, dynamic>)
-                _buildVozacMappingSection(_validationResults!['vozacMapping'] as Map<String, dynamic>),
+                _buildVozacMappingSection(_validationResults!['vozacMapping']
+                    as Map<String, dynamic>),
 
               const SizedBox(height: 16),
 
@@ -141,7 +150,8 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
                     ),
                     child: Text(
                       _validationResults.toString(),
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 12),
                     ),
                   ),
                 ],
@@ -181,8 +191,12 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
                 ),
               ],
             ),
-            if (errorCount > 0) Text('❌ Greške: $errorCount', style: const TextStyle(color: Colors.red)),
-            if (warningCount > 0) Text('⚠️ Upozorenja: $warningCount', style: const TextStyle(color: Colors.orange)),
+            if (errorCount > 0)
+              Text('❌ Greške: $errorCount',
+                  style: const TextStyle(color: Colors.red)),
+            if (warningCount > 0)
+              Text('⚠️ Upozorenja: $warningCount',
+                  style: const TextStyle(color: Colors.orange)),
             Text('💡 ${summary['recommendation']}'),
           ],
         ),
@@ -199,19 +213,25 @@ class _MapiranjeTestScreenState extends State<MapiranjeTestScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('🗂️ Vozac Mapping Detalji:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('🗂️ Vozac Mapping Detalji:',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text('Hardcoded vozači: ${hardcoded.join(", ")}'),
         Text('Dinamički vozači: ${dynamic.join(", ")}'),
         if (errors.isNotEmpty) ...[
           const SizedBox(height: 8),
-          const Text('❌ Greške:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ...errors.map((error) => Text('  • $error', style: const TextStyle(color: Colors.red))),
+          const Text('❌ Greške:',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ...errors.map((error) =>
+              Text('  • $error', style: const TextStyle(color: Colors.red))),
         ],
         if (warnings.isNotEmpty) ...[
           const SizedBox(height: 8),
-          const Text('⚠️ Upozorenja:', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-          ...warnings.map((warning) => Text('  • $warning', style: const TextStyle(color: Colors.orange))),
+          const Text('⚠️ Upozorenja:',
+              style:
+                  TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          ...warnings.map((warning) => Text('  • $warning',
+              style: const TextStyle(color: Colors.orange))),
         ],
       ],
     );

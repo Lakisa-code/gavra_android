@@ -285,8 +285,3 @@ enum PageTransitionType {
   bounce,
   rotation,
 }
-
-
-
-
-

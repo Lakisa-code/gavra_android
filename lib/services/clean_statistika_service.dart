@@ -121,8 +121,3 @@ class CleanStatistikaService {
     return sviPutnici;
   }
 }
-
-
-
-
-

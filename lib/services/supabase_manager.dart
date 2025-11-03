@@ -30,7 +30,7 @@ class SupabaseManager {
   static SupabaseClient get client {
     if (_client == null) {
       // Debug logging removed for production
-_client = Supabase.instance.client;
+      _client = Supabase.instance.client;
     }
     return _client!;
   }
@@ -42,18 +42,18 @@ _client = Supabase.instance.client;
     // Čekaj da se oslobodi konekcija ako je dostignut limit
     while (_activeConnections >= _maxConnections) {
       // Debug logging removed for production
-await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     }
 
     _activeConnections++;
-      // Debug logging removed for production
-try {
+    // Debug logging removed for production
+    try {
       final result = await operation(client);
       return result;
     } finally {
       _activeConnections--;
       // Debug logging removed for production
-}
+    }
   }
 
   /// Optimizovano čitanje sa timeout-om
@@ -63,9 +63,12 @@ try {
     Map<String, dynamic>? filters,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    return executeWithConnectionLimit<List<Map<String, dynamic>>>((client) async {
+    return executeWithConnectionLimit<List<Map<String, dynamic>>>(
+        (client) async {
       var queryBuilder = client.from(table);
-      var query = columns != null ? queryBuilder.select(columns) : queryBuilder.select();
+      var query = columns != null
+          ? queryBuilder.select(columns)
+          : queryBuilder.select();
 
       if (filters != null) {
         for (final entry in filters.entries) {
@@ -95,8 +98,8 @@ try {
         await query.timeout(timeout);
         return true;
       } catch (e) {
-      // Debug logging removed for production
-return false;
+        // Debug logging removed for production
+        return false;
       }
     });
   }
@@ -108,7 +111,8 @@ return false;
     Map<String, dynamic> filters, {
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    return executeWithConnectionLimit<List<Map<String, dynamic>>>((client) async {
+    return executeWithConnectionLimit<List<Map<String, dynamic>>>(
+        (client) async {
       try {
         var query = client.from(table).update(data);
 
@@ -119,8 +123,8 @@ return false;
         final response = await query.select().timeout(timeout);
         return List<Map<String, dynamic>>.from(response as List);
       } catch (e) {
-      // Debug logging removed for production
-return [];
+        // Debug logging removed for production
+        return [];
       }
     });
   }
@@ -133,11 +137,16 @@ return [];
   }) async {
     return executeWithConnectionLimit<Map<String, dynamic>?>((client) async {
       try {
-        final response = await client.from(table).insert(data).select().single().timeout(timeout);
+        final response = await client
+            .from(table)
+            .insert(data)
+            .select()
+            .single()
+            .timeout(timeout);
         return response;
       } catch (e) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
     });
   }
@@ -147,13 +156,14 @@ return null;
     return {
       'activeConnections': _activeConnections,
       'maxConnections': _maxConnections,
-      'utilizationPercent': (_activeConnections / _maxConnections * 100).round(),
+      'utilizationPercent':
+          (_activeConnections / _maxConnections * 100).round(),
     };
   }
 
   /// Resetuj connection pool (za testiranje)
   static void resetConnectionPool() {
     _activeConnections = 0;
-      // Debug logging removed for production
-}
+    // Debug logging removed for production
+  }
 }

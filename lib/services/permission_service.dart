@@ -135,7 +135,8 @@ class PermissionService {
                                     ),
                                   ),
                                   child: TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
                                     child: const Text(
                                       'PRESKOČI',
                                       style: TextStyle(
@@ -163,18 +164,22 @@ class PermissionService {
                                       foregroundColor: Colors.white,
                                       elevation: 0,
                                       shadowColor: Colors.transparent,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
                                     ),
                                     onPressed: () async {
-                                      final success = await requestAllPermissions();
+                                      final success =
+                                          await requestAllPermissions();
                                       if (context.mounted) {
                                         Navigator.of(context).pop(success);
                                       }
                                     },
-                                    icon: const Icon(Icons.check_circle_rounded),
+                                    icon:
+                                        const Icon(Icons.check_circle_rounded),
                                     label: const Text(
                                       'ODOBRI DOZVOLE',
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),
@@ -284,12 +289,17 @@ class PermissionService {
       // 🚀 BATCH REQUEST - brži flow sa manje delay-ova
 
       // 1. 📍 LOKACIJA (prvo, najvažnija)
-      final locationStatus =
-          await _requestLocationPermission().timeout(const Duration(seconds: 30), onTimeout: () => false);
+      final locationStatus = await _requestLocationPermission()
+          .timeout(const Duration(seconds: 30), onTimeout: () => false);
 
       // 2. � BATCH REQUEST za ostale dozvole (brže od sequential)
-      final permissions = [Permission.phone, Permission.sms, Permission.notification];
-      final Map<Permission, PermissionStatus> statuses = await permissions.request();
+      final permissions = [
+        Permission.phone,
+        Permission.sms,
+        Permission.notification
+      ];
+      final Map<Permission, PermissionStatus> statuses =
+          await permissions.request();
 
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
       final smsStatus = statuses[Permission.sms] ?? PermissionStatus.denied;
@@ -345,7 +355,9 @@ class PermissionService {
       final phone = await Permission.phone.status;
       final sms = await Permission.sms.status;
 
-      return location && (phone.isGranted || phone.isLimited) && (sms.isGranted || sms.isLimited);
+      return location &&
+          (phone.isGranted || phone.isLimited) &&
+          (sms.isGranted || sms.isLimited);
     } catch (e) {
       return false;
     }
@@ -452,7 +464,8 @@ class PermissionService {
                                 ),
                               ),
                               child: TextButton(
-                                onPressed: () => Navigator.of(context).pop(false),
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false),
                                 child: const Text(
                                   'Otkaži',
                                   style: TextStyle(
@@ -480,7 +493,8 @@ class PermissionService {
                                   elevation: 0,
                                   shadowColor: Colors.transparent,
                                 ),
-                                onPressed: () => Navigator.of(context).pop(true),
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true),
                                 child: const Text(
                                   'Uključi GPS',
                                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -566,7 +580,8 @@ class PermissionService {
   static Future<void> openPermissionSettings() async {
     // Otvori system settings za dozvole aplikacije
     try {
-      await Permission.phone.request(); // Ovo će otvoriti settings ako je potrebno
+      await Permission.phone
+          .request(); // Ovo će otvoriti settings ako je potrebno
     } catch (e) {}
   }
 

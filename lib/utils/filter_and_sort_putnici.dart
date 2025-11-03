@@ -53,8 +53,3 @@ List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
 Map<String, dynamic> _mesecniPutnikToMap(MesecniPutnik p) {
   return p.toMap();
 }
-
-
-
-
-

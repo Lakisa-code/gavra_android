@@ -25,7 +25,8 @@ class RealTimeNavigationWidget extends StatefulWidget {
   final bool enableVoiceInstructions;
 
   @override
-  State<RealTimeNavigationWidget> createState() => _RealTimeNavigationWidgetState();
+  State<RealTimeNavigationWidget> createState() =>
+      _RealTimeNavigationWidgetState();
 }
 
 class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
@@ -103,7 +104,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       };
 
       if (result['optimizedRoute'] != null) {
-        _currentInstructions = (result['instructions'] as List<dynamic>?)?.cast<TurnByTurnInstruction>() ?? [];
+        _currentInstructions = (result['instructions'] as List<dynamic>?)
+                ?.cast<TurnByTurnInstruction>() ??
+            [];
         _totalDistance = (result['totalDistance'] as num?)?.toDouble() ?? 0.0;
         _totalDuration = (result['totalDuration'] as num?)?.toDouble() ?? 0.0;
 
@@ -116,7 +119,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           if (mounted)
             setState(() {
               _isLoading = false;
-              _statusMessage = 'Navigacija spremna - ${_currentInstructions.length} instrukcija';
+              _statusMessage =
+                  'Navigacija spremna - ${_currentInstructions.length} instrukcija';
             });
         }
 
@@ -195,10 +199,17 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             if (mounted)
               setState(() {
                 _currentInstructions =
-                    (newRoute['instructions'] as List<dynamic>?)?.cast<TurnByTurnInstruction>() ?? [];
-                _remainingPassengers = (newRoute['optimizedRoute'] as List<dynamic>?)?.cast<Putnik>() ?? [];
+                    (newRoute['instructions'] as List<dynamic>?)
+                            ?.cast<TurnByTurnInstruction>() ??
+                        [];
+                _remainingPassengers =
+                    (newRoute['optimizedRoute'] as List<dynamic>?)
+                            ?.cast<Putnik>() ??
+                        [];
                 _currentInstructionIndex = 0;
-                _activeInstruction = _currentInstructions.isNotEmpty ? _currentInstructions.first : null;
+                _activeInstruction = _currentInstructions.isNotEmpty
+                    ? _currentInstructions.first
+                    : null;
               });
           }
 
@@ -224,11 +235,13 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
               if (mounted)
                 setState(() {
                   _currentInstructionIndex++;
-                  _activeInstruction = _currentInstructions[_currentInstructionIndex];
+                  _activeInstruction =
+                      _currentInstructions[_currentInstructionIndex];
                 });
             }
 
-            widget.onStatusUpdate?.call('➡️ Sledeća instrukcija: ${_activeInstruction?.text}');
+            widget.onStatusUpdate
+                ?.call('➡️ Sledeća instrukcija: ${_activeInstruction?.text}');
           }
         }
       }
@@ -307,7 +320,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isNavigating ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
+        color: _isNavigating
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.secondary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
       ),
       child: Row(
@@ -337,7 +352,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
               ),
               child: Text(
                 '${_currentInstructionIndex + 1}/${_currentInstructions.length}',
-                style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontSize: 12),
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 12),
               ),
             ),
         ],
@@ -350,7 +367,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outline)),
+        border: Border(
+            bottom: BorderSide(color: Theme.of(context).colorScheme.outline)),
       ),
       child: Row(
         children: [
@@ -451,7 +469,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  color: isPassed ? Theme.of(context).colorScheme.onSurfaceVariant : null,
+                  color: isPassed
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                      : null,
                 ),
               ),
               subtitle: Text(
@@ -506,7 +526,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+        Icon(icon,
+            color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
         const SizedBox(height: 4),
         Text(
           value,
@@ -557,7 +578,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         if (mounted) {
           if (mounted)
             setState(() {
-              _remainingPassengers = result.optimizedPutnici ?? _remainingPassengers;
+              _remainingPassengers =
+                  result.optimizedPutnici ?? _remainingPassengers;
               _statusMessage = '✅ ${result.message}';
             });
         }
@@ -629,12 +651,14 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _isNavigating ? _stopNavigation : _startGPSTracking,
+                  onPressed:
+                      _isNavigating ? _stopNavigation : _startGPSTracking,
                   icon: Icon(_isNavigating ? Icons.stop : Icons.play_arrow),
                   label: Text(_isNavigating ? 'Zaustavi' : 'Pokreni'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _isNavigating ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.tertiary,
+                    backgroundColor: _isNavigating
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.tertiary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   ),
                 ),

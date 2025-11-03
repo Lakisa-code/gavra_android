@@ -49,7 +49,8 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Supabase Monitoring', style: TextStyle(color: Colors.white)),
+        title: const Text('Supabase Monitoring',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue[600],
         elevation: 0,
       ),
@@ -112,7 +113,8 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
 
   Widget _napraviGlavnuKarticu() {
     final status = _statistika['status'] ?? '🟢 ODLIČNO';
-    final procenat = int.tryParse(_statistika['procenat']?.replaceAll('%', '') ?? '0') ?? 0;
+    final procenat =
+        int.tryParse(_statistika['procenat']?.replaceAll('%', '') ?? '0') ?? 0;
 
     MaterialColor boja = Colors.green;
     if (status.contains('🟡')) boja = Colors.orange;
@@ -232,9 +234,12 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               _statistika['procenjeni_users'] ?? '0',
               _statistika['mesecna_procena'] ?? '',
             ),
-            _napraviRedDetalja('💾 Database limit', _statistika['database_limit'] ?? '500 MB', 'Free tier'),
-            _napraviRedDetalja('� Storage limit', _statistika['storage_limit'] ?? '1 GB', 'Free tier'),
-            _napraviRedDetalja('🌐 Egress limit', _statistika['egress_limit'] ?? '5 GB', 'Free tier'),
+            _napraviRedDetalja('💾 Database limit',
+                _statistika['database_limit'] ?? '500 MB', 'Free tier'),
+            _napraviRedDetalja('� Storage limit',
+                _statistika['storage_limit'] ?? '1 GB', 'Free tier'),
+            _napraviRedDetalja('🌐 Egress limit',
+                _statistika['egress_limit'] ?? '5 GB', 'Free tier'),
             const SizedBox(height: 15),
             Container(
               padding: const EdgeInsets.all(15),
@@ -321,14 +326,21 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               ],
             ),
             const SizedBox(height: 20),
-            _napraviSavet('🎉', 'ODLIČO! API pozivi su sada UNLIMITED u Free tier!'),
-            _napraviSavet('👥', 'Glavni limit: 50,000 aktivnih korisnika mesečno'),
+            _napraviSavet(
+                '🎉', 'ODLIČO! API pozivi su sada UNLIMITED u Free tier!'),
+            _napraviSavet(
+                '👥', 'Glavni limit: 50,000 aktivnih korisnika mesečno'),
             _napraviSavet('💾', 'Database: 500MB | Storage: 1GB | Egress: 5GB'),
-            _napraviSavet('📱', 'Development faza - optimalno vreme za testiranje'),
-            _napraviSavet('🔧', 'Koristite PametniSupabase.from() za automatsko praćenje'),
-            _napraviSavet('💰', 'Supabase Pro (25 USD/mesec) tek kad prođete limite'),
-            _napraviSavet('🏪', 'Prioritet: Google Play Developer (25 USD jednom)'),
-            _napraviSavet('📊', 'Povucite nadole za refresh - cache važi 30 sekundi'),
+            _napraviSavet(
+                '📱', 'Development faza - optimalno vreme za testiranje'),
+            _napraviSavet('🔧',
+                'Koristite PametniSupabase.from() za automatsko praćenje'),
+            _napraviSavet(
+                '💰', 'Supabase Pro (25 USD/mesec) tek kad prođete limite'),
+            _napraviSavet(
+                '🏪', 'Prioritet: Google Play Developer (25 USD jednom)'),
+            _napraviSavet(
+                '📊', 'Povucite nadole za refresh - cache važi 30 sekundi'),
           ],
         ),
       ),

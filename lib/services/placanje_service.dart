@@ -7,7 +7,8 @@ class PlacanjeService {
   static final _supabase = Supabase.instance.client;
 
   /// Kombinuje podatke o plaćanju iz mesecni_putnici i putovanja_istorija
-  static Future<Map<String, double>> getStvarnaPlacanja(List<MesecniPutnik> putnici) async {
+  static Future<Map<String, double>> getStvarnaPlacanja(
+      List<MesecniPutnik> putnici) async {
     final Map<String, double> rezultat = {};
 
     try {
@@ -19,7 +20,8 @@ class PlacanjeService {
           .eq('tip_putnika', 'mesecni')
           .not('cena', 'is', null);
 
-      final List<dynamic> istorijaPlacanjaData = istorijaPlacanjaResponse as List;
+      final List<dynamic> istorijaPlacanjaData =
+          istorijaPlacanjaResponse as List;
 
       // Mapa za brže pronalaženje po ID-u - sabira SVA plaćanja
       final Map<String, double> placanjaPoId = {};
@@ -31,11 +33,13 @@ class PlacanjeService {
         final putnikIme = placanje['putnik_ime'] as String?;
 
         if (mesecniPutnikId != null) {
-          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
+          placanjaPoId[mesecniPutnikId] =
+              (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
         }
 
         if (putnikIme != null) {
-          placanjaPoImenu[putnikIme] = (placanjaPoImenu[putnikIme] ?? 0.0) + cena;
+          placanjaPoImenu[putnikIme] =
+              (placanjaPoImenu[putnikIme] ?? 0.0) + cena;
         }
       }
 
@@ -113,11 +117,13 @@ class PlacanjeService {
         final putnikIme = placanje['putnik_ime'] as String?;
 
         if (mesecniPutnikId != null) {
-          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
+          placanjaPoId[mesecniPutnikId] =
+              (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
         }
 
         if (putnikIme != null) {
-          placanjaPoImenu[putnikIme] = (placanjaPoImenu[putnikIme] ?? 0.0) + cena;
+          placanjaPoImenu[putnikIme] =
+              (placanjaPoImenu[putnikIme] ?? 0.0) + cena;
         }
       }
 
@@ -150,8 +156,9 @@ class PlacanjeService {
       // Preuzmi sve mesečne putnike
       final putnicResponse = await _supabase.from('mesecni_putnici').select();
 
-      final List<MesecniPutnik> putnici =
-          (putnicResponse as List).map((data) => MesecniPutnik.fromMap(data as Map<String, dynamic>)).toList();
+      final List<MesecniPutnik> putnici = (putnicResponse as List)
+          .map((data) => MesecniPutnik.fromMap(data as Map<String, dynamic>))
+          .toList();
 
       // Dobij stvarna plaćanja
       final stvarnaPlacanja = await getStvarnaPlacanja(putnici);

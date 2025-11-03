@@ -51,38 +51,44 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   // V3.0 Clean - Setup realtime monitoring with resilience
   void _initializeRealtimeMonitoring() {
     // GPS Realtime Stream with error recovery
-    _gpsSubscription =
-        Supabase.instance.client.from('gps_lokacije').stream(primaryKey: ['id']).order('timestamp').listen(
-              (data) {
-                if (mounted) {
-                  try {
-                    final gpsLokacije = data.map((json) => GPSLokacija.fromMap(json)).toList();
-                    if (mounted)
-                      setState(() {
-                        _gpsLokacije = gpsLokacije;
-                        _isLoading = false;
-                        _updateMarkers();
-                      });
-                  } catch (e) {
+    _gpsSubscription = Supabase.instance.client
+        .from('gps_lokacije')
+        .stream(primaryKey: ['id'])
+        .order('timestamp')
+        .listen(
+          (data) {
+            if (mounted) {
+              try {
+                final gpsLokacije =
+                    data.map((json) => GPSLokacija.fromMap(json)).toList();
+                if (mounted)
+                  setState(() {
+                    _gpsLokacije = gpsLokacije;
+                    _isLoading = false;
+                    _updateMarkers();
+                  });
+              } catch (e) {
 // Fallback to cached data
-                    if (_gpsLokacije.isEmpty) {
-                      _loadGpsLokacije();
-                    }
-                  }
+                if (_gpsLokacije.isEmpty) {
+                  _loadGpsLokacije();
                 }
-              },
-              onError: (Object error) {
+              }
+            }
+          },
+          onError: (Object error) {
 // V3.0 Resilience - Auto retry after 5 seconds
-                Timer(const Duration(seconds: 5), () {
-                  if (mounted) {
-                    _initializeRealtimeMonitoring();
-                  }
-                });
-              },
-            );
+            Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                _initializeRealtimeMonitoring();
+              }
+            });
+          },
+        );
 
     // Putnik Realtime Stream with error recovery
-    _putnikSubscription = Supabase.instance.client.from('putnik').stream(primaryKey: ['id']).listen(
+    _putnikSubscription = Supabase.instance.client
+        .from('putnik')
+        .stream(primaryKey: ['id']).listen(
       (data) {
         if (mounted) {
           try {
@@ -120,7 +126,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _loadPutnici() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastPutniciLoad != null && DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
+    if (_lastPutniciLoad != null &&
+        DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
       return;
     }
 
@@ -165,7 +172,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _loadGpsLokacije() async {
     // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastGpsLoad != null && DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
+    if (_lastGpsLoad != null &&
+        DateTime.now().difference(_lastGpsLoad!) < cacheDuration) {
       return;
     }
 
@@ -176,8 +184,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         });
 
       // Prvo pokušaj da dobiješ strukturu tabele
-      final response =
-          await Supabase.instance.client.from('gps_lokacije').select().limit(10); // Uzmi samo 10 da vidimo strukturu
+      final response = await Supabase.instance.client
+          .from('gps_lokacije')
+          .select()
+          .limit(10); // Uzmi samo 10 da vidimo strukturu
       final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {
@@ -228,7 +238,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       Map<String, GPSLokacija> najnovijeLokacije = {};
       for (final lokacija in _gpsLokacije) {
         final vozacKey = lokacija.vozacId ?? 'nepoznat';
-        if (!najnovijeLokacije.containsKey(vozacKey) || najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
+        if (!najnovijeLokacije.containsKey(vozacKey) ||
+            najnovijeLokacije[vozacKey]!.vreme.isBefore(lokacija.vreme)) {
           najnovijeLokacije[vozacKey] = lokacija;
         }
       }
@@ -396,7 +407,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                     // 🚗 Vozači toggle
                     IconButton(
                       icon: Icon(
-                        _showDrivers ? Icons.directions_car : Icons.directions_car_outlined,
+                        _showDrivers
+                            ? Icons.directions_car
+                            : Icons.directions_car_outlined,
                         color: _showDrivers ? Colors.white : Colors.white54,
                       ),
                       onPressed: () {
@@ -406,7 +419,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                           });
                         _updateMarkers();
                       },
-                      tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
+                      tooltip:
+                          _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
                     ),
                     // 👥 Putnici toggle
                     IconButton(
@@ -421,7 +435,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                           });
                         _updateMarkers();
                       },
-                      tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
+                      tooltip: _showPassengers
+                          ? 'Sakrij putnike'
+                          : 'Prikaži putnike',
                     ),
                     // 🔄 Refresh dugme
                     TextButton(
@@ -604,10 +620,12 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                       _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
                     ],
-                    if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
+                    if (_showPassengers)
+                      _buildLegendItem(Colors.green, '👤 Putnici'),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),

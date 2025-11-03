@@ -28,11 +28,14 @@ class LoadingScreen extends StatefulWidget {
   State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateMixin {
+class _LoadingScreenState extends State<LoadingScreen>
+    with TickerProviderStateMixin {
   // 🎯 V3.0 State Management
-  final ValueNotifier<LoadingStage> _currentStage = ValueNotifier(LoadingStage.initializing);
+  final ValueNotifier<LoadingStage> _currentStage =
+      ValueNotifier(LoadingStage.initializing);
   final ValueNotifier<double> _progress = ValueNotifier(0.0);
-  final ValueNotifier<String> _statusMessage = ValueNotifier('Pokretanje aplikacije...');
+  final ValueNotifier<String> _statusMessage =
+      ValueNotifier('Pokretanje aplikacije...');
   final ValueNotifier<bool> _hasError = ValueNotifier(false);
   final ValueNotifier<String?> _errorMessage = ValueNotifier(null);
 
@@ -159,7 +162,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       final elapsed = timer.tick * 16;
       final t = (elapsed / duration.inMilliseconds).clamp(0.0, 1.0);
 
-      _progress.value = currentProgress + (targetProgress - currentProgress) * t;
+      _progress.value =
+          currentProgress + (targetProgress - currentProgress) * t;
 
       if (t >= 1.0) {
         timer.cancel();
@@ -666,7 +670,8 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: _retryCount < maxRetries ? _retryLoading : null,
+                        onPressed:
+                            _retryCount < maxRetries ? _retryLoading : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -681,7 +686,9 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                           size: 18,
                         ),
                         label: Text(
-                          _retryCount < maxRetries ? 'Pokušaj ponovo' : 'Previše pokušaja',
+                          _retryCount < maxRetries
+                              ? 'Pokušaj ponovo'
+                              : 'Previše pokušaja',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,

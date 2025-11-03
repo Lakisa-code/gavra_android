@@ -40,9 +40,11 @@ class VoiceNavigationService {
       await _audioSession!.configure(
         const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
+          avAudioSessionCategoryOptions:
+              AVAudioSessionCategoryOptions.duckOthers,
           avAudioSessionMode: AVAudioSessionMode.spokenAudio,
-          avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.longFormAudio,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.longFormAudio,
           androidAudioAttributes: AndroidAudioAttributes(
             contentType: AndroidAudioContentType.speech,
             flags: AndroidAudioFlags.audibilityEnforced,
@@ -131,7 +133,8 @@ class VoiceNavigationService {
 
   /// 📢 ANNOUNCE PASSENGER PICKUP
   static Future<void> announcePassengerPickup(Putnik putnik) async {
-    final kartaTip = (putnik.mesecnaKarta == true) ? 'Mesečna karta.' : 'Jednokratna karta.';
+    final kartaTip =
+        (putnik.mesecnaKarta == true) ? 'Mesečna karta.' : 'Jednokratna karta.';
     final announcement = 'Sledeći putnik: ${putnik.ime}. '
         'Adresa: ${putnik.adresa}. '
         '$kartaTip';
@@ -145,7 +148,8 @@ class VoiceNavigationService {
   }
 
   /// 📢 ANNOUNCE DISTANCE TO DESTINATION
-  static Future<void> announceDistanceToDestination(double distanceMeters) async {
+  static Future<void> announceDistanceToDestination(
+      double distanceMeters) async {
     String distanceText;
 
     if (distanceMeters < 100) {
@@ -221,10 +225,16 @@ class VoiceNavigationService {
         .replaceAll('°', 'stepeni');
 
     // Fix common mispronunciations
-    processed = processed.replaceAll('GPS', 'Ges Pe Es').replaceAll('API', 'A Pe I').replaceAll('URL', 'U Er El');
+    processed = processed
+        .replaceAll('GPS', 'Ges Pe Es')
+        .replaceAll('API', 'A Pe I')
+        .replaceAll('URL', 'U Er El');
 
     // Add pauses for better comprehension
-    processed = processed.replaceAll('.', '. ').replaceAll(',', ', ').replaceAll(';', '; ');
+    processed = processed
+        .replaceAll('.', '. ')
+        .replaceAll(',', ', ')
+        .replaceAll(';', '; ');
 
     return processed.trim();
   }
@@ -242,7 +252,8 @@ class VoiceNavigationService {
   }
 
   /// 🔄 CONVERT INSTRUCTION TO NATURAL SERBIAN
-  static String _convertInstructionToSerbian(TurnByTurnInstruction instruction) {
+  static String _convertInstructionToSerbian(
+      TurnByTurnInstruction instruction) {
     String direction = '';
 
     switch (instruction.type) {
@@ -324,7 +335,8 @@ class VoiceNavigationService {
 
   /// 📍 HANDLE GPS UPDATE FOR NAVIGATION
   static void _handleGpsUpdate(Position position) async {
-    if (_currentInstructions.isEmpty || _currentInstructionIndex >= _currentInstructions.length) {
+    if (_currentInstructions.isEmpty ||
+        _currentInstructionIndex >= _currentInstructions.length) {
       return;
     }
 

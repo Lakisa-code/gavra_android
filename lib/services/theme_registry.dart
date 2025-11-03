@@ -38,13 +38,15 @@ class ThemeRegistry {
   };
 
   /// Vraća sve dostupne teme
-  static Map<String, ThemeDefinition> get allThemes => Map.unmodifiable(_themes);
+  static Map<String, ThemeDefinition> get allThemes =>
+      Map.unmodifiable(_themes);
 
   /// Vraća listu naziva tema za dropdown
   static List<String> get themeNames => _themes.keys.toList();
 
   /// Vraća listu display imena tema za dropdown
-  static List<String> get themeDisplayNames => _themes.values.map((t) => t.name).toList();
+  static List<String> get themeDisplayNames =>
+      _themes.values.map((t) => t.name).toList();
 
   /// Vraća temu po ID-u
   static ThemeDefinition? getTheme(String themeId) => _themes[themeId];

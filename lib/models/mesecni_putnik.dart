@@ -78,8 +78,12 @@ class MesecniPutnik {
       datumKrajaMeseca: map['datum_kraja_meseca'] != null
           ? DateTime.parse(map['datum_kraja_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
-      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
+      createdAt: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
       status: map['status'] as String? ?? 'aktivan',
       ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble() ?? 0.0,
@@ -87,7 +91,9 @@ class MesecniPutnik {
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
       obrisan: map['obrisan'] as bool? ?? false,
-      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'] as String)
+          : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
       statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
@@ -95,15 +101,21 @@ class MesecniPutnik {
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
       pokupljen: map['pokupljen'] as bool? ?? false,
-      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null,
       rutaId: map['ruta_id'] as String?,
       voziloId: map['vozilo_id'] as String?,
       adresaPolaskaId: map['adresa_polaska_id'] as String?,
       adresaDolaskaId: map['adresa_dolaska_id'] as String?,
       ime: map['ime'] as String?,
       prezime: map['prezime'] as String?,
-      datumPocetka: map['datum_pocetka'] != null ? DateTime.parse(map['datum_pocetka'] as String) : null,
-      datumKraja: map['datum_kraja'] != null ? DateTime.parse(map['datum_kraja'] as String) : null,
+      datumPocetka: map['datum_pocetka'] != null
+          ? DateTime.parse(map['datum_pocetka'] as String)
+          : null,
+      datumKraja: map['datum_kraja'] != null
+          ? DateTime.parse(map['datum_kraja'] as String)
+          : null,
     );
   }
   final String id;
@@ -184,7 +196,8 @@ class MesecniPutnik {
       'adresa_bela_crkva': adresaBelaCrkva,
       'adresa_vrsac': adresaVrsac,
       'radni_dani': radniDani,
-      'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
+      'datum_pocetka_meseca':
+          datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -194,8 +207,8 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'vreme_pokupljenja':
-          vremePokupljenja?.toIso8601String(), // Koristi vremePokupljenja umesto poslednjePutovanje
+      'vreme_pokupljenja': vremePokupljenja
+          ?.toIso8601String(), // Koristi vremePokupljenja umesto poslednjePutovanje
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
@@ -215,7 +228,7 @@ class MesecniPutnik {
       'datum_kraja': datumKraja?.toIso8601String(),
     };
 
-    // ✅ Dodaj id samo ako nije prazan (za UPDATE operacije)
+    // Dodaj id samo ako nije prazan (za UPDATE operacije)
     // Za INSERT operacije, ostavi id da baza generiše UUID
     if (id.isNotEmpty) {
       result['id'] = id;
@@ -345,7 +358,10 @@ class MesecniPutnik {
 
   /// Validira da li su osnovna polja popunjena
   bool isValid() {
-    return putnikIme.isNotEmpty && tip.isNotEmpty && polasciPoDanu.isNotEmpty && id.isNotEmpty;
+    return putnikIme.isNotEmpty &&
+        tip.isNotEmpty &&
+        polasciPoDanu.isNotEmpty &&
+        id.isNotEmpty;
   }
 
   /// Validira format telefona (srpski brojevi)
@@ -364,7 +380,8 @@ class MesecniPutnik {
 
   /// Validira da li putnik ima validnu adresu
   bool hasValidAddress() {
-    return (adresaBelaCrkva != null && adresaBelaCrkva!.isNotEmpty) || (adresaVrsac != null && adresaVrsac!.isNotEmpty);
+    return (adresaBelaCrkva != null && adresaBelaCrkva!.isNotEmpty) ||
+        (adresaVrsac != null && adresaVrsac!.isNotEmpty);
   }
 
   /// Validira da li je period važenja valjan
@@ -389,7 +406,8 @@ class MesecniPutnik {
     }
 
     if (!hasValidPhoneNumbers()) {
-      errors['telefoni'] = 'Jedan ili više brojeva telefona nije u ispravnom formatu';
+      errors['telefoni'] =
+          'Jedan ili više brojeva telefona nije u ispravnom formatu';
     }
 
     if (polasciPoDanu.isEmpty) {

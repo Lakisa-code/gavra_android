@@ -242,8 +242,3 @@ class PutnikList extends StatelessWidget {
     }
   }
 }
-
-
-
-
-

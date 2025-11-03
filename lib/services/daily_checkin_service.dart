@@ -12,12 +12,14 @@ import 'statistika_service.dart';
 class DailyCheckInService {
   static const String _checkInPrefix = 'daily_checkin_';
   // Stream controller za real-time ažuriranje kocke
-  static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
+  static final StreamController<double> _sitanNovacController =
+      StreamController<double>.broadcast();
 
   /// Stream za real-time ažuriranje sitnog novca u UI
   static Stream<double> streamTodayAmount(String vozac) {
     // ✅ FIX: Koristi direktan SimplifiedKusurService stream za realtime ažuriranje
-    return SimplifiedKusurService.streamKusurForVozac(vozac).map((kusurFromBaza) {
+    return SimplifiedKusurService.streamKusurForVozac(vozac)
+        .map((kusurFromBaza) {
       // Ako nema kusura u bazi, pokušaj SharedPreferences kao fallback
       if (kusurFromBaza > 0) {
         return kusurFromBaza;
@@ -39,7 +41,8 @@ class DailyCheckInService {
   static Future<double> getAmountFromBothSources(String vozac) async {
     try {
       // 1. Pokušaj SimplifiedKusurService (baza) - prioritet
-      final kusurFromBaza = await SimplifiedKusurService.getKusurForVozac(vozac);
+      final kusurFromBaza =
+          await SimplifiedKusurService.getKusurForVozac(vozac);
       if (kusurFromBaza > 0) return kusurFromBaza;
     } catch (e) {
       // Ignoriši grešku KusurService
@@ -82,7 +85,8 @@ class DailyCheckInService {
   static Future<bool> hasCheckedInToday(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
     return prefs.getBool(todayKey) ?? false;
   }
 
@@ -93,11 +97,13 @@ class DailyCheckInService {
     double dnevniPazari = 0.0,
   }) async {
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     // � Ažuriraj kusur u vozaci tabeli (sada kada kolona postoji!)
     try {
-      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac).timeout(const Duration(seconds: 3));
+      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac)
+          .timeout(const Duration(seconds: 3));
     } catch (e) {
       print('WARNING: Kusur update failed: $e');
       // Nastavi sa lokalnim čuvanjem
@@ -130,9 +136,11 @@ class DailyCheckInService {
   }
 
   /// 🚨 EMERGENCY LOCAL SAVE - kada se sve ostalo zaglavi!
-  static Future<void> saveLokalno(String vozac, double sitanNovac, {double dnevniPazari = 0.0}) async {
+  static Future<void> saveLokalno(String vozac, double sitanNovac,
+      {double dnevniPazari = 0.0}) async {
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(todayKey, true);
@@ -150,7 +158,8 @@ class DailyCheckInService {
   static Future<double?> getTodayAmount(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
     return prefs.getDouble('${todayKey}_amount');
   }
 
@@ -158,7 +167,8 @@ class DailyCheckInService {
   static Future<double?> getTodayPazari(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
     return prefs.getDouble('${todayKey}_pazari');
   }
 
@@ -176,7 +186,8 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>> getTodayCheckIn(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
     final sitanNovac = prefs.getDouble('${todayKey}_amount') ?? 0.0;
     final dnevniPazari = prefs.getDouble('${todayKey}_pazari') ?? 0.0;
@@ -348,7 +359,8 @@ class DailyCheckInService {
     final today = DateTime.now();
     for (int i = 0; i < days; i++) {
       final date = today.subtract(Duration(days: i));
-      final dateKey = '$_checkInPrefix${vozac}_${date.year}_${date.month}_${date.day}';
+      final dateKey =
+          '$_checkInPrefix${vozac}_${date.year}_${date.month}_${date.day}';
       final hasCheckedIn = prefs.getBool(dateKey) ?? false;
       if (hasCheckedIn) {
         final amount = prefs.getDouble('${dateKey}_amount') ?? 0.0;
@@ -356,7 +368,8 @@ class DailyCheckInService {
         history.add({
           'datum': date,
           'iznos': amount,
-          'timestamp': timestampStr != null ? DateTime.parse(timestampStr) : date,
+          'timestamp':
+              timestampStr != null ? DateTime.parse(timestampStr) : date,
         });
       }
     }
@@ -367,7 +380,8 @@ class DailyCheckInService {
   static Future<void> resetCheckInForToday(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
     await prefs.remove(todayKey);
     await prefs.remove('${todayKey}_amount');
     await prefs.remove('${todayKey}_timestamp');
@@ -380,7 +394,8 @@ class DailyCheckInService {
     DateTime datum,
     Map<String, dynamic> popisPodaci,
   ) async {
-    final dateKey = '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
+    final dateKey =
+        '$_checkInPrefix${vozac}_${datum.year}_${datum.month}_${datum.day}';
     try {
       // Sačuvaj u Supabase (ako postoji tabela)
       await _savePopisToSupabase(vozac, popisPodaci, datum);
@@ -403,7 +418,8 @@ class DailyCheckInService {
     // Proverava poslednja 7 dana
     for (int i = 1; i <= 7; i++) {
       final checkDate = today.subtract(Duration(days: i));
-      final dateKey = '$_checkInPrefix${vozac}_${checkDate.year}_${checkDate.month}_${checkDate.day}';
+      final dateKey =
+          '$_checkInPrefix${vozac}_${checkDate.year}_${checkDate.month}_${checkDate.day}';
       final popisString = prefs.getString('${dateKey}_popis');
       if (popisString != null) {
         // Parsiraj JSON nazad u Map<String, dynamic>
@@ -430,8 +446,10 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final yesterday = today.subtract(const Duration(days: 1));
-    final yesterdayKey = '$_checkInPrefix${vozac}_${yesterday.year}_${yesterday.month}_${yesterday.day}';
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+    final yesterdayKey =
+        '$_checkInPrefix${vozac}_${yesterday.year}_${yesterday.month}_${yesterday.day}';
+    final todayKey =
+        '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
     // Ako je juče imao popis, a danas se prvi put uloguje
     final hadReportYesterday = prefs.getString('${yesterdayKey}_popis') != null;
     final checkedInToday = prefs.getBool(todayKey) ?? false;
@@ -451,7 +469,8 @@ class DailyCheckInService {
       // Uvoz potrebnih servisa
       final PutnikService putnikService = PutnikService();
       // 1. OSNOVNI PODACI ZA CILJANI DATUM
-      final dayStart = DateTime(targetDate.year, targetDate.month, targetDate.day);
+      final dayStart =
+          DateTime(targetDate.year, targetDate.month, targetDate.day);
       final dayEnd = DateTime(
         targetDate.year,
         targetDate.month,
@@ -463,11 +482,14 @@ class DailyCheckInService {
       // 2. KOMBINOVANI PUTNICI ZA DATUM (iz realtime) - koristimo server-filter
       final isoDate =
           '${targetDate.year.toString().padLeft(4, '0')}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}';
-      final putnici = await putnikService.streamKombinovaniPutniciFiltered(isoDate: isoDate).first;
+      final putnici = await putnikService
+          .streamKombinovaniPutniciFiltered(isoDate: isoDate)
+          .first;
       // ✅ FIX: Koristi StatistikaService umesto manuelne logike - IDENTIČNO SA _showPopisDana()
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(
+      final detaljneStats =
+          await StatistikaService.instance.detaljneStatistikePoVozacima(
         putnici,
         dayStart,
         dayEnd,
@@ -480,7 +502,10 @@ class DailyCheckInService {
         ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
           from: dayStart,
           to: dayEnd,
-        ).map((pazarMap) => pazarMap[vozac] ?? 0.0).first.timeout(const Duration(seconds: 10));
+        )
+            .map((pazarMap) => pazarMap[vozac] ?? 0.0)
+            .first
+            .timeout(const Duration(seconds: 10));
       } catch (e) {
         ukupanPazar = 0.0; // Fallback vrednost
       }
@@ -504,7 +529,8 @@ class DailyCheckInService {
       // 🚗 REALTIME GPS KILOMETRAŽA - IDENTIČNO SA _showPopisDana()
       double kilometraza;
       try {
-        kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
+        kilometraza = await StatistikaService.instance
+            .getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
         kilometraza = 0.0; // Fallback vrednost
       }
@@ -545,8 +571,10 @@ class DailyCheckInService {
         'datum': datum.toIso8601String().split('T')[0],
         'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
         'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
-        'dnevni_pazari': popisPodaci['ukupanPazar'] ?? 0.0, // Isti kao ukupan_pazar
-        'ukupno': (popisPodaci['sitanNovac'] ?? 0.0) + (popisPodaci['ukupanPazar'] ?? 0.0),
+        'dnevni_pazari':
+            popisPodaci['ukupanPazar'] ?? 0.0, // Isti kao ukupan_pazar
+        'ukupno': (popisPodaci['sitanNovac'] ?? 0.0) +
+            (popisPodaci['ukupanPazar'] ?? 0.0),
         'checkin_vreme': DateTime.now().toIso8601String(),
         'dodati_putnici': popisPodaci['dodatiPutnici'] ?? 0,
         'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,

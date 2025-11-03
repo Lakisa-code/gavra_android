@@ -10,8 +10,6 @@ import 'advanced_caching_service.dart';
 /// Real-time metrics, A/B testing, user behavior tracking
 /// 100% BESPLATNO - bolje od Google Analytics!
 class PerformanceAnalyticsService {
-
-
   // 📊 METRICS COLLECTORS
   static final Map<String, PerformanceMetric> _metrics = {};
   static final Map<String, List<DataPoint>> _timeSeries = {};
@@ -86,7 +84,6 @@ class PerformanceAnalyticsService {
 
       // Check for performance alerts
       _checkPerformanceAlert(metricName, value);
-
     } catch (e) {
       // Logger removed
     }
@@ -117,7 +114,6 @@ class PerformanceAnalyticsService {
         final oldestKey = _userBehavior.keys.first;
         _userBehavior.remove(oldestKey);
       }
-
     } catch (e) {
       // Logger removed
     }
@@ -145,7 +141,6 @@ class PerformanceAnalyticsService {
         userId: userId,
         metadata: metadata ?? {},
       );
-
     } catch (e) {
       // Logger removed
     }
@@ -544,8 +539,6 @@ class PerformanceAnalyticsService {
           isHigherBetter ? value < threshold * 0.5 : value > threshold * 2;
 
       if (isAlert) {
-        
-
         // In production, send to monitoring service
       }
     }
@@ -1014,8 +1007,3 @@ class MetricDetails {
   final Map<String, double> percentiles;
   final double trend;
 }
-
-
-
-
-

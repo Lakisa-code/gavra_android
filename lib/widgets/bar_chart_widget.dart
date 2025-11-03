@@ -77,8 +77,3 @@ class BarChartWidget extends StatelessWidget {
     );
   }
 }
-
-
-
-
-

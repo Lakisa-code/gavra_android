@@ -23,7 +23,8 @@ class StreamErrorWidget extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.smartErrorContainer,
-        border: Border.all(color: Theme.of(context).colorScheme.smartError.withOpacity(0.5)),
+        border: Border.all(
+            color: Theme.of(context).colorScheme.smartError.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -380,8 +381,3 @@ class MiniNetworkErrorWidget extends StatelessWidget {
     );
   }
 }
-
-
-
-
-

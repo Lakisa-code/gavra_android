@@ -14,7 +14,8 @@ import '../models/putnik.dart';
 /// Koristi OpenStreetMap tiles + lokalna SQLite baza za geocoding
 class OfflineMapService {
   static Database? _database;
-  static final String _tileUrlTemplate = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  static final String _tileUrlTemplate =
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   // Granice Vršac/Bela Crkva regiona
   static const double _minLat = 44.7; // Južno od Vršca
@@ -175,7 +176,8 @@ class OfflineMapService {
         double shortestDistance = double.infinity;
 
         for (final putnik in unvisited) {
-          final distance = _calculateDistance(currentPosition, coordinates[putnik]!);
+          final distance =
+              _calculateDistance(currentPosition, coordinates[putnik]!);
           if (distance < shortestDistance) {
             shortestDistance = distance;
             nearest = putnik;
@@ -204,7 +206,8 @@ class OfflineMapService {
   }) async {
     try {
       final double latDelta = radiusKm / 111.0; // 1 stepen ≈ 111km
-      final double lngDelta = radiusKm / (111.0 * math.cos(center.latitude * math.pi / 180));
+      final double lngDelta =
+          radiusKm / (111.0 * math.cos(center.latitude * math.pi / 180));
 
       final LatLng southwest = LatLng(
         math.max(_minLat, center.latitude - latDelta),
@@ -245,8 +248,10 @@ class OfflineMapService {
         ''');
 
         // Index za brže pretrage
-        await db.execute('CREATE INDEX idx_grad_adresa ON addresses(grad, adresa)');
-        await db.execute('CREATE INDEX idx_coordinates ON addresses(latitude, longitude)');
+        await db
+            .execute('CREATE INDEX idx_grad_adresa ON addresses(grad, adresa)');
+        await db.execute(
+            'CREATE INDEX idx_coordinates ON addresses(latitude, longitude)');
       },
     );
   }
@@ -255,23 +260,68 @@ class OfflineMapService {
   static Future<void> _preloadCriticalAddresses() async {
     final criticalAddresses = [
       // VRŠAC
-      {'grad': 'Vršac', 'adresa': 'Trg pobede 1', 'lat': 45.1167, 'lng': 21.3000},
-      {'grad': 'Vršac', 'adresa': 'Svetosavska 1', 'lat': 45.1170, 'lng': 21.3010},
-      {'grad': 'Vršac', 'adresa': 'Omladinska 1', 'lat': 45.1160, 'lng': 21.2990},
-      {'grad': 'Vršac', 'adresa': 'Železnička stanica', 'lat': 45.1180, 'lng': 21.2950},
+      {
+        'grad': 'Vršac',
+        'adresa': 'Trg pobede 1',
+        'lat': 45.1167,
+        'lng': 21.3000
+      },
+      {
+        'grad': 'Vršac',
+        'adresa': 'Svetosavska 1',
+        'lat': 45.1170,
+        'lng': 21.3010
+      },
+      {
+        'grad': 'Vršac',
+        'adresa': 'Omladinska 1',
+        'lat': 45.1160,
+        'lng': 21.2990
+      },
+      {
+        'grad': 'Vršac',
+        'adresa': 'Železnička stanica',
+        'lat': 45.1180,
+        'lng': 21.2950
+      },
 
       // BELA CRKVA
-      {'grad': 'Bela Crkva', 'adresa': 'Trg oslobođenja 1', 'lat': 44.8975, 'lng': 21.4178},
-      {'grad': 'Bela Crkva', 'adresa': 'Cara Dušana 1', 'lat': 44.8980, 'lng': 21.4180},
-      {'grad': 'Bela Crkva', 'adresa': 'Autobuska stanica', 'lat': 44.8970, 'lng': 21.4175},
+      {
+        'grad': 'Bela Crkva',
+        'adresa': 'Trg oslobođenja 1',
+        'lat': 44.8975,
+        'lng': 21.4178
+      },
+      {
+        'grad': 'Bela Crkva',
+        'adresa': 'Cara Dušana 1',
+        'lat': 44.8980,
+        'lng': 21.4180
+      },
+      {
+        'grad': 'Bela Crkva',
+        'adresa': 'Autobuska stanica',
+        'lat': 44.8970,
+        'lng': 21.4175
+      },
 
       // SELA VRŠAC
       {'grad': 'Straža', 'adresa': 'Centar', 'lat': 45.1000, 'lng': 21.2500},
-      {'grad': 'Vojvodinci', 'adresa': 'Centar', 'lat': 45.0500, 'lng': 21.2000},
+      {
+        'grad': 'Vojvodinci',
+        'adresa': 'Centar',
+        'lat': 45.0500,
+        'lng': 21.2000
+      },
       {'grad': 'Potporanj', 'adresa': 'Centar', 'lat': 45.0800, 'lng': 21.1500},
 
       // SELA BELA CRKVA
-      {'grad': 'Vraćev Gaj', 'adresa': 'Centar', 'lat': 44.9200, 'lng': 21.3500},
+      {
+        'grad': 'Vraćev Gaj',
+        'adresa': 'Centar',
+        'lat': 44.9200,
+        'lng': 21.3500
+      },
       {'grad': 'Dupljaja', 'adresa': 'Centar', 'lat': 44.8500, 'lng': 21.3000},
       {'grad': 'Jasenovo', 'adresa': 'Centar', 'lat': 44.8800, 'lng': 21.5000},
     ];

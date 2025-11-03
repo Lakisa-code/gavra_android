@@ -11,7 +11,6 @@ import 'geocoding_stats_service.dart';
 class AdvancedGeocodingService {
   static const String _cachePrefix = 'advanced_geocoding_';
 
-
   // 🌍 MULTIPLE FREE GEOCODING PROVIDERS - failover sistem
   static const Map<String, String> _providers = {
     'nominatim': 'https://nominatim.openstreetmap.org/search',
@@ -47,7 +46,6 @@ class AdvancedGeocodingService {
   }) async {
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac opštine dozvoljene
     if (_isCityOutsideServiceArea(grad)) {
-      
       return null;
     }
 
@@ -130,7 +128,6 @@ class AdvancedGeocodingService {
 
     for (int i = 0; i < batches.length; i++) {
       final batch = batches[i];
-      
 
       // Paralelno geocoding za batch
       final futures = batch.map((entry) async {
@@ -653,8 +650,3 @@ bool _isCityOutsideServiceArea(String grad) {
     (city) => normalizedGrad.contains(city) || city.contains(normalizedGrad),
   );
 }
-
-
-
-
-

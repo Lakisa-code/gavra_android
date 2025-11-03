@@ -70,10 +70,11 @@ class AuthManager {
 
       if (authResult.isSuccess && authResult.user != null) {
         // 🔄 PRIORITET: Koristi VozacBoja mapiranje za email -> vozač ime
-        String driverName = VozacBoja.getVozacForEmail(authResult.user!.email) ??
-            authResult.user!.displayName ??
-            authResult.user!.email?.split('@')[0] ??
-            'Vozač';
+        String driverName =
+            VozacBoja.getVozacForEmail(authResult.user!.email) ??
+                authResult.user!.displayName ??
+                authResult.user!.email?.split('@')[0] ??
+                'Vozač';
 
         await _saveDriverSession(driverName);
         // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a
@@ -195,9 +196,12 @@ class AuthManager {
   static Future<AuthResult> resendEmailVerification() async {
     try {
       final result = await FirebaseAuthService.resendEmailVerification();
-      return result.isSuccess ? AuthResult.success(result.message) : AuthResult.error(result.message);
+      return result.isSuccess
+          ? AuthResult.success(result.message)
+          : AuthResult.error(result.message);
     } catch (e) {
-      return AuthResult.error('Greška pri slanju verifikacije: ${e.toString()}');
+      return AuthResult.error(
+          'Greška pri slanju verifikacije: ${e.toString()}');
     }
   }
 
@@ -239,7 +243,8 @@ class AuthManager {
       final deviceInfo = DeviceInfoPlugin();
       if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
-        deviceId = '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
+        deviceId =
+            '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         deviceId = '${iosInfo.identifierForVendor}_${iosInfo.model}';

@@ -6,7 +6,7 @@ import 'ruta.dart';
 
 /// Status dnevnih putnika
 enum DnevniPutnikStatus {
-  aktivno, // ✅ DODANO: default vrednost iz baze
+  aktivno,
   rezervisan,
   pokupljen,
   otkazan,
@@ -18,7 +18,7 @@ extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
   String get value {
     switch (this) {
       case DnevniPutnikStatus.aktivno:
-        return 'aktivno'; // ✅ DODANO: default vrednost iz baze
+        return 'aktivno';
       case DnevniPutnikStatus.rezervisan:
         return 'rezervisan';
       case DnevniPutnikStatus.pokupljen:
@@ -35,7 +35,7 @@ extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
   static DnevniPutnikStatus fromString(String status) {
     switch (status.toLowerCase()) {
       case 'aktivno':
-        return DnevniPutnikStatus.aktivno; // ✅ DODANO: default vrednost iz baze
+        return DnevniPutnikStatus.aktivno;
       case 'rezervisan':
         return DnevniPutnikStatus.rezervisan;
       case 'pokupljen':
@@ -58,22 +58,22 @@ class DnevniPutnik {
     String? id,
     required this.ime,
     this.brojTelefona,
-    required this.grad, // ✅ DODANO: nedostajalo u modelu
+    required this.grad,
     required this.adresaId,
     required this.rutaId,
     required this.datumPutovanja,
     required this.vremePolaska,
     this.brojMesta = 1,
     required this.cena,
-    this.status = DnevniPutnikStatus.aktivno, // ✅ ISPRAVKA: default vrednost iz baze
+    this.status = DnevniPutnikStatus.aktivno,
     this.napomena,
     this.vremePokupljenja,
     this.pokupioVozacId,
     this.vremePlacanja,
     this.naplatioVozacId,
     this.dodaoVozacId,
-    this.otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
-    this.voziloId, // ✅ DODANO: nedostajalo u modelu
+    this.otkazaoVozacId,
+    this.voziloId,
     this.obrisan = false,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -84,26 +84,30 @@ class DnevniPutnik {
   factory DnevniPutnik.fromMap(Map<String, dynamic> map) {
     return DnevniPutnik(
       id: map['id'] as String,
-      ime: map['putnik_ime'] as String, // ✅ ISPRAVKA: era 'ime'
-      brojTelefona: map['telefon'] as String?, // ✅ ISPRAVKA: era 'broj_telefona'
-      grad: map['grad'] as String, // ✅ DODANO: nedostajalo u modelu
+      ime: map['putnik_ime'] as String,
+      brojTelefona: map['telefon'] as String?,
+      grad: map['grad'] as String,
       adresaId: map['adresa_id'] as String,
       rutaId: map['ruta_id'] as String,
-      datumPutovanja: DateTime.parse(map['datum_putovanja'] as String), // ✅ ISPRAVKA: era 'datum'
-      vremePolaska: map['vreme_polaska'] as String, // ✅ ISPRAVKA: era 'polazak'
+      datumPutovanja: DateTime.parse(map['datum_putovanja'] as String),
+      vremePolaska: map['vreme_polaska'] as String,
       brojMesta: map['broj_mesta'] as int? ?? 1,
       cena: (map['cena'] as num).toDouble(),
       status: DnevniPutnikStatusExtension.fromString(
-        map['status'] as String? ?? 'aktivno', // ✅ ISPRAVKA: default vrednost iz baze
+        map['status'] as String? ?? 'aktivno',
       ),
       napomena: map['napomena'] as String?,
-      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null,
       pokupioVozacId: map['pokupio_vozac_id'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
+      vremePlacanja: map['vreme_placanja'] != null
+          ? DateTime.parse(map['vreme_placanja'] as String)
+          : null,
       naplatioVozacId: map['naplatio_vozac_id'] as String?,
       dodaoVozacId: map['dodao_vozac_id'] as String?,
-      otkazaoVozacId: map['otkazao_vozac_id'] as String?, // ✅ DODANO: nedostajalo u modelu
-      voziloId: map['vozilo_id'] as String?, // ✅ DODANO: nedostajalo u modelu
+      otkazaoVozacId: map['otkazao_vozac_id'] as String?,
+      voziloId: map['vozilo_id'] as String?,
       obrisan: map['obrisan'] as bool? ?? false,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -112,7 +116,7 @@ class DnevniPutnik {
   final String id;
   final String ime;
   final String? brojTelefona;
-  final String grad; // ✅ DODANO: nedostajalo u modelu
+  final String grad;
   final String adresaId;
   final String rutaId;
   final DateTime datumPutovanja;
@@ -126,8 +130,8 @@ class DnevniPutnik {
   final DateTime? vremePlacanja;
   final String? naplatioVozacId;
   final String? dodaoVozacId;
-  final String? otkazaoVozacId; // ✅ DODANO: nedostajalo u modelu
-  final String? voziloId; // ✅ DODANO: nedostajalo u modelu
+  final String? otkazaoVozacId;
+  final String? voziloId;
   final bool obrisan;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -135,13 +139,13 @@ class DnevniPutnik {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'putnik_ime': ime, // ✅ ISPRAVKA: era 'ime'
-      'telefon': brojTelefona, // ✅ ISPRAVKA: era 'broj_telefona'
-      'grad': grad, // ✅ DODANO: nedostajalo u modelu
+      'putnik_ime': ime,
+      'telefon': brojTelefona,
+      'grad': grad,
       'adresa_id': adresaId,
       'ruta_id': rutaId,
-      'datum_putovanja': datumPutovanja.toIso8601String().split('T')[0], // ✅ ISPRAVKA: era 'datum'
-      'vreme_polaska': vremePolaska, // ✅ ISPRAVKA: era 'polazak'
+      'datum_putovanja': datumPutovanja.toIso8601String().split('T')[0],
+      'vreme_polaska': vremePolaska,
       'broj_mesta': brojMesta,
       'cena': cena,
       'status': status.value,
@@ -151,8 +155,8 @@ class DnevniPutnik {
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'naplatio_vozac_id': naplatioVozacId,
       'dodao_vozac_id': dodaoVozacId,
-      'otkazao_vozac_id': otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
-      'vozilo_id': voziloId, // ✅ DODANO: nedostajalo u modelu
+      'otkazao_vozac_id': otkazaoVozacId,
+      'vozilo_id': voziloId,
       'obrisan': obrisan,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -161,10 +165,13 @@ class DnevniPutnik {
 
   String get punoIme => ime;
 
-  bool get jePokupljen => status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
+  bool get jePokupljen =>
+      status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
   bool get jePlacen => vremePlacanja != null;
   bool get jeOtkazan => status == DnevniPutnikStatus.otkazan;
-  bool get jeOdsustvo => status == DnevniPutnikStatus.bolovanje || status == DnevniPutnikStatus.godisnji;
+  bool get jeOdsustvo =>
+      status == DnevniPutnikStatus.bolovanje ||
+      status == DnevniPutnikStatus.godisnji;
 
   /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
   Putnik toPutnik(Adresa adresa, Ruta ruta) {
@@ -208,7 +215,11 @@ class DnevniPutnik {
 
   /// Validira da li su sva obavezna polja popunjena
   bool get isValid {
-    return ime.trim().isNotEmpty && adresaId.isNotEmpty && rutaId.isNotEmpty && cena >= 0 && vremePolaska.isNotEmpty;
+    return ime.trim().isNotEmpty &&
+        adresaId.isNotEmpty &&
+        rutaId.isNotEmpty &&
+        cena >= 0 &&
+        vremePolaska.isNotEmpty;
   }
 
   /// Validira format vremena polaska (HH:mm)
@@ -346,7 +357,8 @@ class DnevniPutnik {
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
       dodaoVozacId: dodaoVozacId ?? this.dodaoVozacId,
-      otkazaoVozacId: otkazaoVozacId ?? this.otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
+      otkazaoVozacId: otkazaoVozacId ??
+          this.otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
       voziloId: voziloId ?? this.voziloId, // ✅ DODANO: nedostajalo u modelu
       obrisan: obrisan ?? this.obrisan,
       createdAt: createdAt ?? this.createdAt,
@@ -374,6 +386,9 @@ class DnevniPutnik {
 
   @override
   int get hashCode {
-    return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
+    return id.hashCode ^
+        ime.hashCode ^
+        datumPutovanja.hashCode ^
+        vremePolaska.hashCode;
   }
 }

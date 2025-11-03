@@ -6,7 +6,8 @@ import '../utils/vozac_boja.dart';
 /// 🔥 FIREBASE AUTH + SUPABASE DATA SERVICE
 /// Firebase Auth za autentifikaciju, Supabase za podatke
 class FirebaseAuthService {
-  static final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
+  static final firebase_auth.FirebaseAuth _auth =
+      firebase_auth.FirebaseAuth.instance;
   static final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Trenutno ulogovan korisnik
@@ -16,7 +17,8 @@ class FirebaseAuthService {
   static bool get isLoggedIn => currentUser != null;
 
   /// Stream trenutnog korisnika za realtime updates
-  static Stream<firebase_auth.User?> get authStateChanges => _auth.authStateChanges();
+  static Stream<firebase_auth.User?> get authStateChanges =>
+      _auth.authStateChanges();
 
   /// Email registracija sa Supabase podacima
   static Future<AuthResult> registerWithEmail({
@@ -33,7 +35,8 @@ class FirebaseAuthService {
       }
 
       // 1. Kreiranje korisnika u Firebase Auth
-      final firebase_auth.UserCredential credential = await _auth.createUserWithEmailAndPassword(
+      final firebase_auth.UserCredential credential =
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -53,7 +56,8 @@ class FirebaseAuthService {
 
       return AuthResult.success(
         user: credential.user,
-        message: 'Registracija uspešna! Proverite svoj email za confirmation link.',
+        message:
+            'Registracija uspešna! Proverite svoj email za confirmation link.',
       );
     } on firebase_auth.FirebaseAuthException catch (e) {
       return AuthResult.failure(_getErrorMessage(e));
@@ -68,7 +72,8 @@ class FirebaseAuthService {
     required String password,
   }) async {
     try {
-      final firebase_auth.UserCredential credential = await _auth.signInWithEmailAndPassword(
+      final firebase_auth.UserCredential credential =
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -180,10 +185,15 @@ class FirebaseAuthService {
   }
 
   /// Sinhronizacija korisničkog profila sa Supabase
-  static Future<void> _syncUserProfileWithSupabase(firebase_auth.User user) async {
+  static Future<void> _syncUserProfileWithSupabase(
+      firebase_auth.User user) async {
     try {
       // Proveri da li postoji profil
-      final response = await _supabase.from('korisnici').select().eq('firebase_uid', user.uid).maybeSingle();
+      final response = await _supabase
+          .from('korisnici')
+          .select()
+          .eq('firebase_uid', user.uid)
+          .maybeSingle();
 
       if (response == null) {
         // Kreiraj novi profil ako ne postoji
@@ -209,7 +219,11 @@ class FirebaseAuthService {
       final user = currentUser;
       if (user == null) return null;
 
-      final response = await _supabase.from('korisnici').select().eq('firebase_uid', user.uid).maybeSingle();
+      final response = await _supabase
+          .from('korisnici')
+          .select()
+          .eq('firebase_uid', user.uid)
+          .maybeSingle();
 
       return response;
     } catch (e) {

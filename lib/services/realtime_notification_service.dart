@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
-
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
 
@@ -52,12 +51,8 @@ class RealtimeNotificationService {
       await utf8.decoder.bind(httpResponse).join();
       if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
         // Logger removed
-      } else {
-        
-      }
-    } catch (e) {
-      
-    }
+      } else {}
+    } catch (e) {}
   }
 
   /// OneSignal direktno konfigurisano sa REST API
@@ -69,19 +64,14 @@ class RealtimeNotificationService {
   static Future<void> handleInitialMessage(RemoteMessage? message) async {
     if (message == null) return;
     try {
-      
       await _handleFirebaseNotificationTap(message);
     } catch (e) {
       // Logger removed
     }
   }
 
-
-
   /// Initialize service with full multi-channel support (Firebase + OneSignal + Local)
-  static Future<void> initialize() async {
-    
-  }
+  static Future<void> initialize() async {}
 
   /// Setup foreground Firebase message listeners for real-time notifications
   static void listenForForegroundNotifications(BuildContext context) {
@@ -100,21 +90,25 @@ class RealtimeNotificationService {
       if (datumString.isNotEmpty) {
         try {
           final datum = DateTime.parse(datumString);
-          isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
+          isToday = datum.year == danas.year &&
+              datum.month == danas.month &&
+              datum.day == danas.day;
         } catch (_) {
           isToday = false;
         }
       }
 
-      if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
+      if ((type == 'dodat' ||
+              type == 'novi_putnik' ||
+              type == 'otkazan' ||
+              type == 'otkazan_putnik') &&
+          isToday) {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
           payload: (message.data['type'] as String?) ?? 'firebase_foreground',
         );
-      } else {
-        
-      }
+      } else {}
     });
 
     // Listen for message taps
@@ -139,7 +133,8 @@ class RealtimeNotificationService {
       await FirebaseMessaging.instance.subscribeToTopic('gavra_all_drivers');
 
       // Subscribe to driver-specific topic
-      await FirebaseMessaging.instance.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      await FirebaseMessaging.instance
+          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
       // Logger removed
     } catch (e) {
@@ -179,8 +174,6 @@ class RealtimeNotificationService {
         segment: 'All',
         data: data,
       );
-
-      
     } catch (e) {
       // Logger removed
     }
@@ -188,8 +181,6 @@ class RealtimeNotificationService {
 
   /// Test notification functionality with multi-channel support
   static Future<void> sendTestNotification(String message) async {
-    
-
     // Show local notification
     await LocalNotificationService.showRealtimeNotification(
       title: 'Gavra Test - Multi Channel',
@@ -202,8 +193,10 @@ class RealtimeNotificationService {
   static Future<bool> hasNotificationPermissions() async {
     // Logger removed
     try {
-      NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
-      bool hasPermission = settings.authorizationStatus == AuthorizationStatus.authorized;
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
+      bool hasPermission =
+          settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return hasPermission;
     } catch (e) {
@@ -222,10 +215,12 @@ class RealtimeNotificationService {
         return false;
       }
 
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.requestPermission().timeout(const Duration(seconds: 10));
+      NotificationSettings settings = await FirebaseMessaging.instance
+          .requestPermission()
+          .timeout(const Duration(seconds: 10));
 
-      bool granted = settings.authorizationStatus == AuthorizationStatus.authorized;
+      bool granted =
+          settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return granted;
     } catch (e) {
@@ -248,7 +243,8 @@ class RealtimeNotificationService {
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData =
+            jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(
@@ -263,8 +259,3 @@ class RealtimeNotificationService {
     }
   }
 }
-
-
-
-
-

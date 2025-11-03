@@ -26,7 +26,8 @@ import 'cache_service.dart';
 ///
 /// OGRANIČENO NA: Bela Crkva i Vršac opštine samo
 class AdresaService {
-  AdresaService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
+  AdresaService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
 
   static const String _cachePrefix = 'adresa_';
@@ -47,7 +48,8 @@ class AdresaService {
     try {
       // Check cache first unless force refresh
       if (!forceRefresh) {
-        final cached = await CacheService.getFromDisk<List<Map<String, dynamic>>>(
+        final cached =
+            await CacheService.getFromDisk<List<Map<String, dynamic>>>(
           _listCacheKey,
         );
         if (cached != null) {
@@ -60,7 +62,10 @@ class AdresaService {
       // Logger removed
       _cacheMisses++;
 
-      final response = await _supabase.from('adrese').select().order('updated_at', ascending: false);
+      final response = await _supabase
+          .from('adrese')
+          .select()
+          .order('updated_at', ascending: false);
 
       final adrese = (response as List)
           .map((json) => Adresa.fromMap(json as Map<String, dynamic>))
@@ -88,7 +93,8 @@ class AdresaService {
     try {
       // Check cache first
       final cacheKey = '$_cachePrefix$id';
-      final cached = await CacheService.getFromDisk<Map<String, dynamic>>(cacheKey);
+      final cached =
+          await CacheService.getFromDisk<Map<String, dynamic>>(cacheKey);
       if (cached != null) {
         // Logger removed
         _cacheHits++;
@@ -98,7 +104,8 @@ class AdresaService {
       // Logger removed
       _cacheMisses++;
 
-      final response = await _supabase.from('adrese').select().eq('id', id).single();
+      final response =
+          await _supabase.from('adrese').select().eq('id', id).single();
 
       final adresa = Adresa.fromMap(response);
 
@@ -135,7 +142,11 @@ class AdresaService {
 
       // Logger removed
 
-      final response = await _supabase.from('adrese').insert(normalizedAdresa.toMap()).select().single();
+      final response = await _supabase
+          .from('adrese')
+          .insert(normalizedAdresa.toMap())
+          .select()
+          .single();
 
       final createdAdresa = Adresa.fromMap(response);
 
@@ -164,7 +175,12 @@ class AdresaService {
 
       // Logger removed
 
-      final response = await _supabase.from('adrese').update(updates).eq('id', id).select().single();
+      final response = await _supabase
+          .from('adrese')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
 
       final updatedAdresa = Adresa.fromMap(response);
 
@@ -244,9 +260,14 @@ class AdresaService {
 
       // Logger removed
 
-      final response = await _supabase.from('adrese').insert(validAdrese.map((a) => a.toMap()).toList()).select();
+      final response = await _supabase
+          .from('adrese')
+          .insert(validAdrese.map((a) => a.toMap()).toList())
+          .select();
 
-      final createdAdrese = (response as List).map((json) => Adresa.fromMap(json as Map<String, dynamic>)).toList();
+      final createdAdrese = (response as List)
+          .map((json) => Adresa.fromMap(json as Map<String, dynamic>))
+          .toList();
 
       // Cache all created addresses
       for (final adresa in createdAdrese) {
@@ -361,7 +382,8 @@ class AdresaService {
       // Text search in ulica and grad
       if (query != null && query.trim().isNotEmpty) {
         final searchTerm = query.trim().toLowerCase();
-        queryBuilder = queryBuilder.or('ulica.ilike.%$searchTerm%,grad.ilike.%$searchTerm%');
+        queryBuilder = queryBuilder
+            .or('ulica.ilike.%$searchTerm%,grad.ilike.%$searchTerm%');
       }
 
       // Filter by city
@@ -475,8 +497,10 @@ class AdresaService {
 
       // Basic counts
       stats['totalAddresses'] = allAdrese.length;
-      stats['addressesWithCoordinates'] = allAdrese.where((a) => a.hasValidCoordinates).length;
-      stats['validAddresses'] = allAdrese.where((a) => a.isCompletelyValid).length;
+      stats['addressesWithCoordinates'] =
+          allAdrese.where((a) => a.hasValidCoordinates).length;
+      stats['validAddresses'] =
+          allAdrese.where((a) => a.isCompletelyValid).length;
 
       // Municipality breakdown
       final byMunicipality = <String, int>{};
@@ -487,7 +511,8 @@ class AdresaService {
         byMunicipality[municipality] = (byMunicipality[municipality] ?? 0) + 1;
 
         if (adresa.hasValidCoordinates) {
-          coordinatesByMunicipality[municipality] = (coordinatesByMunicipality[municipality] ?? 0) + 1;
+          coordinatesByMunicipality[municipality] =
+              (coordinatesByMunicipality[municipality] ?? 0) + 1;
         }
       }
 
@@ -497,10 +522,13 @@ class AdresaService {
       // Service coverage
       final inServiceArea = allAdrese.where((a) => a.isInServiceArea).length;
       stats['serviceAreaCoverage'] = inServiceArea;
-      stats['serviceAreaPercentage'] = allAdrese.isNotEmpty ? (inServiceArea / allAdrese.length * 100).round() : 0;
+      stats['serviceAreaPercentage'] = allAdrese.isNotEmpty
+          ? (inServiceArea / allAdrese.length * 100).round()
+          : 0;
 
       // Priority locations
-      final priorityLocations = allAdrese.where((a) => a.priorityScore > 0).length;
+      final priorityLocations =
+          allAdrese.where((a) => a.priorityScore > 0).length;
       stats['priorityLocations'] = priorityLocations;
 
       // Cache statistics
@@ -508,7 +536,9 @@ class AdresaService {
         'totalOperations': _totalOperations,
         'cacheHits': _cacheHits,
         'cacheMisses': _cacheMisses,
-        'cacheHitRate': _totalOperations > 0 ? (_cacheHits / _totalOperations * 100).round() : 0,
+        'cacheHitRate': _totalOperations > 0
+            ? (_cacheHits / _totalOperations * 100).round()
+            : 0,
         'lastOperation': _lastOperationTime?.toIso8601String(),
       };
 
@@ -570,8 +600,15 @@ class AdresaService {
   Stream<List<Adresa>> watchAdrese() {
     // Logger removed
 
-    return _supabase.from('adrese').stream(primaryKey: ['id']).order('updated_at').map(
-          (data) => data.map((json) => Adresa.fromMap(json)).where((adresa) => adresa.isInServiceArea).toList(),
+    return _supabase
+        .from('adrese')
+        .stream(primaryKey: ['id'])
+        .order('updated_at')
+        .map(
+          (data) => data
+              .map((json) => Adresa.fromMap(json))
+              .where((adresa) => adresa.isInServiceArea)
+              .toList(),
         );
   }
 
@@ -579,7 +616,11 @@ class AdresaService {
   Stream<Adresa?> watchAdresa(String id) {
     // Logger removed
 
-    return _supabase.from('adrese').stream(primaryKey: ['id']).eq('id', id).map((data) {
+    return _supabase
+        .from('adrese')
+        .stream(primaryKey: ['id'])
+        .eq('id', id)
+        .map((data) {
           if (data.isEmpty) return null;
           final adresa = Adresa.fromMap(data.first);
           return adresa.isInServiceArea ? adresa : null;
@@ -638,7 +679,9 @@ class AdresaService {
     return {
       'isHealthy': true,
       'totalOperations': _totalOperations,
-      'cacheHitRate': _totalOperations > 0 ? (_cacheHits / _totalOperations * 100).round() : 0,
+      'cacheHitRate': _totalOperations > 0
+          ? (_cacheHits / _totalOperations * 100).round()
+          : 0,
       'lastOperation': _lastOperationTime?.toIso8601String(),
       'cacheSize': 'N/A', // Could be implemented with cache size tracking
     };

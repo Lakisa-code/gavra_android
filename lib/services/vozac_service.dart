@@ -6,26 +6,33 @@ import 'adresa_service.dart';
 
 /// Servis za upravljanje vozačima
 class VozacService {
-  VozacService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
+  VozacService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
 
   /// Dohvata sve vozače
   Future<List<Vozac>> getAllVozaci() async {
-    final response = await _supabase.from('vozaci').select().eq('aktivan', true).order('ime');
+    final response = await _supabase
+        .from('vozaci')
+        .select()
+        .eq('aktivan', true)
+        .order('ime');
 
     return response.map((json) => Vozac.fromMap(json)).toList();
   }
 
   /// Dohvata vozača po ID-u
   Future<Vozac?> getVozacById(String id) async {
-    final response = await _supabase.from('vozaci').select().eq('id', id).single();
+    final response =
+        await _supabase.from('vozaci').select().eq('id', id).single();
 
     return Vozac.fromMap(response);
   }
 
   /// Kreira novog vozača
   Future<Vozac> createVozac(Vozac vozac) async {
-    final response = await _supabase.from('vozaci').insert(vozac.toMap()).select().single();
+    final response =
+        await _supabase.from('vozaci').insert(vozac.toMap()).select().single();
 
     return Vozac.fromMap(response);
   }
@@ -34,7 +41,12 @@ class VozacService {
   Future<Vozac> updateVozac(String id, Map<String, dynamic> updates) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 
-    final response = await _supabase.from('vozaci').update(updates).eq('id', id).select().single();
+    final response = await _supabase
+        .from('vozaci')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
     return Vozac.fromMap(response);
   }
@@ -71,7 +83,12 @@ class VozacService {
 
     if (parts.length == 1) {
       // Samo ime
-      final response = await _supabase.from('vozaci').select().eq('aktivan', true).eq('ime', parts[0]).maybeSingle();
+      final response = await _supabase
+          .from('vozaci')
+          .select()
+          .eq('aktivan', true)
+          .eq('ime', parts[0])
+          .maybeSingle();
 
       return response != null ? Vozac.fromMap(response) : null;
     } else {
@@ -150,16 +167,24 @@ class VozacService {
 
     // Use OR conditions for each address ID instead of in_ if method doesn't exist
     if (adresaIds.length == 1) {
-      final response =
-          await _supabase.from('vozaci').select().eq('aktivan', true).eq('adresa_id', adresaIds.first).order('ime');
+      final response = await _supabase
+          .from('vozaci')
+          .select()
+          .eq('aktivan', true)
+          .eq('adresa_id', adresaIds.first)
+          .order('ime');
 
       return response.map((json) => Vozac.fromMap(json)).toList();
     } else {
       // For multiple IDs, we'd need to make multiple queries or use a different approach
       final List<Vozac> results = [];
       for (final adresaId in adresaIds) {
-        final response =
-            await _supabase.from('vozaci').select().eq('aktivan', true).eq('adresa_id', adresaId).order('ime');
+        final response = await _supabase
+            .from('vozaci')
+            .select()
+            .eq('aktivan', true)
+            .eq('adresa_id', adresaId)
+            .order('ime');
 
         final vozaci = response.map((json) => Vozac.fromMap(json)).toList();
         results.addAll(vozaci);

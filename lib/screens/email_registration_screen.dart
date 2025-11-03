@@ -13,10 +13,12 @@ class EmailRegistrationScreen extends StatefulWidget {
   final String? preselectedDriverName;
 
   @override
-  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() =>
+      _EmailRegistrationScreenState();
 }
 
-class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with TickerProviderStateMixin {
+class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -492,7 +494,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
       if (result.isSuccess) {
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
         final currentUser = FirebaseAuthService.currentUser;
-        final needsVerification = currentUser != null && !currentUser.emailVerified;
+        final needsVerification =
+            currentUser != null && !currentUser.emailVerified;
 
         if (needsVerification) {
           // Sakrij loading dialog
@@ -628,7 +631,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           child: SingleChildScrollView(
             child: Text(
               'Vaš nalog je uspešno kreiran i možete se prijaviti.',
-              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
             ),
           ),
         ),

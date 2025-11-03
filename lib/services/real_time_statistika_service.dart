@@ -18,7 +18,8 @@ import 'supabase_safe.dart';
 class RealTimeStatistikaService {
   RealTimeStatistikaService._internal();
   static RealTimeStatistikaService? _instance;
-  static RealTimeStatistikaService get instance => _instance ??= RealTimeStatistikaService._internal();
+  static RealTimeStatistikaService get instance =>
+      _instance ??= RealTimeStatistikaService._internal();
 
   // 🎯 CENTRALIUZOVANI STREAM CACHE
   final Map<String, Stream<dynamic>> _streamCache = {};
@@ -51,7 +52,8 @@ class RealTimeStatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final cacheKey = 'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
+    final cacheKey =
+        'pazar_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
       // Debug logging removed for production
@@ -76,7 +78,8 @@ class RealTimeStatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final cacheKey = 'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
+    final cacheKey =
+        'detaljne_${fromDate.millisecondsSinceEpoch}_${toDate.millisecondsSinceEpoch}';
 
     if (!_streamCache.containsKey(cacheKey)) {
       // Debug logging removed for production
@@ -85,7 +88,8 @@ class RealTimeStatistikaService {
             final putnici = data[0] as List<Putnik>;
             final mesecniPutnici = data[1] as List<MesecniPutnik>;
 
-            return StatistikaService.instance.calculateDetaljneStatistikeSinhronno(
+            return StatistikaService.instance
+                .calculateDetaljneStatistikeSinhronno(
               putnici,
               mesecniPutnici,
               fromDate,
@@ -109,7 +113,8 @@ class RealTimeStatistikaService {
       _streamCache[cacheKey] = RealtimeService.instance
           .tableStream('putovanja_istorija')
           .map((data) {
-            final List<dynamic> items = data is List ? List<dynamic>.from(data) : <dynamic>[];
+            final List<dynamic> items =
+                data is List ? List<dynamic>.from(data) : <dynamic>[];
             final filtered = items.where((row) {
               try {
                 return row['putnik_id']?.toString() == putnikId.toString();
@@ -169,14 +174,16 @@ class RealTimeStatistikaService {
       }
 
       final ukupno = ukupnoPutovanja + otkazi;
-      final uspesnost = ukupno > 0 ? ((ukupnoPutovanja / ukupno) * 100).round() : 0;
+      final uspesnost =
+          ukupno > 0 ? ((ukupnoPutovanja / ukupno) * 100).round() : 0;
 
       return {
         'ukupnoPutovanja': ukupnoPutovanja,
         'otkazi': otkazi,
         'ukupanPrihod': ukupanPrihod,
         'uspesnost': uspesnost,
-        'poslednje': putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
+        'poslednje':
+            putovanja.isNotEmpty ? putovanja.first['created_at'] : null,
       };
     } catch (e) {
       // Debug logging removed for production

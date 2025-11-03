@@ -196,7 +196,8 @@ class RealtimePriorityService {
       }).eq('id', currentDriver);
 
       // Sačuvaj lokalno da je status ažuriran
-      await prefs.setInt('last_status_update', DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+          'last_status_update', DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       // Tiho preskače greške
     }
@@ -227,7 +228,8 @@ class RealtimePriorityService {
         );
       }
 
-      await prefs.setInt('last_emergency_check', DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+          'last_emergency_check', DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       // Tiho preskače greške - tabela možda ne postoji
     }
@@ -278,10 +280,14 @@ class RealtimePriorityService {
         'battery_level': prefs.getInt('battery_level') ?? 100,
       };
 
-      await Supabase.instance.client.from('vozaci').update(driverData).eq('id', currentDriver);
+      await Supabase.instance.client
+          .from('vozaci')
+          .update(driverData)
+          .eq('id', currentDriver);
 
       // Sačuvaj lokalno timestamp poslednjeg ažuriranja
-      await prefs.setInt('last_driver_update', DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+          'last_driver_update', DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       // Tiho preskače greške
     }
@@ -313,7 +319,8 @@ class RealtimePriorityService {
         // Tabela možda ne postoji, ignoriši grešku
       }
 
-      await prefs.setInt('last_other_data_update', DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+          'last_other_data_update', DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       // Tiho preskače greške - NO BATTERY SRANJE!
     }

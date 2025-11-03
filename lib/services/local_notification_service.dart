@@ -12,14 +12,16 @@ import '../screens/danas_screen.dart';
 import 'supabase_safe.dart';
 
 class LocalNotificationService {
-  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   static final AudioPlayer _audioPlayer = AudioPlayer();
 
   static Future<void> initialize(BuildContext context) async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
     );
 
@@ -41,7 +43,8 @@ class LocalNotificationService {
     );
 
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
     // Permission requests are handled by RealtimeNotificationService
@@ -73,7 +76,8 @@ class LocalNotificationService {
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
-            channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
+            channelDescription:
+                'Kanal za realtime heads-up notifikacije sa zvukom',
             importance: Importance.max,
             priority: Priority.high,
             playSound: false, // Mi ćemo custom zvuk
@@ -83,7 +87,8 @@ class LocalNotificationService {
             category: AndroidNotificationCategory.call, // Visok prioritet
             visibility: NotificationVisibility.public, // Prikaži na lock screen
             ticker: '$title - $body',
-            largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+            largeIcon:
+                const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
             styleInformation: BigTextStyleInformation(
               body,
               htmlFormatBigText: true,
@@ -124,18 +129,21 @@ class LocalNotificationService {
     String? payload,
   }) async {
     try {
-      final FlutterLocalNotificationsPlugin plugin = FlutterLocalNotificationsPlugin();
+      final FlutterLocalNotificationsPlugin plugin =
+          FlutterLocalNotificationsPlugin();
 
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      const InitializationSettings initializationSettings = InitializationSettings(
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
         android: initializationSettingsAndroid,
       );
 
       await plugin.initialize(initializationSettings);
 
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
         'gavra_realtime_channel',
         'Gavra Realtime Notifikacije',
         channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
@@ -177,7 +185,8 @@ class LocalNotificationService {
       if (response.payload != null) {
         try {
           // Parse the payload JSON
-          final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
+          final Map<String, dynamic> payloadData =
+              jsonDecode(response.payload!) as Map<String, dynamic>;
 
           notificationType = payloadData['type'] as String?;
           final putnikData = payloadData['putnik'];
@@ -186,7 +195,8 @@ class LocalNotificationService {
           if (putnikData is Map<String, dynamic>) {
             putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
             putnikGrad = putnikData['grad'] as String?;
-            putnikVreme = (putnikData['vreme'] ?? putnikData['polazak']) as String?;
+            putnikVreme =
+                (putnikData['vreme'] ?? putnikData['polazak']) as String?;
           } else if (putnikData is String) {
             // Try to parse if it's JSON string
             try {
@@ -194,7 +204,8 @@ class LocalNotificationService {
               if (putnikMap is Map<String, dynamic>) {
                 putnikIme = (putnikMap['ime'] ?? putnikMap['name']) as String?;
                 putnikGrad = putnikMap['grad'] as String?;
-                putnikVreme = (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
+                putnikVreme =
+                    (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
               }
             } catch (e) {
               // If not JSON, use as direct string
@@ -203,12 +214,15 @@ class LocalNotificationService {
           }
 
           // 🔍 DOHVATI PUTNIK PODATKE IZ BAZE ako nisu u payload-u
-          if (putnikIme != null && (putnikGrad == null || putnikVreme == null)) {
+          if (putnikIme != null &&
+              (putnikGrad == null || putnikVreme == null)) {
             try {
               final putnikInfo = await _fetchPutnikFromDatabase(putnikIme);
               if (putnikInfo != null) {
                 putnikGrad = putnikGrad ?? putnikInfo['grad'] as String?;
-                putnikVreme = putnikVreme ?? (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska']) as String?;
+                putnikVreme = putnikVreme ??
+                    (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska'])
+                        as String?;
               }
             } catch (e) {
               // Ignore database fetch errors - fallback to basic navigation

@@ -30,7 +30,8 @@ class NovcanaValidacija {
   }
 
   /// Validacija za mesečna plaćanja
-  static bool isValidMonthlyPayment(double? amount, String? vozac, String? mesec) {
+  static bool isValidMonthlyPayment(
+      double? amount, String? vozac, String? mesec) {
     if (!isValidAmount(amount)) return false;
     if (!isValidDriver(vozac)) return false;
     if (mesec == null || mesec.isEmpty) return false;
@@ -71,7 +72,8 @@ class NovcanaValidacija {
 
     if (vozacPutnici.isEmpty) return 0.0;
 
-    final placeni = vozacPutnici.where((p) => isValidAmount(p.iznosPlacanja)).length;
+    final placeni =
+        vozacPutnici.where((p) => isValidAmount(p.iznosPlacanja)).length;
     return (placeni / vozacPutnici.length) * 100;
   }
 
@@ -96,8 +98,3 @@ class NovcanaValidacija {
     return (modelAmount - dbAmount).abs() < 0.01;
   }
 }
-
-
-
-
-

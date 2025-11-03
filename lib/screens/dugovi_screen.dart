@@ -29,8 +29,10 @@ class _DugoviScreenState extends State<DugoviScreen> {
   final Map<String, DateTime> _streamHeartbeats = {};
 
   // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
+  final BehaviorSubject<String> _searchSubject =
+      BehaviorSubject<String>.seeded('');
+  final BehaviorSubject<String> _filterSubject =
+      BehaviorSubject<String>.seeded('svi');
   late Stream<String> _debouncedSearchStream;
   final TextEditingController _searchController = TextEditingController();
 
@@ -141,7 +143,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
                 (p) =>
                     (p.iznosPlacanja == null || p.iznosPlacanja == 0) &&
                     (p.jePokupljen) &&
-                    (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')) &&
+                    (p.status == null ||
+                        (p.status != 'Otkazano' && p.status != 'otkazan')) &&
                     (p.mesecnaKarta != true),
               )
               .toList();
@@ -178,7 +181,9 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 🔍 DEBOUNCED SEARCH SETUP
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
+    _debouncedSearchStream = _searchSubject
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct();
 
     _debouncedSearchStream.listen((query) {
       _performSearch(query);
@@ -241,7 +246,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
     if (searchQuery.isNotEmpty) {
       dugovi = dugovi.where((duznik) {
         return duznik.ime.toLowerCase().contains(searchQuery) ||
-            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ?? false) ||
+            (duznik.pokupioVozac?.toLowerCase().contains(searchQuery) ??
+                false) ||
             (duznik.grad.toLowerCase().contains(searchQuery));
       }).toList();
     }
@@ -283,7 +289,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
           preferredSize: const Size.fromHeight(80),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+              color: Theme.of(context)
+                  .glassContainer, // Transparentni glassmorphism
               border: Border.all(
                 color: Theme.of(context).glassBorder,
                 width: 1.5,
@@ -413,7 +420,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
               // Filter dropdown
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
@@ -460,7 +468,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
               // Sort dropdown
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
@@ -518,11 +527,14 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isHealthy ? 'Prikazano: $filteredCount od $totalCount dužnika' : 'Podaci se učitavaju...',
+                        isHealthy
+                            ? 'Prikazano: $filteredCount od $totalCount dužnika'
+                            : 'Podaci se učitavaju...',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.indigo.shade600,
-                          fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
+                          fontStyle:
+                              isHealthy ? FontStyle.normal : FontStyle.italic,
                         ),
                       ),
                       if (isHealthy) ...[
@@ -549,7 +561,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
   // 💰 CALCULATE TOTAL DEBT
   double _calculateTotalDebt() {
-    return _getFilteredDugovi().fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
+    return _getFilteredDugovi()
+        .fold(0.0, (sum, duznik) => sum + _calculateDugAmount(duznik));
   }
 
   // 🚀 V3.0 REALTIME CONTENT BUILDER
@@ -586,7 +599,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -696,14 +710,18 @@ class _DugoviScreenState extends State<DugoviScreen> {
       );
     }
 
-    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
+    if (errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('connection')) {
       return NetworkErrorWidget(
         message: 'Problem sa mrežom u $streamName',
         onRetry: onRetry ?? _initializeRealtimeStream,
       );
     }
 
-    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
+    if (errorString.contains('data') ||
+        errorString.contains('parse') ||
+        errorString.contains('format')) {
       return DataErrorWidget(
         dataType: streamName,
         reason: error.toString(),

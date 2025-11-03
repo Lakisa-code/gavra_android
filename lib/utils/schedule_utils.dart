@@ -20,8 +20,3 @@ bool isZimski(DateTime date) {
 
   return false;
 }
-
-
-
-
-

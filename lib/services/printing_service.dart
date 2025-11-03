@@ -163,9 +163,9 @@ class PrintingService {
             'Spisak_putnika_${selectedDay}_${selectedVreme}_${selectedGrad}_${DateFormat('dd_MM_yyyy').format(DateTime.now())}.pdf',
       );
       // Debug logging removed for production
-} catch (e) {
+    } catch (e) {
       // Debug logging removed for production
-if (context.mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Greška pri štampanju: $e'),
@@ -488,8 +488,3 @@ if (context.mounted) {
     );
   }
 }
-
-
-
-
-

@@ -132,7 +132,8 @@ class VozacMappingService {
 
     // ⚠️ WARN: Ako cache nije učitan, vrati null umesto crash
     if (!_isInitialized || _vozacUuidToName == null) {
-      print('⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
+      print(
+          '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
       return null;
     }
 
@@ -142,7 +143,8 @@ class VozacMappingService {
   /// Dobij UUID vozača sinhron (koristi cache ili null)
   static String? getVozacUuidSync(String ime) {
     if (!_isInitialized || _vozacNameToUuid == null) {
-      print('⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
+      print(
+          '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
       return null;
     }
     return _vozacNameToUuid?[ime];
@@ -165,7 +167,12 @@ class VozacMappingService {
     final warnings = <String>[];
 
     // Import VozacBoja da pristupimo validDrivers
-    final hardcodedDrivers = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana']; // VozacBoja.validDrivers
+    final hardcodedDrivers = [
+      'Bruda',
+      'Bilevski',
+      'Bojan',
+      'Svetlana'
+    ]; // VozacBoja.validDrivers
     final dynamicDrivers = _vozacNameToUuid?.keys.toList() ?? [];
 
     // Proveri da li svi hardcoded vozači postoje u bazi

@@ -9,7 +9,6 @@ import 'advanced_geocoding_service.dart';
 /// Enterprise-level autocomplete sa prediktivnim algoritima
 /// 100% BESPLATNO - bolji od Google Places API!
 class SmartAddressAutocompleteService {
-
   static const String _historyPrefix = 'address_history_';
   static const String _contextPrefix = 'address_context_';
   static const String _popularPrefix = 'popular_addresses_';
@@ -38,7 +37,6 @@ class SmartAddressAutocompleteService {
   }) async {
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac dozvoljeni
     if (_isCityOutsideServiceArea(currentCity)) {
-      
       return [];
     }
 
@@ -811,8 +809,3 @@ class AddressSuggestion {
         'metadata': metadata,
       };
 }
-
-
-
-
-

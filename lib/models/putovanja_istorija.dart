@@ -225,7 +225,8 @@ class PutovanjaIstorija {
     }
 
     if (!hasValidMesecniPutnikLink()) {
-      errors['mesecniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
+      errors['mesecniPutnikId'] =
+          'Mesečni putnici moraju imati ID mesečnog putnika';
     }
 
     if (!isDatumValid()) {

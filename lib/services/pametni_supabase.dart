@@ -28,7 +28,8 @@ class PametniSupabase {
   static RealtimeClient get realtime => _supabase.realtime;
 
   /// RPC pozivi se takođe broje
-  static Future<dynamic> rpc(String funkcija, {Map<String, dynamic>? params}) async {
+  static Future<dynamic> rpc(String funkcija,
+      {Map<String, dynamic>? params}) async {
     // Broji poziv asinhrono
     SimpleUsageMonitor.brojPoziv().catchError((e) => null);
     return _supabase.rpc(funkcija, params: params);

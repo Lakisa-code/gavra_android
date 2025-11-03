@@ -15,7 +15,8 @@ class SimplifiedKusurService {
     try {
       // CACHE OPTIMIZOVANO - prvo pokušaj iz cache
       final cacheKey = 'kusur_vozac_$vozacIme';
-      final cached = CacheService.getFromMemory<double>(cacheKey, maxAge: const Duration(minutes: 2));
+      final cached = CacheService.getFromMemory<double>(cacheKey,
+          maxAge: const Duration(minutes: 2));
 
       if (cached != null) {
         // Debug logging removed for production
@@ -46,7 +47,8 @@ class SimplifiedKusurService {
   }
 
   /// Ažuriraj kusur za određenog vozača u bazi - OPTIMIZOVANO sa timeout
-  static Future<bool> updateKusurForVozac(String vozacIme, double noviKusur) async {
+  static Future<bool> updateKusurForVozac(
+      String vozacIme, double noviKusur) async {
     try {
       // Debug logging removed for production
       // OPTIMIZOVANO sa SupabaseManager i eksplicitnim timeout-om
@@ -60,7 +62,8 @@ class SimplifiedKusurService {
         // Invalidate cache za ovog vozača
         final cacheKey = 'kusur_vozac_$vozacIme';
         CacheService.clearFromMemory(cacheKey);
-        CacheService.clearFromMemory('kusur_svi_vozaci'); // Clear i glavni cache
+        CacheService.clearFromMemory(
+            'kusur_svi_vozaci'); // Clear i glavni cache
         // Debug logging removed for production
         // Emituj ažuriranje preko stream-a
         _emitKusurUpdate(vozacIme, noviKusur);

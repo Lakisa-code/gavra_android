@@ -15,7 +15,8 @@ class PieChartWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Null-safe konverzija vrednosti u double
-    final total = data.values.fold(0.0, (double a, double? b) => a + (b ?? 0.0));
+    final total =
+        data.values.fold(0.0, (double a, double? b) => a + (b ?? 0.0));
     final entries = data.entries.toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +38,9 @@ class PieChartWidget extends StatelessWidget {
                   PieChartSectionData(
                     color: colors[i % colors.length],
                     value: entries[i].value,
-                    title: total == 0 ? '' : '${((entries[i].value / total) * 100).toStringAsFixed(1)}%',
+                    title: total == 0
+                        ? ''
+                        : '${((entries[i].value / total) * 100).toStringAsFixed(1)}%',
                     radius: 50,
                     titleStyle: const TextStyle(
                       fontSize: 14,

@@ -152,8 +152,3 @@ class TimeValidator {
     return normalized;
   }
 }
-
-
-
-
-

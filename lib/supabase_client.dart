@@ -22,7 +22,7 @@ const String supabaseServiceRoleKey =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzQzNjI5MiwiZXhwIjoyMDYzMDEyMjkyfQ.BrwnYQ6TWGB1BrmwaE0YnhMC5wMlBRdZUs1xv2dY5r4';
 
 // 📖 БРЗА РЕФЕРЕНЦА - REST API ПРИМЕРИ:
-// 
+//
 // GET возачи:
 // curl -H "apikey: $anonKey" "$url/rest/v1/vozaci?select=ime&limit=5"
 //
@@ -32,8 +32,3 @@ const String supabaseServiceRoleKey =
 // POST нови путник:
 // curl -X POST -H "apikey: $serviceKey" -H "Content-Type: application/json" \
 //      -d '{"putnik_ime":"Тест","tip":"ucenik"}' "$url/rest/v1/mesecni_putnici"
-
-
-
-
-

@@ -26,7 +26,9 @@ class Adresa {
       grad: map['grad'] as String?,
       koordinate: map['koordinate'], // JSONB data
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(map['updated_at'] as String)
+          : DateTime.now(),
     );
   }
 
@@ -125,9 +127,11 @@ class Adresa {
   /// Validation methods
   bool get hasValidCoordinates => latitude != null && longitude != null;
 
-  bool get isValidAddress => (ulica?.isNotEmpty ?? false) && (grad?.isNotEmpty ?? false);
+  bool get isValidAddress =>
+      (ulica?.isNotEmpty ?? false) && (grad?.isNotEmpty ?? false);
 
-  bool get hasCompleteAddress => isValidAddress && broj != null && broj!.isNotEmpty;
+  bool get hasCompleteAddress =>
+      isValidAddress && broj != null && broj!.isNotEmpty;
 
   /// Standardized address format
   String get standardizedAddress {
@@ -168,7 +172,9 @@ class Adresa {
     final double dLon = _toRadians(lon2 - lon1);
 
     final double a = math.pow(math.sin(dLat / 2), 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) * math.pow(math.sin(dLon / 2), 2);
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.pow(math.sin(dLon / 2), 2);
 
     final double c = 2 * math.asin(math.sqrt(a));
     return earthRadius * c;
@@ -262,7 +268,12 @@ class Adresa {
 
   /// Comprehensive validation combining all rules
   bool get isCompletelyValid {
-    return naziv.isNotEmpty && isValidUlica && isValidBroj && isValidGrad && isValidPostanskiBroj && isInServiceArea;
+    return naziv.isNotEmpty &&
+        isValidUlica &&
+        isValidBroj &&
+        isValidGrad &&
+        isValidPostanskiBroj &&
+        isInServiceArea;
   }
 
   /// Get validation error messages
@@ -281,7 +292,8 @@ class Adresa {
       errors.add('Broj nije valjan (format: 1, 12a, 5/3, 15-17)');
     }
     if (!isValidGrad) {
-      errors.add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
+      errors
+          .add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
     }
     if (hasValidCoordinates && !areCoordinatesValidForSerbia) {
       errors.add('Koordinate nisu validne za Srbiju');
@@ -377,7 +389,9 @@ class Adresa {
     ];
 
     final belongsToBelaCrkva = belaCrkvaSettlements.any(
-      (settlement) => normalizedGrad.contains(settlement) || settlement.contains(normalizedGrad),
+      (settlement) =>
+          normalizedGrad.contains(settlement) ||
+          settlement.contains(normalizedGrad),
     );
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
@@ -391,15 +405,21 @@ class Adresa {
     final lowerNaziv = naziv.toLowerCase();
 
     if (lowerNaziv.contains('bolnica')) return '🏥';
-    if (lowerNaziv.contains('skola') || lowerNaziv.contains('škola')) return '🏫';
-    if (lowerNaziv.contains('vrtic') || lowerNaziv.contains('vrtić')) return '🏠';
-    if (lowerNaziv.contains('posta') || lowerNaziv.contains('pošta')) return '📮';
+    if (lowerNaziv.contains('skola') || lowerNaziv.contains('škola'))
+      return '🏫';
+    if (lowerNaziv.contains('vrtic') || lowerNaziv.contains('vrtić'))
+      return '🏠';
+    if (lowerNaziv.contains('posta') || lowerNaziv.contains('pošta'))
+      return '📮';
     if (lowerNaziv.contains('banka')) return '🏛️';
     if (lowerNaziv.contains('crkva')) return '⛪';
     if (lowerNaziv.contains('park')) return '🌳';
     if (lowerNaziv.contains('stadion')) return '🏟️';
-    if (lowerNaziv.contains('market') || lowerNaziv.contains('prodavnica')) return '🏪';
-    if (lowerNaziv.contains('restoran') || lowerNaziv.contains('kafic') || lowerNaziv.contains('kafić')) return '🍽️';
+    if (lowerNaziv.contains('market') || lowerNaziv.contains('prodavnica'))
+      return '🏪';
+    if (lowerNaziv.contains('restoran') ||
+        lowerNaziv.contains('kafic') ||
+        lowerNaziv.contains('kafić')) return '🍽️';
 
     return '📍'; // Default location icon
   }
@@ -474,7 +494,9 @@ class Adresa {
     return text
         .split(' ')
         .map(
-          (word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word,
+          (word) => word.isNotEmpty
+              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
+              : word,
         )
         .join(' ');
   }
