@@ -322,8 +322,10 @@ class _DanasScreenState extends State<DanasScreen> {
   // ✨ DIGITALNI BROJAČ DATUM WIDGET - OPTIMIZOVANO (30s umesto 1s)
   Widget _buildDigitalDateDisplay() {
     return StreamBuilder<DateTime>(
-      stream: Stream.periodic(const Duration(seconds: 30),
-          (_) => DateTime.now()), // 🚀 PERFORMANCE: 30s umesto 1s
+      stream: Stream.periodic(
+        const Duration(seconds: 30),
+        (_) => DateTime.now(),
+      ), // 🚀 PERFORMANCE: 30s umesto 1s
       initialData: DateTime.now(),
       builder: (context, snapshot) {
         final now = snapshot.data ?? DateTime.now();
@@ -1158,10 +1160,11 @@ class _DanasScreenState extends State<DanasScreen> {
                     ),
 
                     Divider(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.24)),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.24),
+                    ),
 
                     // UKUPAN PAZAR - GLAVNI PODATAK
                     _buildStatRow(
@@ -1420,7 +1423,8 @@ class _DanasScreenState extends State<DanasScreen> {
         try {
           _dailyCheckinSub =
               SimplifiedDailyCheckInService.initializeRealtimeForDriver(
-                  _currentDriver!);
+            _currentDriver!,
+          );
 
           // 💓 POKRENI HEARTBEAT MONITORING
           _startHealthMonitoring();
@@ -1466,8 +1470,10 @@ class _DanasScreenState extends State<DanasScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.notification_important,
-                color: Theme.of(context).colorScheme.onSurface),
+            Icon(
+              Icons.notification_important,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -1484,7 +1490,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   Text(
                     'Putnik: ${widget.highlightPutnikIme} | ${widget.filterGrad} ${widget.filterVreme}',
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface),
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                 ],
               ),
@@ -1897,7 +1904,8 @@ class _DanasScreenState extends State<DanasScreen> {
                               (putnik.status ?? '').toLowerCase().trim();
 
                           final vremeMatch = GradAdresaValidator.normalizeTime(
-                                  putnik.polazak) ==
+                                putnik.polazak,
+                              ) ==
                               GradAdresaValidator.normalizeTime(vreme);
 
                           // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
@@ -2060,7 +2068,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                       color: Colors.purple[50],
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                          color: Colors.purple[300]!),
+                                        color: Colors.purple[300]!,
+                                      ),
                                     ),
                                     child: StreamBuilder<int>(
                                       stream: StatistikaService
@@ -2161,7 +2170,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                       color: Colors.orange[50],
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                          color: Colors.orange[300]!),
+                                        color: Colors.orange[300]!,
+                                      ),
                                     ),
                                     child: StreamBuilder<double>(
                                       stream: SimplifiedDailyCheckInService
@@ -2366,7 +2376,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                                 SnackBar(
                                                   content: Text(message),
                                                   duration: const Duration(
-                                                      seconds: 2),
+                                                    seconds: 2,
+                                                  ),
                                                 ),
                                               );
                                             }

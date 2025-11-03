@@ -85,7 +85,10 @@ class StatistikaService {
 
   /// � NOVI STREAM: Čita SAMO STVARNI naplaćeni novac iz putovanja_istorija tabele
   static Stream<double> _streamStvarniPazarZaVozaca(
-      String vozac, DateTime fromDate, DateTime toDate) {
+    String vozac,
+    DateTime fromDate,
+    DateTime toDate,
+  ) {
     final targetDate = fromDate.toIso8601String().split('T')[0];
 
     return Supabase.instance.client
@@ -100,7 +103,8 @@ class StatistikaService {
             String vozacIme = '';
             if (item['vozac_id'] != null) {
               vozacIme = VozacMappingService.getVozacImeWithFallbackSync(
-                      item['vozac_id'] as String) ??
+                    item['vozac_id'] as String,
+                  ) ??
                   '';
             }
 
@@ -516,7 +520,9 @@ class StatistikaService {
 
   /// 🔄 REAL-TIME DETALJNE STATISTIKE STREAM ZA SVE VOZAČE
   Stream<Map<String, Map<String, dynamic>>> streamDetaljneStatistikePoVozacima(
-      DateTime from, DateTime to) {
+    DateTime from,
+    DateTime to,
+  ) {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
       PutnikService().streamKombinovaniPutniciFiltered(),

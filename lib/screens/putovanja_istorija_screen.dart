@@ -438,7 +438,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                            color: Theme.of(context).colorScheme.primary),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       filled: true,
                       fillColor: Theme.of(context).colorScheme.surface,
@@ -460,10 +461,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withOpacity(0.3)),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.3),
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -563,10 +565,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.3)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.3),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

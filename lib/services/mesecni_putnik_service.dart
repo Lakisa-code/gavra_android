@@ -279,7 +279,10 @@ class MesecniPutnikService {
 
       // 2. AŽURIRAJ MESEČNOG PUTNIKA - izračunaj ukupnu sumu svih plaćanja za mesec
       final ukupanIznos = await _izracunajUkupnuSumuZaMesec(
-          putnikId, pocetakMeseca, krajMeseca);
+        putnikId,
+        pocetakMeseca,
+        krajMeseca,
+      );
 
       await updateMesecniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
@@ -878,7 +881,8 @@ class MesecniPutnikService {
 
   /// 🔍 Dobija vozača iz poslednjeg plaćanja po imenu putnika (fallback)
   static Future<String?> getVozacPoslednjegPlacanjaPoImenu(
-      String putnikIme) async {
+    String putnikIme,
+  ) async {
     try {
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')

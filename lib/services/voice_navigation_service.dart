@@ -149,7 +149,8 @@ class VoiceNavigationService {
 
   /// 📢 ANNOUNCE DISTANCE TO DESTINATION
   static Future<void> announceDistanceToDestination(
-      double distanceMeters) async {
+    double distanceMeters,
+  ) async {
     String distanceText;
 
     if (distanceMeters < 100) {
@@ -253,7 +254,8 @@ class VoiceNavigationService {
 
   /// 🔄 CONVERT INSTRUCTION TO NATURAL SERBIAN
   static String _convertInstructionToSerbian(
-      TurnByTurnInstruction instruction) {
+    TurnByTurnInstruction instruction,
+  ) {
     String direction = '';
 
     switch (instruction.type) {

@@ -45,13 +45,18 @@ class SimplifiedDailyCheckInService {
   }
 
   /// 💾 LEGACY SUPPORT - saveCheckIn wrapper SA TIMEOUT ZAŠTITOM!
-  static Future<void> saveCheckIn(String vozac, double sitanNovac,
-      {double dnevniPazari = 0.0}) async {
+  static Future<void> saveCheckIn(
+    String vozac,
+    double sitanNovac, {
+    double dnevniPazari = 0.0,
+  }) async {
     try {
       // KRITIČAN TIMEOUT OD 8 SEKUNDI - nakon toga prekini sve!
-      await DailyCheckInService.saveCheckIn(vozac, sitanNovac,
-              dnevniPazari: dnevniPazari)
-          .timeout(const Duration(seconds: 8));
+      await DailyCheckInService.saveCheckIn(
+        vozac,
+        sitanNovac,
+        dnevniPazari: dnevniPazari,
+      ).timeout(const Duration(seconds: 8));
     } catch (e) {
       print('SIMPLIFIED DAILY CHECK-IN TIMEOUT/ERROR: $e');
       // Ne bacaj grešku dalje - app treba da nastavi da radi!
@@ -92,10 +97,14 @@ class SimplifiedDailyCheckInService {
 
   /// 📊 LEGACY SUPPORT - generateAutomaticReport wrapper
   static Future<Map<String, dynamic>?> generateAutomaticReport(
-      String vozac, DateTime targetDate) async {
+    String vozac,
+    DateTime targetDate,
+  ) async {
     try {
       return await DailyCheckInService.generateAutomaticReport(
-          vozac, targetDate);
+        vozac,
+        targetDate,
+      );
     } catch (e) {
       return null;
     }
@@ -103,7 +112,10 @@ class SimplifiedDailyCheckInService {
 
   /// 📊 LEGACY SUPPORT - saveDailyReport wrapper
   static Future<void> saveDailyReport(
-      String vozac, DateTime datum, Map<String, dynamic> podaci) async {
+    String vozac,
+    DateTime datum,
+    Map<String, dynamic> podaci,
+  ) async {
     try {
       await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
     } catch (e) {
@@ -113,7 +125,8 @@ class SimplifiedDailyCheckInService {
 
   /// 🔗 LEGACY SUPPORT - initializeRealtimeForDriver wrapper
   static StreamSubscription<dynamic>? initializeRealtimeForDriver(
-      String vozac) {
+    String vozac,
+  ) {
     return DailyCheckInService.initializeRealtimeForDriver(vozac);
   }
 

@@ -197,7 +197,9 @@ class RealtimePriorityService {
 
       // Sačuvaj lokalno da je status ažuriran
       await prefs.setInt(
-          'last_status_update', DateTime.now().millisecondsSinceEpoch);
+        'last_status_update',
+        DateTime.now().millisecondsSinceEpoch,
+      );
     } catch (e) {
       // Tiho preskače greške
     }
@@ -229,7 +231,9 @@ class RealtimePriorityService {
       }
 
       await prefs.setInt(
-          'last_emergency_check', DateTime.now().millisecondsSinceEpoch);
+        'last_emergency_check',
+        DateTime.now().millisecondsSinceEpoch,
+      );
     } catch (e) {
       // Tiho preskače greške - tabela možda ne postoji
     }
@@ -287,7 +291,9 @@ class RealtimePriorityService {
 
       // Sačuvaj lokalno timestamp poslednjeg ažuriranja
       await prefs.setInt(
-          'last_driver_update', DateTime.now().millisecondsSinceEpoch);
+        'last_driver_update',
+        DateTime.now().millisecondsSinceEpoch,
+      );
     } catch (e) {
       // Tiho preskače greške
     }
@@ -320,7 +326,9 @@ class RealtimePriorityService {
       }
 
       await prefs.setInt(
-          'last_other_data_update', DateTime.now().millisecondsSinceEpoch);
+        'last_other_data_update',
+        DateTime.now().millisecondsSinceEpoch,
+      );
     } catch (e) {
       // Tiho preskače greške - NO BATTERY SRANJE!
     }

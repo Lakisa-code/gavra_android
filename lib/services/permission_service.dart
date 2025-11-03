@@ -165,7 +165,8 @@ class PermissionService {
                                       elevation: 0,
                                       shadowColor: Colors.transparent,
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 16),
+                                        vertical: 16,
+                                      ),
                                     ),
                                     onPressed: () async {
                                       final success =
@@ -179,7 +180,8 @@ class PermissionService {
                                     label: const Text(
                                       'ODOBRI DOZVOLE',
                                       style: TextStyle(
-                                          fontWeight: FontWeight.bold),
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -296,7 +298,7 @@ class PermissionService {
       final permissions = [
         Permission.phone,
         Permission.sms,
-        Permission.notification
+        Permission.notification,
       ];
       final Map<Permission, PermissionStatus> statuses =
           await permissions.request();

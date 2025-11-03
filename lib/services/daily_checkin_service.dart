@@ -136,8 +136,11 @@ class DailyCheckInService {
   }
 
   /// 🚨 EMERGENCY LOCAL SAVE - kada se sve ostalo zaglavi!
-  static Future<void> saveLokalno(String vozac, double sitanNovac,
-      {double dnevniPazari = 0.0}) async {
+  static Future<void> saveLokalno(
+    String vozac,
+    double sitanNovac, {
+    double dnevniPazari = 0.0,
+  }) async {
     final today = DateTime.now();
     final todayKey =
         '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';

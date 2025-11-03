@@ -201,7 +201,8 @@ class AuthManager {
           : AuthResult.error(result.message);
     } catch (e) {
       return AuthResult.error(
-          'Greška pri slanju verifikacije: ${e.toString()}');
+        'Greška pri slanju verifikacije: ${e.toString()}',
+      );
     }
   }
 

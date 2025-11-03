@@ -353,8 +353,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
               child: Text(
                 '${_currentInstructionIndex + 1}/${_currentInstructions.length}',
                 style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 12),
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontSize: 12,
+                ),
               ),
             ),
         ],
@@ -368,7 +369,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
         border: Border(
-            bottom: BorderSide(color: Theme.of(context).colorScheme.outline)),
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outline),
+        ),
       ),
       child: Row(
         children: [
@@ -526,8 +528,11 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon,
-            color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
+        Icon(
+          icon,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 20,
+        ),
         const SizedBox(height: 4),
         Text(
           value,

@@ -10,13 +10,11 @@ class VoziloService {
 
   /// Dohvata sva vozila
   Future<List<Vozilo>> getAllVozila() async {
-    final response = await _supabase
-        .from('vozila')
-        .select()
-        .eq('aktivan', true)
-        .order('created_at',
-            ascending:
-                false); // ✅ ISPRAVKA: koristi 'created_at' umesto 'registracija'
+    final response =
+        await _supabase.from('vozila').select().eq('aktivan', true).order(
+              'created_at',
+              ascending: false,
+            ); // ✅ ISPRAVKA: koristi 'created_at' umesto 'registracija'
 
     return response.map((json) => Vozilo.fromMap(json)).toList();
   }

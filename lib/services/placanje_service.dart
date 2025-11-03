@@ -8,7 +8,8 @@ class PlacanjeService {
 
   /// Kombinuje podatke o plaćanju iz mesecni_putnici i putovanja_istorija
   static Future<Map<String, double>> getStvarnaPlacanja(
-      List<MesecniPutnik> putnici) async {
+    List<MesecniPutnik> putnici,
+  ) async {
     final Map<String, double> rezultat = {};
 
     try {

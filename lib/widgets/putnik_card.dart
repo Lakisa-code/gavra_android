@@ -333,11 +333,14 @@ class _PutnikCardState extends State<PutnikCard> {
             color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            ),
           ),
           child: ListTile(
-            leading: Icon(Icons.family_restroom,
-                color: Theme.of(context).colorScheme.primary),
+            leading: Icon(
+              Icons.family_restroom,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: const Text(
               '💰 SMS Roditeljima - Plaćanje',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -358,8 +361,10 @@ class _PutnikCardState extends State<PutnikCard> {
     if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
       opcije.add(
         ListTile(
-          leading: Icon(Icons.phone,
-              color: Theme.of(context).colorScheme.successPrimary),
+          leading: Icon(
+            Icons.phone,
+            color: Theme.of(context).colorScheme.successPrimary,
+          ),
           title: const Text('Pozovi putnika'),
           subtitle: Text(_putnik.brojTelefona!),
           onTap: () async {
@@ -370,8 +375,10 @@ class _PutnikCardState extends State<PutnikCard> {
       );
       opcije.add(
         ListTile(
-          leading: Icon(Icons.sms,
-              color: Theme.of(context).colorScheme.successPrimary),
+          leading: Icon(
+            Icons.sms,
+            color: Theme.of(context).colorScheme.successPrimary,
+          ),
           title: const Text('SMS putnik'),
           subtitle: Text(_putnik.brojTelefona!),
           onTap: () async {
@@ -808,8 +815,10 @@ class _PutnikCardState extends State<PutnikCard> {
             ),
             title: Row(
               children: [
-                Icon(Icons.card_membership,
-                    color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.card_membership,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Mesečna karta',
@@ -849,10 +858,11 @@ class _PutnikCardState extends State<PutnikCard> {
                           .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.3)),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.3),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -954,7 +964,9 @@ class _PutnikCardState extends State<PutnikCard> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: TripleBlueFashionStyles.dropdownDecoration,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -1983,9 +1995,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                               ),
                                                               backgroundColor:
                                                                   Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .error,
+                                                                context,
+                                                              ).colorScheme.error,
                                                               duration:
                                                                   const Duration(
                                                                 seconds: 3,
@@ -2062,8 +2073,10 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                     const Text(
                                                                   '✅ Otvaram navigaciju...',
                                                                 ),
-                                                                backgroundColor: Theme.of(
-                                                                        context)
+                                                                backgroundColor: Theme
+                                                                        .of(
+                                                                  context,
+                                                                )
                                                                     .colorScheme
                                                                     .successPrimary,
                                                                 duration:
@@ -2100,8 +2113,10 @@ class _PutnikCardState extends State<PutnikCard> {
                                                                     ),
                                                                   ],
                                                                 ),
-                                                                backgroundColor: Theme.of(
-                                                                        context)
+                                                                backgroundColor: Theme
+                                                                        .of(
+                                                                  context,
+                                                                )
                                                                     .colorScheme
                                                                     .warningPrimary,
                                                                 action:
@@ -2142,9 +2157,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                                               ),
                                                               backgroundColor:
                                                                   Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .error,
+                                                                context,
+                                                              ).colorScheme.error,
                                                               duration:
                                                                   const Duration(
                                                                 seconds: 3,
@@ -2428,9 +2442,11 @@ class _PutnikCardState extends State<PutnikCard> {
                         style: TextStyle(
                           fontSize: 13,
                           color: VozacBoja.isValidDriver(
-                                  _putnik.pokupioVozac ?? widget.currentDriver)
+                            _putnik.pokupioVozac ?? widget.currentDriver,
+                          )
                               ? VozacBoja.get(
-                                  _putnik.pokupioVozac ?? widget.currentDriver)
+                                  _putnik.pokupioVozac ?? widget.currentDriver,
+                                )
                               : Theme.of(context)
                                   .colorScheme
                                   .onSurface

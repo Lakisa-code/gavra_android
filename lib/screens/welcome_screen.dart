@@ -364,8 +364,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           ),
           title: Column(
             children: [
-              Icon(Icons.error,
-                  color: Theme.of(context).colorScheme.error, size: 40),
+              Icon(
+                Icons.error,
+                color: Theme.of(context).colorScheme.error,
+                size: 40,
+              ),
               const SizedBox(height: 12),
               Text(
                 title,

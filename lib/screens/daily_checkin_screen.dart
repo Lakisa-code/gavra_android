@@ -86,7 +86,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
 
   Future<void> _submitKusur() async {
     print(
-        'DEBUG: _submitKusur called, text: "${_kusurController.text.trim()}"');
+      'DEBUG: _submitKusur called, text: "${_kusurController.text.trim()}"',
+    );
 
     if (_kusurController.text.trim().isEmpty) {
       print('DEBUG: Text is empty');
@@ -160,7 +161,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
           await prefs.setBool(todayKey, true);
           await prefs.setDouble('${todayKey}_amount', iznos);
           await prefs.setString(
-              '${todayKey}_timestamp', today.toIso8601String());
+            '${todayKey}_timestamp',
+            today.toIso8601String(),
+          );
 
           print('DEBUG: Emergency local save successful');
 
@@ -463,7 +466,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                               ? null
                               : () {
                                   print(
-                                      'DEBUG: Button pressed! _isLoading: $_isLoading');
+                                    'DEBUG: Button pressed! _isLoading: $_isLoading',
+                                  );
                                   HapticFeedback
                                       .mediumImpact(); // Dodaj haptic feedback
                                   _submitKusur();
@@ -741,7 +745,8 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: vozacColor.withOpacity(
-                              0.3), // PROMENJEN: Koristi boju vozača
+                            0.3,
+                          ), // PROMENJEN: Koristi boju vozača
                         ),
                       ),
                       child: Row(

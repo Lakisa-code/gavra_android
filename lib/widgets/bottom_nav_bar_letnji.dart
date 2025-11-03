@@ -247,7 +247,8 @@ class _PolazakRow extends StatelessWidget {
                                       ? const Color(0xFF4A4A4A) // Crna tema
                                       : currentThemeId == 'passionate_rose'
                                           ? const Color(
-                                              0xFFDC143C) // Pink tema - Crimson
+                                              0xFFDC143C,
+                                            ) // Pink tema - Crimson
                                           : Colors.blue) // Plava tema
                                   : Colors.white,
                             ),
@@ -274,7 +275,8 @@ class _PolazakRow extends StatelessWidget {
                                           ? const Color(0xFF4A4A4A) // Crna tema
                                           : currentThemeId == 'passionate_rose'
                                               ? const Color(
-                                                  0xFFDC143C) // Pink tema - Crimson
+                                                  0xFFDC143C,
+                                                ) // Pink tema - Crimson
                                               : Colors.blue) // Plava tema
                                       : Colors.white70,
                                 ),

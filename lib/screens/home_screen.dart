@@ -391,8 +391,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         title: Column(
           children: [
-            Icon(Icons.logout,
-                color: Theme.of(context).colorScheme.error, size: 40),
+            Icon(
+              Icons.logout,
+              color: Theme.of(context).colorScheme.error,
+              size: 40,
+            ),
             const SizedBox(height: 12),
             Text(
               'Logout',
@@ -665,7 +668,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       value: imeController.text.trim().isEmpty
                                           ? null
                                           : (dozvoljenaImena.contains(
-                                                  imeController.text.trim())
+                                              imeController.text.trim(),
+                                            )
                                               ? imeController.text.trim()
                                               : null),
                                       decoration: InputDecoration(
@@ -850,13 +854,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                 ? [
                                                     Colors.green
                                                         .withOpacity(0.8),
-                                                    Colors.green
+                                                    Colors.green,
                                                   ]
                                                 : [
                                                     Colors.white
                                                         .withOpacity(0.3),
                                                     Colors.white
-                                                        .withOpacity(0.1)
+                                                        .withOpacity(0.1),
                                                   ],
                                           ),
                                           borderRadius:
@@ -1042,7 +1046,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                     // 🚫 VALIDACIJA GRADA
                                     if (GradAdresaValidator.isCityBlocked(
-                                        _selectedGrad)) {
+                                      _selectedGrad,
+                                    )) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
@@ -1078,7 +1083,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
                                     if (mesecnaKarta &&
                                         !dozvoljenaImena.contains(
-                                            imeController.text.trim())) {
+                                          imeController.text.trim(),
+                                        )) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
@@ -1099,7 +1105,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                               ),
                                               const SizedBox(height: 4),
                                               const Text(
-                                                  'Za NOVE mesečne putnike idite na:'),
+                                                'Za NOVE mesečne putnike idite na:',
+                                              ),
                                               const SizedBox(height: 2),
                                               Row(
                                                 children: [
@@ -1135,7 +1142,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           .showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                              '❌ Greška: Nije odabrano vreme polaska'),
+                                            '❌ Greška: Nije odabrano vreme polaska',
+                                          ),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -1145,7 +1153,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     try {
                                       // STRIKTNA VALIDACIJA VOZAČA
                                       if (!VozacBoja.isValidDriver(
-                                          _currentDriver)) {
+                                        _currentDriver,
+                                      )) {
                                         if (!mounted) return;
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
@@ -1204,7 +1213,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             .showSnackBar(
                                           const SnackBar(
                                             content: Text(
-                                                '✅ Putnik je uspešno dodat'),
+                                              '✅ Putnik je uspešno dodat',
+                                            ),
                                             backgroundColor: Colors.green,
                                             duration: Duration(seconds: 2),
                                           ),
@@ -1224,7 +1234,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             .showSnackBar(
                                           SnackBar(
                                             content: Text(
-                                                '❌ Greška pri dodavanju: $e'),
+                                              '❌ Greška pri dodavanju: $e',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
@@ -1390,7 +1401,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).colorScheme.onPrimary),
+                                  Theme.of(context).colorScheme.onPrimary,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 6),

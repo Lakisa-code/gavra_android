@@ -31,7 +31,10 @@ class NovcanaValidacija {
 
   /// Validacija za mesečna plaćanja
   static bool isValidMonthlyPayment(
-      double? amount, String? vozac, String? mesec) {
+    double? amount,
+    String? vozac,
+    String? mesec,
+  ) {
     if (!isValidAmount(amount)) return false;
     if (!isValidDriver(vozac)) return false;
     if (mesec == null || mesec.isEmpty) return false;

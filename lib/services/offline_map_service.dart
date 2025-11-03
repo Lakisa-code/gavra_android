@@ -251,7 +251,8 @@ class OfflineMapService {
         await db
             .execute('CREATE INDEX idx_grad_adresa ON addresses(grad, adresa)');
         await db.execute(
-            'CREATE INDEX idx_coordinates ON addresses(latitude, longitude)');
+          'CREATE INDEX idx_coordinates ON addresses(latitude, longitude)',
+        );
       },
     );
   }
@@ -264,25 +265,25 @@ class OfflineMapService {
         'grad': 'Vršac',
         'adresa': 'Trg pobede 1',
         'lat': 45.1167,
-        'lng': 21.3000
+        'lng': 21.3000,
       },
       {
         'grad': 'Vršac',
         'adresa': 'Svetosavska 1',
         'lat': 45.1170,
-        'lng': 21.3010
+        'lng': 21.3010,
       },
       {
         'grad': 'Vršac',
         'adresa': 'Omladinska 1',
         'lat': 45.1160,
-        'lng': 21.2990
+        'lng': 21.2990,
       },
       {
         'grad': 'Vršac',
         'adresa': 'Železnička stanica',
         'lat': 45.1180,
-        'lng': 21.2950
+        'lng': 21.2950,
       },
 
       // BELA CRKVA
@@ -290,19 +291,19 @@ class OfflineMapService {
         'grad': 'Bela Crkva',
         'adresa': 'Trg oslobođenja 1',
         'lat': 44.8975,
-        'lng': 21.4178
+        'lng': 21.4178,
       },
       {
         'grad': 'Bela Crkva',
         'adresa': 'Cara Dušana 1',
         'lat': 44.8980,
-        'lng': 21.4180
+        'lng': 21.4180,
       },
       {
         'grad': 'Bela Crkva',
         'adresa': 'Autobuska stanica',
         'lat': 44.8970,
-        'lng': 21.4175
+        'lng': 21.4175,
       },
 
       // SELA VRŠAC
@@ -311,7 +312,7 @@ class OfflineMapService {
         'grad': 'Vojvodinci',
         'adresa': 'Centar',
         'lat': 45.0500,
-        'lng': 21.2000
+        'lng': 21.2000,
       },
       {'grad': 'Potporanj', 'adresa': 'Centar', 'lat': 45.0800, 'lng': 21.1500},
 
@@ -320,7 +321,7 @@ class OfflineMapService {
         'grad': 'Vraćev Gaj',
         'adresa': 'Centar',
         'lat': 44.9200,
-        'lng': 21.3500
+        'lng': 21.3500,
       },
       {'grad': 'Dupljaja', 'adresa': 'Centar', 'lat': 44.8500, 'lng': 21.3000},
       {'grad': 'Jasenovo', 'adresa': 'Centar', 'lat': 44.8800, 'lng': 21.5000},

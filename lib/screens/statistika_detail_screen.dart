@@ -553,7 +553,9 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                     ),
                     child: ExpansionTile(
                       tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       childrenPadding: const EdgeInsets.all(16),
                       leading: CircleAvatar(
                         backgroundColor: vozacColor,

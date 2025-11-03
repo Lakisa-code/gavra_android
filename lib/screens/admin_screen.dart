@@ -195,13 +195,17 @@ class _AdminScreenState extends State<AdminScreen> {
 
   // 🎯 KREIRA KOMBINOVANI PAZAR STREAM ZA SVE VOZAČE - ISTI PRISTUP KAO DANAS SCREEN
   Stream<Map<String, double>> _createPazarStreamForAllDrivers(
-      DateTime from, DateTime to) {
+    DateTime from,
+    DateTime to,
+  ) {
     final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana'];
 
     // Kreiraj stream za svakog vozača
     final streamList = vozaciRedosled
-        .map((vozac) =>
-            StatistikaService.streamPazarZaVozaca(vozac, from: from, to: to))
+        .map(
+          (vozac) =>
+              StatistikaService.streamPazarZaVozaca(vozac, from: from, to: to),
+        )
         .toList();
 
     // Kombinuj sve stream-ove
@@ -904,7 +908,9 @@ class _AdminScreenState extends State<AdminScreen> {
                     AdminSecurityService.isAdmin(_currentDriver);
                 final Map<String, double> filteredPazar =
                     AdminSecurityService.filterPazarByPrivileges(
-                        _currentDriver, pazar);
+                  _currentDriver,
+                  pazar,
+                );
 
                 const Map<String, Color> vozacBoje = VozacBoja.boje;
                 final List<String> vozaciRedosled = [
@@ -918,7 +924,9 @@ class _AdminScreenState extends State<AdminScreen> {
                 // 🔐 KORISTI ADMIN SECURITY SERVICE za filtriranje vozača
                 final List<String> prikazaniVozaci =
                     AdminSecurityService.getVisibleDrivers(
-                        _currentDriver, vozaciRedosled);
+                  _currentDriver,
+                  vozaciRedosled,
+                );
                 return SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -931,8 +939,9 @@ class _AdminScreenState extends State<AdminScreen> {
                             children: [
                               Text(
                                 AdminSecurityService.generateTitle(
-                                    _currentDriver,
-                                    'Dnevni pazar - $_selectedDan'),
+                                  _currentDriver,
+                                  'Dnevni pazar - $_selectedDan',
+                                ),
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -1468,7 +1477,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                   child: Container(
                                     height: 50,
                                     margin: const EdgeInsets.symmetric(
-                                        horizontal: 4),
+                                      horizontal: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Theme.of(context)
                                           .glassContainer, // Glassmorphism

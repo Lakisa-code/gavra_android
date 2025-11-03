@@ -133,7 +133,8 @@ class VozacMappingService {
     // ⚠️ WARN: Ako cache nije učitan, vrati null umesto crash
     if (!_isInitialized || _vozacUuidToName == null) {
       print(
-          '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
+        '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.',
+      );
       return null;
     }
 
@@ -144,7 +145,8 @@ class VozacMappingService {
   static String? getVozacUuidSync(String ime) {
     if (!_isInitialized || _vozacNameToUuid == null) {
       print(
-          '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
+        '⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.',
+      );
       return null;
     }
     return _vozacNameToUuid?[ime];
@@ -171,7 +173,7 @@ class VozacMappingService {
       'Bruda',
       'Bilevski',
       'Bojan',
-      'Svetlana'
+      'Svetlana',
     ]; // VozacBoja.validDrivers
     final dynamicDrivers = _vozacNameToUuid?.keys.toList() ?? [];
 

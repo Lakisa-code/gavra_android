@@ -186,7 +186,8 @@ class FirebaseAuthService {
 
   /// Sinhronizacija korisničkog profila sa Supabase
   static Future<void> _syncUserProfileWithSupabase(
-      firebase_auth.User user) async {
+    firebase_auth.User user,
+  ) async {
     try {
       // Proveri da li postoji profil
       final response = await _supabase

@@ -379,8 +379,11 @@ class UpdateChecker {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.system_update,
-                color: Theme.of(context).colorScheme.primary, size: 28),
+            Icon(
+              Icons.system_update,
+              color: Theme.of(context).colorScheme.primary,
+              size: 28,
+            ),
             const SizedBox(width: 8),
             const Text('Nova verzija! 🚀'),
           ],

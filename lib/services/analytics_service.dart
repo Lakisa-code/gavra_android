@@ -48,7 +48,9 @@ class AnalyticsService {
 
   /// 🚗 LOGIRANJE POLAZAKA
   static Future<void> logPolazakKreiran(
-      String vozac, String? destinacija) async {
+    String vozac,
+    String? destinacija,
+  ) async {
     try {
       await _analytics?.logEvent(
         name: 'polazak_kreiran',
@@ -79,7 +81,9 @@ class AnalyticsService {
 
   /// 🔔 LOGIRANJE NOTIFIKACIJA
   static Future<void> logNotifikacijaPoslana(
-      String tip, String? primalac) async {
+    String tip,
+    String? primalac,
+  ) async {
     try {
       await _analytics?.logEvent(
         name: 'notifikacija_poslana',
@@ -111,7 +115,9 @@ class AnalyticsService {
 
   /// 📱 LOGIRANJE EKRANA
   static Future<void> logScreenView(
-      String screenName, String? screenClass) async {
+    String screenName,
+    String? screenClass,
+  ) async {
     try {
       await _analytics?.logScreenView(
         screenName: screenName,
@@ -156,7 +162,9 @@ class AnalyticsService {
 
   /// 📊 LOGIRANJE CUSTOM DOGAĐAJA
   static Future<void> logCustomEvent(
-      String eventName, Map<String, Object>? parameters) async {
+    String eventName,
+    Map<String, Object>? parameters,
+  ) async {
     try {
       await _analytics?.logEvent(
         name: eventName,

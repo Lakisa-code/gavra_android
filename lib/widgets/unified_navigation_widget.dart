@@ -396,9 +396,10 @@ class UnifiedNavigationWidget extends StatelessWidget {
       leading:
           Icon(icon, color: color ?? Theme.of(context).colorScheme.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle,
-          style:
-              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
       onTap: onTap,
     );
   }

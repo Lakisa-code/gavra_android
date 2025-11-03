@@ -1,0 +1,6 @@
+- NE test
+- NE run
+- NE debug
+- NE dugacki odgovori + kod
+- DA mcp serveri
+- NE promena koda samostalno

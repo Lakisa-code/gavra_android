@@ -270,10 +270,12 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       decoration: InputDecoration(
         labelText: 'Email Adresa',
         labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+        ),
         hintText: 'vas.email@primjer.com',
         hintStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        ),
         prefixIcon:
             Icon(Icons.email, color: Theme.of(context).colorScheme.primary),
         filled: true,
@@ -285,12 +287,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary, width: 2),
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -318,10 +323,12 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       decoration: InputDecoration(
         labelText: 'Šifra',
         labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+        ),
         hintText: 'Unesite šifru',
         hintStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+        ),
         prefixIcon:
             Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
         suffixIcon: IconButton(
@@ -345,12 +352,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary, width: 2),
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -390,7 +400,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).colorScheme.onPrimary),
+                  Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
             )
           : const Text(
@@ -583,7 +594,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         content: Text(
           message,
           style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+          ),
         ),
         actions: [
           TextButton(
@@ -617,7 +629,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         content: Text(
           message,
           style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8)),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+          ),
         ),
         actions: [
           TextButton(

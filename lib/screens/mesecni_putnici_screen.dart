@@ -96,20 +96,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 🔄 OPTIMIZACIJA: Update cache umesto StreamBuilder-a
   void _updateCacheValues(List<MesecniPutnik> putnici) {
     final noviRadnici = putnici
-        .where((p) =>
-            p.tip == 'radnik' &&
-            p.aktivan &&
-            !p.obrisan &&
-            p.status != 'bolovanje' &&
-            p.status != 'godišnje')
+        .where(
+          (p) =>
+              p.tip == 'radnik' &&
+              p.aktivan &&
+              !p.obrisan &&
+              p.status != 'bolovanje' &&
+              p.status != 'godišnje',
+        )
         .length;
     final noviUcenici = putnici
-        .where((p) =>
-            p.tip == 'ucenik' &&
-            p.aktivan &&
-            !p.obrisan &&
-            p.status != 'bolovanje' &&
-            p.status != 'godišnje')
+        .where(
+          (p) =>
+              p.tip == 'ucenik' &&
+              p.aktivan &&
+              !p.obrisan &&
+              p.status != 'bolovanje' &&
+              p.status != 'godišnje',
+        )
         .length;
 
     if (_cachedBrojRadnika != noviRadnici ||
@@ -722,7 +726,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   ) {
                     // 🚀 DIREKTNO FILTRIRANJE - bez compute() koji blokira scroll
                     return _filterPutniciDirect(
-                        putnici, searchTerm, filterType);
+                      putnici,
+                      searchTerm,
+                      filterType,
+                    );
                   },
                 ).distinct().debounceTime(const Duration(milliseconds: 100)),
                 builder: (context, snapshot) {
@@ -817,7 +824,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: prikazaniPutnici.length,
                     physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics()),
+                      parent: BouncingScrollPhysics(),
+                    ),
                     itemBuilder: (context, index) {
                       final putnik = prikazaniPutnici[index];
                       return TweenAnimationBuilder<double>(
@@ -2386,9 +2394,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                           size: 20,
                                         ),
                                         SizedBox(width: 8),
-                                        Text('Radnik',
-                                            style:
-                                                TextStyle(color: Colors.white)),
+                                        Text(
+                                          'Radnik',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -2402,9 +2411,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                           size: 20,
                                         ),
                                         SizedBox(width: 8),
-                                        Text('Učenik',
-                                            style:
-                                                TextStyle(color: Colors.white)),
+                                        Text(
+                                          'Učenik',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -2532,10 +2542,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   border: const OutlineInputBorder(),
                                   focusedBorder: const OutlineInputBorder(
                                     borderSide: BorderSide(
-                                        color: Colors.white, width: 2),
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
-                                  prefixIcon: const Icon(Icons.phone,
-                                      color: Colors.white),
+                                  prefixIcon: const Icon(
+                                    Icons.phone,
+                                    color: Colors.white,
+                                  ),
                                   fillColor: Colors.white.withOpacity(0.1),
                                   filled: true,
                                   labelStyle:
@@ -2554,7 +2568,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 child: _noviTip == 'ucenik'
                                     ? Container(
                                         key: const ValueKey(
-                                            'parent_contacts_add'),
+                                          'parent_contacts_add',
+                                        ),
                                         margin: const EdgeInsets.only(top: 16),
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
@@ -2580,7 +2595,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                         .withOpacity(0.3),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            6),
+                                                      6,
+                                                    ),
                                                   ),
                                                   child: const Icon(
                                                     Icons.family_restroom,
@@ -2643,8 +2659,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                 focusedBorder:
                                                     OutlineInputBorder(
                                                   borderSide: BorderSide(
-                                                      color: Colors.white,
-                                                      width: 2),
+                                                    color: Colors.white,
+                                                    width: 2,
+                                                  ),
                                                 ),
                                                 prefixIcon: Icon(
                                                   Icons.man,
@@ -2653,12 +2670,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                 fillColor: Colors.white10,
                                                 filled: true,
                                                 labelStyle: TextStyle(
-                                                    color: Colors.white70),
+                                                  color: Colors.white70,
+                                                ),
                                                 hintStyle: TextStyle(
-                                                    color: Colors.white54),
+                                                  color: Colors.white54,
+                                                ),
                                               ),
                                               style: const TextStyle(
-                                                  color: Colors.white),
+                                                color: Colors.white,
+                                              ),
                                               keyboardType: TextInputType.phone,
                                               controller:
                                                   _brojTelefonaOcaController,
@@ -2682,8 +2702,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                 focusedBorder:
                                                     OutlineInputBorder(
                                                   borderSide: BorderSide(
-                                                      color: Colors.white,
-                                                      width: 2),
+                                                    color: Colors.white,
+                                                    width: 2,
+                                                  ),
                                                 ),
                                                 prefixIcon: Icon(
                                                   Icons.woman,
@@ -2692,12 +2713,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                 fillColor: Colors.white10,
                                                 filled: true,
                                                 labelStyle: TextStyle(
-                                                    color: Colors.white70),
+                                                  color: Colors.white70,
+                                                ),
                                                 hintStyle: TextStyle(
-                                                    color: Colors.white54),
+                                                  color: Colors.white54,
+                                                ),
                                               ),
                                               style: const TextStyle(
-                                                  color: Colors.white),
+                                                color: Colors.white,
+                                              ),
                                               keyboardType: TextInputType.phone,
                                               controller:
                                                   _brojTelefonaMajkeController,
@@ -2775,7 +2799,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   border: OutlineInputBorder(),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(
-                                        color: Colors.green, width: 2),
+                                      color: Colors.green,
+                                      width: 2,
+                                    ),
                                   ),
                                   prefixIcon:
                                       Icon(Icons.home, color: Colors.green),
@@ -2797,7 +2823,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   border: OutlineInputBorder(),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(
-                                        color: Colors.green, width: 2),
+                                      color: Colors.green,
+                                      width: 2,
+                                    ),
                                   ),
                                   prefixIcon:
                                       Icon(Icons.business, color: Colors.green),
@@ -3053,7 +3081,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   border: OutlineInputBorder(),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(
-                                        color: Colors.white, width: 2),
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
                                   prefixIcon:
                                       Icon(Icons.home, color: Colors.white),
@@ -3077,7 +3107,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   border: OutlineInputBorder(),
                                   focusedBorder: OutlineInputBorder(
                                     borderSide: BorderSide(
-                                        color: Colors.white, width: 2),
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                   ),
                                   prefixIcon:
                                       Icon(Icons.business, color: Colors.white),
@@ -3960,7 +3992,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         FutureBuilder<String?>(
                                           future: MesecniPutnikService
                                               .getVozacPoslednjegPlacanja(
-                                                  putnik.id),
+                                            putnik.id,
+                                          ),
                                           builder: (context, snapshot) {
                                             final vozacIme = snapshot.data;
                                             return Column(
@@ -3982,7 +4015,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                     style: TextStyle(
                                                       fontSize: 11,
                                                       color: VozacBoja.get(
-                                                          vozacIme),
+                                                        vozacIme,
+                                                      ),
                                                       fontWeight:
                                                           FontWeight.w500,
                                                     ),

@@ -144,7 +144,11 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
 
   /// 📊 BUILD INDIVIDUAL STATUS CARD
   Widget _buildStatusCard(
-      String title, String status, Color color, IconData icon) {
+    String title,
+    String status,
+    Color color,
+    IconData icon,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -304,7 +308,8 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
 
             // Speech Rate
             Text(
-                'Speech Rate: ${VoiceNavigationService.speechRate.toStringAsFixed(1)}'),
+              'Speech Rate: ${VoiceNavigationService.speechRate.toStringAsFixed(1)}',
+            ),
             Slider(
               value: VoiceNavigationService.speechRate,
               min: 0.5,
@@ -318,7 +323,8 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
 
             // Volume
             Text(
-                'Volume: ${(VoiceNavigationService.volume * 100).toStringAsFixed(0)}%'),
+              'Volume: ${(VoiceNavigationService.volume * 100).toStringAsFixed(0)}%',
+            ),
             Slider(
               value: VoiceNavigationService.volume,
               divisions: 10,
@@ -379,7 +385,8 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
         // 2. Start voice navigation if enabled
         if (_isVoiceNavigationActive) {
           await VoiceNavigationService.announcePassengerPickup(
-              optimizedRoute.first);
+            optimizedRoute.first,
+          );
         }
 
         // 3. Start background GPS if enabled
