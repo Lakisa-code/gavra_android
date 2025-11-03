@@ -149,12 +149,17 @@ return null;
 return null;
       }
 
-      // Proveri duplikate
-      final existingRute =
-          await _checkForDuplicates(ruta.polazak, ruta.dolazak, ruta.naziv);
-      if (existingRute.isNotEmpty) {
-      // Debug logging removed for production
-return null;
+      // Osnovna validacija naziva (bez duplikat provere za polazak/dolazak)
+      final existingNaziv = await SupabaseSafe.run(
+        () => Supabase.instance.client
+            .from('rute')
+            .select('id, naziv')
+            .eq('naziv', ruta.naziv)
+            .limit(1),
+      );
+      
+      if (existingNaziv?.isNotEmpty == true) {
+        return null; // Naziv već postoji
       }
 
       final response = await SupabaseSafe.run(
@@ -172,33 +177,6 @@ return novaRuta;
     } catch (e) {
       // Debug logging removed for production
 return null;
-    }
-  }
-
-  /// Proverava duplikate ruta
-  Future<List<Ruta>> _checkForDuplicates(
-    String polazak,
-    String dolazak,
-    String naziv,
-  ) async {
-    try {
-      final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .select()
-            .or('and(polazak.eq.$polazak,dolazak.eq.$dolazak),naziv.eq.$naziv'),
-        fallback: <dynamic>[],
-      );
-
-      if (response is List) {
-        return response
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
-      }
-      return [];
-    } catch (e) {
-      // Debug logging removed for production
-return [];
     }
   }
 
@@ -656,65 +634,21 @@ return cached;
       final aktivneRute = rute.where((r) => r.aktivan).toList();
       final neaktivneRute = rute.where((r) => !r.aktivan).toList();
 
-      // Kalkuliši statistike
-      final ukupnaUdaljenost = aktivneRute
-          .where((r) => r.udaljenostKm != null)
-          .fold<double>(0, (sum, r) => sum + r.udaljenostKm!);
-
-      final prosecnaUdaljenost =
-          aktivneRute.where((r) => r.udaljenostKm != null).isNotEmpty
-              ? ukupnaUdaljenost /
-                  aktivneRute.where((r) => r.udaljenostKm != null).length
-              : 0.0;
-
-      final ukupnoVreme = aktivneRute
-          .where((r) => r.prosecnoVreme != null)
-          .fold<int>(0, (sum, r) => sum + r.prosecnoVreme!.inMinutes);
-
-      final prosecnoVreme =
-          aktivneRute.where((r) => r.prosecnoVreme != null).isNotEmpty
-              ? ukupnoVreme /
-                  aktivneRute.where((r) => r.prosecnoVreme != null).length
-              : 0.0;
-
-      // Grupisanje po gradovima
-      final polasciCount = <String, int>{};
-      final dolasciCount = <String, int>{};
-
-      for (final ruta in aktivneRute) {
-        polasciCount[ruta.polazak] = (polasciCount[ruta.polazak] ?? 0) + 1;
-        dolasciCount[ruta.dolazak] = (dolasciCount[ruta.dolazak] ?? 0) + 1;
-      }
+      // Osnovne statistike (bez udaljenosti i vremena)
+      final ukupnoRuta = rute.length;
+      final aktivnihRuta = aktivneRute.length;
+      final neaktivnihRuta = neaktivneRute.length;
 
       final stats = {
-        'ukupno_ruta': rute.length,
-        'aktivne_rute': aktivneRute.length,
-        'neaktivne_rute': neaktivneRute.length,
-        'procenat_aktivnih': rute.isNotEmpty
-            ? (aktivneRute.length / rute.length * 100).round()
+        'ukupno_ruta': ukupnoRuta,
+        'aktivne_rute': aktivnihRuta,
+        'neaktivne_rute': neaktivnihRuta,
+        'procenat_aktivnih': ukupnoRuta > 0
+            ? (aktivnihRuta / ukupnoRuta * 100).round()
             : 0,
-        'ukupna_udaljenost_km': ukupnaUdaljenost,
-        'prosecna_udaljenost_km':
-            double.parse(prosecnaUdaljenost.toStringAsFixed(1)),
-        'ukupno_vreme_minuti': ukupnoVreme,
-        'prosecno_vreme_minuti': double.parse(prosecnoVreme.toStringAsFixed(1)),
-        'najčešći_polazak': polasciCount.isNotEmpty
-            ? polasciCount.entries
-                .reduce((a, b) => a.value > b.value ? a : b)
-                .key
+        'poslednja_izmena': rute.isNotEmpty
+            ? rute.map((r) => r.updatedAt).reduce((a, b) => a.isAfter(b) ? a : b).toIso8601String()
             : null,
-        'najčešći_dolazak': dolasciCount.isNotEmpty
-            ? dolasciCount.entries
-                .reduce((a, b) => a.value > b.value ? a : b)
-                .key
-            : null,
-        'polasci_distribution': polasciCount,
-        'dolasci_distribution': dolasciCount,
-        'kratke_rute': aktivneRute.where((r) => r.jeKratkaRuta).length,
-        'dugačke_rute': aktivneRute.where((r) => r.jeDugackaRuta).length,
-        'brze_rute': aktivneRute.where((r) => r.jeBrzaRuta).length,
-        'spore_rute': aktivneRute.where((r) => r.jeSporaRuta).length,
-        'generirano': DateTime.now().toIso8601String(),
       };
 
       // Keširaj statistike
@@ -769,12 +703,7 @@ return {};
         'prosecna_zarada_po_putniku':
             double.parse(prosecnaZarada.toStringAsFixed(2)),
         'status_distribution': statusCount,
-        'zarada_po_km': ruta.udaljenostKm != null && ruta.udaljenostKm! > 0
-            ? double.parse(
-                (ukupnaZarada / ruta.udaljenostKm!).toStringAsFixed(2),
-              )
-            : 0.0,
-        'putnika_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty
+        'putnica_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty
             ? _calculateDailyPassengers(putnici)
             : <String, int>{},
         'generirano': DateTime.now().toIso8601String(),
@@ -815,15 +744,10 @@ return {};
 
       // Data rows
       for (final ruta in rute) {
-        csvLines.add(
-          [
+        csvLines.add([
             ruta.id,
             '"${ruta.naziv}"',
-            '"${ruta.polazak}"',
-            '"${ruta.dolazak}"',
             '"${ruta.opis ?? ''}"',
-            ruta.udaljenostKm?.toString() ?? '',
-            ruta.prosecnoVreme?.inMinutes.toString() ?? '',
             ruta.aktivan ? 'Da' : 'Ne',
             ruta.createdAt.toIso8601String(),
           ].join(','),

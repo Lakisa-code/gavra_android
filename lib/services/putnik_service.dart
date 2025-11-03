@@ -573,9 +573,12 @@ class PutnikService {
               'Idite na: Meni → Mesečni putnici da kreirate novog mesečnog putnika.');
         }
 
-        // 🎯 NOVA LOGIKA: NE DODAVAJ NOVO PUTOVANJE, već samo označi da se pojavio// ℹ️ Za mesečne putnike, njihovo prisustvo se već evidentira kroz mesecni_putnici tabelu
-        // Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike      } else {
+        // 🎯 NOVA LOGIKA: Za mesečne putnike se prisustvo evidentira kroz mesecni_putnici tabelu
+        // ℹ️ Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike
+        print('DEBUG: Mesečni putnik ${putnik.ime} se pojavio za ${putnik.polazak}');
+      } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
+        print('DEBUG: Dodajem dnevnog putnika ${putnik.ime} u putovanja_istorija');
         final insertData = putnik.toPutovanjaIstorijaMap();
         await supabase.from('putovanja_istorija').insert(insertData);
       }

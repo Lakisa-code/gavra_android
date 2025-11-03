@@ -5,8 +5,8 @@ class Vozilo {
   Vozilo({
     String? id,
     required this.registracija,
-    required this.marka,
-    required this.model,
+    this.marka,
+    this.model,
     this.godinaProizvodnje,
     this.brojSedista = 50,
     this.aktivan = true,
@@ -19,11 +19,11 @@ class Vozilo {
   factory Vozilo.fromMap(Map<String, dynamic> map) {
     return Vozilo(
       id: map['id'] as String,
-      registracija: map['registracija'] as String,
-      marka: map['marka'] as String,
-      model: map['model'] as String,
+      registracija: map['registarski_broj'] as String,
+      marka: map['marka'] as String?,
+      model: map['model'] as String?,
       godinaProizvodnje: map['godina_proizvodnje'] as int?,
-      brojSedista: map['broj_sedista'] as int? ?? 50,
+      brojSedista: map['broj_mesta'] as int? ?? 50,
       aktivan: map['aktivan'] as bool? ?? true,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -31,8 +31,8 @@ class Vozilo {
   }
   final String id;
   final String registracija;
-  final String marka;
-  final String model;
+  final String? marka;
+  final String? model;
   final int? godinaProizvodnje;
   final int brojSedista;
   final bool aktivan;
@@ -42,11 +42,11 @@ class Vozilo {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'registracija': registracija,
+      'registarski_broj': registracija,
       'marka': marka,
       'model': model,
       'godina_proizvodnje': godinaProizvodnje,
-      'broj_sedista': brojSedista,
+      'broj_mesta': brojSedista,
       'aktivan': aktivan,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -55,8 +55,3 @@ class Vozilo {
 
   String get punNaziv => '$marka $model ($registracija)';
 }
-
-
-
-
-

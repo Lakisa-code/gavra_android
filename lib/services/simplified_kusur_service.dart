@@ -18,8 +18,8 @@ class SimplifiedKusurService {
       final cached = CacheService.getFromMemory<double>(cacheKey, maxAge: const Duration(minutes: 2));
 
       if (cached != null) {
-      // Debug logging removed for production
-return cached;
+        // Debug logging removed for production
+        return cached;
       }
       // Debug logging removed for production
 // OPTIMIZOVANO sa SupabaseManager
@@ -34,44 +34,45 @@ return cached;
 
         // Sačuvaj u cache
         CacheService.saveToMemory(cacheKey, kusur);
-      // Debug logging removed for production
-return kusur;
+        // Debug logging removed for production
+        return kusur;
       }
       // Debug logging removed for production
-return 0.0;
+      return 0.0;
     } catch (e) {
       // Debug logging removed for production
-return 0.0;
+      return 0.0;
     }
   }
 
-  /// Ažuriraj kusur za određenog vozača u bazi - OPTIMIZOVANO
+  /// Ažuriraj kusur za određenog vozača u bazi - OPTIMIZOVANO sa timeout
   static Future<bool> updateKusurForVozac(String vozacIme, double noviKusur) async {
     try {
       // Debug logging removed for production
-// OPTIMIZOVANO sa SupabaseManager
+      // OPTIMIZOVANO sa SupabaseManager i eksplicitnim timeout-om
       final success = await SupabaseManager.safeUpdate(
         'vozaci',
         {'kusur': noviKusur},
         {'ime': vozacIme},
-      );
+      ).timeout(const Duration(seconds: 2));
 
       if (success) {
         // Invalidate cache za ovog vozača
         final cacheKey = 'kusur_vozac_$vozacIme';
         CacheService.clearFromMemory(cacheKey);
         CacheService.clearFromMemory('kusur_svi_vozaci'); // Clear i glavni cache
-      // Debug logging removed for production
-// Emituj ažuriranje preko stream-a
+        // Debug logging removed for production
+        // Emituj ažuriranje preko stream-a
         _emitKusurUpdate(vozacIme, noviKusur);
         return true;
       } else {
-      // Debug logging removed for production
-return false;
+        // Debug logging removed for production
+        return false;
       }
     } catch (e) {
       // Debug logging removed for production
-return false;
+      print('KUSUR UPDATE TIMEOUT/ERROR: $e');
+      return false;
     }
   }
 
@@ -100,8 +101,8 @@ return false;
       );
 
       if (cached != null) {
-      // Debug logging removed for production
-return cached;
+        // Debug logging removed for production
+        return cached;
       }
       // Debug logging removed for production
 // OPTIMIZOVANO sa SupabaseManager
@@ -124,10 +125,10 @@ return cached;
       // Sačuvaj kompletnu mapu u cache
       CacheService.saveToMemory(cacheKey, rezultat);
       // Debug logging removed for production
-return rezultat;
+      return rezultat;
     } catch (e) {
       // Debug logging removed for production
-return {};
+      return {};
     }
   }
 

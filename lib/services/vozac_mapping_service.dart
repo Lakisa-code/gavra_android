@@ -8,9 +8,26 @@ class VozacMappingService {
   static Map<String, String>? _vozacNameToUuid;
   static Map<String, String>? _vozacUuidToName;
   static DateTime? _lastCacheUpdate;
+  static bool _isInitialized = false;
 
   /// Cache validity period (30 minutes)
   static const Duration _cacheValidityPeriod = Duration(minutes: 30);
+
+  /// 🚀 INICIJALIZACIJA CACHE-A NA STARTUP
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
+    try {
+      await _loadMappingFromDatabase();
+      _isInitialized = true;
+      print('✅ VozacMappingService inicijalizovan uspešno');
+    } catch (e) {
+      print('❌ Greška pri inicijalizaciji VozacMappingService: $e');
+      // Postavi prazan cache da ne crashuje aplikaciju
+      _vozacNameToUuid = {};
+      _vozacUuidToName = {};
+      _isInitialized = true;
+    }
+  }
 
   /// Učitava mapiranje vozača iz baze podataka
   static Future<void> _loadMappingFromDatabase() async {
@@ -24,10 +41,8 @@ class VozacMappingService {
         _vozacNameToUuid![vozac.ime] = vozac.id;
         _vozacUuidToName![vozac.id] = vozac.ime;
 
-        // Dodaj i puno ime ako postoji prezime
-        if (vozac.prezime != null && vozac.prezime!.isNotEmpty) {
-          _vozacNameToUuid![vozac.punoIme] = vozac.id;
-        }
+        // Dodaj i puno ime 
+        _vozacNameToUuid![vozac.punoIme] = vozac.id;
       }
 
       _lastCacheUpdate = DateTime.now();
@@ -111,19 +126,68 @@ class VozacMappingService {
   // KOMPATIBILNOST: Sinhrone metode za modele i mesta gde async nije moguć
   // Ove metode koriste cache ako je dostupan, inače fallback
 
-  /// Dobij UUID vozača sinhron (koristi cache ili null)
-  static String? getVozacUuidSync(String ime) {
-    return _vozacNameToUuid?[ime];
-  }
-
   /// Dobij ime vozača sa fallback sinhron (koristi cache ili null)
   static String? getVozacImeWithFallbackSync(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
+
+    // ⚠️ WARN: Ako cache nije učitan, vrati null umesto crash
+    if (!_isInitialized || _vozacUuidToName == null) {
+      print('⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
+      return null;
+    }
+
     return _vozacUuidToName?[uuid]; // Može biti null
+  }
+
+  /// Dobij UUID vozača sinhron (koristi cache ili null)
+  static String? getVozacUuidSync(String ime) {
+    if (!_isInitialized || _vozacNameToUuid == null) {
+      print('⚠️ WARNING: VozacMappingService cache nije inicijalizovan! Pozovi initialize() na startup.');
+      return null;
+    }
+    return _vozacNameToUuid?[ime];
   }
 
   /// Proveri da li je UUID vozača valjan sinhron
   static bool isValidVozacUuidSync(String uuid) {
+    if (!_isInitialized || _vozacUuidToName == null) {
+      print('⚠️ WARNING: VozacMappingService cache nije inicijalizovan!');
+      return false;
+    }
     return _vozacUuidToName?.containsKey(uuid) ?? false;
+  }
+
+  /// 🔄 CROSS-VALIDATION: Proveri da li se VozacBoja i VozacMappingService slažu
+  static Future<Map<String, dynamic>> validateConsistency() async {
+    await _ensureMappingLoaded();
+
+    final errors = <String>[];
+    final warnings = <String>[];
+
+    // Import VozacBoja da pristupimo validDrivers
+    final hardcodedDrivers = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana']; // VozacBoja.validDrivers
+    final dynamicDrivers = _vozacNameToUuid?.keys.toList() ?? [];
+
+    // Proveri da li svi hardcoded vozači postoje u bazi
+    for (final driver in hardcodedDrivers) {
+      if (!dynamicDrivers.contains(driver)) {
+        errors.add('Vozač "$driver" postoji u VozacBoja ali ne u bazi!');
+      }
+    }
+
+    // Proveri da li u bazi postoje vozači koji nisu u VozacBoja
+    for (final driver in dynamicDrivers) {
+      if (!hardcodedDrivers.contains(driver)) {
+        warnings.add('Vozač "$driver" postoji u bazi ali ne u VozacBoja!');
+      }
+    }
+
+    return {
+      'isValid': errors.isEmpty,
+      'errors': errors,
+      'warnings': warnings,
+      'hardcodedDrivers': hardcodedDrivers,
+      'dynamicDrivers': dynamicDrivers,
+    };
   }
 }

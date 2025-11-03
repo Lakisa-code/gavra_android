@@ -123,10 +123,11 @@ class VozacService {
   /// Dohvata adresu vozača
   Future<Adresa?> getVozacAdresa(String vozacId) async {
     final vozac = await getVozacById(vozacId);
-    if (vozac?.adresaId == null) return null;
+    if (vozac == null) return null;
 
-    final adresaService = AdresaService(supabaseClient: _supabase);
-    return await adresaService.getAdresaById(vozac!.adresaId!);
+    // Since Vozac model doesn't have adresaId, return null for now
+    // This should be implemented when address relationship is added to Vozac model
+    return null;
   }
 
   /// Dodeljuje adresu vozaču
@@ -142,23 +143,14 @@ class VozacService {
   /// Dohvata sve vozače sa adresama
   Future<List<Map<String, dynamic>>> getVozaciSaAdresama() async {
     final vozaci = await getAllVozaci();
-    final adresaService = AdresaService(supabaseClient: _supabase);
 
     final List<Map<String, dynamic>> result = [];
 
     for (final vozac in vozaci) {
-      Adresa? adresa;
-      if (vozac.adresaId != null) {
-        try {
-          adresa = await adresaService.getAdresaById(vozac.adresaId!);
-        } catch (e) {
-          // Ignore if address not found
-        }
-      }
-
+      // Since Vozac model doesn't have adresaId, skip address lookup for now
       result.add({
         'vozac': vozac,
-        'adresa': adresa,
+        'adresa': null,
       });
     }
 

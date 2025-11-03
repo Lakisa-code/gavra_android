@@ -95,14 +95,15 @@ class DailyCheckInService {
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
-    // 🔄 OPTIMIZOVANO: Ažuriraj kusur sa timeout-om
+    // � Ažuriraj kusur u vozaci tabeli (sada kada kolona postoji!)
     try {
-      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac).timeout(const Duration(seconds: 5));
+      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac).timeout(const Duration(seconds: 3));
     } catch (e) {
-      // Ignoriši grešku - nastavi sa ostalim čuvanjem
+      print('WARNING: Kusur update failed: $e');
+      // Nastavi sa lokalnim čuvanjem
     }
 
-    // 📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
+    // �📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(todayKey, true);
@@ -120,10 +121,28 @@ class DailyCheckInService {
     }
 
     // 🌐 REMOTE ČUVANJE - asinhrono u pozadini sa timeout-om
-    try {
-      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 8));
-    } catch (e) {
-      // Ignoriši remote greške - lokalno čuvanje je dovoljno
+    // HITNO ONEMOGUĆENO
+    // try {
+    //   await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
+    // } catch (e) {
+    //   print('Remote save failed but local is OK: $e');
+    // }
+  }
+
+  /// 🚨 EMERGENCY LOCAL SAVE - kada se sve ostalo zaglavi!
+  static Future<void> saveLokalno(String vozac, double sitanNovac, {double dnevniPazari = 0.0}) async {
+    final today = DateTime.now();
+    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(todayKey, true);
+    await prefs.setDouble('${todayKey}_amount', sitanNovac);
+    await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
+    await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
+
+    // Emituj update za stream
+    if (!_sitanNovacController.isClosed) {
+      _sitanNovacController.add(sitanNovac);
     }
   }
 
@@ -173,6 +192,8 @@ class DailyCheckInService {
   }
 
   /// Sačuvaj u Supabase tabelu daily_checkins
+  // HITNO ONEMOGUĆENO - može blokirati UI
+  /*
   static Future<Map<String, dynamic>?> _saveToSupabase(
     String vozac,
     double sitanNovac,
@@ -187,8 +208,10 @@ class DailyCheckInService {
           .upsert({
             'vozac': vozac,
             'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
-            'kusur_iznos': sitanNovac,
+            'sitan_novac': sitanNovac,
             'dnevni_pazari': dnevniPazari,
+            'ukupno': sitanNovac + dnevniPazari,
+            'checkin_vreme': DateTime.now().toIso8601String(),
             'created_at': datum.toIso8601String(),
           })
           .select()
@@ -207,8 +230,10 @@ class DailyCheckInService {
             .upsert({
               'vozac': vozac,
               'datum': datum.toIso8601String().split('T')[0],
-              'kusur_iznos': sitanNovac,
+              'sitan_novac': sitanNovac,
               'dnevni_pazari': dnevniPazari,
+              'ukupno': sitanNovac + dnevniPazari,
+              'checkin_vreme': DateTime.now().toIso8601String(),
               'created_at': datum.toIso8601String(),
             })
             .select()
@@ -223,17 +248,21 @@ class DailyCheckInService {
       rethrow;
     }
   }
+  */
 
   /// Kreiraj tabelu daily_checkins ako ne postoji
+  // HITNO ONEMOGUĆENO
+  /*
   static Future<void> _createDailyCheckinsTable() async {
     try {
       final supabase = Supabase.instance.client;
       // Pokušaj kreiranje preko RPC ako postoji
-      await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
+      await supabase.rpc<void>('create_daily_checins_table_if_not_exists');
     } catch (e) {
       // Ne bacaj grešku jer tabela možda postoji ali RPC ne radi
     }
   }
+  */
 
   /// 🛠️ FORSIRAJ KREIRANJE TABELE - za ekstremne slučajeve
   static Future<bool> forceCreateTable() async {
@@ -517,6 +546,8 @@ class DailyCheckInService {
         'ukupan_pazar': popisPodaci['ukupanPazar'] ?? 0.0,
         'sitan_novac': popisPodaci['sitanNovac'] ?? 0.0,
         'dnevni_pazari': popisPodaci['ukupanPazar'] ?? 0.0, // Isti kao ukupan_pazar
+        'ukupno': (popisPodaci['sitanNovac'] ?? 0.0) + (popisPodaci['ukupanPazar'] ?? 0.0),
+        'checkin_vreme': DateTime.now().toIso8601String(),
         'dodati_putnici': popisPodaci['dodatiPutnici'] ?? 0,
         'otkazani_putnici': popisPodaci['otkazaniPutnici'] ?? 0,
         'naplaceni_putnici': popisPodaci['naplaceniPutnici'] ?? 0,

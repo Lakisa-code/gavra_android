@@ -322,15 +322,15 @@ return null;
         tipPutnika: 'mesecni',
         datum: datum,
         vremePolaska: vremePolaska,
-        vremeAkcije: DateTime.now(),
-        adresaPolaska: adresaPolaska,
         status: status,
-        pokupljen: status == 'pokupljen',
         putnikIme: mesecniPutnik.putnikIme,
-        brojTelefona: mesecniPutnik.brojTelefona,
         cena: cena,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        // obrisan: false, // Redundant - removed default value
+        // Nova polja iz baze
+        napomene: 'Kreiran automatski iz mesečnog putnika',
+        // adresaId: null, // Redundant - removed default value
       );
 
       final result = await dodajPutovanje(putovanje);
@@ -361,15 +361,15 @@ return null;
         tipPutnika: 'dnevni',
         datum: datum,
         vremePolaska: vremePolaska,
-        vremeAkcije: DateTime.now(),
-        adresaPolaska: adresaPolaska,
         status: status,
-        pokupljen: status == 'pokupljen',
         putnikIme: putnikIme,
-        brojTelefona: brojTelefona,
         cena: cena,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        // obrisan: false, // Redundant - removed default value
+        // Nova polja iz baze
+        napomene: 'Dnevni putnik',
+        // adresaId: null, // Redundant - removed default value
       );
 
       final result = await dodajPutovanje(putovanje);
@@ -765,7 +765,7 @@ return false;
       );
 
       final ukupno = putovanja.length;
-      final pokupljeni = putovanja.where((p) => p.pokupljen).length;
+      final pokupljeni = putovanja.where((p) => p.jePokupljen).length;
       final nisu_se_pojavili = putovanja.where((p) => p.status == 'nije_se_pojavio').length;
       final ukupnaZarada = putovanja.fold<double>(0.0, (sum, p) => sum + p.cena);
 
@@ -829,17 +829,15 @@ return {};
 
       // Data rows
       for (final putovanje in putovanja) {
-        csvLines.add(
-          [
+        csvLines.add([
             putovanje.id,
             putovanje.tipPutnika,
             putovanje.datum.toIso8601String().split('T')[0],
             putovanje.vremePolaska,
             '"${putovanje.putnikIme}"',
-            putovanje.brojTelefona ?? '',
-            '"${putovanje.adresaPolaska}"',
+            putovanje.napomene ?? '',
             putovanje.status,
-            putovanje.pokupljen ? 'Da' : 'Ne',
+            putovanje.jePokupljen ? 'Da' : 'Ne',
             putovanje.cena.toString(),
             putovanje.createdAt.toIso8601String(),
           ].join(','),

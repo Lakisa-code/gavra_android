@@ -187,8 +187,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     // Filter cached data - results used implicitly through _getFilteredPutovanja()
     _cachedPutovanja.where((putovanje) {
       return putovanje.putnikIme.toLowerCase().contains(query.toLowerCase()) ||
-          putovanje.adresaPolaska.toLowerCase().contains(query.toLowerCase()) ||
-          (putovanje.brojTelefona?.contains(query) ?? false);
+          (putovanje.napomene?.toLowerCase().contains(query.toLowerCase()) ?? false);
     }).toList();
 
     if (mounted)
@@ -758,8 +757,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     if (searchQuery.isNotEmpty) {
       putovanja = putovanja.where((putovanje) {
         return putovanje.putnikIme.toLowerCase().contains(searchQuery) ||
-            putovanje.adresaPolaska.toLowerCase().contains(searchQuery) ||
-            (putovanje.brojTelefona?.toLowerCase().contains(searchQuery) ?? false);
+            (putovanje.napomene?.toLowerCase().contains(searchQuery) ?? false);
       }).toList();
     }
 
@@ -884,23 +882,25 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  putovanje.adresaPolaska,
+                  putovanje.napomene ?? 'Nema dodatnih informacija',
                   style: TextStyle(color: Colors.grey.shade700),
                 ),
               ),
             ],
           ),
 
-          // Telefon ako postoji
-          if (putovanje.brojTelefona != null) ...[
+          // Napomene ako postoje
+          if (putovanje.napomene != null && putovanje.napomene!.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                Icon(Icons.note, size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 4),
-                Text(
-                  putovanje.brojTelefona!,
-                  style: TextStyle(color: Colors.grey.shade700),
+                Expanded(
+                  child: Text(
+                    putovanje.napomene!,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
                 ),
               ],
             ),
@@ -1420,15 +1420,15 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       final novoPutovanje = PutovanjaIstorija(
         id: '', // Biće automatski generisan u Supabase
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
-        adresaPolaska: 'Bela Crkva', // Default vrednost
         vremePolaska: '07:00', // Default vrednost
         tipPutnika: _noviTipPutnika,
         cena: _novaCena,
         datum: _selectedDate,
-        vremeAkcije: DateTime.now(),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        napomene: _noviPutnikTelefon.trim().isEmpty 
+            ? 'Dodano iz aplikacije'
+            : 'Telefon: ${_noviPutnikTelefon.trim()}',
       );
 
       await PutovanjaIstorijaService.dodajPutovanje(novoPutovanje);
@@ -1466,7 +1466,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     if (mounted)
       setState(() {
         _noviPutnikIme = putovanje.putnikIme;
-        _noviPutnikTelefon = putovanje.brojTelefona ?? '';
+        _noviPutnikTelefon = putovanje.napomene?.contains('Telefon:') == true
+            ? putovanje.napomene!.split('Telefon: ').last
+            : '';
         _novaCena = putovanje.cena;
         _noviTipPutnika = putovanje.tipPutnika;
       });
@@ -1551,17 +1553,22 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         id: originalPutovanje.id,
         mesecniPutnikId: originalPutovanje.mesecniPutnikId,
         putnikIme: _noviPutnikIme.trim(),
-        brojTelefona: _noviPutnikTelefon.trim().isEmpty ? null : _noviPutnikTelefon.trim(),
-        adresaPolaska: originalPutovanje.adresaPolaska,
         vremePolaska: originalPutovanje.vremePolaska,
         tipPutnika: _noviTipPutnika,
         status: originalPutovanje.status,
-        pokupljen: originalPutovanje.pokupljen,
         cena: _novaCena,
         datum: originalPutovanje.datum,
-        vremeAkcije: originalPutovanje.vremeAkcije,
         createdAt: originalPutovanje.createdAt,
         updatedAt: DateTime.now(),
+        // Zadržaj postojeće informacije iz originalnog putovanja
+        obrisan: originalPutovanje.obrisan,
+        vozacId: originalPutovanje.vozacId,
+        napomene: _noviPutnikTelefon.trim().isEmpty 
+            ? originalPutovanje.napomene
+            : 'Telefon: ${_noviPutnikTelefon.trim()}',
+        rutaId: originalPutovanje.rutaId,
+        voziloId: originalPutovanje.voziloId,
+        adresaId: originalPutovanje.adresaId,
       );
 
       await PutovanjaIstorijaService.azurirajPutovanje(azuriranoPutovanje);
@@ -1632,17 +1639,20 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       id: putovanje.id,
       mesecniPutnikId: putovanje.mesecniPutnikId,
       putnikIme: putovanje.putnikIme,
-      brojTelefona: putovanje.brojTelefona,
-      adresaPolaska: putovanje.adresaPolaska,
       vremePolaska: putovanje.vremePolaska,
       tipPutnika: putovanje.tipPutnika,
       status: noviStatus,
-      pokupljen: noviStatus == 'pokupljen',
       cena: putovanje.cena,
       datum: putovanje.datum,
-      vremeAkcije: putovanje.vremeAkcije,
       createdAt: putovanje.createdAt,
       updatedAt: DateTime.now(),
+      // Zadržaj originalna polja
+      obrisan: putovanje.obrisan,
+      vozacId: putovanje.vozacId,
+      napomene: putovanje.napomene,
+      rutaId: putovanje.rutaId,
+      voziloId: putovanje.voziloId,
+      adresaId: putovanje.adresaId,
     );
 
     await PutovanjaIstorijaService.azurirajPutovanje(azuriranoPutovanje);

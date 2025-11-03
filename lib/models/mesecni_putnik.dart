@@ -33,6 +33,19 @@ class MesecniPutnik {
     this.placeniMesec,
     this.placenaGodina,
     this.statistics = const {},
+    // Nova polja za database kompatibilnost
+    this.tipPrikazivanja = 'standard',
+    this.vozacId,
+    this.pokupljen = false,
+    this.vremePokupljenja,
+    this.rutaId,
+    this.voziloId,
+    this.adresaPolaskaId,
+    this.adresaDolaskaId,
+    this.ime,
+    this.prezime,
+    this.datumPocetka,
+    this.datumKraja,
   });
 
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
@@ -82,6 +95,19 @@ class MesecniPutnik {
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
       statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
+      // Nova polja
+      tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
+      vozacId: map['vozac_id'] as String?,
+      pokupljen: map['pokupljen'] as bool? ?? false,
+      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
+      rutaId: map['ruta_id'] as String?,
+      voziloId: map['vozilo_id'] as String?,
+      adresaPolaskaId: map['adresa_polaska_id'] as String?,
+      adresaDolaskaId: map['adresa_dolaska_id'] as String?,
+      ime: map['ime'] as String?,
+      prezime: map['prezime'] as String?,
+      datumPocetka: map['datum_pocetka'] != null ? DateTime.parse(map['datum_pocetka'] as String) : null,
+      datumKraja: map['datum_kraja'] != null ? DateTime.parse(map['datum_kraja'] as String) : null,
     );
   }
   final String id;
@@ -112,6 +138,20 @@ class MesecniPutnik {
   final int? placeniMesec;
   final int? placenaGodina;
   final Map<String, dynamic> statistics;
+
+  // Nova polja iz baze
+  final String tipPrikazivanja;
+  final String? vozacId;
+  final bool pokupljen;
+  final DateTime? vremePokupljenja;
+  final String? rutaId;
+  final String? voziloId;
+  final String? adresaPolaskaId;
+  final String? adresaDolaskaId;
+  final String? ime;
+  final String? prezime;
+  final DateTime? datumPocetka;
+  final DateTime? datumKraja;
 
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
@@ -166,6 +206,18 @@ class MesecniPutnik {
       'placeni_mesec': placeniMesec,
       'placena_godina': placenaGodina,
       'statistics': stats,
+      // Nova polja iz baze
+      'tip_prikazivanja': tipPrikazivanja,
+      'vozac_id': vozacId,
+      'pokupljen': pokupljen,
+      'ruta_id': rutaId,
+      'vozilo_id': voziloId,
+      'adresa_polaska_id': adresaPolaskaId,
+      'adresa_dolaska_id': adresaDolaskaId,
+      'ime': ime,
+      'prezime': prezime,
+      'datum_pocetka': datumPocetka?.toIso8601String(),
+      'datum_kraja': datumKraja?.toIso8601String(),
     };
 
     // ✅ Dodaj id samo ako nije prazan (za UPDATE operacije)

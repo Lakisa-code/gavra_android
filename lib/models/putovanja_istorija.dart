@@ -7,22 +7,18 @@ class PutovanjaIstorija {
     required this.tipPutnika,
     required this.datum,
     required this.vremePolaska,
-    this.vremeAkcije, // OPCIONO
-    required this.adresaPolaska,
-    this.status = 'nije_se_pojavio', // DEFAULT vrednost
+    this.status = 'obavljeno',
     required this.putnikIme,
-    this.brojTelefona,
     this.cena = 0.0,
     required this.createdAt,
     required this.updatedAt,
-    // NOVA POLJA
-    this.dan,
-    this.grad,
     this.obrisan = false,
-    this.pokupljen = false,
-    this.vozac,
-    this.vremePlacanja,
-    this.vremePokupljenja,
+    // Nova polja iz baze
+    this.vozacId,
+    this.napomene,
+    this.rutaId,
+    this.voziloId,
+    this.adresaId,
   });
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
@@ -30,32 +26,21 @@ class PutovanjaIstorija {
     return PutovanjaIstorija(
       id: map['id'] as String,
       mesecniPutnikId: map['mesecni_putnik_id'] as String?,
-      tipPutnika: map['tip_putnika'] as String,
+      tipPutnika: map['tip_putnika'] as String? ?? 'dnevni',
       datum: DateTime.parse(map['datum_putovanja'] as String),
-      vremePolaska: map['vreme_polaska'] as String,
-      vremeAkcije: map['vreme_akcije'] != null
-          ? DateTime.parse(map['vreme_akcije'] as String)
-          : null, // FIXED: Consistent mapping to vreme_akcije
-      adresaPolaska: map['adresa_polaska'] as String,
-      status: map['status'] as String? ??
-          'nije_se_pojavio', // KORISTI status kolonu
-      putnikIme: map['putnik_ime'] as String,
-      brojTelefona: map['broj_telefona'] as String?,
+      vremePolaska: map['vreme_polaska'] as String? ?? '',
+      status: map['status'] as String? ?? 'obavljeno',
+      putnikIme: map['putnik_ime'] as String? ?? '',
       cena: (map['cena'] as num?)?.toDouble() ?? 0.0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
-      // NOVA POLJA
-      dan: map['dan'] as String?,
-      grad: map['grad'] as String?,
       obrisan: map['obrisan'] as bool? ?? false,
-      pokupljen: map['pokupljen'] as bool? ?? false,
-      vozac: map['vozac'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null,
+      // Nova polja iz baze
+      vozacId: map['vozac_id'] as String?,
+      napomene: map['napomene'] as String?,
+      rutaId: map['ruta_id'] as String?,
+      voziloId: map['vozilo_id'] as String?,
+      adresaId: map['adresa_id'] as String?,
     );
   }
   final String id;
@@ -63,23 +48,19 @@ class PutovanjaIstorija {
   final String tipPutnika;
   final DateTime datum;
   final String vremePolaska;
-  final DateTime? vremeAkcije; // OPCIONO - možda se mapira na vreme_pokupljenja
-  final String adresaPolaska;
-  final String status; // UNIFIED status column - replaces deprecated columns
+  final String status;
   final String putnikIme;
-  final String? brojTelefona;
   final double cena;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  // NOVA POLJA koja postoje u bazi
-  final String? dan;
-  final String? grad;
   final bool obrisan;
-  final bool pokupljen;
-  final String? vozac;
-  final DateTime? vremePlacanja;
-  final DateTime? vremePokupljenja;
+
+  // Nova polja iz baze podataka
+  final String? vozacId;
+  final String? napomene;
+  final String? rutaId;
+  final String? voziloId;
+  final String? adresaId;
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {
@@ -89,24 +70,18 @@ class PutovanjaIstorija {
       'tip_putnika': tipPutnika,
       'datum_putovanja': datum.toIso8601String().split('T')[0],
       'vreme_polaska': vremePolaska,
-      'vreme_akcije':
-          vremeAkcije?.toIso8601String(), // FIXED: Added missing mapping
-      'adresa_polaska': adresaPolaska,
-      'status':
-          status, // KORISTI status umesto status_bela_crkva_vrsac/status_vrsac_bela_crkva
+      'status': status,
       'putnik_ime': putnikIme,
-      'broj_telefona': brojTelefona,
       'cena': cena,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      // NOVA POLJA
-      'dan': dan,
-      'grad': grad,
       'obrisan': obrisan,
-      'pokupljen': pokupljen,
-      'vozac': vozac,
-      'vreme_placanja': vremePlacanja?.toIso8601String(),
-      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
+      // Nova polja iz baze
+      'vozac_id': vozacId,
+      'napomene': napomene,
+      'ruta_id': rutaId,
+      'vozilo_id': voziloId,
+      'adresa_id': adresaId,
     };
   }
 
@@ -117,22 +92,18 @@ class PutovanjaIstorija {
     String? tipPutnika,
     DateTime? datum,
     String? vremePolaska,
-    DateTime? vremeAkcije,
-    String? adresaPolaska,
     String? status,
     String? putnikIme,
-    String? brojTelefona,
     double? cena,
     DateTime? createdAt,
     DateTime? updatedAt,
-    // NOVA POLJA
-    String? dan,
-    String? grad,
     bool? obrisan,
-    bool? pokupljen,
-    String? vozac,
-    DateTime? vremePlacanja,
-    DateTime? vremePokupljenja,
+    // Nova polja iz baze
+    String? vozacId,
+    String? napomene,
+    String? rutaId,
+    String? voziloId,
+    String? adresaId,
   }) {
     return PutovanjaIstorija(
       id: id ?? this.id,
@@ -140,27 +111,23 @@ class PutovanjaIstorija {
       tipPutnika: tipPutnika ?? this.tipPutnika,
       datum: datum ?? this.datum,
       vremePolaska: vremePolaska ?? this.vremePolaska,
-      vremeAkcije: vremeAkcije ?? this.vremeAkcije,
-      adresaPolaska: adresaPolaska ?? this.adresaPolaska,
       status: status ?? this.status,
       putnikIme: putnikIme ?? this.putnikIme,
-      brojTelefona: brojTelefona ?? this.brojTelefona,
       cena: cena ?? this.cena,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      // NOVA POLJA
-      dan: dan ?? this.dan,
-      grad: grad ?? this.grad,
       obrisan: obrisan ?? this.obrisan,
-      pokupljen: pokupljen ?? this.pokupljen,
-      vozac: vozac ?? this.vozac,
-      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
-      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
+      // Nova polja iz baze
+      vozacId: vozacId ?? this.vozacId,
+      napomene: napomene ?? this.napomene,
+      rutaId: rutaId ?? this.rutaId,
+      voziloId: voziloId ?? this.voziloId,
+      adresaId: adresaId ?? this.adresaId,
     );
   }
 
   // Helper metodi za status - MODERNIZED status logic
-  bool get jePokupljen => status == 'pokupljen' || pokupljen;
+  bool get jePokupljen => status == 'pokupljen';
   bool get jeOtkazao => status == 'otkazao_poziv' || status == 'otkazano';
   bool get nijeSePojaveo => status == 'nije_se_pojavio';
   bool get jePlacen => status == 'placeno';
@@ -189,7 +156,7 @@ class PutovanjaIstorija {
 
   /// Validni statusi putovanja
   static const List<String> validStatusi = [
-    'nije_se_pojavio',
+    'obavljeno',
     'pokupljen',
     'otkazao_poziv',
     'otkazano',
@@ -202,7 +169,6 @@ class PutovanjaIstorija {
     return id.isNotEmpty &&
         putnikIme.isNotEmpty &&
         vremePolaska.isNotEmpty &&
-        adresaPolaska.isNotEmpty &&
         validTipovi.contains(tipPutnika) &&
         validStatusi.contains(status);
   }
@@ -258,13 +224,8 @@ class PutovanjaIstorija {
       errors['vremePolaska'] = 'Vreme polaska mora biti u formatu HH:MM';
     }
 
-    if (adresaPolaska.trim().isEmpty) {
-      errors['adresaPolaska'] = 'Adresa polaska je obavezna';
-    }
-
     if (!hasValidMesecniPutnikLink()) {
-      errors['mesecniPutnikId'] =
-          'Mesečni putnici moraju imati ID mesečnog putnika';
+      errors['mesecniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
     }
 
     if (!isDatumValid()) {
@@ -334,8 +295,3 @@ class PutovanjaIstorija {
   @override
   int get hashCode => id.hashCode;
 }
-
-
-
-
-

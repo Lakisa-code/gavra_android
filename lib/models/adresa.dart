@@ -6,10 +6,10 @@ import 'package:uuid/uuid.dart';
 class Adresa {
   Adresa({
     String? id,
-    required this.ulica,
+    required this.naziv,
+    this.ulica,
     this.broj,
-    required this.grad,
-    this.postanskiBroj,
+    this.grad,
     this.koordinate,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -20,25 +20,23 @@ class Adresa {
   factory Adresa.fromMap(Map<String, dynamic> map) {
     return Adresa(
       id: map['id'] as String,
-      ulica: map['ulica'] as String,
+      naziv: map['naziv'] as String,
+      ulica: map['ulica'] as String?,
       broj: map['broj'] as String?,
-      grad: map['grad'] as String,
-      postanskiBroj: map['postanski_broj'] as String?,
-      koordinate: map['koordinate'] as String?, // PostgreSQL POINT as string
+      grad: map['grad'] as String?,
+      koordinate: map['koordinate'], // JSONB data
       createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
-          : DateTime.now(),
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
     );
   }
 
-  /// Factory constructor with separate lat/lng that creates POINT
+  /// Factory constructor with separate lat/lng that creates JSONB coordinates
   factory Adresa.withCoordinates({
     String? id,
-    required String ulica,
+    required String naziv,
+    String? ulica,
     String? broj,
-    required String grad,
-    String? postanskiBroj,
+    String? grad,
     double? latitude,
     double? longitude,
     DateTime? createdAt,
@@ -46,61 +44,57 @@ class Adresa {
   }) {
     return Adresa(
       id: id,
+      naziv: naziv,
       ulica: ulica,
       broj: broj,
       grad: grad,
-      postanskiBroj: postanskiBroj,
-      koordinate: createPointString(latitude, longitude),
+      koordinate: createCoordinatesJsonb(latitude, longitude),
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
   }
   final String id;
-  final String ulica;
+  final String naziv;
+  final String? ulica;
   final String? broj;
-  final String grad;
-  final String? postanskiBroj;
-  final String? koordinate; // PostgreSQL POINT kao string "(lat,lng)"
+  final String? grad;
+  final dynamic koordinate; // JSONB data from PostgreSQL
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  // Virtuelna polja za latitude/longitude iz POINT koordinata
-  double? get latitude => _parseLatitudeFromPoint();
-  double? get longitude => _parseLongitudeFromPoint();
+  // Virtuelna polja za latitude/longitude iz JSONB koordinata
+  double? get latitude => _parseLatitudeFromJsonb();
+  double? get longitude => _parseLongitudeFromJsonb();
 
-  // Naziv adrese za kompatibilnost sa DnevniPutnik modelom
-  String get naziv => punaAdresa;
+  // Puna adresa za kompatibilnost
+  String get punaAdresa {
+    final delovi = <String>[];
+    if (ulica != null && ulica!.isNotEmpty) delovi.add(ulica!);
+    if (broj != null && broj!.isNotEmpty) delovi.add(broj!);
+    if (grad != null && grad!.isNotEmpty) delovi.add(grad!);
+    return delovi.join(', ');
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'naziv': naziv,
       'ulica': ulica,
       'broj': broj,
       'grad': grad,
-      'postanski_broj': postanskiBroj,
-      'koordinate': koordinate, // PostgreSQL POINT as string
+      'koordinate': koordinate, // JSONB data
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  String get punaAdresa {
-    final delovi = [ulica];
-    if (broj != null) delovi.add(broj!);
-    delovi.add(grad);
-    if (postanskiBroj != null) delovi.add(postanskiBroj!);
-    return delovi.join(', ');
-  }
-
-  /// Parse latitude from PostgreSQL POINT string format "(lat,lng)"
-  double? _parseLatitudeFromPoint() {
+  /// Parse latitude from JSONB coordinates
+  double? _parseLatitudeFromJsonb() {
     if (koordinate == null) return null;
     try {
-      // PostgreSQL POINT format: "(latitude,longitude)"
-      final clean = koordinate!.replaceAll(RegExp(r'[()]'), '');
-      final parts = clean.split(',');
-      if (parts.length == 2) {
-        return double.parse(parts[0].trim());
+      if (koordinate is Map<String, dynamic>) {
+        final lat = (koordinate as Map<String, dynamic>)['lat'];
+        return lat is num ? lat.toDouble() : null;
       }
     } catch (e) {
       // Handle parsing errors gracefully
@@ -108,15 +102,13 @@ class Adresa {
     return null;
   }
 
-  /// Parse longitude from PostgreSQL POINT string format "(lat,lng)"
-  double? _parseLongitudeFromPoint() {
+  /// Parse longitude from JSONB coordinates
+  double? _parseLongitudeFromJsonb() {
     if (koordinate == null) return null;
     try {
-      // PostgreSQL POINT format: "(latitude,longitude)"
-      final clean = koordinate!.replaceAll(RegExp(r'[()]'), '');
-      final parts = clean.split(',');
-      if (parts.length == 2) {
-        return double.parse(parts[1].trim());
+      if (koordinate is Map<String, dynamic>) {
+        final lng = (koordinate as Map<String, dynamic>)['lng'];
+        return lng is num ? lng.toDouble() : null;
       }
     } catch (e) {
       // Handle parsing errors gracefully
@@ -124,27 +116,26 @@ class Adresa {
     return null;
   }
 
-  /// Create POINT string from latitude and longitude
-  static String? createPointString(double? lat, double? lng) {
+  /// Create JSONB coordinates from latitude and longitude
+  static Map<String, double>? createCoordinatesJsonb(double? lat, double? lng) {
     if (lat == null || lng == null) return null;
-    return '($lat,$lng)';
+    return {'lat': lat, 'lng': lng};
   }
 
   /// Validation methods
   bool get hasValidCoordinates => latitude != null && longitude != null;
 
-  bool get isValidAddress => ulica.isNotEmpty && grad.isNotEmpty;
+  bool get isValidAddress => (ulica?.isNotEmpty ?? false) && (grad?.isNotEmpty ?? false);
 
-  bool get hasCompleteAddress =>
-      isValidAddress && broj != null && broj!.isNotEmpty;
+  bool get hasCompleteAddress => isValidAddress && broj != null && broj!.isNotEmpty;
 
   /// Standardized address format
   String get standardizedAddress {
     final parts = <String>[];
 
     // Add street
-    if (ulica.isNotEmpty) {
-      parts.add(_capitalizeWords(ulica));
+    if (ulica != null && ulica!.isNotEmpty) {
+      parts.add(_capitalizeWords(ulica!));
     }
 
     // Add number if exists
@@ -153,13 +144,8 @@ class Adresa {
     }
 
     // Add city
-    if (grad.isNotEmpty) {
-      parts.add(_capitalizeWords(grad));
-    }
-
-    // Add postal code if exists
-    if (postanskiBroj != null && postanskiBroj!.isNotEmpty) {
-      parts.add(postanskiBroj!);
+    if (grad != null && grad!.isNotEmpty) {
+      parts.add(_capitalizeWords(grad!));
     }
 
     return parts.join(', ');
@@ -182,9 +168,7 @@ class Adresa {
     final double dLon = _toRadians(lon2 - lon1);
 
     final double a = math.pow(math.sin(dLat / 2), 2) +
-        math.cos(_toRadians(lat1)) *
-            math.cos(_toRadians(lat2)) *
-            math.pow(math.sin(dLon / 2), 2);
+        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) * math.pow(math.sin(dLon / 2), 2);
 
     final double c = 2 * math.asin(math.sqrt(a));
     return earthRadius * c;
@@ -194,15 +178,15 @@ class Adresa {
 
   /// Validate street name format and content
   bool get isValidUlica {
-    if (ulica.trim().isEmpty) return false;
-    if (ulica.trim().length < 2) return false;
+    if (ulica == null || ulica!.trim().isEmpty) return true; // Now optional
+    if (ulica!.trim().length < 2) return false;
 
     // Basic character validation for Serbian addresses
     final validPattern = RegExp(r'^[a-žA-Ž0-9\s.,\-/()]+$', unicode: true);
-    if (!validPattern.hasMatch(ulica.trim())) return false;
+    if (!validPattern.hasMatch(ulica!.trim())) return false;
 
     // Check for minimum meaningful content
-    final cleanStreet = ulica.trim().replaceAll(RegExp(r'\s+'), ' ');
+    final cleanStreet = ulica!.trim().replaceAll(RegExp(r'\s+'), ' ');
     return cleanStreet.length >= 2;
   }
 
@@ -217,9 +201,9 @@ class Adresa {
 
   /// Validate city name (restricted to Bela Crkva and Vršac municipalities)
   bool get isValidGrad {
-    if (grad.trim().isEmpty) return false;
+    if (grad == null || grad!.trim().isEmpty) return true; // Now optional
 
-    final normalizedGrad = grad
+    final normalizedGrad = grad!
         .toLowerCase()
         .trim()
         .replaceAll('š', 's')
@@ -246,12 +230,8 @@ class Adresa {
 
   /// Validate postal code format (Serbian postal codes)
   bool get isValidPostanskiBroj {
-    if (postanskiBroj == null || postanskiBroj!.trim().isEmpty)
-      return true; // Optional
-
-    // Serbian postal codes: 5-digit format
-    final postalPattern = RegExp(r'^[0-9]{5}$');
-    return postalPattern.hasMatch(postanskiBroj!.trim());
+    // Remove this field as it's not in database
+    return true;
   }
 
   /// Validate coordinate precision and bounds for Serbia
@@ -282,17 +262,16 @@ class Adresa {
 
   /// Comprehensive validation combining all rules
   bool get isCompletelyValid {
-    return isValidUlica &&
-        isValidBroj &&
-        isValidGrad &&
-        isValidPostanskiBroj &&
-        isInServiceArea;
+    return naziv.isNotEmpty && isValidUlica && isValidBroj && isValidGrad && isValidPostanskiBroj && isInServiceArea;
   }
 
   /// Get validation error messages
   List<String> get validationErrors {
     final errors = <String>[];
 
+    if (naziv.isEmpty) {
+      errors.add('Naziv adrese je obavezan');
+    }
     if (!isValidUlica) {
       errors.add(
         'Naziv ulice nije valjan (minimum 2 karaktera, dozvoljeni karakteri)',
@@ -302,11 +281,7 @@ class Adresa {
       errors.add('Broj nije valjan (format: 1, 12a, 5/3, 15-17)');
     }
     if (!isValidGrad) {
-      errors
-          .add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
-    }
-    if (!isValidPostanskiBroj) {
-      errors.add('Poštanski broj nije valjan (format: 12345)');
+      errors.add('Grad nije valjan (dozvoljeni samo Bela Crkva i Vršac opštine)');
     }
     if (hasValidCoordinates && !areCoordinatesValidForSerbia) {
       errors.add('Koordinate nisu validne za Srbiju');
@@ -324,8 +299,8 @@ class Adresa {
   String get displayAddress {
     final parts = <String>[];
 
-    if (isValidUlica) {
-      parts.add(_capitalizeWords(ulica));
+    if (ulica != null && ulica!.isNotEmpty) {
+      parts.add(_capitalizeWords(ulica!));
     }
 
     if (isValidBroj && broj!.isNotEmpty) {
@@ -344,12 +319,8 @@ class Adresa {
       parts.add(address);
     }
 
-    if (isValidGrad) {
-      parts.add(_capitalizeWords(grad));
-    }
-
-    if (isValidPostanskiBroj) {
-      parts.add(postanskiBroj!);
+    if (grad != null && grad!.isNotEmpty) {
+      parts.add(_capitalizeWords(grad!));
     }
 
     return parts.join(', ');
@@ -381,7 +352,9 @@ class Adresa {
 
   /// Get municipality name
   String get municipality {
-    final normalizedGrad = grad
+    if (grad == null || grad!.trim().isEmpty) return 'Unknown';
+
+    final normalizedGrad = grad!
         .toLowerCase()
         .trim()
         .replaceAll('š', 's')
@@ -404,9 +377,7 @@ class Adresa {
     ];
 
     final belongsToBelaCrkva = belaCrkvaSettlements.any(
-      (settlement) =>
-          normalizedGrad.contains(settlement) ||
-          settlement.contains(normalizedGrad),
+      (settlement) => normalizedGrad.contains(settlement) || settlement.contains(normalizedGrad),
     );
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
@@ -417,41 +388,35 @@ class Adresa {
 
   /// Get icon for address type
   String get addressIcon {
-    final lowerUlica = ulica.toLowerCase();
+    final lowerNaziv = naziv.toLowerCase();
 
-    if (lowerUlica.contains('bolnica')) return '🏥';
-    if (lowerUlica.contains('skola') || lowerUlica.contains('škola'))
-      return '🏫';
-    if (lowerUlica.contains('vrtic') || lowerUlica.contains('vrtić'))
-      return '🏠';
-    if (lowerUlica.contains('posta') || lowerUlica.contains('pošta'))
-      return '📮';
-    if (lowerUlica.contains('banka')) return '🏛️';
-    if (lowerUlica.contains('crkva')) return '⛪';
-    if (lowerUlica.contains('park')) return '🌳';
-    if (lowerUlica.contains('stadion')) return '🏟️';
-    if (lowerUlica.contains('market') || lowerUlica.contains('prodavnica'))
-      return '🏪';
-    if (lowerUlica.contains('restoran') ||
-        lowerUlica.contains('kafic') ||
-        lowerUlica.contains('kafić')) return '🍽️';
+    if (lowerNaziv.contains('bolnica')) return '🏥';
+    if (lowerNaziv.contains('skola') || lowerNaziv.contains('škola')) return '🏫';
+    if (lowerNaziv.contains('vrtic') || lowerNaziv.contains('vrtić')) return '🏠';
+    if (lowerNaziv.contains('posta') || lowerNaziv.contains('pošta')) return '📮';
+    if (lowerNaziv.contains('banka')) return '🏛️';
+    if (lowerNaziv.contains('crkva')) return '⛪';
+    if (lowerNaziv.contains('park')) return '🌳';
+    if (lowerNaziv.contains('stadion')) return '🏟️';
+    if (lowerNaziv.contains('market') || lowerNaziv.contains('prodavnica')) return '🏪';
+    if (lowerNaziv.contains('restoran') || lowerNaziv.contains('kafic') || lowerNaziv.contains('kafić')) return '🍽️';
 
     return '📍'; // Default location icon
   }
 
   /// Get priority score for sorting (important locations first)
   int get priorityScore {
-    final lowerUlica = ulica.toLowerCase();
+    final lowerNaziv = naziv.toLowerCase();
 
-    if (lowerUlica.contains('bolnica')) return 100;
-    if (lowerUlica.contains('skola') || lowerUlica.contains('škola')) return 90;
-    if (lowerUlica.contains('ambulanta')) return 85;
-    if (lowerUlica.contains('posta') || lowerUlica.contains('pošta')) return 80;
-    if (lowerUlica.contains('vrtic') || lowerUlica.contains('vrtić')) return 75;
-    if (lowerUlica.contains('banka')) return 70;
-    if (lowerUlica.contains('centar')) return 65;
-    if (lowerUlica.contains('trg')) return 60;
-    if (lowerUlica.contains('glavna')) return 55;
+    if (lowerNaziv.contains('bolnica')) return 100;
+    if (lowerNaziv.contains('skola') || lowerNaziv.contains('škola')) return 90;
+    if (lowerNaziv.contains('ambulanta')) return 85;
+    if (lowerNaziv.contains('posta') || lowerNaziv.contains('pošta')) return 80;
+    if (lowerNaziv.contains('vrtic') || lowerNaziv.contains('vrtić')) return 75;
+    if (lowerNaziv.contains('banka')) return 70;
+    if (lowerNaziv.contains('centar')) return 65;
+    if (lowerNaziv.contains('trg')) return 60;
+    if (lowerNaziv.contains('glavna')) return 55;
 
     return 0; // Regular residential addresses
   }
@@ -461,20 +426,20 @@ class Adresa {
   /// Create a copy with updated fields
   Adresa copyWith({
     String? id,
+    String? naziv,
     String? ulica,
     String? broj,
     String? grad,
-    String? postanskiBroj,
-    String? koordinate,
+    dynamic koordinate,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return Adresa(
       id: id ?? this.id,
+      naziv: naziv ?? this.naziv,
       ulica: ulica ?? this.ulica,
       broj: broj ?? this.broj,
       grad: grad ?? this.grad,
-      postanskiBroj: postanskiBroj ?? this.postanskiBroj,
       koordinate: koordinate ?? this.koordinate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -484,17 +449,17 @@ class Adresa {
   /// Create a copy with normalized text fields
   Adresa normalize() {
     return copyWith(
-      ulica: _capitalizeWords(ulica.trim()),
+      naziv: _capitalizeWords(naziv.trim()),
+      ulica: ulica != null ? _capitalizeWords(ulica!.trim()) : null,
       broj: broj?.trim(),
-      grad: _capitalizeWords(grad.trim()),
-      postanskiBroj: postanskiBroj?.trim(),
+      grad: grad != null ? _capitalizeWords(grad!.trim()) : null,
     );
   }
 
   /// Create a copy with updated coordinates
   Adresa withCoordinates(double latitude, double longitude) {
     return copyWith(
-      koordinate: createPointString(latitude, longitude),
+      koordinate: createCoordinatesJsonb(latitude, longitude),
       updatedAt: DateTime.now(),
     );
   }
@@ -509,9 +474,7 @@ class Adresa {
     return text
         .split(' ')
         .map(
-          (word) => word.isNotEmpty
-              ? word[0].toUpperCase() + word.substring(1).toLowerCase()
-              : word,
+          (word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word,
         )
         .join(' ');
   }
@@ -521,14 +484,9 @@ class Adresa {
   /// Enhanced toString for debugging
   @override
   String toString() {
-    return 'Adresa{id: $id, adresa: $standardizedAddress, '
+    return 'Adresa{id: $id, naziv: $naziv, '
         'koordinate: ${hasValidCoordinates ? "($latitude,$longitude)" : "none"}}';
   }
 }
 
 // Remove the extension as we're using dart:math directly
-
-
-
-
-

@@ -179,8 +179,8 @@ class DnevniPutnik {
       naplatioVozac: naplatioVozacId,
       pokupioVozac: pokupioVozacId,
       dodaoVozac: dodaoVozacId,
-      grad: adresa.grad,
-      adresa: '${adresa.ulica} ${adresa.broj}',
+      grad: adresa.grad ?? '',
+      adresa: '${adresa.ulica ?? ''} ${adresa.broj ?? ''}'.trim(),
       obrisan: obrisan,
       brojTelefona: brojTelefona,
       datum: datumPutovanja.toIso8601String().split('T')[0],
@@ -273,7 +273,7 @@ class DnevniPutnik {
       naplatioVozac: naplatioVozacId,
       pokupioVozac: pokupioVozacId,
       dodaoVozac: dodaoVozacId,
-      grad: adresa.grad,
+      grad: adresa.grad ?? '',
       adresa: adresa.naziv,
       obrisan: obrisan,
       brojTelefona: brojTelefona,
@@ -352,8 +352,3 @@ class DnevniPutnik {
     return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
   }
 }
-
-
-
-
-

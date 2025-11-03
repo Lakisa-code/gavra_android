@@ -11,13 +11,10 @@ class GPSLokacija {
     required this.longitude,
     this.brzina,
     this.pravac,
+    this.tacnost,
     DateTime? vreme,
-    this.adresa,
-    this.aktivan = true,
-    DateTime? createdAt,
   })  : id = id ?? const Uuid().v4(),
-        vreme = vreme ?? DateTime.now(),
-        createdAt = createdAt ?? DateTime.now();
+        vreme = vreme ?? DateTime.now();
 
   factory GPSLokacija.fromMap(Map<String, dynamic> map) {
     return GPSLokacija(
@@ -28,10 +25,8 @@ class GPSLokacija {
       longitude: (map['longitude'] as num).toDouble(),
       brzina: (map['brzina'] as num?)?.toDouble(),
       pravac: (map['pravac'] as num?)?.toDouble(),
+      tacnost: (map['tacnost'] as num?)?.toDouble(),
       vreme: DateTime.parse(map['vreme'] as String),
-      adresa: map['adresa'] as String?,
-      aktivan: map['aktivan'] as bool? ?? true,
-      createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
 
@@ -43,7 +38,7 @@ class GPSLokacija {
     required double longitude,
     double? brzina,
     double? pravac,
-    String? adresa,
+    double? tacnost,
   }) {
     return GPSLokacija(
       voziloId: voziloId,
@@ -52,8 +47,8 @@ class GPSLokacija {
       longitude: longitude,
       brzina: brzina,
       pravac: pravac,
+      tacnost: tacnost,
       vreme: DateTime.now(),
-      adresa: adresa,
     );
   }
   final String id;
@@ -63,10 +58,8 @@ class GPSLokacija {
   final double longitude;
   final double? brzina;
   final double? pravac;
+  final double? tacnost;
   final DateTime vreme;
-  final String? adresa;
-  final bool aktivan;
-  final DateTime createdAt;
 
   Map<String, dynamic> toMap() {
     return {
@@ -77,10 +70,8 @@ class GPSLokacija {
       'longitude': longitude,
       'brzina': brzina,
       'pravac': pravac,
+      'tacnost': tacnost,
       'vreme': vreme.toIso8601String(),
-      'adresa': adresa,
-      'aktivan': aktivan,
-      'created_at': createdAt.toIso8601String(),
     };
   }
 
@@ -95,23 +86,28 @@ class GPSLokacija {
         1000;
   }
 
-  /// Formatirana adresa za prikaz
-  String get displayAdresa => adresa ?? 'Nepoznata lokacija';
+  /// Formatirana tacnost za prikaz
+  String get displayTacnost {
+    if (tacnost == null) return 'N/A';
+    return '${tacnost!.toStringAsFixed(1)} m';
+  }
 
   /// Da li je lokacija "sveža" (manja od 5 minuta)
   bool get isFresh => DateTime.now().difference(vreme).inMinutes < 5;
 
   /// Validira GPS koordinate
   bool get isValidCoordinates {
-    return latitude >= -90 &&
-        latitude <= 90 &&
-        longitude >= -180 &&
-        longitude <= 180;
+    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
   }
 
   /// Validira brzinu (realna vrednost)
   bool get isValidSpeed {
     return brzina == null || (brzina! >= 0 && brzina! <= 200);
+  }
+
+  /// Validira tacnost (realna vrednost)
+  bool get isValidAccuracy {
+    return tacnost == null || (tacnost! >= 0 && tacnost! <= 1000);
   }
 
   /// Formatirana brzina za prikaz
@@ -133,11 +129,6 @@ class GPSLokacija {
   String toString() {
     return 'GPSLokacija{id: $id, vozilo: $voziloId, vozac: $vozacId, '
         'lat: ${latitude.toStringAsFixed(6)}, lng: ${longitude.toStringAsFixed(6)}, '
-        'vreme: $vreme}';
+        'tacnost: ${tacnost?.toStringAsFixed(1)}m, vreme: $vreme}';
   }
 }
-
-
-
-
-

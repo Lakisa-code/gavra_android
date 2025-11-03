@@ -1,0 +1,10 @@
+# 🚀 GRADLE OPTIMIZACIJA ZA SLAB HARDWARE
+org.gradle.jvmargs=-Xmx2048m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+org.gradle.parallel=true
+org.gradle.configureondemand=true
+org.gradle.daemon=true
+org.gradle.caching=true
+android.useAndroidX=true
+android.enableJetifier=true
+android.enableR8.fullMode=false
+android.bundle.enableUncompressedNativeLibs=false

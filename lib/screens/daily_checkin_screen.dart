@@ -84,23 +84,31 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   }
 
   Future<void> _submitKusur() async {
+    print('DEBUG: _submitKusur called, text: "${_kusurController.text.trim()}"');
+
     if (_kusurController.text.trim().isEmpty) {
+      print('DEBUG: Text is empty');
       _showError('Unesite iznos sitnog novca!');
       return;
     }
 
     final double? iznos = double.tryParse(_kusurController.text.trim());
+    print('DEBUG: Parsed amount: $iznos');
+
     if (iznos == null || iznos < 0) {
+      print('DEBUG: Invalid amount');
       _showError('Unesite valjan iznos!');
       return;
     }
 
+    print('DEBUG: Starting save process for amount: $iznos');
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      // Dodaj timeout da sprečiš hanging
-      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos).timeout(const Duration(seconds: 10));
+      // 🚀 SUPER AGRESIVAN TIMEOUT OD 3 SEKUNDI - MORA DA PROĐE!
+      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos).timeout(const Duration(seconds: 3));
 
+      print('DEBUG: Save successful!');
       if (mounted) {
         // Reset loading state first
         setState(() => _isLoading = false);
@@ -130,20 +138,67 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           }
         });
       }
-    } on TimeoutException catch (_) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _showError('Čuvanje je previše dugo trajalo. Pokušajte ponovo.');
-      }
     } catch (e) {
+      print('DAILY CHECK-IN SUBMIT TIMEOUT/ERROR: $e');
+
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('Greška pri čuvanju: $e');
+
+        // 🚨 SUPER JEDNOSTAVAN FALLBACK - direktno lokalno čuvanje!
+        try {
+          print('DEBUG: Attempting emergency local save');
+
+          // Direktno lokalno čuvanje bez uključivanja servisa
+          final prefs = await SharedPreferences.getInstance();
+          final today = DateTime.now();
+          final todayKey = 'daily_checkin_${widget.vozac}_${today.year}_${today.month}_${today.day}';
+
+          await prefs.setBool(todayKey, true);
+          await prefs.setDouble('${todayKey}_amount', iznos);
+          await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
+
+          print('DEBUG: Emergency local save successful');
+
+          // Prikaži success poruku
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Sačuvano lokalno - ${widget.vozac}!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(milliseconds: 1000),
+            ),
+          );
+
+          // UVEK pozovi callback - app mora da nastavi!
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              print('DEBUG: Calling onCompleted callback');
+              widget.onCompleted();
+            }
+          });
+        } catch (fallbackError) {
+          print('DEBUG: Even emergency save failed: $fallbackError');
+          // Čak i emergency save ne radi - prikaži grešku ali dozvoli nastavak
+          _showError('Greška u čuvanju: $fallbackError');
+
+          // IPAK DOZVOLI NASTAVAK NAKON 2 SEKUNDE!
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              widget.onCompleted();
+            }
+          });
+        }
       }
     }
   }
 
   void _showError(String message) {
+    print('DEBUG: _showError called with message: $message');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -396,7 +451,13 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitKusur,
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  print('DEBUG: Button pressed! _isLoading: $_isLoading');
+                                  HapticFeedback.mediumImpact(); // Dodaj haptic feedback
+                                  _submitKusur();
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: vozacColor,
                             foregroundColor: Colors.white,
@@ -930,6 +991,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         'datum': datum.toIso8601String().split('T')[0],
         'ukupan_pazar': automatskiPopis['ukupanPazar'],
         'sitan_novac': newSitanNovac, // Ažurirani kusur
+        'dnevni_pazari': automatskiPopis['ukupanPazar'],
+        'ukupno': newSitanNovac + ((automatskiPopis['ukupanPazar'] as num?) ?? 0.0),
+        'checkin_vreme': DateTime.now().toIso8601String(),
         'dodati_putnici': automatskiPopis['dodatiPutnici'],
         'otkazani_putnici': automatskiPopis['otkazaniPutnici'],
         'naplaceni_putnici': automatskiPopis['naplaceniPutnici'],
@@ -1012,9 +1076,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
         // Ažuriraj server sa offline podacima
         await Supabase.instance.client
-            .from('automatski_popis')
+            .from('daily_checkins')
             .update({
               'sitan_novac': data['sitanNovac'],
+              'ukupno': (data['sitanNovac'] ?? 0.0) + (data['dnevniPazari'] ?? 0.0),
+              'checkin_vreme': DateTime.now().toIso8601String(),
               'updated_at': DateTime.now().toIso8601String(),
             })
             .eq('vozac', widget.vozac)

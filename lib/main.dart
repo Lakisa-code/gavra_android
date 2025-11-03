@@ -16,6 +16,7 @@ import 'services/simple_usage_monitor.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/update_service.dart'; // 🔄 Auto-update sistem
 import 'services/voice_navigation_service.dart';
+import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'supabase_client.dart';
 
 void main() async {
@@ -46,6 +47,14 @@ void main() async {
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
     ).timeout(const Duration(seconds: 5));
+
+    // 🗂️ INICIJALIZUJ VOZAC MAPPING CACHE
+    try {
+      await VozacMappingService.initialize();
+    } catch (e) {
+      print('⚠️ Greška pri inicijalizaciji VozacMappingService: $e');
+      // Nastavi bez vozac mapping-a ako ne uspe
+    }
   } catch (e) {
     // Continue without Supabase if it fails
   }

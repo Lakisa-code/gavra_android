@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -208,9 +209,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Home screen only supports weekdays, default to Monday for weekends
     _selectedDay = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
     _initializeCurrentDriver();
-    _initializeRealtimeService();
+
+    // 🚨 POPRAVLJENO: Async inicijalizacija bez blokiranje UI
+    _initializeRealtimeService().catchError((e) => <String, dynamic>{});
     _setupRealtimeMonitoring(); // 🚨 NOVO: Setup realtime monitoring
-    _loadPutnici();
+    // StreamBuilder će automatski učitati data - ne treba eksplicitno _loadPutnici()
     _setupRealtimeListener();
     _startSmartNotifikacije();
 
@@ -329,35 +332,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<List<Putnik>> _getAllPutnici() async {
-    try {
-// 🆕 NOVI NAČIN: Koristi PutnikService za učitavanje iz obe tabele
-      // 🎯 PROSLIJEDI SELEKTOVANI DAN umesto današnjeg
-      final result = await _putnikService.getAllPutniciFromBothTables(
-        targetDay: _selectedDay,
-      );
-      return result;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<void> _loadPutnici() async {
-// 🛡️ FIX: Pojednostavi dupli mounted check
-    if (mounted) setState(() => _isLoading = true);
-    try {
-      final putnici = await _getAllPutnici();
-      if (mounted) {
-        setState(() {
-          _allPutnici = putnici;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-      _showErrorDialog('Greška pri učitavanju: $e');
-    }
-  }
+  // _loadPutnici metoda uklonjena - StreamBuilder automatski učitava podatke
 
   // _getPutnikCount je uklonjen jer nije korišćen
 
@@ -388,44 +363,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: Colors.white70,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.error.withOpacity(0.3),
-            width: 1.5,
-          ),
-        ),
-        title: Text(
-          'Greška',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.error,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          message,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('OK'),
           ),
         ],
       ),
@@ -1189,8 +1126,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                                       );
                                       await _putnikService.dodajPutnika(putnik);
-                                      // ✅ FORSIRANA REFRESH LISTE
-                                      await _loadPutnici();
+
+                                      // 🔄 FORSIRAJ REALTIME REFRESH da se stream ažurira
+                                      try {
+                                        await RealtimeService.instance.refreshNow();
+                                      } catch (e) {
+                                        // Ignoriši greške u refresh-u
+                                      }
 
                                       if (!mounted) return;
 
@@ -1454,16 +1396,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // 🎯 KORISTI SVE PUTNICE za ispravno računanje brojača
-    return StreamBuilder<List<Putnik>>(
-      stream: _putnikService.streamKombinovaniPutniciFiltered(
-        isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
-        // Ne prosleđujemo grad i vreme - trebaju nam SVI putnici za brojač
+    // 🚨 HITNO: FutureBuilder umesto StreamBuilder
+    return FutureBuilder<List<Putnik>>(
+      future: _putnikService.getAllPutniciFromBothTables(
+        targetDay: _selectedDay,
       ),
-      initialData: const [],
       builder: (context, snapshot) {
+        // 🚨 DEBUG: Log state information
+        if (kDebugMode) {
+          final isoDate = _getTargetDateIsoFromSelectedDay(_selectedDay);
+          print(
+            '📊 HOME STREAM DEBUG: selectedDay=$_selectedDay, isoDate=$isoDate, hasData=${snapshot.hasData}, hasError=${snapshot.hasError}, connectionState=${snapshot.connectionState}, data length=${snapshot.data?.length ?? 'null'}',
+          );
+        }
+
         // 🚨 NOVO: Error handling sa specialized widgets
         if (snapshot.hasError) {
+          if (kDebugMode) {
+            print('❌ HOME STREAM ERROR: ${snapshot.error}');
+          }
           return Scaffold(
             appBar: PreferredSize(
               preferredSize: const Size.fromHeight(95),
@@ -1506,7 +1457,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
-          return const Center(child: CircularProgressIndicator());
+          if (kDebugMode) {
+            print('⏳ HOME STREAM: Waiting for initial data...');
+          }
+          return Scaffold(
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(95),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: ThemeManager().currentGradient,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
+                  ),
+                ),
+                child: const SafeArea(
+                  child: Center(
+                    child: Text(
+                      'REZERVACIJE - UČITAVANJE',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1.8,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            body: const Center(child: CircularProgressIndicator()),
+          );
         }
 
         final allPutnici = snapshot.data ?? [];
@@ -1928,7 +1909,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         .toList(),
                                     onChanged: (value) {
                                       if (mounted) setState(() => _selectedDay = value!);
-                                      _loadPutnici();
+                                      // 🔄 Stream će se automatski ažurirati preko StreamBuilder-a
+                                      // Ne treba eksplicitno pozivati _loadPutnici()
                                     },
                                   ),
                                 ),

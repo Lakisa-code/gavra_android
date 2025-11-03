@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'daily_checkin_service.dart';
 
 /// 🚀 SIMPLIFIKOVANI DAILY CHECK-IN SERVIS
@@ -41,9 +43,28 @@ class SimplifiedDailyCheckInService {
     }
   }
 
-  /// 💾 LEGACY SUPPORT - saveCheckIn wrapper
+  /// 💾 LEGACY SUPPORT - saveCheckIn wrapper SA TIMEOUT ZAŠTITOM!
   static Future<void> saveCheckIn(String vozac, double sitanNovac, {double dnevniPazari = 0.0}) async {
-    await DailyCheckInService.saveCheckIn(vozac, sitanNovac, dnevniPazari: dnevniPazari);
+    try {
+      // KRITIČAN TIMEOUT OD 8 SEKUNDI - nakon toga prekini sve!
+      await DailyCheckInService.saveCheckIn(vozac, sitanNovac, dnevniPazari: dnevniPazari)
+          .timeout(const Duration(seconds: 8));
+    } catch (e) {
+      print('SIMPLIFIED DAILY CHECK-IN TIMEOUT/ERROR: $e');
+      // Ne bacaj grešku dalje - app treba da nastavi da radi!
+      // Ali ipak pokušaj lokalno čuvanje kao fallback
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final today = DateTime.now();
+        final todayKey = 'daily_checkin_${vozac}_${today.year}_${today.month}_${today.day}';
+        await prefs.setBool(todayKey, true);
+        await prefs.setDouble('${todayKey}_amount', sitanNovac);
+        await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
+        print('EMERGENCY LOCAL SAVE SUCCESSFUL');
+      } catch (localError) {
+        print('EMERGENCY LOCAL SAVE FAILED: $localError');
+      }
+    }
   }
 
   /// ✅ LEGACY SUPPORT - hasCheckedInToday wrapper
