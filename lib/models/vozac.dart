@@ -11,7 +11,9 @@ class Vozac {
     this.kusur = 0.0,
     DateTime? createdAt,
     DateTime? updatedAt,
-  })  : id = id ?? const Uuid().v4(),
+  })  : assert(ime.trim().isNotEmpty, 'Ime vozača ne može biti prazno'),
+        assert(kusur >= 0.0, 'Kusur ne može biti negativan'),
+        id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -52,6 +54,92 @@ class Vozac {
   /// Vraća puno ime vozača
   String get punoIme {
     return ime;
+  }
+
+  /// Validira da li je ime vozača validno (ne sme biti prazno)
+  bool get isValidIme {
+    return ime.trim().isNotEmpty && ime.trim().length >= 2;
+  }
+
+  /// Validira da li je kusur validan (mora biti >= 0)
+  bool get isValidKusur {
+    return kusur >= 0.0;
+  }
+
+  /// Validira telefon format (srpski broj)
+  bool get isValidTelefon {
+    if (brojTelefona == null || brojTelefona!.isEmpty) return true; // Optional field
+    
+    final telefon = brojTelefona!.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Srpski mobilni: +381 6x xxx xxxx ili 06x xxx xxxx
+    // Srpski fiksni: +381 1x xxx xxxx ili 01x xxx xxxx
+    return telefon.startsWith('+3816') || 
+           telefon.startsWith('06') ||
+           telefon.startsWith('+3811') ||
+           telefon.startsWith('01') ||
+           telefon.length == 8 || telefon.length == 9; // lokalni brojevi
+  }
+
+  /// Validira email format
+  bool get isValidEmail {
+    if (email == null || email!.isEmpty) return true; // Optional field
+    
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email!);
+  }
+
+  /// Kompletna validacija vozača
+  bool get isValid {
+    return isValidIme && isValidKusur && isValidTelefon && isValidEmail;
+  }
+
+  /// Lista grešaka validacije
+  List<String> get validationErrors {
+    final errors = <String>[];
+    
+    if (!isValidIme) {
+      errors.add('Ime vozača mora imati najmanje 2 karaktera');
+    }
+    
+    if (!isValidKusur) {
+      errors.add('Kusur ne može biti negativan');
+    }
+    
+    if (!isValidTelefon) {
+      errors.add('Nevaljan format telefona');
+    }
+    
+    if (!isValidEmail) {
+      errors.add('Nevaljan format email adrese');
+    }
+    
+    return errors;
+  }
+
+  /// Vraca formatiran kusur za prikaz
+  String get displayKusur {
+    return '${kusur.toStringAsFixed(2)} RSD';
+  }
+
+  /// Kreira kopiju vozača sa promenjenim vrednostima
+  Vozac copyWith({
+    String? ime,
+    String? brojTelefona,
+    String? email,
+    bool? aktivan,
+    double? kusur,
+  }) {
+    return Vozac(
+      id: id,
+      ime: ime ?? this.ime,
+      brojTelefona: brojTelefona ?? this.brojTelefona,
+      email: email ?? this.email,
+      aktivan: aktivan ?? this.aktivan,
+      kusur: kusur ?? this.kusur,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+    );
   }
 
   /// ToString metoda za debugging

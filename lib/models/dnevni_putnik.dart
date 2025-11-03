@@ -6,6 +6,7 @@ import 'ruta.dart';
 
 /// Status dnevnih putnika
 enum DnevniPutnikStatus {
+  aktivno, // ✅ DODANO: default vrednost iz baze
   rezervisan,
   pokupljen,
   otkazan,
@@ -16,6 +17,8 @@ enum DnevniPutnikStatus {
 extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
   String get value {
     switch (this) {
+      case DnevniPutnikStatus.aktivno:
+        return 'aktivno'; // ✅ DODANO: default vrednost iz baze
       case DnevniPutnikStatus.rezervisan:
         return 'rezervisan';
       case DnevniPutnikStatus.pokupljen:
@@ -31,6 +34,8 @@ extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
 
   static DnevniPutnikStatus fromString(String status) {
     switch (status.toLowerCase()) {
+      case 'aktivno':
+        return DnevniPutnikStatus.aktivno; // ✅ DODANO: default vrednost iz baze
       case 'rezervisan':
         return DnevniPutnikStatus.rezervisan;
       case 'pokupljen':
@@ -53,19 +58,22 @@ class DnevniPutnik {
     String? id,
     required this.ime,
     this.brojTelefona,
+    required this.grad, // ✅ DODANO: nedostajalo u modelu
     required this.adresaId,
     required this.rutaId,
     required this.datumPutovanja,
     required this.vremePolaska,
     this.brojMesta = 1,
     required this.cena,
-    this.status = DnevniPutnikStatus.rezervisan,
+    this.status = DnevniPutnikStatus.aktivno, // ✅ ISPRAVKA: default vrednost iz baze
     this.napomena,
     this.vremePokupljenja,
     this.pokupioVozacId,
     this.vremePlacanja,
     this.naplatioVozacId,
     this.dodaoVozacId,
+    this.otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
+    this.voziloId, // ✅ DODANO: nedostajalo u modelu
     this.obrisan = false,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -76,16 +84,17 @@ class DnevniPutnik {
   factory DnevniPutnik.fromMap(Map<String, dynamic> map) {
     return DnevniPutnik(
       id: map['id'] as String,
-      ime: map['ime'] as String,
-      brojTelefona: map['broj_telefona'] as String?,
+      ime: map['putnik_ime'] as String, // ✅ ISPRAVKA: era 'ime'
+      brojTelefona: map['telefon'] as String?, // ✅ ISPRAVKA: era 'broj_telefona'
+      grad: map['grad'] as String, // ✅ DODANO: nedostajalo u modelu
       adresaId: map['adresa_id'] as String,
       rutaId: map['ruta_id'] as String,
-      datumPutovanja: DateTime.parse(map['datum'] as String),
-      vremePolaska: map['polazak'] as String,
+      datumPutovanja: DateTime.parse(map['datum_putovanja'] as String), // ✅ ISPRAVKA: era 'datum'
+      vremePolaska: map['vreme_polaska'] as String, // ✅ ISPRAVKA: era 'polazak'
       brojMesta: map['broj_mesta'] as int? ?? 1,
       cena: (map['cena'] as num).toDouble(),
       status: DnevniPutnikStatusExtension.fromString(
-        map['status'] as String? ?? 'rezervisan',
+        map['status'] as String? ?? 'aktivno', // ✅ ISPRAVKA: default vrednost iz baze
       ),
       napomena: map['napomena'] as String?,
       vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
@@ -93,6 +102,8 @@ class DnevniPutnik {
       vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       naplatioVozacId: map['naplatio_vozac_id'] as String?,
       dodaoVozacId: map['dodao_vozac_id'] as String?,
+      otkazaoVozacId: map['otkazao_vozac_id'] as String?, // ✅ DODANO: nedostajalo u modelu
+      voziloId: map['vozilo_id'] as String?, // ✅ DODANO: nedostajalo u modelu
       obrisan: map['obrisan'] as bool? ?? false,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -101,6 +112,7 @@ class DnevniPutnik {
   final String id;
   final String ime;
   final String? brojTelefona;
+  final String grad; // ✅ DODANO: nedostajalo u modelu
   final String adresaId;
   final String rutaId;
   final DateTime datumPutovanja;
@@ -114,6 +126,8 @@ class DnevniPutnik {
   final DateTime? vremePlacanja;
   final String? naplatioVozacId;
   final String? dodaoVozacId;
+  final String? otkazaoVozacId; // ✅ DODANO: nedostajalo u modelu
+  final String? voziloId; // ✅ DODANO: nedostajalo u modelu
   final bool obrisan;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -121,12 +135,13 @@ class DnevniPutnik {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'ime': ime,
-      'broj_telefona': brojTelefona,
+      'putnik_ime': ime, // ✅ ISPRAVKA: era 'ime'
+      'telefon': brojTelefona, // ✅ ISPRAVKA: era 'broj_telefona'
+      'grad': grad, // ✅ DODANO: nedostajalo u modelu
       'adresa_id': adresaId,
       'ruta_id': rutaId,
-      'datum': datumPutovanja.toIso8601String().split('T')[0],
-      'polazak': vremePolaska,
+      'datum_putovanja': datumPutovanja.toIso8601String().split('T')[0], // ✅ ISPRAVKA: era 'datum'
+      'vreme_polaska': vremePolaska, // ✅ ISPRAVKA: era 'polazak'
       'broj_mesta': brojMesta,
       'cena': cena,
       'status': status.value,
@@ -136,6 +151,8 @@ class DnevniPutnik {
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'naplatio_vozac_id': naplatioVozacId,
       'dodao_vozac_id': dodaoVozacId,
+      'otkazao_vozac_id': otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
+      'vozilo_id': voziloId, // ✅ DODANO: nedostajalo u modelu
       'obrisan': obrisan,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -218,6 +235,8 @@ class DnevniPutnik {
   /// Vraća ljudski čitljiv status
   String get statusLabel {
     switch (status) {
+      case DnevniPutnikStatus.aktivno:
+        return 'Aktivno'; // ✅ DODANO: default vrednost iz baze
       case DnevniPutnikStatus.rezervisan:
         return 'Rezervisan';
       case DnevniPutnikStatus.pokupljen:
@@ -289,6 +308,7 @@ class DnevniPutnik {
     String? id,
     String? ime,
     String? brojTelefona,
+    String? grad, // ✅ DODANO: nedostajalo u modelu
     String? adresaId,
     String? rutaId,
     DateTime? datumPutovanja,
@@ -302,6 +322,8 @@ class DnevniPutnik {
     DateTime? vremePlacanja,
     String? naplatioVozacId,
     String? dodaoVozacId,
+    String? otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
+    String? voziloId, // ✅ DODANO: nedostajalo u modelu
     bool? obrisan,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -310,6 +332,7 @@ class DnevniPutnik {
       id: id ?? this.id,
       ime: ime ?? this.ime,
       brojTelefona: brojTelefona ?? this.brojTelefona,
+      grad: grad ?? this.grad, // ✅ DODANO: nedostajalo u modelu
       adresaId: adresaId ?? this.adresaId,
       rutaId: rutaId ?? this.rutaId,
       datumPutovanja: datumPutovanja ?? this.datumPutovanja,
@@ -323,6 +346,8 @@ class DnevniPutnik {
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
       dodaoVozacId: dodaoVozacId ?? this.dodaoVozacId,
+      otkazaoVozacId: otkazaoVozacId ?? this.otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
+      voziloId: voziloId ?? this.voziloId, // ✅ DODANO: nedostajalo u modelu
       obrisan: obrisan ?? this.obrisan,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),

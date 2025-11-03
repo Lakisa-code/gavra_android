@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 class GPSLokacija {
   GPSLokacija({
     String? id,
-    required this.voziloId,
+    this.voziloId,
     this.vozacId,
     required this.latitude,
     required this.longitude,
@@ -19,7 +19,7 @@ class GPSLokacija {
   factory GPSLokacija.fromMap(Map<String, dynamic> map) {
     return GPSLokacija(
       id: map['id'] as String,
-      voziloId: map['vozilo_id'] as String,
+      voziloId: map['vozilo_id'] as String?,
       vozacId: map['vozac_id'] as String?,
       latitude: (map['latitude'] as num).toDouble(),
       longitude: (map['longitude'] as num).toDouble(),
@@ -32,7 +32,7 @@ class GPSLokacija {
 
   /// Kreira GPS lokaciju sa trenutnim vremenom
   factory GPSLokacija.sada({
-    required String voziloId,
+    String? voziloId,
     String? vozacId,
     required double latitude,
     required double longitude,
@@ -52,7 +52,7 @@ class GPSLokacija {
     );
   }
   final String id;
-  final String voziloId;
+  final String? voziloId;
   final String? vozacId;
   final double latitude;
   final double longitude;
@@ -127,7 +127,7 @@ class GPSLokacija {
   /// ToString metoda za debugging
   @override
   String toString() {
-    return 'GPSLokacija{id: $id, vozilo: $voziloId, vozac: $vozacId, '
+    return 'GPSLokacija{id: $id, vozilo: ${voziloId ?? 'null'}, vozac: $vozacId, '
         'lat: ${latitude.toStringAsFixed(6)}, lng: ${longitude.toStringAsFixed(6)}, '
         'tacnost: ${tacnost?.toStringAsFixed(1)}m, vreme: $vreme}';
   }

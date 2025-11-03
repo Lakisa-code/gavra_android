@@ -6,8 +6,7 @@ import 'supabase_safe.dart';
 
 /// Servis za upravljanje rutama
 class RutaService {
-  RutaService({SupabaseClient? supabaseClient})
-      : _supabase = supabaseClient ?? Supabase.instance.client;
+  RutaService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
 
   // Cache konfiguracija
@@ -18,8 +17,7 @@ class RutaService {
   static String _getAllCacheKey() => '${_cacheKeyPrefix}_all';
   static String _getActiveCacheKey() => '${_cacheKeyPrefix}_active';
   static String _getByIdCacheKey(String id) => '${_cacheKeyPrefix}_id_$id';
-  static String _getSearchCacheKey(String query) =>
-      '${_cacheKeyPrefix}_search_$query';
+  static String _getSearchCacheKey(String query) => '${_cacheKeyPrefix}_search_$query';
   static String _getStatsCacheKey() => '${_cacheKeyPrefix}_statistics';
 
   // Čišćenje cache-a
@@ -44,10 +42,8 @@ class RutaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-      // Debug logging removed for production
-return cached
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        // Debug logging removed for production
+        return cached.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
       }
 
       final response = await SupabaseSafe.run(
@@ -66,7 +62,7 @@ return cached
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -80,15 +76,12 @@ return [];
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-      // Debug logging removed for production
-return cached
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        // Debug logging removed for production
+        return cached.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
       }
 
       final response = await SupabaseSafe.run(
-        () =>
-            _supabase.from('rute').select().eq('aktivan', true).order('naziv'),
+        () => _supabase.from('rute').select().eq('aktivan', true).order('naziv'),
         fallback: <dynamic>[],
       );
 
@@ -103,7 +96,7 @@ return cached
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -114,8 +107,8 @@ return [];
       final cacheKey = _getByIdCacheKey(id);
       final cached = await CacheService.getFromMemory<Ruta>(cacheKey);
       if (cached != null) {
-      // Debug logging removed for production
-return cached;
+        // Debug logging removed for production
+        return cached;
       }
 
       final response = await SupabaseSafe.run(
@@ -123,8 +116,8 @@ return cached;
       );
 
       if (response == null) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       final ruta = Ruta.fromMap(response);
@@ -135,7 +128,7 @@ return null;
       return ruta;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -145,19 +138,15 @@ return null;
       // Validacija pre dodavanja
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       // Osnovna validacija naziva (bez duplikat provere za polazak/dolazak)
       final existingNaziv = await SupabaseSafe.run(
-        () => Supabase.instance.client
-            .from('rute')
-            .select('id, naziv')
-            .eq('naziv', ruta.naziv)
-            .limit(1),
+        () => Supabase.instance.client.from('rute').select('id, naziv').eq('naziv', ruta.naziv).limit(1),
       );
-      
+
       if (existingNaziv?.isNotEmpty == true) {
         return null; // Naziv već postoji
       }
@@ -173,10 +162,10 @@ return null;
       // Očisti cache
       await _clearCache();
       // Debug logging removed for production
-return novaRuta;
+      return novaRuta;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -187,17 +176,12 @@ return null;
       updates['updated_at'] = DateTime.now().toIso8601String();
 
       final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single(),
+        () => _supabase.from('rute').update(updates).eq('id', id).select().single(),
       );
 
       if (response == null) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       final azuriranaRuta = Ruta.fromMap(response);
@@ -205,17 +189,17 @@ return null;
       // Validacija nakon ažuriranja
       final validation = azuriranaRuta.validateFull();
       if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       // Očisti cache
       await _clearCacheForId(id);
       // Debug logging removed for production
-return azuriranaRuta;
+      return azuriranaRuta;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -225,19 +209,14 @@ return null;
       // Validacija
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       final updatedRuta = ruta.withUpdatedTime();
 
       final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .update(updatedRuta.toMap())
-            .eq('id', ruta.id)
-            .select()
-            .single(),
+        () => _supabase.from('rute').update(updatedRuta.toMap()).eq('id', ruta.id).select().single(),
       );
 
       if (response == null) return null;
@@ -247,10 +226,10 @@ return null;
       // Očisti cache
       await _clearCacheForId(ruta.id);
       // Debug logging removed for production
-return result;
+      return result;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -267,10 +246,10 @@ return null;
       // Očisti cache
       await _clearCacheForId(id);
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -287,10 +266,10 @@ return false;
       // Očisti cache
       await _clearCacheForId(id);
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -300,8 +279,8 @@ return false;
       // Prvo proveri da li postoje povezani putnici
       final hasDependencies = await _checkRutaDependencies(id);
       if (hasDependencies) {
-      // Debug logging removed for production
-return false;
+        // Debug logging removed for production
+        return false;
       }
 
       await SupabaseSafe.run(
@@ -311,10 +290,10 @@ return false;
       // Očisti cache
       await _clearCacheForId(id);
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -322,18 +301,14 @@ return false;
   Future<bool> _checkRutaDependencies(String rutaId) async {
     try {
       final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('dnevni_putnici')
-            .select('id')
-            .eq('ruta_id', rutaId)
-            .limit(1),
+        () => _supabase.from('dnevni_putnici').select('id').eq('ruta_id', rutaId).limit(1),
         fallback: <dynamic>[],
       );
 
       return response is List && response.isNotEmpty;
     } catch (e) {
       // Debug logging removed for production
-return true; // Sigurnost - pretpostavi da ima zavisnosti
+      return true; // Sigurnost - pretpostavi da ima zavisnosti
     }
   }
 
@@ -352,16 +327,12 @@ return true; // Sigurnost - pretpostavi da ima zavisnosti
     try {
       // Keširaj jednostavne pretrage
       String? cacheKey;
-      if (query != null &&
-          query.length > 2 &&
-          aktivan == null &&
-          minUdaljenost == null &&
-          maxUdaljenost == null) {
+      if (query != null && query.length > 2 && aktivan == null && minUdaljenost == null && maxUdaljenost == null) {
         cacheKey = _getSearchCacheKey(query);
         final cached = await CacheService.getFromMemory<List<Ruta>>(cacheKey);
         if (cached != null) {
-      // Debug logging removed for production
-return cached;
+          // Debug logging removed for production
+          return cached;
         }
       }
 
@@ -411,9 +382,7 @@ return cached;
       );
 
       if (response is List) {
-        final results = response
-            .map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        final results = response.map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
 
         // Keširaj jednostavne pretrage
         if (cacheKey != null) {
@@ -425,7 +394,7 @@ return cached;
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -443,11 +412,7 @@ return [];
     try {
       final response = await SupabaseSafe.run(
         () {
-          var q = _supabase
-              .from('rute')
-              .select()
-              .eq('polazak', polazak)
-              .eq('dolazak', destinacija);
+          var q = _supabase.from('rute').select().eq('polazak', polazak).eq('dolazak', destinacija);
 
           if (sameAktivan) {
             q = q.eq('aktivan', true);
@@ -459,14 +424,12 @@ return [];
       );
 
       if (response is List) {
-        return response
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        return response.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
       }
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -527,8 +490,8 @@ return [];
       for (final ruta in rute) {
         final validation = ruta.validateFull();
         if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return [];
+          // Debug logging removed for production
+          return [];
         }
       }
 
@@ -540,19 +503,17 @@ return [];
       );
 
       if (response is List) {
-        final results = response
-            .map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        final results = response.map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
 
         // Očisti cache
         await _clearCache();
-      // Debug logging removed for production
-return results;
+        // Debug logging removed for production
+        return results;
       }
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -568,10 +529,10 @@ return [];
         }
       }
       // Debug logging removed for production
-return results;
+      return results;
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -588,10 +549,10 @@ return [];
       // Očisti cache
       await _clearCache();
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -608,10 +569,10 @@ return false;
       // Očisti cache
       await _clearCache();
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -626,8 +587,8 @@ return false;
         maxAge: const Duration(minutes: 30),
       );
       if (cached != null) {
-      // Debug logging removed for production
-return cached;
+        // Debug logging removed for production
+        return cached;
       }
 
       final rute = await getAllRute();
@@ -643,9 +604,7 @@ return cached;
         'ukupno_ruta': ukupnoRuta,
         'aktivne_rute': aktivnihRuta,
         'neaktivne_rute': neaktivnihRuta,
-        'procenat_aktivnih': ukupnoRuta > 0
-            ? (aktivnihRuta / ukupnoRuta * 100).round()
-            : 0,
+        'procenat_aktivnih': ukupnoRuta > 0 ? (aktivnihRuta / ukupnoRuta * 100).round() : 0,
         'poslednja_izmena': rute.isNotEmpty
             ? rute.map((r) => r.updatedAt).reduce((a, b) => a.isAfter(b) ? a : b).toIso8601String()
             : null,
@@ -657,7 +616,7 @@ return cached;
       return stats;
     } catch (e) {
       // Debug logging removed for production
-return {};
+      return {};
     }
   }
 
@@ -670,10 +629,7 @@ return {};
 
       // Dobij putnici na ovoj ruti
       final putnici = await SupabaseSafe.run(
-        () => _supabase
-            .from('dnevni_putnici')
-            .select('cena, datum, status')
-            .eq('ruta_id', rutaId),
+        () => _supabase.from('dnevni_putnici').select('cena, datum, status').eq('ruta_id', rutaId),
         fallback: <dynamic>[],
       );
 
@@ -686,8 +642,7 @@ return {};
         (sum, p) => sum + ((p['cena'] as num?)?.toDouble() ?? 0),
       );
 
-      final prosecnaZarada =
-          ukupnoPutnika > 0 ? ukupnaZarada / ukupnoPutnika : 0.0;
+      final prosecnaZarada = ukupnoPutnika > 0 ? ukupnaZarada / ukupnoPutnika : 0.0;
 
       // Status distribucija
       final statusCount = <String, int>{};
@@ -700,17 +655,15 @@ return {};
         'ruta_info': ruta.toMap(),
         'ukupno_putnika': ukupnoPutnika,
         'ukupna_zarada': ukupnaZarada,
-        'prosecna_zarada_po_putniku':
-            double.parse(prosecnaZarada.toStringAsFixed(2)),
+        'prosecna_zarada_po_putniku': double.parse(prosecnaZarada.toStringAsFixed(2)),
         'status_distribution': statusCount,
-        'putnica_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty
-            ? _calculateDailyPassengers(putnici)
-            : <String, int>{},
+        'putnica_po_danu':
+            ukupnoPutnika > 0 && putnici.isNotEmpty ? _calculateDailyPassengers(putnici) : <String, int>{},
         'generirano': DateTime.now().toIso8601String(),
       };
     } catch (e) {
       // Debug logging removed for production
-return {};
+      return {};
     }
   }
 
@@ -744,7 +697,8 @@ return {};
 
       // Data rows
       for (final ruta in rute) {
-        csvLines.add([
+        csvLines.add(
+          [
             ruta.id,
             '"${ruta.naziv}"',
             '"${ruta.opis ?? ''}"',
@@ -756,10 +710,10 @@ return {};
 
       final csvContent = csvLines.join('\n');
       // Debug logging removed for production
-return csvContent;
+      return csvContent;
     } catch (e) {
       // Debug logging removed for production
-return '';
+      return '';
     }
   }
 
@@ -771,18 +725,14 @@ return '';
       final cutoffDateStr = cutoffDate.toIso8601String();
 
       await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .delete()
-            .eq('aktivan', false)
-            .lt('updated_at', cutoffDateStr),
+        () => _supabase.from('rute').delete().eq('aktivan', false).lt('updated_at', cutoffDateStr),
       );
 
       await _clearCache();
       // Debug logging removed for production
-} catch (e) {
+    } catch (e) {
       // Debug logging removed for production
-}
+    }
   }
 
   /// Cache statistike
@@ -790,8 +740,3 @@ return '';
     return CacheService.getStats();
   }
 }
-
-
-
-
-

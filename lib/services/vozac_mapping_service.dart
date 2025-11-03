@@ -41,7 +41,7 @@ class VozacMappingService {
         _vozacNameToUuid![vozac.ime] = vozac.id;
         _vozacUuidToName![vozac.id] = vozac.ime;
 
-        // Dodaj i puno ime 
+        // Dodaj i puno ime
         _vozacNameToUuid![vozac.punoIme] = vozac.id;
       }
 

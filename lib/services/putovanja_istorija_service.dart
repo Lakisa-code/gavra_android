@@ -51,13 +51,13 @@ class PutovanjaIstorijaService {
           });
           return list;
         } catch (e) {
-      // Debug logging removed for production
-return <PutovanjaIstorija>[];
+          // Debug logging removed for production
+          return <PutovanjaIstorija>[];
         }
       });
     } catch (e) {
       // Debug logging removed for production
-return Stream.value([]);
+      return Stream.value([]);
     }
   }
 
@@ -78,13 +78,13 @@ return Stream.value([]);
             try {
               return data.map((json) => PutovanjaIstorija.fromMap(json)).toList();
             } catch (e) {
-      // Debug logging removed for production
-return <PutovanjaIstorija>[];
+              // Debug logging removed for production
+              return <PutovanjaIstorija>[];
             }
           });
     } catch (e) {
       // Debug logging removed for production
-return Stream.value([]);
+      return Stream.value([]);
     }
   }
 
@@ -102,13 +102,13 @@ return Stream.value([]);
           list.sort((a, b) => b.datum.compareTo(a.datum));
           return list;
         } catch (e) {
-      // Debug logging removed for production
-return <PutovanjaIstorija>[];
+          // Debug logging removed for production
+          return <PutovanjaIstorija>[];
         }
       });
     } catch (e) {
       // Debug logging removed for production
-return Stream.value([]);
+      return Stream.value([]);
     }
   }
 
@@ -122,8 +122,8 @@ return Stream.value([]);
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-      // Debug logging removed for production
-return cached
+        // Debug logging removed for production
+        return cached
             .map(
               (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
             )
@@ -150,7 +150,7 @@ return cached
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -168,8 +168,8 @@ return [];
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-      // Debug logging removed for production
-return cached
+        // Debug logging removed for production
+        return cached
             .map(
               (json) => PutovanjaIstorija.fromMap(json as Map<String, dynamic>),
             )
@@ -192,7 +192,7 @@ return cached
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -226,7 +226,7 @@ return [];
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -241,7 +241,7 @@ return [];
       return PutovanjaIstorija.fromMap(response);
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -269,7 +269,7 @@ return null;
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -281,8 +281,8 @@ return [];
       // Validate before adding
       final validation = putovanje.validateFull();
       if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       final response = await SupabaseSafe.run(
@@ -299,10 +299,10 @@ return null;
         await _clearCacheForMesecni(result.mesecniPutnikId!);
       }
       // Debug logging removed for production
-return result;
+      return result;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -341,7 +341,7 @@ return null;
       return result;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -379,7 +379,7 @@ return null;
       return result;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -391,8 +391,8 @@ return null;
       // Validate before updating
       final validation = putovanje.validateFull();
       if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return null;
+        // Debug logging removed for production
+        return null;
       }
 
       final response = await SupabaseSafe.run(
@@ -409,10 +409,10 @@ return null;
         await _clearCacheForMesecni(result.mesecniPutnikId!);
       }
       // Debug logging removed for production
-return result;
+      return result;
     } catch (e) {
       // Debug logging removed for production
-return null;
+      return null;
     }
   }
 
@@ -444,10 +444,10 @@ return null;
         fallback: <dynamic>[],
       );
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -470,10 +470,10 @@ return false;
         }
       }
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -509,7 +509,7 @@ return false;
       return list.length;
     } catch (e) {
       // Debug logging removed for production
-return 0;
+      return 0;
     }
   }
 
@@ -550,7 +550,7 @@ return 0;
       return ukupno;
     } catch (e) {
       // Debug logging removed for production
-return 0.0;
+      return 0.0;
     }
   }
 
@@ -572,8 +572,8 @@ return 0.0;
         cacheKey = _getSearchCacheKey(query);
         final cached = await CacheService.getFromMemory<List<PutovanjaIstorija>>(cacheKey);
         if (cached != null) {
-      // Debug logging removed for production
-return cached;
+          // Debug logging removed for production
+          return cached;
         }
       }
 
@@ -638,7 +638,7 @@ return cached;
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -651,8 +651,8 @@ return [];
       for (final putovanje in putovanja) {
         final validation = putovanje.validateFull();
         if (validation.isNotEmpty) {
-      // Debug logging removed for production
-return [];
+          // Debug logging removed for production
+          return [];
         }
       }
 
@@ -682,13 +682,13 @@ return [];
         for (final mesecniId in affectedMesecni) {
           await _clearCacheForMesecni(mesecniId);
         }
-      // Debug logging removed for production
-return results;
+        // Debug logging removed for production
+        return results;
       }
       return [];
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -706,10 +706,10 @@ return [];
         }
       }
       // Debug logging removed for production
-return results;
+      return results;
     } catch (e) {
       // Debug logging removed for production
-return [];
+      return [];
     }
   }
 
@@ -741,10 +741,10 @@ return [];
         await _clearCacheForMesecni(mesecniId);
       }
       // Debug logging removed for production
-return true;
+      return true;
     } catch (e) {
       // Debug logging removed for production
-return false;
+      return false;
     }
   }
 
@@ -800,7 +800,7 @@ return false;
       };
     } catch (e) {
       // Debug logging removed for production
-return {};
+      return {};
     }
   }
 
@@ -829,7 +829,8 @@ return {};
 
       // Data rows
       for (final putovanje in putovanja) {
-        csvLines.add([
+        csvLines.add(
+          [
             putovanje.id,
             putovanje.tipPutnika,
             putovanje.datum.toIso8601String().split('T')[0],
@@ -846,10 +847,10 @@ return {};
 
       final csvContent = csvLines.join('\n');
       // Debug logging removed for production
-return csvContent;
+      return csvContent;
     } catch (e) {
       // Debug logging removed for production
-return '';
+      return '';
     }
   }
 
@@ -867,9 +868,9 @@ return '';
 
       await _clearCache();
       // Debug logging removed for production
-} catch (e) {
+    } catch (e) {
       // Debug logging removed for production
-}
+    }
   }
 
   // 📊 CACHE STATISTIKE
@@ -877,8 +878,3 @@ return '';
     return CacheService.getStats();
   }
 }
-
-
-
-
-

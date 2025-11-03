@@ -27,7 +27,6 @@ class MesecniPutnik {
     this.cena,
     this.brojPutovanja = 0,
     this.brojOtkazivanja = 0,
-    this.poslednjePutovanje,
     this.obrisan = false,
     this.vremePlacanja,
     this.placeniMesec,
@@ -87,9 +86,6 @@ class MesecniPutnik {
       cena: (map['cena'] as num?)?.toDouble(),
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
-      poslednjePutovanje: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null, // ✅ FIXED: Koristi vreme_pokupljenja
       obrisan: map['obrisan'] as bool? ?? false,
       vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       placeniMesec: map['placeni_mesec'] as int?,
@@ -132,7 +128,6 @@ class MesecniPutnik {
   final double? cena;
   final int brojPutovanja;
   final int brojOtkazivanja;
-  final DateTime? poslednjePutovanje;
   final bool obrisan;
   final DateTime? vremePlacanja;
   final int? placeniMesec;
@@ -175,7 +170,7 @@ class MesecniPutnik {
     stats.addAll({
       'trips_total': brojPutovanja,
       'cancellations_total': brojOtkazivanja,
-      'last_trip': poslednjePutovanje?.toIso8601String(),
+      'last_trip': vremePokupljenja?.toIso8601String(),
     });
 
     Map<String, dynamic> result = {
@@ -200,7 +195,7 @@ class MesecniPutnik {
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
       'vreme_pokupljenja':
-          poslednjePutovanje?.toIso8601String(), // ✅ FIXED: Koristi vreme_pokupljenja umesto poslednje_putovanje
+          vremePokupljenja?.toIso8601String(), // Koristi vremePokupljenja umesto poslednjePutovanje
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
@@ -289,7 +284,6 @@ class MesecniPutnik {
     int? placenaGodina,
     int? brojPutovanja,
     int? brojOtkazivanja,
-    DateTime? poslednjePutovanje,
     bool? obrisan,
     Map<String, dynamic>? statistics,
   }) {
@@ -311,7 +305,6 @@ class MesecniPutnik {
       cena: cena ?? this.cena,
       brojPutovanja: brojPutovanja ?? this.brojPutovanja,
       brojOtkazivanja: brojOtkazivanja ?? this.brojOtkazivanja,
-      poslednjePutovanje: poslednjePutovanje ?? this.poslednjePutovanje,
       obrisan: obrisan ?? this.obrisan,
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       placeniMesec: placeniMesec ?? this.placeniMesec,
