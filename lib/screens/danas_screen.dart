@@ -26,6 +26,7 @@ import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/schedule_utils.dart';
 import '../utils/slot_utils.dart';
+import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import '../widgets/bottom_nav_bar_zimski.dart';
@@ -282,18 +283,11 @@ class _DanasScreenState extends State<DanasScreen> {
       int otkazaliUcenici = 0; // učenici koji su otkazali
 
       for (final djak in djaci) {
-        final status = djak.status.toLowerCase().trim();
+        // 🔧 PROVERA: Da li je aktivni učenik (standardizovano)
+        final jeAktivan = TextUtils.isStatusActive(djak.status);
 
-        // 🔧 PROVERA: Da li je aktivni učenik (radi, aktivan, aktivni)
-        final jeAktivan = (status == 'radi' || status == 'aktivan' || status == 'aktivni');
-
-        // 🔧 PROVERA: Da li je otkazao
-        final jeOtkazao = (status == 'otkazano' ||
-            status == 'otkazan' ||
-            status == 'bolovanje' ||
-            status == 'godisnji' ||
-            status == 'godišnji' ||
-            status == 'obrisan');
+        // 🔧 PROVERA: Da li je otkazao (standardizovano)
+        final jeOtkazao = !jeAktivan;
 
         // Da li ide ujutro (Bela Crkva)?
         final polazakBC = djak.getPolazakBelaCrkvaZaDan(danasnjiDan);
@@ -602,9 +596,8 @@ class _DanasScreenState extends State<DanasScreen> {
             // Match grad and vreme
             final normPolazak = GradAdresaValidator.normalizeTime(p.polazak);
             if (p.grad == selectedGrad && normPolazak == GradAdresaValidator.normalizeTime(selectedVreme)) {
-              // Exclude deleted
-              final normalizedStatus = (p.status ?? '').toLowerCase().trim();
-              if (normalizedStatus != 'obrisan') {
+              // Exclude deleted (standardizovano)
+              if (p.status != 'obrisan') {
                 mesecniPutniciAsPutnik.add(p);
               }
             }
@@ -618,13 +611,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
         final List<Putnik> dnevniPutnici =
             dnevniResponse.map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item)).where((putnik) {
-          final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
-          return normalizedStatus != 'otkazano' &&
-              normalizedStatus != 'otkazan' &&
-              normalizedStatus != 'bolovanje' &&
-              normalizedStatus != 'godisnji' &&
-              normalizedStatus != 'godišnji' &&
-              normalizedStatus != 'obrisan';
+          // Standardizovano filtriranje aktivnih putnika
+          return TextUtils.isStatusActive(putnik.status);
         }).toList();
 
         final filtriraniPutnici = <Putnik>[
@@ -1580,8 +1568,6 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 SAMO REORDER PUTNIKA - bez otvaranja mape
     final filtriraniPutnici = putnici.where((p) {
-      final normalizedStatus = (p.status ?? '').toLowerCase().trim();
-
       final vremeMatch =
           GradAdresaValidator.normalizeTime(p.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
 
@@ -1589,12 +1575,7 @@ class _DanasScreenState extends State<DanasScreen> {
       final gradMatch = _isGradMatch(p.grad, p.adresa, _selectedGrad);
 
       final danMatch = p.dan == _getTodayForDatabase();
-      final statusOk = (normalizedStatus != 'otkazano' &&
-          normalizedStatus != 'otkazan' &&
-          normalizedStatus != 'bolovanje' &&
-          normalizedStatus != 'godisnji' &&
-          normalizedStatus != 'godišnji' &&
-          normalizedStatus != 'obrisan');
+      final statusOk = TextUtils.isStatusActive(p.status);
       final hasAddress = p.adresa != null && p.adresa!.isNotEmpty;
 
       return vremeMatch && gradMatch && danMatch && statusOk && hasAddress;
@@ -1854,8 +1835,6 @@ class _DanasScreenState extends State<DanasScreen> {
                   final grad = _selectedGrad;
 
                   final filtriraniPutnici = danasPutnici.where((putnik) {
-                    final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
-
                     final vremeMatch =
                         GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(vreme);
 
@@ -1870,16 +1849,11 @@ class _DanasScreenState extends State<DanasScreen> {
                     // MESEČNI PUTNICI - isto kao u home_screen
                     if (putnik.mesecnaKarta == true) {
                       // Za mesečne putnike, samo isključi obrisane
-                      final statusOk = normalizedStatus != 'obrisan';
+                      final statusOk = putnik.status != 'obrisan';
                       return vremeMatch && gradMatch && statusOk;
                     } else {
                       // DNEVNI PUTNICI - standardno filtriranje
-                      final statusOk = (normalizedStatus != 'otkazano' &&
-                          normalizedStatus != 'otkazan' &&
-                          normalizedStatus != 'bolovanje' &&
-                          normalizedStatus != 'godisnji' &&
-                          normalizedStatus != 'godišnji' &&
-                          normalizedStatus != 'obrisan');
+                      final statusOk = TextUtils.isStatusActive(putnik.status);
                       return vremeMatch && gradMatch && statusOk;
                     }
                   }).toList();
@@ -1887,8 +1861,6 @@ class _DanasScreenState extends State<DanasScreen> {
                   // Koristiti optimizovanu rutu ako postoji, ali filtriraj je po trenutnom polazaku
                   final finalPutnici = _isRouteOptimized
                       ? _optimizedRoute.where((putnik) {
-                          final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
-
                           final vremeMatch = GradAdresaValidator.normalizeTime(
                                 putnik.polazak,
                               ) ==
@@ -1906,15 +1878,10 @@ class _DanasScreenState extends State<DanasScreen> {
                           bool statusOk;
                           if (putnik.mesecnaKarta == true) {
                             // Za mesečne putnike, samo isključi obrisane
-                            statusOk = normalizedStatus != 'obrisan';
+                            statusOk = putnik.status != 'obrisan';
                           } else {
                             // DNEVNI PUTNICI - standardno filtriranje
-                            statusOk = (normalizedStatus != 'otkazano' &&
-                                normalizedStatus != 'otkazan' &&
-                                normalizedStatus != 'bolovanje' &&
-                                normalizedStatus != 'godisnji' &&
-                                normalizedStatus != 'godišnji' &&
-                                normalizedStatus != 'obrisan');
+                            statusOk = TextUtils.isStatusActive(putnik.status);
                           }
 
                           return vremeMatch && gradMatch && statusOk;

@@ -5,6 +5,7 @@ import '../models/action_log.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 import '../utils/mesecni_helpers.dart';
+import '../utils/text_utils.dart'; // DODANO za konzistentno filtriranje statusa
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_notification_service.dart';
@@ -326,15 +327,10 @@ class PutnikService {
 
       final List<Putnik> dnevniPutnici =
           dnevniResponse.map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item)).where((putnik) {
-        final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
-        final isValid = normalizedStatus != 'otkazano' &&
-            normalizedStatus != 'otkazan' &&
-            normalizedStatus != 'bolovanje' &&
-            normalizedStatus != 'godisnji' &&
-            normalizedStatus != 'godišnji' &&
-            normalizedStatus != 'obrisan';
+        // 🔧 STANDARDIZACIJA: Koristi TextUtils.isStatusActive za konzistentnost
+        final isValid = TextUtils.isStatusActive(putnik.status);
         if (!isValid) {
-          print('🏠 Preskoči dnevni putnik: ${putnik.ime}, status=$normalizedStatus');
+          print('🏠 Preskoči dnevni putnik: ${putnik.ime}, status=${putnik.status}');
         }
         return isValid;
       }).toList();

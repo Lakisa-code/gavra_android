@@ -1665,7 +1665,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {
-            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
             final gradMatch = GradAdresaValidator.isGradMatch(
               putnik.grad,
               putnik.adresa,
@@ -1677,12 +1676,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               _getDayAbbreviation(_selectedDay),
             );
             final danMatch = normalizedPutnikDan.contains(normalizedDanBaza);
-            final statusOk = (normalizedStatus != 'otkazano' &&
-                normalizedStatus != 'otkazan' &&
-                normalizedStatus != 'bolovanje' &&
-                normalizedStatus != 'godisnji' &&
-                normalizedStatus != 'godišnji' &&
-                normalizedStatus != 'obrisan');
+            final statusOk = TextUtils.isStatusActive(putnik.status);
             return gradMatch && vremeMatch && danMatch && statusOk;
           }).length;
         }

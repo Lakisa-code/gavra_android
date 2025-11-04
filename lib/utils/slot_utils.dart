@@ -62,22 +62,24 @@ class SlotUtils {
           // 🔍 DODATNA VALIDACIJA ZA BC 6:00 I U DAY ABBR
           if (vreme == '6:00') {
             bool validanBc6Putnik = true;
-            
+
             if (p.polazak.trim() != '6:00' && p.polazak.trim() != '06:00') {
               validanBc6Putnik = false;
             }
-            
+
             final gradLower = p.grad.toLowerCase();
             if (!gradLower.contains('bela') && !gradLower.contains('bc') && gradLower != 'bela crkva') {
               validanBc6Putnik = false;
             }
-            
+
             final statusLower = (p.status ?? '').toLowerCase();
-            if (statusLower.contains('otkazan') || statusLower.contains('obrisan') || 
-                statusLower.contains('bolovanje') || statusLower.contains('godišnji')) {
+            if (statusLower.contains('otkazan') ||
+                statusLower.contains('obrisan') ||
+                statusLower.contains('bolovanje') ||
+                statusLower.contains('godišnji')) {
               validanBc6Putnik = false;
             }
-            
+
             if (validanBc6Putnik) {
               brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
             }
@@ -121,11 +123,9 @@ class SlotUtils {
 
     for (final p in allPutnici) {
       try {
-        final normalizedStatus = TextUtils.normalizeText(p.status ?? '');
-        if (normalizedStatus == 'obrisan' ||
-            normalizedStatus == 'godišnji' ||
-            normalizedStatus == 'godisnji' ||
-            normalizedStatus == 'bolovanje') {
+        // 🔧 STANDARDIZACIJA: Koristi TextUtils.isStatusActive za konzistentnost
+        if (!TextUtils.isStatusActive(p.status)) {
+          final normalizedStatus = TextUtils.normalizeText(p.status ?? '');
           if (normalizedStatus == 'obrisan')
             ukupnoObrisanih++;
           else
@@ -157,28 +157,26 @@ class SlotUtils {
           if (vreme == '6:00') {
             // Striktna validacija za BC 6:00
             bool validanBc6Putnik = true;
-            
+
             // 1. Proveri da li polazak eksplicitno sadrži 6:00
             if (p.polazak.trim() != '6:00' && p.polazak.trim() != '06:00') {
               validanBc6Putnik = false;
               print('🚨 ODBAČEN BC 6:00 putnik - netačno vreme: ${p.ime}, polazak="${p.polazak}"');
             }
-            
+
             // 2. Proveri da li grad eksplicitno sadrži Bela Crkva
             final gradLower = p.grad.toLowerCase();
             if (!gradLower.contains('bela') && !gradLower.contains('bc') && gradLower != 'bela crkva') {
               validanBc6Putnik = false;
               print('🚨 ODBAČEN BC 6:00 putnik - netačan grad: ${p.ime}, grad="${p.grad}"');
             }
-            
+
             // 3. Proveri status - mora biti aktivan
-            final statusLower = (p.status ?? '').toLowerCase();
-            if (statusLower.contains('otkazan') || statusLower.contains('obrisan') || 
-                statusLower.contains('bolovanje') || statusLower.contains('godišnji')) {
+            if (!TextUtils.isStatusActive(p.status)) {
               validanBc6Putnik = false;
               print('🚨 ODBAČEN BC 6:00 putnik - neaktivan: ${p.ime}, status="${p.status}"');
             }
-            
+
             // 4. KRITIČNO: Proveri da li je dan validan za današnji datum
             if (p.datum != null && p.datum!.isNotEmpty) {
               if (p.datum != isoDate) {
@@ -194,12 +192,14 @@ class SlotUtils {
                 print('🚨 ODBAČEN BC 6:00 putnik - pogrešan dan: ${p.ime}, dan="${p.dan}" (trebalo: $danasAbbr)');
               }
             }
-            
+
             if (validanBc6Putnik) {
               brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
               ukupnoBcPutnika++;
               ukupnoBc6++;
-              print('✅ VALIDNI BC 6:00 putnik #$ukupnoBc6: ${p.ime}, status=${p.status}, polazak=${p.polazak}, grad=${p.grad}');
+              print(
+                '✅ VALIDNI BC 6:00 putnik #$ukupnoBc6: ${p.ime}, status=${p.status}, polazak=${p.polazak}, grad=${p.grad}',
+              );
             }
           } else {
             // Za ostala vremena, koristi standardno brojanje
@@ -222,8 +222,18 @@ class SlotUtils {
     print('🔍 Validni za datum: $ukupnoValidnih');
     print('🔍 BC putnici: $ukupnoBcPutnika');
     print('🔍 VS putnici: $ukupnoVsPutnika');
-    print('🔍 BC 6:00 ukupno: ${brojPutnikaBC['6:00']}');
+    print('🔍 BC 6:00 FINALNO: ${brojPutnikaBC['6:00']} (nakon stroge validacije)');
     print('🔍 Sva BC vremena: $brojPutnikaBC');
+
+    // 🎯 KRITIČNA PORUKA
+    final bc6Finalno = brojPutnikaBC['6:00'] ?? 0;
+    if (bc6Finalno < 50) {
+      print('✅ BC 6:00 broj je sada realističan: $bc6Finalno');
+    } else if (bc6Finalno > 70) {
+      print('❌ BC 6:00 još uvek visok: $bc6Finalno - potrebna dodatna analiza!');
+    } else {
+      print('⚠️ BC 6:00 broj je granični: $bc6Finalno - proveri da li je tačan');
+    }
 
     return {
       'BC': brojPutnikaBC,
