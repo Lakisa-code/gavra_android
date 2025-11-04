@@ -55,10 +55,14 @@ class PutnikService {
       try {
         final combined = <Putnik>[];
 
+        print('📅 === STREAM KOMBINOVANI DEBUG ===');
+        print('📅 isoDate: $isoDate, grad: $grad, vreme: $vreme');
+
         // Fetch daily rows server-side if isoDate provided, otherwise fetch recent daily
         final dnevniResponse = await SupabaseSafe.run(
           () async {
             if (isoDate != null) {
+              print('📅 Fetchujem dnevne za datum: $isoDate');
               return await supabase
                   .from('putovanja_istorija')
                   .select()
@@ -69,6 +73,7 @@ class PutnikService {
                   )
                   .eq('tip_putnika', 'dnevni');
             }
+            print('📅 Fetchujem sve dnevne (bez datuma)');
             return await supabase
                 .from('putovanja_istorija')
                 .select()
@@ -77,6 +82,8 @@ class PutnikService {
           },
           fallback: <dynamic>[],
         );
+
+        print('📅 Dnevni response: ${dnevniResponse?.length ?? 0}');
 
         if (dnevniResponse is List) {
           for (final d in dnevniResponse) {
@@ -103,6 +110,9 @@ class PutnikService {
         final mesecni =
             await supabase.from('mesecni_putnici').select(mesecniFields).eq('aktivan', true).eq('obrisan', false);
 
+        print('📅 Mesečni response: ${mesecni.length}');
+        int streamMesecniBc6 = 0;
+
         for (final m in mesecni) {
           // ✅ ISPRAVKA: Generiši putnik objekte za SVE radne dane, ne samo trenutni
           final radniDaniString = m['radni_dani'] as String? ?? '';
@@ -124,10 +134,21 @@ class PutnikService {
               if (normVremeFilter != null && normVreme != normVremeFilter) {
                 continue;
               }
+
+              // Debug BC 6:00 mesečni
+              if (normVreme == '6:00' &&
+                  (p.grad.toLowerCase().contains('bela') || p.grad.toLowerCase().contains('bc'))) {
+                streamMesecniBc6++;
+                print('📅 BC 6:00 mesečni (stream): ${p.ime}, dan=$dan, polazak=${p.polazak}');
+              }
+
               combined.add(p);
             }
           }
         }
+
+        print('📅 Stream BC 6:00 mesečni: $streamMesecniBc6');
+        print('📅 Stream ukupno kombinovano: ${combined.length}');
 
         subject.add(combined);
       } catch (e) {
@@ -286,7 +307,7 @@ class PutnikService {
       final targetDate = targetDay ?? _getTodayName();
       final datum = _parseDateFromDayName(targetDate);
       final danas = datum.toIso8601String().split('T')[0];
-      
+
       print('🏠 PutnikService.getAllPutniciFromBothTables: targetDay=$targetDay, danas=$danas');
 
       // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - filtriraj po created_at umesto datum_putovanja
@@ -294,22 +315,40 @@ class PutnikService {
           .from('putovanja_istorija')
           .select()
           .gte('created_at', '${danas}T00:00:00.000Z')
-          .lt('created_at', '${DateTime.parse(danas).add(const Duration(days: 1)).toIso8601String().split('T')[0]}T00:00:00.000Z')
+          .lt(
+            'created_at',
+            '${DateTime.parse(danas).add(const Duration(days: 1)).toIso8601String().split('T')[0]}T00:00:00.000Z',
+          )
           .eq('tip_putnika', 'dnevni')
           .timeout(const Duration(seconds: 5));
-      
+
       print('🏠 Dnevni putnici response: ${dnevniResponse.length}');
 
       final List<Putnik> dnevniPutnici =
           dnevniResponse.map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item)).where((putnik) {
         final normalizedStatus = (putnik.status ?? '').toLowerCase().trim();
-        return normalizedStatus != 'otkazano' &&
+        final isValid = normalizedStatus != 'otkazano' &&
             normalizedStatus != 'otkazan' &&
             normalizedStatus != 'bolovanje' &&
             normalizedStatus != 'godisnji' &&
             normalizedStatus != 'godišnji' &&
             normalizedStatus != 'obrisan';
+        if (!isValid) {
+          print('🏠 Preskoči dnevni putnik: ${putnik.ime}, status=$normalizedStatus');
+        }
+        return isValid;
       }).toList();
+
+      print('🏠 Validni dnevni putnici: ${dnevniPutnici.length}');
+
+      // Debug: prikaži BC 6:00 dnevne putnike
+      final bc6Dnevni = dnevniPutnici
+          .where(
+            (p) =>
+                p.polazak == '6:00' && (p.grad.toLowerCase().contains('bela') || p.grad.toLowerCase().contains('bc')),
+          )
+          .length;
+      print('🏠 BC 6:00 dnevni putnici: $bc6Dnevni');
 
       allPutnici.addAll(dnevniPutnici);
 
@@ -331,6 +370,9 @@ class PutnikService {
 
       print('🏠 Mesečni putnici response: ${mesecniResponse.length}');
 
+      int validniMesecni = 0;
+      int bc6Mesecni = 0;
+
       for (final data in mesecniResponse) {
         // KORISTI fromMesecniPutniciMultipleForDay da kreira putnike samo za selektovani dan
         final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(data, danKratica);
@@ -338,14 +380,24 @@ class PutnikService {
         // ✅ VALIDACIJA: Prikaži samo putnike sa validnim vremenima polazaka
         final validPutnici = mesecniPutnici.where((putnik) {
           final polazak = putnik.polazak.trim();
-          return polazak.isNotEmpty && polazak != '00:00:00' && polazak != '00:00' && polazak != 'null';
+          final isValid = polazak.isNotEmpty && polazak != '00:00:00' && polazak != '00:00' && polazak != 'null';
+          if (isValid) {
+            validniMesecni++;
+            if (polazak == '6:00' &&
+                (putnik.grad.toLowerCase().contains('bela') || putnik.grad.toLowerCase().contains('bc'))) {
+              bc6Mesecni++;
+              print('🏠 BC 6:00 mesečni putnik: ${putnik.ime}, polazak=$polazak, grad=${putnik.grad}');
+            }
+          }
+          return isValid;
         }).toList();
 
         allPutnici.addAll(validPutnici);
       }
-      
-      print('🏠 Ukupno putnika (dnevni + mesečni): ${allPutnici.length}');
 
+      print('🏠 Validni mesečni putnici: $validniMesecni');
+      print('🏠 BC 6:00 mesečni putnici: $bc6Mesecni');
+      print('🏠 Ukupno putnika (dnevni + mesečni): ${allPutnici.length}');
       return allPutnici;
     } catch (e) {
       return [];
