@@ -52,19 +52,16 @@ class SlotUtils {
 
         // Match by day abbreviation using Putnik.dan (which can be 'Pon'/'pon'/'Ponedeljak')
         final normalizedPutnikDan = GradAdresaValidator.normalizeString(p.dan);
-        final normalizedTarget =
-            GradAdresaValidator.normalizeString(targetDayAbbr);
+        final normalizedTarget = GradAdresaValidator.normalizeString(targetDayAbbr);
         if (!normalizedPutnikDan.contains(normalizedTarget)) continue;
 
         final vreme = GradAdresaValidator.normalizeTime(p.polazak);
         final grad = p.grad;
 
-        if (bcVremena.contains(vreme) &&
-            GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
+        if (bcVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
           brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
         }
-        if (vsVremena.contains(vreme) &&
-            GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
+        if (vsVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
           brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
         }
       } catch (e) {
@@ -104,23 +101,19 @@ class SlotUtils {
           }
         } else {
           // fallback: match by day abbreviation in p.dan
-          final normalizedPutnikDan =
-              GradAdresaValidator.normalizeString(p.dan);
+          final normalizedPutnikDan = GradAdresaValidator.normalizeString(p.dan);
           final targetDayAbbr = isoDateToDayAbbr(isoDate);
-          final normalizedTarget =
-              GradAdresaValidator.normalizeString(targetDayAbbr);
+          final normalizedTarget = GradAdresaValidator.normalizeString(targetDayAbbr);
           if (!normalizedPutnikDan.contains(normalizedTarget)) continue;
         }
 
         final vreme = GradAdresaValidator.normalizeTime(p.polazak);
         final grad = p.grad;
 
-        if (bcVremena.contains(vreme) &&
-            GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
+        if (bcVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
           brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
         }
-        if (vsVremena.contains(vreme) &&
-            GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
+        if (vsVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
           brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
         }
       } catch (e) {

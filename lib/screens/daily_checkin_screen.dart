@@ -523,6 +523,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Color.lerp(vozacColor, Colors.white, 0.95), // Koristi dinamičku svetlu boju
         title: Row(
           children: [
             Icon(Icons.person, color: vozacColor, size: 20),
@@ -660,6 +661,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
     final vozacColor = VozacBoja.get(widget.vozac); // DODANO: Koristi boju vozača
+
+    // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
+    final lightVozacColor = Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija
+    final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
+
     final controller = TextEditingController(
       text: (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0',
     );
@@ -668,7 +674,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: lightVozacColor.withOpacity(0.95), // Koristi dinamičku svetlu boju
         title: Row(
           children: [
             Icon(
@@ -695,7 +701,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
             child: Card(
               margin: const EdgeInsets.all(0),
               elevation: 0,
-              color: Theme.of(context).colorScheme.surface.withOpacity(0.5), // PROMENJEN: Prati temu
+              color: softVozacColor.withOpacity(0.3), // Koristi dinamičku meku boju
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
