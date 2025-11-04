@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
@@ -13,9 +13,9 @@ class RealtimeNotificationService {
   ///
   /// OneSignal konfiguracija direktno u aplikaciji
   /// App ID: 4fd57af1-568a-45e0-a737-3b3918c4e92a
-  /// REST Key: dymepwhpkubkfxhqhc4mlh2x7
+  /// REST Key je sada SAKRIVEN na server-side (Supabase Edge Function)
 
-  /// Pošalji OneSignal notifikaciju putem REST API-ja
+  /// 🔒 SIGURNO: Pošalji OneSignal notifikaciju putem Supabase Edge Function
   static Future<void> sendOneSignalNotification({
     required String title,
     required String body,
@@ -23,41 +23,159 @@ class RealtimeNotificationService {
     String? segment, // Ili segment (npr. "All")
     Map<String, dynamic>? data,
   }) async {
-    // OneSignal REST API direktan poziv
+    // 🔒 SIGURNO: REST API ključ je na server-side (Supabase Edge Function)
     const String appId = '4fd57af1-568a-45e0-a737-3b3918c4e92a';
-    const String restKey = 'dymepwhpkubkfxhqhc4mlh2x7';
-
-    if (appId.isEmpty || restKey.isEmpty) {
-      // Logger removed
-      return;
-    }
 
     try {
       final payload = {
         'app_id': appId,
-        'headings': {'en': title},
-        'contents': {'en': body},
-        if (playerId != null) 'include_player_ids': [playerId],
-        if (segment != null) 'included_segments': [segment],
+        'title': title,
+        'body': body,
+        if (playerId != null) 'player_id': playerId,
+        if (segment != null) 'segment': segment,
         if (data != null) 'data': data,
       };
 
-      final uri = Uri.parse('https://onesignal.com/api/v1/notifications');
-      final req = await HttpClient().postUrl(uri);
-      req.headers.set('Content-Type', 'application/json');
-      req.headers.set('Authorization', 'Basic $restKey');
-      req.add(utf8.encode(jsonEncode(payload)));
-      final httpResponse = await req.close();
-      await utf8.decoder.bind(httpResponse).join();
-      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
-        // Logger removed
-      } else {}
-    } catch (e) {}
+      // 🌐 Pozovi Supabase Edge Function umesto direktnog REST poziva
+      final supabase = Supabase.instance.client;
+      final response = await supabase.functions.invoke(
+        'send-onesignal-notification',
+        body: payload,
+      );
+
+      if (response.data != null && response.data['success'] == true) {
+        // Logger removed - successful OneSignal send
+      } else {
+        // Logger removed - OneSignal send failed
+      }
+    } catch (e) {
+      // Fallback to local notification if OneSignal fails
+      try {
+        await LocalNotificationService.showRealtimeNotification(
+          title: title,
+          body: body,
+          payload: jsonEncode(data ?? {}),
+        );
+      } catch (fallbackError) {
+        // Logger removed - both OneSignal and local notification failed
+      }
+    }
   }
 
-  /// OneSignal direktno konfigurisano sa REST API
-  static void initializeOneSignal() {
-    // Logger removed
+  /// 🔥 SIGURNO: Pošalji FCM notifikaciju putem Supabase Edge Function
+  static Future<bool> sendFCMNotification({
+    required String title,
+    required String body,
+    required String targetType, // 'token', 'topic', 'condition'
+    required String targetValue, // device token, topic name, ili condition
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final payload = {
+        'title': title,
+        'body': body,
+        'data': data ?? {},
+        'target': {
+          'type': targetType,
+          'value': targetValue,
+        },
+      };
+
+      final response = await supabase.functions.invoke(
+        'send-fcm-notification',
+        body: payload,
+      );
+
+      if (response.data != null && response.data['success'] == true) {
+        // Logger removed - FCM sent successfully
+        return true;
+      } else {
+        // Logger removed - FCM send failed
+        return false;
+      }
+    } catch (e) {
+      // Logger removed - FCM function call failed
+      return false;
+    }
+  }
+
+  /// 🎯 Pošalji notifikaciju svim vozačima
+  static Future<void> sendNotificationToAllDrivers({
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    // Multi-channel strategija
+    final List<Future<void>> notifications = [];
+
+    // 1. FCM - pošalji svim pretplatnicima topic-a
+    notifications.add(
+      sendFCMNotification(
+        title: title,
+        body: body,
+        targetType: 'topic',
+        targetValue: 'gavra_all_drivers',
+        data: data,
+      ).then((_) {}), // Convert Future<bool> to Future<void>
+    );
+
+    // 2. OneSignal - pošalji svim korisnicima
+    notifications.add(
+      sendOneSignalNotification(
+        title: title,
+        body: body,
+        segment: 'All',
+        data: data,
+      ),
+    );
+
+    // 3. Local notification kao fallback
+    notifications.add(
+      LocalNotificationService.showRealtimeNotification(
+        title: title,
+        body: body,
+        payload: jsonEncode(data ?? {}),
+      ),
+    );
+
+    // Pokreni sve paralelno
+    await Future.wait(notifications);
+  }
+
+  /// 🎯 Pošalji notifikaciju specifičnom vozaču
+  static Future<void> sendNotificationToDriver({
+    required String driverId,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    // Multi-channel strategija za specifičnog vozača
+    final List<Future<void>> notifications = [];
+
+    // 1. FCM - topic za specifičnog vozača
+    notifications.add(
+      sendFCMNotification(
+        title: title,
+        body: body,
+        targetType: 'topic',
+        targetValue: 'gavra_driver_${driverId.toLowerCase()}',
+        data: data,
+      ).then((_) {}),
+    );
+
+    // 2. Možete dodati OneSignal targeting po User ID-u
+    // 3. Local notification
+    notifications.add(
+      LocalNotificationService.showRealtimeNotification(
+        title: title,
+        body: body,
+        payload: jsonEncode(data ?? {}),
+      ),
+    );
+
+    await Future.wait(notifications);
   }
 
   /// Public helper to handle an initial/cold-start RemoteMessage (from getInitialMessage)
@@ -90,19 +208,13 @@ class RealtimeNotificationService {
       if (datumString.isNotEmpty) {
         try {
           final datum = DateTime.parse(datumString);
-          isToday = datum.year == danas.year &&
-              datum.month == danas.month &&
-              datum.day == danas.day;
+          isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
         } catch (_) {
           isToday = false;
         }
       }
 
-      if ((type == 'dodat' ||
-              type == 'novi_putnik' ||
-              type == 'otkazan' ||
-              type == 'otkazan_putnik') &&
-          isToday) {
+      if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
@@ -133,8 +245,7 @@ class RealtimeNotificationService {
       await FirebaseMessaging.instance.subscribeToTopic('gavra_all_drivers');
 
       // Subscribe to driver-specific topic
-      await FirebaseMessaging.instance
-          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      await FirebaseMessaging.instance.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
       // Logger removed
     } catch (e) {
@@ -193,10 +304,8 @@ class RealtimeNotificationService {
   static Future<bool> hasNotificationPermissions() async {
     // Logger removed
     try {
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
-      bool hasPermission =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
+      bool hasPermission = settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return hasPermission;
     } catch (e) {
@@ -215,12 +324,10 @@ class RealtimeNotificationService {
         return false;
       }
 
-      NotificationSettings settings = await FirebaseMessaging.instance
-          .requestPermission()
-          .timeout(const Duration(seconds: 10));
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.requestPermission().timeout(const Duration(seconds: 10));
 
-      bool granted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      bool granted = settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return granted;
     } catch (e) {
@@ -243,8 +350,7 @@ class RealtimeNotificationService {
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData =
-            jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(

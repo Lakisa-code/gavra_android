@@ -286,14 +286,19 @@ class PutnikService {
       final targetDate = targetDay ?? _getTodayName();
       final datum = _parseDateFromDayName(targetDate);
       final danas = datum.toIso8601String().split('T')[0];
+      
+      print('🏠 PutnikService.getAllPutniciFromBothTables: targetDay=$targetDay, danas=$danas');
 
-      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - povlači iz putovanja_istorija
+      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - filtriraj po created_at umesto datum_putovanja
       final dnevniResponse = await supabase
           .from('putovanja_istorija')
           .select()
-          .eq('datum_putovanja', danas) // ✅ FIXED: datum_putovanja umesto datum
+          .gte('created_at', '${danas}T00:00:00.000Z')
+          .lt('created_at', '${DateTime.parse(danas).add(const Duration(days: 1)).toIso8601String().split('T')[0]}T00:00:00.000Z')
           .eq('tip_putnika', 'dnevni')
           .timeout(const Duration(seconds: 5));
+      
+      print('🏠 Dnevni putnici response: ${dnevniResponse.length}');
 
       final List<Putnik> dnevniPutnici =
           dnevniResponse.map<Putnik>((item) => Putnik.fromPutovanjaIstorija(item)).where((putnik) {
@@ -324,6 +329,8 @@ class PutnikService {
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 5));
 
+      print('🏠 Mesečni putnici response: ${mesecniResponse.length}');
+
       for (final data in mesecniResponse) {
         // KORISTI fromMesecniPutniciMultipleForDay da kreira putnike samo za selektovani dan
         final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(data, danKratica);
@@ -336,6 +343,8 @@ class PutnikService {
 
         allPutnici.addAll(validPutnici);
       }
+      
+      print('🏠 Ukupno putnika (dnevni + mesečni): ${allPutnici.length}');
 
       return allPutnici;
     } catch (e) {

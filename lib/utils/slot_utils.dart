@@ -95,17 +95,18 @@ class SlotUtils {
         }
 
         // If putnik has an explicit datum, only count it when dates match
+        bool dateMatches = false;
         if (p.datum != null && p.datum!.isNotEmpty) {
-          if (p.datum != isoDate) {
-            continue;
-          }
+          dateMatches = (p.datum == isoDate);
         } else {
           // fallback: match by day abbreviation in p.dan
           final normalizedPutnikDan = GradAdresaValidator.normalizeString(p.dan);
           final targetDayAbbr = isoDateToDayAbbr(isoDate);
           final normalizedTarget = GradAdresaValidator.normalizeString(targetDayAbbr);
-          if (!normalizedPutnikDan.contains(normalizedTarget)) continue;
+          dateMatches = normalizedPutnikDan.contains(normalizedTarget);
         }
+        
+        if (!dateMatches) continue;
 
         final vreme = GradAdresaValidator.normalizeTime(p.polazak);
         final grad = p.grad;
@@ -125,9 +126,7 @@ class SlotUtils {
       'BC': brojPutnikaBC,
       'VS': brojPutnikaVS,
     };
-  }
-
-  // Helper: convert ISO date string to day abbreviation used in mesecni_putnici
+  }  // Helper: convert ISO date string to day abbreviation used in mesecni_putnici
   static String isoDateToDayAbbr(String isoDate) {
     try {
       final dt = DateTime.parse(isoDate);

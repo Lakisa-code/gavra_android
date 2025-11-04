@@ -149,9 +149,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return now.toIso8601String().split('T')[0];
     }
 
-    // Inače traži sledeći put kada će biti taj dan
-    int daysToAdd =
-        targetDayIndex > currentDayIndex ? targetDayIndex - currentDayIndex : (7 - currentDayIndex) + targetDayIndex;
+    // 🔧 POPRAVLJENO: Traži prethodni ili sledeći put kada je bio/će biti taj dan
+    // Ali uvek vrati najbliži datum (prethodni ili sledeći)
+    int daysToAdd = targetDayIndex - currentDayIndex;
+    if (daysToAdd <= -4) {
+      // Ako je više od 4 dana unazad, uzmi sledeći put
+      daysToAdd += 7;
+    } else if (daysToAdd >= 4) {
+      // Ako je više od 4 dana unapred, uzmi prethodni put
+      daysToAdd -= 7;
+    }
+
     final targetDate = now.add(Duration(days: daysToAdd));
     return targetDate.toIso8601String().split('T')[0];
   }
@@ -1457,7 +1465,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // � POPRAVLJENO: StreamBuilder umesto FutureBuilder za reaktivno ažuriranje
+    // 🔧 POPRAVLJENO: StreamBuilder umesto FutureBuilder za reaktivno ažuriranje
     return StreamBuilder<List<Putnik>>(
       stream: Stream.fromFuture(
         _putnikService.getAllPutniciFromBothTables(
@@ -1573,11 +1581,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
         // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN
-        // Brojač pokazuje ukupan broj putnika po slotovima za ceo dan
-        // NEZAVISAN od trenutno selektovanog grada/vremena
-        final slotCounts = SlotUtils.computeSlotCountsForDayAbbr(allPutnici, targetDayAbbr);
+        // 🔧 POPRAVLJENO: Koristi isti metod kao Danas Screen za konzistentnost
+        // Koristimo computeSlotCountsForDate umesto computeSlotCountsForDayAbbr za tačnost
+        final todayIso = DateTime.now().toIso8601String().split('T')[0];
+        final todayDayAbbr = SlotUtils.isoDateToDayAbbr(todayIso);
+
+        Map<String, Map<String, int>> slotCounts;
+        if (targetDayAbbr == todayDayAbbr) {
+          // Za današnji dan, koristi tačan ISO datum kao Danas Screen
+          print('🏠 HOME: Koristim TODAY ISO: $todayIso za brojanje putnika');
+          slotCounts = SlotUtils.computeSlotCountsForDate(allPutnici, todayIso);
+        } else {
+          // Za druge dane, koristi day abbreviation
+          print('🏠 HOME: Koristim DAY ABBR: $targetDayAbbr za brojanje putnika');
+          slotCounts = SlotUtils.computeSlotCountsForDayAbbr(allPutnici, targetDayAbbr);
+        }
         final Map<String, int> brojPutnikaBC = Map<String, int>.from(slotCounts['BC'] ?? {});
         final Map<String, int> brojPutnikaVS = Map<String, int>.from(slotCounts['VS'] ?? {});
+
+        print('🏠 HOME: BC 6:00 = ${brojPutnikaBC['6:00']}');
+        print('🏠 HOME: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');
 
         // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
         List<Putnik> sortiraniPutnici(List<Putnik> lista) {

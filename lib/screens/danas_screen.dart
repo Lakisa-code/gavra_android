@@ -2377,9 +2377,14 @@ class _DanasScreenState extends State<DanasScreen> {
 
 // Compute slot counts for today using shared helper to ensure parity with Home screen
             final todayIso = DateTime.now().toIso8601String().split('T')[0];
+            print('📅 DANAS: Koristim TODAY ISO: $todayIso za brojanje putnika');
             final slotCountsToday = SlotUtils.computeSlotCountsForDate(allPutnici, todayIso);
             final Map<String, int> brojPutnikaBC = Map<String, int>.from(slotCountsToday['BC'] ?? {});
             final Map<String, int> brojPutnikaVS = Map<String, int>.from(slotCountsToday['VS'] ?? {});
+
+            print('📅 DANAS: BC 6:00 = ${brojPutnikaBC['6:00']}');
+            print('📅 DANAS: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');
+            print('📅 DANAS: Ukupno putnika u listi = ${allPutnici.length}');
 
             int getPutnikCount(String grad, String vreme) {
               if (grad == 'Bela Crkva') return brojPutnikaBC[vreme] ?? 0;
