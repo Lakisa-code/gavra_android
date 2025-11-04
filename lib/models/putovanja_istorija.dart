@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'action_log.dart';
+
 class PutovanjaIstorija {
   PutovanjaIstorija({
     required this.id,
@@ -13,13 +15,15 @@ class PutovanjaIstorija {
     required this.createdAt,
     required this.updatedAt,
     this.obrisan = false,
-    // Nova polja iz baze
+    // Simplifikovana vozac_id struktura
     this.vozacId,
+    this.createdBy,
+    ActionLog? actionLog,
     this.napomene,
     this.rutaId,
     this.voziloId,
     this.adresaId,
-  });
+  }) : actionLog = actionLog ?? ActionLog.empty();
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
   factory PutovanjaIstorija.fromMap(Map<String, dynamic> map) {
@@ -35,8 +39,10 @@ class PutovanjaIstorija {
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       obrisan: map['obrisan'] as bool? ?? false,
-      // Nova polja iz baze
+      // Simplifikovana vozac_id struktura
       vozacId: map['vozac_id'] as String?,
+      createdBy: map['created_by'] as String?,
+      actionLog: ActionLog.fromString(map['action_log'] as String?),
       napomene: map['napomene'] as String?,
       rutaId: map['ruta_id'] as String?,
       voziloId: map['vozilo_id'] as String?,
@@ -55,8 +61,10 @@ class PutovanjaIstorija {
   final DateTime updatedAt;
   final bool obrisan;
 
-  // Nova polja iz baze podataka
+  // Simplifikovana vozac_id struktura
   final String? vozacId;
+  final String? createdBy;
+  final ActionLog actionLog;
   final String? napomene;
   final String? rutaId;
   final String? voziloId;
@@ -76,8 +84,10 @@ class PutovanjaIstorija {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'obrisan': obrisan,
-      // Nova polja iz baze
+      // Simplifikovana vozac_id struktura
       'vozac_id': vozacId,
+      'created_by': createdBy,
+      'action_log': actionLog.toJsonString(),
       'napomene': napomene,
       'ruta_id': rutaId,
       'vozilo_id': voziloId,
@@ -225,8 +235,7 @@ class PutovanjaIstorija {
     }
 
     if (!hasValidMesecniPutnikLink()) {
-      errors['mesecniPutnikId'] =
-          'Mesečni putnici moraju imati ID mesečnog putnika';
+      errors['mesecniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
     }
 
     if (!isDatumValid()) {

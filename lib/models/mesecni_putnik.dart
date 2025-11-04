@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../services/adresa_supabase_service.dart';
 import '../utils/mesecni_helpers.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
@@ -14,8 +15,8 @@ class MesecniPutnik {
     required this.tip,
     this.tipSkole,
     required this.polasciPoDanu,
-    this.adresaBelaCrkva,
-    this.adresaVrsac,
+    this.adresaBelaCrkvaId,
+    this.adresaVrsacId,
     this.radniDani = 'pon,uto,sre,cet,pet',
     required this.datumPocetkaMeseca,
     required this.datumKrajaMeseca,
@@ -41,10 +42,8 @@ class MesecniPutnik {
     this.voziloId,
     this.adresaPolaskaId,
     this.adresaDolaskaId,
-    this.ime,
-    this.prezime,
-    this.datumPocetka,
-    this.datumKraja,
+    // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
+    // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
 
   factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
@@ -69,8 +68,8 @@ class MesecniPutnik {
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
       polasciPoDanu: polasciPoDanu,
-      adresaBelaCrkva: map['adresa_bela_crkva'] as String?,
-      adresaVrsac: map['adresa_vrsac'] as String?,
+      adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
+      adresaVrsacId: map['adresa_vrsac_id'] as String?,
       radniDani: map['radni_dani'] as String? ?? 'pon,uto,sre,cet,pet',
       datumPocetkaMeseca: map['datum_pocetka_meseca'] != null
           ? DateTime.parse(map['datum_pocetka_meseca'] as String)
@@ -78,12 +77,8 @@ class MesecniPutnik {
       datumKrajaMeseca: map['datum_kraja_meseca'] != null
           ? DateTime.parse(map['datum_kraja_meseca'] as String)
           : DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-      createdAt: map['created_at'] != null
-          ? DateTime.parse(map['created_at'] as String)
-          : DateTime.now(),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
-          : DateTime.now(),
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
       aktivan: map['aktivan'] as bool? ?? true,
       status: map['status'] as String? ?? 'aktivan',
       ukupnaCenaMeseca: (map['ukupna_cena_meseca'] as num?)?.toDouble() ?? 0.0,
@@ -91,9 +86,7 @@ class MesecniPutnik {
       brojPutovanja: map['broj_putovanja'] as int? ?? 0,
       brojOtkazivanja: map['broj_otkazivanja'] as int? ?? 0,
       obrisan: map['obrisan'] as bool? ?? false,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
+      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       placeniMesec: map['placeni_mesec'] as int?,
       placenaGodina: map['placena_godina'] as int?,
       statistics: Map<String, dynamic>.from(map['statistics'] as Map? ?? {}),
@@ -101,21 +94,13 @@ class MesecniPutnik {
       tipPrikazivanja: map['tip_prikazivanja'] as String? ?? 'standard',
       vozacId: map['vozac_id'] as String?,
       pokupljen: map['pokupljen'] as bool? ?? false,
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null,
+      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
       rutaId: map['ruta_id'] as String?,
       voziloId: map['vozilo_id'] as String?,
       adresaPolaskaId: map['adresa_polaska_id'] as String?,
       adresaDolaskaId: map['adresa_dolaska_id'] as String?,
-      ime: map['ime'] as String?,
-      prezime: map['prezime'] as String?,
-      datumPocetka: map['datum_pocetka'] != null
-          ? DateTime.parse(map['datum_pocetka'] as String)
-          : null,
-      datumKraja: map['datum_kraja'] != null
-          ? DateTime.parse(map['datum_kraja'] as String)
-          : null,
+      // Uklonjeno: ime, prezime - koristi se putnikIme
+      // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
   }
   final String id;
@@ -126,8 +111,8 @@ class MesecniPutnik {
   final String tip; // direktno string umesto enum-a
   final String? tipSkole;
   final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
-  final String? adresaBelaCrkva; // adresa u Beloj Crkvi
-  final String? adresaVrsac; // adresa u Vršcu
+  final String? adresaBelaCrkvaId; // UUID reference u tabelu adrese
+  final String? adresaVrsacId; // UUID reference u tabelu adrese
   final String radniDani;
   final DateTime datumPocetkaMeseca;
   final DateTime datumKrajaMeseca;
@@ -155,10 +140,7 @@ class MesecniPutnik {
   final String? voziloId;
   final String? adresaPolaskaId;
   final String? adresaDolaskaId;
-  final String? ime;
-  final String? prezime;
-  final DateTime? datumPocetka;
-  final DateTime? datumKraja;
+  // Uklonjeno legacy polja: ime, prezime, datumPocetka, datumKraja
 
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
@@ -193,11 +175,10 @@ class MesecniPutnik {
       'tip': tip,
       'tip_skole': tipSkole,
       'polasci_po_danu': normalizedPolasci,
-      'adresa_bela_crkva': adresaBelaCrkva,
-      'adresa_vrsac': adresaVrsac,
+      'adresa_bela_crkva_id': adresaBelaCrkvaId,
+      'adresa_vrsac_id': adresaVrsacId,
       'radni_dani': radniDani,
-      'datum_pocetka_meseca':
-          datumPocetkaMeseca.toIso8601String().split('T')[0],
+      'datum_pocetka_meseca': datumPocetkaMeseca.toIso8601String().split('T')[0],
       'datum_kraja_meseca': datumKrajaMeseca.toIso8601String().split('T')[0],
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -207,8 +188,7 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'vreme_pokupljenja': vremePokupljenja
-          ?.toIso8601String(), // Koristi vremePokupljenja umesto poslednjePutovanje
+      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(), // Koristi vremePokupljenja umesto poslednjePutovanje
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
@@ -222,10 +202,7 @@ class MesecniPutnik {
       'vozilo_id': voziloId,
       'adresa_polaska_id': adresaPolaskaId,
       'adresa_dolaska_id': adresaDolaskaId,
-      'ime': ime,
-      'prezime': prezime,
-      'datum_pocetka': datumPocetka?.toIso8601String(),
-      'datum_kraja': datumKraja?.toIso8601String(),
+      // Uklonjeno: ime, prezime, datum_pocetka, datum_kraja - duplikati
     };
 
     // Dodaj id samo ako nije prazan (za UPDATE operacije)
@@ -358,10 +335,7 @@ class MesecniPutnik {
 
   /// Validira da li su osnovna polja popunjena
   bool isValid() {
-    return putnikIme.isNotEmpty &&
-        tip.isNotEmpty &&
-        polasciPoDanu.isNotEmpty &&
-        id.isNotEmpty;
+    return putnikIme.isNotEmpty && tip.isNotEmpty && polasciPoDanu.isNotEmpty && id.isNotEmpty;
   }
 
   /// Validira format telefona (srpski brojevi)
@@ -380,8 +354,8 @@ class MesecniPutnik {
 
   /// Validira da li putnik ima validnu adresu
   bool hasValidAddress() {
-    return (adresaBelaCrkva != null && adresaBelaCrkva!.isNotEmpty) ||
-        (adresaVrsac != null && adresaVrsac!.isNotEmpty);
+    return (adresaBelaCrkvaId != null && adresaBelaCrkvaId!.isNotEmpty) ||
+        (adresaVrsacId != null && adresaVrsacId!.isNotEmpty);
   }
 
   /// Validira da li je period važenja valjan
@@ -406,8 +380,7 @@ class MesecniPutnik {
     }
 
     if (!hasValidPhoneNumbers()) {
-      errors['telefoni'] =
-          'Jedan ili više brojeva telefona nije u ispravnom formatu';
+      errors['telefoni'] = 'Jedan ili više brojeva telefona nije u ispravnom formatu';
     }
 
     if (polasciPoDanu.isEmpty) {
@@ -425,7 +398,41 @@ class MesecniPutnik {
     return errors;
   }
 
-  // ==================== RELATIONSHIP HELPERS ====================
+  // ==================== ADDRESS HELPERS ====================
+
+  /// Dobija naziv adrese za Belu Crkvu
+  Future<String?> getAdresaBelaCrkvaNaziv() async {
+    if (adresaBelaCrkvaId == null) return null;
+    return await AdresaSupabaseService.getNazivAdreseByUuid(adresaBelaCrkvaId);
+  }
+
+  /// Dobija naziv adrese za Vršac
+  Future<String?> getAdresaVrsacNaziv() async {
+    if (adresaVrsacId == null) return null;
+    return await AdresaSupabaseService.getNazivAdreseByUuid(adresaVrsacId);
+  }
+
+  /// Dobija formatiran prikaz adresa (za UI)
+  Future<String> getFormatiranePrikkazAdresa() async {
+    final bcNaziv = await getAdresaBelaCrkvaNaziv();
+    final vsNaziv = await getAdresaVrsacNaziv();
+
+    final adrese = <String>[];
+    if (bcNaziv != null) adrese.add('BC: $bcNaziv');
+    if (vsNaziv != null) adrese.add('VS: $vsNaziv');
+
+    return adrese.isEmpty ? 'Nema adresa' : adrese.join(' | ');
+  }
+
+  /// Legacy kompatibilnost - vraća TEXT naziv Bela Crkva adrese
+  @Deprecated('Koristi getAdresaBelaCrkvaNaziv() umesto TEXT polja')
+  Future<String?> get adresaBelaCrkva async => await getAdresaBelaCrkvaNaziv();
+
+  /// Legacy kompatibilnost - vraća TEXT naziv Vršac adrese
+  @Deprecated('Koristi getAdresaVrsacNaziv() umesto TEXT polja')
+  Future<String?> get adresaVrsac async => await getAdresaVrsacNaziv();
+
+  // ==================== RELATIONSHIP HELPERS ===================="
 
   /// Da li putnik ima mesečnu kartu (uvek true za MesecniPutnik)
   bool get hasMesecnaKarta => true;

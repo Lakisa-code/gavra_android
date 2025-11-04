@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import 'action_log.dart';
 import 'adresa.dart';
 import 'putnik.dart';
 import 'ruta.dart';
@@ -68,16 +69,16 @@ class DnevniPutnik {
     this.status = DnevniPutnikStatus.aktivno,
     this.napomena,
     this.vremePokupljenja,
-    this.pokupioVozacId,
     this.vremePlacanja,
-    this.naplatioVozacId,
-    this.dodaoVozacId,
-    this.otkazaoVozacId,
     this.voziloId,
+    this.vozacId,
+    this.createdBy,
+    ActionLog? actionLog,
     this.obrisan = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
+        actionLog = actionLog ?? ActionLog.empty(),
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -97,22 +98,18 @@ class DnevniPutnik {
         map['status'] as String? ?? 'aktivno',
       ),
       napomena: map['napomena'] as String?,
-      vremePokupljenja: map['vreme_pokupljenja'] != null
-          ? DateTime.parse(map['vreme_pokupljenja'] as String)
-          : null,
-      pokupioVozacId: map['pokupio_vozac_id'] as String?,
-      vremePlacanja: map['vreme_placanja'] != null
-          ? DateTime.parse(map['vreme_placanja'] as String)
-          : null,
-      naplatioVozacId: map['naplatio_vozac_id'] as String?,
-      dodaoVozacId: map['dodao_vozac_id'] as String?,
-      otkazaoVozacId: map['otkazao_vozac_id'] as String?,
+      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
+      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       voziloId: map['vozilo_id'] as String?,
+      vozacId: map['vozac_id'] as String?,
+      createdBy: map['created_by'] as String?,
+      actionLog: ActionLog.fromString(map['action_log'] as String?),
       obrisan: map['obrisan'] as bool? ?? false,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
+
   final String id;
   final String ime;
   final String? brojTelefona;
@@ -126,12 +123,11 @@ class DnevniPutnik {
   final DnevniPutnikStatus status;
   final String? napomena;
   final DateTime? vremePokupljenja;
-  final String? pokupioVozacId;
   final DateTime? vremePlacanja;
-  final String? naplatioVozacId;
-  final String? dodaoVozacId;
-  final String? otkazaoVozacId;
   final String? voziloId;
+  final String? vozacId;
+  final String? createdBy;
+  final ActionLog actionLog;
   final bool obrisan;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -151,12 +147,11 @@ class DnevniPutnik {
       'status': status.value,
       'napomena': napomena,
       'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
-      'pokupio_vozac_id': pokupioVozacId,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
-      'naplatio_vozac_id': naplatioVozacId,
-      'dodao_vozac_id': dodaoVozacId,
-      'otkazao_vozac_id': otkazaoVozacId,
       'vozilo_id': voziloId,
+      'vozac_id': vozacId,
+      'created_by': createdBy,
+      'action_log': actionLog.toJsonString(),
       'obrisan': obrisan,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -165,13 +160,10 @@ class DnevniPutnik {
 
   String get punoIme => ime;
 
-  bool get jePokupljen =>
-      status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
+  bool get jePokupljen => status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
   bool get jePlacen => vremePlacanja != null;
   bool get jeOtkazan => status == DnevniPutnikStatus.otkazan;
-  bool get jeOdsustvo =>
-      status == DnevniPutnikStatus.bolovanje ||
-      status == DnevniPutnikStatus.godisnji;
+  bool get jeOdsustvo => status == DnevniPutnikStatus.bolovanje || status == DnevniPutnikStatus.godisnji;
 
   /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
   Putnik toPutnik(Adresa adresa, Ruta ruta) {
@@ -200,9 +192,9 @@ class DnevniPutnik {
       vremePlacanja: vremePlacanja,
       placeno: jePlacen,
       cena: cena,
-      naplatioVozac: naplatioVozacId,
-      pokupioVozac: pokupioVozacId,
-      dodaoVozac: dodaoVozacId,
+      naplatioVozac: actionLog.getVozacForAction(ActionType.paid),
+      pokupioVozac: actionLog.getVozacForAction(ActionType.picked),
+      dodaoVozac: actionLog.getVozacForAction(ActionType.created) ?? createdBy,
       grad: adresa.grad ?? '',
       adresa: '${adresa.ulica ?? ''} ${adresa.broj ?? ''}'.trim(),
       obrisan: obrisan,
@@ -215,11 +207,7 @@ class DnevniPutnik {
 
   /// Validira da li su sva obavezna polja popunjena
   bool get isValid {
-    return ime.trim().isNotEmpty &&
-        adresaId.isNotEmpty &&
-        rutaId.isNotEmpty &&
-        cena >= 0 &&
-        vremePolaska.isNotEmpty;
+    return ime.trim().isNotEmpty && adresaId.isNotEmpty && rutaId.isNotEmpty && cena >= 0 && vremePolaska.isNotEmpty;
   }
 
   /// Validira format vremena polaska (HH:mm)
@@ -300,9 +288,9 @@ class DnevniPutnik {
       vremePlacanja: vremePlacanja,
       placeno: isPlacen,
       cena: cena,
-      naplatioVozac: naplatioVozacId,
-      pokupioVozac: pokupioVozacId,
-      dodaoVozac: dodaoVozacId,
+      naplatioVozac: actionLog.getVozacForAction(ActionType.paid),
+      pokupioVozac: actionLog.getVozacForAction(ActionType.picked),
+      dodaoVozac: actionLog.getVozacForAction(ActionType.created) ?? createdBy,
       grad: adresa.grad ?? '',
       adresa: adresa.naziv,
       obrisan: obrisan,
@@ -319,7 +307,7 @@ class DnevniPutnik {
     String? id,
     String? ime,
     String? brojTelefona,
-    String? grad, // ✅ DODANO: nedostajalo u modelu
+    String? grad,
     String? adresaId,
     String? rutaId,
     DateTime? datumPutovanja,
@@ -329,12 +317,11 @@ class DnevniPutnik {
     DnevniPutnikStatus? status,
     String? napomena,
     DateTime? vremePokupljenja,
-    String? pokupioVozacId,
     DateTime? vremePlacanja,
-    String? naplatioVozacId,
-    String? dodaoVozacId,
-    String? otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
-    String? voziloId, // ✅ DODANO: nedostajalo u modelu
+    String? voziloId,
+    String? vozacId,
+    String? createdBy,
+    ActionLog? actionLog,
     bool? obrisan,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -343,7 +330,7 @@ class DnevniPutnik {
       id: id ?? this.id,
       ime: ime ?? this.ime,
       brojTelefona: brojTelefona ?? this.brojTelefona,
-      grad: grad ?? this.grad, // ✅ DODANO: nedostajalo u modelu
+      grad: grad ?? this.grad,
       adresaId: adresaId ?? this.adresaId,
       rutaId: rutaId ?? this.rutaId,
       datumPutovanja: datumPutovanja ?? this.datumPutovanja,
@@ -353,13 +340,11 @@ class DnevniPutnik {
       status: status ?? this.status,
       napomena: napomena ?? this.napomena,
       vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
-      pokupioVozacId: pokupioVozacId ?? this.pokupioVozacId,
       vremePlacanja: vremePlacanja ?? this.vremePlacanja,
-      naplatioVozacId: naplatioVozacId ?? this.naplatioVozacId,
-      dodaoVozacId: dodaoVozacId ?? this.dodaoVozacId,
-      otkazaoVozacId: otkazaoVozacId ??
-          this.otkazaoVozacId, // ✅ DODANO: nedostajalo u modelu
-      voziloId: voziloId ?? this.voziloId, // ✅ DODANO: nedostajalo u modelu
+      voziloId: voziloId ?? this.voziloId,
+      vozacId: vozacId ?? this.vozacId,
+      createdBy: createdBy ?? this.createdBy,
+      actionLog: actionLog ?? this.actionLog,
       obrisan: obrisan ?? this.obrisan,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
@@ -386,9 +371,33 @@ class DnevniPutnik {
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        ime.hashCode ^
-        datumPutovanja.hashCode ^
-        vremePolaska.hashCode;
+    return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
+  }
+
+  // ✅ HELPER METODE ZA ACTIONLOG
+
+  /// Ko je kreirao putnika
+  String? get createdByVozac => actionLog.getVozacForAction(ActionType.created) ?? createdBy;
+
+  /// Ko je naplatio putnika
+  String? get paidByVozac => actionLog.getVozacForAction(ActionType.paid);
+
+  /// Ko je pokupio putnika
+  String? get pickedByVozac => actionLog.getVozacForAction(ActionType.picked);
+
+  /// Ko je otkazao putnika
+  String? get cancelledByVozac => actionLog.getVozacForAction(ActionType.cancelled);
+
+  /// Da li je putnik naplaton
+  bool get isNaplaton => actionLog.hasAction(ActionType.paid) || paidByVozac != null;
+
+  /// Da li je putnik otkazan
+  bool get isOtkazan => actionLog.hasAction(ActionType.cancelled) || cancelledByVozac != null;
+
+  /// Dodaje akciju u log
+  DnevniPutnik addAction(ActionType type, String vozacId, [String? note]) {
+    return copyWith(
+      actionLog: actionLog.addAction(type, vozacId, note),
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/action_log.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 import '../utils/mesecni_helpers.dart';
@@ -1042,27 +1043,44 @@ class PutnikService {
         final polazak = selectedVreme ?? '5:00'; // Koristi proslijećeno vreme ili default
         final grad = selectedGrad ?? 'Bela Crkva'; // Koristi proslijećeni grad ili default
 
-        // Kreiraj zapis otkazivanja za današnji dan
+        // Kreiraj zapis otkazivanja za današnji dan sa ActionLog
+        final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
+        final actionLog = ActionLog.empty().addAction(
+          ActionType.cancelled,
+          vozacUuid ?? '',
+          'Otkazano',
+        );
+
         await SupabaseSafe.run(
           () => supabase.from('putovanja_istorija').upsert({
             'putnik_ime': respMap['putnik_ime'],
-            'datum': danas,
-            'vreme_polaska': polazak, // ✅ ISPRAVKA: koristi 'vreme_polaska' umesto 'polazak'
+            'datum_putovanja': danas,
+            'vreme_polaska': polazak,
             'grad': grad,
-            'status': 'otkazan', // Otkazan SAMO za ovaj konkretan dan/vreme
+            'status': 'otkazan',
             'cena': 0,
-            'vozac': null,
-            'otkazao_vozac': otkazaoVozac, // ✅ NOVA KOLONA - vozač koji je otkazivanje izvršio
+            'vozac_id': null,
+            'created_by': vozacUuid,
+            'action_log': actionLog.toJsonString(),
           }),
           fallback: <dynamic>[],
         );
       } else {
-        // Za putovanja_istorija koristi 'status' kolonu
+        // Za putovanja_istorija koristi ActionLog
+        final currentData = await supabase.from(tabela).select('action_log').eq('id', id.toString()).single();
+
+        final currentActionLog = ActionLog.fromString(currentData['action_log'] as String?);
+        final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
+        final updatedActionLog = currentActionLog.addAction(
+          ActionType.cancelled,
+          vozacUuid ?? '',
+          'Otkazano',
+        );
+
         await supabase.from(tabela).update({
-          'status': 'otkazan', // ✅ ORIGINALNO: 'otkazan' ne 'otkazano'
-          'otkazao_vozac': otkazaoVozac, // ✅ NOVA KOLONA - vozač koji je otkazivanje izvršio
-          // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
-        }).eq('id', id as String);
+          'status': 'otkazan',
+          'action_log': updatedActionLog.toJsonString(),
+        }).eq('id', id.toString());
       }
 
       // 📬 POŠALJI NOTIFIKACIJU ZA OTKAZIVANJE (za tekući dan)
