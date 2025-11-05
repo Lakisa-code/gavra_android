@@ -1582,10 +1582,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN
         // 🔧 POPRAVLJENO: Koristi isti metod kao Danas Screen za konzistentnost
-        // Koristimo computeSlotCountsForDate umesto computeSlotCountsForDayAbbr za tačnost
-        final todayIso = DateTime.now().toIso8601String().split('T')[0];
-        final todayDayAbbr = SlotUtils.isoDateToDayAbbr(todayIso);
-
         // 🔧 JEDNOSTAVNO BROJANJE: Bez SlotUtils komplikacija
         final Map<String, int> brojPutnikaBC = {
           '5:00': 0,
