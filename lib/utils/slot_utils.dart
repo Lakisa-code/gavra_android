@@ -95,7 +95,7 @@ class SlotUtils {
             }
           } else {
             brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
-          brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
+          }
         }
 
         // 🔧 EKSPLICITNA PROVERA: Da li putnik ide u Vršac (koristi i grad i adresu)
