@@ -24,7 +24,7 @@ import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
-import '../utils/schedule_utils.dart';
+import '../utils/schedule_utils.dart'; // Za isZimski funkciju
 import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
@@ -2317,22 +2317,16 @@ class _DanasScreenState extends State<DanasScreen> {
                 },
               ),
         bottomNavigationBar: StreamBuilder<List<Putnik>>(
-          stream: RealtimeService.instance.streamKombinovaniPutnici(
+          // 🔧 IDENTIČAN PRISTUP KAO HOME_SCREEN: dobijamo SVE putničke za dan, bez filtera
+          stream: _putnikService.streamKombinovaniPutniciFiltered(
             isoDate: DateTime.now().toIso8601String().split('T')[0],
-            // Ukloni filtriranje po gradu i vremenu za bottom nav - treba da prikaže sve putacije
+            // UKLONJENO grad/vreme filteri da bi brojevi bili identični kao u home_screen
           ),
           builder: (context, snapshot) {
-            if (snapshot.hasData) {}
-
-            // PRIVREMENO: Uvek prikaži bottom nav bar za testiranje
-            if (snapshot.connectionState == ConnectionState.waiting) {}
-            if (snapshot.hasError) {}
-            if (!snapshot.hasData) {}
-
             // Koristi prazan lista putnika ako nema podataka
             final allPutnici = snapshot.hasData ? snapshot.data! : <Putnik>[];
 
-// 🔧 JEDNOSTAVNO BROJANJE: Bez SlotUtils komplikacija
+            // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN ZA BROJANJE PUTNIKA
             final Map<String, int> brojPutnikaBC = {
               '5:00': 0,
               '6:00': 0,
@@ -2363,7 +2357,7 @@ class _DanasScreenState extends State<DanasScreen> {
             for (final p in allPutnici) {
               if (!TextUtils.isStatusActive(p.status)) continue;
 
-              // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - filtriraj po danu uzimajući u obzir i p.datum
+              // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - filtriranje po datumu
               final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
               final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
               final dayMatch = p.datum != null
@@ -2387,14 +2381,14 @@ class _DanasScreenState extends State<DanasScreen> {
               }
             }
 
+            // Helper funkcija za brojanje putnika
             int getPutnikCount(String grad, String vreme) {
               if (grad == 'Bela Crkva') return brojPutnikaBC[vreme] ?? 0;
               if (grad == 'Vršac') return brojPutnikaVS[vreme] ?? 0;
               return 0;
             }
 
-            // (totalFilteredCount removed)
-
+            // Return Widget
             return isZimski(DateTime.now())
                 ? BottomNavBarZimski(
                     sviPolasci: _sviPolasci,

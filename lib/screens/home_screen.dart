@@ -1312,11 +1312,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // 🔧 POPRAVLJENO: StreamBuilder umesto FutureBuilder za reaktivno ažuriranje
+    // 🔧 POPRAVLJENO: Koristi pravi stream koji se ažurira kada se dan menja
     return StreamBuilder<List<Putnik>>(
-      stream: Stream.fromFuture(
-        _putnikService.getAllPutniciFromBothTables(targetDay: _selectedDay),
-      ).asBroadcastStream(),
+      key: ValueKey(_selectedDay), // 🎯 DODANO: Key da se widget rebuilds kada se dan menja
+      stream: _putnikService.streamKombinovaniPutniciFiltered(
+        isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+      ),
       builder: (context, snapshot) {
         // 🚨 DEBUG: Log state information
         // 🚨 NOVO: Error handling sa specialized widgets

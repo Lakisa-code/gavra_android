@@ -60,14 +60,11 @@ class PutnikService {
         final dnevniResponse = await SupabaseSafe.run(
           () async {
             if (isoDate != null) {
+              // ✅ ISPRAVKA: Koristi datum kolonu umesto created_at kao u getAllPutniciFromBothTables
               return await supabase
                   .from('putovanja_istorija')
                   .select()
-                  .gte('created_at', '${isoDate}T00:00:00.000Z')
-                  .lt(
-                    'created_at',
-                    '${DateTime.parse(isoDate).add(const Duration(days: 1)).toIso8601String().split('T')[0]}T00:00:00.000Z',
-                  )
+                  .eq('datum', isoDate) // Direktno filtriranje po datum koloni
                   .eq('tip_putnika', 'dnevni');
             }
             return await supabase
@@ -99,35 +96,26 @@ class PutnikService {
         }
         danKratica ??= _getDayAbbreviationFromName(_getTodayName());
 
-        // Query mesecni_putnici - uzmi SVE aktivne mesečne putnike
-        // ✅ ISPRAVKA: Ne filtriraj po danu jer sada kreiramo objekte za sve radne dane
+        // Query mesecni_putnici - uzmi aktivne mesečne putnike za ciljani dan
         final mesecni =
             await supabase.from('mesecni_putnici').select(mesecniFields).eq('aktivan', true).eq('obrisan', false);
 
         for (final m in mesecni) {
-          // ✅ ISPRAVKA: Generiši putnik objekte za SVE radne dane, ne samo trenutni
-          final radniDaniString = m['radni_dani'] as String? ?? '';
-          final radniDaniLista = radniDaniString.split(',').map((d) => d.trim()).toList();
+          // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan kao u getAllPutniciFromBothTables
+          final putniciZaDan = Putnik.fromMesecniPutniciMultipleForDay(m, danKratica);
+          for (final p in putniciZaDan) {
+            // apply grad/vreme filter if provided
+            final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+            final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
 
-          // Kreiraj putnik objekte za svaki radni dan
-          for (final dan in radniDaniLista) {
-            if (dan.isEmpty) continue;
-
-            final putniciZaDan = Putnik.fromMesecniPutniciMultipleForDay(m, dan);
-            for (final p in putniciZaDan) {
-              // apply grad/vreme filter if provided
-              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-              final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
-              // ✅ ISPRAVLJENO: Za mesečne putnike koristi direktno poređenje grada
-              if (grad != null && p.grad != grad) {
-                continue;
-              }
-              if (normVremeFilter != null && normVreme != normVremeFilter) {
-                continue;
-              }
-
-              combined.add(p);
+            if (grad != null && p.grad != grad) {
+              continue;
             }
+            if (normVremeFilter != null && normVreme != normVremeFilter) {
+              continue;
+            }
+
+            combined.add(p);
           }
         }
 
@@ -289,15 +277,11 @@ class PutnikService {
       final datum = _parseDateFromDayName(targetDate);
       final danas = datum.toIso8601String().split('T')[0];
 
-      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - filtriraj po created_at umesto datum_putovanja
+      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - filtriraj po datum koloni
       final dnevniResponse = await supabase
           .from('putovanja_istorija')
           .select()
-          .gte('created_at', '${danas}T00:00:00.000Z')
-          .lt(
-            'created_at',
-            '${DateTime.parse(danas).add(const Duration(days: 1)).toIso8601String().split('T')[0]}T00:00:00.000Z',
-          )
+          .eq('datum', danas) // Koristi datum kolonu umesto created_at
           .eq('tip_putnika', 'dnevni')
           .timeout(const Duration(seconds: 5));
 
