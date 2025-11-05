@@ -60,11 +60,11 @@ class PutnikService {
         final dnevniResponse = await SupabaseSafe.run(
           () async {
             if (isoDate != null) {
-              // ✅ ISPRAVKA: Koristi datum kolonu umesto created_at kao u getAllPutniciFromBothTables
+              // ✅ ISPRAVKA: Koristi datum_putovanja kolonu umesto datum
               return await supabase
                   .from('putovanja_istorija')
                   .select()
-                  .eq('datum', isoDate) // Direktno filtriranje po datum koloni
+                  .eq('datum_putovanja', isoDate) // ✅ ISPRAVKA: Pravi naziv kolone
                   .eq('tip_putnika', 'dnevni');
             }
             return await supabase
@@ -78,7 +78,22 @@ class PutnikService {
 
         if (dnevniResponse is List) {
           for (final d in dnevniResponse) {
-            combined.add(Putnik.fromPutovanjaIstorija(d as Map<String, dynamic>));
+            final putnik = Putnik.fromPutovanjaIstorija(d as Map<String, dynamic>);
+
+            // ✅ DODAJ CLIENT-SIDE FILTERING za dnevne putnike po gradu/vremenu
+            if (grad != null && putnik.grad != grad) {
+              continue; // Preskoči ako grad ne odgovara
+            }
+
+            if (vreme != null) {
+              final normVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
+              final normVremeFilter = GradAdresaValidator.normalizeTime(vreme);
+              if (normVreme != normVremeFilter) {
+                continue; // Preskoči ako vreme ne odgovara
+              }
+            }
+
+            combined.add(putnik);
           }
         }
 
@@ -232,7 +247,7 @@ class PutnikService {
           .from('putovanja_istorija')
           .select()
           .eq('putnik_ime', imePutnika)
-          .eq('datum', danas)
+          .eq('datum_putovanja', danas)
           .maybeSingle();
 
       if (putovanjaResponse != null) {
@@ -277,11 +292,11 @@ class PutnikService {
       final datum = _parseDateFromDayName(targetDate);
       final danas = datum.toIso8601String().split('T')[0];
 
-      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - filtriraj po datum koloni
+      // ✅ ISPRAVKA: Koristi istu logiku kao danas_screen - filtriraj po datum_putovanja koloni
       final dnevniResponse = await supabase
           .from('putovanja_istorija')
           .select()
-          .eq('datum', danas) // Koristi datum kolonu umesto created_at
+          .eq('datum_putovanja', danas) // ✅ ISPRAVKA: Pravi naziv kolone
           .eq('tip_putnika', 'dnevni')
           .timeout(const Duration(seconds: 5));
 
@@ -301,14 +316,23 @@ class PutnikService {
       const mesecniFields = '*,'
           'polasci_po_danu';
 
-      final mesecniResponse = await supabase
+      // ✅ OPTIMIZOVANO: Prvo učitaj sve aktivne, zatim filtriraj po danu u Dart kodu (sigurniji pristup)
+      final allMesecniResponse = await supabase
           .from('mesecni_putnici')
           .select(mesecniFields)
           .eq('aktivan', true)
           .eq('obrisan', false)
-          .like('radni_dani', '%$danKratica%') // ⚠️ TODO: Zameniti sa tačnijim matchovanjem u SQL-u
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 5));
+
+      // Filtriraj rezultate sa tačnim matchovanjem dana
+      final mesecniResponse = <Map<String, dynamic>>[];
+      for (final row in allMesecniResponse) {
+        final radniDani = row['radni_dani'] as String?;
+        if (radniDani != null && radniDani.split(',').map((d) => d.trim()).contains(danKratica)) {
+          mesecniResponse.add(Map<String, dynamic>.from(row));
+        }
+      }
 
       for (final data in mesecniResponse) {
         // KORISTI fromMesecniPutniciMultipleForDay da kreira putnike samo za selektovani dan
@@ -559,7 +583,9 @@ class PutnikService {
         throw Exception(
           'Grad "${putnik.grad}" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
         );
-      } // 🏘️ VALIDACIJA ADRESE
+      }
+
+      // 🏘️ VALIDACIJA ADRESE
       if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
         if (!GradAdresaValidator.validateAdresaForCity(
           putnik.adresa,
@@ -588,7 +614,7 @@ class PutnikService {
         // ℹ️ Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike
       } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
-        final insertData = putnik.toPutovanjaIstorijaMap();
+        final insertData = await putnik.toPutovanjaIstorijaMapWithAdresa(); // ✅ KORISTI PRAVO REŠENJE
         await supabase.from('putovanja_istorija').insert(insertData);
       }
 
@@ -613,8 +639,14 @@ class PutnikService {
           },
         );
       } else {}
+
+      // 🔄 FORCE REFRESH SVA DVA STREAM-A
+      await RealtimeService.instance.refreshNow();
+
+      // 🔄 DODATNO: Resetuj cache za sigurnost
+      _streams.clear();
     } catch (e) {
-      rethrow; // Ponovno baci grešku da je home_screen može uhvatiti
+      rethrow;
     }
   }
 
@@ -659,7 +691,7 @@ class PutnikService {
       try {
         final List<dynamic> dnevniFiltered = putovanjaData.where((row) {
           try {
-            return (row['datum'] == danas) && (row['tip_putnika'] == 'dnevni');
+            return (row['datum_putovanja'] == danas) && (row['tip_putnika'] == 'dnevni');
           } catch (_) {
             return false;
           }
@@ -884,6 +916,9 @@ class PutnikService {
       'status': 'obrisan', // Dodatno označavanje u status
       // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
     }).eq('id', id as String);
+
+    // 🔄 AŽURIRAJ REAL-TIME STREAMS NAKON BRISANJA
+    await RealtimeService.instance.refreshNow();
   }
 
   /// ✅ OZNAČI KAO POKUPLJEN
@@ -1137,9 +1172,9 @@ class PutnikService {
   ) async {
     final data = await supabase
         .from('putovanja_istorija')
-        .select()
+        .select('*, adrese(naziv, grad)')
         .eq('tip_putnika', 'dnevni')
-        .eq('adresa_polaska', grad) // koristimo adresa_polaska umesto grad
+        .eq('adrese.grad', grad) // ✅ PRAVO REŠENJE: koristi JOIN sa adrese tabelu
         .eq('vreme_polaska', vreme)
         .neq('status', 'otkazan') as List<dynamic>?;
 
@@ -1402,7 +1437,7 @@ class PutnikService {
           .from('putovanja_istorija')
           .select()
           .eq('putnik_ime', imePutnika)
-          .eq('datum', danas)
+          .eq('datum_putovanja', danas)
           .maybeSingle();
 
       if (putovanjaResponse != null) {
@@ -1415,7 +1450,7 @@ class PutnikService {
               'vozac': null, // ✅ UKLONI vozača
             })
             .eq('putnik_ime', imePutnika)
-            .eq('datum', danas);
+            .eq('datum_putovanja', danas);
       } else {
         // Nema zapis u putovanja_istorija za danas - nastavi
       }
@@ -1492,7 +1527,7 @@ class PutnikService {
             .select(
               'id, putnik_ime, vreme_polaska',
             ) // UKLONITI vreme_akcije - kolona ne postoji
-            .eq('datum', danas)
+            .eq('datum_putovanja', danas)
             .eq('grad', grad)
             .eq('status', 'pokupljen');
 

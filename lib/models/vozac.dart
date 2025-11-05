@@ -9,6 +9,9 @@ class Vozac {
     this.email,
     this.aktivan = true,
     this.kusur = 0.0,
+    this.obrisan = false,
+    this.deletedAt,
+    this.status = 'aktivan',
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : assert(ime.trim().isNotEmpty, 'Ime vozača ne može biti prazno'),
@@ -25,6 +28,9 @@ class Vozac {
       email: map['email'] as String?,
       aktivan: map['aktivan'] as bool? ?? true,
       kusur: (map['kusur'] as num?)?.toDouble() ?? 0.0,
+      obrisan: map['obrisan'] as bool? ?? false,
+      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
+      status: map['status'] as String? ?? 'aktivan',
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
@@ -35,6 +41,9 @@ class Vozac {
   final String? email;
   final bool aktivan;
   final double kusur;
+  final bool obrisan;
+  final DateTime? deletedAt;
+  final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -46,6 +55,9 @@ class Vozac {
       'email': email,
       'aktivan': aktivan,
       'kusur': kusur,
+      'obrisan': obrisan,
+      'deleted_at': deletedAt?.toIso8601String(),
+      'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -68,8 +80,7 @@ class Vozac {
 
   /// Validira telefon format (srpski broj)
   bool get isValidTelefon {
-    if (brojTelefona == null || brojTelefona!.isEmpty)
-      return true; // Optional field
+    if (brojTelefona == null || brojTelefona!.isEmpty) return true; // Optional field
 
     final telefon = brojTelefona!.replaceAll(RegExp(r'[^\d+]'), '');
 
@@ -131,6 +142,9 @@ class Vozac {
     String? email,
     bool? aktivan,
     double? kusur,
+    bool? obrisan,
+    DateTime? deletedAt,
+    String? status,
   }) {
     return Vozac(
       id: id,
@@ -139,6 +153,9 @@ class Vozac {
       email: email ?? this.email,
       aktivan: aktivan ?? this.aktivan,
       kusur: kusur ?? this.kusur,
+      obrisan: obrisan ?? this.obrisan,
+      deletedAt: deletedAt ?? this.deletedAt,
+      status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

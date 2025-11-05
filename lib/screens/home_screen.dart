@@ -1314,9 +1314,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // 🔧 POPRAVLJENO: Koristi pravi stream koji se ažurira kada se dan menja
     return StreamBuilder<List<Putnik>>(
-      key: ValueKey(_selectedDay), // 🎯 DODANO: Key da se widget rebuilds kada se dan menja
+      key: ValueKey(_selectedDay), // 🎯 Key samo sa danom - trebaju nam SVI putnici za brojanje
       stream: _putnikService.streamKombinovaniPutniciFiltered(
         isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+        // ❌ UKLONITI grad/vreme filtere - trebaju nam SVI putnici za bottom nav brojanje
       ),
       builder: (context, snapshot) {
         // 🚨 DEBUG: Log state information
@@ -1456,7 +1457,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           '19:00': 0,
         };
 
-        for (final p in allPutnici) {
+        // 🔧 BROJANJE: Koristi SVE putnice iz snapshot.data, ne filtrirane allPutnici
+        final sviPutniciZaBrojanje = snapshot.data ?? <Putnik>[];
+        for (final p in sviPutniciZaBrojanje) {
           if (!TextUtils.isStatusActive(p.status)) continue;
 
           // 🔧 DODANO: Filtriraj po danu kao što radi i główny StreamBuilder

@@ -13,6 +13,8 @@ class GPSLokacija {
     this.pravac,
     this.tacnost,
     DateTime? vreme,
+    this.obrisan = false,
+    this.deletedAt,
   })  : id = id ?? const Uuid().v4(),
         vreme = vreme ?? DateTime.now();
 
@@ -27,6 +29,8 @@ class GPSLokacija {
       pravac: (map['pravac'] as num?)?.toDouble(),
       tacnost: (map['tacnost'] as num?)?.toDouble(),
       vreme: DateTime.parse(map['vreme'] as String),
+      obrisan: map['obrisan'] as bool? ?? false,
+      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
     );
   }
 
@@ -60,6 +64,8 @@ class GPSLokacija {
   final double? pravac;
   final double? tacnost;
   final DateTime vreme;
+  final bool obrisan;
+  final DateTime? deletedAt;
 
   Map<String, dynamic> toMap() {
     return {
@@ -72,6 +78,8 @@ class GPSLokacija {
       'pravac': pravac,
       'tacnost': tacnost,
       'vreme': vreme.toIso8601String(),
+      'obrisan': obrisan,
+      'deleted_at': deletedAt?.toIso8601String(),
     };
   }
 
@@ -97,10 +105,7 @@ class GPSLokacija {
 
   /// Validira GPS koordinate
   bool get isValidCoordinates {
-    return latitude >= -90 &&
-        latitude <= 90 &&
-        longitude >= -180 &&
-        longitude <= 180;
+    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
   }
 
   /// Validira brzinu (realna vrednost)
@@ -127,11 +132,77 @@ class GPSLokacija {
     return '${directions[index]} (${pravac!.toStringAsFixed(0)}°)';
   }
 
+  /// Da li je GPS lokacija aktivna (nije obrisana)
+  bool get isActive => !obrisan;
+
+  /// Da li je GPS lokacija obrisana
+  bool get isDeleted => obrisan;
+
+  /// Kopira GPS lokaciju sa izmenjenim vrednostima
+  GPSLokacija copyWith({
+    String? id,
+    String? voziloId,
+    String? vozacId,
+    double? latitude,
+    double? longitude,
+    double? brzina,
+    double? pravac,
+    double? tacnost,
+    DateTime? vreme,
+    bool? obrisan,
+    DateTime? deletedAt,
+  }) {
+    return GPSLokacija(
+      id: id ?? this.id,
+      voziloId: voziloId ?? this.voziloId,
+      vozacId: vozacId ?? this.vozacId,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      brzina: brzina ?? this.brzina,
+      pravac: pravac ?? this.pravac,
+      tacnost: tacnost ?? this.tacnost,
+      vreme: vreme ?? this.vreme,
+      obrisan: obrisan ?? this.obrisan,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  /// Soft delete GPS lokacije
+  GPSLokacija markAsDeleted() {
+    return copyWith(
+      obrisan: true,
+      deletedAt: DateTime.now(),
+    );
+  }
+
+  /// Restore obrisane GPS lokacije
+  GPSLokacija restore() {
+    return copyWith(
+      obrisan: false,
+    );
+  }
+
   /// ToString metoda za debugging
   @override
   String toString() {
     return 'GPSLokacija{id: $id, vozilo: ${voziloId ?? 'null'}, vozac: $vozacId, '
         'lat: ${latitude.toStringAsFixed(6)}, lng: ${longitude.toStringAsFixed(6)}, '
-        'tacnost: ${tacnost?.toStringAsFixed(1)}m, vreme: $vreme}';
+        'tacnost: ${tacnost?.toStringAsFixed(1)}m, vreme: $vreme, obrisan: $obrisan}';
+  }
+
+  /// Jednakost dva objekta
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is GPSLokacija &&
+        other.id == id &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.vreme == vreme;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^ latitude.hashCode ^ longitude.hashCode ^ vreme.hashCode;
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../globals.dart';
 import 'cache_service.dart';
 import 'supabase_manager.dart';
 
@@ -48,38 +49,127 @@ class SimplifiedKusurService {
     }
   }
 
-  /// Ažuriraj kusur za određenog vozača u bazi - OPTIMIZOVANO sa timeout
+  /// Postavi jutarnji kusur za vozača (samo jednom dnevno)
+  static Future<bool> setJutarnjiKusur(
+    String vozacIme,
+    double jutarnjiKusur,
+  ) async {
+    try {
+      // 🌅 JUTARNJA LOGIKA: Postavi početni kusur za dan
+      await supabase.rpc<void>(
+        'update_vozac_kusur',
+        params: {'vozac_ime': vozacIme, 'novi_kusur': jutarnjiKusur},
+      ).timeout(const Duration(seconds: 3));
+
+      // Sačuvaj jutarnji kusur u cache za kalkulacije
+      final jutarnjiKey = 'jutarnji_kusur_${vozacIme}_${DateTime.now().toIso8601String().split('T')[0]}';
+      CacheService.saveToMemory(jutarnjiKey, jutarnjiKusur);
+
+      // Invalidate ostali cache
+      final cacheKey = 'kusur_vozac_$vozacIme';
+      CacheService.clearFromMemory(cacheKey);
+      CacheService.clearFromMemory('kusur_svi_vozaci');
+
+      // Emituj ažuriranje preko stream-a
+      _emitKusurUpdate(vozacIme, jutarnjiKusur);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Oduzmi pazar od tekućeg kusura
+  static Future<bool> oduzmiPazarOdKusura(
+    String vozacIme,
+    double pazarIznos,
+  ) async {
+    try {
+      // Dobij trenutni kusur
+      final trenutniKusur = await getKusurForVozac(vozacIme);
+
+      // Izračunaj novi kusur (ne može ispod 0)
+      final noviKusur = (trenutniKusur - pazarIznos).clamp(0.0, double.infinity);
+
+      // Ažuriraj kusur u bazi
+      await supabase.rpc<void>(
+        'update_vozac_kusur',
+        params: {'vozac_ime': vozacIme, 'novi_kusur': noviKusur},
+      ).timeout(const Duration(seconds: 3));
+
+      // Invalidate cache
+      final cacheKey = 'kusur_vozac_$vozacIme';
+      CacheService.clearFromMemory(cacheKey);
+      CacheService.clearFromMemory('kusur_svi_vozaci');
+
+      // Emituj ažuriranje
+      _emitKusurUpdate(vozacIme, noviKusur);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Dobij jutarnji kusur za vozača (iz cache-a)
+  static Future<double> getJutarnjiKusur(String vozacIme) async {
+    final jutarnjiKey = 'jutarnji_kusur_${vozacIme}_${DateTime.now().toIso8601String().split('T')[0]}';
+    final cached = CacheService.getFromMemory<double>(jutarnjiKey);
+    return cached ?? 0.0;
+  }
+
+  /// Proveri da li je vozač već uradio jutarnji check-in danas
+  static Future<bool> isJutarnjiCheckInDone(String vozacIme) async {
+    final jutarnjiKey = 'jutarnji_kusur_${vozacIme}_${DateTime.now().toIso8601String().split('T')[0]}';
+    final cached = CacheService.getFromMemory<double>(jutarnjiKey);
+    return cached != null;
+  }
+
   static Future<bool> updateKusurForVozac(
     String vozacIme,
     double noviKusur,
   ) async {
     try {
-      // Debug logging removed for production
-      // OPTIMIZOVANO sa SupabaseManager i eksplicitnim timeout-om
-      final success = await SupabaseManager.safeUpdate(
-        'vozaci',
-        {'kusur': noviKusur},
-        {'ime': vozacIme},
-      ).timeout(const Duration(seconds: 2));
+      // 🕐 VALIDACIJA: Kusur se ažurira samo tokom radnih sati
+      final now = DateTime.now();
+      final currentHour = now.hour;
 
-      if (success) {
-        // Invalidate cache za ovog vozača
-        final cacheKey = 'kusur_vozac_$vozacIme';
-        CacheService.clearFromMemory(cacheKey);
-        CacheService.clearFromMemory(
-          'kusur_svi_vozaci',
-        ); // Clear i glavni cache
-        // Debug logging removed for production
-        // Emituj ažuriranje preko stream-a
-        _emitKusurUpdate(vozacIme, noviKusur);
-        return true;
-      } else {
-        // Debug logging removed for production
+      // Blokiran update van radnih sati (pre 5:00 ili posle 23:00)
+      if (currentHour < 5 || currentHour > 23) {
         return false;
       }
+
+      // 🚀 PRIMARNI PRISTUP: RPC funkcija (pouzdaniji za numeric tipove)
+      await supabase.rpc<void>(
+        'update_vozac_kusur',
+        params: {'vozac_ime': vozacIme, 'novi_kusur': noviKusur},
+      ).timeout(const Duration(seconds: 2));
+
+      // Invalidate cache za ovog vozača
+      final cacheKey = 'kusur_vozac_$vozacIme';
+      CacheService.clearFromMemory(cacheKey);
+      CacheService.clearFromMemory('kusur_svi_vozaci');
+
+      // Emituj ažuriranje preko stream-a
+      _emitKusurUpdate(vozacIme, noviKusur);
+      return true;
     } catch (e) {
-      // Debug logging removed for production
-      return false;
+      // 🧪 FALLBACK: Direct UPDATE sa string kastovanjem
+      try {
+        await supabase
+            .from('vozaci')
+            .update({'kusur': noviKusur.toString()})
+            .eq('ime', vozacIme)
+            .timeout(const Duration(seconds: 2));
+
+        // Invalidate cache
+        final cacheKey = 'kusur_vozac_$vozacIme';
+        CacheService.clearFromMemory(cacheKey);
+        CacheService.clearFromMemory('kusur_svi_vozaci');
+
+        _emitKusurUpdate(vozacIme, noviKusur);
+        return true;
+      } catch (e2) {
+        return false;
+      }
     }
   }
 

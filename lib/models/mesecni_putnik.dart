@@ -14,6 +14,7 @@ class MesecniPutnik {
     this.brojTelefonaMajke,
     required this.tip,
     this.tipSkole,
+    this.napomena,
     required this.polasciPoDanu,
     this.adresaBelaCrkvaId,
     this.adresaVrsacId,
@@ -42,6 +43,28 @@ class MesecniPutnik {
     this.voziloId,
     this.adresaPolaskaId,
     this.adresaDolaskaId,
+    // Vikend polasci
+    this.polSubBc,
+    this.polSubVs,
+    this.polNedBc,
+    this.polNedVs,
+    // Dodatne informacije
+    this.adresa,
+    this.grad,
+    this.firma,
+    this.ukupnoVoznji = 0,
+    this.activan = true,
+    this.actionLog = const [],
+    this.kreiran,
+    this.azuriran,
+    // Tracking polja
+    this.dodaliVozaci = const [],
+    this.putovanjaId,
+    this.userId,
+    this.tipPrevoza,
+    this.placeno = false,
+    this.datumPlacanja,
+    this.posebneNapomene,
     // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
@@ -60,13 +83,14 @@ class MesecniPutnik {
     });
 
     return MesecniPutnik(
-      id: map['id'] as String? ?? '',
+      id: map['id'] as String? ?? _generateUuid(),
       putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
       brojTelefona: map['broj_telefona'] as String?,
       brojTelefonaOca: map['broj_telefona_oca'] as String?,
       brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       tip: map['tip'] as String? ?? 'radnik',
       tipSkole: map['tip_skole'] as String?,
+      napomena: map['napomena'] as String?,
       polasciPoDanu: polasciPoDanu,
       adresaBelaCrkvaId: map['adresa_bela_crkva_id'] as String?,
       adresaVrsacId: map['adresa_vrsac_id'] as String?,
@@ -99,6 +123,28 @@ class MesecniPutnik {
       voziloId: map['vozilo_id'] as String?,
       adresaPolaskaId: map['adresa_polaska_id'] as String?,
       adresaDolaskaId: map['adresa_dolaska_id'] as String?,
+      // Vikend polasci
+      polSubBc: map['pol_sub_bc'] as String?,
+      polSubVs: map['pol_sub_vs'] as String?,
+      polNedBc: map['pol_ned_bc'] as String?,
+      polNedVs: map['pol_ned_vs'] as String?,
+      // Dodatne informacije
+      adresa: map['adresa'] as String?,
+      grad: map['grad'] as String?,
+      firma: map['firma'] as String?,
+      ukupnoVoznji: map['ukupno_voznji'] as int? ?? 0,
+      activan: map['activan'] as bool? ?? true,
+      actionLog: map['action_log'] as List? ?? [],
+      kreiran: map['kreiran'] != null ? DateTime.parse(map['kreiran'] as String) : null,
+      azuriran: map['azuriran'] != null ? DateTime.parse(map['azuriran'] as String) : null,
+      // Tracking polja
+      dodaliVozaci: map['dodali_vozaci'] as List? ?? [],
+      putovanjaId: map['putovanja_id'] as String?,
+      userId: map['user_id'] as String?,
+      tipPrevoza: map['tip_prevoza'] as String?,
+      placeno: map['placeno'] as bool? ?? false,
+      datumPlacanja: map['datum_placanja'] != null ? DateTime.parse(map['datum_placanja'] as String) : null,
+      posebneNapomene: map['posebne_napomene'] as String?,
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
@@ -110,6 +156,7 @@ class MesecniPutnik {
   final String? brojTelefonaMajke; // dodatni telefon majke
   final String tip; // direktno string umesto enum-a
   final String? tipSkole;
+  final String? napomena;
   final Map<String, List<String>> polasciPoDanu; // dan -> lista vremena polaska
   final String? adresaBelaCrkvaId; // UUID reference u tabelu adrese
   final String? adresaVrsacId; // UUID reference u tabelu adrese
@@ -140,6 +187,31 @@ class MesecniPutnik {
   final String? voziloId;
   final String? adresaPolaskaId;
   final String? adresaDolaskaId;
+
+  // Vikend polasci
+  final String? polSubBc;
+  final String? polSubVs;
+  final String? polNedBc;
+  final String? polNedVs;
+
+  // Dodatne informacije
+  final String? adresa;
+  final String? grad;
+  final String? firma;
+  final int ukupnoVoznji;
+  final bool activan;
+  final List<dynamic> actionLog;
+  final DateTime? kreiran;
+  final DateTime? azuriran;
+
+  // Tracking polja
+  final List<dynamic> dodaliVozaci;
+  final String? putovanjaId;
+  final String? userId;
+  final String? tipPrevoza;
+  final bool placeno;
+  final DateTime? datumPlacanja;
+  final String? posebneNapomene;
   // Uklonjeno legacy polja: ime, prezime, datumPocetka, datumKraja
 
   Map<String, dynamic> toMap() {
@@ -174,6 +246,7 @@ class MesecniPutnik {
       'broj_telefona_majke': brojTelefonaMajke,
       'tip': tip,
       'tip_skole': tipSkole,
+      'napomena': napomena,
       'polasci_po_danu': normalizedPolasci,
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
       'adresa_vrsac_id': adresaVrsacId,
@@ -202,6 +275,28 @@ class MesecniPutnik {
       'vozilo_id': voziloId,
       'adresa_polaska_id': adresaPolaskaId,
       'adresa_dolaska_id': adresaDolaskaId,
+      // Vikend polasci
+      'pol_sub_bc': polSubBc,
+      'pol_sub_vs': polSubVs,
+      'pol_ned_bc': polNedBc,
+      'pol_ned_vs': polNedVs,
+      // Dodatne informacije
+      'adresa': adresa,
+      'grad': grad,
+      'firma': firma,
+      'ukupno_voznji': ukupnoVoznji,
+      'activan': activan,
+      'action_log': actionLog,
+      'kreiran': kreiran?.toIso8601String(),
+      'azuriran': azuriran?.toIso8601String(),
+      // Tracking polja
+      'dodali_vozaci': dodaliVozaci,
+      'putovanja_id': putovanjaId,
+      'user_id': userId,
+      'tip_prevoza': tipPrevoza,
+      'placeno': placeno,
+      'datum_placanja': datumPlacanja?.toIso8601String(),
+      'posebne_napomene': posebneNapomene,
       // Uklonjeno: ime, prezime, datum_pocetka, datum_kraja - duplikati
     };
 
@@ -261,6 +356,7 @@ class MesecniPutnik {
     String? brojTelefona,
     String? tip,
     String? tipSkole,
+    String? napomena,
     Map<String, List<String>>? polasciPoDanu,
     String? radniDani,
     DateTime? datumPocetkaMeseca,
@@ -276,6 +372,26 @@ class MesecniPutnik {
     int? brojOtkazivanja,
     bool? obrisan,
     Map<String, dynamic>? statistics,
+    // Nove kolone
+    String? polSubBc,
+    String? polSubVs,
+    String? polNedBc,
+    String? polNedVs,
+    String? adresa,
+    String? grad,
+    String? firma,
+    int? ukupnoVoznji,
+    bool? activan,
+    List<dynamic>? actionLog,
+    DateTime? kreiran,
+    DateTime? azuriran,
+    List<dynamic>? dodaliVozaci,
+    String? putovanjaId,
+    String? userId,
+    String? tipPrevoza,
+    bool? placeno,
+    DateTime? datumPlacanja,
+    String? posebneNapomene,
   }) {
     return MesecniPutnik(
       id: id ?? this.id,
@@ -283,6 +399,7 @@ class MesecniPutnik {
       brojTelefona: brojTelefona ?? this.brojTelefona,
       tip: tip ?? this.tip,
       tipSkole: tipSkole ?? this.tipSkole,
+      napomena: napomena ?? this.napomena,
       polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
       radniDani: radniDani ?? this.radniDani,
       datumPocetkaMeseca: datumPocetkaMeseca ?? this.datumPocetkaMeseca,
@@ -300,6 +417,26 @@ class MesecniPutnik {
       placeniMesec: placeniMesec ?? this.placeniMesec,
       placenaGodina: placenaGodina ?? this.placenaGodina,
       statistics: statistics ?? this.statistics,
+      // Nove kolone
+      polSubBc: polSubBc ?? this.polSubBc,
+      polSubVs: polSubVs ?? this.polSubVs,
+      polNedBc: polNedBc ?? this.polNedBc,
+      polNedVs: polNedVs ?? this.polNedVs,
+      adresa: adresa ?? this.adresa,
+      grad: grad ?? this.grad,
+      firma: firma ?? this.firma,
+      ukupnoVoznji: ukupnoVoznji ?? this.ukupnoVoznji,
+      activan: activan ?? this.activan,
+      actionLog: actionLog ?? this.actionLog,
+      kreiran: kreiran ?? this.kreiran,
+      azuriran: azuriran ?? this.azuriran,
+      dodaliVozaci: dodaliVozaci ?? this.dodaliVozaci,
+      putovanjaId: putovanjaId ?? this.putovanjaId,
+      userId: userId ?? this.userId,
+      tipPrevoza: tipPrevoza ?? this.tipPrevoza,
+      placeno: placeno ?? this.placeno,
+      datumPlacanja: datumPlacanja ?? this.datumPlacanja,
+      posebneNapomene: posebneNapomene ?? this.posebneNapomene,
     );
   }
 
@@ -517,5 +654,13 @@ class MesecniPutnik {
   /// Detaljni opis za debug
   String get detailDescription {
     return 'MesecniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan, status: $status, polasci: ${polasciPoDanu.length}, period: $formatiraniPeriod)';
+  }
+
+  /// ✅ HELPER: Generiši UUID ako nedostaje iz baze
+  static String _generateUuid() {
+    // Jednostavna UUID v4 simulacija za fallback
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = (timestamp * 1000 + (timestamp % 1000)).toRadixString(36);
+    return 'fallback-uuid-$random';
   }
 }

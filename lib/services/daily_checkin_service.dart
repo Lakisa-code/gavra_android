@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'dnevni_kusur_service.dart';
 import 'putnik_service.dart';
 import 'realtime_service.dart';
 import 'simplified_kusur_service.dart';
@@ -95,16 +96,32 @@ class DailyCheckInService {
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
-    // � Ažuriraj kusur u vozaci tabeli (sada kada kolona postoji!)
-    try {
-      await SimplifiedKusurService.updateKusurForVozac(vozac, sitanNovac).timeout(const Duration(seconds: 3));
-    } catch (e) {
-      // Nastavi sa lokalnim čuvanjem
+    // 🚫 JEDNOSTAVNA VALIDACIJA - vozač može uneti kusur samo jednom dnevno
+    final prefs = await SharedPreferences.getInstance();
+    final alreadyChecked = prefs.getBool(todayKey) ?? false;
+
+    if (alreadyChecked) {
+      // Već je uneo kusur danas - samo ažuriraj lokalnu vrednost
+      await prefs.setDouble('${todayKey}_amount', sitanNovac);
+      if (!_sitanNovacController.isClosed) {
+        _sitanNovacController.add(sitanNovac);
+      }
+      return;
     }
 
-    // �📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
+    // 🌅 PRVI PUT DANAS - sačuvaj kusur koji vozač ima za smenu
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final currentHour = today.hour;
+
+      // Kusur se može uneti samo u jutarnjim satima (5:00 - 12:00) ili uveče (20:00 - 23:00)
+      if ((currentHour >= 5 && currentHour <= 12) || (currentHour >= 20 && currentHour <= 23)) {
+        // Koristi novi DnevniKusurService
+        await DnevniKusurService.unesiJutarnjiKusur(vozac, sitanNovac);
+      }
+    } catch (e) {
+      // Nastavi sa lokalnim čuvanjem čak i ako baza ne radi
+    } // 📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
+    try {
       await prefs.setBool(todayKey, true);
       await prefs.setDouble('${todayKey}_amount', sitanNovac);
       await prefs.setDouble('${todayKey}_pazari', dnevniPazari);

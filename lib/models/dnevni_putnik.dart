@@ -5,50 +5,50 @@ import 'adresa.dart';
 import 'putnik.dart';
 import 'ruta.dart';
 
-/// Status dnevnih putnika
+/// Status dnevnih putnika - sinhronizovan sa database CHECK constraint
 enum DnevniPutnikStatus {
-  aktivno,
-  rezervisan,
+  kreiran,
+  ceka,
+  naplacen,
   pokupljen,
+  zavrsen,
   otkazan,
-  bolovanje,
-  godisnji,
 }
 
 extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
   String get value {
     switch (this) {
-      case DnevniPutnikStatus.aktivno:
-        return 'aktivno';
-      case DnevniPutnikStatus.rezervisan:
-        return 'rezervisan';
+      case DnevniPutnikStatus.kreiran:
+        return 'kreiran';
+      case DnevniPutnikStatus.ceka:
+        return 'ceka';
+      case DnevniPutnikStatus.naplacen:
+        return 'naplačen';
       case DnevniPutnikStatus.pokupljen:
         return 'pokupljen';
+      case DnevniPutnikStatus.zavrsen:
+        return 'završen';
       case DnevniPutnikStatus.otkazan:
         return 'otkazan';
-      case DnevniPutnikStatus.bolovanje:
-        return 'bolovanje';
-      case DnevniPutnikStatus.godisnji:
-        return 'godisnji';
     }
   }
 
   static DnevniPutnikStatus fromString(String status) {
     switch (status.toLowerCase()) {
-      case 'aktivno':
-        return DnevniPutnikStatus.aktivno;
-      case 'rezervisan':
-        return DnevniPutnikStatus.rezervisan;
+      case 'kreiran':
+        return DnevniPutnikStatus.kreiran;
+      case 'ceka':
+        return DnevniPutnikStatus.ceka;
+      case 'naplačen':
+        return DnevniPutnikStatus.naplacen;
       case 'pokupljen':
         return DnevniPutnikStatus.pokupljen;
+      case 'završen':
+        return DnevniPutnikStatus.zavrsen;
       case 'otkazan':
         return DnevniPutnikStatus.otkazan;
-      case 'bolovanje':
-        return DnevniPutnikStatus.bolovanje;
-      case 'godisnji':
-        return DnevniPutnikStatus.godisnji;
       default:
-        return DnevniPutnikStatus.rezervisan;
+        return DnevniPutnikStatus.kreiran; // default kao u bazi je 'aktivno' -> 'kreiran'
     }
   }
 }
@@ -66,10 +66,7 @@ class DnevniPutnik {
     required this.vremePolaska,
     this.brojMesta = 1,
     required this.cena,
-    this.status = DnevniPutnikStatus.aktivno,
-    this.napomena,
-    this.vremePokupljenja,
-    this.vremePlacanja,
+    this.status = DnevniPutnikStatus.kreiran,
     this.voziloId,
     this.vozacId,
     this.createdBy,
@@ -95,11 +92,8 @@ class DnevniPutnik {
       brojMesta: map['broj_mesta'] as int? ?? 1,
       cena: (map['cena'] as num).toDouble(),
       status: DnevniPutnikStatusExtension.fromString(
-        map['status'] as String? ?? 'aktivno',
+        map['status'] as String? ?? 'kreiran',
       ),
-      napomena: map['napomena'] as String?,
-      vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
-      vremePlacanja: map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null,
       voziloId: map['vozilo_id'] as String?,
       vozacId: map['vozac_id'] as String?,
       createdBy: map['created_by'] as String?,
@@ -121,9 +115,6 @@ class DnevniPutnik {
   final int brojMesta;
   final double cena;
   final DnevniPutnikStatus status;
-  final String? napomena;
-  final DateTime? vremePokupljenja;
-  final DateTime? vremePlacanja;
   final String? voziloId;
   final String? vozacId;
   final String? createdBy;
@@ -145,9 +136,6 @@ class DnevniPutnik {
       'broj_mesta': brojMesta,
       'cena': cena,
       'status': status.value,
-      'napomena': napomena,
-      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
-      'vreme_placanja': vremePlacanja?.toIso8601String(),
       'vozilo_id': voziloId,
       'vozac_id': vozacId,
       'created_by': createdBy,
@@ -160,10 +148,10 @@ class DnevniPutnik {
 
   String get punoIme => ime;
 
-  bool get jePokupljen => status == DnevniPutnikStatus.pokupljen || vremePokupljenja != null;
-  bool get jePlacen => vremePlacanja != null;
+  bool get jePokupljen => status == DnevniPutnikStatus.pokupljen;
+  bool get jePlacen => status == DnevniPutnikStatus.naplacen;
   bool get jeOtkazan => status == DnevniPutnikStatus.otkazan;
-  bool get jeOdsustvo => status == DnevniPutnikStatus.bolovanje || status == DnevniPutnikStatus.godisnji;
+  bool get jeOdsustvo => status == DnevniPutnikStatus.zavrsen; // završen status je najbliži odsustvu
 
   /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
   Putnik toPutnik(Adresa adresa, Ruta ruta) {
@@ -188,9 +176,7 @@ class DnevniPutnik {
                               ? 'sub'
                               : 'ned',
       status: status.value,
-      vremePokupljenja: vremePokupljenja,
-      vremePlacanja: vremePlacanja,
-      placeno: jePlacen,
+      placeno: isPlacen,
       cena: cena,
       naplatioVozac: actionLog.getVozacForAction(ActionType.paid),
       pokupioVozac: actionLog.getVozacForAction(ActionType.picked),
@@ -223,29 +209,29 @@ class DnevniPutnik {
 
   /// Proverava da li je putnik pokupljen
   bool get isPokupljen {
-    return status == DnevniPutnikStatus.pokupljen && vremePokupljenja != null;
+    return status == DnevniPutnikStatus.pokupljen;
   }
 
   /// Proverava da li je putnik plaćen
   bool get isPlacen {
-    return vremePlacanja != null && cena > 0;
+    return status == DnevniPutnikStatus.naplacen && cena > 0;
   }
 
   /// Vraća ljudski čitljiv status
   String get statusLabel {
     switch (status) {
-      case DnevniPutnikStatus.aktivno:
-        return 'Aktivno'; // ✅ DODANO: default vrednost iz baze
-      case DnevniPutnikStatus.rezervisan:
-        return 'Rezervisan';
+      case DnevniPutnikStatus.kreiran:
+        return 'Kreiran';
+      case DnevniPutnikStatus.ceka:
+        return 'Čeka';
+      case DnevniPutnikStatus.naplacen:
+        return 'Naplaćen';
       case DnevniPutnikStatus.pokupljen:
         return 'Pokupljen';
+      case DnevniPutnikStatus.zavrsen:
+        return 'Završen';
       case DnevniPutnikStatus.otkazan:
         return 'Otkazan';
-      case DnevniPutnikStatus.bolovanje:
-        return 'Bolovanje';
-      case DnevniPutnikStatus.godisnji:
-        return 'Godišnji odmor';
     }
   }
 
@@ -284,8 +270,6 @@ class DnevniPutnik {
       mesecnaKarta: false,
       dan: danKratica,
       status: status.value,
-      vremePokupljenja: vremePokupljenja,
-      vremePlacanja: vremePlacanja,
       placeno: isPlacen,
       cena: cena,
       naplatioVozac: actionLog.getVozacForAction(ActionType.paid),
@@ -315,9 +299,6 @@ class DnevniPutnik {
     int? brojMesta,
     double? cena,
     DnevniPutnikStatus? status,
-    String? napomena,
-    DateTime? vremePokupljenja,
-    DateTime? vremePlacanja,
     String? voziloId,
     String? vozacId,
     String? createdBy,
@@ -338,9 +319,6 @@ class DnevniPutnik {
       brojMesta: brojMesta ?? this.brojMesta,
       cena: cena ?? this.cena,
       status: status ?? this.status,
-      napomena: napomena ?? this.napomena,
-      vremePokupljenja: vremePokupljenja ?? this.vremePokupljenja,
-      vremePlacanja: vremePlacanja ?? this.vremePlacanja,
       voziloId: voziloId ?? this.voziloId,
       vozacId: vozacId ?? this.vozacId,
       createdBy: createdBy ?? this.createdBy,

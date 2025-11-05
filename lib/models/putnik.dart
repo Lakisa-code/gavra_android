@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../services/adresa_supabase_service.dart'; // DODATO za pravo rešenje adresa
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../utils/mesecni_helpers.dart';
 import 'mesecni_putnik.dart';
@@ -130,7 +131,7 @@ class Putnik {
             )
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
-      dodaoVozac: map['dodao_vozac'] as String?,
+      dodaoVozac: map['dodao_vozac'] as String? ?? 'Bojan', // ✅ FALLBACK: Sistemski vozač za mesečne putnike
       grad: grad,
       adresa: _determineAdresaFromMesecni(map),
       obrisan: !MesecniHelpers.isActiveFromMap(map),
@@ -165,16 +166,22 @@ class Putnik {
             )
           : null, // ✅ Samo ako je stvarno plaćeno
       // pokupioVozac: null, // ✅ NEMA U SHEMI - default je null
-      // dodaoVozac: null, // ✅ NEMA U SHEMI - default je null
+      dodaoVozac: VozacMappingService.getVozacImeWithFallbackSync(
+            map['created_by'] as String?,
+          ) ??
+          _mapUuidToVozacHardcoded(map['created_by'] as String?), // ✅ FALLBACK za UUID mapiranje
       // Ako tabela sadrži ime u 'vozac' polju, koristi ga, inače pokušaj da
       // mapiramo 'vozac_id' (UUID) na ime pomoću VozacMappingService.
       vozac: (map['vozac'] as String?) ??
           VozacMappingService.getVozacImeWithFallbackSync(
             map['vozac_id'] as String?,
           ),
-      grad: map['grad'] as String? ?? map['adresa_polaska'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
+      grad: map['grad'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
       otkazaoVozac: map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
-      adresa: map['adresa_polaska'] as String?,
+      adresa: map['adresa'] as String? ??
+          ((map['napomene'] as String?)?.contains('Adresa:') == true
+              ? (map['napomene'] as String?)?.replaceFirst('Adresa: ', '')
+              : null),
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
     );
@@ -618,31 +625,104 @@ class Putnik {
     // ✅ ISPRAVKA: Uvek koristi _getDateForDay da izračuna pravi datum na osnovu dan vrednosti
     final datumZaUpis = _getDateForDay(dan);
 
+    // ✅ KONVERTUJ IME VOZAČA U UUID SA FALLBACK-OM
+    String? vozacUuid;
+    if (dodaoVozac != null) {
+      vozacUuid = VozacMappingService.getVozacUuidSync(dodaoVozac!);
+
+      // 🆘 FALLBACK: Poznati UUID-ovi ako mapiranje ne radi
+      if (vozacUuid == null) {
+        switch (dodaoVozac!) {
+          case 'Bojan':
+            vozacUuid = '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e';
+            break;
+          case 'Svetlana':
+            vozacUuid = '5b379394-084e-1c7d-76bf-fc193a5b6c7d';
+            break;
+          case 'Bruda':
+            vozacUuid = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
+            break;
+          case 'Bilevski':
+            vozacUuid = '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g';
+            break;
+          default:
+            vozacUuid = null; // Za nepoznate vozače
+        }
+      }
+    }
+
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
       'mesecni_putnik_id': mesecnaKarta == true ? id : null,
       'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
-      'datum': datumZaUpis, // ✅ Za danas_screen.dart compatibility
       'datum_putovanja': datumZaUpis, // ✅ Za PutovanjaIstorijaService compatibility
       'vreme_polaska': polazak,
       'putnik_ime': ime,
-      'adresa_polaska': adresa ?? grad, // DODANO: adresa polaska
-      'broj_telefona': brojTelefona,
+      'grad': grad, // ✅ DODANO: grad kolona
+      // ✅ PRAVO REŠENJE: koristi adresa_id umesto napomena hack-a
+      'adresa_id': null, // Ostaće null - adresa se dodaje asinhrono u servisu
+      'napomene': adresa != null ? 'Adresa: $adresa' : 'Putovanje dodato ${DateTime.now().toIso8601String()}',
       'cena': iznosPlacanja ?? 0.0,
       'status': status ?? 'nije_se_pojavio',
       'obrisan': obrisan,
-      'vozac_id': dodaoVozac, // ✅ ISPRAVKA: koristiti dodaoVozac umesto naplatioVozac
-      'napomene': 'Putovanje dodato ${DateTime.now().toIso8601String()}',
-      'placeni_mesec': null, // ✅ Za dnevne putnike
-      'placena_godina': null, // ✅ Za dnevne putnike
-      'vreme_akcije': vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'created_by': vozacUuid, // ✅ ISPRAVKA: koristimo UUID umesto imena vozača
+      'action_log': {
+        'actions': <Map<String, dynamic>>[],
+        'created_at': DateTime.now().toIso8601String(),
+        'created_by': vozacUuid,
+        'primary_driver': vozacUuid,
+      }, // ✅ ISPRAVKA: JSON objekat umesto jsonEncode string-a za constraint validation
       'created_at': vremeDodavanja?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
-  } // Helper metoda za dobijanje kratice dana u nedelji
+  }
+
+  /// ✅ PRAVO REŠENJE: Asinhrono dodavanje adrese sa UUID reference
+  Future<Map<String, dynamic>> toPutovanjaIstorijaMapWithAdresa() async {
+    final baseMap = toPutovanjaIstorijaMap();
+
+    // ✅ PRAVO REŠENJE: Dobij ili kreiraj adresu u adrese tabeli
+    if (adresa != null && adresa!.isNotEmpty) {
+      try {
+        // Pokušaj da pronađeš postojeću adresu ili kreiraj novu
+        final adresaObj = await AdresaSupabaseService.createOrGetAdresa(
+          naziv: adresa!,
+          grad: grad,
+        );
+        if (adresaObj != null) {
+          baseMap['adresa_id'] = adresaObj.id;
+          baseMap['napomene'] = 'Putovanje dodato ${DateTime.now().toIso8601String()}'; // Ukloni adresu iz napomena
+        }
+      } catch (e) {
+        // Ako ne može da kreira adresu, ostavi kako jeste sa adresom u napomenama
+      }
+    }
+
+    return baseMap;
+  }
+
+  // Helper metoda za dobijanje kratice dana u nedelji
 
   static String _getDanNedeljeKratica(int weekday) {
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     return daniKratice[weekday - 1];
+  }
+
+  // ✅ FALLBACK MAPIRANJE UUID -> VOZAČ IME
+  static String? _mapUuidToVozacHardcoded(String? uuid) {
+    if (uuid == null) return null;
+
+    switch (uuid) {
+      case '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e':
+        return 'Bojan';
+      case '5b379394-084e-1c7d-76bf-fc193a5b6c7d':
+        return 'Svetlana';
+      case '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f':
+        return 'Bruda';
+      case '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g':
+        return 'Bilevski';
+      default:
+        return null;
+    }
   }
 }

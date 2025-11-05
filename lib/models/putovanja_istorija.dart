@@ -23,6 +23,7 @@ class PutovanjaIstorija {
     this.rutaId,
     this.voziloId,
     this.adresaId,
+    this.grad,
   }) : actionLog = actionLog ?? ActionLog.empty();
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
@@ -47,6 +48,7 @@ class PutovanjaIstorija {
       rutaId: map['ruta_id'] as String?,
       voziloId: map['vozilo_id'] as String?,
       adresaId: map['adresa_id'] as String?,
+      grad: map['grad'] as String?,
     );
   }
   final String id;
@@ -69,6 +71,7 @@ class PutovanjaIstorija {
   final String? rutaId;
   final String? voziloId;
   final String? adresaId;
+  final String? grad;
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {
@@ -92,6 +95,7 @@ class PutovanjaIstorija {
       'ruta_id': rutaId,
       'vozilo_id': voziloId,
       'adresa_id': adresaId,
+      'grad': grad,
     };
   }
 
@@ -114,6 +118,7 @@ class PutovanjaIstorija {
     String? rutaId,
     String? voziloId,
     String? adresaId,
+    String? grad,
   }) {
     return PutovanjaIstorija(
       id: id ?? this.id,
@@ -133,6 +138,7 @@ class PutovanjaIstorija {
       rutaId: rutaId ?? this.rutaId,
       voziloId: voziloId ?? this.voziloId,
       adresaId: adresaId ?? this.adresaId,
+      grad: grad ?? this.grad,
     );
   }
 

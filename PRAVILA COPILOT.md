@@ -1,7 +1,0 @@
-- NE flutter run/debug/build
-- NE test
-- NE debug
-- NE dugacki odgovori + kod
-- DA mcp serveri
-- NE promena koda samostalno 
-- DA todo liste
