@@ -180,11 +180,6 @@ class SlotUtils {
                            normalizedAdresa.contains('bela') || 
                            normalizedAdresa.contains('bc');
 
-        // 🐛 DEBUG: Privremeno log-ovanje za BC putnike
-        if (vreme == '6:00') {
-          print('🔍 [computeSlotCountsForDate] BC 6:00 putnik: ${p.ime}, grad="$grad", adresa="$adresa", jeBelaCrkva=$jeBelaCrkva');
-        }
-
         if (bcVremena.contains(vreme) && jeBelaCrkva) {
           // 🔍 DODATNA VALIDACIJA: Proveri da li je zaista BC 6:00 putnik
           if (vreme == '6:00') {
