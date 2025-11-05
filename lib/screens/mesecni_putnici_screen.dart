@@ -398,20 +398,25 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // Filter po aktivnosti (samo aktivni i ne obrisani)
       if (!putnik.aktivan || putnik.obrisan) return false;
 
-      // Filter po statusu (isključi bolovanje i godišnje ako nije eksplicitno traženo)
-      if (putnik.status == 'bolovanje' || putnik.status == 'godišnje') return false;
+      // ✅ POBOLJŠANO: Centralizovano filtriranje statusa
+      final status = putnik.status.toLowerCase().trim();
+      final invalidStatuses = ['bolovanje', 'godišnje', 'godisnji', 'obrisan', 'otkazan', 'otkazano'];
+      if (invalidStatuses.contains(status)) return false;
 
       // Filter po tipu
       if (filterType == 'radnik' && putnik.tip != 'radnik') return false;
       if (filterType == 'ucenik' && putnik.tip != 'ucenik') return false;
 
-      // Search filter
+      // ✅ POBOLJŠANO: Search filter sa boljom logikom
       if (searchTerm.isNotEmpty) {
         final searchLower = searchTerm.toLowerCase();
         final imeLower = putnik.putnikIme.toLowerCase();
         final tipSkoleLower = (putnik.tipSkole ?? '').toLowerCase();
+        final tipLower = putnik.tip.toLowerCase();
 
-        if (!imeLower.contains(searchLower) && !tipSkoleLower.contains(searchLower)) {
+        if (!(imeLower.contains(searchLower) ||
+            tipSkoleLower.contains(searchLower) ||
+            tipLower.contains(searchLower))) {
           return false;
         }
       }

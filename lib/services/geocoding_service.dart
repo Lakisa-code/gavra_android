@@ -1,71 +1,224 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cache_service.dart';
 import 'geocoding_stats_service.dart';
+import 'performance_optimizer_service.dart';
 
 class GeocodingService {
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
   static const String _cachePrefix = 'geocoding_';
 
-  // Pronađi koordinate za adresu - SA CACHE OPTIMIZACIJOM
+  // 🚀 BATCH PROCESSING VARIABLES
+  static final Map<String, Completer<String?>> _pendingRequests = {};
+  static final Set<String> _processingRequests = {};
+
+  // 🚀 OPTIMIZOVANA VERZIJA - SA BATCH PROCESSING
   static Future<String?> getKoordinateZaAdresu(
     String grad,
     String adresa,
   ) async {
-    // 🚫 PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vršac)
-    if (_isCityBlocked(grad)) {
-      return null;
-    }
+    final stopwatch = Stopwatch()..start();
 
-    final cacheKey = CacheKeys.geocoding('${grad}_$adresa');
-
-    // 1. Prvo proveri memory cache (najbrži)
-    final memoryCached = CacheService.getFromMemory<String>(
-      cacheKey,
-      maxAge: const Duration(hours: 6), // Koordinate se retko menjaju
-    );
-    if (memoryCached != null) {
-      await GeocodingStatsService.incrementCacheHits();
-      await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
-
-      return memoryCached;
-    }
-
-    // 2. Proveri disk cache
-    final diskCached = await CacheService.getFromDisk<String>(
-      cacheKey,
-      maxAge: const Duration(days: 7), // Koordinate su stabilne
-    );
-    if (diskCached != null) {
-      // Sacuvaj u memory za sledeći put
-      CacheService.saveToMemory(cacheKey, diskCached);
-      await GeocodingStatsService.incrementCacheHits();
-      await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
-      // Logger removed
-      return diskCached;
-    }
-
-    // 3. Pozovi API samo ako nema cache
     try {
-      await GeocodingStatsService.incrementApiCalls();
-      final coords = await _fetchFromNominatim(grad, adresa);
-      if (coords != null) {
-        // Sacuvaj u oba cache-a
-        CacheService.saveToMemory(cacheKey, coords);
-        await CacheService.saveToDisk(cacheKey, coords);
-        await GeocodingStatsService.addPopularLocation('${grad}_$adresa');
-        // Logger removed
-        return coords;
+      // 🚫 PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vršac)
+      if (_isCityBlocked(grad)) {
+        return null;
       }
-    } catch (e) {
-      // Logger removed
-    }
 
-    return null;
+      final requestKey = '${grad}_$adresa';
+
+      // 🔄 BATCH PROCESSING - Spreči duplikate zahteva
+      if (_processingRequests.contains(requestKey)) {
+        // Čekaj postojeći zahtev
+        if (_pendingRequests.containsKey(requestKey)) {
+          return await _pendingRequests[requestKey]!.future;
+        }
+      }
+
+      // Dodaj novi zahtev u queue
+      final completer = Completer<String?>();
+      _pendingRequests[requestKey] = completer;
+      _processingRequests.add(requestKey);
+
+      final cacheKey = CacheKeys.geocoding(requestKey);
+
+      // 1. Prvo proveri memory cache (najbrži)
+      final memoryCached = CacheService.getFromMemory<String>(
+        cacheKey,
+        maxAge: const Duration(hours: 6), // Koordinate se retko menjaju
+      );
+      if (memoryCached != null) {
+        await GeocodingStatsService.incrementCacheHits();
+        await GeocodingStatsService.addPopularLocation(requestKey);
+        _completeRequest(requestKey, memoryCached);
+        return memoryCached;
+      }
+
+      // 2. Proveri disk cache
+      final diskCached = await CacheService.getFromDisk<String>(
+        cacheKey,
+        maxAge: const Duration(days: 7), // Koordinate su stabilne
+      );
+      if (diskCached != null) {
+        // Sacuvaj u memory za sledeći put
+        CacheService.saveToMemory(cacheKey, diskCached);
+        await GeocodingStatsService.incrementCacheHits();
+        await GeocodingStatsService.addPopularLocation(requestKey);
+        _completeRequest(requestKey, diskCached);
+        return diskCached;
+      }
+
+      // 3. Pozovi API samo ako nema cache - SA BATCH OPTIMIZACIJOM
+      PerformanceOptimizerService.batchDatabaseOperation(
+        'geocoding_api_call',
+        () async {
+          try {
+            await GeocodingStatsService.incrementApiCalls();
+            final coords = await _fetchFromNominatim(grad, adresa);
+            if (coords != null) {
+              // Sacuvaj u oba cache-a
+              CacheService.saveToMemory(cacheKey, coords);
+              await CacheService.saveToDisk(cacheKey, coords);
+              await GeocodingStatsService.addPopularLocation(requestKey);
+              _completeRequest(requestKey, coords);
+            } else {
+              _completeRequest(requestKey, null);
+            }
+          } catch (e) {
+            _completeRequest(requestKey, null);
+          }
+        },
+      );
+
+      return await completer.future;
+    } finally {
+      stopwatch.stop();
+      PerformanceOptimizerService().trackOperation(
+        'geocoding_getKoordinateZaAdresu',
+        stopwatch.elapsed,
+      );
+    }
+  }
+
+  /// 🚀 BATCH GEOCODING - Optimizovano za velike količine adresa
+  static Future<Map<String, String?>> getKoordinateZaViseAdresa(
+    List<Map<String, String>> adrese, // {'grad': 'Vršac', 'adresa': 'Trg Pobede 1'}
+  ) async {
+    final stopwatch = Stopwatch()..start();
+    final results = <String, String?>{};
+
+    try {
+      // 📊 Grupiši po cache statusu
+      final fromCache = <String, String?>{};
+      final needsApi = <Map<String, String>>[];
+
+      for (final adresaData in adrese) {
+        final grad = adresaData['grad'] ?? '';
+        final adresa = adresaData['adresa'] ?? '';
+        final requestKey = '${grad}_$adresa';
+
+        if (_isCityBlocked(grad)) continue;
+
+        final cacheKey = CacheKeys.geocoding(requestKey);
+
+        // Proveri memory cache
+        final memoryCached = CacheService.getFromMemory<String>(
+          cacheKey,
+          maxAge: const Duration(hours: 6),
+        );
+
+        if (memoryCached != null) {
+          fromCache[requestKey] = memoryCached;
+          continue;
+        }
+
+        // Proveri disk cache
+        final diskCached = await CacheService.getFromDisk<String>(
+          cacheKey,
+          maxAge: const Duration(days: 7),
+        );
+
+        if (diskCached != null) {
+          CacheService.saveToMemory(cacheKey, diskCached);
+          fromCache[requestKey] = diskCached;
+          continue;
+        }
+
+        // Dodaj u listu za API pozive
+        needsApi.add(adresaData);
+      }
+
+      // 📈 Update stats za cache hits
+      if (fromCache.isNotEmpty) {
+        for (int i = 0; i < fromCache.length; i++) {
+          await GeocodingStatsService.incrementCacheHits();
+        }
+      }
+
+      results.addAll(fromCache);
+
+      // 🌐 Batch API pozivi sa rate limiting
+      if (needsApi.isNotEmpty) {
+        const int batchSize = 5; // Nominatim rate limit
+        const Duration delayBetweenBatches = Duration(seconds: 1);
+
+        for (int i = 0; i < needsApi.length; i += batchSize) {
+          final batch = needsApi.skip(i).take(batchSize).toList();
+          final batchResults = await Future.wait(
+            batch.map((adresaData) async {
+              final grad = adresaData['grad'] ?? '';
+              final adresa = adresaData['adresa'] ?? '';
+              final requestKey = '${grad}_$adresa';
+
+              try {
+                await GeocodingStatsService.incrementApiCalls();
+                final coords = await _fetchFromNominatim(grad, adresa);
+
+                if (coords != null) {
+                  final cacheKey = CacheKeys.geocoding(requestKey);
+                  CacheService.saveToMemory(cacheKey, coords);
+                  await CacheService.saveToDisk(cacheKey, coords);
+                  await GeocodingStatsService.addPopularLocation(requestKey);
+                }
+
+                return MapEntry(requestKey, coords);
+              } catch (e) {
+                return MapEntry(requestKey, null);
+              }
+            }),
+          );
+
+          // Dodaj batch rezultate
+          for (final entry in batchResults) {
+            results[entry.key] = entry.value;
+          }
+
+          // Pauza između batch-eva za rate limiting
+          if (i + batchSize < needsApi.length) {
+            await Future<void>.delayed(delayBetweenBatches);
+          }
+        }
+      }
+
+      return results;
+    } finally {
+      stopwatch.stop();
+      PerformanceOptimizerService().trackOperation(
+        'geocoding_batch_${adrese.length}',
+        stopwatch.elapsed,
+      );
+    }
+  }
+
+  // 🔄 HELPER - Complete pending request
+  static void _completeRequest(String requestKey, String? result) {
+    final completer = _pendingRequests.remove(requestKey);
+    _processingRequests.remove(requestKey);
+    completer?.complete(result);
   }
 
   // Pozovi Nominatim API sa retry logikom
@@ -77,8 +230,7 @@ class GeocodingService {
       try {
         final query = '$adresa, $grad, Serbia';
         final encodedQuery = Uri.encodeComponent(query);
-        final url =
-            '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
+        final url = '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
 
         final response = await http.get(
           Uri.parse(url),
@@ -88,8 +240,7 @@ class GeocodingService {
         ).timeout(timeout);
 
         if (response.statusCode == 200) {
-          final List<dynamic> results =
-              json.decode(response.body) as List<dynamic>;
+          final List<dynamic> results = json.decode(response.body) as List<dynamic>;
 
           if (results.isNotEmpty) {
             final result = results[0];
@@ -149,10 +300,7 @@ class GeocodingService {
   static Future<int> getCacheCount() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs
-          .getKeys()
-          .where((key) => key.startsWith(_cachePrefix))
-          .length;
+      return prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).length;
     } catch (e) {
       return 0;
     }
@@ -172,8 +320,7 @@ class GeocodingService {
       'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
     return !allowedCities.any(
-      (allowed) =>
-          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+      (allowed) => normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
     );
   }
 }

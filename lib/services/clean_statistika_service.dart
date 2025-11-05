@@ -1,17 +1,14 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../globals.dart';
 
 /// Čisti StatistikaService koji izbegava duplikate
 /// Koristi samo mesecni_putnici kao primarni izvor
 class CleanStatistikaService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
-
   /// Dohvati ukupne statistike (samo iz mesecni_putnici)
   static Future<Map<String, dynamic>> dohvatiUkupneStatistike() async {
-    final mesecniPutnici =
-        await _supabase.from('mesecni_putnici').select().eq('obrisan', false);
+    final mesecniPutnici = await supabase.from('mesecni_putnici').select().eq('obrisan', false);
 
     // Standalone putovanja (bez mesecni_putnik_id)
-    final standalonePutovanja = await _supabase
+    final standalonePutovanja = await supabase
         .from('putovanja_istorija')
         .select()
         .eq('obrisan', false)
@@ -44,11 +41,8 @@ class CleanStatistikaService {
   }
 
   /// Dohvati mesečne statistike
-  static Future<Map<String, dynamic>> dohvatiMesecneStatistike(
-    int mesec,
-    int godina,
-  ) async {
-    final mesecniPutnici = await _supabase
+  static Future<Map<String, dynamic>> dohvatiMesecneStatistike(int mesec, int godina) async {
+    final mesecniPutnici = await supabase
         .from('mesecni_putnici')
         .select()
         .eq('obrisan', false)
@@ -73,13 +67,13 @@ class CleanStatistikaService {
 
   /// Lista svih putnika bez duplikata
   static Future<List<Map<String, dynamic>>> dohvatiSvePutnikeClean() async {
-    final mesecniPutnici = await _supabase
+    final mesecniPutnici = await supabase
         .from('mesecni_putnici')
         .select()
         .eq('obrisan', false)
         .order('datum_placanja', ascending: false);
 
-    final standalonePutovanja = await _supabase
+    final standalonePutovanja = await supabase
         .from('putovanja_istorija')
         .select()
         .eq('obrisan', false)

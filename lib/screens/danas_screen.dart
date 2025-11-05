@@ -245,12 +245,10 @@ class _DanasScreenState extends State<DanasScreen> {
   Future<Map<String, int>> _calculateDjackieBrojeviAsync() async {
     try {
       final danasnjiDan = _getTodayForDatabase();
-      print('🔍 DEBUG: Trenutni dan = $danasnjiDan'); // DEBUG
 
       // Direktno dohvati mesečne putnike iz baze da imamo pristup tip informaciji
       final service = MesecniPutnikService();
       final sviMesecniPutnici = await service.getAktivniMesecniPutnici();
-      print('🔍 DEBUG: Ukupno mesečnih putnika iz baze = ${sviMesecniPutnici.length}'); // DEBUG
 
       // 🔧 REORGANIZOVANA LOGIKA: Prvo filtriraj osnovne kriterijume, zatim računaj status unutar
       final djaci = sviMesecniPutnici.where((MesecniPutnik mp) {
@@ -262,19 +260,8 @@ class _DanasScreenState extends State<DanasScreen> {
         final jeUcenik = tipLower == 'ucenik' || tipLower == 'učenik' || tipLower == 'djak' || tipLower == 'student';
         // 🔧 UKLONJEN status filter - računaću status unutar glavne logike
 
-        // 🔍 DEBUG: Logiraj svaki filter za prvi putnik
-        if (sviMesecniPutnici.indexOf(mp) == 0) {
-          print('🔍 DEBUG: Prvi putnik - ${mp.putnikIme}');
-          print('  radniDani: ${mp.radniDani} -> split: $radniDaniList');
-          print('  dayMatch: $dayMatch (tražim: $danasnjiDan)');
-          print('  tip: ${mp.tip} -> jeUcenik: $jeUcenik');
-          print('  status: ${mp.status}');
-        }
-
         return dayMatch && jeUcenik;
       }).toList();
-
-      print('🔍 DEBUG: Filtriranih učenika = ${djaci.length}'); // DEBUG
 
       // FINALNA LOGIKA: OSTALO/UKUPNO
       int ukupnoUjutro = 0; // ukupno učenika koji idu ujutro (Bela Crkva)
@@ -311,12 +298,6 @@ class _DanasScreenState extends State<DanasScreen> {
       // RAČUNAJ OSTALO
       final ostalo = ukupnoUjutro - reseniUcenici - otkazaliUcenici;
 
-      print('🔍 DEBUG: FINALNI REZULTAT:'); // DEBUG
-      print('  ukupnoUjutro: $ukupnoUjutro');
-      print('  reseniUcenici: $reseniUcenici');
-      print('  otkazaliUcenici: $otkazaliUcenici');
-      print('  ostalo: $ostalo');
-
       return {
         'ukupno_ujutro': ukupnoUjutro, // 30 - ukupno koji idu ujutro
         'reseni': reseniUcenici, // 15 - upisani za oba pravca
@@ -324,7 +305,6 @@ class _DanasScreenState extends State<DanasScreen> {
         'ostalo': ostalo, // 10 - ostalo da se vrati
       };
     } catch (e) {
-      print('🔍 DEBUG: GREŠKA u _calculateDjackieBrojeviAsync: $e'); // DEBUG
       return {
         'ukupno': 0,
         'povratak': 0,
@@ -982,10 +962,10 @@ class _DanasScreenState extends State<DanasScreen> {
   bool _isLoading = false;
 
   Future<void> _loadPutnici() async {
-    if (mounted) if (mounted) setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     // Osloni se na stream, ali možeš ovde dodati logiku za ručno osvežavanje ako bude potrebno
     await Future<void>.delayed(const Duration(milliseconds: 100)); // simulacija
-    if (mounted) if (mounted) setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   // _filteredDuznici već postoji, ne treba duplirati
@@ -1314,6 +1294,17 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 DANAS SCREEN PRIKAZUJE SAMO TRENUTNI DAN - ne prebacuje na Ponedeljak
     return todayName;
+  }
+
+  // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - konvertuj ISO datum u kraći dan
+  String _isoDateToDayAbbr(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      return dani[date.weekday - 1];
+    } catch (e) {
+      return 'pon'; // fallback
+    }
   }
 
   // ✅ SINHRONIZACIJA SA HOME SCREEN - postavi trenutno vreme i grad
@@ -2353,7 +2344,7 @@ class _DanasScreenState extends State<DanasScreen> {
               '13:00': 0,
               '14:00': 0,
               '15:30': 0,
-              '18:00': 0
+              '18:00': 0,
             };
             final Map<String, int> brojPutnikaVS = {
               '6:00': 0,
@@ -2366,17 +2357,27 @@ class _DanasScreenState extends State<DanasScreen> {
               '14:00': 0,
               '15:30': 0,
               '17:00': 0,
-              '19:00': 0
+              '19:00': 0,
             };
 
             for (final p in allPutnici) {
               if (!TextUtils.isStatusActive(p.status)) continue;
 
-              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-              final normAdresa = (p.adresa ?? '').toLowerCase();
+              // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - filtriraj po danu uzimajući u obzir i p.datum
+              final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
+              final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
+              final dayMatch = p.datum != null
+                  ? p.datum == targetDateIso
+                  : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+              if (!dayMatch) continue;
 
-              final jeBelaCrkva = normAdresa.contains('bela') || normAdresa.contains('bc');
-              final jeVrsac = normAdresa.contains('vrsac') || normAdresa.contains('vs');
+              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+              // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka
+              final putnikGrad = p.grad.toLowerCase();
+
+              final jeBelaCrkva =
+                  putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
+              final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
 
               if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
                 brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
@@ -2385,10 +2386,6 @@ class _DanasScreenState extends State<DanasScreen> {
                 brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
               }
             }
-
-            print('📅 DANAS: BC 6:00 = ${brojPutnikaBC['6:00']}');
-            print('📅 DANAS: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');
-            print('📅 DANAS: Ukupno putnika u listi = ${allPutnici.length}');
 
             int getPutnikCount(String grad, String vreme) {
               if (grad == 'Bela Crkva') return brojPutnikaBC[vreme] ?? 0;

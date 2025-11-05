@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 🌐 GLOBALNE VARIJABLE ZA GAVRA ANDROID
 ///
@@ -11,3 +12,7 @@ import 'package:flutter/material.dart';
 /// - notification_navigation_service.dart - za navigaciju iz notifikacija
 /// - local_notification_service.dart - za pristup context-u u background-u
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// Globalna instanca Supabase klijenta
+/// Koristi se u svim servisima umesto kreiranja novih instanci
+final SupabaseClient supabase = Supabase.instance.client;

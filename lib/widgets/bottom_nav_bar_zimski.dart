@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../services/theme_manager.dart';
 import '../theme.dart';
-import '../utils/slot_utils.dart';
 
 class BottomNavBarZimski extends StatefulWidget {
   const BottomNavBarZimski({
@@ -109,8 +108,32 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
 
   @override
   Widget build(BuildContext context) {
-    const List<String> bcVremena = SlotUtils.bcVremena;
-    const List<String> vsVremena = SlotUtils.vsVremena;
+    const List<String> bcVremena = [
+      '5:00',
+      '6:00',
+      '7:00',
+      '8:00',
+      '9:00',
+      '11:00',
+      '12:00',
+      '13:00',
+      '14:00',
+      '15:30',
+      '18:00',
+    ];
+    const List<String> vsVremena = [
+      '6:00',
+      '7:00',
+      '8:00',
+      '10:00',
+      '11:00',
+      '12:00',
+      '13:00',
+      '14:00',
+      '15:30',
+      '17:00',
+      '19:00',
+    ];
     final currentThemeId = ThemeManager().currentThemeId;
 
     return Container(

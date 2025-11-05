@@ -370,11 +370,11 @@ class Putnik {
     }
 
     // Čitaj vremena za targetDan koristeći helpers koji kombinuju JSON i stare kolone
-    final polazakBC = MesecniHelpers.getPolazakForDay(map, targetDan, 'bc') ?? '6:00';
-    final polazakVS = MesecniHelpers.getPolazakForDay(map, targetDan, 'vs') ?? '14:00';
+    final polazakBC = MesecniHelpers.getPolazakForDay(map, targetDan, 'bc');
+    final polazakVS = MesecniHelpers.getPolazakForDay(map, targetDan, 'vs');
 
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
-    if (polazakBC.isNotEmpty && polazakBC != '00:00:00') {
+    if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
@@ -418,7 +418,7 @@ class Putnik {
     }
 
     // Kreiraj putnik za Vršac ako ima polazak za targetDan
-    if (polazakVS.isNotEmpty && polazakVS != '00:00:00') {
+    if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
@@ -495,10 +495,18 @@ class Putnik {
     return vremeString;
   }
 
-  // HELPER METODE za mapiranje (legacy methods removed)
+  // HELPER METODE za mapiranje
   static String _determineGradFromMesecni(Map<String, dynamic> map) {
-    // Use normalized schema - check adresa_id or similar field
-    return 'Bela Crkva'; // default fallback
+    // Proverava adrese da odredi grad
+    final adresaVS = map['adresa_vrsac'] as String?;
+
+    // Ako ima adresu u Vršcu, to je Vršac
+    if (adresaVS != null && adresaVS.trim().isNotEmpty) {
+      return 'Vršac';
+    }
+
+    // Ako nema adresu u Vršcu, default je Bela Crkva
+    return 'Bela Crkva';
   }
 
   static String? _determineAdresaFromMesecni(Map<String, dynamic> map) {

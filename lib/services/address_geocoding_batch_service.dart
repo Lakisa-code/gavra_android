@@ -1,30 +1,20 @@
-import 'package:gavra_android/services/geocoding_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../globals.dart';
+import 'geocoding_service.dart';
 
 /// Servis za masovno dodavanje GPS koordinata u adrese tabelu
 /// Koristi GeocodingService i automatski ažurira bazu podataka
 class AddressGeocodingBatchService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
-
   /// Dodaj GPS koordinate za sve adrese bez koordinata
   static Future<void> geocodeAllMissingAddresses() async {
     try {
-      print('🌍 Započinje batch geocoding svih adresa...');
-
       // 1. Uzmi sve adrese bez koordinata
-      final response =
-          await _supabase.from('adrese').select('id, naziv, grad, koordinate').isFilter('koordinate', null);
+      final response = await supabase.from('adrese').select('id, naziv, grad, koordinate').isFilter('koordinate', null);
 
       final List<dynamic> adrese = response as List<dynamic>;
-      print('📍 Pronađeno ${adrese.length} adresa bez koordinata');
 
       if (adrese.isEmpty) {
-        print('✅ Sve adrese već imaju koordinate!');
         return;
       }
-
-      int uspesne = 0;
-      int neuspesne = 0;
 
       // 2. Geocoding za svaku adresu
       for (int i = 0; i < adrese.length; i++) {
@@ -32,8 +22,6 @@ class AddressGeocodingBatchService {
         final id = adresa['id'];
         final naziv = adresa['naziv'];
         final grad = adresa['grad'];
-
-        print('🔍 Geocoding ${i + 1}/${adrese.length}: $naziv, $grad');
 
         // Koristi postojeći GeocodingService
         final koordinateString = await GeocodingService.getKoordinateZaAdresu(
@@ -50,24 +38,19 @@ class AddressGeocodingBatchService {
 
             if (lat != null && lng != null) {
               // Sačuvaj u bazu kao JSONB
-              await _supabase.from('adrese').update({
-                'koordinate': {'lat': lat, 'lng': lng},
-                'updated_at': DateTime.now().toIso8601String(),
-              }).eq('id', id.toString());
-
-              uspesne++;
-              print('✅ Uspešno: $naziv → $lat, $lng');
-            } else {
-              neuspesne++;
-              print('❌ Neispravne koordinate: $naziv → $koordinateString');
+              await supabase
+                  .from('adrese')
+                  .update({
+                    'koordinate': {'lat': lat, 'lng': lng},
+                    'updated_at': DateTime.now().toIso8601String(),
+                  })
+                  .eq('id', id.toString());
             }
           } else {
-            neuspesne++;
-            print('❌ Neispravne koordinate format: $naziv → $koordinateString');
+            // Neispravne koordinate format
           }
         } else {
-          neuspesne++;
-          print('❌ Geocoding failed: $naziv, $grad');
+          // Geocoding failed
         }
 
         // Poštuj rate limiting - 1 sekunda između zahteva
@@ -75,13 +58,7 @@ class AddressGeocodingBatchService {
           await Future<void>.delayed(const Duration(seconds: 1));
         }
       }
-
-      print('\n📊 BATCH GEOCODING ZAVRŠEN:');
-      print('✅ Uspešne: $uspesne');
-      print('❌ Neuspešne: $neuspesne');
-      print('📍 Ukupno: ${uspesne + neuspesne}');
     } catch (e) {
-      print('❌ Greška tokom batch geocoding: $e');
       rethrow;
     }
   }
@@ -89,7 +66,7 @@ class AddressGeocodingBatchService {
   /// Proverava status geocoding za sve adrese
   static Future<Map<String, dynamic>> getGeocodingStatus() async {
     try {
-      final response = await _supabase.from('adrese').select('id, naziv, grad, koordinate');
+      final response = await supabase.from('adrese').select('id, naziv, grad, koordinate');
 
       final List<dynamic> adrese = response as List<dynamic>;
 
@@ -117,32 +94,23 @@ class AddressGeocodingBatchService {
         'status_po_gradovima': statusPoGradovima,
       };
     } catch (e) {
-      print('❌ Greška pri dobijanju geocoding statusa: $e');
-      return {
-        'error': e.toString(),
-      };
+      return {'error': e.toString()};
     }
   }
 
   /// Ponovo pokušaj geocoding samo za neuspešne adrese
   static Future<void> retryFailedGeocoding() async {
-    print('🔄 Ponavljam geocoding za neuspešne adrese...');
     await geocodeAllMissingAddresses();
   }
 
   /// Briše sve GPS koordinate (za testing)
   static Future<void> clearAllCoordinates() async {
     try {
-      print('🗑️ Brišem sve GPS koordinate...');
-
-      await _supabase.from('adrese').update({
-        'koordinate': null,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).neq('id', ''); // Update sve adrese
-
-      print('✅ Sve koordinate obrisane');
+      await supabase
+          .from('adrese')
+          .update({'koordinate': null, 'updated_at': DateTime.now().toIso8601String()})
+          .neq('id', ''); // Update sve adrese
     } catch (e) {
-      print('❌ Greška pri brisanju koordinata: $e');
       rethrow;
     }
   }

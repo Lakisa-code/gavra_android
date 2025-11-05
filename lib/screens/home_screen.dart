@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
@@ -45,7 +44,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Logging using dlog function from logging.dart
   final PutnikService _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
-  final SupabaseClient supabase = Supabase.instance.client;
 
   bool _isLoading = true;
   bool _isAddingPutnik = false; // DODANO za loading state kad se dodaje putnik
@@ -70,20 +68,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Note: FailFastStreamManagerNew and NetworkStatus will be integrated later
   StreamSubscription<dynamic>? _networkStatusSubscription;
 
-  final List<String> _dani = [
-    'Ponedeljak',
-    'Utorak',
-    'Sreda',
-    'Četvrtak',
-    'Petak',
-  ];
+  // 📅 Jednostavna konverzija ISO datuma u dan u nedelji
+  String _isoDateToDayAbbr(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      return dani[date.weekday - 1];
+    } catch (e) {
+      return 'pon'; // fallback
+    }
+  }
+
+  final List<String> _dani = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak'];
 
   // 🕐 VREMENA ZA DROPDOWN
-  final List<String> bcVremena = SlotUtils.bcVremena;
+  final List<String> bcVremena = [
+    '5:00',
+    '6:00',
+    '7:00',
+    '8:00',
+    '9:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:30',
+    '18:00',
+  ];
 
-  final List<String> vsVremena = SlotUtils.vsVremena;
+  final List<String> vsVremena = [
+    '6:00',
+    '7:00',
+    '8:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:30',
+    '17:00',
+    '19:00',
+  ];
 
-// Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - ZIMSKI RASPORED
+  // Kompletna lista polazaka za BottomNavBar (bez "Svi polasci") - ZIMSKI RASPORED
   final List<String> _sviPolasci = [
     '5:00 Bela Crkva',
     '6:00 Bela Crkva',
@@ -375,21 +402,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             width: 90,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.white70,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.white70),
             ),
           ),
         ],
@@ -405,18 +424,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.dangerPrimary.withOpacity(0.5),
-            width: 2,
-          ),
+          side: BorderSide(color: Theme.of(context).colorScheme.dangerPrimary.withOpacity(0.5), width: 2),
         ),
         title: Column(
           children: [
-            Icon(
-              Icons.logout,
-              color: Theme.of(context).colorScheme.error,
-              size: 40,
-            ),
+            Icon(Icons.logout, color: Theme.of(context).colorScheme.error, size: 40),
             const SizedBox(height: 12),
             Text(
               'Logout',
@@ -430,26 +442,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         content: Text(
           'Da li ste sigurni da se želite odjaviti?',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-            fontSize: 16,
-          ),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), fontSize: 16),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Otkaži',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Otkaži', style: TextStyle(color: Colors.grey)),
           ),
           HapticElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Theme.of(context).colorScheme.onError,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             hapticType: HapticType.medium,
             onPressed: () => Navigator.of(context).pop(true),
@@ -496,10 +500,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               gradient: Theme.of(context).backgroundGradient,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(context).glassBorder,
-                width: 1.5,
-              ),
+              border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
@@ -518,23 +519,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Theme.of(context).glassContainer,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).glassBorder,
-                      ),
-                    ),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                    border: Border(bottom: BorderSide(color: Theme.of(context).glassBorder)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.person_add_alt_1,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      const Icon(Icons.person_add_alt_1, color: Colors.white, size: 28),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
@@ -543,13 +533,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fontSize: 22,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
+                            shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                           ),
                         ),
                       ),
@@ -561,15 +545,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Colors.red.withOpacity(0.4),
-                            ),
+                            border: Border.all(color: Colors.red.withOpacity(0.4)),
                           ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 20),
                         ),
                       ),
                     ],
@@ -590,9 +568,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: Theme.of(context).glassContainer,
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Theme.of(context).glassBorder,
-                            ),
+                            border: Border.all(color: Theme.of(context).glassBorder),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -610,13 +586,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   fontSize: 16,
-                                  shadows: [
-                                    Shadow(
-                                      offset: Offset(1, 1),
-                                      blurRadius: 3,
-                                      color: Colors.black54,
-                                    ),
-                                  ],
+                                  shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -636,9 +606,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: Theme.of(context).glassContainer,
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Theme.of(context).glassBorder,
-                            ),
+                            border: Border.all(color: Theme.of(context).glassBorder),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -656,13 +624,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   fontSize: 16,
-                                  shadows: [
-                                    Shadow(
-                                      offset: Offset(1, 1),
-                                      blurRadius: 3,
-                                      color: Colors.black54,
-                                    ),
-                                  ],
+                                  shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -687,21 +649,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       dropdownColor: Theme.of(context).colorScheme.surface,
                                       value: imeController.text.trim().isEmpty
                                           ? null
-                                          : (dozvoljenaImena.contains(
-                                              imeController.text.trim(),
-                                            )
+                                          : (dozvoljenaImena.contains(imeController.text.trim())
                                               ? imeController.text.trim()
                                               : null),
                                       decoration: InputDecoration(
                                         labelText: 'Mesečni putnik',
                                         hintText: 'Izaberite putnika...',
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        prefixIcon: Icon(
-                                          Icons.person,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                        prefixIcon: Icon(Icons.person, color: Theme.of(context).colorScheme.primary),
                                         fillColor: Theme.of(context).colorScheme.surface,
                                         filled: true,
                                       ),
@@ -709,10 +664,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           .map(
                                             (String ime) => DropdownMenuItem(
                                               value: ime,
-                                              child: Text(
-                                                ime,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
+                                              child: Text(ime, overflow: TextOverflow.ellipsis),
                                             ),
                                           )
                                           .toList(),
@@ -761,17 +713,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   decoration: BoxDecoration(
                                     color: Colors.green.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: Colors.green.withOpacity(0.3),
-                                    ),
+                                    border: Border.all(color: Colors.green.withOpacity(0.3)),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(
-                                        Icons.route,
-                                        color: Colors.green,
-                                        size: 16,
-                                      ),
+                                      const Icon(Icons.route, color: Colors.green, size: 16),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -799,9 +745,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: Theme.of(context).glassContainer,
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Theme.of(context).glassBorder,
-                            ),
+                            border: Border.all(color: Theme.of(context).glassBorder),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -820,16 +764,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.white.withOpacity(0.2),
-                                      Colors.white.withOpacity(0.1),
-                                    ],
+                                    colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.1)],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.3),
-                                    width: 1.5,
-                                  ),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.1),
@@ -843,11 +781,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   children: [
                                     const Text(
                                       'Mesečna karta',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
                                     ),
                                     GestureDetector(
                                       onTap: () {
@@ -863,14 +797,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             colors: mesecnaKarta
-                                                ? [
-                                                    Colors.green.withOpacity(0.8),
-                                                    Colors.green,
-                                                  ]
-                                                : [
-                                                    Colors.white.withOpacity(0.3),
-                                                    Colors.white.withOpacity(0.1),
-                                                  ],
+                                                ? [Colors.green.withOpacity(0.8), Colors.green]
+                                                : [Colors.white.withOpacity(0.3), Colors.white.withOpacity(0.1)],
                                           ),
                                           borderRadius: BorderRadius.circular(14),
                                           border: Border.all(
@@ -913,20 +841,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   decoration: BoxDecoration(
                                     color: Colors.orange.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: Colors.orange.withOpacity(0.3),
-                                    ),
+                                    border: Border.all(color: Colors.orange.withOpacity(0.3)),
                                   ),
                                   child: const Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(
-                                            Icons.info_outline,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
+                                          Icon(Icons.info_outline, color: Colors.white, size: 14),
                                           SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
@@ -961,11 +883,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       bottomLeft: Radius.circular(20),
                       bottomRight: Radius.circular(20),
                     ),
-                    border: Border(
-                      top: BorderSide(
-                        color: Theme.of(context).glassBorder,
-                      ),
-                    ),
+                    border: Border(top: BorderSide(color: Theme.of(context).glassBorder)),
                   ),
                   child: Row(
                     children: [
@@ -976,9 +894,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Colors.red.withOpacity(0.4),
-                            ),
+                            border: Border.all(color: Colors.red.withOpacity(0.4)),
                           ),
                           child: TextButton(
                             onPressed: () => Navigator.pop(context),
@@ -988,13 +904,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(1, 1),
-                                    blurRadius: 3,
-                                    color: Colors.black54,
-                                  ),
-                                ],
+                                shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                               ),
                             ),
                           ),
@@ -1010,9 +920,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: Colors.green.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Colors.green.withOpacity(0.6),
-                            ),
+                            border: Border.all(color: Colors.green.withOpacity(0.6)),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.2),
@@ -1027,9 +935,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                             ),
                             onPressed: _isAddingPutnik
                                 ? null
@@ -1045,9 +951,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     }
 
                                     // 🚫 VALIDACIJA GRADA
-                                    if (GradAdresaValidator.isCityBlocked(
-                                      _selectedGrad,
-                                    )) {
+                                    if (GradAdresaValidator.isCityBlocked(_selectedGrad)) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
@@ -1062,10 +966,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     // 🏘️ VALIDACIJA ADRESE
                                     final adresa = adresaController.text.trim();
                                     if (adresa.isNotEmpty &&
-                                        !GradAdresaValidator.validateAdresaForCity(
-                                          adresa,
-                                          _selectedGrad,
-                                        )) {
+                                        !GradAdresaValidator.validateAdresaForCity(adresa, _selectedGrad)) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
@@ -1078,10 +979,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     }
 
                                     // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
-                                    if (mesecnaKarta &&
-                                        !dozvoljenaImena.contains(
-                                          imeController.text.trim(),
-                                        )) {
+                                    if (mesecnaKarta && !dozvoljenaImena.contains(imeController.text.trim())) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Column(
@@ -1090,18 +988,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             children: [
                                               const Text(
                                                 '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                                style: TextStyle(fontWeight: FontWeight.bold),
                                               ),
                                               const SizedBox(height: 4),
-                                              const Text(
-                                                'Možete dodati samo POSTOJEĆE mesečne putnike.',
-                                              ),
+                                              const Text('Možete dodati samo POSTOJEĆE mesečne putnike.'),
                                               const SizedBox(height: 4),
-                                              const Text(
-                                                'Za NOVE mesečne putnike idite na:',
-                                              ),
+                                              const Text('Za NOVE mesečne putnike idite na:'),
                                               const SizedBox(height: 2),
                                               Row(
                                                 children: [
@@ -1113,9 +1005,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                                   const SizedBox(width: 4),
                                                   const Text(
                                                     'Meni → Mesečni putnici',
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
+                                                    style: TextStyle(fontWeight: FontWeight.bold),
                                                   ),
                                                 ],
                                               ),
@@ -1131,9 +1021,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     if (_selectedVreme.isEmpty || _selectedGrad.isEmpty) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text(
-                                            '❌ Greška: Nije odabrano vreme polaska',
-                                          ),
+                                          content: Text('❌ Greška: Nije odabrano vreme polaska'),
                                           backgroundColor: Colors.red,
                                         ),
                                       );
@@ -1208,9 +1096,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // ignore: use_build_context_synchronously
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
-                                            content: Text(
-                                              '✅ Putnik je uspešno dodat',
-                                            ),
+                                            content: Text('✅ Putnik je uspešno dodat'),
                                             backgroundColor: Colors.green,
                                             duration: Duration(seconds: 2),
                                           ),
@@ -1228,9 +1114,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // ignore: use_build_context_synchronously
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text(
-                                              '❌ Greška pri dodavanju: $e',
-                                            ),
+                                            content: Text('❌ Greška pri dodavanju: $e'),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
@@ -1244,20 +1128,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       const SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                        ),
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                                       ),
                                       const SizedBox(width: 8),
                                       Container(
                                         decoration: const BoxDecoration(
                                           boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black54,
-                                              offset: Offset(1, 1),
-                                              blurRadius: 3,
-                                            ),
+                                            BoxShadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 3),
                                           ],
                                         ),
                                         child: const Text(
@@ -1274,11 +1151,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 : const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        Icons.add_circle,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
+                                      Icon(Icons.add_circle, color: Colors.white, size: 20),
                                       SizedBox(width: 8),
                                       Text(
                                         'Dodaj',
@@ -1286,13 +1159,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           color: Colors.white,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 16,
-                                          shadows: [
-                                            Shadow(
-                                              offset: Offset(1, 1),
-                                              blurRadius: 3,
-                                              color: Colors.black54,
-                                            ),
-                                          ],
+                                          shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                                         ),
                                       ),
                                     ],
@@ -1321,10 +1188,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Container(
             decoration: BoxDecoration(
               gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)),
               boxShadow: [
                 BoxShadow(
                   color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
@@ -1356,13 +1220,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fontWeight: FontWeight.w800,
                             color: Theme.of(context).colorScheme.onPrimary,
                             letterSpacing: 0.5,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
-                              ),
-                            ],
+                            shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                           ),
                         ),
                       ),
@@ -1373,10 +1231,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       flex: 2,
                       child: Container(
                         height: 35,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(18),
@@ -1390,9 +1245,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Theme.of(context).colorScheme.onPrimary,
-                                ),
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -1413,12 +1266,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
 
                     // PRAZAN PROSTOR - desno
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        height: 35,
-                      ),
-                    ),
+                    Expanded(flex: 3, child: Container(height: 35)),
                   ],
                 ),
               ),
@@ -1467,9 +1315,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // 🔧 POPRAVLJENO: StreamBuilder umesto FutureBuilder za reaktivno ažuriranje
     return StreamBuilder<List<Putnik>>(
       stream: Stream.fromFuture(
-        _putnikService.getAllPutniciFromBothTables(
-          targetDay: _selectedDay,
-        ),
+        _putnikService.getAllPutniciFromBothTables(targetDay: _selectedDay),
       ).asBroadcastStream(),
       builder: (context, snapshot) {
         // 🚨 DEBUG: Log state information
@@ -1526,7 +1372,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         // Get target day abbreviation for additional filtering
         final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
-        final targetDayAbbr = SlotUtils.isoDateToDayAbbr(targetDateIso);
+        final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
 
         // Additional client-side filtering like danas_screen
         Iterable<Putnik> filtered = allPutnici.where((p) {
@@ -1553,13 +1399,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
           final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
           final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
-          final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
-            putnik.grad,
-            putnik.adresa,
-            _selectedGrad,
-          );
-          final odgovarajuceVreme =
-              GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
+          final odgovarajuciGrad = GradAdresaValidator.isGradMatch(putnik.grad, putnik.adresa, _selectedGrad);
+          final odgovarajuceVreme = () {
+            final putnikVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
+            final selektovanoVreme = GradAdresaValidator.normalizeTime(_selectedVreme);
+            final match = putnikVreme == selektovanoVreme;
+            return match;
+          }();
           final prikazi = imaVreme &&
               imaGrad &&
               imaDan &&
@@ -1612,11 +1458,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         for (final p in allPutnici) {
           if (!TextUtils.isStatusActive(p.status)) continue;
 
-          final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-          final normAdresa = (p.adresa ?? '').toLowerCase();
+          // 🔧 DODANO: Filtriraj po danu kao što radi i główny StreamBuilder
+          final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
+          final dayMatch =
+              p.datum != null ? p.datum == targetDateIso : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+          if (!dayMatch) continue;
 
-          final jeBelaCrkva = normAdresa.contains('bela') || normAdresa.contains('bc');
-          final jeVrsac = normAdresa.contains('vrsac') || normAdresa.contains('vs');
+          final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+          // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka
+          final putnikGrad = p.grad.toLowerCase();
+
+          final jeBelaCrkva = putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
+          final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
 
           if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
             brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
@@ -1625,9 +1478,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
           }
         }
-
-        print('🏠 HOME: BC 6:00 = ${brojPutnikaBC['6:00']}');
-        print('🏠 HOME: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');
 
         // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
         List<Putnik> sortiraniPutnici(List<Putnik> lista) {
@@ -1692,16 +1542,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           // Fallback: brzo prebroj ako grad nije standardan
           return allPutnici.where((putnik) {
-            final gradMatch = GradAdresaValidator.isGradMatch(
-              putnik.grad,
-              putnik.adresa,
-              grad,
-            );
+            final gradMatch = GradAdresaValidator.isGradMatch(putnik.grad, putnik.adresa, grad);
             final vremeMatch = _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
             final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
-            final normalizedDanBaza = GradAdresaValidator.normalizeString(
-              _getDayAbbreviation(_selectedDay),
-            );
+            final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(_selectedDay));
             final danMatch = normalizedPutnikDan.contains(normalizedDanBaza);
             final statusOk = TextUtils.isStatusActive(putnik.status);
             return gradMatch && vremeMatch && danMatch && statusOk;
@@ -1717,16 +1561,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Scaffold(
             backgroundColor: Colors.transparent, // Transparentna pozadina
             appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(
-                95,
-              ), // Povećano sa 80 na 95 zbog sezonskog indikatora
+              preferredSize: const Size.fromHeight(95), // Povećano sa 80 na 95 zbog sezonskog indikatora
               child: Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-                  border: Border.all(
-                    color: Theme.of(context).glassBorder,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
@@ -1758,19 +1597,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               color: Colors.white, // Bela boja za bolju vidljivost
                               letterSpacing: 1.8,
                               shadows: [
-                                Shadow(
-                                  blurRadius: 12,
-                                  color: Colors.black87,
-                                ),
-                                Shadow(
-                                  offset: Offset(2, 2),
-                                  blurRadius: 6,
-                                  color: Colors.black54,
-                                ),
-                                Shadow(
-                                  blurRadius: 20,
-                                  color: Color(0xFF1976D2),
-                                ),
+                                Shadow(blurRadius: 12, color: Colors.black87),
+                                Shadow(offset: Offset(2, 2), blurRadius: 6, color: Colors.black54),
+                                Shadow(blurRadius: 20, color: Color(0xFF1976D2)),
                               ],
                             ),
                           ),
@@ -1785,10 +1614,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 flex: 35,
                                 child: Container(
                                   height: 32,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: VozacBoja.get(_currentDriver),
                                     borderRadius: BorderRadius.circular(14),
@@ -1808,15 +1634,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         fontSize: 16,
                                         color: Colors.white,
                                         shadows: [
-                                          Shadow(
-                                            blurRadius: 8,
-                                            color: Colors.black87,
-                                          ),
-                                          Shadow(
-                                            offset: Offset(1, 1),
-                                            blurRadius: 4,
-                                            color: Colors.black54,
-                                          ),
+                                          Shadow(blurRadius: 8, color: Colors.black87),
+                                          Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
                                         ],
                                       ),
                                       overflow: TextOverflow.ellipsis,
@@ -1841,16 +1660,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 borderRadius: BorderRadius.circular(14),
                                 child: Container(
                                   height: 32,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 2,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.4),
-                                    ),
+                                    border: Border.all(color: Colors.white.withOpacity(0.4)),
                                   ),
                                   child: const Center(
                                     child: FittedBox(
@@ -1862,15 +1676,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           fontSize: 26,
                                           color: Colors.white,
                                           shadows: [
-                                            Shadow(
-                                              blurRadius: 8,
-                                              color: Colors.black87,
-                                            ),
-                                            Shadow(
-                                              offset: Offset(1, 1),
-                                              blurRadius: 4,
-                                              color: Colors.black54,
-                                            ),
+                                            Shadow(blurRadius: 8, color: Colors.black87),
+                                            Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
                                           ],
                                         ),
                                         overflow: TextOverflow.ellipsis,
@@ -1890,16 +1697,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               flex: 35,
                               child: Container(
                                 height: 32,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.25),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.3),
-                                  ),
+                                  border: Border.all(color: Colors.white.withOpacity(0.3)),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
@@ -1915,15 +1717,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15,
                                       shadows: [
-                                        Shadow(
-                                          blurRadius: 8,
-                                          color: Colors.black87,
-                                        ),
-                                        Shadow(
-                                          offset: Offset(1, 1),
-                                          blurRadius: 4,
-                                          color: Colors.black54,
-                                        ),
+                                        Shadow(blurRadius: 8, color: Colors.black87),
+                                        Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(12),
@@ -1938,15 +1733,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                               fontWeight: FontWeight.w700,
                                               fontSize: 15,
                                               shadows: [
-                                                Shadow(
-                                                  blurRadius: 8,
-                                                  color: Colors.black87,
-                                                ),
-                                                Shadow(
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 4,
-                                                  color: Colors.black54,
-                                                ),
+                                                Shadow(blurRadius: 8, color: Colors.black87),
+                                                Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
                                               ],
                                             ),
                                             textAlign: TextAlign.center,
@@ -2002,11 +1790,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     children: [
                       // Dugmad za akcije
                       Expanded(
-                        child: _HomeScreenButton(
-                          label: 'Dodaj',
-                          icon: Icons.person_add,
-                          onTap: _showAddPutnikDialog,
-                        ),
+                        child: _HomeScreenButton(label: 'Dodaj', icon: Icons.person_add, onTap: _showAddPutnikDialog),
                       ),
                       const SizedBox(width: 4),
                       if (_currentDriver == 'Bruda' ||
@@ -2018,10 +1802,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             label: 'Danas',
                             icon: Icons.today,
                             onTap: () {
-                              AnimatedNavigation.pushSmooth(
-                                context,
-                                const DanasScreen(),
-                              );
+                              AnimatedNavigation.pushSmooth(context, const DanasScreen());
                             },
                           ),
                         ),
@@ -2032,10 +1813,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             label: 'Admin',
                             icon: Icons.admin_panel_settings,
                             onTap: () {
-                              AnimatedNavigation.pushSmooth(
-                                context,
-                                const AdminScreen(),
-                              );
+                              AnimatedNavigation.pushSmooth(context, const AdminScreen());
                             },
                           ),
                         ),
@@ -2056,11 +1834,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       const SizedBox(width: 4),
                       Expanded(
-                        child: _HomeScreenButton(
-                          label: 'Logout',
-                          icon: Icons.logout,
-                          onTap: _logout,
-                        ),
+                        child: _HomeScreenButton(label: 'Logout', icon: Icons.logout, onTap: _logout),
                       ),
                     ],
                   ),
@@ -2072,14 +1846,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
-                      border: Border.all(
-                        color: Theme.of(context).glassBorder,
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        Theme.of(context).glassShadow,
-                      ],
+                      boxShadow: [Theme.of(context).glassShadow],
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -2091,12 +1860,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 8,
-                                      color: Colors.black87,
-                                    ),
-                                  ],
+                                  shadows: [Shadow(blurRadius: 8, color: Colors.black87)],
                                 ),
                               ),
                             )
@@ -2227,19 +1991,11 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton> with Single
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
+    _controller = AnimationController(duration: const Duration(milliseconds: 150), vsync: this);
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -2283,9 +2039,7 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton> with Single
                 boxShadow: _isPressed
                     ? widget.boxShadow.map((shadow) {
                         return BoxShadow(
-                          color: shadow.color.withOpacity(
-                            (shadow.color.opacity * 1.5).clamp(0.0, 1.0),
-                          ),
+                          color: shadow.color.withOpacity((shadow.color.opacity * 1.5).clamp(0.0, 1.0)),
                           blurRadius: shadow.blurRadius * 1.2,
                           offset: shadow.offset,
                         );
@@ -2310,11 +2064,7 @@ class _AnimatedActionButtonState extends State<AnimatedActionButton> with Single
 
 // Originalna _HomeScreenButton klasa sa seksi bojama
 class _HomeScreenButton extends StatelessWidget {
-  const _HomeScreenButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
+  const _HomeScreenButton({required this.label, required this.icon, required this.onTap});
   final String label;
   final IconData icon;
   final VoidCallback onTap;
@@ -2328,10 +2078,7 @@ class _HomeScreenButton extends StatelessWidget {
         padding: const EdgeInsets.all(6), // Smanjeno sa 12 na 6
         decoration: BoxDecoration(
           color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-          border: Border.all(
-            color: Theme.of(context).glassBorder,
-            width: 1.5,
-          ),
+          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -2358,15 +2105,8 @@ class _HomeScreenButton extends StatelessWidget {
                 fontSize: 12, // Povećano sa 11 na 12
                 fontWeight: FontWeight.w600,
                 shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                    color: Colors.black87,
-                  ),
-                  Shadow(
-                    offset: Offset(1, 1),
-                    blurRadius: 4,
-                    color: Colors.black54,
-                  ),
+                  Shadow(blurRadius: 8, color: Colors.black87),
+                  Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
                 ],
               ),
               textAlign: TextAlign.center,

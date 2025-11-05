@@ -1,13 +1,10 @@
 import 'dart:async';
 
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../globals.dart';
 import 'vozac_mapping_service.dart';
 
 /// Servis za upravljanje kusur-om vozača u bazi podataka
 class KusurService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
-
   /// Stream controller za real-time ažuriranje kusur kocki
   static final StreamController<Map<String, double>> _kusurController =
       StreamController<Map<String, double>>.broadcast();
@@ -21,11 +18,7 @@ class KusurService {
         return 0.0;
       }
 
-      final response = await _supabase
-          .from('vozaci')
-          .select('kusur')
-          .eq('id', vozacUuid)
-          .maybeSingle();
+      final response = await supabase.from('vozaci').select('kusur').eq('id', vozacUuid).maybeSingle();
 
       if (response != null && response['kusur'] != null) {
         return (response['kusur'] as num).toDouble();
@@ -38,10 +31,7 @@ class KusurService {
   }
 
   /// Ažuriraj kusur za određenog vozača u bazi
-  static Future<bool> updateKusurForVozac(
-    String vozacIme,
-    double noviKusur,
-  ) async {
+  static Future<bool> updateKusurForVozac(String vozacIme, double noviKusur) async {
     try {
       // Mapiranje ime -> UUID
       final vozacUuid = await VozacMappingService.getVozacUuid(vozacIme);
@@ -49,9 +39,7 @@ class KusurService {
         return false;
       }
 
-      await _supabase
-          .from('vozaci')
-          .update({'kusur': noviKusur}).eq('id', vozacUuid);
+      await supabase.from('vozaci').update({'kusur': noviKusur}).eq('id', vozacUuid);
 
       // Emituj ažuriranje preko stream-a
       _emitKusurUpdate(vozacIme, noviKusur);
@@ -79,7 +67,7 @@ class KusurService {
   /// Dobij kusur za sve vozače odjednom
   static Future<Map<String, double>> getKusurSvihVozaca() async {
     try {
-      final response = await _supabase.from('vozaci').select('id, ime, kusur');
+      final response = await supabase.from('vozaci').select('id, ime, kusur');
 
       final Map<String, double> rezultat = {};
 

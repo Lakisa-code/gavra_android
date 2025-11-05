@@ -3,8 +3,7 @@ import '../models/mesecni_putnik.dart';
 // Funkcija za compute: filtrira i sortira putnike van glavnog threada
 // Sada koristi List<Map<String, dynamic>> za kompatibilnost sa compute
 List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
-  final List<Map<String, dynamic>> putniciMap =
-      List<Map<String, dynamic>>.from(args['putnici'] as Iterable);
+  final List<Map<String, dynamic>> putniciMap = List<Map<String, dynamic>>.from(args['putnici'] as Iterable);
   final String searchTerm = (args['searchTerm'] as String?) ?? '';
   final String filterType = (args['filterType'] as String?) ?? 'svi';
 
@@ -14,15 +13,23 @@ List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
   // Prikaz svih putnika (osim ako search/filterType ne filtrira)
   final filtrirani = putnici;
 
-  // Ostatak filtera (search, tip)
+  // ✅ POBOLJŠANO: Ostatak filtera (search, tip) sa konzistentnom logikom
   final result = filtrirani.where((putnik) {
+    // ✅ DODANO: Proveri aktivnost i status
+    if (!putnik.aktivan || putnik.obrisan) return false;
+
+    final status = putnik.status.toLowerCase().trim();
+    final invalidStatuses = ['bolovanje', 'godišnje', 'godisnji', 'obrisan', 'otkazan', 'otkazano'];
+    if (invalidStatuses.contains(status)) return false;
+
     // Filtriraj po search termu
     bool matchesSearch = true;
     if (searchTerm.isNotEmpty) {
       final search = searchTerm.toLowerCase();
       matchesSearch = putnik.putnikIme.toLowerCase().contains(search) ||
           (putnik.brojTelefona?.toLowerCase().contains(search) ?? false) ||
-          putnik.tip.toLowerCase().contains(search);
+          putnik.tip.toLowerCase().contains(search) ||
+          (putnik.tipSkole?.toLowerCase().contains(search) ?? false);
     }
 
     // Filtriraj po tipu putnika

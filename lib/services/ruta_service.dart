@@ -1,13 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../models/ruta.dart';
+import 'batch_database_service.dart';
 import 'cache_service.dart';
+import 'performance_optimizer_service.dart';
 import 'supabase_safe.dart';
 
-/// Servis za upravljanje rutama
-class RutaService {
-  RutaService({SupabaseClient? supabaseClient})
-      : _supabase = supabaseClient ?? Supabase.instance.client;
+/// 🚀 OPTIMIZOVANI SERVIS ZA UPRAVLJANJE RUTAMA
+class RutaService with BatchDatabaseMixin {
+  RutaService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? supabase;
   final SupabaseClient _supabase;
 
   // Cache konfiguracija
@@ -18,8 +20,7 @@ class RutaService {
   static String _getAllCacheKey() => '${_cacheKeyPrefix}_all';
   static String _getActiveCacheKey() => '${_cacheKeyPrefix}_active';
   static String _getByIdCacheKey(String id) => '${_cacheKeyPrefix}_id_$id';
-  static String _getSearchCacheKey(String query) =>
-      '${_cacheKeyPrefix}_search_$query';
+  static String _getSearchCacheKey(String query) => '${_cacheKeyPrefix}_search_$query';
   static String _getStatsCacheKey() => '${_cacheKeyPrefix}_statistics';
 
   // Čišćenje cache-a
@@ -34,8 +35,10 @@ class RutaService {
     await _clearCache();
   }
 
-  /// Dohvata sve rute (sa keširanje)
+  /// 🚀 OPTIMIZOVANA VERZIJA - Dohvata sve rute (sa batch optimizacijom)
   Future<List<Ruta>> getAllRute() async {
+    final stopwatch = Stopwatch()..start();
+
     try {
       // Pokušaj cache prvo
       final cacheKey = _getAllCacheKey();
@@ -44,34 +47,47 @@ class RutaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        // Debug logging removed for production
-        return cached
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        return cached.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
       }
 
-      final response = await SupabaseSafe.run(
-        () => _supabase.from('rute').select().order('naziv'),
-        fallback: <dynamic>[],
+      // 🚀 OPTIMIZOVANI QUERY - Samo potrebne kolone
+      final response = await selectOptimized(
+        'rute',
+        columns: [
+          'id',
+          'naziv',
+          'polazak',
+          'dolazak',
+          'opis',
+          'udaljenost_km',
+          'prosecno_vreme',
+          'aktivan',
+          'created_at',
+          'updated_at',
+        ],
       );
 
-      if (response is List) {
-        final dataList = response.cast<Map<String, dynamic>>();
-
+      if (response.isNotEmpty) {
         // Keširaj rezultat
-        await CacheService.saveToDisk(cacheKey, dataList);
-
-        return dataList.map((json) => Ruta.fromMap(json)).toList();
+        await CacheService.saveToDisk(cacheKey, response);
+        return response.map((json) => Ruta.fromMap(json)).toList();
       }
       return [];
     } catch (e) {
-      // Debug logging removed for production
       return [];
+    } finally {
+      stopwatch.stop();
+      PerformanceOptimizerService().trackOperation(
+        'ruta_getAllRute',
+        stopwatch.elapsed,
+      );
     }
   }
 
-  /// Dohvata samo aktivne rute (sa keširanje)
+  /// 🚀 OPTIMIZOVANA VERZIJA - Dohvata samo aktivne rute
   Future<List<Ruta>> getActiveRute() async {
+    final stopwatch = Stopwatch()..start();
+
     try {
       // Pokušaj cache prvo
       final cacheKey = _getActiveCacheKey();
@@ -80,30 +96,31 @@ class RutaService {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        // Debug logging removed for production
-        return cached
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        return cached.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
       }
 
-      final response = await SupabaseSafe.run(
-        () =>
-            _supabase.from('rute').select().eq('aktivan', true).order('naziv'),
-        fallback: <dynamic>[],
+      // 🚀 OPTIMIZOVANI QUERY sa WHERE klauzulom
+      final response = await selectOptimized(
+        'rute',
+        columns: ['id', 'naziv', 'polazak', 'dolazak', 'opis', 'aktivan', 'created_at', 'updated_at'],
+        where: 'aktivan',
+        whereValue: true,
       );
 
-      if (response is List) {
-        final dataList = response.cast<Map<String, dynamic>>();
-
+      if (response.isNotEmpty) {
         // Keširaj rezultat
-        await CacheService.saveToDisk(cacheKey, dataList);
-
-        return dataList.map((json) => Ruta.fromMap(json)).toList();
+        await CacheService.saveToDisk(cacheKey, response);
+        return response.map((json) => Ruta.fromMap(json)).toList();
       }
       return [];
     } catch (e) {
-      // Debug logging removed for production
       return [];
+    } finally {
+      stopwatch.stop();
+      PerformanceOptimizerService().trackOperation(
+        'ruta_getActiveRute',
+        stopwatch.elapsed,
+      );
     }
   }
 
@@ -139,83 +156,89 @@ class RutaService {
     }
   }
 
-  /// Kreira novu rutu (sa validacijom i cache invalidation)
+  /// 🚀 OPTIMIZOVANA VERZIJA - Kreira novu rutu sa batch processing
   Future<Ruta?> createRuta(Ruta ruta) async {
+    final stopwatch = Stopwatch()..start();
+
     try {
       // Validacija pre dodavanja
       final validation = ruta.validateFull();
       if (validation.isNotEmpty) {
-        // Debug logging removed for production
         return null;
       }
 
-      // Osnovna validacija naziva (bez duplikat provere za polazak/dolazak)
-      final existingNaziv = await SupabaseSafe.run(
-        () => Supabase.instance.client
-            .from('rute')
-            .select('id, naziv')
-            .eq('naziv', ruta.naziv)
-            .limit(1),
+      // Osnovna validacija naziva (batch optimizovano)
+      final existingNaziv = await selectOptimized(
+        'rute',
+        columns: ['id', 'naziv'],
+        where: 'naziv',
+        whereValue: ruta.naziv,
+        limit: 1,
       );
 
-      if (existingNaziv?.isNotEmpty == true) {
+      if (existingNaziv.isNotEmpty) {
         return null; // Naziv već postoji
       }
 
-      final response = await SupabaseSafe.run(
-        () => _supabase.from('rute').insert(ruta.toMap()).select().single(),
+      // 🚀 BATCH INSERT
+      batchInsert('rute', ruta.toMap());
+
+      // Privremeno vraćamo rutu (u batch sistemu će biti upisana asinhrono)
+      final novaRuta = ruta.copyWith(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
       );
-
-      if (response == null) return null;
-
-      final novaRuta = Ruta.fromMap(response);
 
       // Očisti cache
       await _clearCache();
-      // Debug logging removed for production
       return novaRuta;
     } catch (e) {
-      // Debug logging removed for production
       return null;
+    } finally {
+      stopwatch.stop();
+      PerformanceOptimizerService().trackOperation(
+        'ruta_createRuta',
+        stopwatch.elapsed,
+      );
     }
   }
 
-  /// Ažurira rutu (sa validacijom i cache invalidation)
+  /// 🚀 OPTIMIZOVANA VERZIJA - Ažurira rutu sa batch processing
   Future<Ruta?> updateRuta(String id, Map<String, dynamic> updates) async {
+    final stopwatch = Stopwatch()..start();
+
     try {
       // Dodaj timestamp
       updates['updated_at'] = DateTime.now().toIso8601String();
+      updates['id'] = id; // Potrebno za batch update
 
-      final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single(),
+      // 🚀 BATCH UPDATE
+      batchUpdate('rute', updates);
+
+      // Privremeno vrati optimistično rezultat
+      final currentRuta = await getRutaById(id);
+      if (currentRuta == null) return null;
+
+      final azuriranaRuta = currentRuta.copyWith(
+        updatedAt: DateTime.now(),
       );
-
-      if (response == null) {
-        // Debug logging removed for production
-        return null;
-      }
-
-      final azuriranaRuta = Ruta.fromMap(response);
 
       // Validacija nakon ažuriranja
       final validation = azuriranaRuta.validateFull();
       if (validation.isNotEmpty) {
-        // Debug logging removed for production
         return null;
       }
 
       // Očisti cache
       await _clearCacheForId(id);
-      // Debug logging removed for production
       return azuriranaRuta;
     } catch (e) {
-      // Debug logging removed for production
       return null;
+    } finally {
+      stopwatch.stop();
+      PerformanceOptimizerService().trackOperation(
+        'ruta_updateRuta',
+        stopwatch.elapsed,
+      );
     }
   }
 
@@ -232,12 +255,7 @@ class RutaService {
       final updatedRuta = ruta.withUpdatedTime();
 
       final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .update(updatedRuta.toMap())
-            .eq('id', ruta.id)
-            .select()
-            .single(),
+        () => _supabase.from('rute').update(updatedRuta.toMap()).eq('id', ruta.id).select().single(),
       );
 
       if (response == null) return null;
@@ -322,11 +340,7 @@ class RutaService {
   Future<bool> _checkRutaDependencies(String rutaId) async {
     try {
       final response = await SupabaseSafe.run(
-        () => _supabase
-            .from('dnevni_putnici')
-            .select('id')
-            .eq('ruta_id', rutaId)
-            .limit(1),
+        () => _supabase.from('dnevni_putnici').select('id').eq('ruta_id', rutaId).limit(1),
         fallback: <dynamic>[],
       );
 
@@ -352,11 +366,7 @@ class RutaService {
     try {
       // Keširaj jednostavne pretrage
       String? cacheKey;
-      if (query != null &&
-          query.length > 2 &&
-          aktivan == null &&
-          minUdaljenost == null &&
-          maxUdaljenost == null) {
+      if (query != null && query.length > 2 && aktivan == null && minUdaljenost == null && maxUdaljenost == null) {
         cacheKey = _getSearchCacheKey(query);
         final cached = await CacheService.getFromMemory<List<Ruta>>(cacheKey);
         if (cached != null) {
@@ -411,9 +421,7 @@ class RutaService {
       );
 
       if (response is List) {
-        final results = response
-            .map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        final results = response.map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
 
         // Keširaj jednostavne pretrage
         if (cacheKey != null) {
@@ -443,11 +451,7 @@ class RutaService {
     try {
       final response = await SupabaseSafe.run(
         () {
-          var q = _supabase
-              .from('rute')
-              .select()
-              .eq('polazak', polazak)
-              .eq('dolazak', destinacija);
+          var q = _supabase.from('rute').select().eq('polazak', polazak).eq('dolazak', destinacija);
 
           if (sameAktivan) {
             q = q.eq('aktivan', true);
@@ -459,9 +463,7 @@ class RutaService {
       );
 
       if (response is List) {
-        return response
-            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        return response.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
       }
       return [];
     } catch (e) {
@@ -540,9 +542,7 @@ class RutaService {
       );
 
       if (response is List) {
-        final results = response
-            .map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>))
-            .toList();
+        final results = response.map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
 
         // Očisti cache
         await _clearCache();
@@ -643,13 +643,9 @@ class RutaService {
         'ukupno_ruta': ukupnoRuta,
         'aktivne_rute': aktivnihRuta,
         'neaktivne_rute': neaktivnihRuta,
-        'procenat_aktivnih':
-            ukupnoRuta > 0 ? (aktivnihRuta / ukupnoRuta * 100).round() : 0,
+        'procenat_aktivnih': ukupnoRuta > 0 ? (aktivnihRuta / ukupnoRuta * 100).round() : 0,
         'poslednja_izmena': rute.isNotEmpty
-            ? rute
-                .map((r) => r.updatedAt)
-                .reduce((a, b) => a.isAfter(b) ? a : b)
-                .toIso8601String()
+            ? rute.map((r) => r.updatedAt).reduce((a, b) => a.isAfter(b) ? a : b).toIso8601String()
             : null,
       };
 
@@ -672,10 +668,7 @@ class RutaService {
 
       // Dobij putnici na ovoj ruti
       final putnici = await SupabaseSafe.run(
-        () => _supabase
-            .from('dnevni_putnici')
-            .select('cena, datum, status')
-            .eq('ruta_id', rutaId),
+        () => _supabase.from('dnevni_putnici').select('cena, datum, status').eq('ruta_id', rutaId),
         fallback: <dynamic>[],
       );
 
@@ -688,8 +681,7 @@ class RutaService {
         (sum, p) => sum + ((p['cena'] as num?)?.toDouble() ?? 0),
       );
 
-      final prosecnaZarada =
-          ukupnoPutnika > 0 ? ukupnaZarada / ukupnoPutnika : 0.0;
+      final prosecnaZarada = ukupnoPutnika > 0 ? ukupnaZarada / ukupnoPutnika : 0.0;
 
       // Status distribucija
       final statusCount = <String, int>{};
@@ -702,12 +694,10 @@ class RutaService {
         'ruta_info': ruta.toMap(),
         'ukupno_putnika': ukupnoPutnika,
         'ukupna_zarada': ukupnaZarada,
-        'prosecna_zarada_po_putniku':
-            double.parse(prosecnaZarada.toStringAsFixed(2)),
+        'prosecna_zarada_po_putniku': double.parse(prosecnaZarada.toStringAsFixed(2)),
         'status_distribution': statusCount,
-        'putnica_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty
-            ? _calculateDailyPassengers(putnici)
-            : <String, int>{},
+        'putnica_po_danu':
+            ukupnoPutnika > 0 && putnici.isNotEmpty ? _calculateDailyPassengers(putnici) : <String, int>{},
         'generirano': DateTime.now().toIso8601String(),
       };
     } catch (e) {
@@ -774,11 +764,7 @@ class RutaService {
       final cutoffDateStr = cutoffDate.toIso8601String();
 
       await SupabaseSafe.run(
-        () => _supabase
-            .from('rute')
-            .delete()
-            .eq('aktivan', false)
-            .lt('updated_at', cutoffDateStr),
+        () => _supabase.from('rute').delete().eq('aktivan', false).lt('updated_at', cutoffDateStr),
       );
 
       await _clearCache();

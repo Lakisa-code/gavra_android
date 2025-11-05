@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../utils/vozac_boja.dart';
 
 /// 🔥 FIREBASE AUTH + SUPABASE DATA SERVICE
@@ -8,7 +8,6 @@ import '../utils/vozac_boja.dart';
 class FirebaseAuthService {
   static final firebase_auth.FirebaseAuth _auth =
       firebase_auth.FirebaseAuth.instance;
-  static final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Trenutno ulogovan korisnik
   static firebase_auth.User? get currentUser => _auth.currentUser;
@@ -171,7 +170,7 @@ class FirebaseAuthService {
     required String vozacName,
   }) async {
     try {
-      await _supabase.from('korisnici').insert({
+      await supabase.from('korisnici').insert({
         'firebase_uid': firebaseUid,
         'email': email,
         'vozac_name': vozacName,
@@ -190,7 +189,7 @@ class FirebaseAuthService {
   ) async {
     try {
       // Proveri da li postoji profil
-      final response = await _supabase
+      final response = await supabase
           .from('korisnici')
           .select()
           .eq('firebase_uid', user.uid)
@@ -205,7 +204,7 @@ class FirebaseAuthService {
         );
       } else {
         // Ažuriraj poslednju prijavu
-        await _supabase.from('korisnici').update({
+        await supabase.from('korisnici').update({
           'last_login': DateTime.now().toIso8601String(),
         }).eq('firebase_uid', user.uid);
       }
@@ -220,7 +219,7 @@ class FirebaseAuthService {
       final user = currentUser;
       if (user == null) return null;
 
-      final response = await _supabase
+      final response = await supabase
           .from('korisnici')
           .select()
           .eq('firebase_uid', user.uid)

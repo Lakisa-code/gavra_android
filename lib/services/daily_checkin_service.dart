@@ -124,7 +124,7 @@ class DailyCheckInService {
     // try {
     //   await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
     // } catch (e) {
-    //   print('Remote save failed but local is OK: $e');
+    //   // Ako remote save ne uspe, ali lokalna je OK, nastavi dalje
     // }
   }
 
