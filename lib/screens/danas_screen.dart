@@ -25,7 +25,6 @@ import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/schedule_utils.dart';
-import '../utils/slot_utils.dart';
 import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
 import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
@@ -2342,12 +2341,50 @@ class _DanasScreenState extends State<DanasScreen> {
             // Koristi prazan lista putnika ako nema podataka
             final allPutnici = snapshot.hasData ? snapshot.data! : <Putnik>[];
 
-// Compute slot counts for today using shared helper to ensure parity with Home screen
-            final todayIso = DateTime.now().toIso8601String().split('T')[0];
-            print('📅 DANAS: Koristim TODAY ISO: $todayIso za brojanje putnika');
-            final slotCountsToday = SlotUtils.computeSlotCountsForDate(allPutnici, todayIso);
-            final Map<String, int> brojPutnikaBC = Map<String, int>.from(slotCountsToday['BC'] ?? {});
-            final Map<String, int> brojPutnikaVS = Map<String, int>.from(slotCountsToday['VS'] ?? {});
+// 🔧 JEDNOSTAVNO BROJANJE: Bez SlotUtils komplikacija
+            final Map<String, int> brojPutnikaBC = {
+              '5:00': 0,
+              '6:00': 0,
+              '7:00': 0,
+              '8:00': 0,
+              '9:00': 0,
+              '11:00': 0,
+              '12:00': 0,
+              '13:00': 0,
+              '14:00': 0,
+              '15:30': 0,
+              '18:00': 0
+            };
+            final Map<String, int> brojPutnikaVS = {
+              '6:00': 0,
+              '7:00': 0,
+              '8:00': 0,
+              '10:00': 0,
+              '11:00': 0,
+              '12:00': 0,
+              '13:00': 0,
+              '14:00': 0,
+              '15:30': 0,
+              '17:00': 0,
+              '19:00': 0
+            };
+
+            for (final p in allPutnici) {
+              if (!TextUtils.isStatusActive(p.status)) continue;
+
+              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+              final normAdresa = (p.adresa ?? '').toLowerCase();
+
+              final jeBelaCrkva = normAdresa.contains('bela') || normAdresa.contains('bc');
+              final jeVrsac = normAdresa.contains('vrsac') || normAdresa.contains('vs');
+
+              if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
+                brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
+              }
+              if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
+                brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
+              }
+            }
 
             print('📅 DANAS: BC 6:00 = ${brojPutnikaBC['6:00']}');
             print('📅 DANAS: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');

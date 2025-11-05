@@ -1586,18 +1586,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final todayIso = DateTime.now().toIso8601String().split('T')[0];
         final todayDayAbbr = SlotUtils.isoDateToDayAbbr(todayIso);
 
-        Map<String, Map<String, int>> slotCounts;
-        if (targetDayAbbr == todayDayAbbr) {
-          // Za današnji dan, koristi tačan ISO datum kao Danas Screen
-          print('🏠 HOME: Koristim TODAY ISO: $todayIso za brojanje putnika');
-          slotCounts = SlotUtils.computeSlotCountsForDate(allPutnici, todayIso);
-        } else {
-          // Za druge dane, koristi day abbreviation
-          print('🏠 HOME: Koristim DAY ABBR: $targetDayAbbr za brojanje putnika');
-          slotCounts = SlotUtils.computeSlotCountsForDayAbbr(allPutnici, targetDayAbbr);
+        // 🔧 JEDNOSTAVNO BROJANJE: Bez SlotUtils komplikacija
+        final Map<String, int> brojPutnikaBC = {
+          '5:00': 0,
+          '6:00': 0,
+          '7:00': 0,
+          '8:00': 0,
+          '9:00': 0,
+          '11:00': 0,
+          '12:00': 0,
+          '13:00': 0,
+          '14:00': 0,
+          '15:30': 0,
+          '18:00': 0
+        };
+        final Map<String, int> brojPutnikaVS = {
+          '6:00': 0,
+          '7:00': 0,
+          '8:00': 0,
+          '10:00': 0,
+          '11:00': 0,
+          '12:00': 0,
+          '13:00': 0,
+          '14:00': 0,
+          '15:30': 0,
+          '17:00': 0,
+          '19:00': 0
+        };
+
+        for (final p in allPutnici) {
+          if (!TextUtils.isStatusActive(p.status)) continue;
+
+          final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+          final normAdresa = (p.adresa ?? '').toLowerCase();
+
+          final jeBelaCrkva = normAdresa.contains('bela') || normAdresa.contains('bc');
+          final jeVrsac = normAdresa.contains('vrsac') || normAdresa.contains('vs');
+
+          if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
+            brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
+          }
+          if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
+            brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
+          }
         }
-        final Map<String, int> brojPutnikaBC = Map<String, int>.from(slotCounts['BC'] ?? {});
-        final Map<String, int> brojPutnikaVS = Map<String, int>.from(slotCounts['VS'] ?? {});
 
         print('🏠 HOME: BC 6:00 = ${brojPutnikaBC['6:00']}');
         print('🏠 HOME: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');
