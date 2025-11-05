@@ -23,7 +23,6 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
 import '../utils/schedule_utils.dart';
-import '../utils/slot_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
 import '../widgets/autocomplete_adresa_field.dart';
@@ -1594,7 +1593,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           '13:00': 0,
           '14:00': 0,
           '15:30': 0,
-          '18:00': 0
+          '18:00': 0,
         };
         final Map<String, int> brojPutnikaVS = {
           '6:00': 0,
@@ -1607,7 +1606,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           '14:00': 0,
           '15:30': 0,
           '17:00': 0,
-          '19:00': 0
+          '19:00': 0,
         };
 
         for (final p in allPutnici) {
