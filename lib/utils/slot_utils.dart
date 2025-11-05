@@ -58,7 +58,11 @@ class SlotUtils {
         final vreme = GradAdresaValidator.normalizeTime(p.polazak);
         final grad = p.grad;
 
-        if (bcVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
+        // 🔧 EKSPLICITNA PROVERA: Da li putnik ide u Belu Crkva
+        final normalizedGrad = grad.toLowerCase();
+        final jeBelaCrkva = normalizedGrad.contains('bela') || normalizedGrad.contains('bc') || normalizedGrad == 'bela crkva';
+
+        if (bcVremena.contains(vreme) && jeBelaCrkva) {
           // 🔍 DODATNA VALIDACIJA ZA BC 6:00 I U DAY ABBR
           if (vreme == '6:00') {
             bool validanBc6Putnik = true;
@@ -87,7 +91,11 @@ class SlotUtils {
             brojPutnikaBC[vreme] = (brojPutnikaBC[vreme] ?? 0) + 1;
           }
         }
-        if (vsVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
+        
+        // 🔧 EKSPLICITNA PROVERA: Da li putnik ide u Vršac
+        final jeVrsac = normalizedGrad.contains('vrsac') || normalizedGrad.contains('vs') || normalizedGrad == 'vrsac';
+        
+        if (vsVremena.contains(vreme) && jeVrsac) {
           brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
         }
       } catch (e) {
@@ -152,7 +160,11 @@ class SlotUtils {
         final vreme = GradAdresaValidator.normalizeTime(p.polazak);
         final grad = p.grad;
 
-        if (bcVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Bela Crkva')) {
+        // 🔧 EKSPLICITNA PROVERA: Da li putnik ide u Belu Crkva
+        final normalizedGrad = grad.toLowerCase();
+        final jeBelaCrkva = normalizedGrad.contains('bela') || normalizedGrad.contains('bc') || normalizedGrad == 'bela crkva';
+
+        if (bcVremena.contains(vreme) && jeBelaCrkva) {
           // 🔍 DODATNA VALIDACIJA: Proveri da li je zaista BC 6:00 putnik
           if (vreme == '6:00') {
             // Striktna validacija za BC 6:00
@@ -207,7 +219,11 @@ class SlotUtils {
             ukupnoBcPutnika++;
           }
         }
-        if (vsVremena.contains(vreme) && GradAdresaValidator.isGradMatch(grad, p.adresa, 'Vršac')) {
+        
+        // 🔧 EKSPLICITNA PROVERA: Da li putnik ide u Vršac
+        final jeVrsac = normalizedGrad.contains('vrsac') || normalizedGrad.contains('vs') || normalizedGrad == 'vrsac';
+        
+        if (vsVremena.contains(vreme) && jeVrsac) {
           brojPutnikaVS[vreme] = (brojPutnikaVS[vreme] ?? 0) + 1;
           ukupnoVsPutnika++;
         }
