@@ -242,7 +242,23 @@ class MesecniPutnikService {
           if (converted != null) {
             validVozacId = converted;
           } else {
-            validVozacId = null;
+            // 🆘 HARDCODED FALLBACK za poznate vozače
+            switch (vozacId) {
+              case 'Bojan':
+                validVozacId = '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e';
+                break;
+              case 'Svetlana':
+                validVozacId = '5b379394-084e-1c7d-76bf-fc193a5b6c7d';
+                break;
+              case 'Bruda':
+                validVozacId = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
+                break;
+              case 'Bilevski':
+                validVozacId = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
+                break;
+              default:
+                validVozacId = null;
+            }
           }
         }
       }

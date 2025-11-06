@@ -62,12 +62,14 @@ class SupabaseSafe {
   /// errors in one place.
   static Future<T?> run<T>(Future<T> Function() fn, {T? fallback}) async {
     try {
-      return await fn();
-    } on PostgrestException {
-      // Error handling - logging removed for production
+      final result = await fn();
+      print('✅ SUPABASE_SAFE SUCCESS: ${result.runtimeType} with ${result is List ? result.length : 'N/A'} items');
+      return result;
+    } on PostgrestException catch (e) {
+      print('❌ SUPABASE_SAFE PostgrestException: ${e.message} (code: ${e.code})');
       return fallback;
     } catch (e) {
-      // Error handling - logging removed for production
+      print('❌ SUPABASE_SAFE GENERIC ERROR: $e');
       return fallback;
     }
   }

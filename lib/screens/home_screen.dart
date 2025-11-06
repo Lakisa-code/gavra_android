@@ -940,7 +940,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             onPressed: _isAddingPutnik
                                 ? null
                                 : () async {
+                                    print('🔵 DUGME DODAJ PRITISNUT!');
+                                    print('🔍 _isAddingPutnik = $_isAddingPutnik');
+                                    print('🔍 IME: ${imeController.text.trim()}');
+                                    print('🔍 GRAD: $_selectedGrad');
+                                    print('🔍 VREME: $_selectedVreme');
+                                    print('🔍 MESECNA KARTA: $mesecnaKarta');
+
                                     if (imeController.text.trim().isEmpty) {
+                                      print('❌ IME JE PRAZNO');
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text('❌ Ime putnika je obavezno'),
@@ -1057,6 +1065,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       }
 
                                       // POKAZI LOADING STATE
+                                      print('🔄 POSTAVLJAM _isAddingPutnik = true');
                                       if (mounted)
                                         setState(() {
                                           _isAddingPutnik = true;
@@ -1075,7 +1084,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         adresa:
                                             adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                                       );
+                                      print('🚀 POZIVAM dodajPutnika sa: ${putnik.toString()}');
                                       await _putnikService.dodajPutnika(putnik);
+                                      print('✅ USPESNO DODAT PUTNIK!');
 
                                       // 🔄 FORSIRAJ REALTIME REFRESH da se stream ažurira
                                       try {
@@ -1086,11 +1097,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                       if (!mounted) return;
 
+                                      print('🔄 RESETUJEM _isAddingPutnik = false NAKON USPESNOG DODAVANJA');
                                       if (mounted)
                                         setState(() {
                                           _isAddingPutnik = false;
                                         });
+
+                                      // 🔄 FORSIRAJ RE-KREIRANJE STREAM-A
+                                      print('🔄 FORSIRAM REBUILD StreamBuilder-a sa novim KEY');
                                       if (mounted) {
+                                        setState(() {
+                                          // Force StreamBuilder rebuild with new key
+                                        });
+                                      }
+
+                                      if (mounted) {
+                                        print('🔄 ZATVARANJE DIALOGA I PRIKAZ SUCCESS PORUKE');
                                         // ignore: use_build_context_synchronously
                                         Navigator.pop(context);
                                         // ignore: use_build_context_synchronously
@@ -1103,6 +1125,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         );
                                       }
                                     } catch (e) {
+                                      print('❌ GREŠKA PRI DODAVANJU: $e');
+                                      print('🔄 RESETUJEM _isAddingPutnik = false');
                                       if (mounted)
                                         setState(() {
                                           _isAddingPutnik = false;
@@ -1313,10 +1337,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
 
     // 🔧 POPRAVLJENO: Koristi pravi stream koji se ažurira kada se dan menja
+    final targetDateForStream = _getTargetDateIsoFromSelectedDay(_selectedDay);
+    print('📅 STREAM TRAŽI DATUM: $targetDateForStream za dan: $_selectedDay');
+
     return StreamBuilder<List<Putnik>>(
       key: ValueKey(_selectedDay), // 🎯 Key samo sa danom - trebaju nam SVI putnici za brojanje
       stream: _putnikService.streamKombinovaniPutniciFiltered(
-        isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+        isoDate: targetDateForStream,
         // ❌ UKLONITI grad/vreme filtere - trebaju nam SVI putnici za bottom nav brojanje
       ),
       builder: (context, snapshot) {

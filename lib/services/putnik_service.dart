@@ -46,55 +46,74 @@ class PutnikService {
     String? grad,
     String? vreme,
   }) {
-    final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
-    if (_streams.containsKey(key)) return _streams[key]!.stream;
+    print('🔍 STREAM POZVAN SA: isoDate=$isoDate, grad=$grad, vreme=$vreme');
 
+    final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
+    if (_streams.containsKey(key)) {
+      print('📦 VRAĆAM POSTOJEĆI STREAM ZA KEY: $key');
+      return _streams[key]!.stream;
+    }
+
+    print('🆕 KREIRAM NOVI STREAM ZA KEY: $key');
     final subject = BehaviorSubject<List<Putnik>>();
     _streams[key] = subject;
 
     Future<void> doFetch() async {
       try {
+        print('🔄 FETCH POKRET STARTED za datum: $isoDate');
         final combined = <Putnik>[];
 
         // Fetch daily rows server-side if isoDate provided, otherwise fetch recent daily
-        final dnevniResponse = await SupabaseSafe.run(
-          () async {
-            if (isoDate != null) {
-              // ✅ ISPRAVKA: Koristi datum_putovanja kolonu umesto datum
-              return await supabase
-                  .from('putovanja_istorija')
-                  .select()
-                  .eq('datum_putovanja', isoDate) // ✅ ISPRAVKA: Pravi naziv kolone
-                  .eq('tip_putnika', 'dnevni');
-            }
-            return await supabase
+        print('📊 QUERY: putovanja_istorija WHERE datum_putovanja=$isoDate AND tip_putnika=dnevni');
+
+        // 🔧 TEMPORARNO: Bypassing SupabaseSafe za debugging
+        late List<dynamic> dnevniResponse;
+        try {
+          if (isoDate != null) {
+            dnevniResponse = await supabase
+                .from('putovanja_istorija')
+                .select()
+                .eq('datum_putovanja', isoDate)
+                .eq('tip_putnika', 'dnevni');
+          } else {
+            dnevniResponse = await supabase
                 .from('putovanja_istorija')
                 .select()
                 .eq('tip_putnika', 'dnevni')
                 .order('created_at', ascending: false);
-          },
-          fallback: <dynamic>[],
-        );
-
-        if (dnevniResponse is List) {
-          for (final d in dnevniResponse) {
-            final putnik = Putnik.fromPutovanjaIstorija(d as Map<String, dynamic>);
-
-            // ✅ DODAJ CLIENT-SIDE FILTERING za dnevne putnike po gradu/vremenu
-            if (grad != null && putnik.grad != grad) {
-              continue; // Preskoči ako grad ne odgovara
-            }
-
-            if (vreme != null) {
-              final normVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
-              final normVremeFilter = GradAdresaValidator.normalizeTime(vreme);
-              if (normVreme != normVremeFilter) {
-                continue; // Preskoči ako vreme ne odgovara
-              }
-            }
-
-            combined.add(putnik);
           }
+          print('📊 DIREKTNI QUERY SUCCESS: ${dnevniResponse.length} redova');
+        } catch (e) {
+          print('❌ DIREKTNI QUERY ERROR: $e');
+          dnevniResponse = <dynamic>[];
+        }
+
+        print('📊 DNEVNI RESPONSE: ${dnevniResponse.length} redova');
+        if (dnevniResponse.isNotEmpty) {
+          print('📊 PRVI RED: ${dnevniResponse.first}');
+        }
+
+        for (final d in dnevniResponse) {
+          final putnik = Putnik.fromPutovanjaIstorija(d as Map<String, dynamic>);
+          print('📊 UČITAVAN PUTNIK: ${putnik.ime} - ${putnik.grad} - ${putnik.polazak}');
+
+          // ✅ DODAJ CLIENT-SIDE FILTERING za dnevne putnike po gradu/vremenu
+          if (grad != null && putnik.grad != grad) {
+            print('❌ PRESKAČEM (grad filter): ${putnik.ime} - ${putnik.grad} != $grad');
+            continue; // Preskoči ako grad ne odgovara
+          }
+
+          if (vreme != null) {
+            final normVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
+            final normVremeFilter = GradAdresaValidator.normalizeTime(vreme);
+            if (normVreme != normVremeFilter) {
+              print('❌ PRESKAČEM (vreme filter): ${putnik.ime} - $normVreme != $normVremeFilter');
+              continue; // Preskoči ako vreme ne odgovara
+            }
+          }
+
+          print('✅ DODAJEM PUTNIKA: ${putnik.ime}');
+          combined.add(putnik);
         }
 
         // 🛑 UKLONJENO: Mesečni putnici se učitavaju preko MesecniPutnikService
@@ -134,8 +153,14 @@ class PutnikService {
           }
         }
 
+        print('📊 UKUPNO KOMBINOVANIH PUTNIKA: ${combined.length}');
+        for (final p in combined) {
+          print('📊 FINALNI PUTNIK: ${p.ime} - ${p.grad} - ${p.polazak}');
+        }
+
         subject.add(combined);
       } catch (e) {
+        print('❌ GREŠKA U doFetch: $e');
         subject.add([]);
       }
     }
@@ -615,7 +640,11 @@ class PutnikService {
       } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
         final insertData = await putnik.toPutovanjaIstorijaMapWithAdresa(); // ✅ KORISTI PRAVO REŠENJE
-        await supabase.from('putovanja_istorija').insert(insertData);
+        print('🔵 DODAVANJE DNEVNOG PUTNIKA U BAZU:');
+        print('📝 INSERT DATA: $insertData');
+
+        final result = await supabase.from('putovanja_istorija').insert(insertData);
+        print('✅ REZULTAT DODAVANJA: $result');
       }
 
       // 🔔 REAL-TIME NOTIFIKACIJA - Novi putnik dodat (samo za današnji dan)
@@ -641,10 +670,22 @@ class PutnikService {
       } else {}
 
       // 🔄 FORCE REFRESH SVA DVA STREAM-A
+      print('🔄 POZIVAM RealtimeService.refreshNow()...');
       await RealtimeService.instance.refreshNow();
 
       // 🔄 DODATNO: Resetuj cache za sigurnost
+      print('🗑️ BRIŠEM STREAM CACHE...');
       _streams.clear();
+
+      // ⏳ KRATKA PAUZA da se obezbedi da je transakcija commitovana
+      print('⏳ PAUZA ZBOG TRANSAKCIJE...');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // 🔄 DODATNI REFRESH NAKON PAUZE
+      print('🔄 DODATNI REFRESH NAKON PAUZE...');
+      await RealtimeService.instance.refreshNow();
+
+      print('✅ DODAVANJE PUTNIKA ZAVRŠENO USPEŠNO!');
     } catch (e) {
       rethrow;
     }
