@@ -33,16 +33,16 @@ jobs:
       run: flutter test
       continue-on-error: true
       
-    - name: 🔨 Build Release APK
+    - name: 🔨 Build Debug APK
       run: |
-        echo "Building release APK for tag: ${{ github.ref_name }}"
-        flutter build apk --release --target-platform android-arm64
+        echo "Building debug APK for: ${{ github.ref_name }}"
+        flutter build apk --debug --target-platform android-arm64
         
     - name: 📁 Upload Release APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: gavra-android-release-${{ github.ref_name }}
-        path: build/app/outputs/flutter-apk/app-release.apk
+        name: gavra-android-debug-${{ github.ref_name }}
+        path: build/app/outputs/flutter-apk/app-debug.apk
         retention-days: 90
 
   release:
@@ -57,7 +57,7 @@ jobs:
     - name: 📱 Download APK
       uses: actions/download-artifact@v4
       with:
-        name: gavra-android-release-${{ github.ref_name }}
+        name: gavra-android-debug-${{ github.ref_name }}
         path: ./artifacts/
         
     - name: �️ Delete Latest Release
@@ -71,14 +71,14 @@ jobs:
     - name: 🎉 Create New Latest Release
       run: |
         # Kreiraj novi latest release
-        gh release create latest ./artifacts/app-release.apk \
+        gh release create latest ./artifacts/app-debug.apk \
           --title "🚀 Gavra Android - Latest Build" \
           --notes "📱 **Automatski build sa commit:** ${{ github.sha }}
 
         ### 📱 QR Code Download:
         Skenuj QR kod za direktan download:
         \`\`\`
-        https://github.com/${{ github.repository }}/releases/latest/download/app-release.apk
+        https://github.com/${{ github.repository }}/releases/latest/download/app-debug.apk
         \`\`\`
         
         ### 🔄 Poslednje promene:
