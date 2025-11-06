@@ -2,6 +2,7 @@ name: 🚀 Build and Release APK
 
 on:
   push:
+    branches: [ main ]
     tags: [ 'v*' ]
 
 jobs:
@@ -45,103 +46,46 @@ jobs:
         retention-days: 90
 
   release:
-    name: 🎉 Create GitHub Release
+    name: 🎉 Update Latest Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     
     steps:
     - name: 🔄 Checkout Repository
       uses: actions/checkout@v4
       
-    - name: 📱 Download Release APK
+    - name: 📱 Download APK
       uses: actions/download-artifact@v4
       with:
         name: gavra-android-release-${{ github.ref_name }}
         path: ./artifacts/
         
-    - name: 📝 Extract Version Info
-      id: version_info
+    - name: �️ Delete Latest Release
       run: |
-        VERSION=${GITHUB_REF_NAME#v}
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "tag_name=$GITHUB_REF_NAME" >> $GITHUB_OUTPUT
+        # Obriši latest release ako postoji
+        gh release delete latest --yes || true
+        git push origin :refs/tags/latest || true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-        # Extract changelog from git commits since last tag
-        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        if [ -n "$LAST_TAG" ]; then
-          CHANGELOG=$(git log --pretty=format:"- %s" $LAST_TAG..HEAD)
-        else
-          CHANGELOG=$(git log --pretty=format:"- %s" -10)
-        fi
-        
-        # Create release notes
-        cat > release_notes.md << EOF
-        ## 🚀 Gavra Android v$VERSION
-        
-        ### 📱 Download APK:
-        - **gavra-android-v$VERSION.apk** - Verzija-specifičan APK
-        - **gavra-android-latest.apk** - Uvek najnovija verzija (QR Code friendly)
-        
+    - name: 🎉 Create New Latest Release
+      run: |
+        # Kreiraj novi latest release
+        gh release create latest ./artifacts/app-release.apk \
+          --title "🚀 Gavra Android - Latest Build" \
+          --notes "📱 **Automatski build sa commit:** ${{ github.sha }}
+
         ### 📱 QR Code Download:
-        Skenuj QR kod za direktan download najnovije verzije:
+        Skenuj QR kod za direktan download:
         \`\`\`
-        https://github.com/${{ github.repository }}/releases/latest/download/gavra-android-latest.apk
+        https://github.com/${{ github.repository }}/releases/latest/download/app-release.apk
         \`\`\`
         
-        ### 🔄 Šta je novo:
-        $CHANGELOG
+        ### 🔄 Poslednje promene:
+        $(git log --oneline -5)
         
-        ### 📋 Instalacija:
-        1. Skini **app-release.apk** fajl
-        2. Omogući "Unknown sources" u Android settings
-        3. Instaliraj APK
-        4. Uživaj! 🎉
-        
-        ### ℹ️ Info:
-        - Verzija: $VERSION
-        - Build: ${{ github.sha }}
-        - Datum: $(date '+%d.%m.%Y %H:%M')
-        EOF
-        
-    - name: 🎉 Create GitHub Release
-      uses: actions/create-release@v1
+        **Build vreme:** $(date '+%d.%m.%Y %H:%M')
+        **Commit:** ${{ github.sha }}" \
+          --latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref_name }}
-        release_name: 🚀 Gavra Android ${{ steps.version_info.outputs.version }}
-        body_path: release_notes.md
-        draft: false
-        prerelease: false
-        
-    - name: 📎 Upload APK to Release (Versioned)
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/app-release.apk
-        asset_name: gavra-android-v${{ steps.version_info.outputs.version }}.apk
-        asset_content_type: application/vnd.android.package-archive
-        
-    - name: 📱 Upload APK to Release (QR Code Friendly)
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/app-release.apk
-        asset_name: gavra-android-latest.apk
-        asset_content_type: application/vnd.android.package-archive
-        
-    - name: 🎯 Post-Release Actions
-      run: |
-        echo "✅ Release ${{ steps.version_info.outputs.tag_name }} uspešno kreiran!"
-        echo "📱 APK dostupan na: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version_info.outputs.tag_name }}"
-        echo "🔗 Update checker će automatski detektovati novu verziju"
-        echo ""
-        echo "📱 QR Code direktan download link:"
-        echo "https://github.com/${{ github.repository }}/releases/latest/download/gavra-android-latest.apk"
-        echo ""
-        echo "🎯 Za QR kod generiši link: https://github.com/${{ github.repository }}/releases/latest/download/gavra-android-latest.apk"
