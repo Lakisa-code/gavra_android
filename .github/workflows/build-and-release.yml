@@ -97,7 +97,14 @@ jobs:
         ## 🚀 Gavra Android v$VERSION
         
         ### 📱 Download APK:
-        - **app-release.apk** - Glavna aplikacija za Android
+        - **gavra-android-v$VERSION.apk** - Verzija-specifičan APK
+        - **gavra-android-latest.apk** - Uvek najnovija verzija (QR Code friendly)
+        
+        ### 📱 QR Code Download:
+        Skenuj QR kod za direktan download najnovije verzije:
+        \`\`\`
+        https://github.com/${{ github.repository }}/releases/latest/download/gavra-android-latest.apk
+        \`\`\`
         
         ### 🔄 Šta je novo:
         $CHANGELOG
@@ -125,7 +132,7 @@ jobs:
         draft: false
         prerelease: false
         
-    - name: 📎 Upload APK to Release
+    - name: 📎 Upload APK to Release (Versioned)
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -135,8 +142,23 @@ jobs:
         asset_name: gavra-android-v${{ steps.version_info.outputs.version }}.apk
         asset_content_type: application/vnd.android.package-archive
         
+    - name: 📱 Upload APK to Release (QR Code Friendly)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/app-release.apk
+        asset_name: gavra-android-latest.apk
+        asset_content_type: application/vnd.android.package-archive
+        
     - name: 🎯 Post-Release Actions
       run: |
         echo "✅ Release ${{ steps.version_info.outputs.tag_name }} uspešno kreiran!"
         echo "📱 APK dostupan na: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version_info.outputs.tag_name }}"
         echo "🔗 Update checker će automatski detektovati novu verziju"
+        echo ""
+        echo "📱 QR Code direktan download link:"
+        echo "https://github.com/${{ github.repository }}/releases/latest/download/gavra-android-latest.apk"
+        echo ""
+        echo "🎯 Za QR kod generiši link: https://github.com/${{ github.repository }}/releases/latest/download/gavra-android-latest.apk"
