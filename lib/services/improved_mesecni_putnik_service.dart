@@ -33,7 +33,7 @@ class ImprovedMesecniPutnikService {
       return response.map((json) => MesecniPutnik.fromMap(json as Map<String, dynamic>)).toList();
     } catch (e) {
       // Fallback na standardnu logiku ako SQL funkcija nije dostupna
-      print('⚠️ SQL funkcija nije dostupna, koristim fallback: $e');
+      // print('⚠️ SQL funkcija nije dostupna, koristim fallback: $e');
       return await _getFallbackFiltered(
         targetDay: targetDay,
         searchTerm: searchTerm,
@@ -131,7 +131,7 @@ class ImprovedMesecniPutnikService {
 
       return stats;
     } catch (e) {
-      print('❌ Greška pri dohvatanju statistika: $e');
+      // print('❌ Greška pri dohvatanju statistika: $e');
       return <String, int>{};
     }
   }
