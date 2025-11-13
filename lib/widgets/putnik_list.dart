@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/putnik.dart';
 import '../utils/text_utils.dart';
 import 'putnik_card.dart';
@@ -82,12 +83,10 @@ class PutnikList extends StatelessWidget {
 
             // OBIČNI PUTNICI
             if (p.vremePokupljenja == null) return 1; // BELE - nepokupljeni
-            if (p.vremePokupljenja != null &&
-                (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
+            if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
               return 2; // PLAVE - pokupljeni neplaćeni
             }
-            if (p.vremePokupljenja != null &&
-                (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
+            if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
               return 3; // ZELENE - pokupljeni plaćeni
             }
             return 99;
@@ -99,8 +98,8 @@ class PutnikList extends StatelessWidget {
           filteredPutnici.sort((a, b) {
             final cmp = putnikSortKey(a).compareTo(putnikSortKey(b));
             if (cmp != 0) return cmp;
-            // Ako su u istoj grupi, zadrži redosled iz baze/streama
-            return 0;
+            // Ako su u istoj grupi, sortiraj alfabetski po imenu
+            return a.ime.compareTo(b.ime);
           });
           prikaz = filteredPutnici;
           if (prikaz.isEmpty) {
@@ -112,14 +111,12 @@ class PutnikList extends StatelessWidget {
               final putnik = prikaz[index];
               // Redni broj: broji samo one koji nisu otkazani
               int? redniBroj;
-              if (!(putnik.status?.toLowerCase() == 'otkazano' ||
-                  putnik.status?.toLowerCase() == 'otkazan')) {
+              if (!(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
                 // Redni broj je pozicija među svim neotkazanim putnicima
                 redniBroj = prikaz
                     .take(index + 1)
                     .where(
-                      (p) => !(p.status?.toLowerCase() == 'otkazano' ||
-                          p.status?.toLowerCase() == 'otkazan'),
+                      (p) => !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'),
                     )
                     .length;
               }
@@ -153,48 +150,48 @@ class PutnikList extends StatelessWidget {
           .where(
             (p) =>
                 !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() != 'otkazano' &&
-                    p.status?.toLowerCase() != 'otkazan') &&
+                (p.status?.toLowerCase() != 'otkazano' && p.status?.toLowerCase() != 'otkazan') &&
                 (p.vremePokupljenja == null),
           )
-          .toList();
+          .toList()
+        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
 
       final plave = filteredPutnici
           .where(
             (p) =>
                 !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() != 'otkazano' &&
-                    p.status?.toLowerCase() != 'otkazan') &&
+                (p.status?.toLowerCase() != 'otkazano' && p.status?.toLowerCase() != 'otkazan') &&
                 (p.vremePokupljenja != null) &&
                 (p.mesecnaKarta != true) &&
                 ((p.iznosPlacanja == null || p.iznosPlacanja == 0)),
           )
-          .toList();
+          .toList()
+        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
 
       final zelene = filteredPutnici
           .where(
             (p) =>
                 !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() != 'otkazano' &&
-                    p.status?.toLowerCase() != 'otkazan') &&
+                (p.status?.toLowerCase() != 'otkazano' && p.status?.toLowerCase() != 'otkazan') &&
                 (p.vremePokupljenja != null) &&
-                (p.mesecnaKarta == true ||
-                    (p.iznosPlacanja != null && p.iznosPlacanja! > 0)),
+                (p.mesecnaKarta == true || (p.iznosPlacanja != null && p.iznosPlacanja! > 0)),
           )
-          .toList();
+          .toList()
+        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
 
       final crvene = filteredPutnici
           .where(
             (p) =>
                 !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() == 'otkazano' ||
-                    p.status?.toLowerCase() == 'otkazan'),
+                (p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'),
           )
-          .toList();
+          .toList()
+        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
 
       final zute = filteredPutnici
           .where((p) => p.jeOdsustvo) // na odsustvu (godišnji/bolovanje)
-          .toList();
+          .toList()
+        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
 
       final prikaz = [
         ...bele, // 1. BELE na vrhu
@@ -213,17 +210,14 @@ class PutnikList extends StatelessWidget {
           // Redni broj: broji samo BELE + PLAVE + ZELENE (ne broji CRVENE i ŽUTE)
           int? redniBroj;
           if (!putnik.jeOdsustvo && // nije ŽUTA (odsustvo)
-              !(putnik.status?.toLowerCase() == 'otkazano' ||
-                  putnik.status?.toLowerCase() == 'otkazan')) {
+              !(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
             // nije CRVENA (otkazana)
             // Broji koliko je neotkazanih i ne-odsutnih putnika pre ovog
             redniBroj = prikaz
                 .take(index + 1)
                 .where(
                   (p) =>
-                      !p.jeOdsustvo &&
-                      !(p.status?.toLowerCase() == 'otkazano' ||
-                          p.status?.toLowerCase() == 'otkazan'),
+                      !p.jeOdsustvo && !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'),
                 )
                 .length;
           }

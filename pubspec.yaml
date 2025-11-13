@@ -51,6 +51,10 @@ dependencies:
   graphql_flutter: ^5.1.2
   uuid: ^4.4.0
   supabase: ^2.0.8
+  
+  # 🏗️ STATE MANAGEMENT & IMMUTABLE MODELS
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
 
   # 🛰️ BACKGROUND GPS TRACKING (BESPLATNO)
   flutter_background_service: ^5.0.8
@@ -63,6 +67,13 @@ dependencies:
   sqflite: ^2.3.3
 
   app_links: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.4.6
+  freezed: ^2.4.5
+  json_serializable: ^6.7.1
 
 flutter:
   uses-material-design: true

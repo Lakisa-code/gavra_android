@@ -39,14 +39,14 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
             hintText: widget.mesecnaKarta
                 ? 'Ime putnika (samo dozvoljena imena)'
                 : (widget.hintText ?? 'Ime putnika'),
-            hintStyle: TextStyle(color: Colors.grey.withOpacity(0.7)),
+            hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.grey),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.5)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -57,7 +57,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
               borderSide: const BorderSide(color: Colors.red),
             ),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.9),
+            fillColor: Colors.white.withValues(alpha: 0.9),
             prefixIcon: Icon(
               widget.mesecnaKarta ? Icons.verified_user : Icons.person,
               color: widget.mesecnaKarta ? Colors.green : Colors.blue,
@@ -116,7 +116,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
                 : 'Često korišćeno ime',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.withOpacity(0.7),
+              color: Colors.grey.withValues(alpha: 0.7),
             ),
           ),
         );

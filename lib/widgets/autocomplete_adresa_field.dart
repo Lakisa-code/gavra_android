@@ -209,7 +209,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
             ),
             child: Column(
               children: [
@@ -377,7 +377,7 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
               borderSide: BorderSide(
                 color: widget.controller.text.trim().isNotEmpty
                     ? Colors.green
-                    : Colors.grey.withOpacity(0.5),
+                    : Colors.grey.withValues(alpha: 0.5),
               ),
             ),
             focusedBorder: OutlineInputBorder(

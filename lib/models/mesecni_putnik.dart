@@ -358,6 +358,8 @@ class MesecniPutnik {
     String? tipSkole,
     String? napomena,
     Map<String, List<String>>? polasciPoDanu,
+    String? adresaBelaCrkvaId,
+    String? adresaVrsacId,
     String? radniDani,
     DateTime? datumPocetkaMeseca,
     DateTime? datumKrajaMeseca,
@@ -401,6 +403,8 @@ class MesecniPutnik {
       tipSkole: tipSkole ?? this.tipSkole,
       napomena: napomena ?? this.napomena,
       polasciPoDanu: polasciPoDanu ?? this.polasciPoDanu,
+      adresaBelaCrkvaId: adresaBelaCrkvaId ?? this.adresaBelaCrkvaId,
+      adresaVrsacId: adresaVrsacId ?? this.adresaVrsacId,
       radniDani: radniDani ?? this.radniDani,
       datumPocetkaMeseca: datumPocetkaMeseca ?? this.datumPocetkaMeseca,
       datumKrajaMeseca: datumKrajaMeseca ?? this.datumKrajaMeseca,
@@ -555,10 +559,29 @@ class MesecniPutnik {
     final vsNaziv = await getAdresaVrsacNaziv();
 
     final adrese = <String>[];
-    if (bcNaziv != null) adrese.add('BC: $bcNaziv');
-    if (vsNaziv != null) adrese.add('VS: $vsNaziv');
+    if (bcNaziv != null) adrese.add(bcNaziv); // Uklonjen "BC:" prefiks
+    if (vsNaziv != null) adrese.add(vsNaziv); // Uklonjen "VS:" prefiks
 
     return adrese.isEmpty ? 'Nema adresa' : adrese.join(' | ');
+  }
+
+  /// Dobija adresu za prikaz na osnovu selektovanog grada
+  Future<String> getAdresaZaSelektovaniGrad(String? selektovaniGrad) async {
+    final bcNaziv = await getAdresaBelaCrkvaNaziv();
+    final vsNaziv = await getAdresaVrsacNaziv();
+
+    // Logika: prikaži adresu za selektovani grad
+    if (selektovaniGrad?.toLowerCase().contains('bela') == true) {
+      // BC selektovano → prikaži BC adresu, fallback na VS
+      if (bcNaziv != null) return bcNaziv;
+      if (vsNaziv != null) return vsNaziv;
+    } else {
+      // VS selektovano → prikaži VS adresu, fallback na BC
+      if (vsNaziv != null) return vsNaziv;
+      if (bcNaziv != null) return bcNaziv;
+    }
+
+    return 'Nema adresa';
   }
 
   /// Legacy kompatibilnost - vraća TEXT naziv Bela Crkva adrese

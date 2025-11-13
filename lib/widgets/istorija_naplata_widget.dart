@@ -50,10 +50,10 @@ class IstorijaHaplataWidget extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: VozacBoja.get(vozac).withOpacity(0.1),
+                    color: VozacBoja.get(vozac).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: VozacBoja.get(vozac).withOpacity(0.3),
+                      color: VozacBoja.get(vozac).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(

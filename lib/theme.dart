@@ -29,9 +29,8 @@ const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   // Surface colors - svetla pozadina
   surface: Color(0xFFF0F9FF), // Svetla pozadina
   onSurface: Color(0xFF1A1A1A),
-  surfaceVariant: Color(0xFFE0F2FE),
+  surfaceContainerHighest: Color(0xFFE0F2FE),
   onSurfaceVariant: Color(0xFF4B5563),
-  surfaceContainerHighest: Color(0xFFDCFDF7),
 
   outline: Color(0xFF6B7280),
   outlineVariant: Color(0xFFD1D5DB),
@@ -120,10 +119,10 @@ extension ThemeGradients on ThemeData {
   LinearGradient get backgroundGradient => ThemeManager().currentGradient;
 
   // Glassmorphism kontejner boje
-  Color get glassContainer => Colors.white.withOpacity(0.06);
-  Color get glassBorder => Colors.white.withOpacity(0.13);
+  Color get glassContainer => Colors.white.withValues(alpha: 0.06);
+  Color get glassBorder => Colors.white.withValues(alpha: 0.13);
   BoxShadow get glassShadow => BoxShadow(
-        color: Colors.black.withOpacity(0.22),
+        color: Colors.black.withValues(alpha: 0.22),
         blurRadius: 24,
         offset: const Offset(0, 8),
       );
@@ -156,22 +155,22 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
       width: 2,
-      color: const Color(0xFF1FA2FF).withOpacity(0.4),
+      color: const Color(0xFF1FA2FF).withValues(alpha: 0.4),
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.3),
+        color: const Color(0xFF021B79).withValues(alpha: 0.3),
         blurRadius: 32,
         offset: const Offset(0, 12),
         spreadRadius: 4,
       ),
       BoxShadow(
-        color: const Color(0xFF4F7CAC).withOpacity(0.2),
+        color: const Color(0xFF4F7CAC).withValues(alpha: 0.2),
         blurRadius: 24,
         offset: const Offset(0, 8),
       ),
       BoxShadow(
-        color: const Color(0xFFE91E63).withOpacity(0.4),
+        color: const Color(0xFFE91E63).withValues(alpha: 0.4),
         blurRadius: 36,
         offset: const Offset(0, 16),
         spreadRadius: 6,
@@ -188,11 +187,11 @@ class TripleBlueFashionStyles {
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
       width: 1.5,
-      color: const Color(0xFF1FA2FF).withOpacity(0.6),
+      color: const Color(0xFF1FA2FF).withValues(alpha: 0.6),
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.4),
+        color: const Color(0xFF021B79).withValues(alpha: 0.4),
         blurRadius: 24,
         offset: const Offset(0, 12),
         spreadRadius: 2,
@@ -204,12 +203,12 @@ class TripleBlueFashionStyles {
     color: const Color(0xFFF0F9FF), // Svetla pozadina
     borderRadius: BorderRadius.circular(16),
     border: Border.all(
-      color: const Color(0xFF1FA2FF).withOpacity(0.4), // Plavi border
+      color: const Color(0xFF1FA2FF).withValues(alpha: 0.4), // Plavi border
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.2), // Plava senka
+        color: const Color(0xFF021B79).withValues(alpha: 0.2), // Plava senka
         blurRadius: 16,
         offset: const Offset(0, 8),
       ),
@@ -220,12 +219,12 @@ class TripleBlueFashionStyles {
     color: Colors.white,
     borderRadius: BorderRadius.circular(24),
     border: Border.all(
-      color: const Color(0xFF1FA2FF).withOpacity(0.5), // Plavi border
+      color: const Color(0xFF1FA2FF).withValues(alpha: 0.5), // Plavi border
       width: 2,
     ),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF021B79).withOpacity(0.3), // Plava senka
+        color: const Color(0xFF021B79).withValues(alpha: 0.3), // Plava senka
         blurRadius: 36,
         offset: const Offset(0, 16),
         spreadRadius: 8,

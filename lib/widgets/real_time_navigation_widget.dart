@@ -74,7 +74,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
       // Dobij trenutnu poziciju
       _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        // desiredAccuracy: deprecated, use settings parameter
       );
 
       if (mounted) {
@@ -347,7 +347,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -367,7 +367,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
         border: Border(
           bottom: BorderSide(color: Theme.of(context).colorScheme.outline),
         ),
@@ -441,9 +441,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
           return Container(
             decoration: BoxDecoration(
               color: isActive
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                   : isPassed
-                      ? Theme.of(context).colorScheme.surfaceVariant
+                      ? Theme.of(context).colorScheme.surfaceContainerHighest
                       : null,
             ),
             child: ListTile(

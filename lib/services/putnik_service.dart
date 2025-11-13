@@ -691,11 +691,12 @@ class PutnikService {
     }
   }
 
-  /// ✅ KOMBINOVANI STREAM - MESEČNI + DNEVNI PUTNICI
+  /// ✅ KOMBINOVANI STREAM - MESEČNI + DNEVNI PUTNICI (OPTIMIZOVANO)
   Stream<List<Putnik>> streamKombinovaniPutnici() {
     final danasKratica = _getFilterDayAbbreviation(DateTime.now().weekday);
     final danas = DateTime.now().toIso8601String().split('T')[0];
 
+    // 🚀 OPTIMIZACIJA: Koristi RealtimeService singleton umesto uklonjenog StreamCacheService
     final mesecniStream = RealtimeService.instance.tableStream('mesecni_putnici');
     final putovanjaStream = RealtimeService.instance.tableStream('putovanja_istorija');
 
@@ -958,7 +959,14 @@ class PutnikService {
       // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
     }).eq('id', id as String);
 
-    // 🔄 AŽURIRAJ REAL-TIME STREAMS NAKON BRISANJA
+    // 🔄 VIŠESTRUKI REFRESH NAKON BRISANJA za trenutno ažuriranje
+    await RealtimeService.instance.refreshNow();
+
+    // 🗑️ OČISTI STREAM CACHE da se forsira novo učitavanje
+    _streams.clear();
+
+    // ⏳ KRATKA PAUZA i DODATNI REFRESH
+    await Future<void>.delayed(const Duration(milliseconds: 150));
     await RealtimeService.instance.refreshNow();
   }
 
@@ -1087,7 +1095,7 @@ class PutnikService {
       await supabase.from(tabela).update({
         'cena': iznos,
         'vozac_id': validVozacId, // ✅ STANDARDIZOVANO - samo vozac_id (UUID)
-        'status': 'placen', // ✅ DODAJ STATUS plaćanja
+        'status': 'placeno', // ✅ DODAJ STATUS plaćanja (konzistentno)
       }).eq('id', id as String);
     } // (Uklonjeno slanje notifikacije za plaćanje)
   }

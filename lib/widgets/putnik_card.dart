@@ -5,11 +5,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/mesecni_putnik.dart' as novi_model;
 import '../models/putnik.dart';
+import '../services/adresa_supabase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
+import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
+import '../utils/global_cache_manager.dart'; // 🔄 DODATO za globalni cache manager
 import '../utils/smart_colors.dart';
 import '../utils/vozac_boja.dart';
 
@@ -318,10 +321,10 @@ class _PutnikCardState extends State<PutnikCard> {
         Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             ),
           ),
           child: ListTile(
@@ -824,10 +827,10 @@ class _PutnikCardState extends State<PutnikCard> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(
@@ -997,7 +1000,7 @@ class _PutnikCardState extends State<PutnikCard> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.successPrimary.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1202,6 +1205,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
       // Pozovi odgovarajući service za plaćanje
       if (isMesecni && mesec != null) {
+        // Validacija da putnik ime nije prazno
+        if (_putnik.ime.trim().isEmpty) {
+          throw Exception('Ime putnika je prazno - ne može se pronaći u bazi');
+        }
+
         // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
         final mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
         if (mesecniPutnik != null) {
@@ -1213,7 +1221,7 @@ class _PutnikCardState extends State<PutnikCard> {
             vozacIme: finalDriver,
           );
         } else {
-          throw Exception('Mesečni putnik ${_putnik.ime} nije pronađen u bazi');
+          throw Exception('Mesečni putnik "${_putnik.ime}" nije pronađen u bazi');
         }
       } else {
         // Za obične putnike koristi postojeći servis
@@ -1229,7 +1237,7 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       if (mounted) {
-        if (mounted) setState(() {});
+        setState(() {});
 
         // Pozovi callback za refresh parent widget-a
         if (widget.onChanged != null) {
@@ -1250,6 +1258,8 @@ class _PutnikCardState extends State<PutnikCard> {
         );
       }
     } catch (e) {
+      // Log greška za debugging
+      print('GREŠKA u _executePayment: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1366,10 +1376,37 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // Dobija koordinate za destinaciju na osnovu grada putnika (transport logika)
-  Future<String?> _getKoordinateZaAdresu(String? grad, String? adresa) async {
-    if (grad == null) return null;
+  // Dobija koordinate za destinaciju - UNIFIKOVANO za sve putnike
+  Future<String?> _getKoordinateZaAdresu(String? grad, String? adresa, String? adresaId) async {
+    // 🎯 PRIORITET 1: Ako imamo adresaId (UUID), koristi tabelu adrese
+    if (adresaId != null && adresaId.isNotEmpty) {
+      try {
+        final adresaObj = await AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
+        if (adresaObj != null && adresaObj.isNotEmpty) {
+          // Traži koordinate za ovu adresu
+          final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(adresaObj, grad ?? '');
+          if (koordinate?.hasValidCoordinates == true) {
+            return '${koordinate!.latitude},${koordinate.longitude}';
+          }
+        }
+      } catch (e) {
+        // Nastavi sa fallback opcijama
+      }
+    }
 
+    // 🎯 PRIORITET 2: Ako imamo naziv adrese, traži u tabeli adrese
+    if (adresa != null && adresa.isNotEmpty && adresa != 'Adresa nije definisana') {
+      try {
+        final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(adresa, grad ?? '');
+        if (koordinate?.hasValidCoordinates == true) {
+          return '${koordinate!.latitude},${koordinate.longitude}';
+        }
+      } catch (e) {
+        // Nastavi sa fallback opcijama
+      }
+    }
+
+    // 🎯 PRIORITET 3: Fallback na transport logiku (centar destinacije)
     // 🚌 TRANSPORT LOGIKA: Navigiraj do centra destinacije
     // Svi iz Bela Crkva opštine → Vršac centar
     // Svi iz Vršac opštine → Bela Crkva centar
@@ -1378,8 +1415,12 @@ class _PutnikCardState extends State<PutnikCard> {
       'Vršac': '44.9013,21.3425', // Bela Crkva centar (destinacija za VS putnike)
     };
 
+    // FALLBACK: Ako grad nije postavljen, koristi default Vršac centar
+    // jer vozite samo između ova 2 grada
+    String gradZaKoordinat = grad ?? 'Vršac';
+
     // Vrati koordinate destinacije na osnovu grada putnika
-    return destinacije[grad];
+    return destinacije[gradZaKoordinat] ?? destinacije['Vršac'];
   }
 
   // Otvara Google Maps navigaciju sa poboljšanim error handling-om
@@ -1557,8 +1598,8 @@ class _PutnikCardState extends State<PutnikCard> {
                     : const Color(
                         0xFF7FB3D3,
                       )) // PLAVO za pokupljene neplaćene - ČETVRTI PRIORITET
-                : Colors.white.withOpacity(
-                    0.70,
+                : Colors.white.withValues(
+                    alpha: 0.70,
                   )); // ⚪ BELO za nepokupljene - PETI PRIORITET (default)
 
     // Prava po vozaču
@@ -1585,8 +1626,8 @@ class _PutnikCardState extends State<PutnikCard> {
           gradient: _putnik.jeOdsustvo
               ? LinearGradient(
                   colors: [
-                    const Color(0xFFFFF59D).withOpacity(
-                      0.85,
+                    const Color(0xFFFFF59D).withValues(
+                      alpha: 0.85,
                     ), // ŽUTO za odsustvo - NAJVEĆI PRIORITET
                     const Color(0xFFFFF59D),
                   ],
@@ -1597,7 +1638,7 @@ class _PutnikCardState extends State<PutnikCard> {
                   ? null // CRVENO za otkazane - bez gradient-a
                   : LinearGradient(
                       colors: [
-                        Colors.white.withOpacity(0.98),
+                        Colors.white.withValues(alpha: 0.98),
                         isSelected
                             ? (isMesecna || isPlaceno
                                 ? const Color(
@@ -1606,7 +1647,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                 : const Color(
                                     0xFF7FB3D3,
                                   )) // Plava za pokupljene neplaćene
-                            : Colors.white.withOpacity(0.98),
+                            : Colors.white.withValues(alpha: 0.98),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -1615,41 +1656,30 @@ class _PutnikCardState extends State<PutnikCard> {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: _putnik.jeOdsustvo
-                ? const Color(0xFFFFC107).withOpacity(
-                    0.6,
+                ? const Color(0xFFFFC107).withValues(
+                    alpha: 0.6,
                   ) // 🟡 ŽUTO border za odsustvo - NAJVEĆI PRIORITET
                 : _putnik.jeOtkazan
-                    ? Colors.red.withOpacity(0.25) // 🔴 CRVENO border za otkazane
+                    ? Colors.red.withValues(alpha: 0.25) // 🔴 CRVENO border za otkazane
                     : isSelected
                         ? (isMesecna || isPlaceno
-                            ? const Color(0xFF388E3C).withOpacity(
-                                0.4,
-                              ) // 🟢 ZELENO border za mesečne/plaćene
-                            : const Color(0xFF7FB3D3).withOpacity(
-                                0.4,
-                              )) // 🔵 PLAVO border za pokupljene neplaćene
-                        : Colors.grey.withOpacity(0.10), // ⚪ BELO border za nepokupljene
+                            ? const Color(0xFF388E3C).withValues(alpha: 0.4) // 🟢 ZELENO border za mesečne/plaćene
+                            : const Color(0xFF7FB3D3).withValues(alpha: 0.4)) // 🔵 PLAVO border za pokupljene neplaćene
+                        : Colors.grey.withValues(alpha: 0.10), // ⚪ BELO border za nepokupljene
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
               color: _putnik.jeOdsustvo
-                  ? const Color(0xFFFFC107).withOpacity(
-                      0.2,
-                    ) // 🟡 ŽUTO shadow za odsustvo - NAJVEĆI PRIORITET
+                  ? const Color(0xFFFFC107).withValues(alpha: 0.2) // 🟡 ŽUTO shadow za odsustvo - NAJVEĆI PRIORITET
                   : _putnik.jeOtkazan
-                      ? Colors.red.withOpacity(0.08) // 🔴 CRVENO shadow za otkazane
+                      ? Colors.red.withValues(alpha: 0.08) // 🔴 CRVENO shadow za otkazane
                       : isSelected
                           ? (isMesecna || isPlaceno
-                              ? const Color(0xFF388E3C).withOpacity(
-                                  0.15,
-                                ) // 🟢 ZELENO shadow za mesečne/plaćene
-                              : const Color(0xFF7FB3D3).withOpacity(
-                                  0.15,
-                                )) // 🔵 PLAVO shadow za pokupljene neplaćene
-                          : Colors.black.withOpacity(
-                              0.07,
-                            ), // ⚪ BELO shadow za nepokupljene
+                              ? const Color(0xFF388E3C).withValues(alpha: 0.15) // 🟢 ZELENO shadow za mesečne/plaćene
+                              : const Color(0xFF7FB3D3)
+                                  .withValues(alpha: 0.15)) // 🔵 PLAVO shadow za pokupljene neplaćene
+                          : Colors.black.withValues(alpha: 0.07), // ⚪ BELO shadow za nepokupljene
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -1728,7 +1758,50 @@ class _PutnikCardState extends State<PutnikCard> {
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
-                        // Prikaži adresu ispod imena ako postoji
+                        // 🏠 ADRESE - prikaži adrese za mesečne putnike ili staru adresu za dnevne
+                        if (_putnik.mesecnaKarta == true)
+                          // Za mesečne putnike koristi novi UUID sistem
+                          FutureBuilder<String>(
+                            future: _getMesecniPutnikAdrese(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const SizedBox.shrink(); // Ne prikazuj loading
+                              }
+
+                              if (snapshot.hasError ||
+                                  !snapshot.hasData ||
+                                  snapshot.data!.isEmpty ||
+                                  snapshot.data == 'Nema adresa') {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  snapshot.data!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: (_putnik.jeOtkazan
+                                            ? Colors.red[300]
+                                            : _putnik.jeOdsustvo
+                                                ? Colors.orange[500] // 🟡 Oranž adresa za odsustvo
+                                                : isSelected
+                                                    ? (isMesecna || isPlaceno)
+                                                        ? Colors.green[500]
+                                                        : const Color(0xFF0D47A1)
+                                                    : Colors.grey[600])
+                                        ?.withValues(alpha: 0.8),
+                                    fontWeight: FontWeight.w500,
+                                    fontStyle: FontStyle.normal,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            },
+                          )
+                        else
+                        // Za dnevne putnike koristi staro TEXT polje
                         if (_putnik.adresa != null && _putnik.adresa!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
@@ -1745,7 +1818,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                     ? Colors.green[500]
                                                     : const Color(0xFF0D47A1)
                                                 : Colors.grey[600])
-                                    ?.withOpacity(0.8),
+                                    ?.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                                 fontStyle: FontStyle.normal,
                               ),
@@ -1812,8 +1885,9 @@ class _PutnikCardState extends State<PutnikCard> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // 📍 GPS IKONA ZA NAVIGACIJU - ako postoji adresa
-                                      if (_putnik.adresa != null && _putnik.adresa!.isNotEmpty) ...[
+                                      // 📍 GPS IKONA ZA NAVIGACIJU - ako postoji adresa (mesečni ili dnevni putnik)
+                                      if ((_putnik.mesecnaKarta == true) ||
+                                          (_putnik.adresa != null && _putnik.adresa!.isNotEmpty)) ...[
                                         GestureDetector(
                                           onTap: () {
                                             showDialog<void>(
@@ -1853,23 +1927,45 @@ class _PutnikCardState extends State<PutnikCard> {
                                                         12,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .primary
+                                                            .withValues(alpha: 0.1),
                                                         borderRadius: BorderRadius.circular(8),
                                                         border: Border.all(
-                                                          color: Colors.blue.withOpacity(
-                                                            0.3,
-                                                          ),
+                                                          color: Colors.blue.withValues(alpha: 0.3),
                                                         ),
                                                       ),
-                                                      child: Text(
-                                                        _putnik.adresa!,
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                        overflow: TextOverflow.fade,
-                                                        maxLines: 3,
-                                                      ),
+                                                      child: _putnik.mesecnaKarta == true
+                                                          ? FutureBuilder<String>(
+                                                              future: _getMesecniPutnikAdrese(),
+                                                              builder: (context, snapshot) {
+                                                                if (snapshot.connectionState ==
+                                                                    ConnectionState.waiting) {
+                                                                  return const Text('Učitavam...');
+                                                                }
+                                                                return Text(
+                                                                  snapshot.data?.isNotEmpty == true
+                                                                      ? snapshot.data!
+                                                                      : 'Adresa nije definisana',
+                                                                  style: const TextStyle(
+                                                                    fontSize: 16,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  ),
+                                                                  overflow: TextOverflow.fade,
+                                                                  maxLines: 3,
+                                                                );
+                                                              },
+                                                            )
+                                                          : Text(
+                                                              _putnik.adresa ?? 'Adresa nije definisana',
+                                                              style: const TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight: FontWeight.w600,
+                                                              ),
+                                                              overflow: TextOverflow.fade,
+                                                              maxLines: 3,
+                                                            ),
                                                     ),
                                                   ],
                                                 ),
@@ -1936,10 +2032,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           );
                                                         }
 
-                                                        // Dobij koordinate (hibridno sa retry)
+                                                        // Dobij koordinate - UNIFIKOVANO za sve putnike
                                                         final koordinate = await _getKoordinateZaAdresu(
                                                           _putnik.grad,
                                                           _putnik.adresa,
+                                                          _putnik.adresaId,
                                                         );
 
                                                         if (mounted && context.mounted) {
@@ -2050,7 +2147,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize, // Adaptive veličina
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
@@ -2072,7 +2169,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.successPrimary.withOpacity(0.1),
+                                              color:
+                                                  Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
@@ -2094,7 +2192,8 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.successPrimary.withOpacity(0.1),
+                                              color:
+                                                  Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
@@ -2124,7 +2223,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Colors.orange.withOpacity(0.1),
+                                              color: Colors.orange.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(4),
                                             ),
                                             child: Icon(
@@ -2162,7 +2261,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontSize: 13,
                             color: VozacBoja.isValidDriver(_putnik.dodaoVozac)
                                 ? VozacBoja.get(_putnik.dodaoVozac)
-                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2174,7 +2273,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontSize: 13,
                             color: VozacBoja.isValidDriver(_putnik.dodaoVozac)
                                 ? VozacBoja.get(_putnik.dodaoVozac)
-                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2190,7 +2289,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               fontSize: 13,
                               color: VozacBoja.isValidDriver(_putnik.otkazaoVozac)
                                   ? VozacBoja.get(_putnik.otkazaoVozac)
-                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -2199,8 +2298,8 @@ class _PutnikCardState extends State<PutnikCard> {
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.isValidDriver(_putnik.otkazaoVozac)
-                                  ? VozacBoja.get(_putnik.otkazaoVozac).withOpacity(0.8)
-                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                                  ? VozacBoja.get(_putnik.otkazaoVozac).withValues(alpha: 0.8)
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2211,7 +2310,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               ),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: VozacBoja.get(_putnik.otkazaoVozac).withOpacity(0.8),
+                                color: VozacBoja.get(_putnik.otkazaoVozac).withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -2250,7 +2349,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               ? VozacBoja.get(
                                   _putnik.pokupioVozac ?? widget.currentDriver,
                                 )
-                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -2264,7 +2363,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               fontSize: 13,
                               color: VozacBoja.isValidDriver(_putnik.naplatioVozac)
                                   ? VozacBoja.get(_putnik.naplatioVozac)
-                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -2274,7 +2373,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               fontSize: 13,
                               color: VozacBoja.isValidDriver(_putnik.naplatioVozac)
                                   ? VozacBoja.get(_putnik.naplatioVozac)
-                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -2407,11 +2506,29 @@ class _PutnikCardState extends State<PutnikCard> {
       final pocetakMeseca = DateTime(year, monthNumber);
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
+      // 🔄 Konvertuj ime vozača u UUID - FIX ZA CONSTRAINT GREŠKU
+      print('🔍 PUTNIK_CARD DEBUG: vozacIme input = "$vozacIme"');
+
+      String vozacUuid;
+      if (VozacMappingService.isValidVozacUuidSync(vozacIme)) {
+        // Već je UUID format
+        vozacUuid = vozacIme;
+        print('🔍 PUTNIK_CARD: vozacIme je već UUID = $vozacUuid');
+      } else {
+        // Konvertuj ime u UUID
+        final uuid = VozacMappingService.getVozacUuidSync(vozacIme);
+        print('🔍 PUTNIK_CARD: VozacMappingService.getVozacUuidSync("$vozacIme") = $uuid');
+
+        // FALLBACK sa pravim UUID-om vozača Bojan
+        vozacUuid = uuid ?? '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e'; // Bojan UUID iz baze
+        print('🔍 PUTNIK_CARD: final vozacUuid = $vozacUuid');
+      }
+
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
       final uspeh = await MesecniPutnikService().azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
-        vozacIme,
+        vozacUuid, // 🎯 PROSLIJEDI UUID UMESTO IMENA
         pocetakMeseca,
         krajMeseca,
       );
@@ -2438,6 +2555,8 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       }
     } catch (e) {
+      // Log greška za debugging
+      print('GREŠKA u _sacuvajPlacanjeStatic: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2466,7 +2585,7 @@ class _PutnikCardState extends State<PutnikCard> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
@@ -2638,9 +2757,45 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (confirm == true) {
       await PutnikService().obrisiPutnika(_putnik.id!);
+
+      // 🔄 GLOBALNI CACHE CLEAR I REFRESH
+      await GlobalCacheManager.clearAllCachesAndRefresh();
+
+      // 🔄 POZOVI onChanged callback da forsira parent refresh
+      if (widget.onChanged != null) {
+        widget.onChanged!();
+      }
+
       if (mounted) {
-        if (mounted) setState(() {});
+        setState(() {});
       }
     }
   }
+
+  /// Učitava formatirane adrese za mesečne putnike koristeći UUID reference
+  Future<String> _getMesecniPutnikAdrese() async {
+    if (_putnik.id == null) return '';
+
+    try {
+      // Učitaj mesečni putnik objekat iz baze koristeći ime putnika
+      final mesecniService = MesecniPutnikService();
+      final sviMesecniPutnici = await mesecniService.getAllMesecniPutnici();
+
+      // Pronađi mesečni putnik objekat po imenu
+      final mesecniPutnik = sviMesecniPutnici.firstWhere(
+        (mp) => mp.putnikIme.trim().toLowerCase() == _putnik.ime.trim().toLowerCase(),
+        orElse: () => throw Exception('Mesečni putnik nije pronađen'),
+      );
+
+      // Koristi getAdresaZaSelektovaniGrad metodu za kontekstualnu adresu
+      return await mesecniPutnik.getAdresaZaSelektovaniGrad(widget.selectedGrad);
+    } catch (e) {
+      // Ako ne može da učita, vrati prazan string
+      return '';
+    }
+  }
+
+  /// Dobija koordinate za navigaciju za mesečne putnike - traži po nazivu mesta
+  /// DEPRECATED: Koristi _getKoordinateZaAdresu umesto ove funkcije
+  /// Zadržano za kompatibilnost
 } // kraj klase

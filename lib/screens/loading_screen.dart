@@ -310,7 +310,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               builder: (context, stage, child) => Text(
                 'Korak ${stage.index + 1} od ${LoadingStage.values.length}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
                 ),
@@ -337,9 +337,9 @@ class _LoadingScreenState extends State<LoadingScreen>
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                 ),
               ),
             ),
@@ -357,7 +357,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                   width: 2,
                 ),
               ),
@@ -366,7 +366,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
               ),
@@ -382,7 +382,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             height: 80,
             child: CircularProgressIndicator(
               value: progress,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
@@ -393,11 +393,11 @@ class _LoadingScreenState extends State<LoadingScreen>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -428,7 +428,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               Shadow(
                 offset: const Offset(0, 2),
                 blurRadius: 4,
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -437,7 +437,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         Text(
           'Sistem za upravljanje prevozom',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             fontSize: 14,
             fontWeight: FontWeight.w400,
             letterSpacing: 0.5,
@@ -460,7 +460,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             Container(
               height: 6,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(3),
               ),
               child: FractionallySizedBox(
@@ -474,7 +474,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                     borderRadius: BorderRadius.circular(3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),
@@ -490,7 +490,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             Text(
               '${(progress * 100).toInt()}%',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -521,11 +521,11 @@ class _LoadingScreenState extends State<LoadingScreen>
           margin: const EdgeInsets.symmetric(horizontal: 32),
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
+            color: Colors.white.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 30,
                 offset: const Offset(0, 15),
               ),
@@ -549,7 +549,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFDC2626).withOpacity(0.3),
+                          color: const Color(0xFFDC2626).withValues(alpha: 0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
                         ),
@@ -589,7 +589,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                     color: const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFDC2626).withOpacity(0.2),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.2),
                     ),
                   ),
                   child: Text(
@@ -643,7 +643,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         side: BorderSide(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -663,7 +663,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                            color: const Color(0xFF1E3A8A).withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),

@@ -464,18 +464,18 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           // Search bar
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
             ),
             child: TextField(
               controller: _searchController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Pretraži lokacije...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                 prefixIcon:
-                    Icon(Icons.search, color: Colors.white.withOpacity(0.6)),
+                    Icon(Icons.search, color: Colors.white.withValues(alpha: 0.6)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         onPressed: () {
@@ -484,7 +484,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                         },
                         icon: Icon(
                           Icons.clear,
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                         ),
                       )
                     : null,
@@ -519,7 +519,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               Text(
                 'Sortiranje:',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -551,11 +551,11 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.white.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+              ? Colors.white.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
           ),
         ),
         child: Text(
@@ -585,7 +585,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color:
-              isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+              isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
@@ -647,9 +647,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -666,7 +666,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 10,
               fontWeight: FontWeight.w500,
             ),
@@ -688,7 +688,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             margin: const EdgeInsets.only(bottom: 12),
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -709,13 +709,13 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             Icon(
               Icons.location_off,
               size: 64,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'Nema rezultata',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -724,7 +724,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             Text(
               'Probajte sa drugim kriterijumima pretrage',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -756,14 +756,14 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: _getCountColor(count).withOpacity(0.2),
+          backgroundColor: _getCountColor(count).withValues(alpha: 0.2),
           child: Text(
             '${index + 1}',
             style: TextStyle(
@@ -785,7 +785,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             ? Text(
                 'Poslednji pristup: ${_formatDateTime(lastAccessed)}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               )
@@ -793,7 +793,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: _getCountColor(count).withOpacity(0.2),
+            color: _getCountColor(count).withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -838,13 +838,13 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'Greška u učitavanju',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -853,7 +853,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           Text(
             _errorMessage ?? 'Nepoznata greška',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 14,
             ),
             textAlign: TextAlign.center,
@@ -862,7 +862,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           ElevatedButton(
             onPressed: _loadData,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               foregroundColor: Colors.white,
             ),
             child: const Text('Pokušaj ponovo'),

@@ -1,85 +1,65 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# Flutter/Dart build outputs
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
 
-# IntelliJ related
+# Android build outputs
+android/app/*.apk
+android/app/*.ap_
+android/app/build/
+android/build/
+android/captures/
+android/.gradle/
+android/local.properties
+
+# iOS build outputs
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/flutter_assets/
+ios/Pods/
+ios/.symlinks/
+ios/**/*.pbxuser
+ios/**/*.xcworkspace
+!ios/**/*.xcworkspace/contents.xcworkspacedata
+ios/**/*.xcuserstate
+ios/**/*.xcscheme
+!ios/**/*.xcscheme
+
+# IDE files
+.idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
-.idea/
+.project
+.settings/
 
-# GitHub Actions artifacts
-gavra-android-debug/
-gavra-android-release/
+# Test and coverage
+coverage/
+test/.test_coverage.dart
+.test_cache/
 
-# Prevent unwanted workflow files
-.github/workflows/auto-release.yml
-.github/workflows/pr-check.yml
-.github/workflows/android.yml
+# Temporary files
+*.log
+*.tmp
+*.swp
+*~
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Temporary documentation files
-*.js
-!tools/**/*.js
-tmp/
-temp/
-
-# Node.js related (not needed for Flutter)
-node_modules/
-package.json
-package-lock.json
-npm-debug.log*
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Flutter ephemeral files (auto-generated)
-**/flutter/ephemeral/
-linux/flutter/ephemeral/
-windows/flutter/ephemeral/
-macos/flutter/ephemeral/
-
-# Gradle cache and build files
-android/.gradle/
-android/app/build/
-android/build/
-
-# Secrets and local env files
+# Environment and secrets
 .env
-**/.env
-service-account.json
-**/service-account.json
-mcp_server/serviceAccountKey.json
-gavra-service-account.json
+*.keystore
+!android/gavra-release-key-production.keystore
+key.properties
+
+# Debug files
+debug_*.sql
+*_test.dart
+
+# Node modules (anywhere in project)
+**/node_modules/
+package-lock.json

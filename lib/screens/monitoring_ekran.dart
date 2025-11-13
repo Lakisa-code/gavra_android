@@ -134,7 +134,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: boja.withOpacity(0.3),
+            color: boja.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -166,7 +166,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
             Container(
               height: 8,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3),
+                color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: FractionallySizedBox(
@@ -183,7 +183,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
             Text(
               '${_statistika['procenat']} od mesečnog limita',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 14,
               ),
             ),
@@ -192,7 +192,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               Text(
                 'Poslednje ažuriranje: ${_statistika['last_update']}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),

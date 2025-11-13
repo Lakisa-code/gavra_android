@@ -259,7 +259,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -269,7 +269,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
           ConstText(
             'Cache Efficiency: $status ($hitRate%)',
             style: TextStyle(
-              color: color.withOpacity(0.8),
+              color: color.withValues(alpha: 0.8),
               fontWeight: FontWeight.w500,
             ),
           ),

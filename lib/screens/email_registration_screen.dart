@@ -136,7 +136,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -163,7 +163,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           Text(
             'Registrujte se sa email adresom',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 16,
             ),
           ),
@@ -226,19 +226,19 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           },
           decoration: InputDecoration(
             labelText: 'Email Adresa',
-            labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+            labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
             hintText: 'Unesite vašu email adresu',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
             prefixIcon: const Icon(Icons.email, color: Colors.blue),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.1),
+            fillColor: Colors.white.withValues(alpha: 0.1),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+              borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -272,10 +272,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: VozacBoja.get(_selectedDriver).withOpacity(0.1),
+              color: VozacBoja.get(_selectedDriver).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: VozacBoja.get(_selectedDriver).withOpacity(0.3),
+                color: VozacBoja.get(_selectedDriver).withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -309,9 +309,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: 'Šifra',
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         hintText: 'Najmanje 6 karaktera',
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
         prefixIcon: const Icon(Icons.lock, color: Colors.blue),
         suffixIcon: IconButton(
           icon: Icon(
@@ -326,14 +326,14 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           },
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -363,9 +363,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: 'Potvrdite Šifru',
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
+        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         hintText: 'Ponovite šifru',
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
         prefixIcon: const Icon(Icons.lock_outline, color: Colors.blue),
         suffixIcon: IconButton(
           icon: Icon(
@@ -380,14 +380,14 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           },
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor: Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.blue.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -421,7 +421,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           borderRadius: BorderRadius.circular(16),
         ),
         elevation: 8,
-        shadowColor: Colors.blue.withOpacity(0.5),
+        shadowColor: Colors.blue.withValues(alpha: 0.5),
       ),
       child: _isLoading
           ? const SizedBox(
@@ -545,7 +545,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         title: Text(title, style: const TextStyle(color: Colors.white)),
         content: Text(
           message,
-          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
         ),
         actions: [
           TextButton(
@@ -590,7 +590,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
               Text(
                 message,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -632,7 +632,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             child: Text(
               'Vaš nalog je uspešno kreiran i možete se prijaviti.',
               style:
-                  TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                  TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
             ),
           ),
         ),
@@ -665,7 +665,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           children: [
             Text(
               'Poslali smo vam konfirmacioni email na:',
-              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
             ),
             const SizedBox(height: 8),
             Text(
@@ -678,7 +678,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
             const SizedBox(height: 16),
             Text(
               'Molimo kliknite na link u email-u da potvrdite vašu adresu. Nakon toga se možete prijaviti u aplikaciju.',
-              style: TextStyle(color: Colors.white.withOpacity(0.8)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
             ),
           ],
         ),

@@ -158,7 +158,7 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: boja.withOpacity(0.1),
+          backgroundColor: boja.withValues(alpha: 0.1),
           child: Icon(ikona, color: boja),
         ),
         title: Text(naslov),

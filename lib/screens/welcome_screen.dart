@@ -14,6 +14,11 @@ import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
 import 'home_screen.dart';
 
+// 🔥 HELPER: Returns HomeScreen based on feature flag
+Widget _getHomeScreen() {
+  return const HomeScreen();
+}
+
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 
@@ -21,8 +26,7 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -97,8 +101,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       final email = rememberedDevice['email']!;
 
       // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
-      final driverName =
-          VozacBoja.getVozacForEmail(email) ?? rememberedDevice['driverName']!;
+      final driverName = VozacBoja.getVozacForEmail(email) ?? rememberedDevice['driverName']!;
 
       // Postavi driver session
       await AuthManager.setCurrentDriver(driverName);
@@ -106,10 +109,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (!mounted) return;
 
       // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn =
-          await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
 
       if (!hasCheckedIn) {
+        // Navigate to DailyCheckInScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
@@ -130,7 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
-            builder: (context) => const HomeScreen(),
+            builder: (context) => _getHomeScreen(),
           ),
         );
       }
@@ -141,8 +144,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final firebaseUser = AuthManager.getCurrentUser();
     // 🔄 MAPIRANJE: email -> vozač ime umesto displayName
     final driverFromFirebase = firebaseUser?.email != null
-        ? VozacBoja.getVozacForEmail(firebaseUser!.email) ??
-            firebaseUser.displayName
+        ? VozacBoja.getVozacForEmail(firebaseUser!.email) ?? firebaseUser.displayName
         : firebaseUser?.displayName;
 
     // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
@@ -156,8 +158,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final savedDriver = await AuthManager.getCurrentDriver();
 
     // Ako je neko ulogovan u Firebase ALI nema saved driver, sinhronizuj
-    if (driverFromFirebase != null &&
-        (savedDriver == null || savedDriver != driverFromFirebase)) {
+    if (driverFromFirebase != null && (savedDriver == null || savedDriver != driverFromFirebase)) {
       await AuthManager.setCurrentDriver(driverFromFirebase);
     }
 
@@ -171,20 +172,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn =
-          await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
       if (!hasCheckedIn) {
-        // POŠALJI NA DAILY CHECK-IN SCREEN
+        // Navigate to DailyCheckInScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
             builder: (context) => DailyCheckInScreen(
               vozac: activeDriver,
               onCompleted: () {
-                // Kada završi check-in, idi na HomeScreen
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
@@ -199,7 +198,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         // DIREKTNO NA HOME SCREEN
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute<void>(builder: (context) => const HomeScreen()),
+          MaterialPageRoute<void>(builder: (context) => _getHomeScreen()),
         );
       }
     }
@@ -220,8 +219,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
 
@@ -298,8 +296,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       final rememberedName = rememberedDevice['driverName']!;
 
       // 🔄 FORSIRAJ REFRESH: Koristi VozacBoja mapiranje za ispravno ime
-      final correctName =
-          VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
+      final correctName = VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
         // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
@@ -308,10 +305,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (!mounted) return;
 
         // Direktno na Daily Check-in ili Home Screen
-        final hasCheckedIn =
-            await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
+        final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
 
         if (!hasCheckedIn) {
+          // Navigate to DailyCheckInScreen
           Navigator.pushReplacement(
             context,
             MaterialPageRoute<void>(
@@ -321,7 +318,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (context) => const HomeScreen(),
+                      builder: (context) => _getHomeScreen(),
                     ),
                   );
                 },
@@ -332,7 +329,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           Navigator.pushReplacement(
             context,
             MaterialPageRoute<void>(
-              builder: (context) => const HomeScreen(),
+              builder: (context) => _getHomeScreen(),
             ),
           );
         }
@@ -358,7 +355,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: Theme.of(context).colorScheme.error.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5),
               width: 2,
             ),
           ),
@@ -384,7 +381,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           content: Text(
             message,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
               fontSize: 16,
             ),
             textAlign: TextAlign.center,
@@ -433,17 +430,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       vertical: 18,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
+                      color: Colors.white.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.22),
+                          color: Colors.black.withValues(alpha: 0.22),
                           blurRadius: 24,
                           offset: const Offset(0, 8),
                         ),
                       ],
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.13),
+                        color: Colors.white.withValues(alpha: 0.13),
                         width: 1.8,
                       ),
                     ),
@@ -461,19 +458,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               shadows: [
                                 // Glavni glow efekat - plavi
                                 Shadow(
-                                  color:
-                                      const Color(0xFF12D8FA).withOpacity(0.8),
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
                                   blurRadius: 20,
                                 ),
                                 // Dodatni glow - svetliji plavi
                                 Shadow(
-                                  color:
-                                      const Color(0xFF00E5FF).withOpacity(0.6),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                                   blurRadius: 15,
                                 ),
                                 // Treći glow - još svetliji
                                 Shadow(
-                                  color: Colors.cyan.withOpacity(0.4),
+                                  color: Colors.cyan.withValues(alpha: 0.4),
                                   blurRadius: 10,
                                 ),
                                 // Osnovna senka za dubinu
@@ -491,7 +486,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         Text(
                           'Aplikacija za vozače',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.75),
+                            color: Colors.white.withValues(alpha: 0.75),
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
                             letterSpacing: 1.2,
@@ -515,8 +510,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical:
-                                      4.0, // Increased slightly for better visibility
+                                  vertical: 4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'] as String,
@@ -554,17 +548,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             vertical: 10, // Reduced padding
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.06),
+                            color: Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(32),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.22),
+                                color: Colors.black.withValues(alpha: 0.22),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
                             ],
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.13),
+                              color: Colors.white.withValues(alpha: 0.13),
                               width: 1.8,
                             ),
                           ),
@@ -579,19 +573,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               shadows: [
                                 // Glavni glow efekat - plavi
                                 Shadow(
-                                  color:
-                                      const Color(0xFF12D8FA).withOpacity(0.8),
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
                                   blurRadius: 20,
                                 ),
                                 // Dodatni glow - svetliji plavi
                                 Shadow(
-                                  color:
-                                      const Color(0xFF00E5FF).withOpacity(0.6),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                                   blurRadius: 15,
                                 ),
                                 // Treći glow - još svetliji
                                 Shadow(
-                                  color: Colors.cyan.withOpacity(0.4),
+                                  color: Colors.cyan.withValues(alpha: 0.4),
                                   blurRadius: 10,
                                 ),
                                 // Osnovna senka za dubinu
@@ -622,11 +614,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF12D8FA).withOpacity(0.6),
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.6),
                               blurRadius: 15,
                             ),
                             Shadow(
-                              color: Colors.cyan.withOpacity(0.3),
+                              color: Colors.cyan.withValues(alpha: 0.3),
                               blurRadius: 8,
                             ),
                           ],
@@ -642,11 +634,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF00E5FF).withOpacity(0.5),
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
                               blurRadius: 12,
                             ),
                             Shadow(
-                              color: Colors.cyan.withOpacity(0.3),
+                              color: Colors.cyan.withValues(alpha: 0.3),
                               blurRadius: 6,
                             ),
                           ],
@@ -662,11 +654,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF12D8FA).withOpacity(0.4),
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.4),
                               blurRadius: 10,
                             ),
                             Shadow(
-                              color: Colors.cyan.withOpacity(0.2),
+                              color: Colors.cyan.withValues(alpha: 0.2),
                               blurRadius: 5,
                             ),
                           ],
@@ -723,8 +715,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      color.withOpacity(0.85),
-                      Colors.white.withOpacity(0.08),
+                      color.withValues(alpha: 0.85),
+                      Colors.white.withValues(alpha: 0.08),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -732,13 +724,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.35),
+                      color: color.withValues(alpha: 0.35),
                       blurRadius: 15,
                       offset: const Offset(0, 6),
                     ),
                   ],
                   border: Border.all(
-                    color: color.withOpacity(0.7),
+                    color: color.withValues(alpha: 0.7),
                     width: 2.0,
                   ),
                 ),
@@ -754,8 +746,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.white.withOpacity(0.18),
-                              color.withOpacity(0.25),
+                              Colors.white.withValues(alpha: 0.18),
+                              color.withValues(alpha: 0.25),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -763,7 +755,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.18),
+                              color: color.withValues(alpha: 0.18),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -789,11 +781,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             fontSize: 13, // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
                             color: color,
-                            letterSpacing:
-                                1.0, // Further reduced to prevent overflow
+                            letterSpacing: 1.0, // Further reduced to prevent overflow
                             shadows: [
                               Shadow(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 blurRadius: 6,
                               ),
                             ],

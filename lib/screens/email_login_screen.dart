@@ -18,8 +18,7 @@ class EmailLoginScreen extends StatefulWidget {
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
 }
 
-class _EmailLoginScreenState extends State<EmailLoginScreen>
-    with TickerProviderStateMixin {
+class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -181,8 +180,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.6),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.6),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -191,7 +190,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -218,7 +217,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           Text(
             'Prijavite se sa email adresom',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
+              color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
               fontSize: 16,
             ),
           ),
@@ -270,16 +269,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       decoration: InputDecoration(
         labelText: 'Email Adresa',
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
         ),
         hintText: 'vas.email@primjer.com',
         hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
-        prefixIcon:
-            Icon(Icons.email, color: Theme.of(context).colorScheme.primary),
+        prefixIcon: Icon(Icons.email, color: Theme.of(context).colorScheme.primary),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+        fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -287,7 +285,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -299,8 +297,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
         ),
       ),
       validator: (value) {
@@ -323,14 +320,13 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       decoration: InputDecoration(
         labelText: 'Šifra',
         labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
         ),
         hintText: 'Unesite šifru',
         hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
-        prefixIcon:
-            Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
+        prefixIcon: Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
         suffixIcon: IconButton(
           icon: Icon(
             _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
@@ -344,7 +340,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           },
         ),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surface.withOpacity(0.1),
+        fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -352,7 +348,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -364,8 +360,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
         ),
       ),
       validator: (value) {
@@ -391,7 +386,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           borderRadius: BorderRadius.circular(16),
         ),
         elevation: 8,
-        shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+        shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
       ),
       child: _isLoading
           ? SizedBox(
@@ -420,7 +415,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       child: Text(
         'Zaboravili ste šifru?',
         style: TextStyle(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -435,7 +430,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         Text(
           'Nemate nalog? ',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize: 16,
           ),
         ),
@@ -492,11 +487,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
-        final needsCheckIn =
-            !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn = !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
-          // Idi na daily check-in
+          // Navigate to DailyCheckInScreen
           if (mounted) {
             Navigator.pushReplacement(
               context,
@@ -594,7 +588,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         content: Text(
           message,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         actions: [
@@ -629,7 +623,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         content: Text(
           message,
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         actions: [

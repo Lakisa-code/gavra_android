@@ -10,7 +10,7 @@ class ShimmerWidgets {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: 2,
       child: Shimmer.fromColors(
-        baseColor: Theme.of(context).colorScheme.surfaceVariant,
+        baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         highlightColor: Theme.of(context).colorScheme.surface,
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -79,7 +79,7 @@ class ShimmerWidgets {
   /// 📊 Shimmer za statistike
   static Widget statistikaShimmer(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.surfaceVariant,
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       highlightColor: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
@@ -115,7 +115,7 @@ class ShimmerWidgets {
   /// 📋 Shimmer za liste
   static Widget listItemShimmer(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.surfaceVariant,
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       highlightColor: Theme.of(context).colorScheme.surface,
       child: ListTile(
         leading: Container(
@@ -162,7 +162,7 @@ class ShimmerWidgets {
     Color? highlightColor,
   }) {
     return Shimmer.fromColors(
-      baseColor: baseColor ?? Theme.of(context).colorScheme.surfaceVariant,
+      baseColor: baseColor ?? Theme.of(context).colorScheme.surfaceContainerHighest,
       highlightColor: highlightColor ?? Theme.of(context).colorScheme.surface,
       child: child,
     );

@@ -64,5 +64,14 @@
   // Уклањамо Project Manager "ghost" tab - екстензија је обрисана
   // Нема сачуваних пројеката, користимо File > Open Folder
   "projectManager.showProjectNameInStatusBar": false,
-  "testing.automaticallyOpenTestResults": "neverOpen"
+  "testing.automaticallyOpenTestResults": "neverOpen",
+  "chat.mcp.serverSampling": {
+    "gavra_android/.vscode/mcp.json: github/github-mcp-server": {
+      "allowedModels": [
+        "copilot/claude-sonnet-4",
+        "copilot/claude-sonnet-4.5",
+        "copilot/gpt-5-mini"
+      ]
+    }
+  }
 }

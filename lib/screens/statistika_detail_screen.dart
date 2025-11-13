@@ -32,8 +32,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   // V3.0 Performance Cache
   final Map<String, double> _kmCache = {};
 
-  // Cache za statistike da se ne pozivaju uvek iznova
-  Future<Map<String, Map<String, dynamic>>>? _statistikeFuture;
+  // ❌ UKLONJENO: _statistikeFuture cache - sada koristi realtime stream
 
   @override
   void initState() {
@@ -62,10 +61,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         _errorMessage = null;
       });
 
-    _putnikSubscription = PutnikService()
-        .streamKombinovaniPutniciFiltered()
-        .timeout(const Duration(seconds: 30))
-        .listen(
+    _putnikSubscription =
+        PutnikService().streamKombinovaniPutniciFiltered().timeout(const Duration(seconds: 30)).listen(
       (putnici) {
         if (mounted) {
           if (mounted)
@@ -91,8 +88,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   // V3.0 Performance-Optimized GPS Calculation with Caching
   Future<double> _calculateKmForVozac(String vozac, DateTimeRange range) async {
-    final cacheKey =
-        '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
+    final cacheKey = '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
 
     if (_kmCache.containsKey(cacheKey)) {
       return _kmCache[cacheKey]!;
@@ -151,11 +147,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) + cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     final distance = earthRadius * c;
@@ -193,12 +186,12 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                   blurRadius: 24,
                   offset: const Offset(0, 12),
                 ),
@@ -314,7 +307,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -453,16 +446,12 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   }
 
   Widget _buildStatisticsContent() {
-    // Cache future da se ne poziva stalno
-    _statistikeFuture ??=
-        StatistikaService.instance.detaljneStatistikePoVozacima(
-      _cachedPutnici,
-      _selectedRange!.start,
-      _selectedRange!.end,
-    );
-
-    return FutureBuilder<Map<String, Map<String, dynamic>>>(
-      future: _statistikeFuture,
+    // 🔥 REALTIME: Koristi stream umesto cached future
+    return StreamBuilder<Map<String, Map<String, dynamic>>>(
+      stream: StatistikaService.instance.streamDetaljneStatistikePoVozacima(
+        _selectedRange!.start,
+        _selectedRange!.end,
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildLoadingState();
@@ -715,7 +704,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -779,10 +768,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                 }
 
                 // Generate daily breakdown for visualization
-                final days = _selectedRange!.end
-                        .difference(_selectedRange!.start)
-                        .inDays +
-                    1;
+                final days = _selectedRange!.end.difference(_selectedRange!.start).inDays + 1;
                 final avgKmPerDay = totalKm / days;
 
                 return LineChart(
@@ -805,8 +791,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           getTitlesWidget: (value, meta) {
                             final dayIndex = value.toInt();
                             if (dayIndex >= 0 && dayIndex < days) {
-                              final date = _selectedRange!.start
-                                  .add(Duration(days: dayIndex));
+                              final date = _selectedRange!.start.add(Duration(days: dayIndex));
                               return Text(
                                 '${date.day}',
                                 style: const TextStyle(fontSize: 12),
@@ -858,7 +843,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                         ),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                         ),
                       ),
                     ],
@@ -911,7 +896,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     try {
       // Clear cache when date range changes
       _kmCache.clear();
-      _statistikeFuture = null; // Reset statistike cache
+      // ❌ UKLONJENO: _statistikeFuture = null; - stream se automatski ažurira
 
       // Trigger UI update
       if (mounted) {

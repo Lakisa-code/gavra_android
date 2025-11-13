@@ -202,7 +202,7 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
       margin: const EdgeInsets.all(8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -221,7 +221,7 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: healthColor.withOpacity(0.1),
+                  color: healthColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: healthColor),
                 ),
@@ -296,7 +296,7 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       child: const Center(

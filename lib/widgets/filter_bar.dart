@@ -37,6 +37,7 @@ class FilterBar extends StatelessWidget {
             child: Container(
               decoration: TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
+                // ignore: deprecated_member_use - value is valid for DropdownButtonFormField
                 value: selectedDay,
                 dropdownColor: Theme.of(context).colorScheme.surface,
                 decoration: InputDecoration(
@@ -46,8 +47,7 @@ class FilterBar extends StatelessWidget {
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 items: dani
                     .map(
@@ -74,6 +74,7 @@ class FilterBar extends StatelessWidget {
             child: Container(
               decoration: TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
+                // ignore: deprecated_member_use - value is valid for DropdownButtonFormField
                 value: selectedGrad,
                 dropdownColor: Theme.of(context).colorScheme.surface,
                 decoration: InputDecoration(
@@ -83,8 +84,7 @@ class FilterBar extends StatelessWidget {
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 items: gradovi
                     .map(
@@ -111,7 +111,7 @@ class FilterBar extends StatelessWidget {
             child: Container(
               decoration: TripleBlueFashionStyles.dropdownDecoration,
               child: DropdownButtonFormField<String>(
-                value: selectedVreme,
+                initialValue: selectedVreme,
                 dropdownColor: Theme.of(context).colorScheme.surface,
                 decoration: InputDecoration(
                   labelText: 'Vreme',
@@ -120,8 +120,7 @@ class FilterBar extends StatelessWidget {
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 items: vremena
                     .map(

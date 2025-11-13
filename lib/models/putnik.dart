@@ -68,6 +68,7 @@ class Putnik {
     this.otkazaoVozac,
     this.vremeOtkazivanja,
     this.adresa,
+    this.adresaId, // NOVO - UUID reference u tabelu adrese
     this.obrisan = false, // default vrednost
     this.priority, // prioritet za optimizaciju ruta
     this.brojTelefona, // broj telefona putnika
@@ -134,6 +135,7 @@ class Putnik {
       dodaoVozac: map['dodao_vozac'] as String? ?? 'Bojan', // ✅ FALLBACK: Sistemski vozač za mesečne putnike
       grad: grad,
       adresa: _determineAdresaFromMesecni(map),
+      adresaId: _determineAdresaIdFromMesecni(map, grad), // ✅ NOVO - UUID adrese
       obrisan: !MesecniHelpers.isActiveFromMap(map),
       brojTelefona: map['broj_telefona'] as String?,
     );
@@ -182,6 +184,7 @@ class Putnik {
           ((map['napomene'] as String?)?.contains('Adresa:') == true
               ? (map['napomene'] as String?)?.replaceFirst('Adresa: ', '')
               : null),
+      adresaId: map['adresa_id'] as String?, // ✅ NOVO - UUID reference u tabelu adrese
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
     );
@@ -231,6 +234,7 @@ class Putnik {
   final String? otkazaoVozac;
   final DateTime? vremeOtkazivanja; // NOVO - vreme kada je otkazano
   final String? adresa; // NOVO - adresa putnika za optimizaciju rute
+  final String? adresaId; // NOVO - UUID reference u tabelu adrese
   final bool obrisan; // NOVO - soft delete flag
   final int? priority; // NOVO - prioritet za optimizaciju ruta (1-5, gde je 1 najmanji)
   final String? brojTelefona; // NOVO - broj telefona putnika
@@ -525,6 +529,15 @@ class Putnik {
     return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
   }
 
+  static String? _determineAdresaIdFromMesecni(Map<String, dynamic> map, String grad) {
+    // Koristi UUID reference na osnovu grada
+    if (grad.toLowerCase().contains('bela')) {
+      return map['adresa_bela_crkva_id'] as String?;
+    } else {
+      return map['adresa_vrsac_id'] as String?;
+    }
+  }
+
   static String _determineDanFromDatum(String? datum) {
     if (datum == null) return 'Pon';
     try {
@@ -681,8 +694,15 @@ class Putnik {
   Future<Map<String, dynamic>> toPutovanjaIstorijaMapWithAdresa() async {
     final baseMap = toPutovanjaIstorijaMap();
 
-    // ✅ PRAVO REŠENJE: Dobij ili kreiraj adresu u adrese tabeli
-    if (adresa != null && adresa!.isNotEmpty) {
+    // ✅ PRIORITET 1: Ako već imamo adresaId, koristi ga
+    if (adresaId != null && adresaId!.isNotEmpty) {
+      baseMap['adresa_id'] = adresaId;
+      baseMap['napomene'] = 'Putovanje dodato ${DateTime.now().toIso8601String()}';
+      return baseMap;
+    }
+
+    // ✅ PRIORITET 2: Ako imamo naziv adrese, kreiraj/pronađi adresu u tabeli
+    if (adresa != null && adresa!.isNotEmpty && adresa != 'Adresa nije definisana') {
       try {
         // Pokušaj da pronađeš postojeću adresu ili kreiraj novu
         final adresaObj = await AdresaSupabaseService.createOrGetAdresa(

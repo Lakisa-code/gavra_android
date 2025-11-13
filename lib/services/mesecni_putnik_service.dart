@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/action_log.dart';
 import '../models/mesecni_putnik.dart';
+import 'realtime_service.dart'; // 🔄 DODATO za refresh nakon brisanja
 import 'vozac_mapping_service.dart';
 
 /// Servis za upravljanje mesečnim putnicima (normalizovana šema)
@@ -231,14 +233,17 @@ class MesecniPutnikService {
   ) async {
     try {
       // Validacija UUID-a pre slanja u bazu
+      print('DEBUG: Input vozacId: "$vozacId"');
       String? validVozacId;
       if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
         // Provjeri da li je već valid UUID
         if (_isValidUuid(vozacId)) {
           validVozacId = vozacId;
+          print('DEBUG: vozacId je već valid UUID: $validVozacId');
         } else {
           // Ako nije UUID, pokušaj konverziju (fallback)
           final converted = VozacMappingService.getVozacUuidSync(vozacId);
+          print('DEBUG: VozacMappingService konverzija: $converted');
           if (converted != null) {
             validVozacId = converted;
           } else {
@@ -259,15 +264,55 @@ class MesecniPutnikService {
               default:
                 validVozacId = null;
             }
+            print('DEBUG: Hardcoded fallback result: $validVozacId');
           }
         }
+      } else {
+        print('DEBUG: vozacId je prazan ili "Nepoznat vozač"');
       }
+
+      print('DEBUG: Final validVozacId: $validVozacId');
 
       // 1. UVEK DODAJ NOVI ZAPIS ZA PLAĆANJE (omogućava višestruka plaćanja za isti mesec)
       final putnik = await getMesecniPutnikById(putnikId);
       if (putnik != null) {
         // Odaberi adresu za putovanje (prioritet Bela Crkva)
         String? adresaId = putnik.adresaBelaCrkvaId ?? putnik.adresaVrsacId;
+
+        // Kreiraj ActionLog za plaćanje sa created_by
+        print('DEBUG: Kreiranje ActionLog - validVozacId: $validVozacId');
+
+        // Osiguraj da vozacId nije null ili prazan
+        final effectiveVozacId = validVozacId ?? '';
+        if (effectiveVozacId.isEmpty) {
+          print('DEBUG: UPOZORENJE - vozacId je prazan, koristim default "system" vozaca');
+        }
+
+        final finalVozacId = effectiveVozacId.isNotEmpty ? effectiveVozacId : '00000000-0000-0000-0000-000000000000';
+
+        final actionLog = ActionLog(
+          createdBy: finalVozacId,
+          createdAt: DateTime.now(),
+        ).addAction(
+          ActionType.paid,
+          finalVozacId,
+          'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
+        );
+
+        print('DEBUG: ActionLog JSON: ${actionLog.toJsonString()}');
+
+        // 🔍 DETALJNO DEBUG ISPIS
+        final actionLogJson = actionLog.toJson();
+        print('DEBUG: ActionLog Map: $actionLogJson');
+        print('DEBUG: Has actions key: ${actionLogJson.containsKey('actions')}');
+        print('DEBUG: Actions type: ${actionLogJson['actions'].runtimeType}');
+        print('DEBUG: Actions content: ${actionLogJson['actions']}');
+        print('DEBUG: Actions is null? ${actionLogJson['actions'] == null}');
+
+        // 🧪 TEST CONSTRAINT COMPLIANCE
+        final hasActionsKey = actionLogJson.containsKey('actions');
+        final actionsIsArray = actionLogJson['actions'] is List;
+        print('DEBUG: Constraint check - has actions: $hasActionsKey, is array: $actionsIsArray');
 
         await _supabase.from('putovanja_istorija').insert({
           'mesecni_putnik_id': putnikId,
@@ -276,10 +321,12 @@ class MesecniPutnikService {
           'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
           'vreme_polaska': 'mesecno_placanje',
           'status': 'placeno',
-          'vozac_id': validVozacId,
+          'vozac_id': finalVozacId,
+          'created_by': finalVozacId,
           'adresa_id': adresaId, // ✅ DODANO: UUID referenca na adresu
           'cena': iznos,
           'napomene': 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
+          'action_log': actionLog.toJson(), // ✅ DIREKTAN JSON OBJEKAT umesto string
         });
       }
 
@@ -300,6 +347,8 @@ class MesecniPutnikService {
 
       return true;
     } catch (e) {
+      // Log greška za debugging
+      print('GREŠKA u azurirajPlacanjeZaMesec: $e');
       return false;
     }
   }
@@ -347,8 +396,15 @@ class MesecniPutnikService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
+      // 🔄 FORSIRAJ REALTIME REFRESH NAKON BRISANJA
+      await RealtimeService.instance.refreshNow();
+
       // Očisti cache nakon brisanja da se promene odmah vide
       clearCache();
+
+      // ⏳ DODATNI REFRESH NAKON PAUZE
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await RealtimeService.instance.refreshNow();
 
       return true;
     } catch (e) {
@@ -828,6 +884,41 @@ class MesecniPutnikService {
   }
 
   /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
+  // 🔥 REALTIME STREAM: Dobija vozača poslednjeg plaćanja za putnika
+  static Stream<String?> streamVozacPoslednjegPlacanja(String putnikId) {
+    return Supabase.instance.client.from('putovanja_istorija').stream(primaryKey: ['id']).map((data) {
+      try {
+        if (data.isEmpty) return null;
+
+        // Filtriraj po mesecni_putnik_id, tip_putnika i status
+        final filtered = data.where((item) {
+          return item['mesecni_putnik_id'] == putnikId &&
+              item['tip_putnika'] == 'mesecni' &&
+              item['status'] == 'placeno';
+        }).toList();
+
+        if (filtered.isEmpty) return null;
+
+        // Sortiraj po created_at da dobijemo poslednje plaćanje
+        final sortedData = List<Map<String, dynamic>>.from(filtered);
+        sortedData.sort((a, b) {
+          final aTime = a['created_at'] as String?;
+          final bTime = b['created_at'] as String?;
+          if (aTime == null || bTime == null) return 0;
+          return bTime.compareTo(aTime); // Descending (najnovije prvo)
+        });
+
+        final vozacId = sortedData.first['vozac_id'] as String?;
+        if (vozacId != null && vozacId.isNotEmpty) {
+          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    });
+  }
+
   static Future<String?> getVozacPoslednjegPlacanja(String putnikId) async {
     try {
       final placanja = await Supabase.instance.client

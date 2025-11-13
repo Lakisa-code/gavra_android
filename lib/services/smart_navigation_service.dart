@@ -19,8 +19,7 @@ class SmartNavigationService {
       final currentPosition = await _getCurrentPosition();
 
       // 2. DOBIJ KOORDINATE ZA SVE ADRESE
-      final Map<Putnik, Position> coordinates =
-          await _getCoordinatesForPutnici(putnici);
+      final Map<Putnik, Position> coordinates = await _getCoordinatesForPutnici(putnici);
 
       if (coordinates.isEmpty) {
         return NavigationResult.error(
@@ -59,8 +58,7 @@ class SmartNavigationService {
 
       if (success) {
         return NavigationResult.success(
-          message:
-              '🎯 Navigacija pokrenuta sa ${optimizedRoute.length} putnika',
+          message: '🎯 Navigacija pokrenuta sa ${optimizedRoute.length} putnika',
           optimizedPutnici: optimizedRoute,
           totalDistance: await _calculateTotalDistance(
             currentPosition,
@@ -93,9 +91,9 @@ class SmartNavigationService {
 
     // Dobij poziciju sa visokom tačnošću
     return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-      timeLimit: const Duration(seconds: 10),
-    );
+        // desiredAccuracy: deprecated, use settings parameter
+        // timeLimit: const Duration(seconds: 10), // deprecated, use settings parameter
+        );
   }
 
   /// 🗺️ Dobij koordinate za sve putnike
@@ -109,8 +107,7 @@ class SmartNavigationService {
 
       try {
         // Poboljšaj adresu za geocoding
-        final improvedAddress =
-            _improveAddressForGeocoding(putnik.adresa!, putnik.grad);
+        final improvedAddress = _improveAddressForGeocoding(putnik.adresa!, putnik.grad);
 
         // Dobij koordinate preko GeocodingService
         final coordsString = await GeocodingService.getKoordinateZaAdresu(
@@ -217,8 +214,7 @@ class SmartNavigationService {
 
       // Nađi najbliži neposećen grad
       for (final putnik in unvisited) {
-        final distance =
-            _calculateDistance(currentPosition, coordinates[putnik]!);
+        final distance = _calculateDistance(currentPosition, coordinates[putnik]!);
         if (distance < shortestDistance) {
           shortestDistance = distance;
           nearest = putnik;
@@ -293,15 +289,13 @@ class SmartNavigationService {
       String osmNavigationUrl = 'https://www.openstreetmap.org/directions?';
 
       // Dodaj početnu poziciju
-      osmNavigationUrl +=
-          'from=${startPosition.latitude}%2C${startPosition.longitude}';
+      osmNavigationUrl += 'from=${startPosition.latitude}%2C${startPosition.longitude}';
 
       // Za OpenStreetMap, koristimo prvi i poslednji destination
       if (optimizedRoute.isNotEmpty) {
         final lastPutnik = optimizedRoute.last;
         if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
-          final improvedAddress =
-              _improveAddressForGeocoding(lastPutnik.adresa!, lastPutnik.grad);
+          final improvedAddress = _improveAddressForGeocoding(lastPutnik.adresa!, lastPutnik.grad);
           final encodedAddress = Uri.encodeComponent(
             '$improvedAddress, ${lastPutnik.grad}, Serbia',
           );
@@ -318,8 +312,7 @@ class SmartNavigationService {
       if (await canLaunchUrl(uri)) {
         return await launchUrl(
           uri,
-          mode: LaunchMode
-              .externalApplication, // Otvori u navigacionoj aplikaciji
+          mode: LaunchMode.externalApplication, // Otvori u navigacionoj aplikaciji
         );
       } else {
         throw Exception('Ne mogu da otvorim Google Maps');

@@ -4,10 +4,10 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'dnevni_kusur_service.dart';
+// import 'dnevni_kusur_service.dart';
 import 'putnik_service.dart';
 import 'realtime_service.dart';
-import 'simplified_kusur_service.dart';
+// import 'simplified_kusur_service.dart';
 import 'statistika_service.dart';
 
 class DailyCheckInService {
@@ -17,34 +17,18 @@ class DailyCheckInService {
 
   /// Stream za real-time ažuriranje sitnog novca u UI
   static Stream<double> streamTodayAmount(String vozac) {
-    // ✅ FIX: Koristi direktan SimplifiedKusurService stream za realtime ažuriranje
-    return SimplifiedKusurService.streamKusurForVozac(vozac).map((kusurFromBaza) {
-      // Ako nema kusura u bazi, pokušaj SharedPreferences kao fallback
-      if (kusurFromBaza > 0) {
-        return kusurFromBaza;
-      } else {
-        // Async fallback - pozovi getTodayAmount ali vrati trenutnu vrednost
-        getTodayAmount(vozac).then((localAmount) {
-          if (localAmount != null && localAmount > 0) {
-            if (!_sitanNovacController.isClosed) {
-              _sitanNovacController.add(localAmount);
-            }
-          }
-        });
-        return kusurFromBaza; // Vrati vrednost iz baze (možda 0)
-      }
-    });
+    return Stream.value(0.0);
   }
 
   /// Helper: Dobij kusur iz oba izvora - prioritet ima KusurService
   static Future<double> getAmountFromBothSources(String vozac) async {
-    try {
-      // 1. Pokušaj SimplifiedKusurService (baza) - prioritet
-      final kusurFromBaza = await SimplifiedKusurService.getKusurForVozac(vozac);
-      if (kusurFromBaza > 0) return kusurFromBaza;
-    } catch (e) {
-      // Ignoriši grešku KusurService
-    }
+    // ❌ DEPRECATED: Use MasterRealtimeStream instead
+    // try {
+    //   final kusurFromBaza = await SimplifiedKusurService.getKusurForVozac(vozac);
+    //   if (kusurFromBaza > 0) return kusurFromBaza;
+    // } catch (e) {
+    //   // Ignoriši grešku KusurService
+    // }
 
     // 2. Fallback na SharedPreferences
     final localAmount = await getTodayAmount(vozac);
@@ -110,17 +94,13 @@ class DailyCheckInService {
     }
 
     // 🌅 PRVI PUT DANAS - sačuvaj kusur koji vozač ima za smenu
-    try {
-      final currentHour = today.hour;
-
-      // Kusur se može uneti samo u jutarnjim satima (5:00 - 12:00) ili uveče (20:00 - 23:00)
-      if ((currentHour >= 5 && currentHour <= 12) || (currentHour >= 20 && currentHour <= 23)) {
-        // Koristi novi DnevniKusurService
-        await DnevniKusurService.unesiJutarnjiKusur(vozac, sitanNovac);
-      }
-    } catch (e) {
-      // Nastavi sa lokalnim čuvanjem čak i ako baza ne radi
-    } // 📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
+    // ❌ DEPRECATED: Use MasterRealtimeStream instead
+    // try {
+    //   await DnevniKusurService.unesiJutarnjiKusur(vozac, sitanNovac);
+    // } catch (e) {
+    //   // Nastavi sa lokalnim čuvanjem čak i ako baza ne radi
+    // }
+    // 📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
     try {
       await prefs.setBool(todayKey, true);
       await prefs.setDouble('${todayKey}_amount', sitanNovac);

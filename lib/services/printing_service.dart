@@ -1,10 +1,11 @@
 // 'dart:typed_data' not required; elements available via Flutter packages
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:intl/intl.dart';
-import 'package:flutter/foundation.dart';
+import 'package:printing/printing.dart';
+
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/text_utils.dart';
@@ -96,33 +97,26 @@ class PrintingService {
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
           final odgovarajuciGrad =
-              normalizedPutnikGrad.contains(normalizedGrad) ||
-                  normalizedGrad.contains(normalizedPutnikGrad);
+              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           // Poređenje vremena - normalizuj oba formata
           final putnikPolazak = putnik.polazak.toString().trim();
           final selectedVremeStr = selectedVreme.trim();
-          final odgovarajuciPolazak =
-              normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
-                  (normalizeTime(putnikPolazak)
-                      .startsWith(normalizeTime(selectedVremeStr)));
+          final odgovarajuciPolazak = normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
+              (normalizeTime(putnikPolazak).startsWith(normalizeTime(selectedVremeStr)));
 
           // DODAJ FILTRIRANJE PO DANU I ZA MESEČNE PUTNIKE
-          final odgovarajuciDan =
-              putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
+          final odgovarajuciDan = putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
 
-          final result = odgovarajuciGrad &&
-              odgovarajuciPolazak &&
-              odgovarajuciDan &&
-              normalizedStatus != 'obrisan';
+          final result = odgovarajuciGrad && odgovarajuciPolazak && odgovarajuciDan && normalizedStatus != 'obrisan';
 
           return result;
         } else {
           // DNEVNI/OBIČNI PUTNICI - standardno filtriranje
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
-          final gradMatch = normalizedPutnikGrad.contains(normalizedGrad) ||
-              normalizedGrad.contains(normalizedPutnikGrad);
+          final gradMatch =
+              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
           final odgovara = gradMatch &&
@@ -188,8 +182,7 @@ class PrintingService {
     // Grupiši putnike po statusu
     final pokupljeni = putnici.where((p) => p.jePokupljen).toList();
     final otkazani = putnici.where((p) => p.jeOtkazan).toList();
-    final cekaju =
-        putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
+    final cekaju = putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
 
     // Sortiraj po gradu/destinaciji
     pokupljeni.sort((a, b) => a.grad.compareTo(b.grad));
@@ -385,8 +378,8 @@ class PrintingService {
       width: double.infinity,
       padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: pw.BoxDecoration(
-        color: PdfColor.fromInt(color.value),
-        border: pw.Border.all(color: PdfColor.fromInt(color.value)),
+        color: PdfColor.fromInt(color.toARGB32()),
+        border: pw.Border.all(color: PdfColor.fromInt(color.toARGB32())),
         borderRadius: pw.BorderRadius.circular(5),
       ),
       child: pw.Text(

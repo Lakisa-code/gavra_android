@@ -242,75 +242,75 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
-  Future<Map<String, int>> _calculateDjackieBrojeviAsync() async {
-    try {
-      final danasnjiDan = _getTodayForDatabase();
+  // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ
+  Stream<Map<String, int>> _streamDjackieBrojevi() {
+    return MesecniPutnikService.streamAktivniMesecniPutnici().map((sviMesecniPutnici) {
+      try {
+        final danasnjiDan = _getTodayForDatabase();
 
-      // Direktno dohvati mesečne putnike iz baze da imamo pristup tip informaciji
-      final service = MesecniPutnikService();
-      final sviMesecniPutnici = await service.getAktivniMesecniPutnici();
+        // 🔧 REORGANIZOVANA LOGIKA: Prvo filtriraj osnovne kriterijume, zatim računaj status unutar
+        final djaci = sviMesecniPutnici.where((MesecniPutnik mp) {
+          // 🔧 ISPRAVKA: Tačno matchovanje dana umesto contains()
+          final radniDaniList = mp.radniDani.toLowerCase().split(',');
+          final dayMatch = radniDaniList.contains(danasnjiDan.toLowerCase());
+          // 🔧 ISPRAVKA: Prošireni tip filter - uključuje sve moguće varijante
+          final tipLower = mp.tip.toLowerCase();
+          final jeUcenik = tipLower == 'ucenik' || tipLower == 'učenik' || tipLower == 'djak' || tipLower == 'student';
+          // 🔧 UKLONJEN status filter - računaću status unutar glavne logike
 
-      // 🔧 REORGANIZOVANA LOGIKA: Prvo filtriraj osnovne kriterijume, zatim računaj status unutar
-      final djaci = sviMesecniPutnici.where((MesecniPutnik mp) {
-        // 🔧 ISPRAVKA: Tačno matchovanje dana umesto contains()
-        final radniDaniList = mp.radniDani.toLowerCase().split(',');
-        final dayMatch = radniDaniList.contains(danasnjiDan.toLowerCase());
-        // 🔧 ISPRAVKA: Prošireni tip filter - uključuje sve moguće varijante
-        final tipLower = mp.tip.toLowerCase();
-        final jeUcenik = tipLower == 'ucenik' || tipLower == 'učenik' || tipLower == 'djak' || tipLower == 'student';
-        // 🔧 UKLONJEN status filter - računaću status unutar glavne logike
+          return dayMatch && jeUcenik;
+        }).toList();
 
-        return dayMatch && jeUcenik;
-      }).toList();
+        // FINALNA LOGIKA: OSTALO/UKUPNO
+        int ukupnoUjutro = 0; // ukupno učenika koji idu ujutro (Bela Crkva)
+        int reseniUcenici = 0; // učenici upisani za OBA pravca (automatski rešeni)
+        int otkazaliUcenici = 0; // učenici koji su otkazali
 
-      // FINALNA LOGIKA: OSTALO/UKUPNO
-      int ukupnoUjutro = 0; // ukupno učenika koji idu ujutro (Bela Crkva)
-      int reseniUcenici = 0; // učenici upisani za OBA pravca (automatski rešeni)
-      int otkazaliUcenici = 0; // učenici koji su otkazali
+        for (final djak in djaci) {
+          // 🔧 PROVERA: Da li je aktivni učenik (standardizovano)
+          final jeAktivan = TextUtils.isStatusActive(djak.status);
 
-      for (final djak in djaci) {
-        // 🔧 PROVERA: Da li je aktivni učenik (standardizovano)
-        final jeAktivan = TextUtils.isStatusActive(djak.status);
+          // 🔧 PROVERA: Da li je otkazao (standardizovano)
+          final jeOtkazao = !jeAktivan;
 
-        // 🔧 PROVERA: Da li je otkazao (standardizovano)
-        final jeOtkazao = !jeAktivan;
+          // Da li ide ujutro (Bela Crkva)?
+          final polazakBC = djak.getPolazakBelaCrkvaZaDan(danasnjiDan);
+          final ideBelaCrkva = polazakBC != null && polazakBC.isNotEmpty;
 
-        // Da li ide ujutro (Bela Crkva)?
-        final polazakBC = djak.getPolazakBelaCrkvaZaDan(danasnjiDan);
-        final ideBelaCrkva = polazakBC != null && polazakBC.isNotEmpty;
+          // Da li se vraća (Vršac)?
+          final polazakVS = djak.getPolazakVrsacZaDan(danasnjiDan);
+          final vraca = polazakVS != null && polazakVS.isNotEmpty;
 
-        // Da li se vraća (Vršac)?
-        final polazakVS = djak.getPolazakVrsacZaDan(danasnjiDan);
-        final vraca = polazakVS != null && polazakVS.isNotEmpty;
+          // 🔧 LOGIKA: Samo oni koji idu ujutro u Belu Crkvu se računaju
+          if (ideBelaCrkva) {
+            ukupnoUjutro++; // broji sve koji idu ujutro (nezavisno od statusa)
 
-        // 🔧 LOGIKA: Samo oni koji idu ujutro u Belu Crkvu se računaju
-        if (ideBelaCrkva) {
-          ukupnoUjutro++; // broji sve koji idu ujutro (nezavisno od statusa)
-
-          if (jeOtkazao) {
-            otkazaliUcenici++; // otkazao nakon upisa
-          } else if (jeAktivan && vraca) {
-            reseniUcenici++; // aktivan + upisan za oba pravca = rešen
+            if (jeOtkazao) {
+              otkazaliUcenici++; // otkazao nakon upisa
+            } else if (jeAktivan && vraca) {
+              reseniUcenici++; // aktivan + upisan za oba pravca = rešen
+            }
           }
         }
+
+        // RAČUNAJ OSTALO
+        final ostalo = ukupnoUjutro - reseniUcenici - otkazaliUcenici;
+
+        return {
+          'ukupno_ujutro': ukupnoUjutro, // 30 - ukupno koji idu ujutro
+          'reseni': reseniUcenici, // 15 - upisani za oba pravca
+          'otkazali': otkazaliUcenici, // 5 - otkazani
+          'ostalo': ostalo, // 10 - ostalo da se vrati
+        };
+      } catch (e) {
+        return {
+          'ukupno_ujutro': 0,
+          'reseni': 0,
+          'otkazali': 0,
+          'ostalo': 0,
+        };
       }
-
-      // RAČUNAJ OSTALO
-      final ostalo = ukupnoUjutro - reseniUcenici - otkazaliUcenici;
-
-      return {
-        'ukupno_ujutro': ukupnoUjutro, // 30 - ukupno koji idu ujutro
-        'reseni': reseniUcenici, // 15 - upisani za oba pravca
-        'otkazali': otkazaliUcenici, // 5 - otkazani
-        'ostalo': ostalo, // 10 - ostalo da se vrati
-      };
-    } catch (e) {
-      return {
-        'ukupno': 0,
-        'povratak': 0,
-        'slobodno': 0,
-      };
-    }
+    });
   }
 
   // ✨ DIGITALNI BROJAČ DATUM WIDGET - OPTIMIZOVANO (30s umesto 1s)
@@ -485,8 +485,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // �🎓 FINALNO DUGME - OSTALO/UKUPNO FORMAT
   Widget _buildDjackiBrojacButton() {
-    return FutureBuilder<Map<String, int>>(
-      future: _calculateDjackieBrojeviAsync(),
+    return StreamBuilder<Map<String, int>>(
+      stream: _streamDjackieBrojevi(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           // 🚨 MINI ERROR WIDGET ZA APPBAR
@@ -667,7 +667,7 @@ class _DanasScreenState extends State<DanasScreen> {
             decoration: BoxDecoration(
               color: Colors.black87,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: speedColor.withOpacity(0.4)),
+              border: Border.all(color: speedColor.withValues(alpha: 0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -722,9 +722,10 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🎓 POPUP SA DETALJNIM ĐAČKIM STATISTIKAMA - OPTIMIZOVAN
   void _showDjackiDialog(Map<String, int> statistike) {
-    final zakazane = statistike['povratak'] ?? 0;
-    final ostale = statistike['slobodno'] ?? 0;
-    final ukupno = statistike['ukupno'] ?? 0;
+    final ukupnoUjutro = statistike['ukupno_ujutro'] ?? 0; // ukupno učenika ujutro (Bela Crkva)
+    final reseni = statistike['reseni'] ?? 0; // upisani za oba pravca (BC + VS)
+    final ostalo = statistike['ostalo'] ?? 0; // ostalo da se vrati (samo BC)
+    final otkazali = statistike['otkazali'] ?? 0; // otkazani učenici
 
     showDialog<void>(
       context: context,
@@ -733,7 +734,7 @@ class _DanasScreenState extends State<DanasScreen> {
           children: [
             const Icon(Icons.school, color: Colors.blue),
             const SizedBox(width: 8),
-            Text('Đaci - Danas ($zakazane/$ostale)'),
+            Text('Đaci - Danas ($reseni/$ostalo)'),
           ],
         ),
         content: Column(
@@ -741,8 +742,8 @@ class _DanasScreenState extends State<DanasScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildStatRow(
-              'Ukupno upisano',
-              '$ukupno',
+              'Ukupno ujutro (BC)',
+              '$ukupnoUjutro',
               Icons.group,
               Colors.blue,
             ),
@@ -769,7 +770,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Zakazane ($zakazane)',
+                        'Rešeni ($reseni)',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.green,
@@ -779,7 +780,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Učenici koji imaju i jutarnji i popodnevni polazak',
+                    'Učenici koji imaju i jutarnji (BC) i popodnevni (VS) polazak',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
@@ -795,7 +796,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Ostale ($ostale)',
+                        'Ostalo ($ostalo)',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.orange,
@@ -805,7 +806,33 @@ class _DanasScreenState extends State<DanasScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Učenici koji imaju samo jutarnji polazak',
+                    'Učenici koji imaju samo jutarnji polazak (BC)',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Otkazali ($otkazali)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Učenici koji su otkazali, na bolovanju ili godišnjem',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -1051,11 +1078,11 @@ class _DanasScreenState extends State<DanasScreen> {
             child: Card(
               margin: const EdgeInsets.all(0),
               elevation: 4,
-              color: vozacColor.withOpacity(0.25),
+              color: vozacColor.withValues(alpha: 0.25),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: vozacColor.withOpacity(0.6),
+                  color: vozacColor.withValues(alpha: 0.6),
                   width: 2,
                 ),
               ),
@@ -1126,7 +1153,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     ),
 
                     Divider(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24),
                     ),
 
                     // UKUPAN PAZAR - GLAVNI PODATAK
@@ -1145,9 +1172,9 @@ class _DanasScreenState extends State<DanasScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
+                          color: Colors.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -1706,12 +1733,12 @@ class _DanasScreenState extends State<DanasScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                   blurRadius: 24,
                   offset: const Offset(0, 12),
                 ),

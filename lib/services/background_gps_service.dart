@@ -94,7 +94,7 @@ void onStart(ServiceInstance service) async {
     // Pokušaj da dobiješ GPS poziciju
     try {
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        // desiredAccuracy: deprecated, use settings parameter
       );
 
       // Pošalji na Supabase (ako je moguće)

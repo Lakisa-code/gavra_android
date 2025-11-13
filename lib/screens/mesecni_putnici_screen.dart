@@ -516,7 +516,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.red.withOpacity(0.4),
+                                  color: Colors.red.withValues(alpha: 0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -580,7 +580,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.teal.withOpacity(0.4),
+                                  color: Colors.teal.withValues(alpha: 0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -682,18 +682,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               padding: const EdgeInsets.all(16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       blurRadius: 10,
                       spreadRadius: 1,
                       offset: const Offset(0, 3),
                     ),
                   ],
                   border: Border.all(
-                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                    color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                   ),
                 ),
                 child: TextField(
@@ -950,7 +950,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       Switch(
                         value: putnik.aktivan,
                         onChanged: bolovanje ? null : (value) => _toggleAktivnost(putnik),
-                        activeColor: Colors.green,
+                        activeThumbColor: Colors.green,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ],
@@ -1060,10 +1060,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.05),
+                    color: Colors.blue.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.blue.withOpacity(0.2),
+                      color: Colors.blue.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
@@ -1216,10 +1216,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Colors.green.withOpacity(0.3),
+                          color: Colors.green.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -1255,10 +1255,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Colors.orange.withOpacity(0.3),
+                          color: Colors.orange.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -1347,19 +1347,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              color.withOpacity(0.15),
-              color.withOpacity(0.08),
+              color.withValues(alpha: 0.15),
+              color.withValues(alpha: 0.08),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -1479,15 +1479,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _getTypeColor(_noviTip, context).withOpacity(0.1),
+                    color: _getTypeColor(_noviTip, context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _getTypeColor(_noviTip, context).withOpacity(0.3),
+                      color: _getTypeColor(_noviTip, context).withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: _getTypeColor(_noviTip, context).withOpacity(0.1),
+                        color: _getTypeColor(_noviTip, context).withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1528,7 +1528,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _noviTip,
+                        initialValue: _noviTip,
                         decoration: InputDecoration(
                           labelText: 'Tip putnika',
                           border: const OutlineInputBorder(),
@@ -1621,15 +1621,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.blue.withOpacity(0.3),
+                      color: Colors.blue.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.blue.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1672,10 +1672,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                 margin: const EdgeInsets.only(top: 16),
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
+                                  color: Colors.orange.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: Colors.orange.withOpacity(0.3),
+                                    color: Colors.orange.withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: Column(
@@ -1686,7 +1686,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(0.2),
+                                            color: Colors.orange.withValues(alpha: 0.2),
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: const Icon(
@@ -1763,15 +1763,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.green.withOpacity(0.3),
+                      color: Colors.green.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1827,15 +1827,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.1),
+                    color: Colors.purple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.purple.withOpacity(0.3),
+                      color: Colors.purple.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.purple.withOpacity(0.1),
+                        color: Colors.purple.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -1916,7 +1916,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 Navigator.pop(context);
               },
               style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               child: const Text('Otkaži'),
             ),
@@ -2124,7 +2124,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 15,
                   spreadRadius: 2,
                   offset: const Offset(0, 8),
@@ -2158,7 +2158,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           key: ValueKey('${_noviTip}_add'),
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _getTypeColor(_noviTip, context).withOpacity(0.2),
+                            color: _getTypeColor(_noviTip, context).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
@@ -2210,10 +2210,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
+                            color: Colors.red.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(
-                              color: Colors.red.withOpacity(0.4),
+                              color: Colors.red.withValues(alpha: 0.4),
                             ),
                           ),
                           child: const Icon(
@@ -2246,7 +2246,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -2260,7 +2260,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: _getTypeColor(_noviTip, context).withOpacity(0.2),
+                                      color: _getTypeColor(_noviTip, context).withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -2311,7 +2311,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     Icons.person,
                                     color: Colors.white,
                                   ),
-                                  fillColor: Colors.white.withOpacity(0.1),
+                                  fillColor: Colors.white.withValues(alpha: 0.1),
                                   filled: true,
                                   labelStyle: const TextStyle(color: Colors.white70),
                                 ),
@@ -2320,7 +2320,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               ),
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
-                                value: _noviTip,
+                                initialValue: _noviTip,
                                 decoration: InputDecoration(
                                   labelText: 'Tip putnika',
                                   border: const OutlineInputBorder(),
@@ -2338,7 +2338,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       width: 2,
                                     ),
                                   ),
-                                  fillColor: Colors.white.withOpacity(0.1),
+                                  fillColor: Colors.white.withValues(alpha: 0.1),
                                   filled: true,
                                   labelStyle: const TextStyle(color: Colors.white70),
                                 ),
@@ -2412,7 +2412,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       color: Colors.white,
                                     ),
                                   ),
-                                  fillColor: Colors.white.withOpacity(0.1),
+                                  fillColor: Colors.white.withValues(alpha: 0.1),
                                   filled: true,
                                   labelStyle: const TextStyle(color: Colors.white70),
                                   hintStyle: const TextStyle(color: Colors.white54),
@@ -2437,7 +2437,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -2451,7 +2451,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.2),
+                                      color: Colors.blue.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -2502,7 +2502,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     Icons.phone,
                                     color: Colors.white,
                                   ),
-                                  fillColor: Colors.white.withOpacity(0.1),
+                                  fillColor: Colors.white.withValues(alpha: 0.1),
                                   filled: true,
                                   labelStyle: const TextStyle(color: Colors.white70),
                                   hintStyle: const TextStyle(color: Colors.white54),
@@ -2523,10 +2523,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         margin: const EdgeInsets.only(top: 16),
                                         padding: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
-                                          color: Colors.orange.withOpacity(0.2),
+                                          color: Colors.orange.withValues(alpha: 0.2),
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.orange.withOpacity(0.4),
+                                            color: Colors.orange.withValues(alpha: 0.4),
                                           ),
                                         ),
                                         child: Column(
@@ -2537,7 +2537,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                 Container(
                                                   padding: const EdgeInsets.all(6),
                                                   decoration: BoxDecoration(
-                                                    color: Colors.orange.withOpacity(0.3),
+                                                    color: Colors.orange.withValues(alpha: 0.3),
                                                     borderRadius: BorderRadius.circular(
                                                       6,
                                                     ),
@@ -2669,15 +2669,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.green.withOpacity(0.3),
+                              color: Colors.green.withValues(alpha: 0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.green.withOpacity(0.1),
+                                color: Colors.green.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -2691,7 +2691,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.2),
+                                      color: Colors.green.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -2768,15 +2768,15 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.purple.withOpacity(0.1),
+                            color: Colors.purple.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.purple.withOpacity(0.3),
+                              color: Colors.purple.withValues(alpha: 0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.purple.withOpacity(0.1),
+                                color: Colors.purple.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -2790,7 +2790,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.purple.withOpacity(0.2),
+                                      color: Colors.purple.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -2906,7 +2906,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.withOpacity(0.1),
+                                  color: Colors.purple.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Row(
@@ -2947,7 +2947,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -2961,7 +2961,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.withOpacity(0.2),
+                                      color: Colors.green.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -3057,7 +3057,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -3071,7 +3071,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.purple.withOpacity(0.2),
+                                      color: Colors.purple.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(
@@ -3132,10 +3132,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         child: Container(
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.2),
+                            color: Colors.red.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(
-                              color: Colors.red.withOpacity(0.4),
+                              color: Colors.red.withValues(alpha: 0.4),
                             ),
                           ),
                           child: TextButton(
@@ -3170,14 +3170,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           duration: const Duration(milliseconds: 200),
                           height: 40,
                           decoration: BoxDecoration(
-                            color: (_noviTip == 'ucenik' ? Colors.orange : Colors.teal).withOpacity(0.3),
+                            color: (_noviTip == 'ucenik' ? Colors.orange : Colors.teal).withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(
-                              color: (_noviTip == 'ucenik' ? Colors.orange : Colors.teal).withOpacity(0.6),
+                              color: (_noviTip == 'ucenik' ? Colors.orange : Colors.teal).withValues(alpha: 0.6),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -3514,10 +3514,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -3907,10 +3907,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                             color: Colors.green.shade600,
                                           ),
                                         ),
-                                      // 🔍 Vozač poslednjeg plaćanja
+                                      // 🔍 Vozač poslednjeg plaćanja - 🔥 REALTIME
                                       if (putnik.vremePlacanja != null)
-                                        FutureBuilder<String?>(
-                                          future: MesecniPutnikService.getVozacPoslednjegPlacanja(
+                                        StreamBuilder<String?>(
+                                          stream: MesecniPutnikService.streamVozacPoslednjegPlacanja(
                                             putnik.id,
                                           ),
                                           builder: (context, snapshot) {
@@ -4348,9 +4348,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
+            color: Colors.blue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -4384,9 +4384,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -4411,8 +4411,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 putnik.vremePlacanja != null ? _formatDatum(putnik.vremePlacanja!) : 'Nema podataka o datumu',
               ),
               // 🔍 Vozač koji je naplatio - async loading
-              FutureBuilder<String?>(
-                future: MesecniPutnikService.getVozacPoslednjegPlacanja(putnik.id),
+              // 🔥 REALTIME: Vozač poslednjeg plaćanja
+              StreamBuilder<String?>(
+                stream: MesecniPutnikService.streamVozacPoslednjegPlacanja(putnik.id),
                 builder: (context, snapshot) {
                   final vozacIme = snapshot.data ?? 'Učitava...';
                   return _buildStatRow('🚗 Vozač (naplata):', vozacIme);
@@ -4429,9 +4430,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: periodColor.withOpacity(0.1),
+            color: periodColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: periodColor.withOpacity(0.3)),
+            border: Border.all(color: periodColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -4474,9 +4475,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

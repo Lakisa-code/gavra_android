@@ -33,7 +33,7 @@ class TripleBlueFashionTema {
     borderRadius: BorderRadius.circular(15),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.1),
+        color: Colors.black.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 4),
       ),
@@ -58,15 +58,15 @@ class TripleBlueFashionTema {
 
   // TRANSPARENTNI GLASSMORPHISM DUGMICI
   static BoxDecoration glassmorphismDugme = BoxDecoration(
-    color: Colors.white.withOpacity(0.06),
+    color: Colors.white.withValues(alpha: 0.06),
     borderRadius: BorderRadius.circular(12),
     border: Border.all(
-      color: Colors.white.withOpacity(0.13),
+      color: Colors.white.withValues(alpha: 0.13),
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.1),
+        color: Colors.black.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 4),
       ),
@@ -77,13 +77,13 @@ class TripleBlueFashionTema {
   static BoxDecoration bottomNavBar = BoxDecoration(
     color: Colors.transparent,
     border: Border.all(
-      color: Colors.white.withOpacity(0.13),
+      color: Colors.white.withValues(alpha: 0.13),
       width: 1.5,
     ),
     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
     boxShadow: [
       BoxShadow(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         blurRadius: 24,
         offset: const Offset(0, -8),
         spreadRadius: 2,
@@ -93,15 +93,15 @@ class TripleBlueFashionTema {
 
   // POPUP DODAJ PUTNIKA - GLASSMORPHISM DIALOG
   static BoxDecoration popupDialog = BoxDecoration(
-    color: Colors.white.withOpacity(0.06),
+    color: Colors.white.withValues(alpha: 0.06),
     borderRadius: BorderRadius.circular(20),
     border: Border.all(
-      color: Colors.white.withOpacity(0.13),
+      color: Colors.white.withValues(alpha: 0.13),
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.1),
+        color: Colors.black.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 4),
       ),
@@ -137,7 +137,7 @@ class TripleBlueFashionTema {
   static BoxDecoration appBarButton = BoxDecoration(
     color: Colors.black87,
     borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: Colors.white.withOpacity(0.4)),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
   );
 
   static BoxDecoration djackiButton = BoxDecoration(
@@ -151,9 +151,9 @@ class TripleBlueFashionTema {
 
   // 💡 INFORMACIJSKI KONTEJNERI
   static BoxDecoration infoContainer = BoxDecoration(
-    color: Colors.orange.withOpacity(0.1),
+    color: Colors.orange.withValues(alpha: 0.1),
     borderRadius: BorderRadius.circular(8),
-    border: Border.all(color: Colors.orange.withOpacity(0.3)),
+    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
   );
 
   static BoxDecoration warningContainer = BoxDecoration(
@@ -163,31 +163,31 @@ class TripleBlueFashionTema {
 
   // 🎨 GLASSMORPHISM DUGMAD I KONTEJNERI
   static BoxDecoration glassmorphismContainer = BoxDecoration(
-    color: Colors.white.withOpacity(0.15),
+    color: Colors.white.withValues(alpha: 0.15),
     borderRadius: BorderRadius.circular(14),
     border: Border.all(
-      color: Colors.white.withOpacity(0.3),
+      color: Colors.white.withValues(alpha: 0.3),
     ),
   );
 
   // 📋 SWITCH/TOGGLE DUGME
   static BoxDecoration toggleOn = BoxDecoration(
     gradient: LinearGradient(
-      colors: [Colors.green.withOpacity(0.8), Colors.green],
+      colors: [Colors.green.withValues(alpha: 0.8), Colors.green],
     ),
     borderRadius: BorderRadius.circular(14),
     border: Border.all(
-      color: Colors.green.withOpacity(0.6),
+      color: Colors.green.withValues(alpha: 0.6),
     ),
   );
 
   static BoxDecoration toggleOff = BoxDecoration(
     gradient: LinearGradient(
-      colors: [Colors.white.withOpacity(0.3), Colors.white.withOpacity(0.1)],
+      colors: [Colors.white.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.1)],
     ),
     borderRadius: BorderRadius.circular(14),
     border: Border.all(
-      color: Colors.white.withOpacity(0.4),
+      color: Colors.white.withValues(alpha: 0.4),
     ),
   );
 
@@ -196,7 +196,7 @@ class TripleBlueFashionTema {
     borderRadius: BorderRadius.circular(11),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withValues(alpha: 0.2),
         blurRadius: 4,
         offset: const Offset(0, 2),
       ),
@@ -205,22 +205,22 @@ class TripleBlueFashionTema {
 
   // 🔳 AKCIJSKI DUGMAD
   static BoxDecoration cancelButton = BoxDecoration(
-    color: Colors.red.withOpacity(0.2),
+    color: Colors.red.withValues(alpha: 0.2),
     borderRadius: BorderRadius.circular(15),
     border: Border.all(
-      color: Colors.red.withOpacity(0.4),
+      color: Colors.red.withValues(alpha: 0.4),
     ),
   );
 
   static BoxDecoration saveButton = BoxDecoration(
-    color: Colors.green.withOpacity(0.3),
+    color: Colors.green.withValues(alpha: 0.3),
     borderRadius: BorderRadius.circular(15),
     border: Border.all(
-      color: Colors.green.withOpacity(0.6),
+      color: Colors.green.withValues(alpha: 0.6),
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.2),
+        color: Colors.black.withValues(alpha: 0.2),
         blurRadius: 8,
         offset: const Offset(0, 4),
       ),
@@ -229,15 +229,15 @@ class TripleBlueFashionTema {
 
   // 👤 KONTAKT SEKCIJA
   static BoxDecoration contactSection = BoxDecoration(
-    color: Colors.blue.withOpacity(0.1),
+    color: Colors.blue.withValues(alpha: 0.1),
     borderRadius: BorderRadius.circular(12),
     border: Border.all(
-      color: Colors.blue.withOpacity(0.3),
+      color: Colors.blue.withValues(alpha: 0.3),
       width: 1.5,
     ),
     boxShadow: [
       BoxShadow(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         blurRadius: 8,
         offset: const Offset(0, 2),
       ),
@@ -245,15 +245,15 @@ class TripleBlueFashionTema {
   );
 
   static BoxDecoration parentContactsEdit = BoxDecoration(
-    color: Colors.orange.withOpacity(0.1),
+    color: Colors.orange.withValues(alpha: 0.1),
     borderRadius: BorderRadius.circular(8),
     border: Border.all(
-      color: Colors.orange.withOpacity(0.3),
+      color: Colors.orange.withValues(alpha: 0.3),
     ),
   );
 
   static BoxDecoration familyIcon = BoxDecoration(
-    color: Colors.orange.withOpacity(0.2),
+    color: Colors.orange.withValues(alpha: 0.2),
     borderRadius: BorderRadius.circular(6),
   );
 
@@ -262,15 +262,15 @@ class TripleBlueFashionTema {
     return BoxDecoration(
       gradient: LinearGradient(
         colors: [
-          color.withOpacity(0.15),
-          color.withOpacity(0.08),
+          color.withValues(alpha: 0.15),
+          color.withValues(alpha: 0.08),
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(8),
       border: Border.all(
-        color: color.withOpacity(0.3),
+        color: color.withValues(alpha: 0.3),
       ),
     );
   }
@@ -278,7 +278,7 @@ class TripleBlueFashionTema {
   // 🎯 ICON BUTTON WRAPPER
   static BoxDecoration iconWrapper({required Color color}) {
     return BoxDecoration(
-      color: color.withOpacity(0.2),
+      color: color.withValues(alpha: 0.2),
       borderRadius: BorderRadius.circular(8),
     );
   }

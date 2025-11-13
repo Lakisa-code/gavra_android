@@ -54,20 +54,25 @@ class AdresaSupabaseService {
   /// Pronađi adresu po nazivu i gradu
   static Future<Adresa?> findAdresaByNazivAndGrad(String naziv, String grad) async {
     try {
+      print('🔍 Finding address: naziv="$naziv", grad="$grad"');
       final response = await supabase
           .from('adrese')
-          .select('id, naziv, grad, koordinate')
+          .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
           .eq('naziv', naziv)
           .eq('grad', grad)
           .maybeSingle();
 
+      print('🔍 Search response: $response');
       if (response != null) {
         final adresa = Adresa.fromMap(response);
         _cache[adresa.id] = adresa;
+        print('🔍 Found address: ${adresa.id}');
         return adresa;
       }
+      print('🔍 No address found');
       return null;
     } catch (e) {
+      print('❌ Error finding address: $e');
       return null;
     }
   }
@@ -81,24 +86,44 @@ class AdresaSupabaseService {
     double? lat,
     double? lng,
   }) async {
+    print('🏠 createOrGetAdresa called with: naziv="$naziv", grad="$grad"');
+
     // Prvo pokušaj da pronađeš postojeću
-    final postojeca = await findAdresaByNazivAndGrad(naziv, grad);
-    if (postojeca != null) {
-      return postojeca;
+    try {
+      print('🏠 Searching for existing address...');
+      final postojeca = await findAdresaByNazivAndGrad(naziv, grad);
+      if (postojeca != null) {
+        print('🏠 Found existing address: ${postojeca.id}');
+        return postojeca;
+      }
+      print('🏠 No existing address found, creating new...');
+    } catch (e) {
+      print('❌ Error searching for existing address: $e');
     }
 
     // Kreiraj novu
     try {
+      print('🏠 Inserting new address...');
       final response = await supabase
           .from('adrese')
-          .insert({'naziv': naziv, 'grad': grad, 'ulica': ulica ?? naziv, 'broj': broj, 'lat': lat, 'lng': lng})
-          .select()
+          .insert({
+            'naziv': naziv,
+            'grad': grad,
+            'ulica': ulica ?? naziv,
+            'broj': broj,
+            // Dodaj koordinate kao JSONB objekat ako su dostupne
+            if (lat != null && lng != null) 'koordinate': {'lat': lat, 'lng': lng},
+          })
+          .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
           .single();
 
+      print('🏠 Insert response: $response');
       final adresa = Adresa.fromMap(response);
       _cache[adresa.id] = adresa;
+      print('🏠 Successfully created address: ${adresa.id}');
       return adresa;
     } catch (e) {
+      print('❌ Error creating new address: $e');
       return null;
     }
   }

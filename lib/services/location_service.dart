@@ -45,9 +45,9 @@ class LocationService {
       if (!hasPermission) return null;
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
+          // desiredAccuracy: deprecated, use settings parameter
+          // timeLimit: const Duration(seconds: 10), // deprecated, use settings parameter
+          );
 
       return position;
     } catch (e) {
@@ -60,8 +60,7 @@ class LocationService {
   static Future<String?> getAddressFromPosition(Position position) async {
     try {
       // Koristi Nominatim API za reverse geocoding
-      final address =
-          await _reverseGeocode(position.latitude, position.longitude);
+      final address = await _reverseGeocode(position.latitude, position.longitude);
 
       if (address != null) {
         // Logger removed
@@ -79,8 +78,7 @@ class LocationService {
   static Future<String?> _reverseGeocode(double lat, double lng) async {
     try {
       const String baseUrl = 'https://nominatim.openstreetmap.org/reverse';
-      final url =
-          '$baseUrl?lat=$lat&lon=$lng&format=json&addressdetails=1&accept-language=sr';
+      final url = '$baseUrl?lat=$lat&lon=$lng&format=json&addressdetails=1&accept-language=sr';
 
       final response = await http.get(
         Uri.parse(url),
@@ -121,10 +119,7 @@ class LocationService {
     }
 
     // Dodaj grad/naselje
-    final place = address['city'] ??
-        address['town'] ??
-        address['village'] ??
-        address['municipality'];
+    final place = address['city'] ?? address['town'] ?? address['village'] ?? address['municipality'];
     if (place != null) {
       if (components.isNotEmpty) {
         components.add(place as String);
@@ -133,9 +128,7 @@ class LocationService {
       }
     }
 
-    return components.isNotEmpty
-        ? components.join(', ')
-        : (data['display_name'] as String?) ?? 'Nepoznata lokacija';
+    return components.isNotEmpty ? components.join(', ') : (data['display_name'] as String?) ?? 'Nepoznata lokacija';
   }
 
   /// Dobija trenutnu adresu korisnika (GPS + reverse geocoding)

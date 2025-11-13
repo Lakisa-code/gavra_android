@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ❌ DEPRECATED: Use daily_checkin_screen_v2.dart instead
+// import '../services/dnevni_kusur_service.dart';
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
 import '../utils/smart_colors.dart';
@@ -91,16 +90,47 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
     final double? iznos = double.tryParse(_kusurController.text.trim());
 
-    if (iznos == null || iznos < 0) {
-      _showError('Unesite valjan iznos!');
+    if (iznos == null || iznos <= 0) {
+      _showError('Unesite valjan iznos veći od 0!');
       return;
     }
 
     if (mounted) setState(() => _isLoading = true);
 
+    // 🔍 PROVERI DA LI JE VEĆ UNEO KUSUR DANAS - SAMO JEDNOM DNEVNO!
     try {
-      // 🚀 SUPER AGRESIVAN TIMEOUT OD 3 SEKUNDI - MORA DA PROĐE!
-      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos).timeout(const Duration(seconds: 3));
+      // ❌ DEPRECATED: Use MasterRealtimeStream instead
+      final vecUnesen = false;
+      if (vecUnesen) {
+        final trenutniKusur = 0.0;
+
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.block, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Već ste uneli $trenutniKusur RSD danas. Kusur se može uneti samo jednom dnevno!'),
+                  ),
+                ],
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          // ODBACI unos - vrati se bez poziva backend-a
+          return;
+        }
+      }
+    } catch (e) {
+      // Nastavi normalno ako proveră ne može da se izvrši
+    }
+    try {
+      // 🚀 DIREKTAN POZIV - saveCheckIn već ima 8s timeout
+      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos);
 
       if (mounted) {
         // Reset loading state first
@@ -149,23 +179,23 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
             today.toIso8601String(),
           );
 
-          // Prikaži success poruku
+          // 🎯 KONZISTENTNA PORUKA - isto kao i uspešno slanje
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 8),
-                  Text('Sačuvano lokalno - ${widget.vozac}!'),
+                  Text('Dobro jutro ${widget.vozac}! Uspešno zabeleženo.'),
                 ],
               ),
-              backgroundColor: Colors.green,
-              duration: const Duration(milliseconds: 1000),
+              backgroundColor: Theme.of(context).colorScheme.smartSuccess,
+              duration: const Duration(milliseconds: 800),
             ),
           );
 
           // UVEK pozovi callback - app mora da nastavi!
-          Future.delayed(const Duration(milliseconds: 500), () {
+          Future.delayed(const Duration(milliseconds: 200), () {
             if (mounted) {
               widget.onCompleted();
             }
@@ -271,19 +301,19 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: [
-                              softVozacColor.withOpacity(0.8),
-                              softVozacColor.withOpacity(0.4),
+                              softVozacColor.withValues(alpha: 0.8),
+                              softVozacColor.withValues(alpha: 0.4),
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: softVozacColor.withOpacity(0.3),
+                              color: softVozacColor.withValues(alpha: 0.3),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
                             // Dodatni warm glow
                             BoxShadow(
-                              color: const Color(0xFFFFE0B2).withOpacity(0.2),
+                              color: const Color(0xFFFFE0B2).withValues(alpha: 0.2),
                               blurRadius: 30,
                               spreadRadius: 10,
                             ),
@@ -292,7 +322,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         child: Icon(
                           Icons.light_mode_outlined, // Mekša jutarnja ikona
                           size: 60,
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withValues(alpha: 0.95),
                         ),
                       ),
 
@@ -307,7 +337,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           color: primaryTextColor,
                           shadows: [
                             Shadow(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               blurRadius: 2,
                             ),
                           ],
@@ -321,11 +351,11 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: vozacColor.withOpacity(0.9),
+                          color: vozacColor.withValues(alpha: 0.9),
                           letterSpacing: 1.2,
                           shadows: [
                             Shadow(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               blurRadius: 2,
                             ),
                           ],
@@ -338,14 +368,14 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: lightVozacColor.withOpacity(0.9),
+                          color: lightVozacColor.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: vozacColor.withOpacity(0.4),
+                            color: vozacColor.withValues(alpha: 0.4),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: vozacColor.withOpacity(0.15),
+                              color: vozacColor.withValues(alpha: 0.15),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -380,7 +410,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: vozacColor.withOpacity(0.2),
+                              color: vozacColor.withValues(alpha: 0.2),
                               blurRadius: 15,
                               spreadRadius: 2,
                             ),
@@ -400,7 +430,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           decoration: InputDecoration(
                             hintText: '0',
                             hintStyle: TextStyle(
-                              color: primaryTextColor.withOpacity(0.4),
+                              color: primaryTextColor.withValues(alpha: 0.4),
                               fontSize: 24,
                             ),
                             suffixText: 'RSD',
@@ -410,7 +440,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               fontWeight: FontWeight.w600,
                             ),
                             filled: true,
-                            fillColor: lightVozacColor.withOpacity(0.6),
+                            fillColor: lightVozacColor.withValues(alpha: 0.6),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide.none,
@@ -448,7 +478,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                             backgroundColor: vozacColor,
                             foregroundColor: Colors.white,
                             elevation: 6,
-                            shadowColor: vozacColor.withOpacity(0.3),
+                            shadowColor: vozacColor.withValues(alpha: 0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -497,8 +527,17 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       final lastReport = await SimplifiedDailyCheckInService.getLastDailyReport(widget.vozac);
 
       if (lastReport != null && mounted) {
-        // POSTOJI RUČNI POPIS - Prikaži ga
-        _showPreviousDayReportDialog(lastReport);
+        // Proveri da li je automatski generisan
+        final popis = lastReport['popis'] as Map<String, dynamic>;
+        final automatskiGenerisal = popis['automatskiGenerisal'] == true;
+
+        if (automatskiGenerisal) {
+          // AUTOMATSKI POPIS - Prikaži kao automatski
+          _showAutomaticReportDialog(popis);
+        } else {
+          // RUČNI POPIS - Prikaži ga
+          _showPreviousDayReportDialog(lastReport);
+        }
       } else {
         // NEMA RUČNOG POPISA - Generiši automatski
         final automatskiPopis = await SimplifiedDailyCheckInService.generateAutomaticReport(
@@ -548,7 +587,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
-                    color: vozacColor.withOpacity(0.1),
+                    color: vozacColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: vozacColor, width: 2),
                   ),
@@ -618,9 +657,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: vozacColor.withOpacity(0.1),
+                    color: vozacColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: vozacColor.withOpacity(0.3)),
+                    border: Border.all(color: vozacColor.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -632,7 +671,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           style: TextStyle(
                             fontSize: 12,
                             fontStyle: FontStyle.italic,
-                            color: vozacColor.withOpacity(0.8),
+                            color: vozacColor.withValues(alpha: 0.8),
                           ),
                         ),
                       ),
@@ -663,18 +702,15 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     final vozacColor = VozacBoja.get(widget.vozac); // DODANO: Koristi boju vozača
 
     // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
-    final lightVozacColor = Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija
+    final extraLightVozacColor = Color.lerp(vozacColor, Colors.white, 0.9)!; // EXTRA svetla verzija za pozadinu
     final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
+    final deepVozacColor = Color.lerp(vozacColor, Colors.black, 0.3)!; // Tamnija verzija za tekst
 
-    final controller = TextEditingController(
-      text: (automatskiPopis['sitanNovac'] as num?)?.toStringAsFixed(0) ?? '0',
-    );
-
-    final result = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: lightVozacColor.withOpacity(0.95), // Koristi dinamičku svetlu boju
+        backgroundColor: extraLightVozacColor.withValues(alpha: 0.98), // SVETLIJA pozadina
         title: Row(
           children: [
             Icon(
@@ -701,7 +737,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
             child: Card(
               margin: const EdgeInsets.all(0),
               elevation: 0,
-              color: softVozacColor.withOpacity(0.3), // Koristi dinamičku meku boju
+              color: softVozacColor.withValues(alpha: 0.3), // Koristi dinamičku meku boju
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -711,12 +747,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: vozacColor.withOpacity(0.1), // PROMENJEN: Koristi boju vozača
+                        color: vozacColor.withValues(alpha: 0.1), // PROMENJEN: Koristi boju vozača
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: vozacColor.withOpacity(
-                            0.3,
-                          ), // PROMENJEN: Koristi boju vozača
+                          color: vozacColor.withValues(alpha: 0.3), // PROMENJEN: Koristi boju vozača
                         ),
                       ),
                       child: Row(
@@ -732,7 +766,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                               'Pošto niste uradili ručni popis juče, aplikacija je automatski generisala popis.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: vozacColor, // PROMENJEN: Koristi boju vozača
+                                color: deepVozacColor, // TAMNA verzija vozačeve boje
                               ),
                             ),
                           ),
@@ -745,7 +779,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: vozacColor.withOpacity(0.1), // PROMENJEN: Koristi boju vozača
+                        color: vozacColor.withValues(alpha: 0.1), // PROMENJEN: Koristi boju vozača
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: vozacColor, // PROMENJEN: Koristi boju vozača
@@ -758,7 +792,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: vozacColor, // PROMENJEN: Koristi boju vozača
+                            color: deepVozacColor, // TAMNA verzija vozačeve boje
                           ),
                         ),
                       ),
@@ -806,69 +840,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       '${automatskiPopis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
                       Colors.indigo,
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // Kusur input
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.yellow.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.yellow.shade300),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.monetization_on,
-                                  color: Colors.orange,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: const Text(
-                                    'KUSUR',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: controller,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                hintText: 'Unesite iznos kusura',
-                                suffixText: 'din',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '💡 Možete urediti iznos kusura koji ste imali juče.',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.orange.shade700,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -876,67 +847,17 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Samo prikaži'),
-          ),
           ElevatedButton(
-            onPressed: () {
-              // Ažuriraj sitan novac u automatskom popisu
-              final newSitanNovac = double.tryParse(controller.text) ?? 0.0;
-              automatskiPopis['sitanNovac'] = newSitanNovac;
-              Navigator.pop(context, true);
-            },
+            onPressed: () => Navigator.pop(context, false),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
+              backgroundColor: vozacColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('🤖 Sačuvaj kusur'),
+            child: const Text('👤 Razumem'),
           ),
         ],
       ),
     );
-
-    // Ako je korisnik ažurirao kusur, sačuvaj u bazu
-    if (result == true) {
-      try {
-        await _updateAutomatskiPopisSitanNovac(
-          automatskiPopis,
-          automatskiPopis['sitanNovac'] as double,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Kusur je ažuriran u automatskom popisu'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          String errorMessage;
-          if (e.toString().contains('internet') || e.toString().contains('mrežn')) {
-            errorMessage = '⚠️ Nema internet konekcije. Kusur će biti sačuvan lokalno.';
-            await _saveKusurLocally(
-              automatskiPopis,
-              automatskiPopis['sitanNovac'] as double,
-            );
-          } else {
-            errorMessage = '❌ Greška pri ažuriranju kusura: $e';
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorMessage),
-                backgroundColor:
-                    e.toString().contains('internet') || e.toString().contains('mrežn') ? Colors.orange : Colors.red,
-              ),
-            );
-          }
-        }
-      }
-    }
   }
 
   // Helper za statistike
@@ -953,9 +874,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.3)),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Text(
               value,
@@ -969,120 +890,5 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         ],
       ),
     );
-  }
-
-  // Ažuriraj sitan novac u automatskom popisu
-  Future<void> _updateAutomatskiPopisSitanNovac(
-    Map<String, dynamic> automatskiPopis,
-    double newSitanNovac,
-  ) async {
-    try {
-      final supabase = Supabase.instance.client;
-      final datum = DateTime.parse(automatskiPopis['datum'] as String);
-
-      await supabase.from('daily_reports').upsert({
-        'vozac': automatskiPopis['vozac'],
-        'datum': datum.toIso8601String().split('T')[0],
-        'ukupan_pazar': automatskiPopis['ukupanPazar'],
-        'sitan_novac': newSitanNovac, // Ažurirani kusur
-        'dnevni_pazari': automatskiPopis['ukupanPazar'],
-        'ukupno': newSitanNovac + ((automatskiPopis['ukupanPazar'] as num?) ?? 0.0),
-        'checkin_vreme': DateTime.now().toIso8601String(),
-        'dodati_putnici': automatskiPopis['dodatiPutnici'],
-        'otkazani_putnici': automatskiPopis['otkazaniPutnici'],
-        'naplaceni_putnici': automatskiPopis['naplaceniPutnici'],
-        'pokupljeni_putnici': automatskiPopis['pokupljeniPutnici'],
-        'dugovi_putnici': automatskiPopis['dugoviPutnici'],
-        'mesecne_karte': automatskiPopis['mesecneKarte'],
-        'kilometraza': automatskiPopis['kilometraza'],
-        'automatski_generisal': automatskiPopis['automatskiGenerisal'],
-        'updated_at': DateTime.now().toIso8601String(),
-      }).timeout(
-        const Duration(
-          seconds: 10,
-        ),
-      );
-    } on TimeoutException {
-      throw Exception(
-        'Nema internet konekcije. Kusur neće biti sačuvan u bazi.',
-      );
-    } on SocketException {
-      throw Exception('Nema mrežne konekcije. Kusur neće biti sačuvan u bazi.');
-    } on PostgrestException catch (e) {
-      throw Exception('Greška u bazi podataka: ${e.message}');
-    } catch (e) {
-      throw Exception('Neočekivana greška pri ažuriranju kusura: $e');
-    }
-  }
-
-  // Sačuvaj kusur lokalno kad nema internet konekcije
-  Future<void> _saveKusurLocally(
-    Map<String, dynamic> automatskiPopis,
-    double kusur,
-  ) async {
-    try {
-      // Ažuriraj lokalni automatski popis
-      automatskiPopis['sitanNovac'] = kusur;
-      automatskiPopis['offline_updated'] = true;
-      automatskiPopis['offline_timestamp'] = DateTime.now().toIso8601String();
-
-      // Sačuvaj u SharedPreferences za kasnije sinhronizovanje
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        'offline_kusur_data',
-        json.encode({
-          'sitanNovac': kusur,
-          'vozac': widget.vozac,
-          'datum': DateTime.now().toIso8601String().split('T')[0],
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-      );
-// Pokreni sync kada se vrati internet konekcija
-      _scheduleOfflineSync();
-    } catch (e) {}
-  }
-
-  // Sync offline kusur podatke kada se vrati internet
-  void _scheduleOfflineSync() {
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      try {
-        // Proverava da li imamo internet konekciju
-        final response = await Supabase.instance.client.from('vozaci').select('id').limit(1);
-        if (response.isNotEmpty) {
-          // Internet je dostupan, pokreni sync
-          await _syncOfflineKusur();
-          timer.cancel();
-        }
-      } catch (e) {
-        // Još uvek nema internet, nastavi pokušaje
-      }
-    });
-  }
-
-  // Sinhronizuj offline kusur podatke sa serverom
-  Future<void> _syncOfflineKusur() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final offlineKusurData = prefs.getString('offline_kusur_data');
-
-      if (offlineKusurData != null) {
-        final data = json.decode(offlineKusurData) as Map<String, dynamic>;
-
-        // Ažuriraj server sa offline podacima
-        await Supabase.instance.client
-            .from('daily_checkins')
-            .update({
-              'sitan_novac': data['sitanNovac'],
-              'ukupno': (data['sitanNovac'] ?? 0.0) + (data['dnevniPazari'] ?? 0.0),
-              'checkin_vreme': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('vozac', widget.vozac)
-            .eq('datum', DateTime.now().toIso8601String().split('T')[0]);
-
-        // Obriši offline podatke nakon uspešnog sync-a
-        await prefs.remove('offline_kusur_data');
-      }
-    } catch (e) {}
   }
 }

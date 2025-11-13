@@ -190,7 +190,8 @@ class _AdresaDropdownWidgetState extends State<AdresaDropdownWidget> {
     }
 
     return DropdownButtonFormField<String>(
-      value: _selectedValue,
+      // ignore: deprecated_member_use - value is valid for DropdownButtonFormField
+      initialValue: _selectedValue,
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,

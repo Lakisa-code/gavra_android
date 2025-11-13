@@ -51,10 +51,10 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (vozacBoje[vozac] ?? Colors.blueGrey).withOpacity(0.1),
+              color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: (vozacBoje[vozac] ?? Colors.blueGrey).withOpacity(0.3),
+                color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),
@@ -95,7 +95,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                                  .withOpacity(0.8),
+                                  .withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -166,7 +166,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
             border: Border.all(color: Colors.green[300]!, width: 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.green.withOpacity(0.2),
+                color: Colors.green.withValues(alpha: 0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               ),
@@ -214,9 +214,9 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -224,7 +224,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: color.withOpacity(0.8),
+              color: color.withValues(alpha: 0.8),
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,

@@ -69,7 +69,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
             color: (isRouteOptimized
                     ? const Color(0xFF4CAF50)
                     : const Color(0xFF00D4FF))
-                .withOpacity(0.3),
+                .withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -145,7 +145,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
             color: (isNavigating
                     ? const Color(0xFFFF9800)
                     : const Color(0xFF673AB7))
-                .withOpacity(0.3),
+                .withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -204,7 +204,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .error
-                            .withOpacity(0.8),
+                            .withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Icon(
@@ -233,7 +233,7 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
       // 1. Dobij trenutnu poziciju
       final currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        // desiredAccuracy: deprecated, use settings parameter
       );
 
       // 2. Kreiraj OpenStreetMap URL sa TRENUTNIM redosledom putnika

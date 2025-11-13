@@ -244,7 +244,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
             Text(
               'Učitavam detalje...',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 16,
               ),
             ),
@@ -324,20 +324,20 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.08),
-            Theme.of(context).colorScheme.primary.withOpacity(0.04),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.04),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -413,7 +413,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                           Theme.of(context)
                               .colorScheme
                               .tertiary
-                              .withOpacity(0.8),
+                              .withValues(alpha: 0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -422,7 +422,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                           color: Theme.of(context)
                               .colorScheme
                               .tertiary
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -448,7 +448,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                           Theme.of(context)
                               .colorScheme
                               .errorContainer
-                              .withOpacity(0.8),
+                              .withValues(alpha: 0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -457,7 +457,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                           color: Theme.of(context)
                               .colorScheme
                               .error
-                              .withOpacity(0.2),
+                              .withValues(alpha: 0.2),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -484,7 +484,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Column(
@@ -898,8 +898,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: tipPlacanja == 'mesecna_karta'
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-              : Theme.of(context).colorScheme.successPrimary.withOpacity(0.2),
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+              : Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.2),
           child: Icon(
             tipPlacanja == 'mesecna_karta' ? Icons.credit_card : Icons.payments,
             color: tipPlacanja == 'mesecna_karta'
@@ -945,9 +945,9 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         text,
@@ -1043,13 +1043,13 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
 
         Color boja = Theme.of(context).colorScheme.surfaceContainerHighest;
         if (aktivnost == 'voznja') {
-          boja = Theme.of(context).colorScheme.successPrimary.withOpacity(0.2);
+          boja = Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.2);
         }
         if (aktivnost == 'otkaz') {
-          boja = Theme.of(context).colorScheme.warningPrimary.withOpacity(0.2);
+          boja = Theme.of(context).colorScheme.warningPrimary.withValues(alpha: 0.2);
         }
         if (aktivnost == 'oba') {
-          boja = Theme.of(context).colorScheme.primary.withOpacity(0.2);
+          boja = Theme.of(context).colorScheme.primary.withValues(alpha: 0.2);
         }
 
         return Container(
