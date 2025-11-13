@@ -16,8 +16,21 @@ class DailyCheckInService {
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
   /// Stream za real-time ažuriranje sitnog novca u UI
-  static Stream<double> streamTodayAmount(String vozac) {
-    return Stream.value(0.0);
+  static Stream<double> streamTodayAmount(String vozac) async* {
+    // Odmah emituj trenutnu vrednost iz SharedPreferences
+    final currentAmount = await getTodayAmount(vozac) ?? 0.0;
+    yield currentAmount;
+    
+    // Zatim slušaj stream controller za ažuriranja
+    yield* _sitanNovacController.stream;
+  }
+
+  /// Initialize stream with current value from SharedPreferences
+  static Future<void> initializeStreamForVozac(String vozac) async {
+    final currentAmount = await getTodayAmount(vozac) ?? 0.0;
+    if (!_sitanNovacController.isClosed) {
+      _sitanNovacController.add(currentAmount);
+    }
   }
 
   /// Helper: Dobij kusur iz oba izvora - prioritet ima KusurService

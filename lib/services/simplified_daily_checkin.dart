@@ -66,6 +66,11 @@ class SimplifiedDailyCheckInService {
         await prefs.setBool(todayKey, true);
         await prefs.setDouble('${todayKey}_amount', sitanNovac);
         await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
+        
+        // Emituj update za stream
+        if (!_streamController.isClosed) {
+          _streamController.add(sitanNovac);
+        }
       } catch (localError) {
         // Emergency save failed - ignore silently
       }

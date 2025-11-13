@@ -9,6 +9,7 @@ import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
+import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -1426,6 +1427,9 @@ class _DanasScreenState extends State<DanasScreen> {
     _initializeCurrentDriver().then((_) {
       if (_currentDriver != null && _currentDriver!.isNotEmpty) {
         try {
+          // Initialize kusur stream to show current value
+          DailyCheckInService.initializeStreamForVozac(_currentDriver!);
+          
           _dailyCheckinSub = SimplifiedDailyCheckInService.initializeRealtimeForDriver(
             _currentDriver!,
           );
