@@ -1258,8 +1258,6 @@ class _PutnikCardState extends State<PutnikCard> {
         );
       }
     } catch (e) {
-      // Log greška za debugging
-      print('GREŠKA u _executePayment: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2507,17 +2505,14 @@ class _PutnikCardState extends State<PutnikCard> {
       final krajMeseca = DateTime(year, monthNumber + 1, 0, 23, 59, 59);
 
       // 🔄 Konvertuj ime vozača u UUID - FIX ZA CONSTRAINT GREŠKU
-      print('🔍 PUTNIK_CARD DEBUG: vozacIme input = "$vozacIme"');
 
       String vozacUuid;
       if (VozacMappingService.isValidVozacUuidSync(vozacIme)) {
         // Već je UUID format
         vozacUuid = vozacIme;
-        print('🔍 PUTNIK_CARD: vozacIme je već UUID = $vozacUuid');
       } else {
         // Konvertuj ime u UUID
         final uuid = VozacMappingService.getVozacUuidSync(vozacIme);
-        print('🔍 PUTNIK_CARD: VozacMappingService.getVozacUuidSync("$vozacIme") = $uuid');
 
         // FALLBACK sa pravim UUID-om vozača Bojan
         vozacUuid = uuid ?? '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e'; // Bojan UUID iz baze
@@ -2555,8 +2550,6 @@ class _PutnikCardState extends State<PutnikCard> {
         }
       }
     } catch (e) {
-      // Log greška za debugging
-      print('GREŠKA u _sacuvajPlacanjeStatic: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

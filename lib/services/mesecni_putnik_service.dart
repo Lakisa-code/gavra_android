@@ -233,17 +233,14 @@ class MesecniPutnikService {
   ) async {
     try {
       // Validacija UUID-a pre slanja u bazu
-      print('DEBUG: Input vozacId: "$vozacId"');
       String? validVozacId;
       if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
         // Provjeri da li je već valid UUID
         if (_isValidUuid(vozacId)) {
           validVozacId = vozacId;
-          print('DEBUG: vozacId je već valid UUID: $validVozacId');
         } else {
           // Ako nije UUID, pokušaj konverziju (fallback)
           final converted = VozacMappingService.getVozacUuidSync(vozacId);
-          print('DEBUG: VozacMappingService konverzija: $converted');
           if (converted != null) {
             validVozacId = converted;
           } else {
@@ -264,14 +261,9 @@ class MesecniPutnikService {
               default:
                 validVozacId = null;
             }
-            print('DEBUG: Hardcoded fallback result: $validVozacId');
           }
         }
-      } else {
-        print('DEBUG: vozacId je prazan ili "Nepoznat vozač"');
       }
-
-      print('DEBUG: Final validVozacId: $validVozacId');
 
       // 1. UVEK DODAJ NOVI ZAPIS ZA PLAĆANJE (omogućava višestruka plaćanja za isti mesec)
       final putnik = await getMesecniPutnikById(putnikId);
@@ -280,14 +272,9 @@ class MesecniPutnikService {
         String? adresaId = putnik.adresaBelaCrkvaId ?? putnik.adresaVrsacId;
 
         // Kreiraj ActionLog za plaćanje sa created_by
-        print('DEBUG: Kreiranje ActionLog - validVozacId: $validVozacId');
 
         // Osiguraj da vozacId nije null ili prazan
         final effectiveVozacId = validVozacId ?? '';
-        if (effectiveVozacId.isEmpty) {
-          print('DEBUG: UPOZORENJE - vozacId je prazan, koristim default "system" vozaca');
-        }
-
         final finalVozacId = effectiveVozacId.isNotEmpty ? effectiveVozacId : '00000000-0000-0000-0000-000000000000';
 
         final actionLog = ActionLog(
@@ -298,21 +285,6 @@ class MesecniPutnikService {
           finalVozacId,
           'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year}',
         );
-
-        print('DEBUG: ActionLog JSON: ${actionLog.toJsonString()}');
-
-        // 🔍 DETALJNO DEBUG ISPIS
-        final actionLogJson = actionLog.toJson();
-        print('DEBUG: ActionLog Map: $actionLogJson');
-        print('DEBUG: Has actions key: ${actionLogJson.containsKey('actions')}');
-        print('DEBUG: Actions type: ${actionLogJson['actions'].runtimeType}');
-        print('DEBUG: Actions content: ${actionLogJson['actions']}');
-        print('DEBUG: Actions is null? ${actionLogJson['actions'] == null}');
-
-        // 🧪 TEST CONSTRAINT COMPLIANCE
-        final hasActionsKey = actionLogJson.containsKey('actions');
-        final actionsIsArray = actionLogJson['actions'] is List;
-        print('DEBUG: Constraint check - has actions: $hasActionsKey, is array: $actionsIsArray');
 
         await _supabase.from('putovanja_istorija').insert({
           'mesecni_putnik_id': putnikId,

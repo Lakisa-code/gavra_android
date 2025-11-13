@@ -5,7 +5,6 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SmartCache {
@@ -66,10 +65,10 @@ class SmartCache {
       if (_memoryCache.containsKey(key)) {
         final cached = _memoryCache[key] as CachedValue<T>?;
         if (cached != null && !cached.isExpired) {
-          debugPrint('✅ Cache HIT (L1): $key');
+          /// Remove all debugPrint statements for production
           return cached.value;
         } else {
-          debugPrint('⏰ Cache EXPIRED (L1): $key');
+          // Cache expired
           _memoryCache.remove(key);
         }
       }
@@ -88,20 +87,20 @@ class SmartCache {
             if (value != null) {
               // Restore to L1
               _memoryCache[key] = CachedValue(value, ttl);
-              debugPrint('✅ Cache HIT (L2): $key');
+              // Cache hit L2
               return value;
             }
           } else {
-            debugPrint('⏰ Cache EXPIRED (L2): $key');
+            // Cache expired L2
           }
         }
       } catch (e) {
-        debugPrint('❌ Cache L2 deserialization error for $key: $e');
+        // Cache deserialization error
       }
     }
 
     // Cache MISS - fetch fresh data
-    debugPrint('❌ Cache MISS: $key - Fetching fresh data...');
+    // Cache miss - fetch fresh data
     final freshValue = await fetchFn();
     await set(key, freshValue, ttl);
     return freshValue;
@@ -124,10 +123,8 @@ class SmartCache {
         'cachedAt': DateTime.now().toIso8601String(),
       };
       await prefs.setString('${_prefs}_$key', jsonEncode(cacheData));
-
-      debugPrint('💾 Cache SET: $key (TTL: ${ttl.inMinutes}m)');
     } catch (e) {
-      debugPrint('❌ Cache SET error for $key: $e');
+      // Cache set error - not critical
     }
   }
 
@@ -141,8 +138,6 @@ class SmartCache {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${_prefs}_$key');
-
-    debugPrint('🗑️ Cache INVALIDATED: $key');
   }
 
   /// Invalidate multiple keys matching a pattern
@@ -163,7 +158,7 @@ class SmartCache {
       await prefs.remove(key);
     }
 
-    debugPrint('🗑️ Cache INVALIDATED (pattern): $pattern (${keysToRemove.length} keys)');
+    // Pattern invalidation complete
   }
 
   // =====================================================
@@ -181,7 +176,7 @@ class SmartCache {
       await prefs.remove(key);
     }
 
-    debugPrint('🗑️ Cache CLEARED: All entries removed');
+    // Cache cleared
   }
 
   // =====================================================

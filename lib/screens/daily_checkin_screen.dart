@@ -97,37 +97,6 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
     if (mounted) setState(() => _isLoading = true);
 
-    // 🔍 PROVERI DA LI JE VEĆ UNEO KUSUR DANAS - SAMO JEDNOM DNEVNO!
-    try {
-      // ❌ DEPRECATED: Use MasterRealtimeStream instead
-      final vecUnesen = false;
-      if (vecUnesen) {
-        final trenutniKusur = 0.0;
-
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.block, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text('Već ste uneli $trenutniKusur RSD danas. Kusur se može uneti samo jednom dnevno!'),
-                  ),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-          // ODBACI unos - vrati se bez poziva backend-a
-          return;
-        }
-      }
-    } catch (e) {
-      // Nastavi normalno ako proveră ne može da se izvrši
-    }
     try {
       // 🚀 DIREKTAN POZIV - saveCheckIn već ima 8s timeout
       await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos);
