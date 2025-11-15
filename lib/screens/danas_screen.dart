@@ -7,9 +7,9 @@ import 'package:url_launcher/url_launcher.dart'; // 🗺️ DODANO za OpenStreet
 
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
+import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
-import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -1429,7 +1429,7 @@ class _DanasScreenState extends State<DanasScreen> {
         try {
           // Initialize kusur stream to show current value
           DailyCheckInService.initializeStreamForVozac(_currentDriver!);
-          
+
           _dailyCheckinSub = SimplifiedDailyCheckInService.initializeRealtimeForDriver(
             _currentDriver!,
           );
@@ -1994,7 +1994,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.green[50],
+                                      color: Colors.green.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(color: Colors.green[300]!),
                                     ),
@@ -2029,7 +2029,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.purple[50],
+                                      color: Colors.purple.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: Colors.purple[300]!,
@@ -2077,7 +2077,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.red[50],
+                                      color: Colors.red.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(color: Colors.red[300]!),
                                     ),
@@ -2126,7 +2126,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.orange[50],
+                                      color: Colors.orange.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: Colors.orange[300]!,
