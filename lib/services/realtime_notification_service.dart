@@ -7,58 +7,56 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
+import 'push_service.dart';
 
 class RealtimeNotificationService {
-  /// IMPORTANT: Do NOT store your OneSignal REST API key in the client app.
-  ///
-  /// OneSignal konfiguracija direktno u aplikaciji
-  /// App ID: 4fd57af1-568a-45e0-a737-3b3918c4e92a
-  /// REST Key je sada SAKRIVEN na server-side (Supabase Edge Function)
+  /// IMPORTANT: Do NOT store provider REST/API keys in the client app.
+  /// This app uses FCM + Huawei Push; provider keys must be stored server-side as Supabase secrets.
 
-  /// 🔒 SIGURNO: Pošalji OneSignal notifikaciju putem Supabase Edge Function
-  static Future<void> sendOneSignalNotification({
+  /// 🔒 SIGURNO: Pošalji Push notifikaciju (FCM/Huawei) putem Supabase Edge Function
+  static Future<bool> sendPushNotification({
     required String title,
     required String body,
     String? playerId, // Ako želiš da šalješ pojedinačno
+    List<String>? externalUserIds,
+    List<String>? driverIds,
+    List<Map<String, dynamic>>? tokens, // [{token, provider}]
     String? segment, // Ili segment (npr. "All")
     Map<String, dynamic>? data,
   }) async {
-    // 🔒 SIGURNO: REST API ključ je na server-side (Supabase Edge Function)
-    const String appId = '4fd57af1-568a-45e0-a737-3b3918c4e92a';
-
     try {
       final payload = {
-        'app_id': appId,
+        if (playerId != null) 'player_id': playerId,
+        if (externalUserIds != null) 'external_user_ids': externalUserIds,
+        if (driverIds != null) 'driver_ids': driverIds,
+        if (tokens != null) 'tokens': tokens,
+        if (segment != null) 'segment': segment,
         'title': title,
         'body': body,
-        if (playerId != null) 'player_id': playerId,
-        if (segment != null) 'segment': segment,
-        if (data != null) 'data': data,
+        'data': data ?? {},
       };
 
       // 🌐 Pozovi Supabase Edge Function umesto direktnog REST poziva
       final supabase = Supabase.instance.client;
       final response = await supabase.functions.invoke(
-        'send-onesignal-notification',
+        'send-push-notification',
         body: payload,
       );
 
       if (response.data != null && response.data['success'] == true) {
-        // Logger removed - successful OneSignal send
+        return true;
       } else {
-        // Logger removed - OneSignal send failed
+        // Try local fallback
+        await LocalNotificationService.showRealtimeNotification(
+            title: title, body: body, payload: jsonEncode(data ?? {}));
+        return false;
       }
     } catch (e) {
-      // Fallback to local notification if OneSignal fails
       try {
         await LocalNotificationService.showRealtimeNotification(
-          title: title,
-          body: body,
-          payload: jsonEncode(data ?? {}),
-        );
-      } catch (fallbackError) {
-        // Logger removed - both OneSignal and local notification failed
-      }
+            title: title, body: body, payload: jsonEncode(data ?? {}));
+      } catch (_) {}
+      return false;
     }
   }
 
@@ -121,15 +119,16 @@ class RealtimeNotificationService {
       ).then((_) {}), // Convert Future<bool> to Future<void>
     );
 
-    // 2. OneSignal - pošalji svim korisnicima
+    // 2. Server-side push (send-push-notification) to all active push players (FCM + Huawei)
     notifications.add(
-      sendOneSignalNotification(
+      RealtimeNotificationService.sendPushNotification(
         title: title,
         body: body,
         segment: 'All',
         data: data,
-      ),
+      ).then((_) {}),
     );
+    //    If 'send-push-notification' supports 'segment: All' future enhancement can move here.
 
     // 3. Local notification kao fallback
     notifications.add(
@@ -144,7 +143,7 @@ class RealtimeNotificationService {
     await Future.wait(notifications);
   }
 
-  /// 🎯 Pošalji notifikaciju specifičnom vozaču
+  /// 🎯 Pošalji notifikaciju specifičnom vozaču (via server-side push)
   static Future<void> sendNotificationToDriver({
     required String driverId,
     required String title,
@@ -165,7 +164,15 @@ class RealtimeNotificationService {
       ).then((_) {}),
     );
 
-    // 2. Možete dodati OneSignal targeting po User ID-u
+    // 2. Server-side push for targeted driver tokens
+    notifications.add(
+      sendPushNotification(
+        title: title,
+        body: body,
+        driverIds: [driverId],
+        data: data,
+      ),
+    );
     // 3. Local notification
     notifications.add(
       LocalNotificationService.showRealtimeNotification(
@@ -188,8 +195,15 @@ class RealtimeNotificationService {
     }
   }
 
-  /// Initialize service with full multi-channel support (Firebase + OneSignal + Local)
-  static Future<void> initialize() async {}
+  /// Initialize service with full multi-channel support (Firebase + PushService + Local)
+  static Future<void> initialize() async {
+    try {
+      // Initialize FCM listeners and Push service
+      await PushService.initialize();
+    } catch (e) {
+      // ignore
+    }
+  }
 
   /// Setup foreground Firebase message listeners for real-time notifications
   static void listenForForegroundNotifications(BuildContext context) {
@@ -208,19 +222,13 @@ class RealtimeNotificationService {
       if (datumString.isNotEmpty) {
         try {
           final datum = DateTime.parse(datumString);
-          isToday = datum.year == danas.year &&
-              datum.month == danas.month &&
-              datum.day == danas.day;
+          isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
         } catch (_) {
           isToday = false;
         }
       }
 
-      if ((type == 'dodat' ||
-              type == 'novi_putnik' ||
-              type == 'otkazan' ||
-              type == 'otkazan_putnik') &&
-          isToday) {
+      if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
@@ -251,8 +259,7 @@ class RealtimeNotificationService {
       await FirebaseMessaging.instance.subscribeToTopic('gavra_all_drivers');
 
       // Subscribe to driver-specific topic
-      await FirebaseMessaging.instance
-          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      await FirebaseMessaging.instance.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
       // Logger removed
     } catch (e) {
@@ -260,12 +267,12 @@ class RealtimeNotificationService {
     }
   }
 
-  /// Real-time notifications using Firebase + OneSignal + Local notifications
-  static void sendRealtimeNotification(
+  /// Real-time notifications using Firebase + Huawei + Local notifications (server-side push via Supabase functions)
+  static Future<void> sendRealtimeNotification(
     String title,
     String body,
     Map<String, dynamic> data,
-  ) {
+  ) async {
     // Logger removed
 
     try {
@@ -273,7 +280,7 @@ class RealtimeNotificationService {
       // Convert data to JSON string payload for notification
       final String payloadJson = jsonEncode(data);
 
-      LocalNotificationService.showRealtimeNotification(
+      await LocalNotificationService.showRealtimeNotification(
         title: title,
         body: body,
         payload: payloadJson,
@@ -284,12 +291,12 @@ class RealtimeNotificationService {
       // Note: FCM sending is typically done from server, not client
       // Logger removed
 
-      // 3. OneSignal notification (REST API poziv iz klijenta)
-      // Slanje svima u segmentu "All" (ili koristi playerId za pojedinačne korisnike)
-      RealtimeNotificationService.sendOneSignalNotification(
+      // 3. Server-side: FCM topic/broadcast
+      await RealtimeNotificationService.sendFCMNotification(
         title: title,
         body: body,
-        segment: 'All',
+        targetType: 'topic',
+        targetValue: 'gavra_all_drivers',
         data: data,
       );
     } catch (e) {
@@ -311,10 +318,8 @@ class RealtimeNotificationService {
   static Future<bool> hasNotificationPermissions() async {
     // Logger removed
     try {
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
-      bool hasPermission =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
+      bool hasPermission = settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return hasPermission;
     } catch (e) {
@@ -333,12 +338,10 @@ class RealtimeNotificationService {
         return false;
       }
 
-      NotificationSettings settings = await FirebaseMessaging.instance
-          .requestPermission()
-          .timeout(const Duration(seconds: 10));
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.requestPermission().timeout(const Duration(seconds: 10));
 
-      bool granted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      bool granted = settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return granted;
     } catch (e) {
@@ -361,8 +364,7 @@ class RealtimeNotificationService {
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData =
-            jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(

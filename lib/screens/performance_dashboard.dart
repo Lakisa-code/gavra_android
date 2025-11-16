@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/advanced_cache_manager.dart';
 import '../services/memory_management_service.dart';
 import '../services/performance_optimizer_service.dart';
+import '../theme.dart';
 import '../utils/widget_performance_mixin.dart';
 
 /// 🚀 PERFORMANCE MONITORING DASHBOARD
@@ -34,8 +35,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
     });
 
     try {
-      _performanceMetrics =
-          PerformanceOptimizerService().getPerformanceMetrics();
+      _performanceMetrics = PerformanceOptimizerService().getPerformanceMetrics();
       _memoryStats = MemoryManagementService().getMemoryStats();
       _cacheStats = AdvancedCacheManager().getStatistics();
     } catch (e) {
@@ -64,6 +64,28 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
             onPressed: _isRefreshing ? null : _refreshMetrics,
           ),
         ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).glassContainer,
+            border: Border.all(
+              color: Theme.of(context).glassBorder,
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(25),
+              bottomRight: Radius.circular(25),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        ),
       ),
       body: _isRefreshing && _performanceMetrics.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -94,14 +116,10 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
       title: '⚡ Performance Metrics',
       child: Column(
         children: [
-          _buildMetricRow(
-              'Operation Counts', _performanceMetrics['operation_counts']),
-          _buildMetricRow('Operation Durations (ms)',
-              _performanceMetrics['operation_durations']),
-          _buildMetricRow(
-              'Recent Operations', _performanceMetrics['recent_operations']),
-          _buildMetricRow(
-              'Active Batches', _performanceMetrics['active_batches']),
+          _buildMetricRow('Operation Counts', _performanceMetrics['operation_counts']),
+          _buildMetricRow('Operation Durations (ms)', _performanceMetrics['operation_durations']),
+          _buildMetricRow('Recent Operations', _performanceMetrics['recent_operations']),
+          _buildMetricRow('Active Batches', _performanceMetrics['active_batches']),
           _buildOptimalityIndicator(),
         ],
       ),
@@ -124,20 +142,16 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
                   padding: EdgeInsets.all(8),
                   child: ConstText(
                     '🚨 Critical Memory Usage Detected!',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
             ),
-          _buildMetricRow(
-              'Stream Controllers', _memoryStats['active_stream_controllers']),
+          _buildMetricRow('Stream Controllers', _memoryStats['active_stream_controllers']),
           _buildMetricRow('Active Timers', _memoryStats['active_timers']),
-          _buildMetricRow(
-              'Active Subscriptions', _memoryStats['active_subscriptions']),
+          _buildMetricRow('Active Subscriptions', _memoryStats['active_subscriptions']),
           _buildMetricRow('Total Resources', _memoryStats['total_resources']),
-          _buildMetricRow(
-              'Memory Warnings', _memoryStats['memory_warnings_count']),
+          _buildMetricRow('Memory Warnings', _memoryStats['memory_warnings_count']),
           _buildMetricRow('Current RSS (MB)', _memoryStats['current_rss_mb']),
         ],
       ),
@@ -150,8 +164,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
       child: Column(
         children: [
           _buildMetricRow('Memory Entries', _cacheStats['memory_entries']),
-          _buildMetricRow(
-              'Memory Usage %', _cacheStats['memory_usage_percent']),
+          _buildMetricRow('Memory Usage %', _cacheStats['memory_usage_percent']),
           _buildMetricRow('Hit Rate %', _cacheStats['hit_rate_percent']),
           _buildMetricRow('Hit Count', _cacheStats['hit_count']),
           _buildMetricRow('Miss Count', _cacheStats['miss_count']),
@@ -335,8 +348,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
     );
   }
 
-  Widget _buildActionButton(
-      String label, IconData icon, VoidCallback onPressed) {
+  Widget _buildActionButton(String label, IconData icon, VoidCallback onPressed) {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon),

@@ -34,6 +34,7 @@ import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error wid
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
+import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -248,6 +249,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeAsync() async {
     try {
       await _initializeCurrentDriver();
+      // 🔒 If the current driver is missing or not whitelist-valid, redirect to welcome/login
+      if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
 
       // 🚨 POPRAVLJENO: Async inicijalizacija bez blokiranje UI
       _initializeRealtimeService().catchError((e) => <String, dynamic>{});
@@ -1354,14 +1366,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   blurRadius: 24,
-                  offset: const Offset(0, 12),
+                  offset: const Offset(0, 8),
+                  spreadRadius: 2,
                 ),
               ],
             ),
@@ -1509,6 +1517,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
                 child: SafeArea(
                   child: Center(
@@ -1810,7 +1826,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               Expanded(
                                 flex: 35,
                                 child: Container(
-                                    height: 38,
+                                  height: 38,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: VozacBoja.get(_currentDriver).withValues(alpha: 0.2),

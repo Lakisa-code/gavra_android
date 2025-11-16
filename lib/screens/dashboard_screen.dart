@@ -99,6 +99,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 2,
+                ),
+              ],
             ),
           ),
         ),

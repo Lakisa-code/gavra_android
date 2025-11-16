@@ -26,8 +26,7 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -100,10 +99,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     if (rememberedDevice != null) {
       // Auto-login sa zapamćenim uređajem
       final email = rememberedDevice['email']!;
-
       // 🔄 FORSIRAJ ISPRAVNO MAPIRANJE: email -> vozač ime
-      final driverName =
-          VozacBoja.getVozacForEmail(email) ?? rememberedDevice['driverName']!;
+      final driverName = VozacBoja.getVozacForEmail(email);
+      // Ne dozvoli auto-login ako email nije whitelistovan
+      if (driverName == null || !VozacBoja.isValidDriver(driverName)) {
+        // Ostani na welcome/login i ne auto-login
+        return;
+      }
 
       // Postavi driver session
       await AuthManager.setCurrentDriver(driverName);
@@ -111,8 +113,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (!mounted) return;
 
       // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn =
-          await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
 
       if (!hasCheckedIn) {
         // Navigate to DailyCheckInScreen
@@ -146,10 +147,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     // PROVERI FIREBASE AUTH STATE
     final firebaseUser = AuthManager.getCurrentUser();
     // 🔄 MAPIRANJE: email -> vozač ime umesto displayName
-    final driverFromFirebase = firebaseUser?.email != null
-        ? VozacBoja.getVozacForEmail(firebaseUser!.email) ??
-            firebaseUser.displayName
-        : firebaseUser?.displayName;
+    // Map only via email to a whitelisted driver; don't fall back to displayName
+    final driverFromFirebase = firebaseUser?.email != null ? VozacBoja.getVozacForEmail(firebaseUser!.email) : null;
 
     // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
     if (AuthManager.isEmailAuthenticated() && !AuthManager.isEmailVerified()) {
@@ -161,14 +160,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     // Koristi novi AuthManager za session management
     final savedDriver = await AuthManager.getCurrentDriver();
 
-    // Ako je neko ulogovan u Firebase ALI nema saved driver, sinhronizuj
+    // Ako je neko ulogovan u Firebase, proveri da li je whitelisted pre setovanja
     if (driverFromFirebase != null &&
+        VozacBoja.isValidDriver(driverFromFirebase) &&
         (savedDriver == null || savedDriver != driverFromFirebase)) {
       await AuthManager.setCurrentDriver(driverFromFirebase);
     }
 
-    // Koristi driver iz Firebase ako postoji, inače iz local storage
-    final activeDriver = driverFromFirebase ?? savedDriver;
+    // Koristi driver iz Firebase ako postoji i validan, inače iz local storage
+    final activeDriver = (driverFromFirebase != null && VozacBoja.isValidDriver(driverFromFirebase))
+        ? driverFromFirebase
+        : (savedDriver != null && VozacBoja.isValidDriver(savedDriver) ? savedDriver : null);
 
     if (activeDriver != null && activeDriver.isNotEmpty) {
       // Vozač je već logovan - PROVERI DAILY CHECK-IN
@@ -177,8 +179,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn =
-          await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
@@ -225,8 +226,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
 
@@ -303,8 +303,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       final rememberedName = rememberedDevice['driverName']!;
 
       // 🔄 FORSIRAJ REFRESH: Koristi VozacBoja mapiranje za ispravno ime
-      final correctName =
-          VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
+      final correctName = VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
         // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
@@ -313,8 +312,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (!mounted) return;
 
         // Direktno na Daily Check-in ili Home Screen
-        final hasCheckedIn =
-            await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
+        final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
 
         if (!hasCheckedIn) {
           // Navigate to DailyCheckInScreen
@@ -390,10 +388,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           content: Text(
             message,
             style: TextStyle(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.8),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
               fontSize: 16,
             ),
             textAlign: TextAlign.center,
@@ -470,14 +465,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               shadows: [
                                 // Glavni glow efekat - plavi
                                 Shadow(
-                                  color: const Color(0xFF12D8FA)
-                                      .withValues(alpha: 0.8),
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
                                   blurRadius: 20,
                                 ),
                                 // Dodatni glow - svetliji plavi
                                 Shadow(
-                                  color: const Color(0xFF00E5FF)
-                                      .withValues(alpha: 0.6),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                                   blurRadius: 15,
                                 ),
                                 // Treći glow - još svetliji
@@ -524,8 +517,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical:
-                                      4.0, // Increased slightly for better visibility
+                                  vertical: 4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'] as String,
@@ -588,14 +580,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               shadows: [
                                 // Glavni glow efekat - plavi
                                 Shadow(
-                                  color: const Color(0xFF12D8FA)
-                                      .withValues(alpha: 0.8),
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
                                   blurRadius: 20,
                                 ),
                                 // Dodatni glow - svetliji plavi
                                 Shadow(
-                                  color: const Color(0xFF00E5FF)
-                                      .withValues(alpha: 0.6),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                                   blurRadius: 15,
                                 ),
                                 // Treći glow - još svetliji
@@ -631,8 +621,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF12D8FA)
-                                  .withValues(alpha: 0.6),
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.6),
                               blurRadius: 15,
                             ),
                             Shadow(
@@ -652,8 +641,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF00E5FF)
-                                  .withValues(alpha: 0.5),
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
                               blurRadius: 12,
                             ),
                             Shadow(
@@ -673,8 +661,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF12D8FA)
-                                  .withValues(alpha: 0.4),
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.4),
                               blurRadius: 10,
                             ),
                             Shadow(
@@ -801,8 +788,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             fontSize: 13, // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
                             color: color,
-                            letterSpacing:
-                                1.0, // Further reduced to prevent overflow
+                            letterSpacing: 1.0, // Further reduced to prevent overflow
                             shadows: [
                               Shadow(
                                 color: Colors.white.withValues(alpha: 0.5),

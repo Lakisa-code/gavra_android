@@ -35,7 +35,7 @@ supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 -- Kreiranje tabele za praćenje notifikacija
 CREATE TABLE notification_stats (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  type text NOT NULL, -- 'fcm', 'onesignal', 'local'
+  type text NOT NULL, -- 'fcm', 'huawei', 'local'
   title text NOT NULL,
   target_type text NOT NULL, -- 'token', 'topic', 'condition'
   target_value text NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE notification_stats (
   failure_count integer DEFAULT 0,
   multicast_id text,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT notification_stats_type_check CHECK (type IN ('fcm', 'onesignal', 'local'))
+  CONSTRAINT notification_stats_type_check CHECK (type IN ('fcm', 'huawei', 'local'))
 );
 
 -- Index za performance
@@ -111,7 +111,7 @@ await RealtimeNotificationService.sendFCMNotification(...)
 - ✅ **Sigurnost**: Server key sakriven
 - ✅ **Skalabilnost**: Može slati hiljadama korisnika
 - ✅ **Analytics**: Praćenje delivery rates
-- ✅ **Fallback**: Kombinacija FCM + OneSignal + Local
+- ✅ **Fallback**: Kombinacija FCM + Huawei + Local
 - ✅ **Performance**: Batch operations
 - ✅ **Cost Effective**: FCM je besplatan za osnovne potrebe
 

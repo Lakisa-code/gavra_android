@@ -13,12 +13,10 @@ class EmailRegistrationScreen extends StatefulWidget {
   final String? preselectedDriverName;
 
   @override
-  State<EmailRegistrationScreen> createState() =>
-      _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
 }
 
-class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
-    with TickerProviderStateMixin {
+class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,6 +26,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
+  bool _rememberDevice = true;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -82,6 +81,14 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 2,
+                ),
+              ],
             ),
           ),
           title: const Text(
@@ -199,6 +206,15 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           _buildRegisterButton(),
 
           const SizedBox(height: 24),
+
+          CheckboxListTile(
+            value: _rememberDevice,
+            onChanged: (v) {
+              if (mounted) setState(() => _rememberDevice = v ?? false);
+            },
+            title: const Text('Zapamti uređaj'),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
 
           // Back to Login
           _buildBackToLogin(),
@@ -486,6 +502,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
         driverName,
         email,
         password,
+        remember: _rememberDevice,
       );
 
       // Sakrij loading dialog
@@ -494,8 +511,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       if (result.isSuccess) {
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
         final currentUser = FirebaseAuthService.currentUser;
-        final needsVerification =
-            currentUser != null && !currentUser.emailVerified;
+        final needsVerification = currentUser != null && !currentUser.emailVerified;
 
         if (needsVerification) {
           // Sakrij loading dialog
@@ -631,8 +647,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           child: SingleChildScrollView(
             child: Text(
               'Vaš nalog je uspešno kreiran i možete se prijaviti.',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
             ),
           ),
         ),

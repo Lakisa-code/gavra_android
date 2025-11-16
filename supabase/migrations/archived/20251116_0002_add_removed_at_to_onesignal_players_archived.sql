@@ -1,0 +1,2 @@
+-- ARCHIVED: Removed deprecated migration that modified legacy push provider table to include removed_at.
+-- Use `push_players` (created in 20251116_0003_create_push_players.sql) instead.

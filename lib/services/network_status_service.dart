@@ -4,8 +4,7 @@ import 'dart:io';
 /// 📡 NETWORK STATUS SERVICE
 /// Jednostavan network monitoring bez dodatnih paketa
 class NetworkStatusService {
-  static final StreamController<bool> _statusController =
-      StreamController<bool>.broadcast();
+  static final StreamController<bool> _statusController = StreamController<bool>.broadcast();
 
   static bool _isOnline = true;
   static Timer? _checkTimer;
@@ -30,9 +29,8 @@ class NetworkStatusService {
   /// 🔍 PROVERI NETWORK STATUS
   static Future<void> _checkNetworkStatus() async {
     try {
-      // Brza provera preko Google DNS
-      final result = await InternetAddress.lookup('8.8.8.8')
-          .timeout(const Duration(seconds: 3));
+      // Brza provera preko neutralnog DNS (Cloudflare 1.1.1.1) umesto Google DNS
+      final result = await InternetAddress.lookup('1.1.1.1').timeout(const Duration(seconds: 3));
 
       final isConnected = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
       _updateStatus(isConnected);

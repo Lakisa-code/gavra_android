@@ -69,11 +69,30 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
           ),
           backgroundColor: Colors.transparent, // Transparent appBar
           elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
           iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: _ucitava
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white))
+            ? const Center(child: CircularProgressIndicator(color: Colors.white))
             : RefreshIndicator(
                 onRefresh: _ucitajStatistiku,
                 child: SingleChildScrollView(
@@ -88,8 +107,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
                             color: Colors.orange.withValues(alpha: 0.2),
-                            border: Border.all(
-                                color: Colors.orange.withValues(alpha: 0.5)),
+                            border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -116,9 +134,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                                 },
                                 child: const Text(
                                   'Pokušaj ponovo',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -139,8 +155,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
 
   Widget _napraviGlavnuKarticu() {
     final status = _statistika['status'] ?? '🟢 ODLIČNO';
-    final procenat =
-        int.tryParse(_statistika['procenat']?.replaceAll('%', '') ?? '0') ?? 0;
+    final procenat = int.tryParse(_statistika['procenat']?.replaceAll('%', '') ?? '0') ?? 0;
 
     MaterialColor boja = Colors.green;
     if (status.contains('🟡')) boja = Colors.orange;
@@ -414,7 +429,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
             ),
             _napraviSavet(
               '🏪',
-              'Prioritet: Google Play Developer (25 USD jednom)',
+              'Prioritet: Store developer fee (25 USD jednom)',
             ),
             _napraviSavet(
               '📊',

@@ -1,0 +1,2 @@
+- DEPRECATED: This migration was archived and moved into `supabase/migrations/archived/`.
+-- Please do not run this migration; use the `push_players` migration instead.

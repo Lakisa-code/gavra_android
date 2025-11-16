@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gavra_android/services/address_geocoding_batch_service.dart';
 
+import '../../theme.dart';
+
 /// Admin screen za batch geocoding adresa
 class AddressGeocodingScreen extends StatefulWidget {
   const AddressGeocodingScreen({super.key});
@@ -61,8 +63,29 @@ class _AddressGeocodingScreenState extends State<AddressGeocodingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('🌍 Batch Geocoding'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).glassContainer,
+            border: Border.all(
+              color: Theme.of(context).glassBorder,
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(25),
+              bottomRight: Radius.circular(25),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -91,8 +114,7 @@ class _AddressGeocodingScreenState extends State<AddressGeocodingScreen> {
                         'Po gradovima:',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      ...(_status!['status_po_gradovima']
-                              as Map<String, dynamic>)
+                      ...(_status!['status_po_gradovima'] as Map<String, dynamic>)
                           .entries
                           .map((e) => Text('  • ${e.key}: ${e.value} adresa')),
                     ],

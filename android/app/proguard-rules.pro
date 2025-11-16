@@ -36,16 +36,10 @@
 -dontwarn com.google.firebase.**
 -dontwarn com.google.android.gms.**
 
-# Firebase Messaging for OneSignal integration
+# Firebase Messaging
+# Keep Firebase messaging related classes
 -keep class com.google.firebase.messaging.** { *; }
 -keep class com.google.firebase.iid.** { *; }
-
-# ===============================================
-# ONESIGNAL PUSH NOTIFICATIONS
-# ===============================================
--keep class com.onesignal.** { *; }
--dontwarn com.onesignal.**
--keepattributes Signature
 
 # ===============================================
 # ANDROID PERMISSIONS & LOCATION

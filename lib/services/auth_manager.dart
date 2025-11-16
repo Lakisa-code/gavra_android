@@ -2,14 +2,17 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'analytics_service.dart';
 import 'firebase_auth_service.dart';
 import 'firebase_service.dart';
+import 'push_service.dart';
 
 /// � CENTRALIZOVANI AUTH MANAGER - FIREBASE EDITION
 /// Upravlja svim auth operacijama kroz Firebase Auth + Supabase podatke
@@ -26,8 +29,9 @@ class AuthManager {
   static Future<AuthResult> registerWithEmail(
     String driverName,
     String email,
-    String password,
-  ) async {
+    String password, {
+    bool remember = true,
+  }) async {
     try {
       if (!_isValidEmail(email)) {
         return AuthResult.error('Nevaljan format email-a');
@@ -41,9 +45,13 @@ class AuthManager {
 
       if (authResult.isSuccess) {
         await _saveDriverSession(driverName);
-        // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešne registracije
-        await rememberDevice(email, driverName);
+        // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešne registracije (ako je traženo)
+        if (remember) await rememberDevice(email, driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
+        // Bind this device tokens to the human-readable driver name for targeted notifications
+        try {
+          await PushService.bindDriver(driverName);
+        } catch (e) {}
         return AuthResult.success(authResult.message);
       } else {
         return AuthResult.error(authResult.message);
@@ -56,8 +64,9 @@ class AuthManager {
   /// Prijava vozača sa email-om
   static Future<AuthResult> signInWithEmail(
     String email,
-    String password,
-  ) async {
+    String password, {
+    bool remember = true,
+  }) async {
     try {
       if (!_isValidEmail(email)) {
         return AuthResult.error('Nevaljan format email-a');
@@ -70,16 +79,18 @@ class AuthManager {
 
       if (authResult.isSuccess && authResult.user != null) {
         // 🔄 PRIORITET: Koristi VozacBoja mapiranje za email -> vozač ime
-        String driverName =
-            VozacBoja.getVozacForEmail(authResult.user!.email) ??
-                authResult.user!.displayName ??
-                authResult.user!.email?.split('@')[0] ??
-                'Vozač';
-
+        String? driverName = VozacBoja.getVozacForEmail(authResult.user!.email);
+        if (driverName == null || !VozacBoja.isValidDriver(driverName)) {
+          return AuthResult.error('Niste ovlašćeni za pristup aplikaciji');
+        }
         await _saveDriverSession(driverName);
-        // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a
-        await rememberDevice(email, driverName);
+        // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a (ako je traženo)
+        if (remember) await rememberDevice(email, driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
+        // Bind push tokens to current driver
+        try {
+          await PushService.bindDriver(driverName);
+        } catch (e) {}
         return AuthResult.success(authResult.message);
       } else {
         return AuthResult.error(authResult.message);
@@ -93,9 +104,17 @@ class AuthManager {
 
   /// Postavi trenutnog vozača (bez email auth-a)
   static Future<void> setCurrentDriver(String driverName) async {
+    // Set only if driver is valid (whitelisted)
+    if (!VozacBoja.isValidDriver(driverName)) {
+      return;
+    }
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
     await AnalyticsService.logVozacPrijavljen(driverName);
+    // Bind push tokens to current driver
+    try {
+      await PushService.bindDriver(driverName);
+    } catch (e) {}
   }
 
   /// Dobij trenutnog vozača
@@ -124,12 +143,35 @@ class AuthManager {
       // 1. Obriši Firebase Auth session
       await FirebaseAuthService.signOut();
 
-      // 2. Obriši SharedPreferences - SVE
-      await prefs.clear();
+      // 2. Obriši SharedPreferences - ali sačuvaj zapamćene uređaje
+      // Ukloni jedino active session ključeve
+      await prefs.remove(_driverKey);
+      await prefs.remove(_authSessionKey);
 
       // 3. Očisti Firebase session
       try {
         await FirebaseService.clearCurrentDriver();
+        // Remove push mapping on logout
+        try {
+          await PushService.removeAllTokens();
+        } catch (e) {}
+        // Unsubscribe from FCM topics for this driver
+        // Mark tokens as removed in unified `push_players` table
+        try {
+          final supabase = Supabase.instance.client;
+          if (currentDriver != null) {
+            await supabase.from('push_players').update({
+              'removed_at': DateTime.now().toIso8601String(),
+              'is_active': false,
+            }).eq('driver_id', currentDriver);
+          }
+        } catch (e) {}
+        try {
+          await FirebaseMessaging.instance.unsubscribeFromTopic('gavra_all_drivers');
+          if (currentDriver != null && currentDriver.isNotEmpty) {
+            await FirebaseMessaging.instance.unsubscribeFromTopic('gavra_driver_${currentDriver.toLowerCase()}');
+          }
+        } catch (e) {}
       } catch (e) {
         // Firebase clear greška
       }
@@ -196,9 +238,7 @@ class AuthManager {
   static Future<AuthResult> resendEmailVerification() async {
     try {
       final result = await FirebaseAuthService.resendEmailVerification();
-      return result.isSuccess
-          ? AuthResult.success(result.message)
-          : AuthResult.error(result.message);
+      return result.isSuccess ? AuthResult.success(result.message) : AuthResult.error(result.message);
     } catch (e) {
       return AuthResult.error(
         'Greška pri slanju verifikacije: ${e.toString()}',
@@ -244,8 +284,7 @@ class AuthManager {
       final deviceInfo = DeviceInfoPlugin();
       if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
-        deviceId =
-            '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
+        deviceId = '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         deviceId = '${iosInfo.identifierForVendor}_${iosInfo.model}';

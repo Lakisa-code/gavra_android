@@ -39,22 +39,7 @@ class TurnByTurnInstruction {
     );
   }
 
-  /// Factory konstruktor iz Mapbox response
-  factory TurnByTurnInstruction.fromMapbox(
-    Map<String, dynamic> step,
-    int index,
-  ) {
-    return TurnByTurnInstruction(
-      index: index,
-      text: (step['maneuver']?['instruction'] as String?) ?? 'Nastavi pravo',
-      distance: (step['distance'] as num?)?.toDouble() ?? 0.0,
-      duration: (step['duration'] as num?)?.toDouble() ?? 0.0,
-      maneuver: (step['maneuver']?['bearing_after'] as num?)?.toDouble() ?? 0.0,
-      coordinates: _parseMapboxCoordinates(step),
-      streetName: step['name'] as String?,
-      type: _parseMapboxInstructionType(step['maneuver']?['type'] as String?),
-    );
-  }
+  // Mapbox factory removed - use OpenRoute/OSRM formats only
 
   /// Kreira jednostavnu instrukciju za fallback
   factory TurnByTurnInstruction.simple({
@@ -268,33 +253,7 @@ class TurnByTurnInstruction {
     return [];
   }
 
-  static List<Position> _parseMapboxCoordinates(Map<String, dynamic> step) {
-    try {
-      // Mapbox format
-      if (step['geometry'] != null && step['geometry']['coordinates'] != null) {
-        final coordinates = step['geometry']['coordinates'] as List;
-        return coordinates
-            .map(
-              (coord) => Position(
-                latitude: (coord[1] as num).toDouble(),
-                longitude: (coord[0] as num).toDouble(),
-                timestamp: DateTime.now(),
-                accuracy: 0,
-                altitude: 0,
-                altitudeAccuracy: 0,
-                heading: 0,
-                headingAccuracy: 0,
-                speed: 0,
-                speedAccuracy: 0,
-              ),
-            )
-            .toList();
-      }
-    } catch (e) {
-      // Ignore parsing errors
-    }
-    return [];
-  }
+  // Mapbox parsing removed
 
   static InstructionType _parseInstructionType(int type) {
     // OpenRouteService instruction types
@@ -328,43 +287,7 @@ class TurnByTurnInstruction {
     }
   }
 
-  static InstructionType _parseMapboxInstructionType(String? type) {
-    // Mapbox instruction types
-    switch (type) {
-      case 'turn-left':
-        return InstructionType.turnLeft;
-      case 'turn-right':
-        return InstructionType.turnRight;
-      case 'turn-sharp-left':
-        return InstructionType.turnSharpLeft;
-      case 'turn-sharp-right':
-        return InstructionType.turnSharpRight;
-      case 'turn-slight-left':
-        return InstructionType.turnSlightLeft;
-      case 'turn-slight-right':
-        return InstructionType.turnSlightRight;
-      case 'straight':
-        return InstructionType.straight;
-      case 'roundabout':
-        return InstructionType.roundabout;
-      case 'roundabout-exit':
-        return InstructionType.exitRoundabout;
-      case 'uturn':
-        return InstructionType.uturn;
-      case 'arrive':
-        return InstructionType.arrive;
-      case 'depart':
-        return InstructionType.depart;
-      case 'merge':
-        return InstructionType.merge;
-      case 'on-ramp':
-        return InstructionType.rampRight;
-      case 'off-ramp':
-        return InstructionType.rampLeft;
-      default:
-        return InstructionType.straight;
-    }
-  }
+  // Mapbox instruction type parsing removed.
 
   static InstructionType _parseInstructionTypeFromString(String? typeString) {
     if (typeString == null) return InstructionType.straight;

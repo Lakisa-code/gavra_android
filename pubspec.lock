@@ -305,6 +305,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.3"
+  dropdown_button2:
+    dependency: "direct main"
+    description:
+      name: dropdown_button2
+      sha256: b0fe8d49a030315e9eef6c7ac84ca964250155a6224d491c1365061bc974a9e1
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.9"
   equatable:
     dependency: transitive
     description:
@@ -872,6 +880,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  huawei_push:
+    dependency: "direct main"
+    description:
+      name: huawei_push
+      sha256: "63388ea0af5564453da9ac3abf354744173b598fa3a23f09f1c5724e8fa930c9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.14.0+300"
   image:
     dependency: transitive
     description:
@@ -1072,14 +1088,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.1"
-  onesignal_flutter:
-    dependency: "direct main"
-    description:
-      name: onesignal_flutter
-      sha256: b5bb43bf496ddb5e3975ba54c6477cc2d1fcd18fb3698f195d2e0bfd376ddafd
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.3.4"
   open_filex:
     dependency: "direct main"
     description:

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,8 +16,9 @@ class AdvancedGeocodingService {
   static const Map<String, String> _providers = {
     'nominatim': 'https://nominatim.openstreetmap.org/search',
     'photon': 'https://photon.komoot.io/api/',
-    'mapbox_free': 'https://api.mapbox.com/geocoding/v5/mapbox.places',
+    // Providers: Nominatim and Photon are used as default free geocoding providers.
   };
+  // Mapbox support is removed to keep the app 100% free & open-source.
 
   // 🎯 SERBIAN CITY ALIASES - samo Bela Crkva i Vršac opštine
   static const Map<String, List<String>> _cityAliases = {
@@ -94,10 +96,8 @@ class AdvancedGeocodingService {
       // 4. 🤖 AUTO-CORRECTION - pokušaj sa ispravkama
       if (bestResult == null || bestScore < 70.0) {
         if (enableAutoCorrection) {
-          final correctedResult =
-              await _tryAutoCorrection(processedGrad, processedAdresa);
-          if (correctedResult != null &&
-              correctedResult.confidence > bestScore) {
+          final correctedResult = await _tryAutoCorrection(processedGrad, processedAdresa);
+          if (correctedResult != null && correctedResult.confidence > bestScore) {
             bestResult = correctedResult;
           }
         }
@@ -163,8 +163,7 @@ class AdvancedGeocodingService {
 
     // Pronađi alias
     for (final entry in _cityAliases.entries) {
-      if (entry.value
-          .any((alias) => alias.toLowerCase() == normalized.toLowerCase())) {
+      if (entry.value.any((alias) => alias.toLowerCase() == normalized.toLowerCase())) {
         return entry.key;
       }
     }
@@ -199,8 +198,7 @@ class AdvancedGeocodingService {
         return await _searchNominatim(grad, adresa, enableFuzzyMatching);
       case 'photon':
         return await _searchPhoton(grad, adresa, enableFuzzyMatching);
-      case 'mapbox_free':
-        return await _searchMapboxFree(grad, adresa, enableFuzzyMatching);
+      // Mapbox provider intentionally removed; only free providers used by default.
       default:
         return null;
     }
@@ -296,8 +294,7 @@ class AdvancedGeocodingService {
         return GeocodeResult(
           latitude: (coords[1] as num).toDouble(),
           longitude: (coords[0] as num).toDouble(),
-          formattedAddress:
-              (props['name'] ?? props['label'] ?? '$adresa, $grad') as String,
+          formattedAddress: (props['name'] ?? props['label'] ?? '$adresa, $grad') as String,
           confidence: confidence,
           provider: 'photon',
           components: _parsePhotonComponents(props),
@@ -308,57 +305,7 @@ class AdvancedGeocodingService {
     return null;
   }
 
-  /// 🗺️ MAPBOX FREE SEARCH - 100k requests/month besplatno
-  static Future<GeocodeResult?> _searchMapboxFree(
-    String grad,
-    String adresa,
-    bool fuzzy,
-  ) async {
-    // NAPOMENA: Dodaj svoj Mapbox free token u environment
-    const mapboxToken = String.fromEnvironment('MAPBOX_TOKEN');
-    if (mapboxToken.isEmpty) return null;
-
-    const timeout = Duration(seconds: 6);
-    final query = '$adresa $grad Serbia';
-
-    final url = '${_providers['mapbox_free']}/'
-        '${Uri.encodeComponent(query)}.json?'
-        'access_token=$mapboxToken&'
-        'country=rs&'
-        'proximity=21.4,44.9&' // Bias towards Vršac region
-        'limit=3';
-
-    final response = await http.get(Uri.parse(url)).timeout(timeout);
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final features = data['features'] as List<dynamic>?;
-
-      if (features != null && features.isNotEmpty) {
-        final best = features.first;
-        final coords = best['geometry']['coordinates'];
-        final props = best['properties'];
-
-        final confidence = _calculateConfidence(
-          adresa,
-          grad,
-          props as Map<String, dynamic>,
-          'mapbox',
-        );
-
-        return GeocodeResult(
-          latitude: (coords[1] as num).toDouble(),
-          longitude: (coords[0] as num).toDouble(),
-          formattedAddress: best['place_name'] as String,
-          confidence: confidence,
-          provider: 'mapbox',
-          components: _parseMapboxComponents(best as Map<String, dynamic>),
-        );
-      }
-    }
-
-    return null;
-  }
+  // Mapbox geocoding removed for free-only policy; this space is reserved for enterprise features.
 
   /// 🤖 AUTO-CORRECTION - pokušava sa čestim greškama
   static Future<GeocodeResult?> _tryAutoCorrection(
@@ -366,12 +313,7 @@ class AdvancedGeocodingService {
     String adresa,
   ) async {
     final corrections = [
-      adresa
-          .replaceAll('č', 'c')
-          .replaceAll('ć', 'c')
-          .replaceAll('ž', 'z')
-          .replaceAll('š', 's')
-          .replaceAll('đ', 'd'),
+      adresa.replaceAll('č', 'c').replaceAll('ć', 'c').replaceAll('ž', 'z').replaceAll('š', 's').replaceAll('đ', 'd'),
       adresa.replaceAll(' ', ''), // bez space-ova
       adresa.replaceAll(RegExp(r'\d+'), ''), // bez brojeva
       '$adresa bb', // dodaj "bez broja"
@@ -386,8 +328,7 @@ class AdvancedGeocodingService {
             latitude: result.latitude,
             longitude: result.longitude,
             formattedAddress: result.formattedAddress,
-            confidence:
-                math.max(result.confidence - 10, 0), // penalty za korekciju
+            confidence: math.max(result.confidence - 10, 0), // penalty za korekciju
             provider: result.provider,
             components: result.components,
             autocorrected: true,
@@ -418,16 +359,11 @@ class AdvancedGeocodingService {
       case 'photon':
         score += 10;
         break;
-      case 'mapbox':
-        score += 20;
-        break;
+      // optional commercial provider removed - do not adjust score for it
     }
 
     // Address matching
-    final resultText =
-        (result['display_name'] ?? result['name'] ?? result['label'] ?? '')
-            .toString()
-            .toLowerCase();
+    final resultText = (result['display_name'] ?? result['name'] ?? result['label'] ?? '').toString().toLowerCase();
     final queryLower = query.toLowerCase();
 
     if (resultText.contains(queryLower)) {
@@ -454,8 +390,7 @@ class AdvancedGeocodingService {
     if (a.isEmpty) return b.isEmpty ? 1.0 : 0.0;
     if (b.isEmpty) return 0.0;
 
-    final matrix =
-        List.generate(a.length + 1, (i) => List<int>.filled(b.length + 1, 0));
+    final matrix = List.generate(a.length + 1, (i) => List<int>.filled(b.length + 1, 0));
 
     for (int i = 0; i <= a.length; i++) {
       matrix[i][0] = i;
@@ -502,23 +437,7 @@ class AdvancedGeocodingService {
     };
   }
 
-  static Map<String, String> _parseMapboxComponents(
-    Map<String, dynamic> feature,
-  ) {
-    final context = feature['context'] as List<dynamic>? ?? [];
-    final components = <String, String>{};
-
-    for (final item in context) {
-      final id = item['id']?.toString() ?? '';
-      final text = item['text']?.toString() ?? '';
-
-      if (id.startsWith('address')) components['house_number'] = text;
-      if (id.startsWith('place')) components['city'] = text;
-      if (id.startsWith('postcode')) components['postcode'] = text;
-    }
-
-    return components;
-  }
+  // Mapbox components parser removed (Mapbox is no longer used)
 
   /// 💾 CACHE MANAGEMENT
   static Future<GeocodeResult?> _getCachedResult(String key) async {
@@ -623,8 +542,7 @@ class GeocodeResult {
       };
 
   @override
-  String toString() =>
-      '$formattedAddress (${confidence.toStringAsFixed(1)}% via $provider)';
+  String toString() => '$formattedAddress (${confidence.toStringAsFixed(1)}% via $provider)';
 }
 
 /// 🚫 HELPER FUNKCIJA - proveri da li je grad van servisne oblasti

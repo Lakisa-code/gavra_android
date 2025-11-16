@@ -90,21 +90,13 @@ dependencies {
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
 
-    // 🚀 OneSignal Dependency Resolution - Force compatible versions
-    implementation("androidx.work:work-runtime:2.8.1") {
-        because("OneSignal requires work-runtime")
-    }
-    implementation("androidx.cardview:cardview:1.0.0") {
-        because("OneSignal in-app-messages requires cardview")
-    }
-    implementation("androidx.browser:browser:1.3.0") {
-        because("OneSignal in-app-messages requires browser")
-    }
+    // 🚀 Dependency Resolution - ensure versions for required Android libraries
+    implementation("androidx.work:work-runtime:2.8.1")
+    implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.browser:browser:1.3.0")
 
-    // Force Firebase messaging version for OneSignal compatibility (only one needed)
-    implementation("com.google.firebase:firebase-messaging:23.4.0") {
-        because("OneSignal requires firebase-messaging [21.0.0, 23.4.99]")
-    }
+    // Force Firebase messaging to a known-good version
+    implementation("com.google.firebase:firebase-messaging:23.4.0")
 
     // 🚀 Google Play Core - Resolved dependency conflict
     configurations.all {

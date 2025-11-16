@@ -4,14 +4,11 @@ allprojects {
         mavenCentral()
     }
     
-    // 🚀 OneSignal Dependency Resolution Strategy
+    // Dependency resolution strategy preserved for historical reasons; ensure Firebase Messaging remains compatible.
     configurations.all {
         resolutionStrategy {
-            // Force specific versions for OneSignal compatibility
+            // Force Firebase messaging to a compatible version
             force("com.google.firebase:firebase-messaging:23.4.0")
-            force("androidx.work:work-runtime:2.8.1")
-            force("androidx.cardview:cardview:1.0.0")
-            force("androidx.browser:browser:1.3.0")
         }
     }
 }

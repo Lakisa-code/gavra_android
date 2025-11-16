@@ -1,0 +1,26 @@
+name: Scheduled Cleanup Push Players
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # every day at 03:00 UTC
+
+jobs:
+  cleanup:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install supabase CLI
+        shell: pwsh
+        run: npm i -g supabase
+
+      - name: Run cleanup-push-players function
+        shell: pwsh
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          $url = "https://$($env:SUPABASE_URL -replace 'https?://','')/functions/v1/cleanup-push-players"
+          $res = Invoke-RestMethod -Uri $url -Headers @{ 'apikey' = $env:SUPABASE_SERVICE_ROLE_KEY; 'Authorization' = "Bearer $($env:SUPABASE_SERVICE_ROLE_KEY)" } -Method Post -ContentType 'application/json' -Body '{}'
+          Write-Host "Cleanup result: $($res | ConvertTo-Json)"
