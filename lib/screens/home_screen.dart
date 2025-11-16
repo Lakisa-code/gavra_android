@@ -1928,19 +1928,41 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton2<String>(
                                     value: _selectedDay,
-                                    // No explicit icon - keep default or handle via decoration
+                                    // custom button will include arrow icon to preserve layout
+                                    customButton: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Expanded(
+                                          child: Center(
+                                            child: Text(
+                                              _selectedDay,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          size: 14,
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                        ),
+                                      ],
+                                    ),
                                     dropdownStyleData: DropdownStyleData(
                                       decoration: BoxDecoration(
                                         gradient: Theme.of(context).backgroundGradient,
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
                                           color: Theme.of(context).glassBorder,
                                           width: 1.5,
                                         ),
                                       ),
-                                      maxHeight: 300,
                                       elevation: 8,
-                                      width: double.infinity,
                                     ),
                                     style: const TextStyle(
                                       color: Colors.white,
@@ -1960,7 +1982,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                     // button decoration: keep a glass look for the closed button
                                     buttonStyleData: ButtonStyleData(
-                                      padding: EdgeInsets.zero,
+                                      padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
                                         color: Theme.of(context).glassContainer,
                                         borderRadius: BorderRadius.circular(12),
@@ -1971,34 +1993,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
                                     isExpanded: true,
-                                    selectedItemBuilder: (BuildContext context) {
-                                      return _dani.map<Widget>((String value) {
-                                        return Center(
-                                          child: Text(
-                                            value,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14,
-                                              shadows: [
-                                                Shadow(
-                                                  blurRadius: 8,
-                                                  color: Colors.black87,
-                                                ),
-                                                Shadow(
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 4,
-                                                  color: Colors.black54,
-                                                ),
-                                              ],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        );
-                                      }).toList();
-                                    },
+                                    // using customButton, selectedItemBuilder is not needed
                                     items: _dani
                                         .map(
                                           (dan) => DropdownMenuItem(
