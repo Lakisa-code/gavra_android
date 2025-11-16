@@ -1945,12 +1945,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        Icon(
-                                          Icons.keyboard_arrow_down_rounded,
-                                          size: 14,
-                                          color: Theme.of(context).colorScheme.onPrimary,
-                                        ),
                                       ],
                                     ),
                                     dropdownStyleData: DropdownStyleData(
