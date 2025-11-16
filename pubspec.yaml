@@ -33,6 +33,7 @@ dependencies:
   permission_handler: ^11.3.1
   connectivity_plus: ^6.0.5
   rxdart: ^0.27.7
+  dropdown_button2: ^2.3.9
 
   # Za FCM HTTP v1 API skriptu
   googleapis: any
