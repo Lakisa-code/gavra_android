@@ -74,8 +74,8 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
       // Dobij trenutnu poziciju
       _currentPosition = await Geolocator.getCurrentPosition(
-        // desiredAccuracy: deprecated, use settings parameter
-      );
+          // desiredAccuracy: deprecated, use settings parameter
+          );
 
       if (mounted) {
         if (mounted)
@@ -347,7 +347,10 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

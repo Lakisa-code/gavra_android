@@ -97,26 +97,33 @@ class PrintingService {
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
           final odgovarajuciGrad =
-              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
+              normalizedPutnikGrad.contains(normalizedGrad) ||
+                  normalizedGrad.contains(normalizedPutnikGrad);
 
           // Poređenje vremena - normalizuj oba formata
           final putnikPolazak = putnik.polazak.toString().trim();
           final selectedVremeStr = selectedVreme.trim();
-          final odgovarajuciPolazak = normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
-              (normalizeTime(putnikPolazak).startsWith(normalizeTime(selectedVremeStr)));
+          final odgovarajuciPolazak =
+              normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
+                  (normalizeTime(putnikPolazak)
+                      .startsWith(normalizeTime(selectedVremeStr)));
 
           // DODAJ FILTRIRANJE PO DANU I ZA MESEČNE PUTNIKE
-          final odgovarajuciDan = putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
+          final odgovarajuciDan =
+              putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
 
-          final result = odgovarajuciGrad && odgovarajuciPolazak && odgovarajuciDan && normalizedStatus != 'obrisan';
+          final result = odgovarajuciGrad &&
+              odgovarajuciPolazak &&
+              odgovarajuciDan &&
+              normalizedStatus != 'obrisan';
 
           return result;
         } else {
           // DNEVNI/OBIČNI PUTNICI - standardno filtriranje
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
-          final gradMatch =
-              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
+          final gradMatch = normalizedPutnikGrad.contains(normalizedGrad) ||
+              normalizedGrad.contains(normalizedPutnikGrad);
 
           // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
           final odgovara = gradMatch &&
@@ -182,7 +189,8 @@ class PrintingService {
     // Grupiši putnike po statusu
     final pokupljeni = putnici.where((p) => p.jePokupljen).toList();
     final otkazani = putnici.where((p) => p.jeOtkazan).toList();
-    final cekaju = putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
+    final cekaju =
+        putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
 
     // Sortiraj po gradu/destinaciji
     pokupljeni.sort((a, b) => a.grad.compareTo(b.grad));

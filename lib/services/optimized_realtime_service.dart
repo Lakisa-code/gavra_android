@@ -12,11 +12,13 @@ import 'supabase_safe.dart';
 class OptimizedRealtimeService {
   factory OptimizedRealtimeService() => _instance;
   OptimizedRealtimeService._internal();
-  static final OptimizedRealtimeService _instance = OptimizedRealtimeService._internal();
+  static final OptimizedRealtimeService _instance =
+      OptimizedRealtimeService._internal();
 
   // 📊 MANAGED STREAM CONTROLLERS
   late final StreamController<List<Map<String, dynamic>>> _putovanjaController;
-  late final StreamController<List<Map<String, dynamic>>> _dailyCheckinsController;
+  late final StreamController<List<Map<String, dynamic>>>
+      _dailyCheckinsController;
   late final StreamController<List<Putnik>> _combinedPutniciController;
 
   // 🔄 CONNECTION MANAGEMENT
@@ -36,14 +38,19 @@ class OptimizedRealtimeService {
 
     try {
       // Create managed stream controllers
-      _putovanjaController = StreamController<List<Map<String, dynamic>>>.broadcast();
-      _dailyCheckinsController = StreamController<List<Map<String, dynamic>>>.broadcast();
+      _putovanjaController =
+          StreamController<List<Map<String, dynamic>>>.broadcast();
+      _dailyCheckinsController =
+          StreamController<List<Map<String, dynamic>>>.broadcast();
       _combinedPutniciController = StreamController<List<Putnik>>.broadcast();
 
       // Register for memory management
-      MemoryManagementService().registerStreamController('putovanja_controller', _putovanjaController);
-      MemoryManagementService().registerStreamController('daily_checkins_controller', _dailyCheckinsController);
-      MemoryManagementService().registerStreamController('combined_putnici_controller', _combinedPutniciController);
+      MemoryManagementService().registerStreamController(
+          'putovanja_controller', _putovanjaController);
+      MemoryManagementService().registerStreamController(
+          'daily_checkins_controller', _dailyCheckinsController);
+      MemoryManagementService().registerStreamController(
+          'combined_putnici_controller', _combinedPutniciController);
 
       _isInitialized = true;
     } finally {
@@ -111,7 +118,8 @@ class OptimizedRealtimeService {
     // Track subscription
     _activeSubscriptions[subscriptionKey] = subscription;
     _subscriptionTimestamps[subscriptionKey] = DateTime.now();
-    MemoryManagementService().registerSubscription(subscriptionKey, subscription);
+    MemoryManagementService()
+        .registerSubscription(subscriptionKey, subscription);
 
     return subscription;
   }
@@ -331,9 +339,12 @@ class OptimizedRealtimeService {
       }
 
       // Unregister from memory management
-      MemoryManagementService().unregisterStreamController('putovanja_controller');
-      MemoryManagementService().unregisterStreamController('daily_checkins_controller');
-      MemoryManagementService().unregisterStreamController('combined_putnici_controller');
+      MemoryManagementService()
+          .unregisterStreamController('putovanja_controller');
+      MemoryManagementService()
+          .unregisterStreamController('daily_checkins_controller');
+      MemoryManagementService()
+          .unregisterStreamController('combined_putnici_controller');
 
       // Clear tracking data
       _eventCounts.clear();
@@ -348,4 +359,5 @@ class OptimizedRealtimeService {
 }
 
 /// 🚀 SINGLETON ACCESS
-OptimizedRealtimeService get optimizedRealtimeService => OptimizedRealtimeService();
+OptimizedRealtimeService get optimizedRealtimeService =>
+    OptimizedRealtimeService();

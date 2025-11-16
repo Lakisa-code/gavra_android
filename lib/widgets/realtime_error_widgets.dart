@@ -24,7 +24,8 @@ class StreamErrorWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.smartErrorContainer,
         border: Border.all(
-          color: Theme.of(context).colorScheme.smartError.withValues(alpha: 0.5),
+          color:
+              Theme.of(context).colorScheme.smartError.withValues(alpha: 0.5),
         ),
         borderRadius: BorderRadius.circular(12),
       ),

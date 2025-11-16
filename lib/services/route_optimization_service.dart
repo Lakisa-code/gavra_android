@@ -22,10 +22,18 @@ class RouteOptimizationService {
     final adresa = putnik.adresa?.toLowerCase().trim() ?? '';
 
     // Normalizuj srpske karaktere
-    final normalizedGrad =
-        grad.replaceAll('š', 's').replaceAll('đ', 'd').replaceAll('č', 'c').replaceAll('ć', 'c').replaceAll('ž', 'z');
-    final normalizedAdresa =
-        adresa.replaceAll('š', 's').replaceAll('đ', 'd').replaceAll('č', 'c').replaceAll('ć', 'c').replaceAll('ž', 'z');
+    final normalizedGrad = grad
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
+    final normalizedAdresa = adresa
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'd')
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z');
 
     // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
     final serviceAreaCities = [
@@ -185,7 +193,9 @@ class RouteOptimizationService {
     if (putnici.isEmpty) return putnici;
 
     // Filtriraj samo one koji nisu otkazani
-    final aktivniPutnici = putnici.where((p) => p.status != 'otkazan' && p.status != 'Otkazano').toList();
+    final aktivniPutnici = putnici
+        .where((p) => p.status != 'otkazan' && p.status != 'Otkazano')
+        .toList();
 
     if (aktivniPutnici.isEmpty) return putnici;
 
@@ -194,7 +204,9 @@ class RouteOptimizationService {
     // što je pravednije i prirodnije za vozače i putnike
 
     // Dodaj otkazane na kraj
-    final otkazaniPutnici = putnici.where((p) => p.status == 'otkazan' || p.status == 'Otkazano').toList();
+    final otkazaniPutnici = putnici
+        .where((p) => p.status == 'otkazan' || p.status == 'Otkazano')
+        .toList();
 
     return [...aktivniPutnici, ...otkazaniPutnici];
   }
@@ -216,10 +228,12 @@ class RouteOptimizationService {
     // Filtriraj putnike samo za određeni grad, vreme i dan
     final filteredPutnici = allPutnici.where((putnik) {
       // Provjeri osnovne kriterijume
-      final matchesBasic = putnik.dan == dan && putnik.polazak == vreme && putnik.grad == grad;
+      final matchesBasic =
+          putnik.dan == dan && putnik.polazak == vreme && putnik.grad == grad;
 
       // Isključi otkazane
-      final notCanceled = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+      final notCanceled =
+          putnik.status != 'otkazan' && putnik.status != 'Otkazano';
 
       return matchesBasic && notCanceled;
     }).toList();
@@ -264,7 +278,9 @@ class RouteOptimizationService {
   static String generateRouteStringSync(List<Putnik> putnici) {
     if (putnici.isEmpty) return 'Nema putnika';
 
-    final aktivniPutnici = putnici.where((p) => p.status != 'otkazan' && p.status != 'Otkazano').toList();
+    final aktivniPutnici = putnici
+        .where((p) => p.status != 'otkazan' && p.status != 'Otkazano')
+        .toList();
 
     if (aktivniPutnici.isEmpty) return 'Nema aktivnih putnika';
 
@@ -284,7 +300,8 @@ class RouteOptimizationService {
     String vreme,
     String dan,
   ) async {
-    final optimizedPutnici = await optimizeRouteForCityAndTime(allPutnici, grad, vreme, dan);
+    final optimizedPutnici =
+        await optimizeRouteForCityAndTime(allPutnici, grad, vreme, dan);
 
     if (optimizedPutnici.isEmpty) {
       return 'Nema putnika za $grad u $vreme';
@@ -330,7 +347,8 @@ class RouteOptimizationService {
     for (String grad in gradovi) {
       for (String vreme in vremena) {
         final routeKey = '${grad}_$vreme';
-        final optimizedRoute = await optimizeRouteForCityAndTime(allPutnici, grad, vreme, dan);
+        final optimizedRoute =
+            await optimizeRouteForCityAndTime(allPutnici, grad, vreme, dan);
 
         if (optimizedRoute.isNotEmpty) {
           optimizedRoutes[routeKey] = optimizedRoute;
@@ -364,7 +382,9 @@ class RouteOptimizationService {
 
       final rutaString = putnici.map((p) {
         final adresa = p.adresa;
-        return adresa != null && adresa.isNotEmpty ? '${p.ime} ($adresa)' : p.ime;
+        return adresa != null && adresa.isNotEmpty
+            ? '${p.ime} ($adresa)'
+            : p.ime;
       }).join(' → ');
 
       reportLines.add('🚗 $grad $vreme (${putnici.length}): $rutaString');
@@ -377,7 +397,9 @@ class RouteOptimizationService {
   static Future<bool> isRouteOptimized(List<Putnik> putnici) async {
     if (putnici.isEmpty) return true;
 
-    final aktivniPutnici = putnici.where((p) => p.status != 'otkazan' && p.status != 'Otkazano').toList();
+    final aktivniPutnici = putnici
+        .where((p) => p.status != 'otkazan' && p.status != 'Otkazano')
+        .toList();
 
     if (aktivniPutnici.length < 2) return true;
 

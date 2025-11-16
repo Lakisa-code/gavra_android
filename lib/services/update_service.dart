@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+// Manual update/browser functions removed; background check only.
 
 // Update service for checking GitHub releases
 
@@ -14,10 +13,8 @@ class UpdateService {
   static const String repoName = 'gavra_android';
   static const String githubApiUrl =
       'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
-  static const String _skippedVersionKey = 'skipped_update_version';
   static const String _lastCheckKey = 'last_update_check';
-  static const String _lastInstalledVersionKey = 'last_installed_version';
-  static const String _lastFoundVersionKey = 'last_found_version';
+  // removed last_found_version key - no manual storage for update info
 
   // Timer za background proveru
   static Timer? _backgroundTimer;
@@ -81,10 +78,7 @@ class UpdateService {
         bool hasUpdate = _isNewerVersion(currentVersion, latestVersion);
 
         if (hasUpdate) {
-          // Pamti poslednju pronađenu verziju (za buduće UI implementacije)
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_lastFoundVersionKey, latestVersion);
-          // New version found and saved
+          // Found new version (background-only) - not storing manual flags
         }
       }
     } catch (e) {
@@ -92,39 +86,9 @@ class UpdateService {
     }
   }
 
-  /// Vraća poslednju pronađenu verziju (ako postoji)
-  static Future<String?> getLastFoundVersion() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_lastFoundVersionKey);
-  }
+  // getLastFoundVersion removed - we do not persist manual update metadata
 
-  /// Pamti verziju koju je korisnik preskočio
-  static Future<void> skipVersion(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_skippedVersionKey, version);
-    // Version skipped
-  }
-
-  /// Pamti verziju koja je instalirana (kada korisnik klikne Download)
-  static Future<void> markVersionAsInstalled(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_lastInstalledVersionKey, version);
-    // Version marked as installed
-  }
-
-  /// Proverava da li je verzija već instalirana
-  static Future<bool> isVersionInstalled(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    final installedVersion = prefs.getString(_lastInstalledVersionKey);
-    return installedVersion == version;
-  }
-
-  /// Proverava da li je verzija već preskočena
-  static Future<bool> isVersionSkipped(String version) async {
-    final prefs = await SharedPreferences.getInstance();
-    final skippedVersion = prefs.getString(_skippedVersionKey);
-    return skippedVersion == version;
-  }
+  // Manual/manual UI related methods (skip/mark/is installed) removed
 
   /// Pamti kada je poslednji put proveravano
   static Future<void> _saveLastCheckTime() async {
@@ -185,19 +149,7 @@ class UpdateService {
           return false;
         }
 
-        // Proverava da li je korisnik već preskočio ovu verziju
-        if (await isVersionSkipped(latestVersion)) {
-          // Version already skipped
-          await _saveLastCheckTime();
-          return false;
-        }
-
-        // Proverava da li je ova verzija već "instalirana" (korisnik je već kliknuo Download)
-        if (await isVersionInstalled(latestVersion)) {
-          // Version already installed/downloaded
-          await _saveLastCheckTime();
-          return false;
-        }
+        // NOTE: Skipping or installed checks removed (manual UI removed)
 
         DateTime? publishedAt;
         try {
@@ -247,66 +199,7 @@ class UpdateService {
     return false;
   }
 
-  /// Vraća informacije o najnovijoj verziji
-  static Future<Map<String, dynamic>?> getLatestVersionInfo() async {
-    try {
-      final response = await http.get(
-        Uri.parse(githubApiUrl),
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Pronađi APK asset u assets listi
-        String? apkDownloadUrl;
-        if (data['assets'] != null && (data['assets'] as List).isNotEmpty) {
-          for (var asset in data['assets'] as List) {
-            if (asset['name'] != null &&
-                asset['name'].toString().endsWith('.apk')) {
-              apkDownloadUrl = asset['browser_download_url'] as String?;
-              break;
-            }
-          }
-        }
-
-        // Fallback na GitHub release stranicu ako nema APK
-        apkDownloadUrl ??= data['html_url'] as String?;
-
-        // Download URL found
-
-        return {
-          'version': (data['tag_name'] as String).replaceAll('v', ''),
-          'name': data['name'] ?? 'Nova verzija',
-          'body': data['body'] ?? 'Poboljšanja i ispravke',
-          'downloadUrl': apkDownloadUrl,
-          'publishedAt': data['published_at'],
-        };
-      }
-    } catch (e) {
-      // Error handling - logging removed for production
-    }
-    return null;
-  }
-
-  /// Otvara download stranicu za novu verziju
-  static Future<void> openUpdatePage() async {
-    const url = 'https://github.com/$repoOwner/$repoName/releases/latest';
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    }
-  }
-
-  /// Otvara direktan APK download
-  static Future<void> downloadApk() async {
-    final versionInfo = await getLatestVersionInfo();
-    if (versionInfo != null && versionInfo['downloadUrl'] != null) {
-      final url = versionInfo['downloadUrl'];
-      if (await canLaunchUrl(Uri.parse(url as String))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      }
-    }
-  }
+  // Manual UI methods for opening/downloading update removed
 
   /// Poredi da li je nova verzija novija od trenutne
   static bool _isNewerVersion(String current, String latest) {
@@ -352,155 +245,6 @@ class UpdateService {
   }
 }
 
-/// Update checker sa UI dijalogom
-class UpdateChecker {
-  static Future<void> checkAndShowUpdate(BuildContext context) async {
-    try {
-      bool hasUpdate = await UpdateService.checkForUpdate();
+// Note: Manual/manual UI update methods removed — the app uses automatic background checks only.
 
-      if (hasUpdate && context.mounted) {
-        final versionInfo = await UpdateService.getLatestVersionInfo();
-        if (context.mounted) {
-          _showUpdateDialog(context, versionInfo);
-        }
-      }
-    } catch (e) {
-      // Error handling - logging removed for production
-    }
-  }
-
-  static void _showUpdateDialog(
-    BuildContext context,
-    Map<String, dynamic>? versionInfo,
-  ) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.system_update,
-              color: Theme.of(context).colorScheme.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 8),
-            const Text('Nova verzija! 🚀'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (versionInfo != null) ...[
-              Text(
-                'Verzija: ${versionInfo['version']}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(versionInfo['name'] as String? ?? 'Nova verzija'),
-              const SizedBox(height: 8),
-              const Text(
-                'Šta je novo:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(versionInfo['body'] as String? ?? 'Poboljšanja i ispravke'),
-            ] else ...[
-              const Text('Dostupna je nova verzija Gavra Android aplikacije.'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Označi verziju kao preskočenu
-              if (versionInfo != null && versionInfo['version'] != null) {
-                UpdateService.skipVersion(versionInfo['version'] as String);
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Kasnije'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Označi verziju kao instaliranu
-              if (versionInfo != null && versionInfo['version'] != null) {
-                UpdateService.markVersionAsInstalled(
-                  versionInfo['version'] as String,
-                );
-              }
-              Navigator.pop(context);
-              UpdateService.downloadApk();
-            },
-            icon: const Icon(Icons.download),
-            label: const Text('Download'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Manualna provera update-a (za dugme u settings)
-  static Future<void> manualUpdateCheck(BuildContext context) async {
-    // Pokazuj loading
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Proveravam update-e...'),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      bool hasUpdate = await UpdateService.checkForUpdate();
-      if (!context.mounted) return;
-      Navigator.pop(context); // Zatvori loading
-
-      if (hasUpdate) {
-        final versionInfo = await UpdateService.getLatestVersionInfo();
-        if (!context.mounted) return;
-        _showUpdateDialog(context, versionInfo);
-      } else {
-        // Nema update-a
-        if (!context.mounted) return;
-        showDialog<void>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Nema update-a ✅'),
-            content: const Text('Koristiš najnoviju verziju aplikacije.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.pop(context); // Zatvori loading
-      // Greška
-      showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Greška ❌'),
-          content: const Text(
-            'Nemoguće proveriti update-e. Proverite internet konekciju.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-}
+// Manual update UI removed; only automatic background update checks remain.

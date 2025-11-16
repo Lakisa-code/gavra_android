@@ -9,7 +9,8 @@ import 'supabase_safe.dart';
 
 /// 🚀 OPTIMIZOVANI SERVIS ZA UPRAVLJANJE RUTAMA
 class RutaService with BatchDatabaseMixin {
-  RutaService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? supabase;
+  RutaService({SupabaseClient? supabaseClient})
+      : _supabase = supabaseClient ?? supabase;
   final SupabaseClient _supabase;
 
   // Cache konfiguracija
@@ -20,7 +21,8 @@ class RutaService with BatchDatabaseMixin {
   static String _getAllCacheKey() => '${_cacheKeyPrefix}_all';
   static String _getActiveCacheKey() => '${_cacheKeyPrefix}_active';
   static String _getByIdCacheKey(String id) => '${_cacheKeyPrefix}_id_$id';
-  static String _getSearchCacheKey(String query) => '${_cacheKeyPrefix}_search_$query';
+  static String _getSearchCacheKey(String query) =>
+      '${_cacheKeyPrefix}_search_$query';
   static String _getStatsCacheKey() => '${_cacheKeyPrefix}_statistics';
 
   // Čišćenje cache-a
@@ -47,7 +49,9 @@ class RutaService with BatchDatabaseMixin {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        return cached.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
+        return cached
+            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
+            .toList();
       }
 
       // 🚀 OPTIMIZOVANI QUERY - Samo potrebne kolone
@@ -96,13 +100,24 @@ class RutaService with BatchDatabaseMixin {
         maxAge: _cacheExpiry,
       );
       if (cached != null) {
-        return cached.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
+        return cached
+            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
+            .toList();
       }
 
       // 🚀 OPTIMIZOVANI QUERY sa WHERE klauzulom
       final response = await selectOptimized(
         'rute',
-        columns: ['id', 'naziv', 'polazak', 'dolazak', 'opis', 'aktivan', 'created_at', 'updated_at'],
+        columns: [
+          'id',
+          'naziv',
+          'polazak',
+          'dolazak',
+          'opis',
+          'aktivan',
+          'created_at',
+          'updated_at'
+        ],
         where: 'aktivan',
         whereValue: true,
       );
@@ -255,7 +270,12 @@ class RutaService with BatchDatabaseMixin {
       final updatedRuta = ruta.withUpdatedTime();
 
       final response = await SupabaseSafe.run(
-        () => _supabase.from('rute').update(updatedRuta.toMap()).eq('id', ruta.id).select().single(),
+        () => _supabase
+            .from('rute')
+            .update(updatedRuta.toMap())
+            .eq('id', ruta.id)
+            .select()
+            .single(),
       );
 
       if (response == null) return null;
@@ -340,7 +360,11 @@ class RutaService with BatchDatabaseMixin {
   Future<bool> _checkRutaDependencies(String rutaId) async {
     try {
       final response = await SupabaseSafe.run(
-        () => _supabase.from('dnevni_putnici').select('id').eq('ruta_id', rutaId).limit(1),
+        () => _supabase
+            .from('dnevni_putnici')
+            .select('id')
+            .eq('ruta_id', rutaId)
+            .limit(1),
         fallback: <dynamic>[],
       );
 
@@ -366,7 +390,11 @@ class RutaService with BatchDatabaseMixin {
     try {
       // Keširaj jednostavne pretrage
       String? cacheKey;
-      if (query != null && query.length > 2 && aktivan == null && minUdaljenost == null && maxUdaljenost == null) {
+      if (query != null &&
+          query.length > 2 &&
+          aktivan == null &&
+          minUdaljenost == null &&
+          maxUdaljenost == null) {
         cacheKey = _getSearchCacheKey(query);
         final cached = await CacheService.getFromMemory<List<Ruta>>(cacheKey);
         if (cached != null) {
@@ -421,7 +449,9 @@ class RutaService with BatchDatabaseMixin {
       );
 
       if (response is List) {
-        final results = response.map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
+        final results = response
+            .map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>))
+            .toList();
 
         // Keširaj jednostavne pretrage
         if (cacheKey != null) {
@@ -451,7 +481,11 @@ class RutaService with BatchDatabaseMixin {
     try {
       final response = await SupabaseSafe.run(
         () {
-          var q = _supabase.from('rute').select().eq('polazak', polazak).eq('dolazak', destinacija);
+          var q = _supabase
+              .from('rute')
+              .select()
+              .eq('polazak', polazak)
+              .eq('dolazak', destinacija);
 
           if (sameAktivan) {
             q = q.eq('aktivan', true);
@@ -463,7 +497,9 @@ class RutaService with BatchDatabaseMixin {
       );
 
       if (response is List) {
-        return response.map((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
+        return response
+            .map((json) => Ruta.fromMap(json as Map<String, dynamic>))
+            .toList();
       }
       return [];
     } catch (e) {
@@ -542,7 +578,9 @@ class RutaService with BatchDatabaseMixin {
       );
 
       if (response is List) {
-        final results = response.map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>)).toList();
+        final results = response
+            .map<Ruta>((json) => Ruta.fromMap(json as Map<String, dynamic>))
+            .toList();
 
         // Očisti cache
         await _clearCache();
@@ -643,9 +681,13 @@ class RutaService with BatchDatabaseMixin {
         'ukupno_ruta': ukupnoRuta,
         'aktivne_rute': aktivnihRuta,
         'neaktivne_rute': neaktivnihRuta,
-        'procenat_aktivnih': ukupnoRuta > 0 ? (aktivnihRuta / ukupnoRuta * 100).round() : 0,
+        'procenat_aktivnih':
+            ukupnoRuta > 0 ? (aktivnihRuta / ukupnoRuta * 100).round() : 0,
         'poslednja_izmena': rute.isNotEmpty
-            ? rute.map((r) => r.updatedAt).reduce((a, b) => a.isAfter(b) ? a : b).toIso8601String()
+            ? rute
+                .map((r) => r.updatedAt)
+                .reduce((a, b) => a.isAfter(b) ? a : b)
+                .toIso8601String()
             : null,
       };
 
@@ -668,7 +710,10 @@ class RutaService with BatchDatabaseMixin {
 
       // Dobij putnici na ovoj ruti
       final putnici = await SupabaseSafe.run(
-        () => _supabase.from('dnevni_putnici').select('cena, datum, status').eq('ruta_id', rutaId),
+        () => _supabase
+            .from('dnevni_putnici')
+            .select('cena, datum, status')
+            .eq('ruta_id', rutaId),
         fallback: <dynamic>[],
       );
 
@@ -681,7 +726,8 @@ class RutaService with BatchDatabaseMixin {
         (sum, p) => sum + ((p['cena'] as num?)?.toDouble() ?? 0),
       );
 
-      final prosecnaZarada = ukupnoPutnika > 0 ? ukupnaZarada / ukupnoPutnika : 0.0;
+      final prosecnaZarada =
+          ukupnoPutnika > 0 ? ukupnaZarada / ukupnoPutnika : 0.0;
 
       // Status distribucija
       final statusCount = <String, int>{};
@@ -694,10 +740,12 @@ class RutaService with BatchDatabaseMixin {
         'ruta_info': ruta.toMap(),
         'ukupno_putnika': ukupnoPutnika,
         'ukupna_zarada': ukupnaZarada,
-        'prosecna_zarada_po_putniku': double.parse(prosecnaZarada.toStringAsFixed(2)),
+        'prosecna_zarada_po_putniku':
+            double.parse(prosecnaZarada.toStringAsFixed(2)),
         'status_distribution': statusCount,
-        'putnica_po_danu':
-            ukupnoPutnika > 0 && putnici.isNotEmpty ? _calculateDailyPassengers(putnici) : <String, int>{},
+        'putnica_po_danu': ukupnoPutnika > 0 && putnici.isNotEmpty
+            ? _calculateDailyPassengers(putnici)
+            : <String, int>{},
         'generirano': DateTime.now().toIso8601String(),
       };
     } catch (e) {
@@ -764,7 +812,11 @@ class RutaService with BatchDatabaseMixin {
       final cutoffDateStr = cutoffDate.toIso8601String();
 
       await SupabaseSafe.run(
-        () => _supabase.from('rute').delete().eq('aktivan', false).lt('updated_at', cutoffDateStr),
+        () => _supabase
+            .from('rute')
+            .delete()
+            .eq('aktivan', false)
+            .lt('updated_at', cutoffDateStr),
       );
 
       await _clearCache();

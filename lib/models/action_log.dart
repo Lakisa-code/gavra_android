@@ -20,9 +20,12 @@ class ActionLog {
       pickedBy: json['picked_by'] as String?,
       cancelledBy: json['cancelled_by'] as String?,
       primaryDriver: json['primary_driver'] as String?,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
       actions: (json['actions'] as List<dynamic>?)
-              ?.map((action) => ActionEntry.fromJson(action as Map<String, dynamic>))
+              ?.map((action) =>
+                  ActionEntry.fromJson(action as Map<String, dynamic>))
               .toList() ??
           [],
     );
@@ -91,7 +94,9 @@ class ActionLog {
 
   /// Poslednja akcija određenog tipa
   ActionEntry? getLastAction(ActionType type) {
-    return actions.where((action) => action.type == type).fold<ActionEntry?>(null, (latest, current) {
+    return actions
+        .where((action) => action.type == type)
+        .fold<ActionEntry?>(null, (latest, current) {
       if (latest == null) return current;
       return current.timestamp.isAfter(latest.timestamp) ? current : latest;
     });

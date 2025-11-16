@@ -473,9 +473,10 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Pretraži lokacije...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-                prefixIcon:
-                    Icon(Icons.search, color: Colors.white.withValues(alpha: 0.6)),
+                hintStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                prefixIcon: Icon(Icons.search,
+                    color: Colors.white.withValues(alpha: 0.6)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         onPressed: () {
@@ -555,7 +556,8 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
+            color:
+                isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
           ),
         ),
         child: Text(
@@ -584,8 +586,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color:
-              isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+          color: isSelected
+              ? Colors.white.withValues(alpha: 0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(

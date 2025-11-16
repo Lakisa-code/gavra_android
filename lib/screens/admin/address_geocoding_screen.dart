@@ -91,7 +91,8 @@ class _AddressGeocodingScreenState extends State<AddressGeocodingScreen> {
                         'Po gradovima:',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      ...(_status!['status_po_gradovima'] as Map<String, dynamic>)
+                      ...(_status!['status_po_gradovima']
+                              as Map<String, dynamic>)
                           .entries
                           .map((e) => Text('  • ${e.key}: ${e.value} adresa')),
                     ],

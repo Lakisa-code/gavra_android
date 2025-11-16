@@ -3,7 +3,8 @@ import '../models/mesecni_putnik.dart';
 // Funkcija za compute: filtrira i sortira putnike van glavnog threada
 // Sada koristi List<Map<String, dynamic>> za kompatibilnost sa compute
 List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
-  final List<Map<String, dynamic>> putniciMap = List<Map<String, dynamic>>.from(args['putnici'] as Iterable);
+  final List<Map<String, dynamic>> putniciMap =
+      List<Map<String, dynamic>>.from(args['putnici'] as Iterable);
   final String searchTerm = (args['searchTerm'] as String?) ?? '';
   final String filterType = (args['filterType'] as String?) ?? 'svi';
 
@@ -19,7 +20,14 @@ List<Map<String, dynamic>> filterAndSortPutnici(Map<String, dynamic> args) {
     if (!putnik.aktivan || putnik.obrisan) return false;
 
     final status = putnik.status.toLowerCase().trim();
-    final invalidStatuses = ['bolovanje', 'godišnje', 'godisnji', 'obrisan', 'otkazan', 'otkazano'];
+    final invalidStatuses = [
+      'bolovanje',
+      'godišnje',
+      'godisnji',
+      'obrisan',
+      'otkazan',
+      'otkazano'
+    ];
     if (invalidStatuses.contains(status)) return false;
 
     // Filtriraj po search termu

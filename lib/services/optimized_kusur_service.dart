@@ -24,7 +24,8 @@ class OptimizedKusurService {
     if (_isInitialized) return;
 
     _kusurController = StreamController<Map<String, double>>.broadcast();
-    MemoryManagementService().registerStreamController('kusur_controller', _kusurController!);
+    MemoryManagementService()
+        .registerStreamController('kusur_controller', _kusurController!);
     _isInitialized = true;
   }
 
@@ -46,7 +47,11 @@ class OptimizedKusurService {
         return 0.0;
       }
 
-      final response = await supabase.from('vozaci').select('kusur').eq('id', vozacUuid).maybeSingle();
+      final response = await supabase
+          .from('vozaci')
+          .select('kusur')
+          .eq('id', vozacUuid)
+          .maybeSingle();
 
       if (response != null && response['kusur'] != null) {
         return (response['kusur'] as num).toDouble();
@@ -77,7 +82,9 @@ class OptimizedKusurService {
         return false;
       }
 
-      await supabase.from('vozaci').update({'kusur': noviKusur}).eq('id', vozacUuid);
+      await supabase
+          .from('vozaci')
+          .update({'kusur': noviKusur}).eq('id', vozacUuid);
 
       // Emit update through stream
       _emitKusurUpdate(vozacIme, noviKusur);

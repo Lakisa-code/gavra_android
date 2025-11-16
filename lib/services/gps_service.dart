@@ -122,8 +122,8 @@ class GpsService {
       // Uzimanje lokacije
       // Logger removed
       Position position = await Geolocator.getCurrentPosition(
-        // desiredAccuracy: deprecated, use settings parameter
-      );
+          // desiredAccuracy: deprecated, use settings parameter
+          );
 
       // Slanje u Supabase
       // Logger removed

@@ -301,12 +301,18 @@ class _DugoviScreenState extends State<DugoviScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.2),
                   blurRadius: 24,
                   offset: const Offset(0, 12),
                 ),
@@ -501,7 +507,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         child: Text('Po vremenu'),
                       ),
                       DropdownMenuItem<String>(
-                value: 'ime', child: Text('Po imenu')),
+                          value: 'ime', child: Text('Po imenu')),
                       DropdownMenuItem(
                         value: 'vozac',
                         child: Text('Po vozaču'),

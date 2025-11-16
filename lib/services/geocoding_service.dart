@@ -106,7 +106,8 @@ class GeocodingService {
 
   /// 🚀 BATCH GEOCODING - Optimizovano za velike količine adresa
   static Future<Map<String, String?>> getKoordinateZaViseAdresa(
-    List<Map<String, String>> adrese, // {'grad': 'Vršac', 'adresa': 'Trg Pobede 1'}
+    List<Map<String, String>>
+        adrese, // {'grad': 'Vršac', 'adresa': 'Trg Pobede 1'}
   ) async {
     final stopwatch = Stopwatch()..start();
     final results = <String, String?>{};
@@ -230,7 +231,8 @@ class GeocodingService {
       try {
         final query = '$adresa, $grad, Serbia';
         final encodedQuery = Uri.encodeComponent(query);
-        final url = '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
+        final url =
+            '$_baseUrl?q=$encodedQuery&format=json&limit=1&countrycodes=rs';
 
         final response = await http.get(
           Uri.parse(url),
@@ -240,7 +242,8 @@ class GeocodingService {
         ).timeout(timeout);
 
         if (response.statusCode == 200) {
-          final List<dynamic> results = json.decode(response.body) as List<dynamic>;
+          final List<dynamic> results =
+              json.decode(response.body) as List<dynamic>;
 
           if (results.isNotEmpty) {
             final result = results[0];
@@ -300,7 +303,10 @@ class GeocodingService {
   static Future<int> getCacheCount() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).length;
+      return prefs
+          .getKeys()
+          .where((key) => key.startsWith(_cachePrefix))
+          .length;
     } catch (e) {
       return 0;
     }
@@ -320,7 +326,8 @@ class GeocodingService {
       'kruscica', 'kruščica', 'kusic', 'kusić', 'crvena crkva',
     ];
     return !allowedCities.any(
-      (allowed) => normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
+      (allowed) =>
+          normalizedGrad.contains(allowed) || allowed.contains(normalizedGrad),
     );
   }
 }

@@ -143,7 +143,8 @@ class SmartCache {
   /// Invalidate multiple keys matching a pattern
   Future<void> invalidatePattern(String pattern) async {
     // L1: Remove matching keys
-    final keysToRemove = _memoryCache.keys.where((k) => k.contains(pattern)).toList();
+    final keysToRemove =
+        _memoryCache.keys.where((k) => k.contains(pattern)).toList();
 
     for (final key in keysToRemove) {
       _memoryCache.remove(key);
@@ -152,7 +153,8 @@ class SmartCache {
     // L2: Remove matching keys
     final prefs = await SharedPreferences.getInstance();
     final allKeys = prefs.getKeys();
-    final matchingKeys = allKeys.where((k) => k.startsWith(_prefs) && k.contains(pattern));
+    final matchingKeys =
+        allKeys.where((k) => k.startsWith(_prefs) && k.contains(pattern));
 
     for (final key in matchingKeys) {
       await prefs.remove(key);
@@ -201,8 +203,10 @@ class SmartCache {
 
   String keyVozac(String vozacIme) => 'vozac_$vozacIme';
   String keyKusur(String vozacIme) => 'kusur_$vozacIme';
-  String keyPazar(String vozacIme, DateTime datum) => 'pazar_${vozacIme}_${_formatDate(datum)}';
-  String keyStatistika(String vozacIme, DateTime mesec) => 'statistika_${vozacIme}_${_formatDate(mesec)}';
+  String keyPazar(String vozacIme, DateTime datum) =>
+      'pazar_${vozacIme}_${_formatDate(datum)}';
+  String keyStatistika(String vozacIme, DateTime mesec) =>
+      'statistika_${vozacIme}_${_formatDate(mesec)}';
   String keyGps(String vozacId) => 'gps_$vozacId';
   String keyPutnici(DateTime datum) => 'putnici_${_formatDate(datum)}';
 
@@ -214,7 +218,11 @@ class SmartCache {
   // =====================================================
 
   dynamic _serialize<T>(T value) {
-    if (value is Map || value is List || value is String || value is num || value is bool) {
+    if (value is Map ||
+        value is List ||
+        value is String ||
+        value is num ||
+        value is bool) {
       return value;
     }
 

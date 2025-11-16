@@ -131,7 +131,8 @@ class PermissionService {
                                     color: Colors.white.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: TextButton(
@@ -155,7 +156,8 @@ class PermissionService {
                                     color: Colors.white.withValues(alpha: 0.25),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.4),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.4),
                                     ),
                                   ),
                                   child: ElevatedButton.icon(
@@ -246,7 +248,8 @@ class PermissionService {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: (permission['color'] as Color).withValues(alpha: 0.8),
+                    color:
+                        (permission['color'] as Color).withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

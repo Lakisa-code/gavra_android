@@ -78,7 +78,8 @@ abstract class OptimizedStatefulWidget extends StatefulWidget {
 }
 
 /// 🚀 OPTIMIZED STATE BASE CLASS
-abstract class OptimizedState<T extends OptimizedStatefulWidget> extends State<T> with WidgetPerformanceMixin<T> {
+abstract class OptimizedState<T extends OptimizedStatefulWidget>
+    extends State<T> with WidgetPerformanceMixin<T> {
   // Cache za expensive operations
   final Map<String, dynamic> _cache = {};
 
@@ -105,7 +106,8 @@ abstract class OptimizedState<T extends OptimizedStatefulWidget> extends State<T
   /// Optimized setState that debounces rapid calls
   static final Map<int, Timer?> _setStateTimers = {};
 
-  void optimizedSetState(VoidCallback fn, {Duration delay = const Duration(milliseconds: 16)}) {
+  void optimizedSetState(VoidCallback fn,
+      {Duration delay = const Duration(milliseconds: 16)}) {
     final hash = hashCode;
 
     _setStateTimers[hash]?.cancel();

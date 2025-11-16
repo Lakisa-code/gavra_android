@@ -61,8 +61,8 @@ class RealtimeGpsService {
   static Future<Position> getCurrentPosition() async {
     try {
       return await Geolocator.getCurrentPosition(
-        // desiredAccuracy: deprecated, use settings parameter
-      );
+          // desiredAccuracy: deprecated, use settings parameter
+          );
     } catch (e) {
       rethrow;
     }

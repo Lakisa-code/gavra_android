@@ -30,8 +30,12 @@ class MesecniHelpers {
     decoded.forEach((dayKey, val) {
       if (val == null) return;
       if (val is Map) {
-        final bc = val['bc'] ?? val['bela_crkva'] ?? val['polazak_bc'] ?? val['bc_time'];
-        final vs = val['vs'] ?? val['vrsac'] ?? val['polazak_vs'] ?? val['vs_time'];
+        final bc = val['bc'] ??
+            val['bela_crkva'] ??
+            val['polazak_bc'] ??
+            val['bc_time'];
+        final vs =
+            val['vs'] ?? val['vrsac'] ?? val['polazak_vs'] ?? val['vs_time'];
         out[dayKey] = {
           'bc': normalizeTime(bc?.toString()),
           'vs': normalizeTime(vs?.toString()),
@@ -176,8 +180,11 @@ class MesecniHelpers {
       final trips = m['broj_putovanja'] ?? m['brojPutovanja'] ?? 0;
       final cancelled = m['broj_otkazivanja'] ?? m['brojOtkazivanja'] ?? 0;
       final last = m['poslednje_putovanje'] ?? m['poslednjePutovanje'];
-      out['trips_total'] = (trips is num) ? trips : int.tryParse(trips?.toString() ?? '0') ?? 0;
-      out['trips_cancelled'] = (cancelled is num) ? cancelled : int.tryParse(cancelled?.toString() ?? '0') ?? 0;
+      out['trips_total'] =
+          (trips is num) ? trips : int.tryParse(trips?.toString() ?? '0') ?? 0;
+      out['trips_cancelled'] = (cancelled is num)
+          ? cancelled
+          : int.tryParse(cancelled?.toString() ?? '0') ?? 0;
       if (last != null) out['last_trip_at'] = last.toString();
     } catch (_) {
       // swallow parse errors and return minimal map
@@ -214,7 +221,8 @@ class MesecniHelpers {
                 bc = normalizeTime(valPart) ?? valPart;
               }
             }
-            if ((bc != null && bc.isNotEmpty) || (vs != null && vs.isNotEmpty)) {
+            if ((bc != null && bc.isNotEmpty) ||
+                (vs != null && vs.isNotEmpty)) {
               temp[key.toString()] = {'bc': bc, 'vs': vs};
             }
           }

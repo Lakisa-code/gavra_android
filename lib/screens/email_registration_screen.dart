@@ -631,8 +631,8 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           child: SingleChildScrollView(
             child: Text(
               'Vaš nalog je uspešno kreiran i možete se prijaviti.',
-              style:
-                  TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
             ),
           ),
         ),

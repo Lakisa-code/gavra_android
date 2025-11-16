@@ -24,21 +24,24 @@ class FeatureFlags {
   /// 3. A/B test with 50% users
   /// 4. Gradual rollout (10% → 25% → 50% → 100%)
   /// 5. Remove old admin_screen.dart when stable
-  static const bool USE_ADMIN_SCREEN_V2 = false; // ❌ DISABLED: User prefers OLD design
+  static const bool USE_ADMIN_SCREEN_V2 =
+      false; // ❌ DISABLED: User prefers OLD design
 
   /// 🔥 DANAS SCREEN V2 (MasterRealtimeStream)
   ///
   /// **Status:** ✅ CREATED (2,538 lines) - ZERO ERRORS!
   /// **Target:** Replace 7+ streams with 1 GlobalAppState stream
   /// **Improvements:** -70% API calls, -60% memory, single source of truth
-  static const bool USE_DANAS_SCREEN_V2 = false; // ❌ DISABLED: User prefers OLD design
+  static const bool USE_DANAS_SCREEN_V2 =
+      false; // ❌ DISABLED: User prefers OLD design
 
   /// 🔥 DAILY CHECKIN SCREEN V2 (MasterRealtimeStream)
   ///
   /// **Status:** ✅ CREATED (634 lines) - ZERO ERRORS!
   /// **Target:** Replace DnevniKusurService + SimplifiedDailyCheckInService with MasterRealtimeStream
   /// **Improvements:** 2 services → 1 stream, real-time kusur display
-  static const bool USE_DAILY_CHECKIN_SCREEN_V2 = false; // ❌ DISABLED: User prefers OLD design
+  static const bool USE_DAILY_CHECKIN_SCREEN_V2 =
+      false; // ❌ DISABLED: User prefers OLD design
 
   /// � HOME SCREEN V2 (MasterRealtimeStream HYBRID)
   ///

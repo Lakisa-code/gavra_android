@@ -12,7 +12,8 @@ import 'performance_optimizer_service.dart';
 class AdvancedCacheManager {
   factory AdvancedCacheManager() => _instance;
   AdvancedCacheManager._internal();
-  static final AdvancedCacheManager _instance = AdvancedCacheManager._internal();
+  static final AdvancedCacheManager _instance =
+      AdvancedCacheManager._internal();
 
   // 💾 MEMORY CACHE
   final Map<String, _CacheEntry> _memoryCache = {};
@@ -57,7 +58,8 @@ class AdvancedCacheManager {
       }
 
       // 2. Check disk cache
-      final diskResult = await _getFromDisk<T>(key, maxAge: maxAge, fromJson: fromJson);
+      final diskResult =
+          await _getFromDisk<T>(key, maxAge: maxAge, fromJson: fromJson);
       if (diskResult != null) {
         _hitCount++;
         // Store in memory for next time
@@ -145,7 +147,8 @@ class AdvancedCacheManager {
       final data = prefs.getString('cache_$key');
       if (data == null) return null;
 
-      final Map<String, dynamic> cached = Map<String, dynamic>.from(json.decode(data) as Map);
+      final Map<String, dynamic> cached =
+          Map<String, dynamic>.from(json.decode(data) as Map);
       final timestamp = DateTime.parse(cached['timestamp'] as String);
       final age = maxAge ?? _defaultMaxAge;
 
@@ -306,7 +309,8 @@ class AdvancedCacheManager {
           final data = prefs.getString(key);
           if (data == null) continue;
 
-          final Map<String, dynamic> cached = Map<String, dynamic>.from(json.decode(data) as Map);
+          final Map<String, dynamic> cached =
+              Map<String, dynamic>.from(json.decode(data) as Map);
           final timestamp = DateTime.parse(cached['timestamp'] as String);
 
           if (now.difference(timestamp) > _defaultMaxAge) {
@@ -325,12 +329,14 @@ class AdvancedCacheManager {
   /// 📊 Get cache statistics
   Map<String, dynamic> getStatistics() {
     final total = _hitCount + _missCount;
-    final hitRate = total > 0 ? (_hitCount / total * 100).toStringAsFixed(2) : '0.00';
+    final hitRate =
+        total > 0 ? (_hitCount / total * 100).toStringAsFixed(2) : '0.00';
 
     return {
       'memory_entries': _memoryCache.length,
       'max_memory_entries': _maxMemoryEntries,
-      'memory_usage_percent': (_memoryCache.length / _maxMemoryEntries * 100).toStringAsFixed(2),
+      'memory_usage_percent':
+          (_memoryCache.length / _maxMemoryEntries * 100).toStringAsFixed(2),
       'hit_count': _hitCount,
       'miss_count': _missCount,
       'eviction_count': _evictionCount,

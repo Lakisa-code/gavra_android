@@ -154,8 +154,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       }
 
       Position position = await Geolocator.getCurrentPosition(
-        // desiredAccuracy: deprecated, use settings parameter
-      );
+          // desiredAccuracy: deprecated, use settings parameter
+          );
 
       if (mounted)
         setState(() {
@@ -528,7 +528,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                             gradient: LinearGradient(
                               colors: [
                                 Theme.of(context).primaryColor,
-                                Theme.of(context).primaryColor.withValues(alpha: 0.8),
+                                Theme.of(context)
+                                    .primaryColor
+                                    .withValues(alpha: 0.8),
                               ],
                             ),
                             shape: BoxShape.circle,

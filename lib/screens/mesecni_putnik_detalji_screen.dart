@@ -244,7 +244,10 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
             Text(
               'Učitavam detalje...',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
                 fontSize: 16,
               ),
             ),
@@ -484,7 +487,10 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Column(
@@ -899,7 +905,10 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
         leading: CircleAvatar(
           backgroundColor: tipPlacanja == 'mesecna_karta'
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-              : Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.2),
+              : Theme.of(context)
+                  .colorScheme
+                  .successPrimary
+                  .withValues(alpha: 0.2),
           child: Icon(
             tipPlacanja == 'mesecna_karta' ? Icons.credit_card : Icons.payments,
             color: tipPlacanja == 'mesecna_karta'
@@ -1043,10 +1052,16 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
 
         Color boja = Theme.of(context).colorScheme.surfaceContainerHighest;
         if (aktivnost == 'voznja') {
-          boja = Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.2);
+          boja = Theme.of(context)
+              .colorScheme
+              .successPrimary
+              .withValues(alpha: 0.2);
         }
         if (aktivnost == 'otkaz') {
-          boja = Theme.of(context).colorScheme.warningPrimary.withValues(alpha: 0.2);
+          boja = Theme.of(context)
+              .colorScheme
+              .warningPrimary
+              .withValues(alpha: 0.2);
         }
         if (aktivnost == 'oba') {
           boja = Theme.of(context).colorScheme.primary.withValues(alpha: 0.2);

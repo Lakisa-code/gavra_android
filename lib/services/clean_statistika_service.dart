@@ -5,7 +5,8 @@ import '../globals.dart';
 class CleanStatistikaService {
   /// Dohvati ukupne statistike (samo iz mesecni_putnici)
   static Future<Map<String, dynamic>> dohvatiUkupneStatistike() async {
-    final mesecniPutnici = await supabase.from('mesecni_putnici').select().eq('obrisan', false);
+    final mesecniPutnici =
+        await supabase.from('mesecni_putnici').select().eq('obrisan', false);
 
     // Standalone putovanja (bez mesecni_putnik_id)
     final standalonePutovanja = await supabase
@@ -41,7 +42,8 @@ class CleanStatistikaService {
   }
 
   /// Dohvati mesečne statistike
-  static Future<Map<String, dynamic>> dohvatiMesecneStatistike(int mesec, int godina) async {
+  static Future<Map<String, dynamic>> dohvatiMesecneStatistike(
+      int mesec, int godina) async {
     final mesecniPutnici = await supabase
         .from('mesecni_putnici')
         .select()

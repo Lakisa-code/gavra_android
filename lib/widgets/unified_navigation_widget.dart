@@ -233,8 +233,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
       // 1. Dobij trenutnu poziciju
       final currentPosition = await Geolocator.getCurrentPosition(
-        // desiredAccuracy: deprecated, use settings parameter
-      );
+          // desiredAccuracy: deprecated, use settings parameter
+          );
 
       // 2. Kreiraj OpenStreetMap URL sa TRENUTNIM redosledom putnika
       String osmUrl = 'https://www.openstreetmap.org/directions?';

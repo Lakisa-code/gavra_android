@@ -48,7 +48,8 @@ class AdresaPrikazWidget extends StatelessWidget {
         if (snapshot.hasError) {
           return Text(
             'Greška pri učitavanju adresa',
-            style: style?.copyWith(color: Colors.red) ?? TextStyle(color: Colors.red.shade600),
+            style: style?.copyWith(color: Colors.red) ??
+                TextStyle(color: Colors.red.shade600),
           );
         }
 
@@ -153,7 +154,8 @@ class _AdresaDropdownWidgetState extends State<AdresaDropdownWidget> {
     setState(() => _loading = true);
 
     try {
-      final adrese = await AdresaSupabaseService.getAdreseDropdownData(widget.grad);
+      final adrese =
+          await AdresaSupabaseService.getAdreseDropdownData(widget.grad);
       setState(() {
         _adrese = adrese;
         _loading = false;
@@ -239,7 +241,8 @@ class AdresaAutocompleteWidget extends StatefulWidget {
   final Widget? prefixIcon;
 
   @override
-  State<AdresaAutocompleteWidget> createState() => _AdresaAutocompleteWidgetState();
+  State<AdresaAutocompleteWidget> createState() =>
+      _AdresaAutocompleteWidgetState();
 }
 
 class _AdresaAutocompleteWidgetState extends State<AdresaAutocompleteWidget> {

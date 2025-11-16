@@ -42,8 +42,11 @@ class AdresaSupabaseService {
   /// Dobija sve adrese za određeni grad
   static Future<List<Adresa>> getAdreseZaGrad(String grad) async {
     try {
-      final response =
-          await supabase.from('adrese').select('id, naziv, grad, koordinate').eq('grad', grad).order('naziv');
+      final response = await supabase
+          .from('adrese')
+          .select('id, naziv, grad, koordinate')
+          .eq('grad', grad)
+          .order('naziv');
 
       return response.map((json) => Adresa.fromMap(json)).toList();
     } catch (e) {
@@ -52,12 +55,14 @@ class AdresaSupabaseService {
   }
 
   /// Pronađi adresu po nazivu i gradu
-  static Future<Adresa?> findAdresaByNazivAndGrad(String naziv, String grad) async {
+  static Future<Adresa?> findAdresaByNazivAndGrad(
+      String naziv, String grad) async {
     try {
       print('🔍 Finding address: naziv="$naziv", grad="$grad"');
       final response = await supabase
           .from('adrese')
-          .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
+          .select(
+              'id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
           .eq('naziv', naziv)
           .eq('grad', grad)
           .maybeSingle();
@@ -112,9 +117,11 @@ class AdresaSupabaseService {
             'ulica': ulica ?? naziv,
             'broj': broj,
             // Dodaj koordinate kao JSONB objekat ako su dostupne
-            if (lat != null && lng != null) 'koordinate': {'lat': lat, 'lng': lng},
+            if (lat != null && lng != null)
+              'koordinate': {'lat': lat, 'lng': lng},
           })
-          .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
+          .select(
+              'id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
           .single();
 
       print('🏠 Insert response: $response');
@@ -131,7 +138,8 @@ class AdresaSupabaseService {
   /// Pretraži adrese po nazivu (za autocomplete)
   static Future<List<Adresa>> searchAdrese(String query, {String? grad}) async {
     try {
-      var queryBuilder = supabase.from('adrese').select().ilike('naziv', '%$query%');
+      var queryBuilder =
+          supabase.from('adrese').select().ilike('naziv', '%$query%');
 
       if (grad != null) {
         queryBuilder = queryBuilder.eq('grad', grad);
@@ -164,15 +172,21 @@ class AdresaSupabaseService {
   }
 
   /// Helper metoda za dobijanje adresa u formatu za dropdown
-  static Future<List<Map<String, dynamic>>> getAdreseDropdownData(String grad) async {
+  static Future<List<Map<String, dynamic>>> getAdreseDropdownData(
+      String grad) async {
     final adrese = await getAdreseZaGrad(grad);
     return adrese
-        .map((adresa) => {'id': adresa.id, 'naziv': adresa.naziv, 'displayText': adresa.displayAddress})
+        .map((adresa) => {
+              'id': adresa.id,
+              'naziv': adresa.naziv,
+              'displayText': adresa.displayAddress
+            })
         .toList();
   }
 
   /// Batch učitavanje adresa (za optimizaciju)
-  static Future<Map<String, Adresa>> getAdreseByUuids(List<String> uuids) async {
+  static Future<Map<String, Adresa>> getAdreseByUuids(
+      List<String> uuids) async {
     final Map<String, Adresa> result = {};
 
     // Proveri cache prvo

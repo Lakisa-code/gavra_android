@@ -14,7 +14,6 @@ import 'services/firebase_service.dart';
 import 'services/offline_map_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
-import 'services/update_service.dart'; // 🔄 Auto-update sistem
 import 'services/voice_navigation_service.dart';
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'supabase_client.dart';
@@ -122,8 +121,7 @@ class _MyAppState extends State<MyApp> {
       // 🎨 Inicijalizuj ThemeManager
       await ThemeManager().initialize();
 
-      // 🔄 POKRENI AUTO-UPDATE CHECKER
-      UpdateService.startBackgroundUpdateCheck();
+      // 🔄 Auto-update removed as per request
 
       // 🧹 PERIODIČKI CLEANUP - svaki put kada se app pokrene
       CacheService.performAutomaticCleanup();

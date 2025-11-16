@@ -8,7 +8,8 @@ import 'package:flutter/widgets.dart';
 class PerformanceOptimizerService {
   factory PerformanceOptimizerService() => _instance;
   PerformanceOptimizerService._internal();
-  static final PerformanceOptimizerService _instance = PerformanceOptimizerService._internal();
+  static final PerformanceOptimizerService _instance =
+      PerformanceOptimizerService._internal();
 
   // 📊 PERFORMANCE METRICS
   final Map<String, int> _operationCounts = {};
@@ -25,7 +26,8 @@ class PerformanceOptimizerService {
 
   /// 📈 Track operation performance
   void trackOperation(String operationName, Duration duration) {
-    _operationCounts[operationName] = (_operationCounts[operationName] ?? 0) + 1;
+    _operationCounts[operationName] =
+        (_operationCounts[operationName] ?? 0) + 1;
     _operationDurations[operationName] = duration;
 
     _recentOperations.add('$operationName: ${duration.inMilliseconds}ms');

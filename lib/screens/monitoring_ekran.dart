@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/simple_usage_monitor.dart';
+import '../theme.dart'; // 🎨 Import ThemeManager
 
 /// Jednostavan i lep ekran za praćenje Supabase potrošnje
 class MonitoringEkran extends StatefulWidget {
@@ -46,70 +47,93 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          'Supabase Monitoring',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.blue[600],
-        elevation: 0,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: Theme.of(context).backgroundGradient, // 🎨 Use theme gradient
       ),
-      body: _ucitava
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _ucitajStatistiku,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    if (_errorMessage != null)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange[50],
-                          border: Border.all(color: Colors.orange[300]!),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.warning, color: Colors.orange[600]),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: TextStyle(
-                                  color: Colors.orange[800],
-                                  fontSize: 14,
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Transparent background
+        appBar: AppBar(
+          title: const Text(
+            'Supabase Monitoring',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              shadows: [
+                Shadow(
+                  blurRadius: 8,
+                  color: Colors.black87,
+                ),
+              ],
+            ),
+          ),
+          backgroundColor: Colors.transparent, // Transparent appBar
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: _ucitava
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.white))
+            : RefreshIndicator(
+                onRefresh: _ucitajStatistiku,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    children: [
+                      if (_errorMessage != null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.2),
+                            border: Border.all(
+                                color: Colors.orange.withValues(alpha: 0.5)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.warning, color: Colors.orange),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _ucitava = true;
-                                  _errorMessage = null;
-                                });
-                                _ucitajStatistiku();
-                              },
-                              child: const Text('Pokušaj ponovo'),
-                            ),
-                          ],
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _ucitava = true;
+                                    _errorMessage = null;
+                                  });
+                                  _ucitajStatistiku();
+                                },
+                                child: const Text(
+                                  'Pokušaj ponovo',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    _napraviGlavnuKarticu(),
-                    const SizedBox(height: 20),
-                    _napraviDetaljeKarticu(),
-                    const SizedBox(height: 20),
-                    _napraviSaveteKarticu(),
-                  ],
+                      _napraviGlavnuKarticu(),
+                      const SizedBox(height: 20),
+                      _napraviDetaljeKarticu(),
+                      const SizedBox(height: 20),
+                      _napraviSaveteKarticu(),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 
@@ -203,9 +227,22 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
   }
 
   Widget _napraviDetaljeKarticu() {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).glassContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).glassBorder,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -213,14 +250,14 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
           children: [
             Row(
               children: [
-                Icon(Icons.analytics, color: Colors.blue[600], size: 24),
+                const Icon(Icons.analytics, color: Colors.white, size: 24),
                 const SizedBox(width: 10),
-                Text(
+                const Text(
                   'DETALJI POTROŠNJE',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -255,18 +292,22 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
             Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.blue[200]!),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info, color: Colors.blue[600]),
+                  const Icon(Icons.info, color: Colors.white),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _statistika['poruka'] ?? '',
-                      style: TextStyle(color: Colors.blue[700], fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -291,10 +332,10 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               children: [
                 Text(
                   vrednost,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: Colors.white,
                   ),
                 ),
                 if (opis.isNotEmpty)
@@ -302,7 +343,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                     opis,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
               ],
@@ -314,9 +355,22 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
   }
 
   Widget _napraviSaveteKarticu() {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).glassContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).glassBorder,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -324,14 +378,14 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
           children: [
             Row(
               children: [
-                Icon(Icons.lightbulb, color: Colors.amber[600], size: 24),
+                const Icon(Icons.lightbulb, color: Colors.amber, size: 24),
                 const SizedBox(width: 10),
-                Text(
+                const Text(
                   'KORISNI SAVETI',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -383,9 +437,10 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
           Expanded(
             child: Text(
               tekst,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.grey[700],
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
                 height: 1.3,
               ),
             ),

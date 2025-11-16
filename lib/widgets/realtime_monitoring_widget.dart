@@ -13,10 +13,12 @@ class RealtimeMonitoringWidget extends OptimizedStatefulWidget {
   const RealtimeMonitoringWidget({super.key});
 
   @override
-  State<RealtimeMonitoringWidget> createState() => _RealtimeMonitoringWidgetState();
+  State<RealtimeMonitoringWidget> createState() =>
+      _RealtimeMonitoringWidgetState();
 }
 
-class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWidget> {
+class _RealtimeMonitoringWidgetState
+    extends OptimizedState<RealtimeMonitoringWidget> {
   Map<String, dynamic> _realtimeStats = {};
   Map<String, dynamic> _kusurStats = {};
   Map<String, dynamic> _memoryStats = {};
@@ -101,7 +103,9 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _isMonitoring ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
+        color: _isMonitoring
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.secondary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
       ),
       child: Row(
@@ -114,7 +118,9 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
           const SizedBox(width: 12),
           Expanded(
             child: ConstText(
-              _isMonitoring ? '🔄 Realtime Monitoring (Live)' : '⏸️ Monitoring Paused',
+              _isMonitoring
+                  ? '🔄 Realtime Monitoring (Live)'
+                  : '⏸️ Monitoring Paused',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 18,
@@ -145,17 +151,22 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
       healthColor: isHealthy ? Colors.green : Colors.red,
       child: Column(
         children: [
-          _buildStatRow('Initialized', _realtimeStats['initialized']?.toString() ?? 'false'),
-          _buildStatRow('Active Subscriptions', _realtimeStats['active_subscriptions']?.toString() ?? '0'),
-          _buildStatRow('Last Activity', _formatTime(_realtimeStats['last_activity'] as String?)),
-          _buildEventCounts(_realtimeStats['event_counts'] as Map<String, int>?),
+          _buildStatRow('Initialized',
+              _realtimeStats['initialized']?.toString() ?? 'false'),
+          _buildStatRow('Active Subscriptions',
+              _realtimeStats['active_subscriptions']?.toString() ?? '0'),
+          _buildStatRow('Last Activity',
+              _formatTime(_realtimeStats['last_activity'] as String?)),
+          _buildEventCounts(
+              _realtimeStats['event_counts'] as Map<String, int>?),
         ],
       ),
     );
   }
 
   Widget _buildKusurSection() {
-    final isHealthy = _kusurStats['initialized'] == true && _kusurStats['controller_closed'] != true;
+    final isHealthy = _kusurStats['initialized'] == true &&
+        _kusurStats['controller_closed'] != true;
 
     return _buildSection(
       title: '💰 Kusur Service',
@@ -163,9 +174,12 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
       healthColor: isHealthy ? Colors.green : Colors.orange,
       child: Column(
         children: [
-          _buildStatRow('Initialized', _kusurStats['initialized']?.toString() ?? 'false'),
-          _buildStatRow('Controller Status', _kusurStats['controller_closed'] == true ? 'Closed' : 'Open'),
-          _buildStatRow('Has Listeners', _kusurStats['has_listeners']?.toString() ?? 'false'),
+          _buildStatRow(
+              'Initialized', _kusurStats['initialized']?.toString() ?? 'false'),
+          _buildStatRow('Controller Status',
+              _kusurStats['controller_closed'] == true ? 'Closed' : 'Open'),
+          _buildStatRow('Has Listeners',
+              _kusurStats['has_listeners']?.toString() ?? 'false'),
         ],
       ),
     );
@@ -181,12 +195,17 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
       healthColor: isCritical ? Colors.red : Colors.green,
       child: Column(
         children: [
-          _buildStatRow('Stream Controllers', _memoryStats['active_stream_controllers']?.toString() ?? '0'),
-          _buildStatRow('Active Timers', _memoryStats['active_timers']?.toString() ?? '0'),
-          _buildStatRow('Subscriptions', _memoryStats['active_subscriptions']?.toString() ?? '0'),
+          _buildStatRow('Stream Controllers',
+              _memoryStats['active_stream_controllers']?.toString() ?? '0'),
+          _buildStatRow('Active Timers',
+              _memoryStats['active_timers']?.toString() ?? '0'),
+          _buildStatRow('Subscriptions',
+              _memoryStats['active_subscriptions']?.toString() ?? '0'),
           _buildStatRow('Total Resources', totalResources.toString()),
-          _buildStatRow('Memory (MB)', _memoryStats['current_rss_mb']?.toString() ?? 'N/A'),
-          _buildStatRow('Warnings', _memoryStats['memory_warnings_count']?.toString() ?? '0'),
+          _buildStatRow('Memory (MB)',
+              _memoryStats['current_rss_mb']?.toString() ?? 'N/A'),
+          _buildStatRow('Warnings',
+              _memoryStats['memory_warnings_count']?.toString() ?? '0'),
         ],
       ),
     );
@@ -202,7 +221,9 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
       margin: const EdgeInsets.all(8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+            color:
+                Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -282,7 +303,8 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
         ),
         const SizedBox(height: 4),
         ...events.entries.take(5).map(
-              (entry) => _buildStatRow('  ${entry.key}', entry.value.toString()),
+              (entry) =>
+                  _buildStatRow('  ${entry.key}', entry.value.toString()),
             ),
       ],
     );
@@ -333,8 +355,9 @@ class _RealtimeMonitoringWidgetState extends OptimizedState<RealtimeMonitoringWi
               icon: Icon(_isMonitoring ? Icons.stop : Icons.play_arrow),
               label: ConstText(_isMonitoring ? 'Stop' : 'Start'),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _isMonitoring ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                backgroundColor: _isMonitoring
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),

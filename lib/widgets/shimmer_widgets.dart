@@ -162,7 +162,8 @@ class ShimmerWidgets {
     Color? highlightColor,
   }) {
     return Shimmer.fromColors(
-      baseColor: baseColor ?? Theme.of(context).colorScheme.surfaceContainerHighest,
+      baseColor:
+          baseColor ?? Theme.of(context).colorScheme.surfaceContainerHighest,
       highlightColor: highlightColor ?? Theme.of(context).colorScheme.surface,
       child: child,
     );

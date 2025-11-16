@@ -8,7 +8,10 @@ class AddressGeocodingBatchService {
   static Future<void> geocodeAllMissingAddresses() async {
     try {
       // 1. Uzmi sve adrese bez koordinata
-      final response = await supabase.from('adrese').select('id, naziv, grad, koordinate').isFilter('koordinate', null);
+      final response = await supabase
+          .from('adrese')
+          .select('id, naziv, grad, koordinate')
+          .isFilter('koordinate', null);
 
       final List<dynamic> adrese = response as List<dynamic>;
 
@@ -38,13 +41,10 @@ class AddressGeocodingBatchService {
 
             if (lat != null && lng != null) {
               // Sačuvaj u bazu kao JSONB
-              await supabase
-                  .from('adrese')
-                  .update({
-                    'koordinate': {'lat': lat, 'lng': lng},
-                    'updated_at': DateTime.now().toIso8601String(),
-                  })
-                  .eq('id', id.toString());
+              await supabase.from('adrese').update({
+                'koordinate': {'lat': lat, 'lng': lng},
+                'updated_at': DateTime.now().toIso8601String(),
+              }).eq('id', id.toString());
             }
           } else {
             // Neispravne koordinate format
@@ -66,7 +66,8 @@ class AddressGeocodingBatchService {
   /// Proverava status geocoding za sve adrese
   static Future<Map<String, dynamic>> getGeocodingStatus() async {
     try {
-      final response = await supabase.from('adrese').select('id, naziv, grad, koordinate');
+      final response =
+          await supabase.from('adrese').select('id, naziv, grad, koordinate');
 
       final List<dynamic> adrese = response as List<dynamic>;
 
@@ -90,7 +91,8 @@ class AddressGeocodingBatchService {
         'ukupno_adresa': adrese.length,
         'sa_koordinatama': saKoordinatama,
         'bez_koordinata': bezKoordinata,
-        'procenat_kompletiran': adrese.isEmpty ? 0 : (saKoordinatama / adrese.length * 100).round(),
+        'procenat_kompletiran':
+            adrese.isEmpty ? 0 : (saKoordinatama / adrese.length * 100).round(),
         'status_po_gradovima': statusPoGradovima,
       };
     } catch (e) {
@@ -106,10 +108,10 @@ class AddressGeocodingBatchService {
   /// Briše sve GPS koordinate (za testing)
   static Future<void> clearAllCoordinates() async {
     try {
-      await supabase
-          .from('adrese')
-          .update({'koordinate': null, 'updated_at': DateTime.now().toIso8601String()})
-          .neq('id', ''); // Update sve adrese
+      await supabase.from('adrese').update({
+        'koordinate': null,
+        'updated_at': DateTime.now().toIso8601String()
+      }).neq('id', ''); // Update sve adrese
     } catch (e) {
       rethrow;
     }

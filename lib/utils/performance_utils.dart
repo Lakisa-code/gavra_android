@@ -41,10 +41,12 @@ class PerformanceUtils {
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    displayCount = (displayCount + loadMoreCount).clamp(0, items.length);
+                    displayCount =
+                        (displayCount + loadMoreCount).clamp(0, items.length);
                   });
                 },
-                child: Text('Učitaj još ${(items.length - displayCount).clamp(0, loadMoreCount)}'),
+                child: Text(
+                    'Učitaj još ${(items.length - displayCount).clamp(0, loadMoreCount)}'),
               ),
           ],
         );
@@ -71,7 +73,8 @@ class PerformanceUtils {
           height: height ?? 50,
           child: CircularProgressIndicator(
             value: loadingProgress.expectedTotalBytes != null
-                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
                 : null,
           ),
         );

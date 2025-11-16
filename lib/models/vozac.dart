@@ -29,7 +29,9 @@ class Vozac {
       aktivan: map['aktivan'] as bool? ?? true,
       kusur: (map['kusur'] as num?)?.toDouble() ?? 0.0,
       obrisan: map['obrisan'] as bool? ?? false,
-      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
+      deletedAt: map['deleted_at'] != null
+          ? DateTime.parse(map['deleted_at'] as String)
+          : null,
       status: map['status'] as String? ?? 'aktivan',
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
@@ -80,7 +82,8 @@ class Vozac {
 
   /// Validira telefon format (srpski broj)
   bool get isValidTelefon {
-    if (brojTelefona == null || brojTelefona!.isEmpty) return true; // Optional field
+    if (brojTelefona == null || brojTelefona!.isEmpty)
+      return true; // Optional field
 
     final telefon = brojTelefona!.replaceAll(RegExp(r'[^\d+]'), '');
 

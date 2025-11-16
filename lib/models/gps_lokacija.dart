@@ -30,7 +30,9 @@ class GPSLokacija {
       tacnost: (map['tacnost'] as num?)?.toDouble(),
       vreme: DateTime.parse(map['vreme'] as String),
       obrisan: map['obrisan'] as bool? ?? false,
-      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
+      deletedAt: map['deleted_at'] != null
+          ? DateTime.parse(map['deleted_at'] as String)
+          : null,
     );
   }
 
@@ -105,7 +107,10 @@ class GPSLokacija {
 
   /// Validira GPS koordinate
   bool get isValidCoordinates {
-    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+    return latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
   }
 
   /// Validira brzinu (realna vrednost)
@@ -203,6 +208,9 @@ class GPSLokacija {
 
   @override
   int get hashCode {
-    return id.hashCode ^ latitude.hashCode ^ longitude.hashCode ^ vreme.hashCode;
+    return id.hashCode ^
+        latitude.hashCode ^
+        longitude.hashCode ^
+        vreme.hashCode;
   }
 }
