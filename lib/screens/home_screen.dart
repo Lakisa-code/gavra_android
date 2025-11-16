@@ -1814,6 +1814,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: VozacBoja.get(_currentDriver).withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Theme.of(context).glassBorder,
+                                      width: 1.5,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
