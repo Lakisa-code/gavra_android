@@ -1970,8 +1970,8 @@ class _DanasScreenState extends State<DanasScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                               decoration: BoxDecoration(
                                 color: FeatureFlags.freeMode
-                                    ? Colors.green.withOpacity(0.12)
-                                    : Colors.grey.withOpacity(0.04),
+                                    ? Colors.green.withValues(alpha: 0.12)
+                                    : Colors.grey.withValues(alpha: 0.04),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(
