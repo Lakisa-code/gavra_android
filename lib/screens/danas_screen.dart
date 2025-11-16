@@ -33,6 +33,7 @@ import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
 import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
+import '../widgets/clock_ticker.dart';
 import 'dugovi_screen.dart';
 
 // Using centralized logger
@@ -349,9 +350,8 @@ class _DanasScreenState extends State<DanasScreen> {
         final monthStr = now.month.toString().padLeft(2, '0');
         final yearStr = now.year.toString().substring(2);
 
-        final hourStr = now.hour.toString().padLeft(2, '0');
-        final minuteStr = now.minute.toString().padLeft(2, '0');
-        final secondStr = now.second.toString().padLeft(2, '0');
+        // hour/minute/second are handled by ClockTicker (optimized) -
+        // don't compute them here to avoid redundant rebuilds.
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -396,8 +396,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     ),
                   ),
                   // DESNO - VREME
-                  Text(
-                    '$hourStr:$minuteStr:$secondStr',
+                  ClockTicker(
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -411,6 +410,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         ),
                       ],
                     ),
+                    showSeconds: true,
                   ),
                 ],
               ),
