@@ -159,11 +159,9 @@ class Putnik {
           : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
       dan: _determineDanFromDatum(
-        map['datum_putovanja']
-                as String? ?? // ✅ FIXED: datum_putovanja umesto datum
-            map['datum_putovanja']
-                as String?, // ✅ Pokušaj obe kolone za compatibility
+        map['datum_putovanja'] as String? ?? map['datum'] as String?,
       ), // ✅ Izvlači dan iz datum_putovanja kolone
+      datum: map['datum_putovanja'] as String? ?? map['datum'] as String?,
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
       // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
@@ -307,9 +305,8 @@ class Putnik {
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
-    final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
-    final iznosPlacanja =
-        map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
+    final double iznosPlacanja = _parseDouble(map['cena']);
+    final bool placeno = iznosPlacanja > 0; // čita iz cena kolone
     // ✅ ISPRAVKA: Koristi isti sistem mapiranja kao dnevni putnici
     final vozac = (map['vozac'] as String?) ??
         VozacMappingService.getVozacImeWithFallbackSync(
@@ -355,9 +352,8 @@ class Putnik {
     final vremePlacanja = map['vreme_placanja'] != null
         ? DateTime.parse(map['vreme_placanja'] as String)
         : null; // ✅ ČITAJ iz vreme_placanja
-    final placeno = (map['cena'] as double? ?? 0) > 0; // čita iz cena kolone
-    final iznosPlacanja =
-        map['cena'] as double?; // čita iz cena kolone - ORIGINALNA VREDNOST
+    final double iznosPlacanja = _parseDouble(map['cena']);
+    final bool placeno = iznosPlacanja > 0; // čita iz cena kolone
     // ✅ ISPRAVKA: Koristi isti sistem mapiranja kao dnevni putnici
     final vozac = (map['vozac'] as String?) ??
         VozacMappingService.getVozacImeWithFallbackSync(
@@ -450,9 +446,11 @@ class Putnik {
           placeno: placeno,
           cena: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? VozacMappingService.getVozacImeWithFallbackSync(
-                  map['vozac_id'] as String?,
-                )
+              ? (vozac?.isNotEmpty == true
+                  ? vozac
+                  : VozacMappingService.getVozacImeWithFallbackSync(
+                      map['vozac_id'] as String?,
+                    ))
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac']
               as String?, // ✅ NOVA KOLONA za pokupljanje
@@ -500,9 +498,11 @@ class Putnik {
           placeno: placeno,
           cena: iznosPlacanja,
           naplatioVozac: placeno && (iznosPlacanja ?? 0) > 0
-              ? VozacMappingService.getVozacImeWithFallbackSync(
-                  map['vozac_id'] as String?,
-                )
+              ? (vozac?.isNotEmpty == true
+                  ? vozac
+                  : VozacMappingService.getVozacImeWithFallbackSync(
+                      map['vozac_id'] as String?,
+                    ))
               : null, // ✅ Samo ako je stvarno plaćeno
           pokupioVozac: map['pokupljanje_vozac']
               as String?, // ✅ NOVA KOLONA za pokupljanje
