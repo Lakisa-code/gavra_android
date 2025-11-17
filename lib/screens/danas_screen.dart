@@ -1106,7 +1106,7 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // FREE_MODE toggle function removed (no longer used in UI)
+  // freeMode UI toggle removed
 
   // 📊 DIALOG ZA PRIKAZ POPISA DANA - IDENTIČAN FORMAT SA STATISTIKA SCREEN
   Future<bool> _showPopisDialog({
@@ -1948,7 +1948,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         const SizedBox(width: 2),
                         // ⚡ SPEEDOMETER
                         Expanded(child: _buildSpeedometerButton()),
-                        // FREE_MODE toggle removed from AppBar (was admin-only lock icon)
+                        // FREE_MODE UI toggle removed from AppBar
                       ],
                     ),
                   ],

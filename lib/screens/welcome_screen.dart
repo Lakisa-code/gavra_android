@@ -14,7 +14,6 @@ import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
 import 'home_screen.dart';
 
-// 🔥 HELPER: Returns HomeScreen based on feature flag
 Widget _getHomeScreen() {
   return const HomeScreen();
 }

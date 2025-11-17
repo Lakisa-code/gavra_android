@@ -82,7 +82,7 @@ void main() async {
     // Ignoriši greške u voice navigation - optional feature
   }
 
-  // NOTE: FeatureFlags removed; no initialization required.
+  // Feature flags removed from codebase.
 
   // 🟦 INITIALIZE PUSH SERVICE (FCM + HMS)
   try {
