@@ -1,6 +1,5 @@
-/// 🚩 FEATURE FLAGS za kontrolu novih funkcionalnosti
-///
-/// Koristi se za A/B testiranje, staged rollout, i brzo isključivanje buggy features.
+/// DEPRECATED: compile-time feature flags removed.
+/// Use development toggles or `flutter define` if you need staging rollouts.
 class FeatureFlags {
   /// 🔥 ADMIN SCREEN V2 (MasterRealtimeStream)
   ///
@@ -24,24 +23,21 @@ class FeatureFlags {
   /// 3. A/B test with 50% users
   /// 4. Gradual rollout (10% → 25% → 50% → 100%)
   /// 5. Remove old admin_screen.dart when stable
-  static const bool USE_ADMIN_SCREEN_V2 =
-      false; // ❌ DISABLED: User prefers OLD design
+    static const bool USE_ADMIN_SCREEN_V2 = false; // removed
 
   /// 🔥 DANAS SCREEN V2 (MasterRealtimeStream)
   ///
   /// **Status:** ✅ CREATED (2,538 lines) - ZERO ERRORS!
   /// **Target:** Replace 7+ streams with 1 GlobalAppState stream
   /// **Improvements:** -70% API calls, -60% memory, single source of truth
-  static const bool USE_DANAS_SCREEN_V2 =
-      false; // ❌ DISABLED: User prefers OLD design
+    static const bool USE_DANAS_SCREEN_V2 = false; // removed
 
   /// 🔥 DAILY CHECKIN SCREEN V2 (MasterRealtimeStream)
   ///
   /// **Status:** ✅ CREATED (634 lines) - ZERO ERRORS!
   /// **Target:** Replace DnevniKusurService + SimplifiedDailyCheckInService with MasterRealtimeStream
   /// **Improvements:** 2 services → 1 stream, real-time kusur display
-  static const bool USE_DAILY_CHECKIN_SCREEN_V2 =
-      false; // ❌ DISABLED: User prefers OLD design
+    static const bool USE_DAILY_CHECKIN_SCREEN_V2 = false; // removed
 
   /// � HOME SCREEN V2 (MasterRealtimeStream HYBRID)
   ///
@@ -50,20 +46,20 @@ class FeatureFlags {
   /// **Approach:** Outer StreamBuilder (MasterStream) triggers refresh → Inner FutureBuilder (PutnikService)
   /// **Benefits:** Real-time updates + Full Putnik model compatibility
   /// **Improvements:** Eliminates manual refresh, auto-updates on passenger changes
-  static const bool USE_HOME_SCREEN_V2 = false; // 🔄 TESTING PHASE
+    static const bool USE_HOME_SCREEN_V2 = false; // removed
 
   /// �🐛 DEBUG MODE
   ///
   /// Enables verbose logging, performance monitoring, dev tools
-  static const bool DEBUG_MODE = false; // Set to false for production
+    static const bool DEBUG_MODE = false; // removed
 
   /// 📊 PERFORMANCE MONITORING
   ///
   /// Tracks API calls, memory usage, stream health
-  static const bool ENABLE_PERFORMANCE_MONITORING = false;
+    static const bool ENABLE_PERFORMANCE_MONITORING = false; // removed
 
   /// 🔔 REALTIME NOTIFICATIONS V2
   ///
   /// Enhanced notification system with better filtering
-  static const bool USE_REALTIME_NOTIFICATIONS_V2 = false;
+    static const bool USE_REALTIME_NOTIFICATIONS_V2 = false; // removed
 }

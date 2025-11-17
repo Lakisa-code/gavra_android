@@ -11,7 +11,6 @@ import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
-import 'services/feature_flags.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/offline_map_service.dart';
@@ -83,10 +82,7 @@ void main() async {
     // Ignoriši greške u voice navigation - optional feature
   }
 
-  // 🔐 INITIALIZE FEATURE FLAGS (FREE_MODE)
-  try {
-    await FeatureFlags.initialize();
-  } catch (e) {}
+  // NOTE: FeatureFlags removed; no initialization required.
 
   // 🟦 INITIALIZE PUSH SERVICE (FCM + HMS)
   try {

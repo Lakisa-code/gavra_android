@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 
 import '../models/putnik.dart';
 import '../models/turn_by_turn_instruction.dart';
-import '../services/feature_flags.dart';
 import '../services/smart_navigation_service.dart';
 
 /// 🧭 REAL-TIME GPS NAVIGATION WIDGET
@@ -559,9 +558,6 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
       }
 
       // Pokreni Smart Navigation optimizaciju
-      if (FeatureFlags.freeMode) {
-        // Free mode active: prefer OSRM/nearest-neighbour optimization; SmartNavigationService already defaults to that.
-      }
       final result = await SmartNavigationService.startOptimizedNavigation(
         putnici: _remainingPassengers,
         startCity: 'Bela Crkva', // ili dinamički na osnovu trenutne pozicije

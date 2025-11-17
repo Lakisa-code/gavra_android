@@ -2,7 +2,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/putnik.dart';
-import 'feature_flags.dart';
 import 'geocoding_service.dart';
 
 /// 🎯 SMART NAVIGATION SERVICE
@@ -17,10 +16,7 @@ class SmartNavigationService {
     bool useTrafficData = false, // 🚦 NOVO: traffic-aware routing
   }) async {
     try {
-      // If running in free mode, skip any commercial provider-specific integrations.
-      if (FeatureFlags.freeMode) {
-        // proceed with open-source logic only
-      }
+      // NOTE: freeMode feature removed; default behavior preserved.
       // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
       final currentPosition = await _getCurrentPosition();
 
