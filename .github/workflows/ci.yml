@@ -15,7 +15,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run gitleaks scan
-        uses: zricethezav/gitleaks-action@v2.10.0
+        # Use the major version (@v2) to track compatible patch releases; avoid hard pin to a subversion that may not exist.
+        uses: zricethezav/gitleaks-action@v2
         with:
           args: --verbose --redact
 
