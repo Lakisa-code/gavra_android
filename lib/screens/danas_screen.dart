@@ -10,7 +10,6 @@ import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
-import '../services/feature_flags.dart';
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
@@ -1107,19 +1106,7 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // Runtime toggle for FREE_MODE (developer/testing only)
-  Future<void> _toggleFreeMode() async {
-    await FeatureFlags.setFreeMode(!FeatureFlags.freeMode);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(FeatureFlags.freeMode ? 'FREE_MODE: ON' : 'FREE_MODE: OFF'),
-          backgroundColor: FeatureFlags.freeMode ? Colors.green : Colors.grey,
-        ),
-      );
-      setState(() {});
-    }
-  }
+  // FREE_MODE toggle function removed (no longer used in UI)
 
   // 📊 DIALOG ZA PRIKAZ POPISA DANA - IDENTIČAN FORMAT SA STATISTIKA SCREEN
   Future<bool> _showPopisDialog({
@@ -1961,36 +1948,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         const SizedBox(width: 2),
                         // ⚡ SPEEDOMETER
                         Expanded(child: _buildSpeedometerButton()),
-                        const SizedBox(width: 4),
-                        // 🔒 FREE_MODE TOGGLE (admin only) - long-press to toggle
-                        if ((_currentDriver == 'Bojan' || _currentDriver == 'Svetlana'))
-                          GestureDetector(
-                            onLongPress: () => _toggleFreeMode(),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: FeatureFlags.freeMode
-                                    ? Colors.green.withValues(alpha: 0.12)
-                                    : Colors.grey.withValues(alpha: 0.04),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    FeatureFlags.freeMode ? Icons.lock : Icons.lock_open,
-                                    size: 14,
-                                    color: FeatureFlags.freeMode ? Colors.green : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    FeatureFlags.freeMode ? 'FREE_ON' : 'FREE_OFF',
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        // FREE_MODE toggle removed from AppBar (was admin-only lock icon)
                       ],
                     ),
                   ],
