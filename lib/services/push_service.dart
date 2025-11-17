@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // We use a method channel to optionally call Huawei Push plugin methods if available in the host app.
-final MethodChannel _huaweiChannel = const MethodChannel('com.huawei.hms.flutter.push/push');
+final MethodChannel _huaweiChannel =
+    const MethodChannel('com.huawei.hms.flutter.push/push');
 // Huawei push plugin may not be present on all setups; import guarded by conditional
 // import 'package:huawei_push/huawei_push.dart' as hms;
 
@@ -21,12 +22,14 @@ class PushService {
     try {
       _fcmToken = await _fcm.getToken();
       if (_fcmToken != null) {
-        await _registerToken('fcm', _fcmToken!, Platform.isAndroid ? 'android' : 'ios');
+        await _registerToken(
+            'fcm', _fcmToken!, Platform.isAndroid ? 'android' : 'ios');
       }
 
       FirebaseMessaging.instance.onTokenRefresh.listen((token) async {
         _fcmToken = token;
-        await _registerToken('fcm', token, Platform.isAndroid ? 'android' : 'ios');
+        await _registerToken(
+            'fcm', token, Platform.isAndroid ? 'android' : 'ios');
       });
     } catch (e) {
       debugPrint('PushService: FCM init error: $e');
@@ -45,8 +48,10 @@ class PushService {
             // below that invokes 'getToken' and listens for 'onToken' events.
           } catch (pluginErr) {
             // Fallback: use the method channel if the direct plugin call isn't available
-            debugPrint('PushService: HMS plugin direct call failed, falling back to method channel: $pluginErr');
-            final String? token = await _huaweiChannel.invokeMethod<String>('getToken');
+            debugPrint(
+                'PushService: HMS plugin direct call failed, falling back to method channel: $pluginErr');
+            final String? token =
+                await _huaweiChannel.invokeMethod<String>('getToken');
             if (token != null && token.isNotEmpty) {
               _hmsToken = token;
               await _registerToken('huawei', token, 'android');
@@ -65,7 +70,8 @@ class PushService {
             }
           });
         } catch (e) {
-          debugPrint('PushService: HMS plugin not present or not initialized: $e');
+          debugPrint(
+              'PushService: HMS plugin not present or not initialized: $e');
         }
       }
     } catch (e) {
@@ -73,12 +79,14 @@ class PushService {
     }
   }
 
-  static Future<void> _registerToken(String provider, String token, String platform) async {
+  static Future<void> _registerToken(
+      String provider, String token, String platform) async {
     try {
       final supabase = Supabase.instance.client;
       // Insert or upsert into push_players
       await supabase.from('push_players').upsert({
-        'driver_id': supabase.auth.currentUser?.id, // driver id normally numeric; if not, adapt
+        'driver_id': supabase
+            .auth.currentUser?.id, // driver id normally numeric; if not, adapt
         'player_id': token,
         'provider': provider,
         'platform': platform,
@@ -113,7 +121,8 @@ class PushService {
       if (uid == null) return;
 
       // Update tokens that have driver_id equal to auth uid OR null
-      await supabase.from('push_players').update({'driver_id': driverId}).or('driver_id.eq.${uid},driver_id.is.null');
+      await supabase.from('push_players').update({'driver_id': driverId}).or(
+          'driver_id.eq.${uid},driver_id.is.null');
     } catch (e) {
       debugPrint('PushService: bindDriver error: $e');
     }

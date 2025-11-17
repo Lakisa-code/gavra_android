@@ -78,7 +78,10 @@ class _AddressGeocodingScreenState extends State<AddressGeocodingScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.1),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
                 spreadRadius: 2,
@@ -114,7 +117,8 @@ class _AddressGeocodingScreenState extends State<AddressGeocodingScreen> {
                         'Po gradovima:',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      ...(_status!['status_po_gradovima'] as Map<String, dynamic>)
+                      ...(_status!['status_po_gradovima']
+                              as Map<String, dynamic>)
                           .entries
                           .map((e) => Text('  • ${e.key}: ${e.value} adresa')),
                     ],

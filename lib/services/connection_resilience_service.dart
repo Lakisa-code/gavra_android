@@ -9,8 +9,10 @@ class ConnectionResilienceService {
   static final _supabase = Supabase.instance.client;
 
   // Stream kontroleri
-  static final StreamController<bool> _connectionStateController = StreamController<bool>.broadcast();
-  static final StreamController<String> _connectionStatusController = StreamController<String>.broadcast();
+  static final StreamController<bool> _connectionStateController =
+      StreamController<bool>.broadcast();
+  static final StreamController<String> _connectionStatusController =
+      StreamController<String>.broadcast();
 
   // Stanje konekcije
   static bool _isOnline = true;
@@ -26,8 +28,10 @@ class ConnectionResilienceService {
   static const Duration _networkCheckInterval = Duration(seconds: 10);
 
   // Getteri za stream-ove
-  static Stream<bool> get connectionStateStream => _connectionStateController.stream;
-  static Stream<String> get connectionStatusStream => _connectionStatusController.stream;
+  static Stream<bool> get connectionStateStream =>
+      _connectionStateController.stream;
+  static Stream<String> get connectionStatusStream =>
+      _connectionStatusController.stream;
 
   // Getteri za trenutno stanje
   static bool get isOnline => _isOnline;
@@ -102,7 +106,11 @@ class ConnectionResilienceService {
   static Future<void> _checkSupabaseConnection() async {
     try {
       // Jednostavan test query
-      await _supabase.from('mesecni_putnici').select('id').limit(1).timeout(const Duration(seconds: 10));
+      await _supabase
+          .from('mesecni_putnici')
+          .select('id')
+          .limit(1)
+          .timeout(const Duration(seconds: 10));
 
       if (!_isSupabaseConnected) {
         _updateSupabaseState(true);
@@ -159,7 +167,8 @@ class ConnectionResilienceService {
     if (_isSupabaseConnected != isConnected) {
       _isSupabaseConnected = isConnected;
 
-      final status = isConnected ? 'Supabase Connected' : 'Supabase Disconnected';
+      final status =
+          isConnected ? 'Supabase Connected' : 'Supabase Disconnected';
       _connectionStatusController.add(status);
     }
   }

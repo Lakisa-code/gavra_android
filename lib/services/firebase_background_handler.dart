@@ -7,7 +7,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     // We cannot run complex UI logic here; show a basic notification
     final title = message.notification?.title ?? 'Gavra Notification';
-    final body = message.notification?.body ?? message.data['message'] ?? 'Nova notifikacija';
+    final body = message.notification?.body ??
+        message.data['message'] ??
+        'Nova notifikacija';
 
     // Use LocalNotificationService background-safe method
     await LocalNotificationService.showNotificationFromBackground(

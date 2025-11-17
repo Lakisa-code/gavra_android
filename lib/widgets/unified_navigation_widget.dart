@@ -31,7 +31,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final putniciSaAdresom = putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
+    final putniciSaAdresom =
+        putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
 
     return Row(
       children: [
@@ -65,7 +66,10 @@ class UnifiedNavigationWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (isRouteOptimized ? const Color(0xFF4CAF50) : const Color(0xFF00D4FF)).withValues(alpha: 0.3),
+            color: (isRouteOptimized
+                    ? const Color(0xFF4CAF50)
+                    : const Color(0xFF00D4FF))
+                .withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -138,7 +142,10 @@ class UnifiedNavigationWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (isNavigating ? const Color(0xFFFF9800) : const Color(0xFF673AB7)).withValues(alpha: 0.3),
+            color: (isNavigating
+                    ? const Color(0xFFFF9800)
+                    : const Color(0xFF673AB7))
+                .withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -148,8 +155,12 @@ class UnifiedNavigationWidget extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: putniciSaAdresom.isEmpty ? null : () => _openOSMNavigation(context, putniciSaAdresom),
-          onLongPress: putniciSaAdresom.isEmpty ? null : () => _showNavigationMenu(context),
+          onTap: putniciSaAdresom.isEmpty
+              ? null
+              : () => _openOSMNavigation(context, putniciSaAdresom),
+          onLongPress: putniciSaAdresom.isEmpty
+              ? null
+              : () => _showNavigationMenu(context),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
@@ -190,7 +201,10 @@ class UnifiedNavigationWidget extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error.withValues(alpha: 0.8),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .error
+                            .withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Icon(
@@ -224,7 +238,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
 
       // 2. Kreiraj OpenStreetMap URL sa TRENUTNIM redosledom putnika
       String osmUrl = 'https://www.openstreetmap.org/directions?';
-      osmUrl += 'from=${currentPosition.latitude}%2C${currentPosition.longitude}';
+      osmUrl +=
+          'from=${currentPosition.latitude}%2C${currentPosition.longitude}';
 
       // 3. Dodaj poslednju destinaciju (OSM URL ne podržava multiple waypoints na isti način kao neke provajdere)
       if (putnici.isNotEmpty) {
@@ -322,10 +337,13 @@ class UnifiedNavigationWidget extends StatelessWidget {
               context: context,
               icon: Icons.navigation,
               title: 'OpenStreetMap Ruta',
-              subtitle: 'Otvori kompletnu rutu u OpenStreetMap ili pretraživaču',
+              subtitle:
+                  'Otvori kompletnu rutu u OpenStreetMap ili pretraživaču',
               onTap: () {
                 Navigator.pop(context);
-                final putniciSaAdresom = putnici.where((p) => p.adresa != null && p.adresa!.isNotEmpty).toList();
+                final putniciSaAdresom = putnici
+                    .where((p) => p.adresa != null && p.adresa!.isNotEmpty)
+                    .toList();
                 _openOSMNavigation(context, putniciSaAdresom);
               },
             ),
@@ -376,7 +394,8 @@ class UnifiedNavigationWidget extends StatelessWidget {
     Color? color,
   }) {
     return ListTile(
-      leading: Icon(icon, color: color ?? Theme.of(context).colorScheme.primary),
+      leading:
+          Icon(icon, color: color ?? Theme.of(context).colorScheme.primary),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(
         subtitle,

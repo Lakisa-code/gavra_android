@@ -241,10 +241,13 @@ class FlutterBankButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: isSecondary ? Colors.white : Colors.transparent,
-          foregroundColor: isSecondary ? Theme.of(context).colorScheme.primary : Colors.white,
+          foregroundColor: isSecondary
+              ? Theme.of(context).colorScheme.primary
+              : Colors.white,
           elevation: isSecondary ? 2 : 0,
           shadowColor: Colors.transparent,
-          padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: isSecondary
@@ -277,7 +280,9 @@ class FlutterBankButton extends StatelessWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
-                      color: isSecondary ? Theme.of(context).colorScheme.primary : Colors.white,
+                      color: isSecondary
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.white,
                     ),
                   ),
                 ],
