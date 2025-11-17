@@ -82,8 +82,6 @@ void main() async {
     // Ignoriši greške u voice navigation - optional feature
   }
 
-  // Feature flags removed from codebase.
-
   // 🟦 INITIALIZE PUSH SERVICE (FCM + HMS)
   try {
     await PushService.initialize();

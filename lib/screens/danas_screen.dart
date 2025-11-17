@@ -1106,8 +1106,6 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // freeMode UI toggle removed
-
   // 📊 DIALOG ZA PRIKAZ POPISA DANA - IDENTIČAN FORMAT SA STATISTIKA SCREEN
   Future<bool> _showPopisDialog({
     required String vozac,
@@ -1948,7 +1946,6 @@ class _DanasScreenState extends State<DanasScreen> {
                         const SizedBox(width: 2),
                         // ⚡ SPEEDOMETER
                         Expanded(child: _buildSpeedometerButton()),
-                        // FREE_MODE UI toggle removed from AppBar
                       ],
                     ),
                   ],

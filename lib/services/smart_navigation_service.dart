@@ -16,7 +16,6 @@ class SmartNavigationService {
     bool useTrafficData = false, // 🚦 NOVO: traffic-aware routing
   }) async {
     try {
-      // freeMode reference removed.
       // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
       final currentPosition = await _getCurrentPosition();
 
