@@ -17,8 +17,8 @@ jobs:
       - name: Run gitleaks scan
         # Use the major version (@v2) to track compatible patch releases; avoid hard pin to a subversion that may not exist.
         uses: zricethezav/gitleaks-action@v2
-        with:
-          args: --verbose --redact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     name: Build and Test
