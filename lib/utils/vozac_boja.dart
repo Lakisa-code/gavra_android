@@ -25,23 +25,32 @@ class VozacBoja {
   };
 
   static Color get(String? ime) {
-    // STRIKTNO: SAMO 4 vozača imaju boje
     if (ime != null && boje.containsKey(ime)) {
       return boje[ime]!;
     }
 
-    // Za nevalidne vozače vrati neutralnu sivu boju
-    return Colors.grey;
+    // Trebalo bi da se poziva samo za validne vozače
+    throw ArgumentError('Nepoznat vozač: $ime. Validni vozači: ${boje.keys.join(", ")}');
   }
 
-  /// Alias za get() metodu - za kompatibilnost
-  static Color getColor(String? ime) => get(ime);
-
+  /// Proverava da li je vozač prepoznat/valjan
   static bool isValidDriver(String? ime) {
     return ime != null && boje.containsKey(ime);
   }
 
+  /// Lista svih validnih vozača
   static List<String> get validDrivers => boje.keys.toList();
+
+  /// Vraća boju vozača ili default boju za nepoznate vozače
+  static Color getColorOrDefault(String? ime, Color defaultColor) {
+    if (ime != null && boje.containsKey(ime)) {
+      return boje[ime]!;
+    }
+    return defaultColor;
+  }
+
+  /// Alias za get() metodu - za kompatibilnost
+  static Color getColor(String? ime) => get(ime);
 
   // 🔒 HELPER FUNKCIJE ZA EMAIL VALIDACIJU
   static String? getDozvoljenEmailForVozac(String? vozac) {
@@ -62,13 +71,4 @@ class VozacBoja {
   }
 
   static List<String> get sviDozvoljenEmails => dozvoljenEmails.values.toList();
-
-  /// Helper za striktnu validaciju vozača sa error handling
-  static bool validateDriver(String? driver, {void Function(String)? onError}) {
-    final isValid = isValidDriver(driver);
-    if (!isValid && onError != null) {
-      onError('NEVALJAN VOZAČ! Dozvoljen je samo: ${validDrivers.join(", ")}');
-    }
-    return isValid;
-  }
 }

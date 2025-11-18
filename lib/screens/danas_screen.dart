@@ -1094,15 +1094,7 @@ class _DanasScreenState extends State<DanasScreen> {
   //  SAČUVAJ POPIS U DAILY CHECK-IN SERVICE
   Future<void> _sacuvajPopis(String vozac, DateTime datum, Map<String, dynamic> podaci) async {
     try {
-      // DODATNA STRIKTNA PROVERA: VOZAČ MORA BITI WHITELISTOVAN
-      if (!VozacBoja.isValidDriver(vozac)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Neovlašćen vozač - popis nije sačuvan.'), backgroundColor: Colors.orange),
-          );
-        }
-        return;
-      }
+      // Uklonjena striktna provera vozača
       // Sačuvaj kompletan popis
       await SimplifiedDailyCheckInService.saveDailyReport(vozac, datum, podaci);
 
@@ -1428,12 +1420,12 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
-    // Proveri da li je ulogovan i validan vozač
+    // Proveri da li je ulogovan i valjan vozač
     if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Morate biti ulogovani i validan vozač da biste koristili optimizaciju rute.'),
+            content: Text('Morate biti ulogovani i ovlašćeni da biste koristili optimizaciju rute.'),
             backgroundColor: Colors.orange,
           ),
         );

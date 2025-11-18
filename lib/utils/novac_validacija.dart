@@ -1,5 +1,4 @@
 import '../models/putnik.dart';
-import '../utils/vozac_boja.dart';
 
 /// 💰 CENTRALIZOVANA VALIDACIJA NOVCA
 /// Objedinjuje sve logike validacije plaćanja, pazara i finansijskih operacija
@@ -9,10 +8,10 @@ class NovcanaValidacija {
     return amount != null && amount > 0;
   }
 
-  /// Proverava da li je vozač registrovan i valjan
-  static bool isValidDriver(String? driver) {
-    if (driver == null || driver.isEmpty) return false;
-    return VozacBoja.isValidDriver(driver);
+  /// Proverava da li je vozač registrovan - sada samo null/empty proverava
+  /// VozacBoja će baciti error ako nije valjan
+  static bool hasDriverName(String? driver) {
+    return driver != null && driver.isNotEmpty;
   }
 
   /// Glavna validacija za računanje pazara - koristi se svuda!
@@ -20,9 +19,9 @@ class NovcanaValidacija {
     // Osnovni uslovi za validno računanje pazara
     final imaIznos = isValidAmount(putnik.iznosPlacanja);
 
-    // ✅ PRIORITET: naplatioVozac > vozac (SAMO REGISTROVANI VOZAČI)
+    // ✅ PRIORITET: naplatioVozac > vozac (SAMO POSTOJANJE IMENA)
     final registrovaniVozac = putnik.naplatioVozac ?? putnik.vozac;
-    final imaRegistrovanogVozaca = isValidDriver(registrovaniVozac);
+    final imaRegistrovanogVozaca = hasDriverName(registrovaniVozac);
 
     final nijeOtkazan = !putnik.jeOtkazan;
 
@@ -36,7 +35,7 @@ class NovcanaValidacija {
     String? mesec,
   ) {
     if (!isValidAmount(amount)) return false;
-    if (!isValidDriver(vozac)) return false;
+    if (!hasDriverName(vozac)) return false;
     if (mesec == null || mesec.isEmpty) return false;
 
     return true;
@@ -75,8 +74,7 @@ class NovcanaValidacija {
 
     if (vozacPutnici.isEmpty) return 0.0;
 
-    final placeni =
-        vozacPutnici.where((p) => isValidAmount(p.iznosPlacanja)).length;
+    final placeni = vozacPutnici.where((p) => isValidAmount(p.iznosPlacanja)).length;
     return (placeni / vozacPutnici.length) * 100;
   }
 

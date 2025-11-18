@@ -912,7 +912,7 @@ class MesecniPutnikService {
 
         final vozacId = sortedData.first['vozac_id'] as String?;
         final napomene = sortedData.first['napomene'] as String?;
-        
+
         // 1. PRIORITET: Pokušaj sa vozac_id preko UUID mapiranja
         if (vozacId != null && vozacId.isNotEmpty) {
           final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
@@ -920,7 +920,7 @@ class MesecniPutnikService {
             return vozacIme;
           }
         }
-        
+
         // 2. FALLBACK: Izvuci ime vozača iz napomena
         if (napomene != null && napomene.contains('Naplatio:')) {
           try {
@@ -944,7 +944,7 @@ class MesecniPutnikService {
             // Ako parsing ne uspe, samo nastavi
           }
         }
-        
+
         return 'Nepoznat vozač';
       } catch (e) {
         return null;
@@ -966,7 +966,7 @@ class MesecniPutnikService {
       if (placanja.isNotEmpty) {
         final vozacId = placanja.first['vozac_id'] as String?;
         final napomene = placanja.first['napomene'] as String?;
-        
+
         // 1. PRIORITET: Pokušaj sa vozac_id preko UUID mapiranja
         if (vozacId != null && vozacId.isNotEmpty) {
           final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
@@ -974,7 +974,7 @@ class MesecniPutnikService {
             return vozacIme;
           }
         }
-        
+
         // 2. FALLBACK: Izvuci ime vozača iz napomena
         if (napomene != null && napomene.contains('Naplatio:')) {
           try {
@@ -998,7 +998,7 @@ class MesecniPutnikService {
             // Ako parsing ne uspe, samo nastavi
           }
         }
-        
+
         return 'Nepoznat vozač';
       }
       return null;
@@ -1024,7 +1024,7 @@ class MesecniPutnikService {
       if (placanja.isNotEmpty) {
         final vozacId = placanja.first['vozac_id'] as String?;
         final napomene = placanja.first['napomene'] as String?;
-        
+
         // 1. PRIORITET: Pokušaj sa vozac_id preko UUID mapiranja
         if (vozacId != null && vozacId.isNotEmpty) {
           final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
@@ -1032,7 +1032,7 @@ class MesecniPutnikService {
             return vozacIme;
           }
         }
-        
+
         // 2. FALLBACK: Izvuci ime vozača iz napomena
         if (napomene != null && napomene.contains('Naplatio:')) {
           try {
@@ -1056,7 +1056,7 @@ class MesecniPutnikService {
             // Ako parsing ne uspe, samo nastavi
           }
         }
-        
+
         return 'Nepoznat vozač';
       }
       return null;
