@@ -30,8 +30,8 @@ class VozacBoja {
       return boje[ime]!;
     }
 
-    // Za nevalidne vozače vrati crvenu boju
-    return Colors.red;
+    // Za nevalidne vozače vrati neutralnu sivu boju
+    return Colors.grey;
   }
 
   /// Alias za get() metodu - za kompatibilnost
