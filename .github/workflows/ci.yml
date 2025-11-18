@@ -7,23 +7,9 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  secret-scan:
-    name: Secret scan (gitleaks)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run gitleaks scan
-        # Use the major version (@v2) to track compatible patch releases; avoid hard pin to a subversion that may not exist.
-        uses: zricethezav/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build:
     name: Build and Test
     runs-on: ubuntu-latest
-    needs: secret-scan
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -54,7 +40,6 @@ jobs:
   lint-and-scan:
     name: Extra lint & secrets
     runs-on: ubuntu-latest
-    needs: secret-scan
     steps:
       - uses: actions/checkout@v4
 
