@@ -911,10 +911,41 @@ class MesecniPutnikService {
         });
 
         final vozacId = sortedData.first['vozac_id'] as String?;
+        final napomene = sortedData.first['napomene'] as String?;
+        
+        // 1. PRIORITET: Pokušaj sa vozac_id preko UUID mapiranja
         if (vozacId != null && vozacId.isNotEmpty) {
-          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          if (vozacIme != null && vozacIme != 'Nepoznat') {
+            return vozacIme;
+          }
         }
-        return null;
+        
+        // 2. FALLBACK: Izvuci ime vozača iz napomena
+        if (napomene != null && napomene.contains('Naplatio:')) {
+          try {
+            final startIndex = napomene.indexOf('Naplatio:') + 'Naplatio:'.length;
+            final endIndex = napomene.indexOf('(UUID:', startIndex);
+            if (endIndex > startIndex) {
+              final vozacIme = napomene.substring(startIndex, endIndex).trim();
+              if (vozacIme.isNotEmpty) {
+                return vozacIme;
+              }
+            } else {
+              // Ako nema "(UUID:" deo, uzmi sve do kraja ili do "("
+              final ostatak = napomene.substring(startIndex).trim();
+              final parenIndex = ostatak.indexOf('(');
+              final vozacIme = parenIndex > 0 ? ostatak.substring(0, parenIndex).trim() : ostatak;
+              if (vozacIme.isNotEmpty) {
+                return vozacIme;
+              }
+            }
+          } catch (e) {
+            // Ako parsing ne uspe, samo nastavi
+          }
+        }
+        
+        return 'Nepoznat vozač';
       } catch (e) {
         return null;
       }
@@ -925,7 +956,7 @@ class MesecniPutnikService {
     try {
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
-          .select('vozac_id')
+          .select('vozac_id, napomene')
           .eq('mesecni_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .eq('status', 'placeno')
@@ -934,9 +965,41 @@ class MesecniPutnikService {
 
       if (placanja.isNotEmpty) {
         final vozacId = placanja.first['vozac_id'] as String?;
+        final napomene = placanja.first['napomene'] as String?;
+        
+        // 1. PRIORITET: Pokušaj sa vozac_id preko UUID mapiranja
         if (vozacId != null && vozacId.isNotEmpty) {
-          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          if (vozacIme != null && vozacIme != 'Nepoznat') {
+            return vozacIme;
+          }
         }
+        
+        // 2. FALLBACK: Izvuci ime vozača iz napomena
+        if (napomene != null && napomene.contains('Naplatio:')) {
+          try {
+            final startIndex = napomene.indexOf('Naplatio:') + 'Naplatio:'.length;
+            final endIndex = napomene.indexOf('(UUID:', startIndex);
+            if (endIndex > startIndex) {
+              final vozacIme = napomene.substring(startIndex, endIndex).trim();
+              if (vozacIme.isNotEmpty) {
+                return vozacIme;
+              }
+            } else {
+              // Ako nema "(UUID:" deo, uzmi sve do kraja ili do "("
+              final ostatak = napomene.substring(startIndex).trim();
+              final parenIndex = ostatak.indexOf('(');
+              final vozacIme = parenIndex > 0 ? ostatak.substring(0, parenIndex).trim() : ostatak;
+              if (vozacIme.isNotEmpty) {
+                return vozacIme;
+              }
+            }
+          } catch (e) {
+            // Ako parsing ne uspe, samo nastavi
+          }
+        }
+        
+        return 'Nepoznat vozač';
       }
       return null;
     } catch (e) {
@@ -951,7 +1014,7 @@ class MesecniPutnikService {
     try {
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
-          .select('vozac_id')
+          .select('vozac_id, napomene')
           .eq('putnik_ime', putnikIme)
           .eq('tip_putnika', 'mesecni')
           .eq('status', 'placeno')
@@ -960,9 +1023,41 @@ class MesecniPutnikService {
 
       if (placanja.isNotEmpty) {
         final vozacId = placanja.first['vozac_id'] as String?;
+        final napomene = placanja.first['napomene'] as String?;
+        
+        // 1. PRIORITET: Pokušaj sa vozac_id preko UUID mapiranja
         if (vozacId != null && vozacId.isNotEmpty) {
-          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          if (vozacIme != null && vozacIme != 'Nepoznat') {
+            return vozacIme;
+          }
         }
+        
+        // 2. FALLBACK: Izvuci ime vozača iz napomena
+        if (napomene != null && napomene.contains('Naplatio:')) {
+          try {
+            final startIndex = napomene.indexOf('Naplatio:') + 'Naplatio:'.length;
+            final endIndex = napomene.indexOf('(UUID:', startIndex);
+            if (endIndex > startIndex) {
+              final vozacIme = napomene.substring(startIndex, endIndex).trim();
+              if (vozacIme.isNotEmpty) {
+                return vozacIme;
+              }
+            } else {
+              // Ako nema "(UUID:" deo, uzmi sve do kraja ili do "("
+              final ostatak = napomene.substring(startIndex).trim();
+              final parenIndex = ostatak.indexOf('(');
+              final vozacIme = parenIndex > 0 ? ostatak.substring(0, parenIndex).trim() : ostatak;
+              if (vozacIme.isNotEmpty) {
+                return vozacIme;
+              }
+            }
+          } catch (e) {
+            // Ako parsing ne uspe, samo nastavi
+          }
+        }
+        
+        return 'Nepoznat vozač';
       }
       return null;
     } catch (e) {
