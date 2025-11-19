@@ -596,6 +596,13 @@ class PutnikService {
   /// ✅ DODAJ PUTNIKA (dnevni ili mesečni) - 🏘️ SA VALIDACIJOM GRADOVA
   Future<void> dodajPutnika(Putnik putnik) async {
     try {
+      // 🚫 DUPLICATE CHECK - PREVENT RAPID DUPLICATE INSERTS
+      if (putnik.mesecnaKarta != true) {
+        final already = await existsDuplicatePutnik(putnik);
+        if (already) {
+          throw Exception('Postoji već putnik za isti datum/vreme/grad');
+        }
+      }
       // 🚫 STRIKTNA VALIDACIJA VOZAČA
       if (putnik.dodaoVozac == null || putnik.dodaoVozac!.isEmpty || !VozacBoja.isValidDriver(putnik.dodaoVozac)) {
         throw Exception(
@@ -1225,6 +1232,36 @@ class PutnikService {
 
     if (data == null) return [];
     return data.map((e) => Putnik.fromMap(e as Map<String, dynamic>)).toList();
+  }
+
+  /// ✅ PROVERI DA LI POSTOJI DUPLIKAT DNEVNOG PUTNIKA SA ISTIM IMENOM/DATUMOM/VREMENOM
+  Future<bool> existsDuplicatePutnik(Putnik putnik) async {
+    try {
+      // Koristi local map iz model da formiramo datum/vreme (da bude kompatibilno sa insert mapom)
+      final baseMap = putnik.toPutovanjaIstorijaMap();
+      final String datum = baseMap['datum_putovanja'] as String? ?? '';
+      final String vreme = baseMap['vreme_polaska'] as String? ?? '';
+      final String ime = baseMap['putnik_ime'] as String? ?? '';
+      final String grad = baseMap['grad'] as String? ?? '';
+
+      final response = await supabase
+          .from('putovanja_istorija')
+          .select('id')
+          .eq('tip_putnika', 'dnevni')
+          .eq('putnik_ime', ime)
+          .eq('datum_putovanja', datum)
+          .eq('vreme_polaska', vreme)
+          .eq('grad', grad)
+          .neq('status', 'otkazan')
+          .limit(1);
+
+      final list = response as List<dynamic>?;
+      if (list != null && list.isNotEmpty) return true;
+      return false;
+    } catch (e) {
+      // Ako upit ne uspe, ne blokiramo dodavanje - samo ne možemo potvrditi duplikat
+      return false;
+    }
   }
 
   /// 📊 PREDVIĐANJE BROJ PUTNIKA (iz putovanja_istorija)

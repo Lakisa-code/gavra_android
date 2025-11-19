@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final SupabaseClient supabase = Supabase.instance.client;
 
   bool _isLoading = true;
-  bool _isAddingPutnik = false; // DODANO za loading state kad se dodaje putnik
+  // bool _isAddingPutnik = false; // previously used loading state; now handled local to dialog
   String _selectedDay = 'Ponedeljak'; // Biće postavljeno na današnji dan u initState
   String _selectedGrad = 'Bela Crkva';
   String _selectedVreme = '5:00';
@@ -518,6 +518,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     if (!mounted) return;
 
+    bool isDialogLoading = false;
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -1070,7 +1071,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 borderRadius: BorderRadius.circular(15),
                               ),
                             ),
-                            onPressed: _isAddingPutnik
+                            onPressed: isDialogLoading
                                 ? null
                                 : () async {
                                     if (imeController.text.trim().isEmpty) {
@@ -1196,11 +1197,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                       // Uklonjena validacija vozača - dozvoljava sve vozače
 
-                                      // POKAZI LOADING STATE
-                                      if (mounted)
-                                        setState(() {
-                                          _isAddingPutnik = true;
-                                        });
+                                      // POKAZI LOADING STATE - lokalno za dijalog
+                                      setStateDialog(() {
+                                        isDialogLoading = true;
+                                      });
 
                                       // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
 
@@ -1215,6 +1215,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         adresa:
                                             adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                                       );
+                                      // Proveri da li već postoji isti dnevni putnik
+                                      try {
+                                        final exists = await _putnikService.existsDuplicatePutnik(putnik);
+                                        if (exists && putnik.mesecnaKarta != true) {
+                                          // Ukloni loading state
+                                          setStateDialog(() {
+                                            isDialogLoading = false;
+                                          });
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                '❌ Greška: Sličan putnik za izabrani dan/vreme već postoji',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                      } catch (e) {
+                                        // Ignoriši grešku u proveri - nastavi sa dodavanjem
+                                      }
+
                                       await _putnikService.dodajPutnika(putnik);
 
                                       // 🔄 FORSIRAJ REALTIME REFRESH da se stream ažurira
@@ -1226,10 +1248,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                       if (!mounted) return;
 
-                                      if (mounted)
-                                        setState(() {
-                                          _isAddingPutnik = false;
-                                        });
+                                      // Ukloni loading state
+                                      setStateDialog(() {
+                                        isDialogLoading = false;
+                                      });
                                       if (mounted) {
                                         // ignore: use_build_context_synchronously
                                         Navigator.pop(context);
@@ -1245,10 +1267,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         );
                                       }
                                     } catch (e) {
-                                      if (mounted)
-                                        setState(() {
-                                          _isAddingPutnik = false;
-                                        });
+                                      // ensure dialog loading is cleared
+                                      setStateDialog(() {
+                                        isDialogLoading = false;
+                                      });
 
                                       if (!mounted) return;
 
@@ -1265,7 +1287,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       }
                                     }
                                   },
-                            child: _isAddingPutnik
+                            child: isDialogLoading
                                 ? Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
