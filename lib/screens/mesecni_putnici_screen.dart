@@ -3394,7 +3394,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  // 📊 KREIRANJE SADRŽAJA STATISTIKA NA OSNOVU PERIODA
+  // 📊 KREIRANJE SADRŽAJA STATISTIKA NA OSNOVU PERIODA - UNUSED (moved to DetaljneStatistikeDialog)
+  // ignore: unused_element
   Widget _buildStatistikeContent(
     MesecniPutnik putnik,
     Map<String, dynamic> stats,
@@ -3580,7 +3581,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
+  // 📊 REAL-TIME STATISTIKE STREAM - UNUSED (moved to DetaljneStatistikeDialog)
+  // ignore: unused_element
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
     String putnikId,
     String period,

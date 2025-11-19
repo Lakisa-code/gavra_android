@@ -8,7 +8,7 @@ import '../theme.dart';
 import '../widgets/realtime_error_widgets.dart';
 
 /// 📊 WIDGET ZA DETALJNE STATISTIKE MESEČNIH PUTNIKA
-/// 
+///
 /// Izdvojen iz mesecni_putnici_screen.dart za bolju organizaciju koda.
 /// Sadrži kompletnu logiku za prikaz statistika putnika sa:
 /// - Dropdown za odabir perioda (meseci, godina, ukupno)
@@ -621,8 +621,7 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
                   widget.putnik.tip == 'ucenik' ? '🎓 Škola:' : '🏢 Ustanova/Firma:',
                   widget.putnik.tipSkole!,
                 ),
-              if (widget.putnik.brojTelefona != null) 
-                _buildStatRow('📞 Telefon:', widget.putnik.brojTelefona!),
+              if (widget.putnik.brojTelefona != null) _buildStatRow('📞 Telefon:', widget.putnik.brojTelefona!),
             ],
           ),
         ),
@@ -674,8 +673,8 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
               ),
               _buildStatRow(
                 '📅 Datum plaćanja:',
-                widget.putnik.vremePlacanja != null 
-                    ? _formatDatum(widget.putnik.vremePlacanja!) 
+                widget.putnik.vremePlacanja != null
+                    ? _formatDatum(widget.putnik.vremePlacanja!)
                     : 'Nema podataka o datumu',
               ),
               // 🔍 Vozač koji je naplatio - async loading
