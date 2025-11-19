@@ -168,16 +168,17 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
     });
   }
 
-  // 📊 DOBIJ MESEČNE STATISTIKE ZA SEPTEMBAR 2025
+  // 📊 DOBIJ MESEČNE STATISTIKE ZA TRENUTNI MESEC (NOVEMBAR 2025)
   Future<Map<String, dynamic>> _getMesecneStatistike(String putnikId) async {
     try {
-      final DateTime septembarStart = DateTime(2025, 9);
-      final DateTime septembarEnd = DateTime(2025, 9, 30, 23, 59, 59);
+      final DateTime now = DateTime.now();
+      final DateTime monthStart = DateTime(now.year, now.month);
+      final DateTime monthEnd = DateTime(now.year, now.month + 1).subtract(const Duration(days: 1));
 
-      final String startStr = septembarStart.toIso8601String().split('T')[0];
-      final String endStr = septembarEnd.toIso8601String().split('T')[0];
+      final String startStr = monthStart.toIso8601String().split('T')[0];
+      final String endStr = monthEnd.toIso8601String().split('T')[0];
 
-      // Dohvati sva putovanja za septembar 2025
+      // Dohvati sva putovanja za trenutni mesec (novembar 2025)
       final response = await Supabase.instance.client
           .from('putovanja_istorija')
           .select()
