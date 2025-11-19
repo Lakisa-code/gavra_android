@@ -183,9 +183,9 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
           .from('putovanja_istorija')
           .select()
           .eq('putnik_id', putnikId)
-          .gte('datum_putovanja', startStr)
-          .lte('datum_putovanja', endStr)
-          .order('datum_putovanja', ascending: false);
+          .gte('created_at', startStr)
+          .lte('created_at', endStr)
+          .order('created_at', ascending: false);
 
       // Broji jedinstvene datume kada je pokupljen
       final Set<String> uspesniDatumi = {};
@@ -193,7 +193,7 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
       String? poslednjiDatum;
 
       for (final red in response) {
-        final datumPutovanja = red['datum_putovanja'] as String?;
+        final datumPutovanja = red['created_at'] as String?;
         final status = red['status'] as String?;
 
         if (datumPutovanja != null) {
