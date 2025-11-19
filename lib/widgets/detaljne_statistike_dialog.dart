@@ -191,18 +191,23 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
       final Set<String> uspesniDatumi = {};
       final Set<String> otkazaniDatumi = {};
       String? poslednjiDatum;
+      double ukupanPrihod = 0;
 
       for (final red in response) {
         final datumPutovanja = red['created_at'] as String?;
         final status = red['status'] as String?;
+        // Iznos može biti u 'cena' (novi zapisi) ili 'iznos_placanja' (legacy)
+        final double iznos = ((red['cena'] ?? red['iznos_placanja'] ?? 0) as num).toDouble();
 
         if (datumPutovanja != null) {
           if (poslednjiDatum == null) {
-            poslednjiDatum = datumPutovanja;
+            final datum = DateTime.parse(datumPutovanja);
+            poslednjiDatum = '${datum.day}/${datum.month}/${datum.year}';
           }
 
           if (status == 'pokupljen' || status == 'placeno') {
             uspesniDatumi.add(datumPutovanja);
+            ukupanPrihod += iznos;
           } else if (status == 'otkazan') {
             otkazaniDatumi.add(datumPutovanja);
           }
@@ -219,6 +224,7 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
         'otkazivanja': otkazivanja,
         'poslednje': poslednjiDatum ?? 'Nema podataka',
         'uspesnost': uspesnost.round(),
+        'ukupan_prihod': '${ukupanPrihod.toStringAsFixed(0)} RSD',
         'error': false,
       };
     } catch (e) {
@@ -741,10 +747,65 @@ class _DetaljneStatistikeDialogState extends State<DetaljneStatistikeDialog> {
               _buildStatRow('🚗 Putovanja:', '${stats['putovanja'] ?? 0}'),
               _buildStatRow('❌ Otkazivanja:', '${stats['otkazivanja'] ?? 0}'),
               _buildStatRow(
-                '📈 Uspešnost:',
-                '${stats['uspesnost'] ?? 0}%',
+                '🔄 Poslednje putovanje:',
+                stats['poslednje'] ?? 'Nema podataka',
               ),
-              _buildStatRow('📅 Poslednje:', stats['poslednje'] ?? 'Nema podataka'),
+              _buildStatRow('📊 Uspešnost:', '${stats['uspesnost'] ?? 0}%'),
+              if (period == 'Ukupno' && stats['ukupan_prihod'] != null)
+                _buildStatRow(
+                  '💰 Ukupan prihod:',
+                  '${stats['ukupan_prihod']} RSD',
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 🕐 SISTEMSKE INFORMACIJE
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).glassContainer,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: Theme.of(context).glassBorder,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '🕐 Sistemske informacije',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 16,
+                  shadows: [
+                    Shadow(
+                      offset: const Offset(1, 1),
+                      blurRadius: 3,
+                      color: Colors.black54,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildStatRow('📅 Kreiran:', _formatDatum(widget.putnik.createdAt)),
+              _buildStatRow('🔄 Ažuriran:', _formatDatum(widget.putnik.updatedAt)),
+              _buildStatRow(
+                '✅ Status:',
+                widget.putnik.aktivan ? 'Aktivan' : 'Neaktivan',
+              ),
             ],
           ),
         ),
