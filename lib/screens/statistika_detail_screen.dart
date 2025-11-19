@@ -10,7 +10,7 @@ import '../services/putnik_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
-import '../widgets/custom_back_button.dart';
+import '../widgets/glassmorphism_app_bar.dart';
 
 class StatistikaDetailScreen extends StatefulWidget {
   const StatistikaDetailScreen({Key? key}) : super(key: key);
@@ -61,10 +61,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         _errorMessage = null;
       });
 
-    _putnikSubscription = PutnikService()
-        .streamKombinovaniPutniciFiltered()
-        .timeout(const Duration(seconds: 30))
-        .listen(
+    _putnikSubscription =
+        PutnikService().streamKombinovaniPutniciFiltered().timeout(const Duration(seconds: 30)).listen(
       (putnici) {
         if (mounted) {
           if (mounted)
@@ -90,8 +88,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
   // V3.0 Performance-Optimized GPS Calculation with Caching
   Future<double> _calculateKmForVozac(String vozac, DateTimeRange range) async {
-    final cacheKey =
-        '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
+    final cacheKey = '${vozac}_${range.start.millisecondsSinceEpoch}_${range.end.millisecondsSinceEpoch}';
 
     if (_kmCache.containsKey(cacheKey)) {
       return _kmCache[cacheKey]!;
@@ -150,11 +147,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) *
-            cos(_toRadians(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) + cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     final distance = earthRadius * c;
@@ -172,37 +166,8 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
         gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Transparentna pozadina
-        appBar: AppBar(
-          leading: const GradientBackButton(),
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          toolbarHeight: 80,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer, // Glassmorphism
-              border: Border.all(
-                color: Theme.of(context).glassBorder,
-                width: 1.5,
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-          ),
+        backgroundColor: Colors.transparent,
+        appBar: GlassmorphismAppBar(
           title: const Text(
             'Detaljne statistike',
             style: TextStyle(
@@ -773,10 +738,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                 }
 
                 // Generate daily breakdown for visualization
-                final days = _selectedRange!.end
-                        .difference(_selectedRange!.start)
-                        .inDays +
-                    1;
+                final days = _selectedRange!.end.difference(_selectedRange!.start).inDays + 1;
                 final avgKmPerDay = totalKm / days;
 
                 return LineChart(
@@ -799,8 +761,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           getTitlesWidget: (value, meta) {
                             final dayIndex = value.toInt();
                             if (dayIndex >= 0 && dayIndex < days) {
-                              final date = _selectedRange!.start
-                                  .add(Duration(days: dayIndex));
+                              final date = _selectedRange!.start.add(Duration(days: dayIndex));
                               return Text(
                                 '${date.day}',
                                 style: const TextStyle(fontSize: 12),

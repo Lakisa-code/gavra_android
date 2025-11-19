@@ -279,9 +279,10 @@ class MesecniPutnikService {
         );
 
         // Kreiraj napomenu sa informacijom o vozaču
-        final napomena = effectiveVozacId.isNotEmpty
-            ? 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year} - Naplatio: $vozacId (UUID: $effectiveVozacId)'
-            : 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year} - Naplatio: $vozacId (vozač nije u bazi)';
+        final vozacIme = effectiveVozacId.isNotEmpty
+            ? await VozacMappingService.getVozacIme(effectiveVozacId) ?? 'Nepoznat vozač'
+            : 'Sistem';
+        final napomena = 'Mesečno plaćanje za ${pocetakMeseca.month}/${pocetakMeseca.year} - Naplatio: $vozacIme';
 
         try {
           await _supabase.from('putovanja_istorija').insert({
@@ -925,20 +926,10 @@ class MesecniPutnikService {
         if (napomene != null && napomene.contains('Naplatio:')) {
           try {
             final startIndex = napomene.indexOf('Naplatio:') + 'Naplatio:'.length;
-            final endIndex = napomene.indexOf('(UUID:', startIndex);
-            if (endIndex > startIndex) {
-              final vozacIme = napomene.substring(startIndex, endIndex).trim();
-              if (vozacIme.isNotEmpty) {
-                return vozacIme;
-              }
-            } else {
-              // Ako nema "(UUID:" deo, uzmi sve do kraja ili do "("
-              final ostatak = napomene.substring(startIndex).trim();
-              final parenIndex = ostatak.indexOf('(');
-              final vozacIme = parenIndex > 0 ? ostatak.substring(0, parenIndex).trim() : ostatak;
-              if (vozacIme.isNotEmpty) {
-                return vozacIme;
-              }
+            // Nova logika - direktno ime vozača bez UUID dela
+            final vozacIme = napomene.substring(startIndex).trim();
+            if (vozacIme.isNotEmpty) {
+              return vozacIme;
             }
           } catch (e) {
             // Ako parsing ne uspe, samo nastavi
@@ -979,20 +970,10 @@ class MesecniPutnikService {
         if (napomene != null && napomene.contains('Naplatio:')) {
           try {
             final startIndex = napomene.indexOf('Naplatio:') + 'Naplatio:'.length;
-            final endIndex = napomene.indexOf('(UUID:', startIndex);
-            if (endIndex > startIndex) {
-              final vozacIme = napomene.substring(startIndex, endIndex).trim();
-              if (vozacIme.isNotEmpty) {
-                return vozacIme;
-              }
-            } else {
-              // Ako nema "(UUID:" deo, uzmi sve do kraja ili do "("
-              final ostatak = napomene.substring(startIndex).trim();
-              final parenIndex = ostatak.indexOf('(');
-              final vozacIme = parenIndex > 0 ? ostatak.substring(0, parenIndex).trim() : ostatak;
-              if (vozacIme.isNotEmpty) {
-                return vozacIme;
-              }
+            // Nova logika - direktno ime vozača bez UUID dela
+            final vozacIme = napomene.substring(startIndex).trim();
+            if (vozacIme.isNotEmpty) {
+              return vozacIme;
             }
           } catch (e) {
             // Ako parsing ne uspe, samo nastavi
@@ -1037,20 +1018,10 @@ class MesecniPutnikService {
         if (napomene != null && napomene.contains('Naplatio:')) {
           try {
             final startIndex = napomene.indexOf('Naplatio:') + 'Naplatio:'.length;
-            final endIndex = napomene.indexOf('(UUID:', startIndex);
-            if (endIndex > startIndex) {
-              final vozacIme = napomene.substring(startIndex, endIndex).trim();
-              if (vozacIme.isNotEmpty) {
-                return vozacIme;
-              }
-            } else {
-              // Ako nema "(UUID:" deo, uzmi sve do kraja ili do "("
-              final ostatak = napomene.substring(startIndex).trim();
-              final parenIndex = ostatak.indexOf('(');
-              final vozacIme = parenIndex > 0 ? ostatak.substring(0, parenIndex).trim() : ostatak;
-              if (vozacIme.isNotEmpty) {
-                return vozacIme;
-              }
+            // Nova logika - direktno ime vozača bez UUID dela
+            final vozacIme = napomene.substring(startIndex).trim();
+            if (vozacIme.isNotEmpty) {
+              return vozacIme;
             }
           } catch (e) {
             // Ako parsing ne uspe, samo nastavi
