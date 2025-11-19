@@ -133,10 +133,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final TextEditingController _polazakVsCetController = TextEditingController();
   final TextEditingController _polazakVsPetController = TextEditingController();
 
-
-
-
-
   // Convert working days to string
   String _getRadniDaniString() {
     final List<String> odabraniDani = [];
@@ -332,8 +328,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     super.dispose();
   }
-
-
 
   /// 🚀 DIREKTNO FILTRIRANJE - umesto compute() koji blokira scroll
   List<MesecniPutnik> _filterPutniciDirect(

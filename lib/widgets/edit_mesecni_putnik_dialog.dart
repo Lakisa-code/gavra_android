@@ -6,7 +6,7 @@ import '../theme.dart';
 import '../utils/mesecni_helpers.dart';
 
 /// 🔧 WIDGET ZA EDITOVANJE MESEČNIH PUTNIKA
-/// 
+///
 /// Izdvojen iz mesecni_putnici_screen.dart za bolju organizaciju koda.
 /// Sadrži kompletnu logiku za editovanje mesečnog putnika sa:
 /// - Osnovnim informacijama (ime, tip, škola)
@@ -102,22 +102,20 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
 
     // Load times for each day
     for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      _vremenaBcControllers[dan]!.text = 
-          widget.putnik.getPolazakBelaCrkvaZaDan(dan) ?? '';
-      _vremenaVsControllers[dan]!.text = 
-          widget.putnik.getPolazakVrsacZaDan(dan) ?? '';
+      _vremenaBcControllers[dan]!.text = widget.putnik.getPolazakBelaCrkvaZaDan(dan) ?? '';
+      _vremenaVsControllers[dan]!.text = widget.putnik.getPolazakVrsacZaDan(dan) ?? '';
     }
 
     // Load working days
     _setRadniDaniFromString(widget.putnik.radniDani);
-    
+
     // Load addresses asynchronously
     _loadAdreseForEditovanje();
   }
 
   void _setRadniDaniFromString(String? radniDaniStr) {
     if (radniDaniStr == null || radniDaniStr.isEmpty) return;
-    
+
     final dani = radniDaniStr.split(',');
     for (final dan in dani) {
       final cleanDan = dan.trim().toLowerCase();
@@ -128,10 +126,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
   }
 
   String _getRadniDaniString() {
-    final aktivniDani = _radniDani.entries
-        .where((entry) => entry.value)
-        .map((entry) => entry.key)
-        .toList();
+    final aktivniDani = _radniDani.entries.where((entry) => entry.value).map((entry) => entry.key).toList();
     return aktivniDani.join(',');
   }
 
@@ -234,12 +229,12 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
         ...['pon', 'uto', 'sre', 'cet', 'pet'].map((dan) {
           final label = {
             'pon': 'Ponedeljak',
-            'uto': 'Utorak', 
+            'uto': 'Utorak',
             'sre': 'Sreda',
             'cet': 'Četvrtak',
             'pet': 'Petak',
           }[dan]!;
-          
+
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             child: Row(
@@ -404,14 +399,14 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
     _brojTelefonaMajkeController.dispose();
     _adresaBelaCrkvaController.dispose();
     _adresaVrsacController.dispose();
-    
+
     for (final controller in _vremenaBcControllers.values) {
       controller.dispose();
     }
     for (final controller in _vremenaVsControllers.values) {
       controller.dispose();
     }
-    
+
     super.dispose();
   }
 
@@ -420,95 +415,202 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
     final mq = MediaQuery.of(context);
     final isSmallScreen = mq.size.height < 700 || mq.size.width < 600;
 
-    Widget dialogContent = AlertDialog(
-      backgroundColor: Theme.of(context).glassContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Theme.of(context).glassBorder),
-      ),
-      title: Row(
-        children: [
-          Icon(Icons.edit, color: Colors.white70, size: 22),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Uredi mesečnog putnika',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                shadows: [
-                  Shadow(
-                    offset: Offset(1, 1),
-                    blurRadius: 3,
-                    color: Colors.black54,
+    Widget dialogContent = Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+        ),
+        decoration: BoxDecoration(
+          gradient: Theme.of(context).backgroundGradient,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).glassBorder,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).glassContainer,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).glassBorder,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.edit, color: Colors.white70, size: 22),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Uredi mesečnog putnika',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOsnovneInformacije(),
-            _buildKontaktInformacije(),
-            _buildAdresePolaska(),
-            _buildRadniDaniIVremena(),
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildOsnovneInformacije(),
+                    _buildKontaktInformacije(),
+                    _buildAdresePolaska(),
+                    _buildRadniDaniIVremena(),
+                  ],
+                ),
+              ),
+            ),
+            // Footer Actions
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).glassContainer,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).glassBorder,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text(
+                          'Otkaži',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: Colors.green.withValues(alpha: 0.6),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: _sacuvajEditPutnika,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        icon: Icon(Icons.save, size: 18, color: Colors.white),
+                        label: Text(
+                          'Sačuvaj',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white70,
-            backgroundColor: Colors.white.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-          child: Text(
-            'Otkaži',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          child: ElevatedButton.icon(
-            onPressed: _sacuvajEditPutnika,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).glassContainer,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).glassBorder),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            icon: Icon(Icons.save, size: 18, color: Colors.white),
-            label: Text(
-              'Sačuvaj',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
 
     if (isSmallScreen) {
@@ -677,9 +779,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
             onChanged: (value) => _novaTipSkole = value,
             decoration: InputDecoration(
               labelText: _noviTip == 'ucenik' ? '🎓 Škola' : '🏢 Ustanova/Firma',
-              hintText: _noviTip == 'ucenik'
-                  ? 'npr. Gimnazija "Bora Stanković"'
-                  : 'npr. Hemofarm, Opština Vršac...',
+              hintText: _noviTip == 'ucenik' ? 'npr. Gimnazija "Bora Stanković"' : 'npr. Hemofarm, Opština Vršac...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -875,15 +975,15 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).glassContainer,
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
-          color: Colors.green.withValues(alpha: 0.3),
+          color: Theme.of(context).glassBorder,
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -896,38 +996,63 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
             '📍 Adrese polaska',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.green[700],
+              color: Colors.white,
               fontSize: 16,
+              shadows: [
+                Shadow(
+                  offset: const Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             onChanged: (value) => _novaAdresaBelaCrkva = value,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '🏠 Adresa polaska - Bela Crkva',
-              border: OutlineInputBorder(),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.green, width: 2),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              prefixIcon: Icon(Icons.home, color: Colors.green),
-              fillColor: Colors.white,
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white70, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: Icon(Icons.home, color: Colors.white70),
+              fillColor: Colors.white.withValues(alpha: 0.1),
               filled: true,
+              labelStyle: TextStyle(color: Colors.white70, fontSize: 14),
             ),
+            style: TextStyle(color: Colors.white),
             controller: _adresaBelaCrkvaController,
           ),
           const SizedBox(height: 12),
           TextField(
             onChanged: (value) => _novaAdresaVrsac = value,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '🏢 Adresa polaska - Vršac',
-              border: OutlineInputBorder(),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.green, width: 2),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              prefixIcon: Icon(Icons.business, color: Colors.green),
-              fillColor: Colors.white,
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white70, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: Icon(Icons.business, color: Colors.white70),
+              fillColor: Colors.white.withValues(alpha: 0.1),
               filled: true,
+              labelStyle: TextStyle(color: Colors.white70, fontSize: 14),
             ),
+            style: TextStyle(color: Colors.white),
             controller: _adresaVrsacController,
           ),
         ],
