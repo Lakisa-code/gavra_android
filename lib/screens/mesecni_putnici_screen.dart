@@ -23,6 +23,7 @@ import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/custom_back_button.dart';
+import '../widgets/detaljne_statistike_dialog.dart';
 import '../widgets/edit_mesecni_putnik_dialog.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
@@ -3374,211 +3375,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   } // 💾 ČUVANJE PLAĆANJA
 
   // 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
-  Future<void> _prikaziDetaljneStatistike(MesecniPutnik putnik) async {
-    String selectedPeriod = _getCurrentMonthYear();
-
-    showDialog<void>(
+  // 📊 DETALJNE STATISTIKE - POPUP KADA KORISNIK KLIKNE NA "Detaljne statistike"
+  void _prikaziDetaljneStatistike(MesecniPutnik putnik) {
+    showDialog(
       context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.analytics_outlined, color: Colors.blue.shade600),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Detaljne statistike - ${putnik.putnikIme}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 📅 DROPDOWN ZA PERIOD
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade50,
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedPeriod,
-                          isExpanded: true,
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Colors.blue.shade600,
-                          ),
-                          items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
-                            // Proveri da li je mesec plaćen
-                            final bool isPlacen = _isMonthPaid(value, putnik);
-
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.calendar_today,
-                                    size: 16,
-                                    color: isPlacen ? Colors.green : Colors.blue.shade300,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    value,
-                                    style: TextStyle(
-                                      color: isPlacen ? Colors.green[700] : null,
-                                      fontWeight: isPlacen ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList()
-                            ..addAll([
-                              // 📊 CELA GODINA I UKUPNO
-                              const DropdownMenuItem(
-                                value: 'Cela 2025',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.event_note,
-                                      size: 16,
-                                      color: Colors.blue,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Cela 2025'),
-                                  ],
-                                ),
-                              ),
-                              const DropdownMenuItem(
-                                value: 'Ukupno',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.history,
-                                      size: 16,
-                                      color: Colors.purple,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Ukupno'),
-                                  ],
-                                ),
-                              ),
-                            ]),
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              if (mounted)
-                                setState(() {
-                                  selectedPeriod = newValue;
-                                });
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 📊 OPTIMIZOVANO: StreamBuilder umesto FutureBuilder
-                    StreamBuilder<Map<String, dynamic>>(
-                      stream: _streamStatistikeZaPeriod(putnik.id, selectedPeriod),
-                      builder: (context, snapshot) {
-                        // Loading state
-                        if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
-                          return const SizedBox(
-                            height: 200,
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-
-                        // 🔄 ERROR HANDLING: Poboljšano error handling
-                        if (snapshot.hasError) {
-                          return SizedBox(
-                            height: 200,
-                            child: StreamErrorWidget(
-                              streamName: 'MesecniPutniciStats',
-                              errorMessage: snapshot.error.toString(),
-                              onRetry: () {
-                                if (mounted) setState(() {});
-                              },
-                            ),
-                          );
-                        }
-
-                        // Check for data errors
-                        final stats = snapshot.data ?? {};
-                        if (stats['error'] == true) {
-                          return SizedBox(
-                            height: 200,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.warning_amber_outlined,
-                                    color: Colors.orange,
-                                    size: 48,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Podaci trenutno nisu dostupni.\nPovežite se na internet.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.orange[700]),
-                                  ),
-                                  if (!_isConnected) ...[
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red[100],
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        'OFFLINE',
-                                        style: TextStyle(
-                                          color: Colors.red[700],
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-
-                        return _buildStatistikeContent(
-                          putnik,
-                          stats,
-                          selectedPeriod,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Zatvori'),
-                ),
-              ],
-            );
+        return DetaljneStatistikeDialog(
+          putnik: putnik,
+          stvarnaPlacanja: _stvarnaPlacanja,
+          isConnected: _isConnected,
+          onUpdated: () {
+            setState(() {});
           },
         );
       },
