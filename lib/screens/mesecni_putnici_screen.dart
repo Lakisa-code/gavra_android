@@ -24,6 +24,7 @@ import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/custom_back_button.dart';
+import '../widgets/edit_mesecni_putnik_dialog.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
 // 🔄 HELPER EXTENSION za Set poređenje
@@ -67,14 +68,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late ValueNotifier<String> _realtimeHealthStatus;
   late ValueNotifier<bool> _isNetworkConnected;
 
-  // Form controllers
+  // Form controllers for adding new passenger
   String _novoIme = '';
   String _noviTip = 'radnik';
   String _novaTipSkole = '';
   String _noviBrojTelefona = '';
   String _noviBrojTelefonaOca = '';
   String _noviBrojTelefonaMajke = '';
-  // Legacy TEXT polja za kompatibilnost tokom migracije
   String _novaAdresaBelaCrkva = '';
   String _novaAdresaVrsac = '';
 
@@ -86,6 +86,34 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     'cet': true,
     'pet': true,
   };
+
+  // Controllers for new passenger (declared but initialized in _initializeControllers)
+  late TextEditingController _imeController;
+  late TextEditingController _tipSkoleController;
+  late TextEditingController _brojTelefonaController;
+  late TextEditingController _brojTelefonaOcaController;
+  late TextEditingController _brojTelefonaMajkeController;
+  late TextEditingController _adresaBelaCrkvaController;
+  late TextEditingController _adresaVrsacController;
+
+  // Departure time controllers for new passenger (declared but initialized in _initializeControllers)
+  late TextEditingController _polazakBcPonController;
+  late TextEditingController _polazakBcUtoController;
+  late TextEditingController _polazakBcSreController;
+  late TextEditingController _polazakBcCetController;
+  late TextEditingController _polazakBcPetController;
+  late TextEditingController _polazakVsPonController;
+  late TextEditingController _polazakVsUtoController;
+  late TextEditingController _polazakVsSreController;
+  late TextEditingController _polazakVsCetController;
+  late TextEditingController _polazakVsPetController;
+
+  // Time input controllers for new passenger
+  final Map<String, TextEditingController> _vremenaBcControllers = {};
+  final Map<String, TextEditingController> _vremenaVsControllers = {};
+
+  // Services
+  final List<StreamSubscription> _subscriptions = [];
 
   // 💰 PLAĆANJE STATE - kombinovani podaci iz obe tabele + DEBOUNCE
   Map<String, double> _stvarnaPlacanja = {};
@@ -119,38 +147,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  // Departure times controllers - Bela Crkva
-  final TextEditingController _polazakBcPonController = TextEditingController();
-  final TextEditingController _polazakBcUtoController = TextEditingController();
-  final TextEditingController _polazakBcSreController = TextEditingController();
-  final TextEditingController _polazakBcCetController = TextEditingController();
-  final TextEditingController _polazakBcPetController = TextEditingController();
-
-  // Departure times controllers - Vršac
-  final TextEditingController _polazakVsPonController = TextEditingController();
-  final TextEditingController _polazakVsUtoController = TextEditingController();
-  final TextEditingController _polazakVsSreController = TextEditingController();
-  final TextEditingController _polazakVsCetController = TextEditingController();
-  final TextEditingController _polazakVsPetController = TextEditingController();
-
-  // Legacy map structures
-  final Map<String, String> _novaVremenaBC = {
-    'pon': '',
-    'uto': '',
-    'sre': '',
-    'cet': '',
-    'pet': '',
-  };
-
-  final Map<String, String> _novaVremenaVS = {
-    'pon': '',
-    'uto': '',
-    'sre': '',
-    'cet': '',
-    'pet': '',
-  };
-
-  // Convert working days to string
   String _getRadniDaniString() {
     final List<String> odabraniDani = [];
     _noviRadniDani.forEach((dan, selected) {
@@ -160,31 +156,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     });
     return odabraniDani.join(',');
   }
-
-  // Parse working days from string
-  void _setRadniDaniFromString(String radniDaniStr) {
-    final daniList = radniDaniStr.split(',').map((d) => d.trim().toLowerCase()).where((d) => d.isNotEmpty).toList();
-    _noviRadniDani = {
-      'pon': daniList.contains('pon'),
-      'uto': daniList.contains('uto'),
-      'sre': daniList.contains('sre'),
-      'cet': daniList.contains('cet'),
-      'pet': daniList.contains('pet'),
-    };
-  }
-
-  // Edit dialog controllers
-  late TextEditingController _imeController;
-  late TextEditingController _tipSkoleController;
-  late TextEditingController _brojTelefonaController;
-  late TextEditingController _brojTelefonaOcaController;
-  late TextEditingController _brojTelefonaMajkeController;
-  late TextEditingController _adresaBelaCrkvaController;
-  late TextEditingController _adresaVrsacController;
-
-  // Departure time controllers
-  final Map<String, TextEditingController> _vremenaBcControllers = {};
-  final Map<String, TextEditingController> _vremenaVsControllers = {};
 
   @override
   void initState() {
@@ -201,6 +172,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _brojTelefonaMajkeController = TextEditingController();
     _adresaBelaCrkvaController = TextEditingController();
     _adresaVrsacController = TextEditingController();
+
+    // Initialize departure time controllers
+    _polazakBcPonController = TextEditingController();
+    _polazakBcUtoController = TextEditingController();
+    _polazakBcSreController = TextEditingController();
+    _polazakBcCetController = TextEditingController();
+    _polazakBcPetController = TextEditingController();
+    _polazakVsPonController = TextEditingController();
+    _polazakVsUtoController = TextEditingController();
+    _polazakVsSreController = TextEditingController();
+    _polazakVsCetController = TextEditingController();
+    _polazakVsPetController = TextEditingController();
 
     // Kreiraj controller-e za svaки dan
     const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
@@ -339,54 +322,24 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         controller.dispose();
       }
 
-      // 🚨 DODANO: Dispose individual departure controllers
+      // Dispose departure time controllers
       _polazakBcPonController.dispose();
       _polazakBcUtoController.dispose();
       _polazakBcSreController.dispose();
       _polazakBcCetController.dispose();
       _polazakBcPetController.dispose();
-
       _polazakVsPonController.dispose();
       _polazakVsUtoController.dispose();
       _polazakVsSreController.dispose();
       _polazakVsCetController.dispose();
       _polazakVsPetController.dispose();
+
+      _subscriptions.forEach((subscription) => subscription.cancel());
     } catch (e) {
       // Warning disposing controllers
     }
 
     super.dispose();
-  }
-
-  /// Helper metoda za učitavanje naziva adresa iz UUID-ova
-  Future<void> _loadAdreseForEditovanje(MesecniPutnik putnik) async {
-    try {
-      if (putnik.adresaBelaCrkvaId != null) {
-        final bcNaziv = await AdresaSupabaseService.getNazivAdreseByUuid(
-          putnik.adresaBelaCrkvaId,
-        );
-        if (mounted) {
-          setState(() {
-            _novaAdresaBelaCrkva = bcNaziv ?? '';
-            _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
-          });
-        }
-      }
-
-      if (putnik.adresaVrsacId != null) {
-        final vsNaziv = await AdresaSupabaseService.getNazivAdreseByUuid(
-          putnik.adresaVrsacId,
-        );
-        if (mounted) {
-          setState(() {
-            _novaAdresaVrsac = vsNaziv ?? '';
-            _adresaVrsacController.text = _novaAdresaVrsac;
-          });
-        }
-      }
-    } catch (e) {
-      // Ignoriši greške pri učitavanju adresa
-    }
   }
 
   /// 🚀 DIREKTNO FILTRIRANJE - umesto compute() koji blokira scroll
@@ -1264,10 +1217,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: Colors.red.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -1276,7 +1229,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           Icon(
                             Icons.cancel_outlined,
                             size: 14,
-                            color: Colors.white70,
+                            color: Colors.red.shade700,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -1284,7 +1237,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white70,
+                              color: Colors.red.shade700,
                             ),
                           ),
                         ],
@@ -1424,742 +1377,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   void _editPutnik(MesecniPutnik putnik) {
-    // Postavi vrednosti za edit
-    if (mounted) {
-      // Učitaj adrese async
-      _loadAdreseForEditovanje(putnik);
-
-      setState(() {
-        _novoIme = putnik.putnikIme;
-        _noviTip = putnik.tip;
-        _novaTipSkole = putnik.tipSkole ?? '';
-        _noviBrojTelefona = putnik.brojTelefona ?? '';
-
-        // Učitaj vremena iz novih kolona ili fallback na stare - sa formatiranjem
-        _polazakBcPonController.text = putnik.getPolazakBelaCrkvaZaDan('pon') ?? '';
-        _polazakBcUtoController.text = putnik.getPolazakBelaCrkvaZaDan('uto') ?? '';
-        _polazakBcSreController.text = putnik.getPolazakBelaCrkvaZaDan('sre') ?? '';
-        _polazakBcCetController.text = putnik.getPolazakBelaCrkvaZaDan('cet') ?? '';
-        _polazakBcPetController.text = putnik.getPolazakBelaCrkvaZaDan('pet') ?? '';
-
-        _polazakVsPonController.text = putnik.getPolazakVrsacZaDan('pon') ?? '';
-        _polazakVsUtoController.text = putnik.getPolazakVrsacZaDan('uto') ?? '';
-        _polazakVsSreController.text = putnik.getPolazakVrsacZaDan('sre') ?? '';
-        _polazakVsCetController.text = putnik.getPolazakVrsacZaDan('cet') ?? '';
-        _polazakVsPetController.text = putnik.getPolazakVrsacZaDan('pet') ?? '';
-
-        // ✅ DODANO - učitaj postojeće radne dane
-        _setRadniDaniFromString(putnik.radniDani);
-
-        // Postavi vrednosti u controller-e
-        _imeController.text = _novoIme;
-        _tipSkoleController.text = _novaTipSkole;
-        _brojTelefonaController.text = _noviBrojTelefona;
-        _adresaBelaCrkvaController.text = _novaAdresaBelaCrkva;
-        _adresaVrsacController.text = _novaAdresaVrsac;
-
-        // NAPOMENA: Controller-i su već postavljeni iz putnik model-a iznad
-        // Ne trebamo dodatno da ih premeštamo iz _novaVremenaBC/_novaVremenaVS mapa
-      });
-
-      // Use a responsive approach: bottom sheet on small screens, dialog on larger
-      Widget dialogBuilder(BuildContext ctx) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).glassContainer,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Theme.of(context).glassBorder),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.edit, color: Colors.white70, size: 22),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Uredi mesečnog putnika',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 3,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 🎯 OSNOVNE INFORMACIJE - Sekcija
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).glassContainer,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: Theme.of(context).glassBorder,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '📋 Osnovne informacije',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 16,
-                          shadows: [
-                            Shadow(
-                              offset: const Offset(1, 1),
-                              blurRadius: 3,
-                              color: Colors.black54,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        onChanged: (value) => _novoIme = value,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                          labelText: '👤 Ime putnika *',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Colors.blue,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          prefixIcon: Icon(
-                            Icons.person,
-                            color: Colors.blue,
-                          ),
-                          fillColor: Colors.white.withValues(alpha: 0.9),
-                          filled: true,
-                          labelStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7), fontSize: 14),
-                        ),
-                        controller: _imeController,
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: _noviTip,
-                        decoration: InputDecoration(
-                          labelText: 'Tip putnika',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          prefixIcon: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              _noviTip == 'ucenik' ? Icons.school : Icons.business,
-                              key: ValueKey('${_noviTip}_dropdown'),
-                              color: _noviTip == 'ucenik' ? Colors.blue : Colors.teal,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: Colors.blue,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          fillColor: Colors.white.withValues(alpha: 0.9),
-                          filled: true,
-                        ),
-                        dropdownColor: Theme.of(context).colorScheme.surface,
-                        style: const TextStyle(color: Colors.black87),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'radnik',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.business,
-                                  color: Colors.teal,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Radnik',
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'ucenik',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.school,
-                                  color: Colors.blue,
-                                  size: 20,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Učenik',
-                                  style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (mounted) setState(() => _noviTip = value!);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        onChanged: (value) => _novaTipSkole = value,
-                        decoration: InputDecoration(
-                          hintText: _noviTip == 'ucenik'
-                              ? 'Škola (npr. Gimnazija "Bora Stanković")'
-                              : 'Ustanova/Firma (npr. Hemofarm, Opština Vršac...)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.blue, width: 2),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-                          ),
-                          prefixIcon: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Icon(
-                              _noviTip == 'ucenik' ? Icons.school : Icons.business,
-                              key: ValueKey(_noviTip),
-                              color: _noviTip == 'ucenik' ? Colors.blue : Colors.teal,
-                            ),
-                          ),
-                          fillColor: Colors.white.withValues(alpha: 0.9),
-                          filled: true,
-                          hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
-                        ),
-                        style: const TextStyle(color: Colors.black87),
-                        controller: _tipSkoleController,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 📞 KONTAKT INFORMACIJE - Sekcija
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).glassContainer,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: Theme.of(context).glassBorder,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '📞 Kontakt informacije',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 16,
-                          shadows: [
-                            Shadow(
-                              offset: const Offset(1, 1),
-                              blurRadius: 3,
-                              color: Colors.black54,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        decoration: InputDecoration(
-                          hintText: _noviTip == 'ucenik'
-                              ? 'Broj telefona učenika (064/123-456)'
-                              : 'Broj telefona (064/123-456)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.blue, width: 2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          prefixIcon: Icon(Icons.phone, color: Colors.blue),
-                          fillColor: Colors.white.withValues(alpha: 0.9),
-                          filled: true,
-                          hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
-                        ),
-                        style: const TextStyle(color: Colors.black87),
-                        keyboardType: TextInputType.phone,
-                        controller: _brojTelefonaController,
-                      ),
-
-                      // 👨‍👩‍👧‍👦 BROJEVI TELEFONA RODITELJA - animirana sekcija za učenike
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: _noviTip == 'ucenik'
-                            ? Container(
-                                key: const ValueKey('parent_contacts_edit'),
-                                margin: const EdgeInsets.only(top: 16),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).glassContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Theme.of(context).glassBorder,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(alpha: 0.2),
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.family_restroom,
-                                            color: Colors.white70,
-                                            size: 16,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Kontakt podaci roditelja',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Za hitne situacije',
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  color: Colors.white70,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    TextField(
-                                      onChanged: (value) => _noviBrojTelefonaOca = value,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Broj telefona oca',
-                                        hintText: '064/123-456',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.man, color: Colors.blue),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                      keyboardType: TextInputType.phone,
-                                      controller: _brojTelefonaOcaController,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    TextField(
-                                      onChanged: (value) => _noviBrojTelefonaMajke = value,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Broj telefona majke',
-                                        hintText: '065/789-012',
-                                        border: OutlineInputBorder(),
-                                        prefixIcon: Icon(Icons.woman, color: Colors.pink),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                      keyboardType: TextInputType.phone,
-                                      controller: _brojTelefonaMajkeController,
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 📍 ADRESE POLASKA - Sekcija
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.withValues(alpha: 0.3),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '📍 Adrese polaska',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green[700],
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        onChanged: (value) => _novaAdresaBelaCrkva = value,
-                        decoration: const InputDecoration(
-                          labelText: '🏠 Adresa polaska - Bela Crkva',
-                          border: OutlineInputBorder(),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.green, width: 2),
-                          ),
-                          prefixIcon: Icon(Icons.home, color: Colors.green),
-                          fillColor: Colors.white,
-                          filled: true,
-                        ),
-                        controller: _adresaBelaCrkvaController,
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        onChanged: (value) => _novaAdresaVrsac = value,
-                        decoration: const InputDecoration(
-                          labelText: '🏢 Adresa polaska - Vršac',
-                          border: OutlineInputBorder(),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.green, width: 2),
-                          ),
-                          prefixIcon: Icon(Icons.business, color: Colors.green),
-                          fillColor: Colors.white,
-                          filled: true,
-                        ),
-                        controller: _adresaVrsacController,
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 📅 RADNI DANI I VREMENA - Sekcija
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).glassContainer,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).glassBorder,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '📅 Radni dani i vremena',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Odaberi radne dane kada putnik koristi prevoz:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildRadniDanCheckbox(
-                                  'pon',
-                                  'Ponedeljak',
-                                ),
-                              ),
-                              Expanded(
-                                child: _buildRadniDanCheckbox('uto', 'Utorak'),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildRadniDanCheckbox('sre', 'Sreda'),
-                              ),
-                              Expanded(
-                                child: _buildRadniDanCheckbox('cet', 'Četvrtak'),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildRadniDanCheckbox('pet', 'Petak'),
-                              ),
-                              const Expanded(child: SizedBox()),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildVremenaPolaskaSekcija(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                if (mounted)
-                  setState(() {
-                    _novaVremenaBC.clear();
-                    _novaVremenaVS.clear();
-                  });
-                Navigator.pop(context);
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white70,
-                backgroundColor: Colors.white.withValues(alpha: 0.1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Otkaži',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              child: ElevatedButton.icon(
-                onPressed: () => _sacuvajEditPutnika(putnik),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).glassContainer,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Theme.of(context).glassBorder),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-                icon: Icon(Icons.save, size: 18, color: Colors.white),
-                label: Text(
-                  'Sačuvaj',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      }
-
-      final mq = MediaQuery.of(context);
-      if (mq.size.height < 700 || mq.size.width < 600) {
-        showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          builder: (ctx) => Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: SingleChildScrollView(child: dialogBuilder(ctx)),
-          ),
-        );
-      } else {
-        showDialog<void>(
-          context: context,
-          builder: (context) => dialogBuilder(context),
-        );
-      }
-    }
-  }
-
-  Future<void> _sacuvajEditPutnika(MesecniPutnik originalPutnik) async {
-    // Validacija formulara
-    final validationError = _validateForm();
-    if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(validationError),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Koristi vrednosti iz controller-a umesto iz varijabli
-    final ime = _imeController.text.trim();
-    final tipSkole = _tipSkoleController.text.trim();
-    final brojTelefona = _brojTelefonaController.text.trim();
-
-    try {
-      // Pripremi mapu polazaka po danima (JSON)
-      final Map<String, List<String>> polasciPoDanu = {};
-      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final bcRaw = _getControllerBelaCrkva(dan).text.trim();
-        final vsRaw = _getControllerVrsac(dan).text.trim();
-        final bc = bcRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(bcRaw) ?? '') : '';
-        final vs = vsRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(vsRaw) ?? '') : '';
-        final List<String> polasci = [];
-        if (bc.isNotEmpty) polasci.add('$bc BC');
-        if (vs.isNotEmpty) polasci.add('$vs VS');
-        if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
-      }
-      final editovanPutnik = originalPutnik.copyWith(
-        putnikIme: ime,
-        tip: _noviTip,
-        tipSkole: tipSkole.isEmpty ? null : tipSkole,
-        brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        polasciPoDanu: polasciPoDanu,
-        radniDani: _getRadniDaniString(),
-      );
-      // Log and await the update result so we can surface errors to the user
-
-      final updated = await _mesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
-
-      if (updated == null) {
-        // Update failed - show error and don't pop the dialog so user can retry
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Greška pri ažuriranju u bazi. Pokušajte ponovo.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
-      try {
-        await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-          editovanPutnik,
-          DateTime.now().add(const Duration(days: 1)),
-        );
-      } catch (_) {}
-      // Očisti mape izmena nakon uspešnog čuvanja
-      if (mounted)
-        setState(() {
-          _novaVremenaBC.clear();
-          _novaVremenaVS.clear();
-        });
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mesečni putnik je uspešno ažuriran'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e')),
-        );
-      }
-    }
+    showDialog(
+      context: context,
+      builder: (context) => EditMesecniPutnikDialog(
+        putnik: putnik,
+        onUpdated: () {
+          // Trigger a rebuild to refresh the list
+          if (mounted) {
+            setState(() {});
+          }
+        },
+      ),
+    );
   }
 
   void _pokaziDijalogZaDodavanje() {
@@ -2368,7 +1597,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                   initialValue: null,
                                   hint: const Text(
                                     'Tip',
-                                    style: TextStyle(color: Colors.black87),
+                                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Tip putnika',
@@ -2385,10 +1614,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     ),
                                     fillColor: Colors.white.withValues(alpha: 0.9),
                                     filled: true,
-                                    hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
+                                    hintStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500),
                                   ),
                                   dropdownColor: Theme.of(context).colorScheme.surface,
-                                  style: const TextStyle(color: Colors.black87),
+                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                                   items: const [
                                     DropdownMenuItem(
                                       value: 'radnik',
@@ -2402,7 +1631,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                           SizedBox(width: 8),
                                           Text(
                                             'Radnik',
-                                            style: TextStyle(color: Colors.black87),
+                                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                                           ),
                                         ],
                                       ),
@@ -2419,7 +1648,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                           SizedBox(width: 8),
                                           Text(
                                             'Učenik',
-                                            style: TextStyle(color: Colors.black87),
+                                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                                           ),
                                         ],
                                       ),
@@ -2462,9 +1691,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     ),
                                     fillColor: Colors.white.withValues(alpha: 0.9),
                                     filled: true,
-                                    hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
+                                    hintStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500),
                                   ),
-                                  style: const TextStyle(color: Colors.black87),
+                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                                   controller: _tipSkoleController,
                                 ),
                               ],
@@ -2543,9 +1772,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     ),
                                     fillColor: Colors.white.withValues(alpha: 0.9),
                                     filled: true,
-                                    hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
+                                    hintStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500),
                                   ),
-                                  style: const TextStyle(color: Colors.black87),
+                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
                                   keyboardType: TextInputType.phone,
                                   controller: _brojTelefonaController,
                                 ),
@@ -2646,11 +1875,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                   fillColor: Colors.white.withValues(alpha: 0.9),
                                                   filled: true,
                                                   hintStyle: TextStyle(
-                                                    color: Colors.grey.withValues(alpha: 0.7),
+                                                    color: Colors.grey.shade600,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
                                                 style: const TextStyle(
-                                                  color: Colors.black87,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                                 keyboardType: TextInputType.phone,
                                                 controller: _brojTelefonaOcaController,
@@ -2680,11 +1911,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                   fillColor: Colors.white.withValues(alpha: 0.9),
                                                   filled: true,
                                                   hintStyle: TextStyle(
-                                                    color: Colors.grey.withValues(alpha: 0.7),
+                                                    color: Colors.grey.shade600,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 ),
                                                 style: const TextStyle(
-                                                  color: Colors.black87,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                                 keyboardType: TextInputType.phone,
                                                 controller: _brojTelefonaMajkeController,
@@ -2698,9 +1931,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                           ),
 
-                          // 📅 RADNI DANI I VREMENA - Sekcija
+                          // 📍 GLASSMORPHISM ADRESE POLASKA
                           Container(
                             width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 16),
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Theme.of(context).glassContainer,
@@ -2721,19 +1955,127 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Expanded(
+                                    const Expanded(
                                       child: Text(
-                                        '📅 Radni dani i vremena',
-                                        style: const TextStyle(
+                                        '📍 Adrese polaska',
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                           fontSize: 16,
+                                          shadows: [
+                                            Shadow(
+                                              offset: Offset(1, 1),
+                                              blurRadius: 3,
+                                              color: Colors.black54,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
+                                TextField(
+                                  onChanged: (value) {
+                                    _novaAdresaBelaCrkva = value;
+                                    if (_adresaBelaCrkvaController.text != value) {
+                                      _adresaBelaCrkvaController.text = value;
+                                    }
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: '🏠 Adresa polaska - Bela Crkva',
+                                    border: OutlineInputBorder(),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    fillColor: Colors.white.withValues(alpha: 0.9),
+                                    filled: true,
+                                    labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                                  ),
+                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                                  controller: _adresaBelaCrkvaController,
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  onChanged: (value) {
+                                    _novaAdresaVrsac = value;
+                                    if (_adresaVrsacController.text != value) {
+                                      _adresaVrsacController.text = value;
+                                    }
+                                  },
+                                  decoration: InputDecoration(
+                                    hintText: 'Adresa polaska - Vršac',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: Colors.blue, width: 2),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+                                    ),
+                                    fillColor: Colors.white.withValues(alpha: 0.9),
+                                    filled: true,
+                                    hintStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                                  ),
+                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                                  controller: _adresaVrsacController,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // 📅 GLASSMORPHISM RADNI DANI I VREMENA
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).glassContainer,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: Theme.of(context).glassBorder,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        '📅 Radni dani i vremena',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          shadows: [
+                                            Shadow(
+                                              offset: Offset(1, 1),
+                                              blurRadius: 3,
+                                              color: Colors.black54,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // CHECKBOX-I ZA RADNE DANE
                                 Row(
                                   children: [
                                     const Expanded(
@@ -2821,153 +2163,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     _buildRadniDanCheckbox('sre', 'Sreda'),
                                     _buildRadniDanCheckbox('cet', 'Četvrtak'),
                                     _buildRadniDanCheckbox('pet', 'Petak'),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                            ),
-                          ),
-
-                          // 📍 GLASSMORPHISM ADRESE POLASKA
-                          Container(
-                            width: double.infinity,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).glassContainer,
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(
-                                color: Theme.of(context).glassBorder,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        '📍 Adrese polaska',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          shadows: [
-                                            Shadow(
-                                              offset: Offset(1, 1),
-                                              blurRadius: 3,
-                                              color: Colors.black54,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                TextField(
-                                  onChanged: (value) {
-                                    _novaAdresaBelaCrkva = value;
-                                    if (_adresaBelaCrkvaController.text != value) {
-                                      _adresaBelaCrkvaController.text = value;
-                                    }
-                                  },
-                                  decoration: InputDecoration(
-                                    labelText: '🏠 Adresa polaska - Bela Crkva',
-                                    border: OutlineInputBorder(),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                        color: Colors.white,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    fillColor: Colors.white.withValues(alpha: 0.9),
-                                    filled: true,
-                                    labelStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
-                                  ),
-                                  style: const TextStyle(color: Colors.black87),
-                                  controller: _adresaBelaCrkvaController,
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  onChanged: (value) {
-                                    _novaAdresaVrsac = value;
-                                    if (_adresaVrsacController.text != value) {
-                                      _adresaVrsacController.text = value;
-                                    }
-                                  },
-                                  decoration: InputDecoration(
-                                    hintText: 'Adresa polaska - Vršac',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: Colors.blue, width: 2),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-                                    ),
-                                    fillColor: Colors.white.withValues(alpha: 0.9),
-                                    filled: true,
-                                    hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
-                                  ),
-                                  style: const TextStyle(color: Colors.black87),
-                                  controller: _adresaVrsacController,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // 📅 GLASSMORPHISM RADNI DANI I VREMENA
-                          Container(
-                            width: double.infinity,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).glassContainer,
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(
-                                color: Theme.of(context).glassBorder,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Expanded(
-                                      child: Text(
-                                        '📅 Radni dani i vremena',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          shadows: [
-                                            Shadow(
-                                              offset: Offset(1, 1),
-                                              blurRadius: 3,
-                                              color: Colors.black54,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
@@ -4892,7 +4087,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             Flexible(
               child: Text(
                 danNaziv,
-                style: const TextStyle(fontSize: 11),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -4954,9 +4153,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 child: Text(
                   'Unesite vremena polaska za svaki radni dan:',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
+                        color: Colors.white,
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
               ),
@@ -5007,36 +4206,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               .where((entry) => entry.value) // Samo označeni dani
               .map((entry) => _buildDanVremeInput(entry.key))
               .toList(),
-          if (_noviRadniDani.values.any((selected) => selected)) const SizedBox(height: 4),
-          if (_noviRadniDani.values.any((selected) => selected))
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 12,
-                    color: Colors.orange.shade600,
-                  ),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: Text(
-                      'Format: HH:MM (npr. 05:00)',
-                      style: TextStyle(
-                        fontSize: 9,
-                        color: Colors.orange.shade600,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -5165,8 +4334,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               Text(
                 daniMapa[danKod] ?? danKod,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey.shade800,
                     ),
               ),
               Row(

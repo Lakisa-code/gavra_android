@@ -43,7 +43,8 @@ class BasicInfoSection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _getTypeColor(controller.formData.tip, context).withValues(alpha: 0.2),
+                      color: _getTypeColor(controller.formData.tip, context)
+                          .withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -116,7 +117,9 @@ class BasicInfoSection extends StatelessWidget {
                   prefixIcon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
-                      controller.formData.tip == 'ucenik' ? Icons.school : Icons.business,
+                      controller.formData.tip == 'ucenik'
+                          ? Icons.school
+                          : Icons.business,
                       key: ValueKey('${controller.formData.tip}_dropdown'),
                       color: Colors.white,
                     ),
@@ -182,7 +185,9 @@ class BasicInfoSection extends StatelessWidget {
               TextField(
                 controller: controller.getController('tipSkole'),
                 decoration: InputDecoration(
-                  labelText: controller.formData.tip == 'ucenik' ? '🎓 Škola' : '🏢 Ustanova/Firma',
+                  labelText: controller.formData.tip == 'ucenik'
+                      ? '🎓 Škola'
+                      : '🏢 Ustanova/Firma',
                   hintText: controller.formData.tip == 'ucenik'
                       ? 'npr. Gimnazija "Bora Stanković"'
                       : 'npr. Hemofarm, Opština Vršac...',
@@ -196,7 +201,9 @@ class BasicInfoSection extends StatelessWidget {
                   prefixIcon: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
-                      controller.formData.tip == 'ucenik' ? Icons.school : Icons.business,
+                      controller.formData.tip == 'ucenik'
+                          ? Icons.school
+                          : Icons.business,
                       key: ValueKey(controller.formData.tip),
                       color: Colors.white,
                     ),

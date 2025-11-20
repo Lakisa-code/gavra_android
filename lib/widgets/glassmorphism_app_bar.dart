@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Uniform glassmorphism AppBar komponenta za celу aplikaciju
-class GlassmorphismAppBar extends StatelessWidget implements PreferredSizeWidget {
+class GlassmorphismAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const GlassmorphismAppBar({
     super.key,
     this.title,
@@ -31,7 +32,8 @@ class GlassmorphismAppBar extends StatelessWidget implements PreferredSizeWidget
   Widget build(BuildContext context) {
     // Proverava da li treba prikazati back button
     final bool canPop = Navigator.of(context).canPop();
-    final bool shouldShowBackButton = showBackButton && canPop && automaticallyImplyLeading;
+    final bool shouldShowBackButton =
+        showBackButton && canPop && automaticallyImplyLeading;
 
     return Container(
       height: height,

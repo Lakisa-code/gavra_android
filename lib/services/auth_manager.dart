@@ -142,9 +142,11 @@ class AuthManager {
         await FirebaseService.clearCurrentDriver();
         // Push service removed - using only realtime notifications
         try {
-          await FirebaseMessaging.instance.unsubscribeFromTopic('gavra_all_drivers');
+          await FirebaseMessaging.instance
+              .unsubscribeFromTopic('gavra_all_drivers');
           if (currentDriver != null && currentDriver.isNotEmpty) {
-            await FirebaseMessaging.instance.unsubscribeFromTopic('gavra_driver_${currentDriver.toLowerCase()}');
+            await FirebaseMessaging.instance.unsubscribeFromTopic(
+                'gavra_driver_${currentDriver.toLowerCase()}');
           }
         } catch (e) {}
       } catch (e) {
@@ -213,7 +215,9 @@ class AuthManager {
   static Future<AuthResult> resendEmailVerification() async {
     try {
       final result = await FirebaseAuthService.resendEmailVerification();
-      return result.isSuccess ? AuthResult.success(result.message) : AuthResult.error(result.message);
+      return result.isSuccess
+          ? AuthResult.success(result.message)
+          : AuthResult.error(result.message);
     } catch (e) {
       return AuthResult.error(
         'Greška pri slanju verifikacije: ${e.toString()}',
@@ -259,7 +263,8 @@ class AuthManager {
       final deviceInfo = DeviceInfoPlugin();
       if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
-        deviceId = '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
+        deviceId =
+            '${androidInfo.id}_${androidInfo.model}_${androidInfo.brand}';
       } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         deviceId = '${iosInfo.identifierForVendor}_${iosInfo.model}';

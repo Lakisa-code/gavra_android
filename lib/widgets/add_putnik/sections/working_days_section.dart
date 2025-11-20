@@ -239,7 +239,8 @@ class WorkingDaysSection extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => controller.updateRadniDan(danKod, !controller.isWorkingDay(danKod)),
+        onTap: () =>
+            controller.updateRadniDan(danKod, !controller.isWorkingDay(danKod)),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -247,8 +248,12 @@ class WorkingDaysSection extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                controller.isWorkingDay(danKod) ? Icons.check_circle : Icons.circle_outlined,
-                color: controller.isWorkingDay(danKod) ? Colors.green : Colors.white70,
+                controller.isWorkingDay(danKod)
+                    ? Icons.check_circle
+                    : Icons.circle_outlined,
+                color: controller.isWorkingDay(danKod)
+                    ? Colors.green
+                    : Colors.white70,
                 size: 16,
               ),
               const SizedBox(width: 4),
@@ -256,8 +261,12 @@ class WorkingDaysSection extends StatelessWidget {
                 nazivDana,
                 style: TextStyle(
                   fontSize: 12,
-                  color: controller.isWorkingDay(danKod) ? Colors.white : Colors.white70,
-                  fontWeight: controller.isWorkingDay(danKod) ? FontWeight.w600 : FontWeight.w400,
+                  color: controller.isWorkingDay(danKod)
+                      ? Colors.white
+                      : Colors.white70,
+                  fontWeight: controller.isWorkingDay(danKod)
+                      ? FontWeight.w600
+                      : FontWeight.w400,
                 ),
               ),
             ],

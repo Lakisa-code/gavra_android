@@ -46,15 +46,17 @@ class DatabaseValidator {
     final testName = 'TestVozac';
 
     return {
-      'syncMethodsWork': VozacMappingService.getVozacImeWithFallbackSync(testUuid) != null ||
-          VozacMappingService.getVozacUuidSync(testName) != null,
+      'syncMethodsWork':
+          VozacMappingService.getVozacImeWithFallbackSync(testUuid) != null ||
+              VozacMappingService.getVozacUuidSync(testName) != null,
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
 
   /// Generiši opšti summary
   static Map<String, dynamic> _generateSummary(Map<String, dynamic> results) {
-    final mappingResults = results['vozacMapping'] as Map<String, dynamic>? ?? {};
+    final mappingResults =
+        results['vozacMapping'] as Map<String, dynamic>? ?? {};
     final isValid = mappingResults['isValid'] == true;
     final errors = (mappingResults['errors'] as List?) ?? [];
     final warnings = (mappingResults['warnings'] as List?) ?? [];
@@ -63,7 +65,9 @@ class DatabaseValidator {
       'isValid': isValid,
       'errorCount': errors.length,
       'warningCount': warnings.length,
-      'recommendation': isValid ? 'Mapiranje vozača je ispravno!' : 'Potrebne su ispravke u mapiranju vozača!',
+      'recommendation': isValid
+          ? 'Mapiranje vozača je ispravno!'
+          : 'Potrebne su ispravke u mapiranju vozača!',
     };
   }
 

@@ -30,7 +30,8 @@ class VozacBoja {
     }
 
     // Trebalo bi da se poziva samo za validne vozače
-    throw ArgumentError('Nepoznat vozač: $ime. Validni vozači: ${boje.keys.join(", ")}');
+    throw ArgumentError(
+        'Nepoznat vozač: $ime. Validni vozači: ${boje.keys.join(", ")}');
   }
 
   /// Proverava da li je vozač prepoznat/valjan

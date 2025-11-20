@@ -42,7 +42,9 @@ import 'welcome_screen.dart';
 // Using centralized logger
 
 class DanasScreen extends StatefulWidget {
-  const DanasScreen({Key? key, this.highlightPutnikIme, this.filterGrad, this.filterVreme}) : super(key: key);
+  const DanasScreen(
+      {Key? key, this.highlightPutnikIme, this.filterGrad, this.filterVreme})
+      : super(key: key);
   final String? highlightPutnikIme;
   final String? filterGrad;
   final String? filterVreme;
@@ -53,9 +55,11 @@ class DanasScreen extends StatefulWidget {
 
 class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
-  final _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
+  final _putnikService =
+      PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final Set<String> _resettingSlots = {};
-  final RouteOptimizationService _routeOptimizationService = RouteOptimizationService();
+  final RouteOptimizationService _routeOptimizationService =
+      RouteOptimizationService();
   Set<String> _lastMatchingIds = {};
 
   bool _setEquals(Set<String> a, Set<String> b) {
@@ -84,15 +88,21 @@ class _DanasScreenState extends State<DanasScreen> {
     return SizedBox(
       height: 26,
       child: ElevatedButton(
-        onPressed: (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) ? null : () => _showPopisDana(),
+        onPressed:
+            (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver))
+                ? null
+                : () => _showPopisDana(),
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.secondary,
           foregroundColor: Theme.of(context).colorScheme.onSecondary,
           elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        child: const Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
+        child: const Text('POPIS',
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
       ),
     );
   }
@@ -101,12 +111,14 @@ class _DanasScreenState extends State<DanasScreen> {
   void _registerStreamHeartbeat(String streamName) {
     final now = DateTime.now();
     final prev = _streamHeartbeats[streamName];
-    final responseTime = prev != null ? now.difference(prev) : const Duration(milliseconds: 250);
+    final responseTime =
+        prev != null ? now.difference(prev) : const Duration(milliseconds: 250);
     _streamHeartbeats[streamName] = now;
 
     try {
       // Update global network status metrics using the computed response time
-      RealtimeNetworkStatusService.instance.registerStreamResponse(streamName, responseTime, hasError: false);
+      RealtimeNetworkStatusService.instance
+          .registerStreamResponse(streamName, responseTime, hasError: false);
     } catch (_) {}
   }
 
@@ -115,11 +127,13 @@ class _DanasScreenState extends State<DanasScreen> {
     if (_prevNetworkStatus != status) {
       // If we've recovered to good/excellent, force cache invalidation for current filters
       if ((status == NetworkStatus.excellent || status == NetworkStatus.good) &&
-          (_prevNetworkStatus == NetworkStatus.offline || _prevNetworkStatus == NetworkStatus.poor)) {
+          (_prevNetworkStatus == NetworkStatus.offline ||
+              _prevNetworkStatus == NetworkStatus.poor)) {
         final selectedGrad = widget.filterGrad ?? _selectedGrad;
         final selectedVreme = widget.filterVreme ?? _selectedVreme;
         try {
-          _routeOptimizationService.invalidateCacheFor(grad: selectedGrad, vreme: selectedVreme);
+          _routeOptimizationService.invalidateCacheFor(
+              grad: selectedGrad, vreme: selectedVreme);
           if (mounted) setState(() {});
         } catch (_) {}
       }
@@ -208,7 +222,8 @@ class _DanasScreenState extends State<DanasScreen> {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                  decoration:
+                      BoxDecoration(color: statusColor, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -216,19 +231,26 @@ class _DanasScreenState extends State<DanasScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontFamily: 'monospace',
-                    fontWeight: isCritical ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isCritical ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 const Spacer(),
                 if (errorCount > 0)
                   Text(
                     '${errorCount}E',
-                    style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold),
                   ),
                 if (isCritical)
                   const Text(
                     'CRIT',
-                    style: TextStyle(fontSize: 9, color: Colors.purple, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.purple,
+                        fontWeight: FontWeight.bold),
                   ),
               ],
             ),
@@ -238,23 +260,36 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🚨 ERROR TYPE DETECTION HELPER
-  Widget _buildErrorWidgetForException(Object error, String streamName, {VoidCallback? onRetry}) {
+  Widget _buildErrorWidgetForException(Object error, String streamName,
+      {VoidCallback? onRetry}) {
     final errorString = error.toString().toLowerCase();
 
     if (errorString.contains('timeout') || errorString.contains('time')) {
-      return TimeoutErrorWidget(operation: streamName, timeout: const Duration(seconds: 30), onRetry: onRetry);
+      return TimeoutErrorWidget(
+          operation: streamName,
+          timeout: const Duration(seconds: 30),
+          onRetry: onRetry);
     }
 
-    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
-      return NetworkErrorWidget(message: 'Problem sa mrežom u $streamName', onRetry: onRetry);
+    if (errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('connection')) {
+      return NetworkErrorWidget(
+          message: 'Problem sa mrežom u $streamName', onRetry: onRetry);
     }
 
-    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
-      return DataErrorWidget(dataType: streamName, reason: error.toString(), onRefresh: onRetry);
+    if (errorString.contains('data') ||
+        errorString.contains('parse') ||
+        errorString.contains('format')) {
+      return DataErrorWidget(
+          dataType: streamName, reason: error.toString(), onRefresh: onRetry);
     }
 
     // Default stream error
-    return StreamErrorWidget(streamName: streamName, errorMessage: error.toString(), onRetry: onRetry);
+    return StreamErrorWidget(
+        streamName: streamName,
+        errorMessage: error.toString(),
+        onRetry: onRetry);
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
@@ -270,24 +305,31 @@ class _DanasScreenState extends State<DanasScreen> {
         // 🔧 REORGANIZOVANA LOGIKA: Prvo filtriraj osnovne kriterijume, zatim računaj status unutar
         final djaci = sviMesecniPutnici.where((MesecniPutnik mp) {
           // 🔧 ISPRAVKA: Tokenize days and trim; robust tip matching
-          final radniDaniList =
-              mp.radniDani.toLowerCase().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          final radniDaniList = mp.radniDani
+              .toLowerCase()
+              .split(',')
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
           final dayMatch = radniDaniList.contains(danasnjiDan.toLowerCase());
 
           final tipNormalized = TextUtils.normalizeText(mp.tip);
-          final isUcenik =
-              tipNormalized.contains('ucenik') || tipNormalized.contains('djak') || tipNormalized.contains('student');
+          final isUcenik = tipNormalized.contains('ucenik') ||
+              tipNormalized.contains('djak') ||
+              tipNormalized.contains('student');
 
           final gradNormalized = TextUtils.normalizeText(mp.grad ?? '');
           final selectedGradNorm = TextUtils.normalizeText(selectedGrad);
-          final gradMatch = selectedGrad.isEmpty || gradNormalized == selectedGradNorm;
+          final gradMatch =
+              selectedGrad.isEmpty || gradNormalized == selectedGradNorm;
 
           return dayMatch && isUcenik && gradMatch;
         }).toList();
 
         // FINALNA LOGIKA: OSTALO/UKUPNO
         int ukupnoUjutro = 0; // ukupno učenika koji idu ujutro (Bela Crkva)
-        int reseniUcenici = 0; // učenici upisani za OBA pravca (automatski rešeni)
+        int reseniUcenici =
+            0; // učenici upisani za OBA pravca (automatski rešeni)
         int otkazaliUcenici = 0; // učenici koji su otkazali
 
         for (final djak in djaci) {
@@ -323,18 +365,22 @@ class _DanasScreenState extends State<DanasScreen> {
         // Uključi današnje "zakupljeno" iz putovanja_istorija da ne bismo propustili grupne rezervacije
         int zakupljenoCount = 0;
         try {
-          final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
+          final zakupljenoRows =
+              await MesecniPutnikService.getZakupljenoDanas();
           for (final z in zakupljenoRows) {
             try {
               final putnikZ = Putnik.fromPutovanjaIstorija(z);
               // Filtriraj po gradu/selectedGrad
               final gradNorm = TextUtils.normalizeText(putnikZ.grad);
-              if (TextUtils.normalizeText(selectedGrad) != gradNorm && selectedGrad.isNotEmpty) continue;
+              if (TextUtils.normalizeText(selectedGrad) != gradNorm &&
+                  selectedGrad.isNotEmpty) continue;
               // Proveri da li polazak odgovara BC (jutarnji) - heuristika: if grad == 'Bela Crkva'
               if (putnikZ.grad.toLowerCase().contains('bela')) {
                 // De-dupe using name match to avoid double counting the same mesecni putnik
                 final nameMatch = sviMesecniPutnici.any(
-                  (mp) => mp.putnikIme.trim().toLowerCase() == putnikZ.ime.trim().toLowerCase(),
+                  (mp) =>
+                      mp.putnikIme.trim().toLowerCase() ==
+                      putnikZ.ime.trim().toLowerCase(),
                 );
                 if (!nameMatch) {
                   zakupljenoCount++;
@@ -348,7 +394,8 @@ class _DanasScreenState extends State<DanasScreen> {
         final ukupnoSaZakupljeno = ukupnoUjutro + zakupljenoCount;
 
         return {
-          'ukupno_ujutro': ukupnoSaZakupljeno, // 30 - ukupno koji idu ujutro (incl. zakupljeno)
+          'ukupno_ujutro':
+              ukupnoSaZakupljeno, // 30 - ukupno koji idu ujutro (incl. zakupljeno)
           'reseni': reseniUcenici, // 15 - upisani za oba pravca
           'otkazali': otkazaliUcenici, // 5 - otkazani
           'ostalo': ostalo, // 10 - ostalo da se vrati
@@ -362,11 +409,20 @@ class _DanasScreenState extends State<DanasScreen> {
   // ✨ DIGITALNI BROJAČ DATUM WIDGET - OPTIMIZOVANO (30s umesto 1s)
   Widget _buildDigitalDateDisplay() {
     return StreamBuilder<DateTime>(
-      stream: Stream.periodic(const Duration(seconds: 30), (_) => DateTime.now()), // 🚀 PERFORMANCE: 30s umesto 1s
+      stream: Stream.periodic(const Duration(seconds: 30),
+          (_) => DateTime.now()), // 🚀 PERFORMANCE: 30s umesto 1s
       initialData: DateTime.now(),
       builder: (context, snapshot) {
         final now = snapshot.data ?? DateTime.now();
-        final dayNames = ['PONEDELJAK', 'UTORAK', 'SREDA', 'ČETVRTAK', 'PETAK', 'SUBOTA', 'NEDELJA'];
+        final dayNames = [
+          'PONEDELJAK',
+          'UTORAK',
+          'SREDA',
+          'ČETVRTAK',
+          'PETAK',
+          'SUBOTA',
+          'NEDELJA'
+        ];
         final dayName = dayNames[now.weekday - 1];
         final dayStr = now.day.toString().padLeft(2, '0');
         final monthStr = now.month.toString().padLeft(2, '0');
@@ -391,7 +447,12 @@ class _DanasScreenState extends State<DanasScreen> {
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: 1.8,
-                      shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                      shadows: [
+                        Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54)
+                      ],
                     ),
                   ),
                   // SREDINA - DAN
@@ -402,7 +463,12 @@ class _DanasScreenState extends State<DanasScreen> {
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
-                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                      shadows: const [
+                        Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54)
+                      ],
                     ),
                   ),
                   // DESNO - VREME
@@ -412,7 +478,12 @@ class _DanasScreenState extends State<DanasScreen> {
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
-                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                      shadows: const [
+                        Shadow(
+                            offset: Offset(1, 1),
+                            blurRadius: 3,
+                            color: Colors.black54)
+                      ],
                     ),
                     showSeconds: true,
                   ),
@@ -444,27 +515,36 @@ class _DanasScreenState extends State<DanasScreen> {
                     children: [
                       Text('Status: ${isHealthy ? 'ZDRAVO' : 'PROBLEM'}'),
                       const SizedBox(height: 8),
-                      const Text('Stream Heartbeats:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Stream Heartbeats:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                       ..._streamHeartbeats.entries.map((entry) {
-                        final timeSince = DateTime.now().difference(entry.value);
+                        final timeSince =
+                            DateTime.now().difference(entry.value);
                         return Text(
                           '${entry.key}: ${timeSince.inSeconds}s ago',
                           style: TextStyle(
                             fontFamily: 'monospace',
                             fontSize: 12,
-                            color: timeSince.inSeconds > 30 ? Colors.red : Colors.green,
+                            color: timeSince.inSeconds > 30
+                                ? Colors.red
+                                : Colors.green,
                           ),
                         );
                       }),
                       const SizedBox(height: 16),
                       // 🚨 FAIL-FAST STREAM STATUS
-                      const Text('Fail-Fast Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Fail-Fast Status:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       ..._buildFailFastStatus(),
                     ],
                   ),
                 ),
-                actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Zatvori'))
+                ],
               ),
             );
           },
@@ -476,7 +556,8 @@ class _DanasScreenState extends State<DanasScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              child: Icon(isHealthy ? Icons.favorite : Icons.heart_broken, color: Colors.white, size: 14),
+              child: Icon(isHealthy ? Icons.favorite : Icons.heart_broken,
+                  color: Colors.white, size: 14),
             ),
           ),
         );
@@ -495,15 +576,19 @@ class _DanasScreenState extends State<DanasScreen> {
             streamName: 'djacki_brojac',
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Greška đačkog brojača: ${snapshot.error}'), backgroundColor: Colors.red),
+                SnackBar(
+                    content: Text('Greška đačkog brojača: ${snapshot.error}'),
+                    backgroundColor: Colors.red),
               );
             },
           );
         }
 
-        final statistike = snapshot.data ?? {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
+        final statistike = snapshot.data ??
+            {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
         final ostalo = statistike['ostalo'] ?? 0; // 10 - ostalo da se vrati
-        final ukupnoUjutro = statistike['ukupno_ujutro'] ?? 0; // 30 - ukupno ujutro
+        final ukupnoUjutro =
+            statistike['ukupno_ujutro'] ?? 0; // 30 - ukupno ujutro
 
         return SizedBox(
           height: 26, // povećao sa 24 na 26
@@ -513,7 +598,8 @@ class _DanasScreenState extends State<DanasScreen> {
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             ),
             child: Row(
@@ -530,7 +616,10 @@ class _DanasScreenState extends State<DanasScreen> {
                 const SizedBox(width: 2),
                 Text(
                   '$ostalo',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.redAccent),
                 ),
               ],
             ),
@@ -552,7 +641,8 @@ class _DanasScreenState extends State<DanasScreen> {
         if (!snapshot.hasData) return Container();
         final filtriraniPutnici = snapshot.data!;
         final hasPassengers = filtriraniPutnici.isNotEmpty;
-        final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
+        final bool isDriverValid =
+            _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
         return SizedBox(
           height: 26,
           child: ElevatedButton(
@@ -562,16 +652,20 @@ class _DanasScreenState extends State<DanasScreen> {
                     if (_isRouteOptimized) {
                       _resetOptimization();
                     } else {
-                      _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: true);
+                      _optimizeCurrentRoute(filtriraniPutnici,
+                          isAlreadyOptimized: true);
                     }
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: _isRouteOptimized
                   ? Colors.green.shade600
-                  : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400),
+                  : (hasPassengers
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey.shade400),
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
               elevation: hasPassengers ? 2 : 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             ),
             child: Text(
@@ -634,20 +728,26 @@ class _DanasScreenState extends State<DanasScreen> {
   // 🗺️ DUGME ZA NAVIGACIJU (OpenStreetMap / slobodne opcije)
   Widget _buildMapsButton() {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
-    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
+    final bool isDriverValid =
+        _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
     return SizedBox(
       height: 26,
       child: ElevatedButton(
         onPressed: hasOptimizedRoute && isDriverValid
-            ? () => (_isGpsTracking ? _stopSmartNavigation() : _startSmartNavigation())
+            ? () => (_isGpsTracking
+                ? _stopSmartNavigation()
+                : _startSmartNavigation())
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: _isGpsTracking
               ? Colors.orange.shade700
-              : (hasOptimizedRoute ? Theme.of(context).colorScheme.primary : Colors.grey.shade400),
+              : (hasOptimizedRoute
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade400),
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           elevation: hasOptimizedRoute ? 2 : 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         ),
         child: Row(
@@ -671,7 +771,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🎓 POPUP SA DETALJNIM ĐAČKIM STATISTIKAMA - OPTIMIZOVAN
   void _showDjackiDialog(Map<String, int> statistike) {
-    final ukupnoUjutro = statistike['ukupno_ujutro'] ?? 0; // ukupno učenika ujutro (Bela Crkva)
+    final ukupnoUjutro =
+        statistike['ukupno_ujutro'] ?? 0; // ukupno učenika ujutro (Bela Crkva)
     final reseni = statistike['reseni'] ?? 0; // upisani za oba pravca (BC + VS)
     final ostalo = statistike['ostalo'] ?? 0; // ostalo da se vrati (samo BC)
     final otkazali = statistike['otkazali'] ?? 0; // otkazani učenici
@@ -690,7 +791,8 @@ class _DanasScreenState extends State<DanasScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatRow('Ukupno ujutro (BC)', '$ukupnoUjutro', Icons.group, Colors.blue),
+            _buildStatRow('Ukupno ujutro (BC)', '$ukupnoUjutro', Icons.group,
+                Colors.blue),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -707,12 +809,14 @@ class _DanasScreenState extends State<DanasScreen> {
                       Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(
+                            color: Colors.greenAccent, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Rešeni ($reseni)',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.green),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, color: Colors.green),
                       ),
                     ],
                   ),
@@ -727,12 +831,14 @@ class _DanasScreenState extends State<DanasScreen> {
                       Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(
+                            color: Colors.orangeAccent, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Ostalo ($ostalo)',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.orange),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, color: Colors.orange),
                       ),
                     ],
                   ),
@@ -747,12 +853,14 @@ class _DanasScreenState extends State<DanasScreen> {
                       Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(
+                            color: Colors.redAccent, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Otkazali ($otkazali)',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, color: Colors.red),
                       ),
                     ],
                   ),
@@ -766,12 +874,17 @@ class _DanasScreenState extends State<DanasScreen> {
             ),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Zatvori'))
+        ],
       ),
     );
   }
 
-  Widget _buildStatRow(String label, dynamic value, IconData icon, Color color) {
+  Widget _buildStatRow(
+      String label, dynamic value, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -780,11 +893,13 @@ class _DanasScreenState extends State<DanasScreen> {
           const SizedBox(width: 8),
           Text(
             '$label: ',
-            style: TextStyle(color: Colors.grey[700], fontSize: 14), // 🎨 Tamniji tekst
+            style: TextStyle(
+                color: Colors.grey[700], fontSize: 14), // 🎨 Tamniji tekst
           ),
           Text(
             value.toString(),
-            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: color, fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -793,11 +908,14 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
   Future<void> _showPopisDana() async {
-    if (_currentDriver == null || _currentDriver!.isEmpty || !VozacBoja.isValidDriver(_currentDriver)) {
+    if (_currentDriver == null ||
+        _currentDriver!.isEmpty ||
+        !VozacBoja.isValidDriver(_currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Morate biti ulogovani i ovlašćeni da biste koristili Popis.'),
+            content: const Text(
+                'Morate biti ulogovani i ovlašćeni da biste koristili Popis.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -827,7 +945,8 @@ class _DanasScreenState extends State<DanasScreen> {
       }
 
       // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(putnici, dayStart, dayEnd);
+      final detaljneStats = await StatistikaService.instance
+          .detaljneStatistikePoVozacima(putnici, dayStart, dayEnd);
       final vozacStats = detaljneStats[vozac] ?? {};
 
       // 4. REALTIME PAZAR STREAM - PERSONALIZOVANO ZA ULOGOVANOG VOZAČA
@@ -843,7 +962,8 @@ class _DanasScreenState extends State<DanasScreen> {
       }
 
       // 5. SITAN NOVAC
-      final sitanNovac = await SimplifiedDailyCheckInService.getTodayAmount(vozac);
+      final sitanNovac =
+          await SimplifiedDailyCheckInService.getTodayAmount(vozac);
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
@@ -856,7 +976,8 @@ class _DanasScreenState extends State<DanasScreen> {
       // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
       late double kilometraza;
       try {
-        kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
+        kilometraza = await StatistikaService.instance
+            .getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
         kilometraza = 0.0; // Fallback vrednost
       }
@@ -894,7 +1015,9 @@ class _DanasScreenState extends State<DanasScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ Greška pri učitavanju popisa: $e'), backgroundColor: Colors.red));
+        ).showSnackBar(SnackBar(
+            content: Text('❌ Greška pri učitavanju popisa: $e'),
+            backgroundColor: Colors.red));
       }
     }
   }
@@ -975,7 +1098,10 @@ class _DanasScreenState extends State<DanasScreen> {
             Expanded(
               child: Text(
                 'POPIS - ${datum.day}.${datum.month}.${datum.year}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800]),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -990,7 +1116,8 @@ class _DanasScreenState extends State<DanasScreen> {
               color: vozacColor.withValues(alpha: 0.25),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: vozacColor.withValues(alpha: 0.6), width: 2),
+                side: BorderSide(
+                    color: vozacColor.withValues(alpha: 0.6), width: 2),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -1004,22 +1131,39 @@ class _DanasScreenState extends State<DanasScreen> {
                         const SizedBox(width: 8),
                         Text(
                           vozac,
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800]),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
 
                     // DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-                    _buildStatRow('Dodati putnici', dodatiPutnici, Icons.add_circle, Colors.blue),
-                    _buildStatRow('Otkazani', otkazaniPutnici, Icons.cancel, Colors.red),
-                    _buildStatRow('Naplaćeni', naplaceniPutnici, Icons.payment, Colors.green),
-                    _buildStatRow('Pokupljeni', pokupljeniPutnici, Icons.check_circle, Colors.orange),
-                    _buildStatRow('Dugovi', dugoviPutnici, Icons.warning, Colors.redAccent),
-                    _buildStatRow('Mesečne karte', mesecneKarte, Icons.card_membership, Colors.purple),
-                    _buildStatRow('Kilometraža', '${kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
+                    _buildStatRow('Dodati putnici', dodatiPutnici,
+                        Icons.add_circle, Colors.blue),
+                    _buildStatRow(
+                        'Otkazani', otkazaniPutnici, Icons.cancel, Colors.red),
+                    _buildStatRow('Naplaćeni', naplaceniPutnici, Icons.payment,
+                        Colors.green),
+                    _buildStatRow('Pokupljeni', pokupljeniPutnici,
+                        Icons.check_circle, Colors.orange),
+                    _buildStatRow('Dugovi', dugoviPutnici, Icons.warning,
+                        Colors.redAccent),
+                    _buildStatRow('Mesečne karte', mesecneKarte,
+                        Icons.card_membership, Colors.purple),
+                    _buildStatRow(
+                        'Kilometraža',
+                        '${kilometraza.toStringAsFixed(1)} km',
+                        Icons.route,
+                        Colors.teal),
 
-                    Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
+                    Divider(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.24)),
 
                     // UKUPAN PAZAR - GLAVNI PODATAK
                     _buildStatRow(
@@ -1039,15 +1183,19 @@ class _DanasScreenState extends State<DanasScreen> {
                         decoration: BoxDecoration(
                           color: Colors.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.account_balance_wallet, color: Colors.orange, size: 20),
+                            const Icon(Icons.account_balance_wallet,
+                                color: Colors.orange, size: 20),
                             const SizedBox(width: 8),
                             Text(
                               'Sitan novac: ${sitanNovac.toStringAsFixed(0)} RSD',
-                              style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -1064,7 +1212,8 @@ class _DanasScreenState extends State<DanasScreen> {
                       ),
                       child: const Text(
                         '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
-                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                            fontSize: 12, fontStyle: FontStyle.italic),
                       ),
                     ),
                   ],
@@ -1074,7 +1223,9 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Otkaži')),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context, true),
             icon: const Icon(Icons.save),
@@ -1092,14 +1243,16 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   //  SAČUVAJ POPIS U DAILY CHECK-IN SERVICE
-  Future<void> _sacuvajPopis(String vozac, DateTime datum, Map<String, dynamic> podaci) async {
+  Future<void> _sacuvajPopis(
+      String vozac, DateTime datum, Map<String, dynamic> podaci) async {
     try {
       // Uklonjena striktna provera vozača
       // Sačuvaj kompletan popis
       await SimplifiedDailyCheckInService.saveDailyReport(vozac, datum, podaci);
 
       // Takođe sačuvaj i sitan novac (za kompatibilnost)
-      await SimplifiedDailyCheckInService.saveCheckIn(vozac, podaci['sitanNovac'] as double);
+      await SimplifiedDailyCheckInService.saveCheckIn(
+          vozac, podaci['sitanNovac'] as double);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1114,7 +1267,9 @@ class _DanasScreenState extends State<DanasScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ Greška pri čuvanju popisa: $e'), backgroundColor: Colors.red));
+        ).showSnackBar(SnackBar(
+            content: Text('❌ Greška pri čuvanju popisa: $e'),
+            backgroundColor: Colors.red));
       }
     }
   }
@@ -1151,7 +1306,15 @@ class _DanasScreenState extends State<DanasScreen> {
   // Dobij današnji dan u formatu koji se koristi u bazi
   String _getTodayForDatabase() {
     final now = DateTime.now();
-    final dayNames = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned']; // Koristi iste kratice kao Home screen
+    final dayNames = [
+      'pon',
+      'uto',
+      'sre',
+      'cet',
+      'pet',
+      'sub',
+      'ned'
+    ]; // Koristi iste kratice kao Home screen
     final todayName = dayNames[now.weekday - 1];
 
     // 🎯 DANAS SCREEN PRIKAZUJE SAMO TRENUTNI DAN - ne prebacuje na Ponedeljak
@@ -1263,7 +1426,8 @@ class _DanasScreenState extends State<DanasScreen> {
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
+            MaterialPageRoute<void>(
+                builder: (context) => const WelcomeScreen()),
             (route) => false,
           );
         }
@@ -1274,7 +1438,9 @@ class _DanasScreenState extends State<DanasScreen> {
           // Initialize kusur stream to show current value
           DailyCheckInService.initializeStreamForVozac(_currentDriver!);
 
-          _dailyCheckinSub = SimplifiedDailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
+          _dailyCheckinSub =
+              SimplifiedDailyCheckInService.initializeRealtimeForDriver(
+                  _currentDriver!);
 
           // 💓 POKRENI HEARTBEAT MONITORING
           _startHealthMonitoring();
@@ -1295,8 +1461,10 @@ class _DanasScreenState extends State<DanasScreen> {
     _initializeRealtimeTracking();
 
     // Start network status listener to auto-refetch when we recover connectivity
-    _prevNetworkStatus = RealtimeNetworkStatusService.instance.networkStatus.value;
-    RealtimeNetworkStatusService.instance.networkStatus.addListener(_onNetworkStatusChanged);
+    _prevNetworkStatus =
+        RealtimeNetworkStatusService.instance.networkStatus.value;
+    RealtimeNetworkStatusService.instance.networkStatus
+        .addListener(_onNetworkStatusChanged);
 
     //  REAL-TIME NOTIFICATION COUNTER
     RealtimeNotificationCounterService.initialize();
@@ -1309,7 +1477,8 @@ class _DanasScreenState extends State<DanasScreen> {
     // _isRealtimeHealthy.addListener(_onRealtimeHealthyChanged);
 
     // Subscribe to driver GPS position updates to pass to route optimization
-    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
+    _driverPositionSubscription =
+        RealtimeGpsService.positionStream.listen((pos) {
       _lastDriverPosition = pos;
     });
 
@@ -1333,7 +1502,8 @@ class _DanasScreenState extends State<DanasScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.notification_important, color: Theme.of(context).colorScheme.onSurface),
+            Icon(Icons.notification_important,
+                color: Theme.of(context).colorScheme.onSurface),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -1342,11 +1512,14 @@ class _DanasScreenState extends State<DanasScreen> {
                 children: [
                   Text(
                     '🔔 Otvoreno iz notifikacije',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface),
                   ),
                   Text(
                     'Putnik: ${widget.highlightPutnikIme} | ${widget.filterGrad} ${widget.filterVreme}',
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ],
               ),
@@ -1354,19 +1527,25 @@ class _DanasScreenState extends State<DanasScreen> {
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.primary,
-        action: SnackBarAction(label: 'OK', textColor: Theme.of(context).colorScheme.onPrimary, onPressed: () {}),
+        action: SnackBarAction(
+            label: 'OK',
+            textColor: Theme.of(context).colorScheme.onPrimary,
+            onPressed: () {}),
       ),
     );
   }
 
   /// 🔍 GRAD POREĐENJE - razlikuj mesečne i obične putnike
-  bool _isGradMatch(String? putnikGrad, String? putnikAdresa, String selectedGrad, {bool isMesecniPutnik = false}) {
+  bool _isGradMatch(
+      String? putnikGrad, String? putnikAdresa, String selectedGrad,
+      {bool isMesecniPutnik = false}) {
     // Za mesečne putnike - direktno poređenje grada
     if (isMesecniPutnik) {
       return putnikGrad == selectedGrad;
     }
     // Za obične putnike - koristi adresnu validaciju
-    return GradAdresaValidator.isGradMatch(putnikGrad, putnikAdresa, selectedGrad);
+    return GradAdresaValidator.isGradMatch(
+        putnikGrad, putnikAdresa, selectedGrad);
   }
 
   Future<void> _initializeCurrentDriver() async {
@@ -1402,7 +1581,8 @@ class _DanasScreenState extends State<DanasScreen> {
     // 🚨 FAIL-FAST CLEANUP - DISPOSE ALL STREAMS
     FailFastStreamManager.instance.disposeAll();
     try {
-      RealtimeNetworkStatusService.instance.networkStatus.removeListener(_onNetworkStatusChanged);
+      RealtimeNetworkStatusService.instance.networkStatus
+          .removeListener(_onNetworkStatusChanged);
     } catch (e) {}
     try {
       _driverPositionSubscription?.cancel();
@@ -1419,13 +1599,15 @@ class _DanasScreenState extends State<DanasScreen> {
   // Filtriranje dužnika ide u StreamBuilder
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
-  void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
+  void _optimizeCurrentRoute(List<Putnik> putnici,
+      {bool isAlreadyOptimized = false}) async {
     // Proveri da li je ulogovan i valjan vozač
     if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Morate biti ulogovani i ovlašćeni da biste koristili optimizaciju rute.'),
+            content: Text(
+                'Morate biti ulogovani i ovlašćeni da biste koristili optimizaciju rute.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -1445,7 +1627,9 @@ class _DanasScreenState extends State<DanasScreen> {
         if (mounted) {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('❌ Nema putnika sa adresama za reorder'), backgroundColor: Colors.orange),
+            const SnackBar(
+                content: Text('❌ Nema putnika sa adresama za reorder'),
+                backgroundColor: Colors.orange),
           );
         }
         return;
@@ -1460,7 +1644,10 @@ class _DanasScreenState extends State<DanasScreen> {
           _isLoading = false;
         });
 
-      final routeString = _optimizedRoute.take(3).map((p) => p.adresa?.split(',').first ?? p.ime).join(' → ');
+      final routeString = _optimizedRoute
+          .take(3)
+          .map((p) => p.adresa?.split(',').first ?? p.ime)
+          .join(' → ');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1474,7 +1661,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text('📍 Sledeći putnici: $routeString${_optimizedRoute.length > 3 ? "..." : ""}'),
+                Text(
+                    '📍 Sledeći putnici: $routeString${_optimizedRoute.length > 3 ? "..." : ""}'),
                 Text('🎯 Broj putnika: ${_optimizedRoute.length}'),
               ],
             ),
@@ -1488,8 +1676,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 SAMO REORDER PUTNIKA - bez otvaranja mape
     final filtriraniPutnici = putnici.where((p) {
-      final vremeMatch =
-          GradAdresaValidator.normalizeTime(p.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
+      final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) ==
+          GradAdresaValidator.normalizeTime(_selectedVreme);
 
       // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - samo Bela Crkva i Vršac
       final gradMatch = _isGradMatch(p.grad, p.adresa, _selectedGrad);
@@ -1508,7 +1696,9 @@ class _DanasScreenState extends State<DanasScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Nema putnika sa adresama za reorder'), backgroundColor: Colors.orange),
+          const SnackBar(
+              content: Text('❌ Nema putnika sa adresama za reorder'),
+              backgroundColor: Colors.orange),
         );
       }
       return;
@@ -1548,7 +1738,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                Text('📍 Sledeći putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
+                Text(
+                    '📍 Sledeći putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
                 Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
                 const Text('🛰️ Sledite listu odozgo nadole!'),
               ],
@@ -1561,9 +1752,12 @@ class _DanasScreenState extends State<DanasScreen> {
     } catch (e) {
       try {
         // Fallback na osnovnu optimizaciju
-        final fallbackOptimized = await RouteOptimizationService.optimizeRouteGeographically(
+        final fallbackOptimized =
+            await RouteOptimizationService.optimizeRouteGeographically(
           filtriraniPutnici,
-          startAddress: _selectedGrad == 'Bela Crkva' ? 'Bela Crkva, Serbia' : 'Vršac, Serbia',
+          startAddress: _selectedGrad == 'Bela Crkva'
+              ? 'Bela Crkva, Serbia'
+              : 'Vršac, Serbia',
         );
 
         if (mounted)
@@ -1580,7 +1774,8 @@ class _DanasScreenState extends State<DanasScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ Koristim osnovnu GPS optimizaciju (napredna nije dostupna)'),
+              content: Text(
+                  '⚠️ Koristim osnovnu GPS optimizaciju (napredna nije dostupna)'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -1597,7 +1792,8 @@ class _DanasScreenState extends State<DanasScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Nije moguće optimizovati rutu. Pokušajte ponovo.'),
+              content:
+                  Text('❌ Nije moguće optimizovati rutu. Pokušajte ponovo.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -1618,12 +1814,19 @@ class _DanasScreenState extends State<DanasScreen> {
           preferredSize: const Size.fromHeight(80),
           child: Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-              border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)),
+              color: Theme.of(context)
+                  .glassContainer, // Transparentni glassmorphism
+              border:
+                  Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+              borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(25),
+                  bottomRight: Radius.circular(25)),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                   spreadRadius: 2,
@@ -1632,12 +1835,15 @@ class _DanasScreenState extends State<DanasScreen> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // DATUM TEKST - kao rezervacije
-                    Center(child: _buildDigitalDateDisplay()), // dodano Center widget
+                    Center(
+                        child:
+                            _buildDigitalDateDisplay()), // dodano Center widget
                     const SizedBox(height: 4),
                     // DUGMAD U APP BAR-U - dinamički broj dugmića
                     Row(
@@ -1690,15 +1896,18 @@ class _DanasScreenState extends State<DanasScreen> {
                     final selectedVreme = widget.filterVreme ?? _selectedVreme;
                     final selectedDan = _getTodayForDatabase();
                     for (final p in list) {
-                      final gradMatch = _isGradMatch(p.grad, p.adresa, selectedGrad);
-                      final vremeMatch = GradAdresaValidator.normalizeTime(p.polazak) ==
-                          GradAdresaValidator.normalizeTime(selectedVreme);
+                      final gradMatch =
+                          _isGradMatch(p.grad, p.adresa, selectedGrad);
+                      final vremeMatch =
+                          GradAdresaValidator.normalizeTime(p.polazak) ==
+                              GradAdresaValidator.normalizeTime(selectedVreme);
                       final danMatch = p.dan == selectedDan ||
                           p.datum == selectedDan ||
                           (p.datum == null &&
                               GradAdresaValidator.normalizeString(
                                 p.dan,
-                              ).contains(GradAdresaValidator.normalizeString(selectedDan)));
+                              ).contains(GradAdresaValidator.normalizeString(
+                                  selectedDan)));
                       if (gradMatch && vremeMatch && danMatch) {
                         matchingIds.add(p.id.toString());
                       }
@@ -1708,7 +1917,8 @@ class _DanasScreenState extends State<DanasScreen> {
                     if (!_setEquals(_lastMatchingIds, matchingIds)) {
                       _lastMatchingIds = matchingIds;
                       try {
-                        _routeOptimizationService.invalidateCacheFor(grad: selectedGrad, vreme: selectedVreme);
+                        _routeOptimizationService.invalidateCacheFor(
+                            grad: selectedGrad, vreme: selectedVreme);
                         if (mounted) setState(() {});
                       } catch (_) {}
                     }
@@ -1716,12 +1926,15 @@ class _DanasScreenState extends State<DanasScreen> {
 
                   // 🚥 REGISTRUJ NETWORK STATUS - SUCCESS/ERROR
                   if (snapshot.hasData && !snapshot.hasError) {
-                    RealtimeNetworkStatusService.instance.registerStreamResponse(
+                    RealtimeNetworkStatusService.instance
+                        .registerStreamResponse(
                       'putnici_stream',
-                      const Duration(milliseconds: 500), // Estimated response time
+                      const Duration(
+                          milliseconds: 500), // Estimated response time
                     );
                   } else if (snapshot.hasError) {
-                    RealtimeNetworkStatusService.instance.registerStreamResponse(
+                    RealtimeNetworkStatusService.instance
+                        .registerStreamResponse(
                       'putnici_stream',
                       const Duration(seconds: 30), // Error timeout
                       hasError: true,
@@ -1750,11 +1963,13 @@ class _DanasScreenState extends State<DanasScreen> {
                   final danasnjiDan = _getTodayForDatabase();
 
                   // Real-time filtriranje
-                  final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+                  final oneWeekAgo =
+                      DateTime.now().subtract(const Duration(days: 7));
 
                   final danasPutnici = sviPutnici.where((p) {
                     // Dan u nedelji filter
-                    final dayMatch = p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
+                    final dayMatch =
+                        p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
 
                     // Vremski filter - samo poslednja nedelja za dnevne putnike
                     bool timeMatch = true;
@@ -1770,7 +1985,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
                   final filtriraniPutnici = danasPutnici.where((putnik) {
                     final vremeMatch =
-                        GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(vreme);
+                        GradAdresaValidator.normalizeTime(putnik.polazak) ==
+                            GradAdresaValidator.normalizeTime(vreme);
 
                     // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
                     final gradMatch = _isGradMatch(
@@ -1795,7 +2011,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   // Koristiti optimizovanu rutu ako postoji, ali filtriraj je po trenutnom polazaku
                   final finalPutnici = _isRouteOptimized
                       ? _optimizedRoute.where((putnik) {
-                          final vremeMatch = GradAdresaValidator.normalizeTime(putnik.polazak) ==
+                          final vremeMatch = GradAdresaValidator.normalizeTime(
+                                  putnik.polazak) ==
                               GradAdresaValidator.normalizeTime(vreme);
 
                           // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - razlikuj mesečne i obične putnike
@@ -1821,15 +2038,20 @@ class _DanasScreenState extends State<DanasScreen> {
                       : filtriraniPutnici;
                   // 💳 SVIH DUŽNIKA SORTIRANIH PO DATUMU (najnoviji na vrhu)
                   final filteredDuznici = danasPutnici.where((putnik) {
-                    final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
-                    final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+                    final nijePlatio = (putnik.iznosPlacanja == null ||
+                        putnik.iznosPlacanja == 0);
+                    final nijeOtkazan = putnik.status != 'otkazan' &&
+                        putnik.status != 'Otkazano';
                     final jesteMesecni = putnik.mesecnaKarta == true;
                     final pokupljen = putnik.jePokupljen;
 
                     // ✅ NOVA LOGIKA: Vozači vide SVE dužnike (mogu naplatiti bilo koji dug)
                     // Uklonjeno filtriranje po vozaču - jeOvajVozac filter
 
-                    return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
+                    return nijePlatio &&
+                        nijeOtkazan &&
+                        !jesteMesecni &&
+                        pokupljen;
                   }).toList();
 
                   // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)
@@ -1847,7 +2069,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   // ✅ UVEK KORISTI SAMO DANAŠNJI DAN
                   final today = DateTime.now();
                   final dayStart = DateTime(today.year, today.month, today.day);
-                  final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+                  final dayEnd =
+                      DateTime(today.year, today.month, today.day, 23, 59, 59);
                   return StreamBuilder<double>(
                     stream: StatistikaService.streamPazarZaVozaca(
                       _currentDriver ?? '',
@@ -1860,12 +2083,15 @@ class _DanasScreenState extends State<DanasScreen> {
 
                       // 🚥 REGISTRUJ NETWORK STATUS - SUCCESS/ERROR
                       if (pazarSnapshot.hasData && !pazarSnapshot.hasError) {
-                        RealtimeNetworkStatusService.instance.registerStreamResponse(
+                        RealtimeNetworkStatusService.instance
+                            .registerStreamResponse(
                           'pazar_stream',
-                          const Duration(milliseconds: 800), // Estimated response time
+                          const Duration(
+                              milliseconds: 800), // Estimated response time
                         );
                       } else if (pazarSnapshot.hasError) {
-                        RealtimeNetworkStatusService.instance.registerStreamResponse(
+                        RealtimeNetworkStatusService.instance
+                            .registerStreamResponse(
                           'pazar_stream',
                           const Duration(seconds: 30), // Error timeout
                           hasError: true,
@@ -1903,12 +2129,15 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.green.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.green[300]!),
+                                      border:
+                                          Border.all(color: Colors.green[300]!),
                                     ),
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         const Text(
                                           'Pazar',
@@ -1938,20 +2167,25 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.purple.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.purple.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.purple[300]!),
+                                      border: Border.all(
+                                          color: Colors.purple[300]!),
                                     ),
                                     child: StreamBuilder<int>(
-                                      stream: StatistikaService.streamBrojMesecnihKarataZaVozaca(
+                                      stream: StatistikaService
+                                          .streamBrojMesecnihKarataZaVozaca(
                                         _currentDriver ?? '',
                                         from: dayStart,
                                         to: dayEnd,
                                       ),
                                       builder: (context, mesecneSnapshot) {
-                                        final brojMesecnih = mesecneSnapshot.data ?? 0;
+                                        final brojMesecnih =
+                                            mesecneSnapshot.data ?? 0;
                                         return Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             const Text(
@@ -1986,19 +2220,22 @@ class _DanasScreenState extends State<DanasScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.red.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.red[300]!),
+                                      border:
+                                          Border.all(color: Colors.red[300]!),
                                     ),
                                     child: InkWell(
                                       onTap: () {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute<void>(
-                                            builder: (context) => DugoviScreen(currentDriver: _currentDriver),
+                                            builder: (context) => DugoviScreen(
+                                                currentDriver: _currentDriver),
                                           ),
                                         );
                                       },
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           const Text(
@@ -2031,16 +2268,22 @@ class _DanasScreenState extends State<DanasScreen> {
                                     height: 69, // smanjio sa 70 na 69
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.orange.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.orange.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.orange[300]!),
+                                      border: Border.all(
+                                          color: Colors.orange[300]!),
                                     ),
                                     child: StreamBuilder<double>(
-                                      stream: SimplifiedDailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
+                                      stream: SimplifiedDailyCheckInService
+                                          .streamTodayAmount(
+                                              _currentDriver ?? ''),
                                       builder: (context, sitanSnapshot) {
-                                        final sitanNovac = sitanSnapshot.data ?? 0.0;
+                                        final sitanNovac =
+                                            sitanSnapshot.data ?? 0.0;
                                         return Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             const Text(
@@ -2053,7 +2296,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              sitanNovac > 0 ? sitanNovac.toStringAsFixed(0) : '-',
+                                              sitanNovac > 0
+                                                  ? sitanNovac
+                                                      .toStringAsFixed(0)
+                                                  : '-',
                                               style: const TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
@@ -2075,7 +2321,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                 ? const Center(
                                     child: Text(
                                       'Nema putnika za izabrani polazak',
-                                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                                      style: TextStyle(
+                                          fontSize: 16, color: Colors.grey),
                                     ),
                                   )
                                 : Column(
@@ -2084,25 +2331,36 @@ class _DanasScreenState extends State<DanasScreen> {
                                         Container(
                                           width: double.infinity,
                                           padding: const EdgeInsets.all(8),
-                                          margin: const EdgeInsets.only(bottom: 8),
+                                          margin:
+                                              const EdgeInsets.only(bottom: 8),
                                           decoration: BoxDecoration(
-                                            color: _isGpsTracking ? Colors.blue[50] : Colors.green[50],
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: _isGpsTracking
+                                                ? Colors.blue[50]
+                                                : Colors.green[50],
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             border: Border.all(
-                                              color: _isGpsTracking ? Colors.blue[300]! : Colors.green[300]!,
+                                              color: _isGpsTracking
+                                                  ? Colors.blue[300]!
+                                                  : Colors.green[300]!,
                                             ),
                                           ),
                                           child: Row(
                                             children: [
                                               Icon(
-                                                _isGpsTracking ? Icons.gps_fixed : Icons.route,
-                                                color: _isGpsTracking ? Colors.blue : Colors.green,
+                                                _isGpsTracking
+                                                    ? Icons.gps_fixed
+                                                    : Icons.route,
+                                                color: _isGpsTracking
+                                                    ? Colors.blue
+                                                    : Colors.green,
                                                 size: 20,
                                               ),
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       _isListReordered
@@ -2112,56 +2370,83 @@ class _DanasScreenState extends State<DanasScreen> {
                                                               : 'Ruta optimizovana'),
                                                       style: TextStyle(
                                                         fontSize: 12,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         color: _isListReordered
                                                             ? Colors.orange[700]
-                                                            : (_isGpsTracking ? Colors.blue : Colors.green),
+                                                            : (_isGpsTracking
+                                                                ? Colors.blue
+                                                                : Colors.green),
                                                       ),
                                                     ),
                                                     // 🎯 PRIKAZ TRENUTNOG PUTNIKA
                                                     if (_isListReordered &&
-                                                        _currentPassengerIndex < _optimizedRoute.length)
+                                                        _currentPassengerIndex <
+                                                            _optimizedRoute
+                                                                .length)
                                                       Text(
                                                         '👤 SLEDEĆI: ${_optimizedRoute[_currentPassengerIndex].ime}',
                                                         style: TextStyle(
                                                           fontSize: 11,
-                                                          color: Colors.orange[600],
-                                                          fontWeight: FontWeight.w600,
+                                                          color: Colors
+                                                              .orange[600],
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                         ),
                                                       ),
                                                     // 🧭 PRIKAZ NAVIGATION STATUS-A
-                                                    if (_useAdvancedNavigation && _navigationStatus.isNotEmpty)
+                                                    if (_useAdvancedNavigation &&
+                                                        _navigationStatus
+                                                            .isNotEmpty)
                                                       Text(
                                                         '🧭 $_navigationStatus',
                                                         style: TextStyle(
                                                           fontSize: 10,
-                                                          color: Colors.indigo[600],
-                                                          fontStyle: FontStyle.italic,
+                                                          color: Colors
+                                                              .indigo[600],
+                                                          fontStyle:
+                                                              FontStyle.italic,
                                                         ),
                                                       ),
                                                     // DISABLED: Google APIs removed - StreamBuilder completely removed
                                                     // REMOVED: Complete StreamBuilder block - Google APIs disabled
                                                     // 🔄 REAL-TIME ROUTE STRING
                                                     StreamBuilder<String>(
-                                                      stream: Stream.fromIterable([finalPutnici]).map(
-                                                        (putnici) => 'Optimizovana ruta: ${putnici.length} putnika',
+                                                      stream:
+                                                          Stream.fromIterable([
+                                                        finalPutnici
+                                                      ]).map(
+                                                        (putnici) =>
+                                                            'Optimizovana ruta: ${putnici.length} putnika',
                                                       ),
-                                                      initialData: 'Pripremi rutu...',
-                                                      builder: (context, snapshot) {
+                                                      initialData:
+                                                          'Pripremi rutu...',
+                                                      builder:
+                                                          (context, snapshot) {
                                                         if (snapshot.hasData) {
                                                           return Text(
                                                             snapshot.data!,
                                                             style: TextStyle(
                                                               fontSize: 10,
-                                                              color: _isGpsTracking ? Colors.blue : Colors.green,
+                                                              color:
+                                                                  _isGpsTracking
+                                                                      ? Colors
+                                                                          .blue
+                                                                      : Colors
+                                                                          .green,
                                                             ),
                                                             maxLines: 2,
-                                                            overflow: TextOverflow.ellipsis,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           );
                                                         } else {
                                                           return const Text(
                                                             'Učitavanje...',
-                                                            style: TextStyle(fontSize: 10, color: Colors.green),
+                                                            style: TextStyle(
+                                                                fontSize: 10,
+                                                                color: Colors
+                                                                    .green),
                                                           );
                                                         }
                                                       },
@@ -2173,7 +2458,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                           ),
                                         ),
                                       // 🧭 NOVO: Real-time navigation widget
-                                      if (_useAdvancedNavigation && _optimizedRoute.isNotEmpty)
+                                      if (_useAdvancedNavigation &&
+                                          _optimizedRoute.isNotEmpty)
                                         RealTimeNavigationWidget(
                                           optimizedRoute: _optimizedRoute,
                                           onStatusUpdate: (message) {
@@ -2182,8 +2468,12 @@ class _DanasScreenState extends State<DanasScreen> {
                                                 _navigationStatus = message;
                                               });
                                             if (mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                    content: Text(message),
+                                                    duration: const Duration(
+                                                        seconds: 2)),
                                               );
                                             }
                                           },
@@ -2278,7 +2568,8 @@ class _DanasScreenState extends State<DanasScreen> {
               if (!TextUtils.isStatusActive(p.status)) continue;
 
               // 🔧 IDENTIČNA LOGIKA SA HOME SCREEN - filtriranje po datumu
-              final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
+              final targetDateIso =
+                  DateTime.now().toIso8601String().split('T')[0];
               final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
               final dayMatch = p.datum != null
                   ? p.datum == targetDateIso
@@ -2289,9 +2580,12 @@ class _DanasScreenState extends State<DanasScreen> {
               // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka
               final putnikGrad = p.grad.toLowerCase();
 
-              final jeBelaCrkva =
-                  putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
-              final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
+              final jeBelaCrkva = putnikGrad.contains('bela') ||
+                  putnikGrad.contains('bc') ||
+                  putnikGrad == 'bela crkva';
+              final jeVrsac = putnikGrad.contains('vrsac') ||
+                  putnikGrad.contains('vs') ||
+                  putnikGrad == 'vršac';
 
               if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
                 brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
@@ -2315,7 +2609,8 @@ class _DanasScreenState extends State<DanasScreen> {
                     selectedGrad: _selectedGrad,
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
-                    isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                    isSlotLoading: (grad, vreme) =>
+                        _resettingSlots.contains('$grad|$vreme'),
                     onPolazakChanged: (grad, vreme) {
                       if (mounted)
                         setState(() {
@@ -2324,16 +2619,19 @@ class _DanasScreenState extends State<DanasScreen> {
                         });
 
                       // 🕐 KORISTI TIMER MANAGER za debounce - SPREČAVA MEMORY LEAK
-                      TimerManager.debounce('danas_screen_reset_debounce', const Duration(milliseconds: 150), () async {
+                      TimerManager.debounce('danas_screen_reset_debounce',
+                          const Duration(milliseconds: 150), () async {
                         final key = '$grad|$vreme';
                         if (mounted) setState(() => _resettingSlots.add(key));
                         try {
-                          await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
+                          await _putnikService.resetPokupljenjaNaPolazak(
+                              vreme, grad, _currentDriver ?? 'Unknown');
                           await RealtimeService.instance.refreshNow();
                         } catch (e) {
                         } finally {
                           if (mounted) {
-                            if (mounted) setState(() => _resettingSlots.remove(key));
+                            if (mounted)
+                              setState(() => _resettingSlots.remove(key));
                           }
                         }
                       });
@@ -2344,7 +2642,8 @@ class _DanasScreenState extends State<DanasScreen> {
                     selectedGrad: _selectedGrad,
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
-                    isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
+                    isSlotLoading: (grad, vreme) =>
+                        _resettingSlots.contains('$grad|$vreme'),
                     onPolazakChanged: (grad, vreme) async {
                       if (mounted)
                         setState(() {
@@ -2360,12 +2659,14 @@ class _DanasScreenState extends State<DanasScreen> {
                           final key = '$grad|$vreme';
                           if (mounted) setState(() => _resettingSlots.add(key));
                           try {
-                            await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
+                            await _putnikService.resetPokupljenjaNaPolazak(
+                                vreme, grad, _currentDriver ?? 'Unknown');
                             await RealtimeService.instance.refreshNow();
                           } catch (e) {
                           } finally {
                             if (mounted) {
-                              if (mounted) setState(() => _resettingSlots.remove(key));
+                              if (mounted)
+                                setState(() => _resettingSlots.remove(key));
                             }
                           }
                         },
@@ -2400,7 +2701,9 @@ class _DanasScreenState extends State<DanasScreen> {
         }
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('🗺️ ${result.message}'), backgroundColor: Colors.green));
+        ).showSnackBar(SnackBar(
+            content: Text('🗺️ ${result.message}'),
+            backgroundColor: Colors.green));
       } else {
         if (mounted)
           setState(() {
@@ -2409,7 +2712,8 @@ class _DanasScreenState extends State<DanasScreen> {
           });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ ${result.message}'), backgroundColor: Colors.red));
+        ).showSnackBar(SnackBar(
+            content: Text('❌ ${result.message}'), backgroundColor: Colors.red));
       }
     } catch (e) {
       if (mounted) {
@@ -2419,7 +2723,9 @@ class _DanasScreenState extends State<DanasScreen> {
         });
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ Greška pri pokretanju navigacije: $e'), backgroundColor: Colors.red));
+        ).showSnackBar(SnackBar(
+            content: Text('❌ Greška pri pokretanju navigacije: $e'),
+            backgroundColor: Colors.red));
       }
     }
   }
@@ -2432,6 +2738,8 @@ class _DanasScreenState extends State<DanasScreen> {
       });
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('🛑 Navigacija zaustavljena'), backgroundColor: Colors.orange));
+    ).showSnackBar(const SnackBar(
+        content: Text('🛑 Navigacija zaustavljena'),
+        backgroundColor: Colors.orange));
   }
 }

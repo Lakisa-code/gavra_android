@@ -78,7 +78,9 @@ class ContactInfoSection extends StatelessWidget {
               TextField(
                 controller: controller.getController('brojTelefona'),
                 decoration: InputDecoration(
-                  labelText: controller.formData.tip == 'ucenik' ? '📱 Broj telefona učenika' : '📞 Broj telefona',
+                  labelText: controller.formData.tip == 'ucenik'
+                      ? '📱 Broj telefona učenika'
+                      : '📞 Broj telefona',
                   hintText: '064/123-456',
                   border: const OutlineInputBorder(),
                   focusedBorder: const OutlineInputBorder(
@@ -133,7 +135,8 @@ class ContactInfoSection extends StatelessWidget {
                                     color: Colors.white.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.2),
                                     ),
                                   ),
                                   child: const Icon(
@@ -145,7 +148,8 @@ class ContactInfoSection extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 const Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Kontakt podaci roditelja',
@@ -178,7 +182,8 @@ class ContactInfoSection extends StatelessWidget {
 
                             // Telefon oca
                             TextField(
-                              controller: controller.getController('brojTelefonaOca'),
+                              controller:
+                                  controller.getController('brojTelefonaOca'),
                               decoration: InputDecoration(
                                 labelText: 'Broj telefona oca',
                                 hintText: '064/123-456',
@@ -207,7 +212,8 @@ class ContactInfoSection extends StatelessWidget {
                                 hintStyle: const TextStyle(
                                   color: Colors.white54,
                                 ),
-                                errorText: controller.getFieldError('telefonOca'),
+                                errorText:
+                                    controller.getFieldError('telefonOca'),
                               ),
                               style: const TextStyle(
                                 color: Colors.white,
@@ -219,7 +225,8 @@ class ContactInfoSection extends StatelessWidget {
 
                             // Telefon majke
                             TextField(
-                              controller: controller.getController('brojTelefonaMajke'),
+                              controller:
+                                  controller.getController('brojTelefonaMajke'),
                               decoration: InputDecoration(
                                 labelText: 'Broj telefona majke',
                                 hintText: '065/789-012',
@@ -248,7 +255,8 @@ class ContactInfoSection extends StatelessWidget {
                                 hintStyle: const TextStyle(
                                   color: Colors.white54,
                                 ),
-                                errorText: controller.getFieldError('telefonMajke'),
+                                errorText:
+                                    controller.getFieldError('telefonMajke'),
                               ),
                               style: const TextStyle(
                                 color: Colors.white,

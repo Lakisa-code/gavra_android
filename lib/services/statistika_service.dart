@@ -17,7 +17,8 @@ import 'vozac_mapping_service.dart';
 class StatistikaService {
   StatistikaService._internal();
   static StatistikaService? _instance;
-  static StatistikaService get instance => _instance ??= StatistikaService._internal();
+  static StatistikaService get instance =>
+      _instance ??= StatistikaService._internal();
 
   final Map<String, Stream<Map<String, double>>> _streamCache = {};
 
@@ -44,7 +45,8 @@ class StatistikaService {
     final normalizedTo = _normalizeDateTime(to);
 
     // ✅ FIXED: Use proper inclusive date range comparison
-    final result = !normalized.isBefore(normalizedFrom) && !normalized.isAfter(normalizedTo);
+    final result = !normalized.isBefore(normalizedFrom) &&
+        !normalized.isAfter(normalizedTo);
 
     if (!result) {
     } else {}
@@ -119,16 +121,24 @@ class StatistikaService {
               direktnoPodudaranje = (vozacIme == vozac) || (vozacUuid == vozac);
 
               // 🆘 FALLBACK: Познати UUID-јеви ако мапирање не ради
-              if (!direktnoPodudaranje && vozac == 'Bojan' && vozacUuid == '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e') {
+              if (!direktnoPodudaranje &&
+                  vozac == 'Bojan' &&
+                  vozacUuid == '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e') {
                 direktnoPodudaranje = true;
               }
-              if (!direktnoPodudaranje && vozac == 'Svetlana' && vozacUuid == '5b379394-084e-1c7d-76bf-fc193a5b6c7d') {
+              if (!direktnoPodudaranje &&
+                  vozac == 'Svetlana' &&
+                  vozacUuid == '5b379394-084e-1c7d-76bf-fc193a5b6c7d') {
                 direktnoPodudaranje = true;
               }
-              if (!direktnoPodudaranje && vozac == 'Bruda' && vozacUuid == '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f') {
+              if (!direktnoPodudaranje &&
+                  vozac == 'Bruda' &&
+                  vozacUuid == '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f') {
                 direktnoPodudaranje = true;
               }
-              if (!direktnoPodudaranje && vozac == 'Bilevski' && vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
+              if (!direktnoPodudaranje &&
+                  vozac == 'Bilevski' &&
+                  vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
                 direktnoPodudaranje = true;
               }
             }
@@ -169,7 +179,8 @@ class StatistikaService {
         targetUuid = '5b379394-084e-1c7d-76bf-fc193a5b6c7d';
       else if (vozac == 'Bruda')
         targetUuid = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
-      else if (vozac == 'Bilevski') targetUuid = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
+      else if (vozac == 'Bilevski')
+        targetUuid = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
     }
 
     // Ako ni fallback ne radi, vrati 0
@@ -330,7 +341,8 @@ class StatistikaService {
 
         if (vozacId != null && vozacId.isNotEmpty && iznos > 0) {
           // 🔧 KONVERTUJ UUID u ime vozača
-          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          final vozacIme =
+              VozacMappingService.getVozacImeWithFallbackSync(vozacId);
           if (vozacIme != null) {
             // ✅ Dodeli pazar vozaču (bez dodatne validacije)
             if (pazarMesecne.containsKey(vozacIme)) {
@@ -407,7 +419,8 @@ class StatistikaService {
 
         // 2. OTKAZANI - ko je OTKAZAO (ili ko je dodao ako nema otkazaoVozac)
         if (putnik.jeOtkazan) {
-          final otkazaoVozac = putnik.otkazaoVozac ?? putnik.dodaoVozac ?? 'Nepoznat';
+          final otkazaoVozac =
+              putnik.otkazaoVozac ?? putnik.dodaoVozac ?? 'Nepoznat';
           if (vozaciStats.containsKey(otkazaoVozac)) {
             vozaciStats[otkazaoVozac]!['otkazani']++;
           }
@@ -479,7 +492,8 @@ class StatistikaService {
 
         if (vozacId != null && vozacId.isNotEmpty) {
           // 🔧 KONVERTUJ UUID u ime vozača
-          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+          final vozacIme =
+              VozacMappingService.getVozacImeWithFallbackSync(vozacId);
           if (vozaciStats.containsKey(vozacIme) && iznos > 0) {
             // ✅ MESEČNE KARTE SE DODAJU RAZDVOJENO
             vozaciStats[vozacIme]!['mesecneKarte']++;
@@ -560,7 +574,8 @@ class StatistikaService {
         'pazarObicni': 0.0, // 🆕 PAZAR samo od običnih putnika
         'pazarMesecne': 0.0, // 🆕 PAZAR samo od mesečnih karata
         'kilometraza': 0.0, // 🚗 KILOMETRAŽA za taj dan
-        'detaljiNaplata': <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
+        'detaljiNaplata':
+            <Map<String, dynamic>>[], // 🆕 Lista detaljnih naplata
         'poslednjaNaplata': null, // 🆕 Poslednja naplata
         'prosecanIznos': 0.0, // 🆕 Prosečan iznos naplate
       };
@@ -605,7 +620,8 @@ class StatistikaService {
           // ✅ SAMO REGISTROVANI VOZAČI: naplatioVozac > vozac (BEZ FALLBACK-a)
           final vozacData = putnik.naplatioVozac ?? putnik.vozac!;
           // 🔧 KORISTI DINAMIČKO MAPIRANJE umesto hardkodovane mape
-          final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacData);
+          final vozacIme =
+              VozacMappingService.getVozacImeWithFallbackSync(vozacData);
           if (vozaciStats.containsKey(vozacIme)) {
             final iznos = putnik.iznosPlacanja!;
 
@@ -617,7 +633,9 @@ class StatistikaService {
               'tip': putnik.mesecnaKarta == true ? 'Mesečna' : 'Dnevna',
             };
 
-            (vozaciStats[vozacIme]!['detaljiNaplata'] as List<Map<String, dynamic>>).add(detalj);
+            (vozaciStats[vozacIme]!['detaljiNaplata']
+                    as List<Map<String, dynamic>>)
+                .add(detalj);
 
             // Ažuriraj poslednju naplatu
             if (vozaciStats[vozacIme]!['poslednjaNaplata'] == null ||
@@ -708,7 +726,8 @@ class StatistikaService {
     try {
       for (final vozac in sviVozaci) {
         // 🚗 ESTIMACIJA: ~15km po putniku (prosečna ruta Mladenovac-Beograd)
-        final brojPutnika = (vozaciStats[vozac]!['pokupljeni'] as int) + (vozaciStats[vozac]!['mesecneKarte'] as int);
+        final brojPutnika = (vozaciStats[vozac]!['pokupljeni'] as int) +
+            (vozaciStats[vozac]!['mesecneKarte'] as int);
         final estimiranaKilometraza = brojPutnika * 15.0; // 15km po putniku
 
         vozaciStats[vozac]!['kilometraza'] = estimiranaKilometraza;
@@ -722,7 +741,8 @@ class StatistikaService {
 
     // 🧮 KALKULIŠI PROSEČNE IZNOSE ZA SVE VOZAČE
     for (final vozac in sviVozaci) {
-      final detalji = vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
+      final detalji =
+          vozaciStats[vozac]!['detaljiNaplata'] as List<Map<String, dynamic>>;
       if (detalji.isNotEmpty) {
         final ukupanIznos = detalji.fold<double>(
           0.0,
@@ -808,10 +828,14 @@ class StatistikaService {
       double maksimalnaDistancaPoSegmentu = 5.0; // 5km max po segmentu
 
       for (int i = 1; i < lokacije.length; i++) {
-        final lat1 = (lokacije[i - 1]['latitude'] as num).toDouble(); // ✅ Ispravljen naziv
-        final lng1 = (lokacije[i - 1]['longitude'] as num).toDouble(); // ✅ Ispravljen naziv
-        final lat2 = (lokacije[i]['latitude'] as num).toDouble(); // ✅ Ispravljen naziv
-        final lng2 = (lokacije[i]['longitude'] as num).toDouble(); // ✅ Ispravljen naziv
+        final lat1 = (lokacije[i - 1]['latitude'] as num)
+            .toDouble(); // ✅ Ispravljen naziv
+        final lng1 = (lokacije[i - 1]['longitude'] as num)
+            .toDouble(); // ✅ Ispravljen naziv
+        final lat2 =
+            (lokacije[i]['latitude'] as num).toDouble(); // ✅ Ispravljen naziv
+        final lng2 =
+            (lokacije[i]['longitude'] as num).toDouble(); // ✅ Ispravljen naziv
 
         final distanca = _distanceKm(lat1, lng1, lat2, lng2);
 
@@ -841,7 +865,10 @@ class StatistikaService {
       final supabase = Supabase.instance.client;
 
       // Obriši sve GPS pozicije iz tabele
-      await supabase.from('gps_lokacije').delete().neq('id', 0); // Briše sve redove (neq sa nepostojećim ID)
+      await supabase
+          .from('gps_lokacije')
+          .delete()
+          .neq('id', 0); // Briše sve redove (neq sa nepostojećim ID)
       return true;
     } catch (e) {
       return false;
@@ -940,7 +967,9 @@ class StatistikaService {
     const double R = 6371; // Radius Zemlje u km
     double dLat = (lat2 - lat1) * pi / 180.0;
     double dLon = (lon2 - lon1) * pi / 180.0;
-    double a = 0.5 - cos(dLat) / 2 + cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * (1 - cos(dLon)) / 2;
+    double a = 0.5 -
+        cos(dLat) / 2 +
+        cos(lat1 * pi / 180.0) * cos(lat2 * pi / 180.0) * (1 - cos(dLon)) / 2;
     return R * 2 * asin(sqrt(a));
   }
 
@@ -1045,7 +1074,8 @@ class StatistikaService {
       final placeni = aktivni.where((p) => p.jePlacen).toList();
       final placeniOvajMesec = placeni
           .where(
-            (p) => p.placeniMesec == danas.month && p.placenaGodina == danas.year,
+            (p) =>
+                p.placeniMesec == danas.month && p.placenaGodina == danas.year,
           )
           .toList();
 
@@ -1059,7 +1089,8 @@ class StatistikaService {
       for (final putnik in placeniOvajMesec) {
         // 📝 NAPOMENA: Vozač se ne prikazuje jer zahteva async pristup do putovanja_istorija
         // Za detaljnu analizu po vozačima koristi detaljneStatistikePoVozacima()
-        final vozacIme = 'Ukupno'; // Grupirati sve kao ukupno umesto po vozačima
+        final vozacIme =
+            'Ukupno'; // Grupirati sve kao ukupno umesto po vozačima
 
         if (!poVozacima.containsKey(vozacIme)) {
           poVozacima[vozacIme] = {
@@ -1071,8 +1102,10 @@ class StatistikaService {
         }
 
         final iznos = putnik.iznosPlacanja ?? 0.0;
-        poVozacima[vozacIme]!['broj_putnika'] = (poVozacima[vozacIme]!['broj_putnika'] as int) + 1;
-        poVozacima[vozacIme]!['ukupan_iznos'] = (poVozacima[vozacIme]!['ukupan_iznos'] as double) + iznos;
+        poVozacima[vozacIme]!['broj_putnika'] =
+            (poVozacima[vozacIme]!['broj_putnika'] as int) + 1;
+        poVozacima[vozacIme]!['ukupan_iznos'] =
+            (poVozacima[vozacIme]!['ukupan_iznos'] as double) + iznos;
 
         (poVozacima[vozacIme]!['putnici'] as List).add({
           'ime': putnik.putnikIme,

@@ -181,7 +181,7 @@ class TimesSection extends StatelessWidget {
                 nazivDana,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: isWorkingDay ? Colors.white : Colors.white.withOpacity(0.5),
+                  color: isWorkingDay ? Colors.white : Colors.white.withValues(alpha: 0.5),
                   fontSize: 14,
                 ),
               ),

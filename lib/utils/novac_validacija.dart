@@ -74,7 +74,8 @@ class NovcanaValidacija {
 
     if (vozacPutnici.isEmpty) return 0.0;
 
-    final placeni = vozacPutnici.where((p) => isValidAmount(p.iznosPlacanja)).length;
+    final placeni =
+        vozacPutnici.where((p) => isValidAmount(p.iznosPlacanja)).length;
     return (placeni / vozacPutnici.length) * 100;
   }
 
