@@ -156,13 +156,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _adresaVrsacController = TextEditingController();
 
     // Initialize departure time controllers (map-based)
+    const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     for (final dan in dani) {
       _polazakBcControllers[dan] = TextEditingController();
       _polazakVsControllers[dan] = TextEditingController();
     }
-
-    // Kreiraj controller-e za svaки dan
-    const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     for (final dan in dani) {
       _vremenaBcControllers[dan] = TextEditingController();
       _vremenaVsControllers[dan] = TextEditingController();
@@ -1450,7 +1448,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // Note: logic moved to `AddMesecniPutnikDialog` (kept there to reduce duplication)
-  }
 
   void _obrisiPutnika(MesecniPutnik putnik) async {
     // Pokaži potvrdu za brisanje
