@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -9,17 +8,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/mesecni_putnik.dart';
-import '../services/adresa_supabase_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
 import '../services/real_time_statistika_service.dart';
-import '../services/realtime_service.dart';
-import '../services/smart_address_autocomplete_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
-import '../utils/mesecni_helpers.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/add_mesecni_putnik_dialog.dart';
@@ -127,16 +122,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         });
       }
     }
-  }
-
-  String _getRadniDaniString() {
-    final List<String> odabraniDani = [];
-    _noviRadniDani.forEach((dan, selected) {
-      if (selected) {
-        odabraniDani.add(dan);
-      }
-    });
-    return odabraniDani.join(',');
   }
 
   @override
@@ -1373,81 +1358,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  /// 🧹 RESETUJ FORMU ZA DODAVANJE MESEČNOG PUTNIKA
-  void _resetujFormuZaDodavanje() {
-    if (mounted)
-      setState(() {
-        // Očisti sve text controller-e
-        _imeController.clear();
-        _tipSkoleController.clear();
-        _brojTelefonaController.clear();
-        _brojTelefonaOcaController.clear();
-        _brojTelefonaMajkeController.clear();
-        _adresaBelaCrkvaController.clear();
-        _adresaVrsacController.clear();
-
-        // Očisti controller-e za vremena polaska (map-based)
-        for (final c in _polazakBcControllers.values) {
-          c.clear();
-        }
-        for (final c in _polazakVsControllers.values) {
-          c.clear();
-        }
-
-        // Resetuj radne dane na standardnu radnu nedelju
-        _noviRadniDani = {
-          'pon': true,
-          'uto': true,
-          'sre': true,
-          'cet': true,
-          'pet': true,
-        };
-      });
-  }
-
-  /// 🕐 SAČUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETE
-  Future<void> _sacuvajVremePolasakaUIstorijuZaDan(
-    SharedPreferences prefs,
-    String vreme,
-    String smer, // 'BC' ili 'VS'
-    String dan,
-    String? vozac,
-  ) async {
-    try {
-      // Normalizuj vreme
-      final normalizedTime = MesecniHelpers.normalizeTime(vreme);
-      if (normalizedTime == null) return;
-
-      // Kreiraj ključ za čuvanje vremena
-      final key = 'time_history_${smer}_${dan}_${vozac ?? 'global'}';
-
-      // Učitaj postojeće vremena
-      final existingTimesJson = prefs.getString(key) ?? '{}';
-      final existingTimes = Map<String, int>.from(
-        json.decode(existingTimesJson) as Map<String, dynamic>,
-      );
-
-      // Povećaj broj korišćenja za ovo vreme
-      existingTimes[normalizedTime] = (existingTimes[normalizedTime] ?? 0) + 1;
-
-      // Ograniči na maksimalno 20 vremena po ključu da ne zauzima previše prostora
-      if (existingTimes.length > 20) {
-        // Sortiraj po frekvenciji i zadržar samo top 20
-        final sortedEntries = existingTimes.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-        existingTimes.clear();
-        for (int i = 0; i < 20 && i < sortedEntries.length; i++) {
-          existingTimes[sortedEntries[i].key] = sortedEntries[i].value;
-        }
-      }
-
-      // Sačuvaj nazad u SharedPreferences
-      await prefs.setString(key, json.encode(existingTimes));
-    } catch (e) {
-      // Greška pri čuvanju vremena polaska
-    }
-  }
-
-  // Note: logic moved to `AddMesecniPutnikDialog` (kept there to reduce duplication)
+  /// 🕐 SAČUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETEthere to reduce duplication)
 
   void _obrisiPutnika(MesecniPutnik putnik) async {
     // Pokaži potvrdu za brisanje
@@ -1781,12 +1692,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     } catch (e) {
       return '';
     }
-  }
-
-  // Čuva legacy funkciju za kompatibilnost
-  Future<String> _getCurrentDriver() async {
-    final uuid = await _getCurrentDriverUuid();
-    return VozacMappingService.getVozacImeWithFallbackSync(uuid) ?? 'Nepoznat';
   }
 
   // �💰 PRIKAZ DIJALOGA ZA PLAĆANJE
@@ -3105,66 +3010,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 🔍 VALIDACIJA VREMENA POLASKA - Using standardized TimeValidator
   String? _validateTime(String? value) {
     return TimeValidator.validateTime(value);
-  }
-
-  // 📋 VALIDACIJA CELOG FORMULARA
-  String? _validateForm() {
-    final ime = _imeController.text.trim();
-    if (ime.isEmpty) {
-      return 'Ime putnika je obavezno';
-    }
-
-    // Proveri da li je barem jedan radni dan označen
-    final hasWorkingDays = _noviRadniDani.values.any((selected) => selected);
-    if (!hasWorkingDays) {
-      return 'Morate označiti barem jedan radni dan';
-    }
-
-    // Mapa naziva dana
-    final daniMapa = {
-      'pon': 'Ponedeljak',
-      'uto': 'Utorak',
-      'sre': 'Sreda',
-      'cet': 'Četvrtak',
-      'pet': 'Petak',
-    };
-
-    // Proveri vremena polaska za označene dane
-    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      if (_noviRadniDani[dan] == true) {
-        final bcTime = _getControllerBelaCrkva(dan).text.trim();
-        final vsTime = _getControllerVrsac(dan).text.trim();
-
-        // ✅ OPCIONO: Vreme polaska može biti dodato naknadno
-        // Validiraj samo ako je uneto vreme
-
-        // Validacija BC vremena
-        if (bcTime.isNotEmpty) {
-          final bcError = _validateTime(bcTime);
-          if (bcError != null) {
-            return 'BC ${daniMapa[dan]}: $bcError';
-          }
-        }
-
-        // Validacija VS vremena
-        if (vsTime.isNotEmpty) {
-          final vsError = _validateTime(vsTime);
-          if (vsError != null) {
-            return 'VS ${daniMapa[dan]}: $vsError';
-          }
-        }
-
-        // Validacija sekvence polazaka ako su oba vremena uneta
-        if (bcTime.isNotEmpty && vsTime.isNotEmpty) {
-          final sequenceError = TimeValidator.validateDepartureSequence(bcTime, vsTime);
-          if (sequenceError != null) {
-            return '${daniMapa[dan]}: $sequenceError';
-          }
-        }
-      }
-    }
-
-    return null; // Forma je validna
   }
 
   // Helper za input polja za vreme po danu
