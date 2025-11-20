@@ -68,16 +68,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late ValueNotifier<String> _realtimeHealthStatus;
   late ValueNotifier<bool> _isNetworkConnected;
 
-  // Form controllers for adding new passenger
-  String _novoIme = '';
-  String _noviTip = 'radnik';
-  String _novaTipSkole = '';
-  String _noviBrojTelefona = '';
-  String _noviBrojTelefonaOca = '';
-  String _noviBrojTelefonaMajke = '';
-  String _novaAdresaBelaCrkva = '';
-  String _novaAdresaVrsac = '';
-
   // Working days state
   Map<String, bool> _noviRadniDani = {
     'pon': true,
@@ -1407,16 +1397,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   void _resetujFormuZaDodavanje() {
     if (mounted)
       setState(() {
-        // Resetuj osnovne varijable
-        _novoIme = '';
-        _noviTip = 'radnik';
-        _novaTipSkole = '';
-        _noviBrojTelefona = '';
-        _noviBrojTelefonaOca = '';
-        _noviBrojTelefonaMajke = '';
-        _novaAdresaBelaCrkva = '';
-        _novaAdresaVrsac = '';
-
         // Očisti sve text controller-e
         _imeController.clear();
         _tipSkoleController.clear();
@@ -1549,7 +1529,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final noviPutnik = MesecniPutnik(
         id: '', // Biće generisan od strane baze - OK jer toMap() će podesiti UUID
         putnikIme: ime, // Celo ime u jednom polju
-        tip: _noviTip, // Direktno string bez extension-a
+        tip: 'radnik', // Default tip
         tipSkole: tipSkole.isEmpty ? null : tipSkole,
         brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
         brojTelefonaOca: brojTelefonaOca.isEmpty ? null : brojTelefonaOca,
