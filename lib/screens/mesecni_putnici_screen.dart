@@ -1471,6 +1471,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
+  // ignore: unused_element
   Future<void> _sacuvajNovogPutnika() async {
     // Validacija formulara
     final validationError = _validateForm();
@@ -3142,6 +3143,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 📅 BUILDER ZA CHECKBOX RADNIH DANA
+  // ignore: unused_element
   Widget _buildRadniDanCheckbox(String danKod, String danNaziv) {
     return Container(
       margin: const EdgeInsets.only(bottom: 2),
@@ -3186,6 +3188,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // ⏰ BUILDER ZA VREMENA POLASKA PO DANIMA
+  // ignore: unused_element
   Widget _buildVremenaPolaskaSekcija() {
     return Container(
       padding: const EdgeInsets.all(10),
