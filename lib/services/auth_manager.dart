@@ -5,14 +5,12 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'analytics_service.dart';
 import 'firebase_auth_service.dart';
 import 'firebase_service.dart';
-import 'push_service.dart';
 
 /// � CENTRALIZOVANI AUTH MANAGER - FIREBASE EDITION
 /// Upravlja svim auth operacijama kroz Firebase Auth + Supabase podatke
@@ -48,10 +46,7 @@ class AuthManager {
         // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešne registracije (ako je traženo)
         if (remember) await rememberDevice(email, driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
-        // Bind this device tokens to the human-readable driver name for targeted notifications
-        try {
-          await PushService.bindDriver(driverName);
-        } catch (e) {}
+        // Push service removed - using only realtime notifications
         return AuthResult.success(authResult.message);
       } else {
         return AuthResult.error(authResult.message);
@@ -87,10 +82,7 @@ class AuthManager {
         // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a (ako je traženo)
         if (remember) await rememberDevice(email, driverName);
         await AnalyticsService.logVozacPrijavljen(driverName);
-        // Bind push tokens to current driver
-        try {
-          await PushService.bindDriver(driverName);
-        } catch (e) {}
+        // Push service removed - using only realtime notifications
         return AuthResult.success(authResult.message);
       } else {
         return AuthResult.error(authResult.message);
@@ -111,10 +103,7 @@ class AuthManager {
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
     await AnalyticsService.logVozacPrijavljen(driverName);
-    // Bind push tokens to current driver
-    try {
-      await PushService.bindDriver(driverName);
-    } catch (e) {}
+    // Push service removed - using only realtime notifications
   }
 
   /// Dobij trenutnog vozača
@@ -151,21 +140,7 @@ class AuthManager {
       // 3. Očisti Firebase session
       try {
         await FirebaseService.clearCurrentDriver();
-        // Remove push mapping on logout
-        try {
-          await PushService.removeAllTokens();
-        } catch (e) {}
-        // Unsubscribe from FCM topics for this driver
-        // Mark tokens as removed in unified `push_players` table
-        try {
-          final supabase = Supabase.instance.client;
-          if (currentDriver != null) {
-            await supabase.from('push_players').update({
-              'removed_at': DateTime.now().toIso8601String(),
-              'is_active': false,
-            }).eq('driver_id', currentDriver);
-          }
-        } catch (e) {}
+        // Push service removed - using only realtime notifications
         try {
           await FirebaseMessaging.instance.unsubscribeFromTopic('gavra_all_drivers');
           if (currentDriver != null && currentDriver.isNotEmpty) {

@@ -568,12 +568,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.person_add_alt_1,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
                           '✨ Dodaj Putnika',

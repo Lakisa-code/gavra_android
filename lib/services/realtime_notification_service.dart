@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
-import 'push_service.dart';
 
 class RealtimeNotificationService {
   /// IMPORTANT: Do NOT store provider REST/API keys in the client app.
@@ -195,11 +194,19 @@ class RealtimeNotificationService {
     }
   }
 
-  /// Initialize service with full multi-channel support (Firebase + PushService + Local)
+  /// Initialize service with real-time notifications only
   static Future<void> initialize() async {
     try {
-      // Initialize FCM listeners and Push service
-      await PushService.initialize();
+      // Firebase messaging initialization only - push service removed
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
     } catch (e) {
       // ignore
     }
@@ -222,19 +229,13 @@ class RealtimeNotificationService {
       if (datumString.isNotEmpty) {
         try {
           final datum = DateTime.parse(datumString);
-          isToday = datum.year == danas.year &&
-              datum.month == danas.month &&
-              datum.day == danas.day;
+          isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
         } catch (_) {
           isToday = false;
         }
       }
 
-      if ((type == 'dodat' ||
-              type == 'novi_putnik' ||
-              type == 'otkazan' ||
-              type == 'otkazan_putnik') &&
-          isToday) {
+      if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
         LocalNotificationService.showRealtimeNotification(
           title: message.notification?.title ?? 'Gavra Notification',
           body: message.notification?.body ?? 'Nova poruka',
@@ -265,8 +266,7 @@ class RealtimeNotificationService {
       await FirebaseMessaging.instance.subscribeToTopic('gavra_all_drivers');
 
       // Subscribe to driver-specific topic
-      await FirebaseMessaging.instance
-          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      await FirebaseMessaging.instance.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
       // Logger removed
     } catch (e) {
@@ -325,10 +325,8 @@ class RealtimeNotificationService {
   static Future<bool> hasNotificationPermissions() async {
     // Logger removed
     try {
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
-      bool hasPermission =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
+      bool hasPermission = settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return hasPermission;
     } catch (e) {
@@ -347,12 +345,10 @@ class RealtimeNotificationService {
         return false;
       }
 
-      NotificationSettings settings = await FirebaseMessaging.instance
-          .requestPermission()
-          .timeout(const Duration(seconds: 10));
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.requestPermission().timeout(const Duration(seconds: 10));
 
-      bool granted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      bool granted = settings.authorizationStatus == AuthorizationStatus.authorized;
       // Logger removed
       return granted;
     } catch (e) {
@@ -375,8 +371,7 @@ class RealtimeNotificationService {
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData =
-            jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,11 +10,8 @@ import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
-import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/offline_map_service.dart';
-import 'services/push_service.dart';
-import 'services/realtime_notification_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/voice_navigation_service.dart';
@@ -82,23 +78,12 @@ void main() async {
     // Ignoriši greške u voice navigation - optional feature
   }
 
-  // 🟦 INITIALIZE PUSH SERVICE (FCM + HMS)
+  // 🔐 INITIALIZE CACHE SERVICE
   try {
-    await PushService.initialize();
-  } catch (e) {}
-
-  // Handle cold-start notification
-  try {
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      RealtimeNotificationService.handleInitialMessage(initialMessage);
-    }
-  } catch (e) {}
-
-  // Register background handler for FCM - must be top-level function
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  // If a driver session exists, tokens should be registered automatically through PushService.initialize()
+    await CacheService.initialize();
+  } catch (e) {
+    // Ignoriši greške u cache - optional feature
+  }
 
   runApp(const MyApp());
 }
