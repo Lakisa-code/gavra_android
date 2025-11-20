@@ -35,10 +35,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'active_drivers': 25,
           'completed_trips': 89,
           'revenue': 45000.0,
-          'passenger_types': {
+            'passenger_types': {
             'regular': 85,
             'senior': 35,
-            'student': 30,
+              'ucenik': 30,
           },
           'monthly_data': [
             {'month': 'Jan', 'trips': 120},

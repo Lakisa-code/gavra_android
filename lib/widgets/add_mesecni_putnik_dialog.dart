@@ -4,6 +4,8 @@ import '../models/mesecni_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
+import '../utils/mesecni_helpers.dart';
+import '../widgets/shared/time_row.dart';
 
 /// 🆕 WIDGET ZA DODAVANJE MESEČNIH PUTNIKA
 ///
@@ -39,17 +41,9 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
   final TextEditingController _adresaBelaCrkvaController = TextEditingController();
   final TextEditingController _adresaVrsacController = TextEditingController();
 
-  // Time controllers
-  final TextEditingController _polazakBcPonController = TextEditingController();
-  final TextEditingController _polazakBcUtoController = TextEditingController();
-  final TextEditingController _polazakBcSreController = TextEditingController();
-  final TextEditingController _polazakBcCetController = TextEditingController();
-  final TextEditingController _polazakBcPetController = TextEditingController();
-  final TextEditingController _polazakVsPonController = TextEditingController();
-  final TextEditingController _polazakVsUtoController = TextEditingController();
-  final TextEditingController _polazakVsSreController = TextEditingController();
-  final TextEditingController _polazakVsCetController = TextEditingController();
-  final TextEditingController _polazakVsPetController = TextEditingController();
+  // Time controllers — map based for days (pon, uto, sre, cet, pet)
+  final Map<String, TextEditingController> _polazakBcControllers = {};
+  final Map<String, TextEditingController> _polazakVsControllers = {};
 
   // Form data
   String _novoIme = '';
@@ -75,6 +69,11 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
   void initState() {
     super.initState();
     _resetForm();
+    // Initialize per-day time controllers
+    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      _polazakBcControllers[dan] = TextEditingController();
+      _polazakVsControllers[dan] = TextEditingController();
+    }
   }
 
   @override
@@ -86,16 +85,12 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
     _brojTelefonaMajkeController.dispose();
     _adresaBelaCrkvaController.dispose();
     _adresaVrsacController.dispose();
-    _polazakBcPonController.dispose();
-    _polazakBcUtoController.dispose();
-    _polazakBcSreController.dispose();
-    _polazakBcCetController.dispose();
-    _polazakBcPetController.dispose();
-    _polazakVsPonController.dispose();
-    _polazakVsUtoController.dispose();
-    _polazakVsSreController.dispose();
-    _polazakVsCetController.dispose();
-    _polazakVsPetController.dispose();
+    for (final c in _polazakBcControllers.values) {
+      c.dispose();
+    }
+    for (final c in _polazakVsControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -120,17 +115,13 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
         _adresaBelaCrkvaController.clear();
         _adresaVrsacController.clear();
 
-        // Clear time controllers
-        _polazakBcPonController.clear();
-        _polazakBcUtoController.clear();
-        _polazakBcSreController.clear();
-        _polazakBcCetController.clear();
-        _polazakBcPetController.clear();
-        _polazakVsPonController.clear();
-        _polazakVsUtoController.clear();
-        _polazakVsSreController.clear();
-        _polazakVsCetController.clear();
-        _polazakVsPetController.clear();
+        // Clear time controllers (map-based)
+        for (final c in _polazakBcControllers.values) {
+          c.clear();
+        }
+        for (final c in _polazakVsControllers.values) {
+          c.clear();
+        }
 
         // Reset working days
         _noviRadniDani = {
@@ -282,14 +273,15 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
             value: _noviTip,
             label: 'Tip putnika',
             icon: Icons.category,
-            items: const ['radnik', 'đak', 'student'],
+            // Standardized types: 'radnik' and 'ucenik'
+            items: const ['radnik', 'ucenik'],
             onChanged: (value) => setState(() => _noviTip = value ?? 'radnik'),
           ),
-          if (_noviTip == 'đak' || _noviTip == 'student') ...[
+          if (_noviTip == 'ucenik') ...[
             const SizedBox(height: 12),
             _buildTextField(
               controller: _tipSkoleController,
-              label: _noviTip == 'đak' ? 'Škola' : 'Fakultet',
+              label: _noviTip == 'ucenik' ? 'Škola' : 'Fakultet',
               icon: Icons.school,
               onChanged: (value) => setState(() => _novaTipSkole = value),
             ),
@@ -397,55 +389,41 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
       title: '🕐 Vremena polaska',
       child: Column(
         children: [
-          _buildTimeRow('Ponedeljak', _polazakBcPonController, _polazakVsPonController),
+          TimeRow(
+            dayLabel: 'Ponedeljak',
+            bcController: _polazakBcControllers['pon']!,
+            vsController: _polazakVsControllers['pon']!,
+          ),
           const SizedBox(height: 8),
-          _buildTimeRow('Utorak', _polazakBcUtoController, _polazakVsUtoController),
+          TimeRow(
+            dayLabel: 'Utorak',
+            bcController: _polazakBcControllers['uto']!,
+            vsController: _polazakVsControllers['uto']!,
+          ),
           const SizedBox(height: 8),
-          _buildTimeRow('Sreda', _polazakBcSreController, _polazakVsSreController),
+          TimeRow(
+            dayLabel: 'Sreda',
+            bcController: _polazakBcControllers['sre']!,
+            vsController: _polazakVsControllers['sre']!,
+          ),
           const SizedBox(height: 8),
-          _buildTimeRow('Četvrtak', _polazakBcCetController, _polazakVsCetController),
+          TimeRow(
+            dayLabel: 'Četvrtak',
+            bcController: _polazakBcControllers['cet']!,
+            vsController: _polazakVsControllers['cet']!,
+          ),
           const SizedBox(height: 8),
-          _buildTimeRow('Petak', _polazakBcPetController, _polazakVsPetController),
+          TimeRow(
+            dayLabel: 'Petak',
+            bcController: _polazakBcControllers['pet']!,
+            vsController: _polazakVsControllers['pet']!,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeRow(String day, TextEditingController bcController, TextEditingController vsController) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            day,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: _buildTextField(
-            controller: bcController,
-            label: 'BC vreme',
-            hint: '07:30',
-            keyboardType: TextInputType.datetime,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 3,
-          child: _buildTextField(
-            controller: vsController,
-            label: 'VS vreme',
-            hint: '16:30',
-            keyboardType: TextInputType.datetime,
-          ),
-        ),
-      ],
-    );
-  }
+  // TimeRow has been migrated to shared widget `TimeRow` in lib/widgets/shared/time_row.dart
 
   Widget _buildActions() {
     return Container(
@@ -687,36 +665,26 @@ class _AddMesecniPutnikDialogState extends State<AddMesecniPutnikDialog> {
 
   Map<String, List<String>> _getPolasciPoDanu() {
     final polasci = <String, List<String>>{};
+    // Add BC / VS polasci for each day — normalize time and attach suffix
+    void addBc(String key) {
+      final val = _polazakBcControllers[key]?.text.trim() ?? '';
+      if (val.isNotEmpty) {
+        final norm = MesecniHelpers.normalizeTime(val) ?? val;
+        polasci[key] = [...(polasci[key] ?? []), '$norm BC'];
+      }
+    }
 
-    if (_polazakBcPonController.text.isNotEmpty) {
-      polasci['pon'] = [_polazakBcPonController.text];
+    void addVs(String key) {
+      final val = _polazakVsControllers[key]?.text.trim() ?? '';
+      if (val.isNotEmpty) {
+        final norm = MesecniHelpers.normalizeTime(val) ?? val;
+        polasci[key] = [...(polasci[key] ?? []), '$norm VS'];
+      }
     }
-    if (_polazakVsPonController.text.isNotEmpty) {
-      polasci['pon'] = [...(polasci['pon'] ?? []), _polazakVsPonController.text];
-    }
-    if (_polazakBcUtoController.text.isNotEmpty) {
-      polasci['uto'] = [_polazakBcUtoController.text];
-    }
-    if (_polazakVsUtoController.text.isNotEmpty) {
-      polasci['uto'] = [...(polasci['uto'] ?? []), _polazakVsUtoController.text];
-    }
-    if (_polazakBcSreController.text.isNotEmpty) {
-      polasci['sre'] = [_polazakBcSreController.text];
-    }
-    if (_polazakVsSreController.text.isNotEmpty) {
-      polasci['sre'] = [...(polasci['sre'] ?? []), _polazakVsSreController.text];
-    }
-    if (_polazakBcCetController.text.isNotEmpty) {
-      polasci['cet'] = [_polazakBcCetController.text];
-    }
-    if (_polazakVsCetController.text.isNotEmpty) {
-      polasci['cet'] = [...(polasci['cet'] ?? []), _polazakVsCetController.text];
-    }
-    if (_polazakBcPetController.text.isNotEmpty) {
-      polasci['pet'] = [_polazakBcPetController.text];
-    }
-    if (_polazakVsPetController.text.isNotEmpty) {
-      polasci['pet'] = [...(polasci['pet'] ?? []), _polazakVsPetController.text];
+
+    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      addBc(dan);
+      addVs(dan);
     }
 
     return polasci;

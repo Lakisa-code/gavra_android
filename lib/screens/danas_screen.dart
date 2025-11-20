@@ -303,7 +303,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final selectedGrad = widget.filterGrad ?? _selectedGrad;
 
         // 🔧 REORGANIZOVANA LOGIKA: Prvo filtriraj osnovne kriterijume, zatim računaj status unutar
-        final djaci = sviMesecniPutnici.where((MesecniPutnik mp) {
+        final ucenici = sviMesecniPutnici.where((MesecniPutnik mp) {
           // 🔧 ISPRAVKA: Tokenize days and trim; robust tip matching
           final radniDaniList = mp.radniDani
               .toLowerCase()
@@ -313,10 +313,8 @@ class _DanasScreenState extends State<DanasScreen> {
               .toList();
           final dayMatch = radniDaniList.contains(danasnjiDan.toLowerCase());
 
-          final tipNormalized = TextUtils.normalizeText(mp.tip);
-          final isUcenik = tipNormalized.contains('ucenik') ||
-              tipNormalized.contains('djak') ||
-              tipNormalized.contains('student');
+            final tipNormalized = TextUtils.normalizeTip(mp.tip);
+            final isUcenik = tipNormalized.contains('ucenik');
 
           final gradNormalized = TextUtils.normalizeText(mp.grad ?? '');
           final selectedGradNorm = TextUtils.normalizeText(selectedGrad);
@@ -332,19 +330,19 @@ class _DanasScreenState extends State<DanasScreen> {
             0; // učenici upisani za OBA pravca (automatski rešeni)
         int otkazaliUcenici = 0; // učenici koji su otkazali
 
-        for (final djak in djaci) {
+        for (final ucenik in ucenici) {
           // 🔧 PROVERA: Da li je aktivni učenik (standardizovano)
-          final jeAktivan = TextUtils.isStatusActive(djak.status);
+          final jeAktivan = TextUtils.isStatusActive(ucenik.status);
 
           // 🔧 PROVERA: Da li je otkazao (standardizovano)
           final jeOtkazao = !jeAktivan;
 
           // Da li ide ujutro (Bela Crkva)?
-          final polazakBC = djak.getPolazakBelaCrkvaZaDan(danasnjiDan);
+          final polazakBC = ucenik.getPolazakBelaCrkvaZaDan(danasnjiDan);
           final ideBelaCrkva = polazakBC != null && polazakBC.isNotEmpty;
 
           // Da li se vraća (Vršac)?
-          final polazakVS = djak.getPolazakVrsacZaDan(danasnjiDan);
+          final polazakVS = ucenik.getPolazakVrsacZaDan(danasnjiDan);
           final vraca = polazakVS != null && polazakVS.isNotEmpty;
 
           // 🔧 LOGIKA: Samo oni koji idu ujutro u Belu Crkvu se računaju

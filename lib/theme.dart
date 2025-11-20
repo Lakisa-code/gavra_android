@@ -44,7 +44,7 @@ const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
 
 // 🎨 CUSTOM COLOR EXTENSIONS za dodatne boje
 extension CustomColors on ColorScheme {
-  // 👥 Student Colors
+  // 👥 Učenik (student) Colors
   Color get studentPrimary => const Color(0xFF2196F3); // Blue
   Color get studentSecondary => const Color(0xFF42A5F5);
   Color get studentContainer => const Color(0xFFE3F2FD);

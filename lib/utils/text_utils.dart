@@ -12,6 +12,19 @@ class TextUtils {
         .replaceAll('đ', 'd');
   }
 
+  /// Normalizuje tip putnika (npr. "djak" ili "student") u "ucenik".
+  ///
+  /// Centralizovana logika čini lako prilagođavanje sinonima bez menjanja
+  /// logike u više fajlova.
+  static String normalizeTip(String tip) {
+    final normalized = normalizeText(tip);
+    if (normalized.contains('ucenik')) return 'ucenik';
+    if (normalized.contains('djak') || normalized.contains('student')) {
+      return 'ucenik';
+    }
+    return normalized;
+  }
+
   /// Poredi dva statusa uzimajući u obzir kvačice
   /// "godišnji" == "godisnji" vraća true
   static bool statusEquals(String status1, String status2) {

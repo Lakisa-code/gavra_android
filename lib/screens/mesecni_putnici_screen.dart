@@ -86,17 +86,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late TextEditingController _adresaBelaCrkvaController;
   late TextEditingController _adresaVrsacController;
 
-  // Departure time controllers for new passenger (declared but initialized in _initializeControllers)
-  late TextEditingController _polazakBcPonController;
-  late TextEditingController _polazakBcUtoController;
-  late TextEditingController _polazakBcSreController;
-  late TextEditingController _polazakBcCetController;
-  late TextEditingController _polazakBcPetController;
-  late TextEditingController _polazakVsPonController;
-  late TextEditingController _polazakVsUtoController;
-  late TextEditingController _polazakVsSreController;
-  late TextEditingController _polazakVsCetController;
-  late TextEditingController _polazakVsPetController;
+  // Departure time controllers for new passenger (map-based per day)
+  final Map<String, TextEditingController> _polazakBcControllers = {};
+  final Map<String, TextEditingController> _polazakVsControllers = {};
 
   // Time input controllers for new passenger
   final Map<String, TextEditingController> _vremenaBcControllers = {};
@@ -163,17 +155,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     _adresaBelaCrkvaController = TextEditingController();
     _adresaVrsacController = TextEditingController();
 
-    // Initialize departure time controllers
-    _polazakBcPonController = TextEditingController();
-    _polazakBcUtoController = TextEditingController();
-    _polazakBcSreController = TextEditingController();
-    _polazakBcCetController = TextEditingController();
-    _polazakBcPetController = TextEditingController();
-    _polazakVsPonController = TextEditingController();
-    _polazakVsUtoController = TextEditingController();
-    _polazakVsSreController = TextEditingController();
-    _polazakVsCetController = TextEditingController();
-    _polazakVsPetController = TextEditingController();
+    // Initialize departure time controllers (map-based)
+    for (final dan in dani) {
+      _polazakBcControllers[dan] = TextEditingController();
+      _polazakVsControllers[dan] = TextEditingController();
+    }
 
     // Kreiraj controller-e za svaки dan
     const dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
@@ -313,16 +299,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       }
 
       // Dispose departure time controllers
-      _polazakBcPonController.dispose();
-      _polazakBcUtoController.dispose();
-      _polazakBcSreController.dispose();
-      _polazakBcCetController.dispose();
-      _polazakBcPetController.dispose();
-      _polazakVsPonController.dispose();
-      _polazakVsUtoController.dispose();
-      _polazakVsSreController.dispose();
-      _polazakVsCetController.dispose();
-      _polazakVsPetController.dispose();
+      for (final c in _polazakBcControllers.values) {
+        c.dispose();
+      }
+      for (final c in _polazakVsControllers.values) {
+        c.dispose();
+      }
 
       _subscriptions.forEach((subscription) => subscription.cancel());
     } catch (e) {
@@ -1406,17 +1388,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         _adresaBelaCrkvaController.clear();
         _adresaVrsacController.clear();
 
-        // Očisti controller-e za vremena polaska
-        _polazakBcPonController.clear();
-        _polazakBcUtoController.clear();
-        _polazakBcSreController.clear();
-        _polazakBcCetController.clear();
-        _polazakBcPetController.clear();
-        _polazakVsPonController.clear();
-        _polazakVsUtoController.clear();
-        _polazakVsSreController.clear();
-        _polazakVsCetController.clear();
-        _polazakVsPetController.clear();
+        // Očisti controller-e za vremena polaska (map-based)
+        for (final c in _polazakBcControllers.values) {
+          c.clear();
+        }
+        for (final c in _polazakVsControllers.values) {
+          c.clear();
+        }
 
         // Resetuj radne dane na standardnu radnu nedelju
         _noviRadniDani = {
@@ -1471,187 +1449,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  // ignore: unused_element
-  Future<void> _sacuvajNovogPutnika() async {
-    // Validacija formulara
-    final validationError = _validateForm();
-    if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(validationError),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Koristi vrednosti iz controller-a umesto iz varijabli
-    final ime = _imeController.text.trim();
-    final tipSkole = _tipSkoleController.text.trim();
-    final brojTelefona = _brojTelefonaController.text.trim();
-    final brojTelefonaOca = _brojTelefonaOcaController.text.trim();
-    final brojTelefonaMajke = _brojTelefonaMajkeController.text.trim();
-    final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
-    final adresaVrsac = _adresaVrsacController.text.trim();
-
-    try {
-      // Pripremi mapu polazaka po danima (JSON)
-      final Map<String, List<String>> polasciPoDanu = {};
-      for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-        final bcRaw = _getControllerBelaCrkva(dan).text.trim();
-        final vsRaw = _getControllerVrsac(dan).text.trim();
-        final bc = bcRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(bcRaw) ?? '') : '';
-        final vs = vsRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(vsRaw) ?? '') : '';
-        final List<String> polasci = [];
-        if (bc.isNotEmpty) polasci.add('$bc BC');
-        if (vs.isNotEmpty) polasci.add('$vs VS');
-        if (polasci.isNotEmpty) polasciPoDanu[dan] = polasci;
-      }
-      // Kreiraj ili pronađi adrese i dobij UUID-ove
-      String? adresaBelaCrkvaId;
-      String? adresaVrsacId;
-
-      if (adresaBelaCrkva.isNotEmpty) {
-        final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
-          naziv: adresaBelaCrkva,
-          grad: 'Bela Crkva',
-        );
-        adresaBelaCrkvaId = adresaBC?.id;
-      }
-
-      if (adresaVrsac.isNotEmpty) {
-        final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
-          naziv: adresaVrsac,
-          grad: 'Vršac',
-        );
-        adresaVrsacId = adresaVS?.id;
-      }
-
-      final noviPutnik = MesecniPutnik(
-        id: '', // Biće generisan od strane baze - OK jer toMap() će podesiti UUID
-        putnikIme: ime, // Celo ime u jednom polju
-        tip: 'radnik', // Default tip
-        tipSkole: tipSkole.isEmpty ? null : tipSkole,
-        brojTelefona: brojTelefona.isEmpty ? null : brojTelefona,
-        brojTelefonaOca: brojTelefonaOca.isEmpty ? null : brojTelefonaOca,
-        brojTelefonaMajke: brojTelefonaMajke.isEmpty ? null : brojTelefonaMajke,
-        polasciPoDanu: polasciPoDanu,
-        adresaBelaCrkvaId: adresaBelaCrkvaId,
-        adresaVrsacId: adresaVrsacId,
-        radniDani: _getRadniDaniString(),
-        datumPocetkaMeseca: DateTime(DateTime.now().year, DateTime.now().month),
-        datumKrajaMeseca: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        // Ostali parametri imaju default vrednosti (aktivan: true, itd.)
-      );
-
-      final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
-
-      // 🔄 KRITIČNO: Refresh RealtimeService da se promene propagiraju kroz sve servise
-      try {
-        await RealtimeService.instance.refreshNow();
-      } catch (e) {}
-
-      // Kreiraj dnevne putovanja za danas (1 dan unapred) da se odmah pojave u 'Danas' listi
-      try {
-        await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-          dodatiPutnik,
-          DateTime.now().add(const Duration(days: 1)),
-        );
-      } catch (e) {}
-
-      // ✅ DODATO: Forsiraj refresh state-a da se novi putnik odmah prikaže
-      if (mounted) {
-        if (mounted) setState(() {});
-        Navigator.pop(context);
-
-        // Prikaži uspešnu poruku
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Uspešno dodat putnik: ${dodatiPutnik.putnikIme}'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      // 💾 SAČUVAJ ADRESE I VREMENA U ISTORIJU ZA AUTOCOMPLETE
-      try {
-        // Dobij trenutnog vozača kao UUID
-        final prefs = await SharedPreferences.getInstance();
-        final currentDriverName = await _getCurrentDriver();
-
-        // Zabelezi upotrebu adrese Bela Crkva
-        final adresaBelaCrkva = _adresaBelaCrkvaController.text.trim();
-        if (adresaBelaCrkva.isNotEmpty) {
-          await SmartAddressAutocompleteService.recordAddressUsage(
-            address: adresaBelaCrkva,
-            city: 'Bela Crkva',
-            vozac: currentDriverName,
-            timeContext: DateTime.now(),
-          );
-        }
-
-        // Zabelezi upotrebu adrese Vršac
-        final adresaVrsac = _adresaVrsacController.text.trim();
-        if (adresaVrsac.isNotEmpty) {
-          await SmartAddressAutocompleteService.recordAddressUsage(
-            address: adresaVrsac,
-            city: 'Vršac',
-            vozac: currentDriverName,
-            timeContext: DateTime.now(),
-          );
-        }
-
-        // 🕐 SAČUVAJ VREMENA POLASKA U ISTORIJU
-        for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-          if (_noviRadniDani[dan] == true) {
-            final bcTime = _getControllerBelaCrkva(dan).text.trim();
-            final vsTime = _getControllerVrsac(dan).text.trim();
-
-            // Sačuvaj BC vremena ako postoje
-            if (bcTime.isNotEmpty) {
-              await _sacuvajVremePolasakaUIstorijuZaDan(
-                prefs,
-                bcTime,
-                'BC',
-                dan,
-                currentDriverName,
-              );
-            }
-
-            // Sačuvaj VS vremena ako postoje
-            if (vsTime.isNotEmpty) {
-              await _sacuvajVremePolasakaUIstorijuZaDan(
-                prefs,
-                vsTime,
-                'VS',
-                dan,
-                currentDriverName,
-              );
-            }
-          }
-        }
-      } catch (e) {
-        // Greška pri snimanju adresa i vremena - ne prekidaj proces
-      } // 🧹 RESETUJ FORMU NAKON USPEŠNOG DODAVANJA
-      _resetujFormuZaDodavanje();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mesečni putnik je uspešno dodat'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e')),
-        );
-      }
-    }
+  // Note: logic moved to `AddMesecniPutnikDialog` (kept there to reduce duplication)
   }
 
   void _obrisiPutnika(MesecniPutnik putnik) async {
@@ -3300,37 +3098,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // Helper za dobijanje kontrolera za određeni dan i smer
   TextEditingController _getControllerBelaCrkva(String dan) {
-    switch (dan) {
-      case 'pon':
-        return _polazakBcPonController;
-      case 'uto':
-        return _polazakBcUtoController;
-      case 'sre':
-        return _polazakBcSreController;
-      case 'cet':
-        return _polazakBcCetController;
-      case 'pet':
-        return _polazakBcPetController;
-      default:
-        return TextEditingController();
-    }
+    return _polazakBcControllers[dan] ?? TextEditingController();
   }
 
   TextEditingController _getControllerVrsac(String dan) {
-    switch (dan) {
-      case 'pon':
-        return _polazakVsPonController;
-      case 'uto':
-        return _polazakVsUtoController;
-      case 'sre':
-        return _polazakVsSreController;
-      case 'cet':
-        return _polazakVsCetController;
-      case 'pet':
-        return _polazakVsPetController;
-      default:
-        return TextEditingController();
-    }
+    return _polazakVsControllers[dan] ?? TextEditingController();
   }
 
   // 🔍 VALIDACIJA VREMENA POLASKA - Using standardized TimeValidator

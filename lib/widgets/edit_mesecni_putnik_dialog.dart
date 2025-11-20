@@ -4,6 +4,7 @@ import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
 import '../utils/mesecni_helpers.dart';
+import '../widgets/shared/time_row.dart';
 
 /// 🔧 WIDGET ZA EDITOVANJE MESEČNIH PUTNIKA
 ///
@@ -26,8 +27,7 @@ class EditMesecniPutnikDialog extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<EditMesecniPutnikDialog> createState() =>
-      _EditMesecniPutnikDialogState();
+  State<EditMesecniPutnikDialog> createState() => _EditMesecniPutnikDialogState();
 }
 
 class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
@@ -103,10 +103,8 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
 
     // Load times for each day
     for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      _vremenaBcControllers[dan]!.text =
-          widget.putnik.getPolazakBelaCrkvaZaDan(dan) ?? '';
-      _vremenaVsControllers[dan]!.text =
-          widget.putnik.getPolazakVrsacZaDan(dan) ?? '';
+      _vremenaBcControllers[dan]!.text = widget.putnik.getPolazakBelaCrkvaZaDan(dan) ?? '';
+      _vremenaVsControllers[dan]!.text = widget.putnik.getPolazakVrsacZaDan(dan) ?? '';
     }
 
     // Load working days
@@ -129,10 +127,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
   }
 
   String _getRadniDaniString() {
-    final aktivniDani = _radniDani.entries
-        .where((entry) => entry.value)
-        .map((entry) => entry.key)
-        .toList();
+    final aktivniDani = _radniDani.entries.where((entry) => entry.value).map((entry) => entry.key).toList();
     return aktivniDani.join(',');
   }
 
@@ -161,37 +156,11 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
   }
 
   TextEditingController _getControllerBelaCrkva(String dan) {
-    switch (dan) {
-      case 'pon':
-        return _vremenaBcControllers['pon']!;
-      case 'uto':
-        return _vremenaBcControllers['uto']!;
-      case 'sre':
-        return _vremenaBcControllers['sre']!;
-      case 'cet':
-        return _vremenaBcControllers['cet']!;
-      case 'pet':
-        return _vremenaBcControllers['pet']!;
-      default:
-        return TextEditingController();
-    }
+    return _vremenaBcControllers[dan] ?? TextEditingController();
   }
 
   TextEditingController _getControllerVrsac(String dan) {
-    switch (dan) {
-      case 'pon':
-        return _vremenaVsControllers['pon']!;
-      case 'uto':
-        return _vremenaVsControllers['uto']!;
-      case 'sre':
-        return _vremenaVsControllers['sre']!;
-      case 'cet':
-        return _vremenaVsControllers['cet']!;
-      case 'pet':
-        return _vremenaVsControllers['pet']!;
-      default:
-        return TextEditingController();
-    }
+    return _vremenaVsControllers[dan] ?? TextEditingController();
   }
 
   Widget _buildRadniDanCheckbox(String dan, String label) {
@@ -241,68 +210,12 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
             'pet': 'Petak',
           }[dan]!;
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _getControllerBelaCrkva(dan),
-                    decoration: InputDecoration(
-                      hintText: 'BC vreme',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      fillColor: Colors.white.withValues(alpha: 0.1),
-                      filled: true,
-                      hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _getControllerVrsac(dan),
-                    decoration: InputDecoration(
-                      hintText: 'VS vreme',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      fillColor: Colors.white.withValues(alpha: 0.1),
-                      filled: true,
-                      hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ],
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TimeRow(
+              dayLabel: label,
+              bcController: _getControllerBelaCrkva(dan),
+              vsController: _getControllerVrsac(dan),
             ),
           );
         }),
@@ -334,10 +247,8 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
         final bcRaw = _getControllerBelaCrkva(dan).text.trim();
         final vsRaw = _getControllerVrsac(dan).text.trim();
-        final bc =
-            bcRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(bcRaw) ?? '') : '';
-        final vs =
-            vsRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(vsRaw) ?? '') : '';
+        final bc = bcRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(bcRaw) ?? '') : '';
+        final vs = vsRaw.isNotEmpty ? (MesecniHelpers.normalizeTime(vsRaw) ?? '') : '';
         final List<String> polasci = [];
         if (bc.isNotEmpty) polasci.add('$bc BC');
         if (vs.isNotEmpty) polasci.add('$vs VS');
@@ -353,8 +264,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
         radniDani: _getRadniDaniString(),
       );
 
-      final updated =
-          await _mesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
+      final updated = await _mesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
 
       if (updated == null) {
         if (mounted) {
@@ -627,8 +537,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: SingleChildScrollView(child: dialogContent),
           ),
         ),
@@ -693,8 +602,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               prefixIcon: Icon(
@@ -731,8 +639,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               fillColor: Colors.white.withValues(alpha: 0.1),
@@ -790,11 +697,8 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
           TextField(
             onChanged: (value) => _novaTipSkole = value,
             decoration: InputDecoration(
-              labelText:
-                  _noviTip == 'ucenik' ? '🎓 Škola' : '🏢 Ustanova/Firma',
-              hintText: _noviTip == 'ucenik'
-                  ? 'npr. Gimnazija "Bora Stanković"'
-                  : 'npr. Hemofarm, Opština Vršac...',
+              labelText: _noviTip == 'ucenik' ? '🎓 Škola' : '🏢 Ustanova/Firma',
+              hintText: _noviTip == 'ucenik' ? 'npr. Gimnazija "Bora Stanković"' : 'npr. Hemofarm, Opština Vršac...',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -806,8 +710,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               prefixIcon: AnimatedSwitcher(
@@ -821,8 +724,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
               fillColor: Colors.white.withValues(alpha: 0.1),
               filled: true,
               labelStyle: TextStyle(color: Colors.white70, fontSize: 14),
-              hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
             ),
             controller: _tipSkoleController,
           ),
@@ -872,9 +774,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
           const SizedBox(height: 16),
           TextField(
             decoration: InputDecoration(
-              labelText: _noviTip == 'ucenik'
-                  ? '📱 Broj telefona učenika'
-                  : '📞 Broj telefona',
+              labelText: _noviTip == 'ucenik' ? '📱 Broj telefona učenika' : '📞 Broj telefona',
               hintText: '064/123-456',
               border: const OutlineInputBorder(),
               focusedBorder: OutlineInputBorder(
@@ -882,8 +782,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               prefixIcon: Icon(Icons.phone, color: Colors.white70),
@@ -1040,8 +939,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               prefixIcon: Icon(Icons.home, color: Colors.white70),
@@ -1065,8 +963,7 @@ class _EditMesecniPutnikDialogState extends State<EditMesecniPutnikDialog> {
                 borderRadius: BorderRadius.circular(12),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               prefixIcon: Icon(Icons.business, color: Colors.white70),
