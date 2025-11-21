@@ -1771,14 +1771,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 2,
-                    ),
-                  ],
                 ),
                 child: SafeArea(
                   child: Padding(
@@ -1806,10 +1798,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   offset: Offset(2, 2),
                                   blurRadius: 6,
                                   color: Colors.black54,
-                                ),
-                                Shadow(
-                                  blurRadius: 20,
-                                  color: Color(0xFF1976D2),
                                 ),
                               ],
                             ),
