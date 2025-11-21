@@ -1782,12 +1782,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Container(
                           height: 24,
                           alignment: Alignment.center,
-                          child: const Text(
+                          child: Text(
                             'R E Z E R V A C I J E',
                             style: TextStyle(
                               fontSize: 21,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white, // Bela boja za bolju vidljivost
+                              color: Theme.of(context).colorScheme.onPrimary,
                               letterSpacing: 1.8,
                               shadows: [
                                 Shadow(
@@ -1833,8 +1833,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   child: Center(
                                     child: Text(
                                       _currentDriver!,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onPrimary,
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         shadows: [
@@ -1888,10 +1888,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ],
                                   ),
                                   child: Center(
-                                    child: const Text(
+                                    child: Text(
                                       'Tema',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.onPrimary,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                         shadows: [
@@ -1943,8 +1943,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           child: Center(
                                             child: Text(
                                               _selectedDay,
-                                              style: const TextStyle(
-                                                color: Colors.white,
+                                              style: TextStyle(
+                                                color: Theme.of(context).colorScheme.onPrimary,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 14,
                                               ),
@@ -1965,8 +1965,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                       elevation: 8,
                                     ),
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onPrimary,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16,
                                       shadows: [
@@ -2002,8 +2002,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             child: Center(
                                               child: Text(
                                                 dan,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onPrimary,
                                                   fontWeight: FontWeight.w700,
                                                   fontSize: 16,
                                                 ),
