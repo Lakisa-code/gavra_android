@@ -385,12 +385,12 @@ class _DanasScreenState extends State<DanasScreen> {
                   // LEVO - DATUM
                   Text(
                     '$dayStr.$monthStr.$yearStr',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
-                      shadows: [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                     ),
                   ),
                   // SREDINA - DAN
