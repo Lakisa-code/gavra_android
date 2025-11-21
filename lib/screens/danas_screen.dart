@@ -241,10 +241,6 @@ class _DanasScreenState extends State<DanasScreen> {
   Widget _buildErrorWidgetForException(Object error, String streamName, {VoidCallback? onRetry}) {
     final errorString = error.toString().toLowerCase();
 
-    if (errorString.contains('timeout') || errorString.contains('time')) {
-      return TimeoutErrorWidget(operation: streamName, timeout: const Duration(seconds: 30), onRetry: onRetry);
-    }
-
     if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
       return NetworkErrorWidget(message: 'Problem sa mrežom u $streamName', onRetry: onRetry);
     }
