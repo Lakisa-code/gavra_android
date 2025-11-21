@@ -119,7 +119,7 @@ extension ThemeGradients on ThemeData {
   LinearGradient get backgroundGradient => ThemeManager().currentGradient;
 
   // Glassmorphism kontejner boje
-  Color get glassContainer => Colors.white.withValues(alpha: 0.06);
+  Color get glassContainer => Colors.transparent;
   Color get glassBorder => Colors.white.withValues(alpha: 0.13);
   BoxShadow get glassShadow => BoxShadow(
         color: Colors.black.withValues(alpha: 0.22),

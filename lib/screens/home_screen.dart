@@ -1361,7 +1361,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (_isLoading) {
       return Scaffold(
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(78),
+          preferredSize: const Size.fromHeight(74),
           child: Container(
             decoration: BoxDecoration(
               gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
@@ -1831,10 +1831,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               Expanded(
                                 flex: 35,
                                 child: Container(
-                                  height: 38,
+                                  height: 33,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: VozacBoja.get(_currentDriver).withValues(alpha: 0.2),
+                                    color: VozacBoja.get(_currentDriver).withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: Theme.of(context).glassBorder,
@@ -1854,7 +1854,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       _currentDriver!,
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 16,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         shadows: [
                                           Shadow(
@@ -1888,7 +1888,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 },
                                 borderRadius: BorderRadius.circular(12),
                                 child: Container(
-                                  height: 38,
+                                  height: 33,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).glassContainer,
@@ -1933,7 +1933,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             Expanded(
                               flex: 35,
                               child: Container(
-                                height: 38,
+                                height: 33,
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).glassContainer,
