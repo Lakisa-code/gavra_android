@@ -18,12 +18,13 @@ class TimeRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          flex: 2,
+          flex: 3,
           child: Text(
             dayLabel,
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w600,
+              fontSize: 14,
               shadows: [
                 Shadow(
                   offset: Offset(1, 1),
@@ -35,23 +36,25 @@ class TimeRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 3,
+          flex: 2,
           child: TextFormField(
             controller: bcController,
             keyboardType: TextInputType.datetime,
-            style: const TextStyle(color: Colors.black87),
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'BC vreme (07:30)',
+              hintText: '07:30',
+              prefixIcon: Icon(Icons.access_time, color: Colors.blue, size: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Colors.grey),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Colors.blue, width: 2),
               ),
               filled: true,
@@ -59,25 +62,27 @@ class TimeRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
-          flex: 3,
+          flex: 2,
           child: TextFormField(
             controller: vsController,
             keyboardType: TextInputType.datetime,
-            style: const TextStyle(color: Colors.black87),
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'VS vreme (16:30)',
+              hintText: '16:30',
+              prefixIcon: Icon(Icons.access_time, color: Colors.blue, size: 16),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Colors.grey),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Colors.blue, width: 2),
               ),
               filled: true,

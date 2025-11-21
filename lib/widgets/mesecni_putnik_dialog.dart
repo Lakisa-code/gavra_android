@@ -275,7 +275,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
 
   Widget _buildBasicInfoSection() {
     return _buildGlassSection(
-      title: '👤 Osnovne informacije',
+      title: 'Osnovne informacije',
       child: Column(
         children: [
           _buildTextField(
@@ -567,6 +567,51 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       title: '🕐 Vremena polaska',
       child: Column(
         children: [
+          Row(
+            children: [
+              const Expanded(flex: 3, child: SizedBox()), // Placeholder for day label
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'BC',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'VS',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           TimeRow(
             dayLabel: 'Ponedeljak',
             bcController: _polazakBcControllers['pon']!,
