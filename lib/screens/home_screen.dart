@@ -1522,14 +1522,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                      spreadRadius: 2,
-                    ),
-                  ],
+                  // No boxShadow — AppBar should be 100% transparent and only show glass border
                 ),
                 child: SafeArea(
                   child: Center(
