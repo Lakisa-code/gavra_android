@@ -10,7 +10,6 @@ import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../theme.dart';
-import '../widgets/custom_back_button.dart';
 
 class AdminMapScreen extends StatefulWidget {
   const AdminMapScreen({Key? key}) : super(key: key);
@@ -396,7 +395,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    const GradientBackButton(),
+                    const SizedBox.shrink(),
                     const Expanded(
                       child: Text(
                         '🗺️ Admin GPS Mapa',
