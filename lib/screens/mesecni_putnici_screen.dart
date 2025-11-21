@@ -17,7 +17,6 @@ import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
-import '../widgets/custom_back_button.dart';
 import '../widgets/mesecni_putnik_dialog.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
@@ -372,7 +371,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    const GradientBackButton(),
+                    const SizedBox.shrink(),
                     const Expanded(
                       child: Text(
                         'Mesečni Putnici',
