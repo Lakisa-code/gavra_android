@@ -35,7 +35,6 @@ import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
-import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
 import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
@@ -235,22 +234,6 @@ class _DanasScreenState extends State<DanasScreen> {
           );
         }).toList(),
     ];
-  }
-
-  // 🚨 ERROR TYPE DETECTION HELPER
-  Widget _buildErrorWidgetForException(Object error, String streamName, {VoidCallback? onRetry}) {
-    final errorString = error.toString().toLowerCase();
-
-    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
-      return NetworkErrorWidget(message: 'Problem sa mrežom u $streamName', onRetry: onRetry);
-    }
-
-    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
-      return DataErrorWidget(dataType: streamName, reason: error.toString(), onRefresh: onRetry);
-    }
-
-    // Default stream error
-    return StreamErrorWidget(streamName: streamName, errorMessage: error.toString(), onRetry: onRetry);
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
@@ -485,14 +468,27 @@ class _DanasScreenState extends State<DanasScreen> {
       stream: _streamDjackieBrojevi(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          // 🚨 MINI ERROR WIDGET ZA APPBAR
-          return MiniStreamErrorWidget(
-            streamName: 'djacki_brojac',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Greška đačkog brojača: ${snapshot.error}'), backgroundColor: Colors.red),
-              );
-            },
+          // Heartbeat indikator će pokazati grešku - ne prikazujemo dodatne error widget-e
+          return SizedBox(
+            height: 26,
+            child: ElevatedButton(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey.shade400,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              ),
+              child: const Text(
+                'ERR',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+            ),
           );
         }
 
@@ -1721,16 +1717,12 @@ class _DanasScreenState extends State<DanasScreen> {
                   }
 
                   if (snapshot.hasError) {
-                    // 🚨 KORISTI SMART ERROR DETECTION
-                    return _buildErrorWidgetForException(
-                      snapshot.error!,
-                      'putnici_stream',
-                      onRetry: () {
-                        if (mounted)
-                          setState(() {
-                            // Force refresh stream
-                          });
-                      },
+                    // Heartbeat indicator shows connection status
+                    return const Center(
+                      child: Text(
+                        'Nema putnika za izabrani polazak',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
                     );
                   }
 
@@ -1861,17 +1853,8 @@ class _DanasScreenState extends State<DanasScreen> {
                       }
 
                       if (pazarSnapshot.hasError) {
-                        // 🚨 KORISTI SMART ERROR DETECTION
-                        return _buildErrorWidgetForException(
-                          pazarSnapshot.error!,
-                          'pazar_stream',
-                          onRetry: () {
-                            if (mounted)
-                              setState(() {
-                                // Force refresh stream
-                              });
-                          },
-                        );
+                        // Heartbeat indicator shows connection status
+                        return const Center(child: CircularProgressIndicator());
                       }
 
                       if (!pazarSnapshot.hasData) {

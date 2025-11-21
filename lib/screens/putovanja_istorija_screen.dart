@@ -7,7 +7,6 @@ import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
 import '../theme.dart';
 import '../widgets/custom_back_button.dart';
-import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
 class PutovanjaIstorijaScreen extends StatefulWidget {
   const PutovanjaIstorijaScreen({Key? key}) : super(key: key);
@@ -198,37 +197,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   void _loadInitialData() {
     _initializeRealtimeStream();
-  }
-
-  // 🚨 ERROR TYPE DETECTION HELPER
-  Widget _buildErrorWidgetForException(
-    Object error,
-    String streamName, {
-    VoidCallback? onRetry,
-  }) {
-    final errorString = error.toString().toLowerCase();
-
-    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
-      return NetworkErrorWidget(
-        message: 'Problem sa mrežom u $streamName',
-        onRetry: onRetry ?? _initializeRealtimeStream,
-      );
-    }
-
-    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
-      return DataErrorWidget(
-        dataType: streamName,
-        reason: error.toString(),
-        onRefresh: onRetry ?? _initializeRealtimeStream,
-      );
-    }
-
-    // Default stream error
-    return StreamErrorWidget(
-      streamName: streamName,
-      errorMessage: error.toString(),
-      onRetry: onRetry ?? _initializeRealtimeStream,
-    );
   }
 
   @override
@@ -622,10 +590,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     }
 
     if (_errorMessage != null) {
-      return _buildErrorWidgetForException(
-        Exception(_errorMessage!),
-        'Putovanja istorija',
-      );
+      // Heartbeat indicator shows connection status
+      return _buildEmptyState();
     }
 
     // Filter data based on current filter and search

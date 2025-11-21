@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../theme.dart';
 import 'welcome_screen.dart';
@@ -28,14 +27,11 @@ class LoadingScreen extends StatefulWidget {
   State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen>
-    with TickerProviderStateMixin {
+class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateMixin {
   // 🎯 V3.0 State Management
-  final ValueNotifier<LoadingStage> _currentStage =
-      ValueNotifier(LoadingStage.initializing);
+  final ValueNotifier<LoadingStage> _currentStage = ValueNotifier(LoadingStage.initializing);
   final ValueNotifier<double> _progress = ValueNotifier(0.0);
-  final ValueNotifier<String> _statusMessage =
-      ValueNotifier('Pokretanje aplikacije...');
+  final ValueNotifier<String> _statusMessage = ValueNotifier('Pokretanje aplikacije...');
   final ValueNotifier<bool> _hasError = ValueNotifier(false);
   final ValueNotifier<String?> _errorMessage = ValueNotifier(null);
 
@@ -48,8 +44,7 @@ class _LoadingScreenState extends State<LoadingScreen>
   // ⏱️ V3.0 Timeout & Retry Management
   Timer? _loadingTimer;
   Timer? _timeoutTimer;
-  int _retryCount = 0;
-  static const int maxRetries = 3;
+
   static const Duration timeoutDuration = Duration(seconds: 30);
   static const Duration stageDelay = Duration(milliseconds: 800);
 
@@ -133,7 +128,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       _currentStage.value = stage;
       _statusMessage.value = stage.message;
 // Simulate realistic loading with progressive delay
-      final delay = stageDelay.inMilliseconds + (_retryCount * 200);
+      final delay = stageDelay.inMilliseconds;
       await Future<void>.delayed(Duration(milliseconds: delay));
 
       // Update progress with smooth animation
@@ -162,8 +157,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       final elapsed = timer.tick * 16;
       final t = (elapsed / duration.inMilliseconds).clamp(0.0, 1.0);
 
-      _progress.value =
-          currentProgress + (targetProgress - currentProgress) * t;
+      _progress.value = currentProgress + (targetProgress - currentProgress) * t;
 
       if (t >= 1.0) {
         timer.cancel();
@@ -197,27 +191,6 @@ class _LoadingScreenState extends State<LoadingScreen>
         ),
       );
     }
-  }
-
-  Future<void> _retryLoading() async {
-    if (_retryCount >= maxRetries) {
-      _handleLoadingError('Previše pokušaja. Molimo pokušajte kasnije.');
-      return;
-    }
-
-    _retryCount++;
-
-    // Reset state
-    if (mounted)
-      setState(() {
-        _hasError.value = false;
-        _errorMessage.value = null;
-        _progress.value = 0.0;
-        _currentStage.value = LoadingStage.initializing;
-        _statusMessage.value = LoadingStage.initializing.message;
-      });
-// Restart the process
-    _initializeV3Loading();
   }
 
   @override
@@ -503,220 +476,8 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   // ❌ V3.0 ENHANCED ERROR STATE
   Widget _buildV3ErrorState() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF991B1B), // Red-800
-            Color(0xFFDC2626), // Red-600
-            Color(0xFFB91C1C), // Red-700
-          ],
-          stops: [0.0, 0.5, 1.0],
-        ),
-      ),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 32),
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Error icon with animation
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 600),
-                builder: (context, value, child) => Transform.scale(
-                  scale: value,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFDC2626).withValues(alpha: 0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Error title
-              const Text(
-                'Greška pri učitavanju',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
-                  letterSpacing: 0.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 16),
-
-              // Error message
-              ValueListenableBuilder<String?>(
-                valueListenable: _errorMessage,
-                builder: (context, errorMsg, child) => Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFDC2626).withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Text(
-                    errorMsg ?? 'Nepoznata greška',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF7F1D1D),
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Retry count indicator
-              if (_retryCount > 0)
-                Text(
-                  'Pokušaj $_retryCount od $maxRetries',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-
-              const SizedBox(height: 32),
-
-              // Action buttons
-              Row(
-                children: [
-                  // Cancel/Exit button
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        SystemNavigator.pop();
-                      },
-                      icon: const Icon(
-                        Icons.close,
-                        color: Color(0xFF6B7280),
-                        size: 18,
-                      ),
-                      label: const Text(
-                        'Izađi',
-                        style: TextStyle(
-                          color: Color(0xFF6B7280),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: BorderSide(
-                          color: Colors.grey.withValues(alpha: 0.3),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 16),
-
-                  // Retry button
-                  Expanded(
-                    flex: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: tripleBlueFashionGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFF1E3A8A).withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            _retryCount < maxRetries ? _retryLoading : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        label: Text(
-                          _retryCount < maxRetries
-                              ? 'Pokušaj ponovo'
-                              : 'Previše pokušaja',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Help text
-              Text(
-                'Proveri internetsku konekciju i pokušaj ponovo',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return const Center(
+      child: CircularProgressIndicator(),
     );
   }
 }

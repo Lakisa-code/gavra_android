@@ -217,48 +217,6 @@ class _AdminScreenState extends State<AdminScreen> {
     });
   }
 
-  // 🚨 STREAM ERROR WIDGET
-  Widget StreamErrorWidget({
-    required String streamName,
-    required String errorMessage,
-    required VoidCallback onRetry,
-    bool compact = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: compact ? 14 : 20,
-          ),
-          if (!compact) const SizedBox(height: 4),
-          Text(
-            compact ? 'ERR' : 'Stream Error',
-            style: TextStyle(
-              fontSize: compact ? 8 : 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.red,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          if (!compact) const SizedBox(height: 4),
-          GestureDetector(
-            onTap: onRetry,
-            child: Icon(
-              Icons.refresh,
-              color: Colors.red,
-              size: compact ? 12 : 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Mapiranje punih imena dana u skraćenice za filtriranje
   String _getShortDayName(String fullDayName) {
     final dayMapping = {
@@ -1087,27 +1045,57 @@ class _AdminScreenState extends State<AdminScreen> {
                                 // 🔥 ZAMENЈENO: OptimizedKusurService umesto MasterRealtimeStream
                                 stream: OptimizedKusurService.instance.streamKusurForVozac('Bruda'),
                                 builder: (context, snapshot) {
-                                  // 🚨 ENHANCED ERROR HANDLING
+                                  // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {
                                     _kusurStreamHealthy.value = false;
+                                    // Prikaži prazno stanje umesto error widget-a
                                     return Container(
                                       height: 60,
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.red[50],
+                                        color: Colors.white.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: Colors.red[300]!,
-                                          width: 1.2,
+                                          color: Theme.of(context).glassBorder,
+                                          width: 1.5,
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.purple.withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
-                                      child: StreamErrorWidget(
-                                        streamName: 'kusur_bruda',
-                                        errorMessage: 'Kusur stream error',
-                                        onRetry: () {
-                                          if (mounted) setState(() {});
-                                        },
-                                        compact: true,
+                                      child: const Row(
+                                        children: [
+                                          Icon(
+                                            Icons.savings,
+                                            color: Colors.purple,
+                                            size: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'KUSUR',
+                                            style: TextStyle(
+                                              color: Colors.purple,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Center(
+                                              child: Text(
+                                                '0 RSD',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   }
@@ -1191,27 +1179,57 @@ class _AdminScreenState extends State<AdminScreen> {
                                 // 🔥 ZAMENЈENO: OptimizedKusurService umesto MasterRealtimeStream
                                 stream: OptimizedKusurService.instance.streamKusurForVozac('Bilevski'),
                                 builder: (context, snapshot) {
-                                  // 🚨 ENHANCED ERROR HANDLING
+                                  // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {
                                     _kusurStreamHealthy.value = false;
+                                    // Prikaži prazno stanje umesto error widget-a
                                     return Container(
                                       height: 60,
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Colors.red[50],
+                                        color: Colors.white.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: Colors.red[300]!,
-                                          width: 1.2,
+                                          color: Theme.of(context).glassBorder,
+                                          width: 1.5,
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.orange.withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
                                       ),
-                                      child: StreamErrorWidget(
-                                        streamName: 'kusur_bilevski',
-                                        errorMessage: 'Kusur stream error',
-                                        onRetry: () {
-                                          if (mounted) setState(() {});
-                                        },
-                                        compact: true,
+                                      child: const Row(
+                                        children: [
+                                          Icon(
+                                            Icons.savings,
+                                            color: Colors.orange,
+                                            size: 16,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'KUSUR',
+                                            style: TextStyle(
+                                              color: Colors.orange,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Center(
+                                              child: Text(
+                                                '0 RSD',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   }

@@ -30,7 +30,6 @@ import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
-import '../widgets/realtime_error_widgets.dart'; // 🚨 NOVO realtime error widgets
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
@@ -1539,17 +1538,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            body: Center(
-              child: StreamErrorWidget(
-                streamName: 'home_planning_stream',
-                errorMessage: snapshot.error.toString(),
-                onRetry: () {
-                  if (mounted)
-                    setState(() {
-                      // Trigger rebuild
-                    });
-                },
-              ),
+            body: const Center(
+              child: CircularProgressIndicator(),
             ),
           );
         }

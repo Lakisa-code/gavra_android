@@ -8,7 +8,6 @@ import '../services/putnik_service.dart';
 import '../theme.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/putnik_list.dart';
-import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
 class DugoviScreen extends StatefulWidget {
   const DugoviScreen({Key? key, this.currentDriver}) : super(key: key);
@@ -548,10 +547,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
     }
 
     if (_errorMessage != null) {
-      return _buildErrorWidgetForException(
-        Exception(_errorMessage!),
-        'Dugovi lista',
-      );
+      // Heartbeat indicator shows connection status
+      return _buildEmptyState();
     }
 
     final filteredDugovi = _getFilteredDugovi();
@@ -666,36 +663,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  // 🚨 ERROR TYPE DETECTION HELPER
-  Widget _buildErrorWidgetForException(
-    Object error,
-    String streamName, {
-    VoidCallback? onRetry,
-  }) {
-    final errorString = error.toString().toLowerCase();
-
-    if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
-      return NetworkErrorWidget(
-        message: 'Problem sa mrežom u $streamName',
-        onRetry: onRetry ?? _initializeRealtimeStream,
-      );
-    }
-
-    if (errorString.contains('data') || errorString.contains('parse') || errorString.contains('format')) {
-      return DataErrorWidget(
-        dataType: streamName,
-        reason: error.toString(),
-        onRefresh: onRetry ?? _initializeRealtimeStream,
-      );
-    }
-
-    return StreamErrorWidget(
-      streamName: streamName,
-      errorMessage: error.toString(),
-      onRetry: onRetry ?? _initializeRealtimeStream,
     );
   }
 }

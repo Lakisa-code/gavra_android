@@ -18,7 +18,6 @@ import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/mesecni_putnik_dialog.dart';
-import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
 // 🔄 HELPER EXTENSION za Set poređenje
 extension SetExtensions<T> on Set<T> {
@@ -666,12 +665,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   }
 
                   if (snapshot.hasError) {
-                    return StreamErrorWidget(
-                      streamName: 'MesecniPutniciMain',
-                      errorMessage: snapshot.error.toString(),
-                      onRetry: () {
-                        if (mounted) setState(() {});
-                      },
+                    // Heartbeat indicator shows connection status
+                    return const Center(
+                      child: Text(
+                        'Greška pri učitavanju mesečnih putnika',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
                     );
                   }
 
@@ -2083,16 +2082,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           );
                         }
 
-                        // 🔄 ERROR HANDLING: Poboljšano error handling
+                        // Heartbeat indicator pokazuje status konekcije
                         if (snapshot.hasError) {
-                          return SizedBox(
+                          return const SizedBox(
                             height: 200,
-                            child: StreamErrorWidget(
-                              streamName: 'MesecniPutniciStats',
-                              errorMessage: snapshot.error.toString(),
-                              onRetry: () {
-                                if (mounted) setState(() {});
-                              },
+                            child: Center(
+                              child: CircularProgressIndicator(),
                             ),
                           );
                         }
