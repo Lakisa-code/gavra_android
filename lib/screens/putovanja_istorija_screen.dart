@@ -208,14 +208,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }) {
     final errorString = error.toString().toLowerCase();
 
-    if (errorString.contains('timeout') || errorString.contains('time')) {
-      return TimeoutErrorWidget(
-        operation: streamName,
-        timeout: const Duration(seconds: 30),
-        onRetry: onRetry ?? _initializeRealtimeStream,
-      );
-    }
-
     if (errorString.contains('network') || errorString.contains('socket') || errorString.contains('connection')) {
       return NetworkErrorWidget(
         message: 'Problem sa mrežom u $streamName',
