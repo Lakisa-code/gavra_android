@@ -435,11 +435,20 @@ class _AdminScreenState extends State<AdminScreen> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
+                                          color: Theme.of(context).glassContainer,
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.2),
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
                                         ),
                                         child: const Center(
                                           child: FittedBox(
@@ -489,11 +498,20 @@ class _AdminScreenState extends State<AdminScreen> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
+                                          color: Theme.of(context).glassContainer,
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.2),
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
                                         ),
                                         child: const Center(
                                           child: FittedBox(
@@ -544,11 +562,20 @@ class _AdminScreenState extends State<AdminScreen> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.2),
+                                          color: Theme.of(context).glassContainer,
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.2),
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
                                         ),
                                         child: const Center(
                                           child: FittedBox(
@@ -583,16 +610,24 @@ class _AdminScreenState extends State<AdminScreen> {
                                   // DROPDOWN - desno
                                   SizedBox(
                                     width: buttonWidth,
-                                    child: Container(
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Theme.of(context).glassBorder,
-                                          width: 1.5,
+                                      child: Container(
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
                                         ),
-                                      ),
                                       child: DropdownButtonHideUnderline(
                                         child: DropdownButton<String>(
                                           value: _selectedDan,
