@@ -22,8 +22,15 @@ class TimeRow extends StatelessWidget {
           child: Text(
             dayLabel,
             style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              shadows: [
+                Shadow(
+                  offset: Offset(1, 1),
+                  blurRadius: 3,
+                  color: Colors.black54,
+                ),
+              ],
             ),
           ),
         ),
@@ -32,15 +39,23 @@ class TimeRow extends StatelessWidget {
           child: TextFormField(
             controller: bcController,
             keyboardType: TextInputType.datetime,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.black87),
             decoration: InputDecoration(
-              labelText: 'BC vreme',
-              hintText: '07:30',
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.08),
+              hintText: 'BC vreme (07:30)',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.grey),
               ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.blue, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ),
@@ -50,15 +65,23 @@ class TimeRow extends StatelessWidget {
           child: TextFormField(
             controller: vsController,
             keyboardType: TextInputType.datetime,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.black87),
             decoration: InputDecoration(
-              labelText: 'VS vreme',
-              hintText: '16:30',
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.08),
+              hintText: 'VS vreme (16:30)',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.grey),
               ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.blue, width: 2),
+              ),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ),

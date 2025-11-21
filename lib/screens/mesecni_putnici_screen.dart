@@ -17,9 +17,8 @@ import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
-import '../widgets/add_mesecni_putnik_dialog.dart';
 import '../widgets/custom_back_button.dart';
-import '../widgets/edit_mesecni_putnik_dialog.dart';
+import '../widgets/mesecni_putnik_dialog.dart';
 import '../widgets/realtime_error_widgets.dart'; // 🚨 REALTIME error handling
 
 // 🔄 HELPER EXTENSION za Set poređenje
@@ -1334,9 +1333,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   void _editPutnik(MesecniPutnik putnik) {
     showDialog(
       context: context,
-      builder: (context) => EditMesecniPutnikDialog(
-        putnik: putnik,
-        onUpdated: () {
+      builder: (context) => MesecniPutnikDialog(
+        existingPutnik: putnik,
+        onSaved: () {
           // Trigger a rebuild to refresh the list
           if (mounted) {
             setState(() {});
@@ -1350,8 +1349,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AddMesecniPutnikDialog(
-        onAdded: () {
+      builder: (context) => MesecniPutnikDialog(
+        existingPutnik: null, // null indicates adding mode
+        onSaved: () {
           if (mounted) setState(() {});
         },
       ),
