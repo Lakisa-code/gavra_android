@@ -286,7 +286,7 @@ class _AdminScreenState extends State<AdminScreen> {
           preferredSize: const Size.fromHeight(80),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2), // Transparentni glassmorphism
+              color: Theme.of(context).glassContainer, // Transparentni glassmorphism
               border: Border.all(
                 color: Theme.of(context).glassBorder,
                 width: 1.5,
