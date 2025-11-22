@@ -12,8 +12,7 @@ import '../screens/danas_screen.dart';
 import 'supabase_safe.dart';
 
 class LocalNotificationService {
-  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   static final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Recent notifications cache to prevent duplicates (notification_id or hash)
@@ -24,8 +23,7 @@ class LocalNotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
+    const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
     );
 
@@ -47,8 +45,7 @@ class LocalNotificationService {
     );
 
     await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
     // Permission requests are handled by RealtimeNotificationService
@@ -60,7 +57,7 @@ class LocalNotificationService {
     required String title,
     required String body,
     String? payload,
-    bool playCustomSound = true,
+    bool playCustomSound = false, // 🔇 ONEMOGUĆENO: Custom zvuk ne radi
   }) async {
     try {
       // Deduplicate based on payload id or title+body
@@ -90,12 +87,11 @@ class LocalNotificationService {
       }
       _recentNotificationIds[dedupeKey] = now;
       // Clean up old entries
-      _recentNotificationIds
-          .removeWhere((k, v) => now.difference(v) > _dedupeDuration);
-      // 1. Prvo pusti custom zvuk
-      if (playCustomSound) {
-        await _playNotificationSound();
-      }
+      _recentNotificationIds.removeWhere((k, v) => now.difference(v) > _dedupeDuration);
+      // 1. Preskoči custom zvuk - koristi sistemski
+      // if (playCustomSound) {
+      //   await _playNotificationSound(); // 🔇 ONEMOGUĆENO
+      // }
 
       // 2. Vibracija da privuče pažnju
       await HapticFeedback.heavyImpact();
@@ -109,19 +105,17 @@ class LocalNotificationService {
           android: AndroidNotificationDetails(
             'gavra_realtime_channel',
             'Gavra Realtime Notifikacije',
-            channelDescription:
-                'Kanal za realtime heads-up notifikacije sa zvukom',
+            channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
             importance: Importance.max,
             priority: Priority.high,
-            playSound: false, // Mi ćemo custom zvuk
+            playSound: true, // 🔊 SISTEMSKI ZVUK umesto custom MP3
             enableLights: true,
             when: DateTime.now().millisecondsSinceEpoch,
             fullScreenIntent: true, // Za lock screen
             category: AndroidNotificationCategory.call, // Visok prioritet
             visibility: NotificationVisibility.public, // Prikaži na lock screen
             ticker: '$title - $body',
-            largeIcon:
-                const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+            largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
             styleInformation: BigTextStyleInformation(
               body,
               htmlFormatBigText: true,
@@ -139,18 +133,12 @@ class LocalNotificationService {
     }
   }
 
-  /// Pusti custom gavra.mp3 zvuk
+  /// Pusti custom gavra.mp3 zvuk - ONEMOGUĆENO zbog nevalidnog MP3 fajla
   static Future<void> _playNotificationSound() async {
-    try {
-      await _audioPlayer.setAsset('assets/gavra.mp3');
-      await _audioPlayer.setVolume(1.0); // Maksimalna glasnoća
-      await _audioPlayer.play();
-    } catch (e) {
-      // Log the error to help diagnose issues like unsupported audio format
-      try {
-        // Use navigatorKey context-safe logger if available
-      } catch (_) {}
-    }
+    // 🔇 Custom zvuk onemogućen - koristi se sistemski zvuk notifikacije
+    // await _audioPlayer.setAsset('assets/gavra.mp3');
+    // await _audioPlayer.setVolume(1.0);
+    // await _audioPlayer.play();
   }
 
   /// Background-safe helper to show a local notification from a background isolate
@@ -183,23 +171,19 @@ class LocalNotificationService {
         }
       }
       _recentNotificationIds[dedupeKey] = now;
-      _recentNotificationIds
-          .removeWhere((k, v) => now.difference(v) > _dedupeDuration);
-      final FlutterLocalNotificationsPlugin plugin =
-          FlutterLocalNotificationsPlugin();
+      _recentNotificationIds.removeWhere((k, v) => now.difference(v) > _dedupeDuration);
+      final FlutterLocalNotificationsPlugin plugin = FlutterLocalNotificationsPlugin();
 
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      const InitializationSettings initializationSettings =
-          InitializationSettings(
+      const InitializationSettings initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid,
       );
 
       await plugin.initialize(initializationSettings);
 
-      const AndroidNotificationDetails androidDetails =
-          AndroidNotificationDetails(
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         'gavra_realtime_channel',
         'Gavra Realtime Notifikacije',
         channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
@@ -241,8 +225,7 @@ class LocalNotificationService {
       if (response.payload != null) {
         try {
           // Parse the payload JSON
-          final Map<String, dynamic> payloadData =
-              jsonDecode(response.payload!) as Map<String, dynamic>;
+          final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
 
           notificationType = payloadData['type'] as String?;
           final putnikData = payloadData['putnik'];
@@ -251,8 +234,7 @@ class LocalNotificationService {
           if (putnikData is Map<String, dynamic>) {
             putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
             putnikGrad = putnikData['grad'] as String?;
-            putnikVreme =
-                (putnikData['vreme'] ?? putnikData['polazak']) as String?;
+            putnikVreme = (putnikData['vreme'] ?? putnikData['polazak']) as String?;
           } else if (putnikData is String) {
             // Try to parse if it's JSON string
             try {
@@ -260,8 +242,7 @@ class LocalNotificationService {
               if (putnikMap is Map<String, dynamic>) {
                 putnikIme = (putnikMap['ime'] ?? putnikMap['name']) as String?;
                 putnikGrad = putnikMap['grad'] as String?;
-                putnikVreme =
-                    (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
+                putnikVreme = (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
               }
             } catch (e) {
               // If not JSON, use as direct string
@@ -270,15 +251,12 @@ class LocalNotificationService {
           }
 
           // 🔍 DOHVATI PUTNIK PODATKE IZ BAZE ako nisu u payload-u
-          if (putnikIme != null &&
-              (putnikGrad == null || putnikVreme == null)) {
+          if (putnikIme != null && (putnikGrad == null || putnikVreme == null)) {
             try {
               final putnikInfo = await _fetchPutnikFromDatabase(putnikIme);
               if (putnikInfo != null) {
                 putnikGrad = putnikGrad ?? putnikInfo['grad'] as String?;
-                putnikVreme = putnikVreme ??
-                    (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska'])
-                        as String?;
+                putnikVreme = putnikVreme ?? (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska']) as String?;
               }
             } catch (e) {
               // Ignore database fetch errors - fallback to basic navigation
