@@ -1,9 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
@@ -13,7 +11,6 @@ import 'supabase_safe.dart';
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  static final AudioPlayer _audioPlayer = AudioPlayer();
 
   // Recent notifications cache to prevent duplicates (notification_id or hash)
   static final Map<String, DateTime> _recentNotificationIds = {};
@@ -94,9 +91,6 @@ class LocalNotificationService {
       // }
 
       // 2. Vibracija da privuče pažnju
-      await HapticFeedback.heavyImpact();
-
-      // 3. Prikaz heads-up notifikacije
       await flutterLocalNotificationsPlugin.show(
         DateTime.now().millisecondsSinceEpoch.remainder(100000), // Unique ID
         title,
@@ -131,14 +125,6 @@ class LocalNotificationService {
     } catch (e) {
       // Ignorišemo greške sa prikazivanjem notifikacija
     }
-  }
-
-  /// Pusti custom gavra.mp3 zvuk - ONEMOGUĆENO zbog nevalidnog MP3 fajla
-  static Future<void> _playNotificationSound() async {
-    // 🔇 Custom zvuk onemogućen - koristi se sistemski zvuk notifikacije
-    // await _audioPlayer.setAsset('assets/gavra.mp3');
-    // await _audioPlayer.setVolume(1.0);
-    // await _audioPlayer.play();
   }
 
   /// Background-safe helper to show a local notification from a background isolate
@@ -351,11 +337,6 @@ class LocalNotificationService {
   /// Očisti sve notifikacije
   static Future<void> cancelAllNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
-  }
-
-  /// Dispose audio player
-  static Future<void> dispose() async {
-    await _audioPlayer.dispose();
   }
 
   /// 🔍 FETCH PUTNIK DATA FROM DATABASE BY NAME
