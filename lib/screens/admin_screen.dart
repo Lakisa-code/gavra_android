@@ -329,14 +329,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             color: Theme.of(context).glassBorder,
                                             width: 1.5,
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
+                                          // no boxShadow — keep transparent glass + border only
                                         ),
                                         child: const Center(
                                           child: FittedBox(
@@ -392,14 +385,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             color: Theme.of(context).glassBorder,
                                             width: 1.5,
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
+                                          // no boxShadow — keep transparent glass + border only
                                         ),
                                         child: const Center(
                                           child: FittedBox(
@@ -455,14 +441,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             color: Theme.of(context).glassBorder,
                                             width: 1.5,
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
+                                          // no boxShadow — keep transparent glass + border only
                                         ),
                                         child: const Center(
                                           child: FittedBox(
@@ -570,14 +549,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           color: Theme.of(context).glassBorder,
                                           width: 1.5,
                                         ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                            spreadRadius: 1,
-                                          ),
-                                        ],
+                                        // no boxShadow — keep transparent glass + border only
                                       ),
                                       child: DropdownButtonHideUnderline(
                                         child: DropdownButton<String>(
