@@ -13,12 +13,10 @@ class EmailRegistrationScreen extends StatefulWidget {
   final String? preselectedDriverName;
 
   @override
-  State<EmailRegistrationScreen> createState() =>
-      _EmailRegistrationScreenState();
+  State<EmailRegistrationScreen> createState() => _EmailRegistrationScreenState();
 }
 
-class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
-    with TickerProviderStateMixin {
+class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -78,22 +76,12 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
               color: Theme.of(context).glassContainer,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
+                width: 1.5,
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-              ],
             ),
           ),
           title: const Text(
@@ -516,8 +504,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
       if (result.isSuccess) {
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
         final currentUser = FirebaseAuthService.currentUser;
-        final needsVerification =
-            currentUser != null && !currentUser.emailVerified;
+        final needsVerification = currentUser != null && !currentUser.emailVerified;
 
         if (needsVerification) {
           // Sakrij loading dialog
@@ -653,8 +640,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen>
           child: SingleChildScrollView(
             child: Text(
               'Vaš nalog je uspešno kreiran i možete se prijaviti.',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
             ),
           ),
         ),

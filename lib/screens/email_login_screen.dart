@@ -18,8 +18,7 @@ class EmailLoginScreen extends StatefulWidget {
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
 }
 
-class _EmailLoginScreenState extends State<EmailLoginScreen>
-    with TickerProviderStateMixin {
+class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -126,22 +125,12 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
               color: Theme.of(context).glassContainer,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
+                width: 1.5,
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-              ],
             ),
           ),
           title: const Text(
@@ -230,10 +219,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           Text(
             'Prijavite se sa email adresom',
             style: TextStyle(
-              color: Theme.of(context)
-                  .colorScheme
-                  .onPrimary
-                  .withValues(alpha: 0.9),
+              color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
               fontSize: 16,
             ),
           ),
@@ -301,8 +287,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         hintStyle: TextStyle(
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
-        prefixIcon:
-            Icon(Icons.email, color: Theme.of(context).colorScheme.primary),
+        prefixIcon: Icon(Icons.email, color: Theme.of(context).colorScheme.primary),
         filled: true,
         fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
         border: OutlineInputBorder(
@@ -324,8 +309,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
         ),
       ),
       validator: (value) {
@@ -354,8 +338,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         hintStyle: TextStyle(
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
         ),
-        prefixIcon:
-            Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
+        prefixIcon: Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
         suffixIcon: IconButton(
           icon: Icon(
             _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
@@ -389,8 +372,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
         ),
       ),
       validator: (value) {
@@ -416,8 +398,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           borderRadius: BorderRadius.circular(16),
         ),
         elevation: 8,
-        shadowColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+        shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
       ),
       child: _isLoading
           ? SizedBox(
@@ -461,8 +442,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         Text(
           'Nemate nalog? ',
           style: TextStyle(
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize: 16,
           ),
         ),
@@ -498,8 +478,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
       final password = _passwordController.text;
 
       // Koristi AuthManager umesto direktno EmailAuthService
-      final result = await AuthManager.signInWithEmail(email, password,
-          remember: _rememberDevice);
+      final result = await AuthManager.signInWithEmail(email, password, remember: _rememberDevice);
 
       if (result.isSuccess) {
         // Dobij ime vozača iz trenutne auth session
@@ -510,8 +489,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(
-                    'Niste ovlašćeni da se prijavite. Kontaktirajte admina.'),
+                content: Text('Niste ovlašćeni da se prijavite. Kontaktirajte admina.'),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -533,8 +511,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         await _EmailLoginScreenState._playDriverWelcomeSong(driverName);
 
         // Provjeri daily check-in
-        final needsCheckIn =
-            !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+        final needsCheckIn = !await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
 
         if (needsCheckIn) {
           // Navigate to DailyCheckInScreen
@@ -635,8 +612,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         content: Text(
           message,
           style: TextStyle(
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         actions: [
@@ -671,8 +647,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen>
         content: Text(
           message,
           style: TextStyle(
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         actions: [

@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Uniform glassmorphism AppBar komponenta za celу aplikaciju
-class GlassmorphismAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
+class GlassmorphismAppBar extends StatelessWidget implements PreferredSizeWidget {
   const GlassmorphismAppBar({
     super.key,
     this.title,
@@ -32,13 +31,14 @@ class GlassmorphismAppBar extends StatelessWidget
   Widget build(BuildContext context) {
     // Proverava da li treba prikazati back button
     final bool canPop = Navigator.of(context).canPop();
-    final bool shouldShowBackButton =
-        showBackButton && canPop && automaticallyImplyLeading;
+    final bool shouldShowBackButton = showBackButton && canPop && automaticallyImplyLeading;
 
     return Container(
       height: height,
       decoration: BoxDecoration(
+        // Keep the container fully transparent so the underlying gradient shows
         color: backgroundColor ?? Theme.of(context).glassContainer,
+        // Only a thin border — no shadows
         border: Border.all(
           color: Theme.of(context).glassBorder,
           width: 1.5,
@@ -47,14 +47,6 @@ class GlassmorphismAppBar extends StatelessWidget
           bottomLeft: Radius.circular(25),
           bottomRight: Radius.circular(25),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: 2,
-          ),
-        ],
       ),
       child: SafeArea(
         child: Padding(
@@ -108,14 +100,8 @@ class GradientBackButton extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
-          ],
-        ),
+        // Make the back button follow the same transparent glass style
+        color: Theme.of(context).glassContainer,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Theme.of(context).glassBorder,

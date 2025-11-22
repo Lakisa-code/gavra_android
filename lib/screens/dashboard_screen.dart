@@ -35,10 +35,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'active_drivers': 25,
           'completed_trips': 89,
           'revenue': 45000.0,
-            'passenger_types': {
+          'passenger_types': {
             'regular': 85,
             'senior': 35,
-              'ucenik': 30,
+            'ucenik': 30,
           },
           'monthly_data': [
             {'month': 'Jan', 'trips': 120},
@@ -94,22 +94,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: Theme.of(context).glassContainer,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
+                width: 1.5,
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-              ],
+              // intentionally no boxShadow — appbar should be transparent + border only
             ),
           ),
         ),
@@ -187,10 +178,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [
-              color.withValues(alpha: 0.1),
-              color.withValues(alpha: 0.05)
-            ],
+            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -339,8 +327,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPieChart() {
-    final passengerTypes =
-        dashboardData!['passenger_types'] as Map<String, dynamic>;
+    final passengerTypes = dashboardData!['passenger_types'] as Map<String, dynamic>;
     final colors = [Colors.blue, Colors.green, Colors.orange];
 
     return PieChart(

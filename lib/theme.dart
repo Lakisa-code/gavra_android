@@ -42,6 +42,43 @@ const ColorScheme tripleBlueFashionColorScheme = ColorScheme(
   onErrorContainer: Color(0xFF991B1B),
 );
 
+// 🖤 DARK STEEL GREY - Sive boje umesto plavih!
+const ColorScheme darkSteelGreyColorScheme = ColorScheme(
+  brightness: Brightness.dark,
+  // Steel Grey kao glavni - sive boje
+  primary: Color(0xFF404040), // Srednja siva
+  onPrimary: Colors.white,
+  primaryContainer: Color(0xFF6A6A6A), // Svetlija siva
+  onPrimaryContainer: Colors.white,
+
+  // Dark Steel Grey kao secondary
+  secondary: Color(0xFF2C2C2C), // Tamno siva
+  onSecondary: Colors.white,
+  secondaryContainer: Color(0xFF8A8A8A), // Najsvetlija siva
+  onSecondaryContainer: Colors.white,
+
+  // Metallic Grey kao tertiary
+  tertiary: Color(0xFF606060), // Srednje-svetla siva
+  onTertiary: Colors.white,
+  tertiaryContainer: Color(0xFF9A9A9A), // Svetla siva
+  onTertiaryContainer: Colors.white,
+
+  // Surface colors - tamne pozadine
+  surface: Color(0xFF1A1A1A), // Tamna pozadina
+  onSurface: Colors.white,
+  surfaceContainerHighest: Color(0xFF2A2A2A),
+  onSurfaceVariant: Color(0xFFB4B4B4),
+
+  outline: Color(0xFF6A6A6A),
+  outlineVariant: Color(0xFF404040),
+
+  // Error colors - iste kao plava tema
+  error: Color(0xFFEF4444),
+  onError: Colors.white,
+  errorContainer: Color(0xFFFEF2F2),
+  onErrorContainer: Color(0xFF991B1B),
+);
+
 // 🎨 CUSTOM COLOR EXTENSIONS za dodatne boje
 extension CustomColors on ColorScheme {
   // 👥 Učenik (student) Colors
@@ -230,5 +267,52 @@ class TripleBlueFashionStyles {
         spreadRadius: 8,
       ),
     ],
+  );
+}
+
+// 🖤 Dark Steel Grey Styles - BEZ SHADOW-A!
+class DarkSteelGreyStyles {
+  static BoxDecoration cardDecoration = BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      width: 2,
+      color: Colors.grey.withValues(alpha: 0.4), // Siva boja umesto plave
+    ),
+    // BEZ SHADOW-A!
+  );
+
+  static BoxDecoration gradientBackground = const BoxDecoration(
+    gradient: darkSteelGreyGradient,
+  );
+
+  static BoxDecoration gradientButton = BoxDecoration(
+    gradient: darkSteelGreyGradient,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      width: 1.5,
+      color: Colors.grey.withValues(alpha: 0.6), // Siva boja umesto plave
+    ),
+    // BEZ SHADOW-A!
+  );
+
+  static BoxDecoration dropdownDecoration = BoxDecoration(
+    color: Colors.grey[800], // Tamno siva pozadina
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: Colors.grey.withValues(alpha: 0.4), // Siva boja umesto plave
+      width: 1.5,
+    ),
+    // BEZ SHADOW-A!
+  );
+
+  static BoxDecoration popupDecoration = BoxDecoration(
+    color: Colors.grey[900], // Tamno siva pozadina
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: Colors.grey.withValues(alpha: 0.5), // Siva boja umesto plave
+      width: 2,
+    ),
+    // BEZ SHADOW-A!
   );
 }

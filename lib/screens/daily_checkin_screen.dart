@@ -24,8 +24,7 @@ class DailyCheckInScreen extends StatefulWidget {
   State<DailyCheckInScreen> createState() => _DailyCheckInScreenState();
 }
 
-class _DailyCheckInScreenState extends State<DailyCheckInScreen>
-    with TickerProviderStateMixin {
+class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProviderStateMixin {
   final TextEditingController _kusurController = TextEditingController();
   final FocusNode _kusurFocusNode = FocusNode();
   bool _isLoading = false;
@@ -140,8 +139,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
           // Direktno lokalno čuvanje bez uključivanja servisa
           final prefs = await SharedPreferences.getInstance();
           final today = DateTime.now();
-          final todayKey =
-              'daily_checkin_${widget.vozac}_${today.year}_${today.month}_${today.day}';
+          final todayKey = 'daily_checkin_${widget.vozac}_${today.year}_${today.month}_${today.day}';
 
           await prefs.setBool(todayKey, true);
           await prefs.setDouble('${todayKey}_amount', iznos);
@@ -208,12 +206,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     final vozacColor = VozacBoja.get(widget.vozac);
 
     // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
-    final lightVozacColor =
-        Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija
-    final softVozacColor =
-        Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
-    final deepVozacColor =
-        Color.lerp(vozacColor, Colors.black, 0.2)!; // Tamnija verzija
+    final lightVozacColor = Color.lerp(vozacColor, Colors.white, 0.7)!; // Vrlo svetla verzija
+    final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
+    final deepVozacColor = Color.lerp(vozacColor, Colors.black, 0.2)!; // Tamnija verzija
 
     // 🎨 Text boje bazirane na vozačevoj boji
     final primaryTextColor = deepVozacColor; // Tamni tekst na svetloj pozadini
@@ -248,22 +243,13 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
               color: Theme.of(context).glassContainer,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
+                width: 1.5,
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-              ],
+              // no boxShadow: appbar remains fully transparent and border-only
             ),
           ),
         ),
@@ -298,8 +284,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                             ),
                             // Dodatni warm glow
                             BoxShadow(
-                              color: const Color(0xFFFFE0B2)
-                                  .withValues(alpha: 0.2),
+                              color: const Color(0xFFFFE0B2).withValues(alpha: 0.2),
                               blurRadius: 30,
                               spreadRadius: 10,
                             ),
@@ -457,8 +442,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                           onPressed: _isLoading
                               ? null
                               : () {
-                                  HapticFeedback
-                                      .mediumImpact(); // Dodaj haptic feedback
+                                  HapticFeedback.mediumImpact(); // Dodaj haptic feedback
                                   _submitKusur();
                                 },
                           style: ElevatedButton.styleFrom(
@@ -511,8 +495,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
       }
 
       // Proveri da li postoji popis od juče
-      final lastReport =
-          await SimplifiedDailyCheckInService.getLastDailyReport(widget.vozac);
+      final lastReport = await SimplifiedDailyCheckInService.getLastDailyReport(widget.vozac);
 
       if (lastReport != null && mounted) {
         // Proveri da li je automatski generisan
@@ -528,8 +511,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
         }
       } else {
         // NEMA RUČNOG POPISA - Generiši automatski
-        final automatskiPopis =
-            await SimplifiedDailyCheckInService.generateAutomaticReport(
+        final automatskiPopis = await SimplifiedDailyCheckInService.generateAutomaticReport(
           widget.vozac,
           yesterday,
         );
@@ -551,8 +533,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Color.lerp(
-            vozacColor, Colors.white, 0.95), // Koristi dinamičku svetlu boju
+        backgroundColor: Color.lerp(vozacColor, Colors.white, 0.95), // Koristi dinamičku svetlu boju
         title: Row(
           children: [
             Icon(Icons.person, color: vozacColor, size: 20),
@@ -635,8 +616,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                   '${popis['kilometraza']?.toStringAsFixed(1) ?? 0} km',
                   Colors.indigo,
                 ),
-                if (popis['sitanNovac'] != null &&
-                    (popis['sitanNovac'] as num) > 0)
+                if (popis['sitanNovac'] != null && (popis['sitanNovac'] as num) > 0)
                   _buildStatistikaRow(
                     '🪙 Sitan novac',
                     '${popis['sitanNovac']?.toStringAsFixed(0) ?? 0} din',
@@ -650,8 +630,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                   decoration: BoxDecoration(
                     color: vozacColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: vozacColor.withValues(alpha: 0.3)),
+                    border: Border.all(color: vozacColor.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -691,23 +670,18 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
   // 🤖 DIALOG ZA AUTOMATSKI GENERISAN POPIS
   void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
-    final vozacColor =
-        VozacBoja.get(widget.vozac); // DODANO: Koristi boju vozača
+    final vozacColor = VozacBoja.get(widget.vozac); // DODANO: Koristi boju vozača
 
     // 🎨 Kreiranje paleta boja na osnovu vozačeve boje
-    final extraLightVozacColor = Color.lerp(
-        vozacColor, Colors.white, 0.9)!; // EXTRA svetla verzija za pozadinu
-    final softVozacColor =
-        Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
-    final deepVozacColor =
-        Color.lerp(vozacColor, Colors.black, 0.3)!; // Tamnija verzija za tekst
+    final extraLightVozacColor = Color.lerp(vozacColor, Colors.white, 0.9)!; // EXTRA svetla verzija za pozadinu
+    final softVozacColor = Color.lerp(vozacColor, Colors.white, 0.4)!; // Mekša verzija
+    final deepVozacColor = Color.lerp(vozacColor, Colors.black, 0.3)!; // Tamnija verzija za tekst
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor:
-            extraLightVozacColor.withValues(alpha: 0.98), // SVETLIJA pozadina
+        backgroundColor: extraLightVozacColor.withValues(alpha: 0.98), // SVETLIJA pozadina
         title: Row(
           children: [
             Icon(
@@ -734,8 +708,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
             child: Card(
               margin: const EdgeInsets.all(0),
               elevation: 0,
-              color: softVozacColor.withValues(
-                  alpha: 0.3), // Koristi dinamičku meku boju
+              color: softVozacColor.withValues(alpha: 0.3), // Koristi dinamičku meku boju
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -745,12 +718,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: vozacColor.withValues(
-                            alpha: 0.1), // PROMENJEN: Koristi boju vozača
+                        color: vozacColor.withValues(alpha: 0.1), // PROMENJEN: Koristi boju vozača
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: vozacColor.withValues(
-                              alpha: 0.3), // PROMENJEN: Koristi boju vozača
+                          color: vozacColor.withValues(alpha: 0.3), // PROMENJEN: Koristi boju vozača
                         ),
                       ),
                       child: Row(
@@ -766,8 +737,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                               'Pošto niste uradili ručni popis juče, aplikacija je automatski generisala popis.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color:
-                                    deepVozacColor, // TAMNA verzija vozačeve boje
+                                color: deepVozacColor, // TAMNA verzija vozačeve boje
                               ),
                             ),
                           ),
@@ -780,8 +750,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: vozacColor.withValues(
-                            alpha: 0.1), // PROMENJEN: Koristi boju vozača
+                        color: vozacColor.withValues(alpha: 0.1), // PROMENJEN: Koristi boju vozača
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: vozacColor, // PROMENJEN: Koristi boju vozača
@@ -794,8 +763,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen>
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color:
-                                deepVozacColor, // TAMNA verzija vozačeve boje
+                            color: deepVozacColor, // TAMNA verzija vozačeve boje
                           ),
                         ),
                       ),

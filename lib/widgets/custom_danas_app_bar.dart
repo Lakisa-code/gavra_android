@@ -30,20 +30,7 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget _buildDigitalDateDisplay(BuildContext context) {
     final now = DateTime.now();
     final dayNames = ['Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub', 'Ned'];
-    final monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Maj',
-      'Jun',
-      'Jul',
-      'Avg',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Dec'
-    ];
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Avg', 'Sep', 'Okt', 'Nov', 'Dec'];
 
     final dayStr = now.day.toString().padLeft(2, '0');
     final monthStr = monthNames[now.month - 1];
@@ -123,15 +110,7 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
             bottomLeft: Radius.circular(25),
             bottomRight: Radius.circular(25),
           ),
-          boxShadow: [
-            BoxShadow(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-              spreadRadius: 2,
-            ),
-          ],
+          // keep AppBar transparent and border-only; no box shadow
         ),
         child: SafeArea(
           child: Padding(

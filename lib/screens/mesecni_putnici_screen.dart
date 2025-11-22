@@ -351,6 +351,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               color: Theme.of(context).glassContainer,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
+                width: 1.5,
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),

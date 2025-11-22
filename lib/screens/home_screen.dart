@@ -1363,19 +1363,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           preferredSize: const Size.fromHeight(74),
           child: Container(
             decoration: BoxDecoration(
-              gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
+              // Keep appbar fully transparent so underlying gradient shows
+              color: Theme.of(context).glassContainer,
+              border: Border.all(
+                color: Theme.of(context).glassBorder,
+                width: 1.5,
+              ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
                 bottomRight: Radius.circular(25),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 2,
-                ),
-              ],
             ),
             child: SafeArea(
               child: Padding(
@@ -1516,12 +1513,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               preferredSize: const Size.fromHeight(93),
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
+                  color: Theme.of(context).glassContainer,
+                  border: Border.all(
+                    color: Theme.of(context).glassBorder,
+                    width: 1.5,
+                  ),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(25),
                     bottomRight: Radius.circular(25),
                   ),
-                  // No boxShadow — AppBar should be 100% transparent and only show glass border
                 ),
                 child: SafeArea(
                   child: Center(
@@ -1811,14 +1811,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       color: Theme.of(context).glassBorder,
                                       width: 1.5,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
+                                    // no boxShadow — keep transparent glass + border only
                                   ),
                                   child: Center(
                                     child: Text(
@@ -1868,14 +1861,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       color: Theme.of(context).glassBorder,
                                       width: 1.5,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
+                                    // no boxShadow — keep transparent glass + border only
                                   ),
                                   child: Center(
                                     child: Text(
@@ -1913,14 +1899,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     color: Theme.of(context).glassBorder,
                                     width: 1.5,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
+                                  // no boxShadow — keep transparent glass + border only
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton2<String>(
@@ -2366,14 +2345,7 @@ class _HomeScreenButton extends StatelessWidget {
             width: 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: 1,
-            ),
-          ],
+          // no boxShadow — keep transparent glass + border only
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

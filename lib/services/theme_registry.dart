@@ -20,9 +20,9 @@ class ThemeRegistry {
       id: 'dark_steel_grey',
       name: '🖤 Dark Steel Grey',
       description: 'Triple Blue Fashion sa crno-sivim gradijentom',
-      colorScheme: tripleBlueFashionColorScheme, // ISTA TEMA!
+      colorScheme: darkSteelGreyColorScheme, // SIVE BOJE BEZ PLAVIH!
       themeData: tripleBlueFashionTheme, // ISTA TEMA!
-      styles: TripleBlueFashionStyles, // ISTI STILOVI!
+      styles: DarkSteelGreyStyles, // CRNI STILOVI BEZ SHADOW-A!
       gradient: darkSteelGreyGradient, // SAMO GRADIJENT DRUGAČIJI!
     ),
     'passionate_rose': ThemeDefinition(
@@ -38,15 +38,13 @@ class ThemeRegistry {
   };
 
   /// Vraća sve dostupne teme
-  static Map<String, ThemeDefinition> get allThemes =>
-      Map.unmodifiable(_themes);
+  static Map<String, ThemeDefinition> get allThemes => Map.unmodifiable(_themes);
 
   /// Vraća listu naziva tema za dropdown
   static List<String> get themeNames => _themes.keys.toList();
 
   /// Vraća listu display imena tema za dropdown
-  static List<String> get themeDisplayNames =>
-      _themes.values.map((t) => t.name).toList();
+  static List<String> get themeDisplayNames => _themes.values.map((t) => t.name).toList();
 
   /// Vraća temu po ID-u
   static ThemeDefinition? getTheme(String themeId) => _themes[themeId];

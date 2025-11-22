@@ -362,6 +362,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               color: Theme.of(context).glassContainer,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
+                width: 1.5,
               ),
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(25),
