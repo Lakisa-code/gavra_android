@@ -592,12 +592,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                                         ),
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 2),
-                                                    Icon(
-                                                      Icons.keyboard_arrow_down,
-                                                      color: Colors.white,
-                                                      size: 14,
-                                                    ),
+                                                    // arrow removed — selected item displays only text
                                                   ],
                                                 ),
                                               );
