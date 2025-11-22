@@ -13,7 +13,7 @@ class MonitoringEkran extends StatefulWidget {
 
 class _MonitoringEkranState extends State<MonitoringEkran> {
   Map<String, String> _statistika = {};
-  bool _ucitava = true;
+  // loading flag removed — UI doesn't use `_ucitava` here any more
   String? _errorMessage;
 
   @override
@@ -31,14 +31,12 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
       if (mounted) {
         setState(() {
           _statistika = stats;
-          _ucitava = false;
           _errorMessage = null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _ucitava = false;
           _errorMessage = 'Greška pri učitavanju: $e';
         });
       }
@@ -108,9 +106,8 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {
+                            onPressed: () {
                             setState(() {
-                              _ucitava = true;
                               _errorMessage = null;
                             });
                             _ucitajStatistiku();
