@@ -52,8 +52,8 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
     final todayName = app_date_utils.DateUtils.getTodayFullName();
-    // Admin screen only supports weekdays, default to Monday for weekends
-    _selectedDan = ['Subota', 'Nedelja'].contains(todayName) ? 'Ponedeljak' : todayName;
+    // Admin screen supports all days now, including weekends
+    _selectedDan = todayName;
 
     // � FORSIRANA INICIJALIZACIJA VOZAC MAPIRANJA
     VozacMappingService.refreshMapping();
@@ -572,6 +572,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                               'Sreda',
                                               'Četvrtak',
                                               'Petak',
+                                              'Subota',
+                                              'Nedelja',
                                             ].map<Widget>((String value) {
                                               return Center(
                                                 child: Row(
@@ -609,6 +611,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                             'Sreda',
                                             'Četvrtak',
                                             'Petak',
+                                            'Subota',
+                                            'Nedelja',
                                           ].map((dan) {
                                             return DropdownMenuItem<String>(
                                               value: dan,
