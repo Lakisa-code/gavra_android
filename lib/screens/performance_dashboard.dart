@@ -4,6 +4,7 @@ import '../services/advanced_cache_manager.dart';
 import '../services/memory_management_service.dart';
 import '../services/performance_optimizer_service.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../utils/widget_performance_mixin.dart';
 
 /// 🚀 PERFORMANCE MONITORING DASHBOARD
@@ -177,7 +178,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
           children: [
             ConstText(
               title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: Responsive.fontSize(context, 18), fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             child,
@@ -297,9 +298,9 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        const ConstText(
+        ConstText(
           '🛠️ Actions',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: Responsive.fontSize(context, 18), fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -391,7 +392,7 @@ class _PerformanceDashboardState extends OptimizedState<PerformanceDashboard> {
                       leading: const Icon(Icons.warning, color: Colors.orange),
                       title: ConstText(
                         warnings[index],
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
                       ),
                     );
                   },

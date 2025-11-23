@@ -9,6 +9,7 @@ import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/glassmorphism_app_bar.dart';
 
@@ -293,7 +294,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                 Text(
                   '📊 Učitavam statistike...',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: Responsive.fontSize(context, 16),
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[700],
                   ),
@@ -326,7 +327,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
           Text(
             'Izaberite period za analizu',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: Responsive.fontSize(context, 18),
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
@@ -336,7 +337,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
             'Kliknite na dugme "Promeni" da biste \npodesili vremenski period',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: Responsive.fontSize(context, 14),
               color: Colors.grey[500],
             ),
           ),
@@ -359,7 +360,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
           Text(
             'Nema podataka za izabrani period',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: Responsive.fontSize(context, 18),
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
@@ -368,7 +369,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
           Text(
             'Probajte sa drugim vremenskim periodom',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: Responsive.fontSize(context, 14),
               color: Colors.grey[500],
             ),
           ),
@@ -414,7 +415,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                     Text(
                       'Detaljne statistike',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: Responsive.fontSize(context, 20),
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
@@ -452,7 +453,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                         'Period: ${_formatDate(_selectedRange!.start)} - ${_formatDate(_selectedRange!.end)}',
                         style: TextStyle(
                           color: Colors.blue[700],
-                          fontSize: 12,
+                          fontSize: Responsive.fontSize(context, 12),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -489,17 +490,17 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                         radius: 20,
                         child: Text(
                           vozac[0].toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: Responsive.fontSize(context, 16),
                           ),
                         ),
                       ),
                       title: Text(
                         vozac,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: Responsive.fontSize(context, 16),
                           fontWeight: FontWeight.bold,
                           color: vozacColor,
                         ),
@@ -509,7 +510,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           Flexible(
                             child: Text(
                               'Ukupno: ${stats['dodati']} putnika',
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -524,7 +525,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                             child: Text(
                               'Pazar: ${stats['ukupnoPazar'].toStringAsFixed(0)} RSD',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: Responsive.fontSize(context, 12),
                                 color: Colors.green[700],
                                 fontWeight: FontWeight.w600,
                               ),
@@ -662,7 +663,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
               Text(
                 'GPS Kilometraža - $vozac',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Responsive.fontSize(context, 16),
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[800],
                 ),
@@ -697,7 +698,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           'Nema GPS podataka',
                           style: TextStyle(
                             color: Colors.grey[600],
-                            fontSize: 14,
+                            fontSize: Responsive.fontSize(context, 14),
                           ),
                         ),
                       ],
@@ -732,7 +733,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                               final date = _selectedRange!.start.add(Duration(days: dayIndex));
                               return Text(
                                 '${date.day}',
-                                style: const TextStyle(fontSize: 12),
+                                style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
                               );
                             }
                             return const Text('');
@@ -746,7 +747,7 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
                           getTitlesWidget: (value, meta) {
                             return Text(
                               '${value.toInt()}',
-                              style: const TextStyle(fontSize: 10),
+                              style: TextStyle(fontSize: Responsive.fontSize(context, 10)),
                             );
                           },
                         ),
@@ -884,7 +885,7 @@ class _StatRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-                fontSize: isTotal ? 16 : 14,
+                fontSize: Responsive.fontSize(context, isTotal ? 16 : 14),
               ),
             ),
           ),
@@ -893,7 +894,7 @@ class _StatRow extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: color,
-              fontSize: isTotal ? 16 : 14,
+              fontSize: Responsive.fontSize(context, isTotal ? 16 : 14),
             ),
           ),
         ],

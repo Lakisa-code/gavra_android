@@ -6,6 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/custom_back_button.dart';
 
 class PutovanjaIstorijaScreen extends StatefulWidget {
@@ -228,7 +229,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 child: Row(
                   children: [
                     const GradientBackButton(),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -236,7 +237,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                             'Istorija Putovanja',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
+                              fontSize: Responsive.fontSize(context, 18),
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
                               shadows: [
@@ -424,7 +425,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                                 child: Text(
                                   _formatDate(_selectedDate),
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: Responsive.fontSize(context, 13),
                                     fontWeight: FontWeight.w500,
                                     color: Colors.indigo.shade800,
                                   ),
@@ -454,7 +455,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: Responsive.fontSize(context, 13),
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.w500,
                             ),
@@ -561,7 +562,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           return Text(
                             isHealthy ? 'Prikazano: $filteredCount od $totalCount putovanja' : 'Podaci se učitavaju...',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: Responsive.fontSize(context, 12),
                               color: Colors.indigo.shade600,
                               fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
                             ),
@@ -682,7 +683,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           Text(
             'Nema putovanja za izabrani datum',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: Responsive.fontSize(context, 18),
               color: Colors.grey.shade600,
             ),
           ),
@@ -781,7 +782,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 Text(
                   vreme,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: Responsive.fontSize(context, 18),
                     fontWeight: FontWeight.bold,
                     color: Colors.indigo.shade800,
                   ),
@@ -829,8 +830,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
               Expanded(
                 child: Text(
                   putovanje.putnikIme,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, 16),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -884,7 +885,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     Text(
                       'BC → Vršac',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Responsive.fontSize(context, 12),
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w500,
                       ),
@@ -902,7 +903,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                     Text(
                       'Vršac → BC',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Responsive.fontSize(context, 12),
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w500,
                       ),
@@ -985,7 +986,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           color: isMesecni
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)
               : Theme.of(context).colorScheme.warningPrimary.withValues(alpha: 0.8),
-          fontSize: 12,
+          fontSize: Responsive.fontSize(context, 12),
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -1023,7 +1024,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         text,
         style: TextStyle(
           color: color.withValues(alpha: 0.8),
-          fontSize: 11,
+          fontSize: Responsive.fontSize(context, 11),
           fontWeight: FontWeight.bold,
         ),
       ),
