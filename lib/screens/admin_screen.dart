@@ -842,8 +842,14 @@ class _AdminScreenState extends State<AdminScreen> {
                   vozaciRedosled,
                 );
                 return SingleChildScrollView(
+                  // ensure we respect device safe area / system nav bar at the
+                  // bottom — some devices (Samsung) have a system bar which can
+                  // cause a tiny overflow (2px on some screens). Add extra
+                  // bottom padding based on MediaQuery so the content can scroll
+                  // clear of system UI on all devices.
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 12),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(context).padding.bottom + 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1283,7 +1289,10 @@ class _AdminScreenState extends State<AdminScreen> {
                         // UKUPAN PAZAR
                         Container(
                           width: double.infinity,
-                          height: 70,
+                          // increased slightly to provide safe headroom across
+                          // devices (prevent tiny 1–3px overflows caused by
+                          // font metrics / shadows on some phones)
+                          height: 76,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 8,
@@ -1313,6 +1322,9 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                               const SizedBox(width: 8),
                               Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     isAdmin ? 'UKUPAN PAZAR' : 'MOJ UKUPAN PAZAR',
@@ -1357,7 +1369,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     );
                                   },
                                   child: Container(
-                                    height: 50,
+                                    height: 54,
                                     margin: const EdgeInsets.only(right: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
@@ -1374,8 +1386,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: const Column(
+                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           Icons.location_on,
@@ -1421,7 +1434,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     );
                                   },
                                   child: Container(
-                                    height: 50,
+                                    height: 54,
                                     margin: const EdgeInsets.symmetric(
                                       horizontal: 4,
                                     ),
@@ -1440,8 +1453,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: const Column(
+                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
                                           Icons.analytics,

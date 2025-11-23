@@ -6,6 +6,7 @@ import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
 import '../utils/mesecni_helpers.dart';
 import '../widgets/shared/time_row.dart';
+import 'adresa_widgets.dart';
 
 /// 🆕🔧 UNIFIKOVANI WIDGET ZA DODAVANJE I EDITOVANJE MESEČNIH PUTNIKA
 ///
@@ -43,6 +44,9 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   final TextEditingController _brojTelefonaMajkeController = TextEditingController();
   final TextEditingController _adresaBelaCrkvaController = TextEditingController();
   final TextEditingController _adresaVrsacController = TextEditingController();
+  // Selected address UUIDs (keeps track when user chooses a suggestion)
+  String? _adresaBelaCrkvaId;
+  String? _adresaVrsacId;
 
   // Time controllers — map based for days (pon, uto, sre, cet, pet)
   final Map<String, TextEditingController> _polazakBcControllers = {};
@@ -123,13 +127,61 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   }
 
   Future<void> _loadAdreseForEditovanje() async {
-    // For now, we'll use empty strings as defaults
-    // Address loading can be implemented later if needed
-    if (mounted) {
-      setState(() {
-        _adresaBelaCrkvaController.text = '';
-        _adresaVrsacController.text = '';
-      });
+    // Load existing address names for the edit dialog using the UUIDs
+    final putnik = widget.existingPutnik;
+    if (putnik == null) return;
+
+    // Try batch fetch for both ids (faster & respects cache)
+    try {
+      final idsToFetch = <String>[];
+      if (putnik.adresaBelaCrkvaId != null && putnik.adresaBelaCrkvaId!.isNotEmpty) {
+        idsToFetch.add(putnik.adresaBelaCrkvaId!);
+      }
+      if (putnik.adresaVrsacId != null && putnik.adresaVrsacId!.isNotEmpty) {
+        idsToFetch.add(putnik.adresaVrsacId!);
+      }
+
+      if (idsToFetch.isNotEmpty) {
+        final fetched = await AdresaSupabaseService.getAdreseByUuids(idsToFetch);
+
+        final bcNaziv = putnik.adresaBelaCrkvaId != null
+            ? fetched[putnik.adresaBelaCrkvaId!]?.naziv ??
+                await AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaBelaCrkvaId)
+            : null;
+
+        final vsNaziv = putnik.adresaVrsacId != null
+            ? fetched[putnik.adresaVrsacId!]?.naziv ??
+                await AdresaSupabaseService.getNazivAdreseByUuid(putnik.adresaVrsacId)
+            : null;
+
+        if (mounted) {
+          setState(() {
+            _adresaBelaCrkvaController.text = bcNaziv ?? '';
+            _adresaVrsacController.text = vsNaziv ?? '';
+            // keep UUIDs so autocomplete selection is preserved
+            _adresaBelaCrkvaId = putnik.adresaBelaCrkvaId;
+            _adresaVrsacId = putnik.adresaVrsacId;
+          });
+        }
+      } else {
+        // No UUIDs present → leave controllers empty
+        if (mounted) {
+          setState(() {
+            _adresaBelaCrkvaController.text = '';
+            _adresaVrsacController.text = '';
+            _adresaBelaCrkvaId = null;
+            _adresaVrsacId = null;
+          });
+        }
+      }
+    } catch (e) {
+      // In case of any error, keep empty strings but don't crash the dialog
+      if (mounted) {
+        setState(() {
+          _adresaBelaCrkvaController.text = '';
+          _adresaVrsacController.text = '';
+        });
+      }
     }
   }
 
@@ -424,16 +476,32 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       title: '🏠 Adrese',
       child: Column(
         children: [
-          _buildTextField(
+          AdresaAutocompleteWidget(
+            grad: 'Bela Crkva',
             controller: _adresaBelaCrkvaController,
+            initialValue: _adresaBelaCrkvaController.text.isNotEmpty ? _adresaBelaCrkvaController.text : null,
             label: 'Adresa Bela Crkva',
-            icon: Icons.location_on,
+            prefixIcon: const Icon(Icons.location_on),
+            onChanged: (id, naziv) {
+              setState(() {
+                _adresaBelaCrkvaId = id;
+                // if user selected a suggestion the controller already has naziv
+                // if user typed free text, id will be null until saved/created
+              });
+            },
           ),
           const SizedBox(height: 12),
-          _buildTextField(
+          AdresaAutocompleteWidget(
+            grad: 'Vršac',
             controller: _adresaVrsacController,
+            initialValue: _adresaVrsacController.text.isNotEmpty ? _adresaVrsacController.text : null,
             label: 'Adresa Vršac',
-            icon: Icons.location_city,
+            prefixIcon: const Icon(Icons.location_city),
+            onChanged: (id, naziv) {
+              setState(() {
+                _adresaVrsacId = id;
+              });
+            },
           ),
         ],
       ),
@@ -1001,11 +1069,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   }
 
   Future<void> _createNewPutnik() async {
-    // Create addresses if provided
-    String? adresaBelaCrkvaId;
-    String? adresaVrsacId;
+    // Resolve addresses:
+    // Prefer UUIDs selected via autocomplete (_adresa*Id). If no UUID but text exists, create or find address.
+    String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
+    String? adresaVrsacId = _adresaVrsacId;
 
-    if (_adresaBelaCrkvaController.text.isNotEmpty) {
+    if (adresaBelaCrkvaId == null && _adresaBelaCrkvaController.text.isNotEmpty) {
       final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
         naziv: _adresaBelaCrkvaController.text.trim(),
         grad: 'Bela Crkva',
@@ -1013,7 +1082,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       adresaBelaCrkvaId = adresaBC?.id;
     }
 
-    if (_adresaVrsacController.text.isNotEmpty) {
+    if (adresaVrsacId == null && _adresaVrsacController.text.isNotEmpty) {
       final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
         naziv: _adresaVrsacController.text.trim(),
         grad: 'Vršac',
@@ -1059,6 +1128,37 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   }
 
   Future<void> _updateExistingPutnik() async {
+    // Resolve address UUIDs: if the user cleared the field -> null; if provided -> createOrGet
+    // Prefer currently selected IDs from autocomplete; start from existing putnik as fallback
+    String? adresaBelaCrkvaId = _adresaBelaCrkvaId ?? widget.existingPutnik!.adresaBelaCrkvaId;
+    String? adresaVrsacId = _adresaVrsacId ?? widget.existingPutnik!.adresaVrsacId;
+
+    // If the user cleared the field -> set to null
+    if (_adresaBelaCrkvaController.text.isEmpty) {
+      adresaBelaCrkvaId = null;
+    } else {
+      // If no UUID currently known but user typed free text -> create or find
+      if (adresaBelaCrkvaId == null && _adresaBelaCrkvaController.text.isNotEmpty) {
+        final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
+          naziv: _adresaBelaCrkvaController.text.trim(),
+          grad: 'Bela Crkva',
+        );
+        adresaBelaCrkvaId = adresaBC?.id;
+      }
+    }
+
+    if (_adresaVrsacController.text.isEmpty) {
+      adresaVrsacId = null;
+    } else {
+      if (adresaVrsacId == null && _adresaVrsacController.text.isNotEmpty) {
+        final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
+          naziv: _adresaVrsacController.text.trim(),
+          grad: 'Vršac',
+        );
+        adresaVrsacId = adresaVS?.id;
+      }
+    }
+
     final editovanPutnik = widget.existingPutnik!.copyWith(
       putnikIme: _imeController.text.trim(),
       tip: _tip,
@@ -1068,6 +1168,8 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       brojTelefonaMajke: _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       polasciPoDanu: _getPolasciPoDanu(),
       radniDani: _getRadniDaniString(),
+      adresaBelaCrkvaId: adresaBelaCrkvaId,
+      adresaVrsacId: adresaVrsacId,
     );
 
     final updated = await _mesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);

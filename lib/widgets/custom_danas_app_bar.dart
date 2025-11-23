@@ -216,11 +216,21 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 12),
-        label: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
+        // keep the label single-line and scale it down when space is tight
+        // keep label compact but readable; allow enough min width so short labels
+        // (e.g. "POPIS") never get clipped on narrow screens
+        label: Container(
+          alignment: Alignment.center,
+          constraints: const BoxConstraints(minWidth: 56),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.visible,
           ),
         ),
         style: ElevatedButton.styleFrom(
@@ -230,7 +240,12 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          // smaller but guaranteed minimum width so shorter labels are never cut
+          // (the original value was very wide and got overridden when many
+          // buttons are placed in a horizontal row). 56-72px is enough for
+          // short uppercase labels like "POPIS" on narrow devices.
+          minimumSize: const Size(72, 26),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         ),
       ),
     );

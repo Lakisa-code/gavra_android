@@ -141,7 +141,7 @@ class TimesSection extends StatelessWidget {
 
               // Vremena za svaki dan
               ...['pon', 'uto', 'sre', 'cet', 'pet'].map((dan) {
-                return _buildTimeInputRow(dan);
+                return _buildTimeInputRow(context, dan);
               }).toList(),
             ],
           ),
@@ -151,7 +151,7 @@ class TimesSection extends StatelessWidget {
   }
 
   /// Kreira red za unos vremena za određeni dan
-  Widget _buildTimeInputRow(String danKod) {
+  Widget _buildTimeInputRow(BuildContext context, String danKod) {
     final nazivDana = _getDayName(danKod);
     final isWorkingDay = controller.isWorkingDay(danKod);
 
@@ -250,6 +250,22 @@ class TimesSection extends StatelessWidget {
                           ),
                           hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
                           errorText: controller.getFieldError('vreme_bc_$danKod'),
+                          suffixIcon: InkWell(
+                            onTap: () async {
+                              final cur = controller.getController('vreme_bc_$danKod').text;
+                              final initial = _parseTime(cur) ?? const TimeOfDay(hour: 6, minute: 0);
+                              final picked = await showTimePicker(context: context, initialTime: initial);
+                              if (picked != null) {
+                                final h = picked.hour.toString();
+                                final m = picked.minute.toString().padLeft(2, '0');
+                                controller.getController('vreme_bc_$danKod').text = '$h:$m';
+                              }
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(Icons.access_time, color: Colors.white70, size: 18),
+                            ),
+                          ),
                         ),
                         style: const TextStyle(fontSize: 14, height: 1.1, color: Colors.white),
                       ),
@@ -307,6 +323,22 @@ class TimesSection extends StatelessWidget {
                           ),
                           hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
                           errorText: controller.getFieldError('vreme_vs_$danKod'),
+                          suffixIcon: InkWell(
+                            onTap: () async {
+                              final cur = controller.getController('vreme_vs_$danKod').text;
+                              final initial = _parseTime(cur) ?? const TimeOfDay(hour: 16, minute: 30);
+                              final picked = await showTimePicker(context: context, initialTime: initial);
+                              if (picked != null) {
+                                final h = picked.hour.toString();
+                                final m = picked.minute.toString().padLeft(2, '0');
+                                controller.getController('vreme_vs_$danKod').text = '$h:$m';
+                              }
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(Icons.access_time, color: Colors.white70, size: 18),
+                            ),
+                          ),
                         ),
                         style: const TextStyle(fontSize: 14, height: 1.1, color: Colors.white),
                       ),
@@ -322,6 +354,19 @@ class TimesSection extends StatelessWidget {
   }
 
   /// Helper za nazive dana
+  // Parse simple time strings like '05:00' or '5:00' into a TimeOfDay
+  TimeOfDay? _parseTime(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final s = raw.trim();
+    final parts = s.split(':');
+    final h = int.tryParse(parts[0]);
+    final m = parts.length > 1 ? int.tryParse(parts[1]) : 0;
+    if (h == null || m == null) return null;
+    final hour = h.clamp(0, 23);
+    final minute = m.clamp(0, 59);
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
   String _getDayName(String danKod) {
     switch (danKod) {
       case 'pon':

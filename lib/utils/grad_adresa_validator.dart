@@ -30,41 +30,24 @@ class GradAdresaValidator {
   }
 
   /// 🏘️ NASELJA I ADRESE OPŠTINE BELA CRKVA
+  // Reduced — keep only the places we want to accept as Bela Crkva
+  // NOTE: these values are stored in a normalized, diacritic-free form
   static const List<String> naseljaOpstineBelaCrkva = [
     'bela crkva',
-    'kaluđerovo',
     'jasenovo',
-    'čenta',
-    'grebenac',
-    'krstur',
-    'pločica',
     'dupljaja',
-    'kruščica',
-    'velika greda',
-    'dobričevo',
-    'posta', // Pošta Bela Crkva
+    'kruscica',
+    'kusic',
+    'vracev gaj',
   ];
 
   /// 🏘️ NASELJA I ADRESE OPŠTINE VRŠAC
+  // Reduced — only include the villages that should be treated as Vršac
+  // Intentionally exclude Pavliš / Malo Središte / Veliko Središte and similar
   static const List<String> naseljaOpstineVrsac = [
-    'vršac',
     'vrsac',
-    'malo središte',
-    'veliko središte',
-    'mesić',
-    'pavliš',
-    'ritiševo',
-    'straža',
     'straza',
-    'uljma',
-    'vojvodinci',
-    'zagajica',
-    'gudurica',
-    'kuštilj',
-    'marcovac',
     'potporanj',
-    'sočica',
-    'bolnica', // Bolnica Vršac
   ];
 
   /// 🔤 NORMALIZUJ SRPSKE KARAKTERE
@@ -111,21 +94,17 @@ class GradAdresaValidator {
     }
 
     // ✅ AKO GRAD PRIPADA DOZVOLJENIM OPŠTINAMA, DOZVOLI BILO KOJU ADRESU
-    final gradBelongs = naseljaOpstineBelaCrkva
-            .any((naselje) => normalizedPutnikGrad.contains(naselje)) ||
-        naseljaOpstineVrsac
-            .any((naselje) => normalizedPutnikGrad.contains(naselje));
+    final gradBelongs = naseljaOpstineBelaCrkva.any((naselje) => normalizedPutnikGrad.contains(naselje)) ||
+        naseljaOpstineVrsac.any((naselje) => normalizedPutnikGrad.contains(naselje));
 
     if (gradBelongs) {
       return true; // Dozvoli bilo koju adresu u validnim opštinama
     }
 
     // 🔍 PROVERI DA LI ADRESA SADRŽI POZNATA NASELJA (fallback)
-    final belongsToBelaCrkva = naseljaOpstineBelaCrkva
-        .any((naselje) => normalizedAdresa.contains(naselje));
+    final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedAdresa.contains(naselje));
 
-    final belongsToVrsac = naseljaOpstineVrsac
-        .any((naselje) => normalizedAdresa.contains(naselje));
+    final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedAdresa.contains(naselje));
 
     // Dozvoli ako pripada bilo kojoj opštini
     return belongsToBelaCrkva || belongsToVrsac;
@@ -143,12 +122,10 @@ class GradAdresaValidator {
     final normalizedGrad = normalizeString(grad);
 
     // Proveri da li grad pripada opštini Bela Crkva
-    final belongsToBelaCrkva = naseljaOpstineBelaCrkva
-        .any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
 
     // Proveri da li grad pripada opštini Vršac
-    final belongsToVrsac =
-        naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 
     if (belongsToBelaCrkva) {
       return isAdresaInAllowedCity(adresa, 'Bela Crkva');
@@ -184,11 +161,9 @@ class GradAdresaValidator {
     final normalizedGrad = normalizeString(grad);
 
     // Prvo proveri da li pripada dozvoljenim opštinama
-    final belongsToBelaCrkva = naseljaOpstineBelaCrkva
-        .any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToBelaCrkva = naseljaOpstineBelaCrkva.any((naselje) => normalizedGrad.contains(naselje));
 
-    final belongsToVrsac =
-        naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
+    final belongsToVrsac = naseljaOpstineVrsac.any((naselje) => normalizedGrad.contains(naselje));
 
     // Ako pripada dozvoljenim opštinama, ne blokiraj
     if (belongsToBelaCrkva || belongsToVrsac) {
@@ -197,12 +172,11 @@ class GradAdresaValidator {
 
     // Inače proveri da li je u listi blokiranih gradova
     return blockedCities.any(
-      (blocked) =>
-          normalizedGrad.contains(blocked) || blocked.contains(normalizedGrad),
+      (blocked) => normalizedGrad.contains(blocked) || blocked.contains(normalizedGrad),
     );
   }
 
-  /// ⏰ NORMALIZUJ VREME - konvertuj "05:00:00" u "5:00"
+  /// ⏰ NORMALIZUJ VREME - konvertuj "05:00:00" u "05:00", osiguraj vodeću nulu za minute
   static String normalizeTime(String? time) {
     if (time == null || time.isEmpty) {
       return '';
@@ -216,9 +190,12 @@ class GradAdresaValidator {
       normalized = '${parts[0]}:${parts[1]}';
     }
 
-    // Ukloni leading zero (05:00 -> 5:00)
-    if (normalized.startsWith('0')) {
-      normalized = normalized.substring(1);
+    // Ensure minutes have leading zero
+    final parts = normalized.split(':');
+    if (parts.length == 2) {
+      final h = parts[0];
+      final m = parts[1].padLeft(2, '0');
+      normalized = '$h:$m';
     }
 
     return normalized;

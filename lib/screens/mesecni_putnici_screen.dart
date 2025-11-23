@@ -776,14 +776,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   Widget _buildPutnikCard(MesecniPutnik putnik, int redniBroj) {
     final bool bolovanje = putnik.status == 'bolovanje';
-    // Pronađi prvi dan koji ima definisano vreme
-    String? danSaVremenom;
-    for (String dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
-      if (putnik.getPolazakBelaCrkvaZaDan(dan) != null || putnik.getPolazakVrsacZaDan(dan) != null) {
-        danSaVremenom = dan;
-        break;
-      }
-    }
+    // Sačuvaj sva vremena po danima (pon -> pet) i prikaži ih na kartici.
+    // Prethodna logika je prikazivala samo PRVI dan koji je imao vreme.
+    // Sada prikazujemo sve dane koji imaju bar jedan polazak (BC i/ili VS)
+    final List<String> _daniOrder = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -962,8 +958,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
               const SizedBox(height: 12),
 
-              // � RADNO VREME - prikaži polazak vremena ako su definisana za bilo koji dan
-              if (danSaVremenom != null)
+              // � RADNO VREME - prikaži polazak vremena ako je definisan bar jedan dan
+              if (_daniOrder
+                  .any((d) => putnik.getPolazakBelaCrkvaZaDan(d) != null || putnik.getPolazakVrsacZaDan(d) != null))
                 Container(
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 12),
@@ -999,61 +996,82 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       Row(
                         children: [
                           // Polazak iz Bele Crkve
-                          if (putnik.getPolazakBelaCrkvaZaDan(danSaVremenom) != null)
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.departure_board,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  Icon(
-                                    Icons.departure_board,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      'B.Crkva: ${putnik.getPolazakBelaCrkvaZaDan(danSaVremenom)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade700,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          // Prikaži sve dane koji imaju polaske (po redu pon..pet)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: _daniOrder.map((dan) {
+                                final bc = putnik.getPolazakBelaCrkvaZaDan(dan);
+                                final vs = putnik.getPolazakVrsacZaDan(dan);
+                                if (bc == null && vs == null) return const SizedBox.shrink();
 
-                          // Polazak iz Vršca
-                          if (putnik.getPolazakVrsacZaDan(danSaVremenom) != null)
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.departure_board,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      'Vršac: ${putnik.getPolazakVrsacZaDan(danSaVremenom)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade700,
-                                        fontWeight: FontWeight.w500,
+                                // Lokalizovana kratka oznaka dana
+                                final label =
+                                    {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Čet', 'pet': 'Pet'}[dan] ?? dan;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 36,
+                                        child: Text(
+                                          label + ':',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                      if (bc != null) ...[
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.departure_board,
+                                          size: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            'B.Crkva: $bc',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                      if (vs != null) ...[
+                                        const SizedBox(width: 8),
+                                        Icon(
+                                          Icons.departure_board,
+                                          size: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            'Vršac: $vs',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                ],
-                              ),
+                                );
+                              }).toList(),
                             ),
+                          ),
+
+                          // (BC i VS su prikazani unutar liste po danima iznad)
                         ],
                       ),
 

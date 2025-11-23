@@ -1502,8 +1502,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // � PRAVI REALTIME STREAM: streamKombinovaniPutnici() koristi RealtimeService
     // Auto-refresh kada se promeni status putnika (pokupljen/naplaćen/otkazan)
+    // Use a parametric stream filtered to the currently selected day
+    // so monthly passengers (mesecni_putnici) are created for that day
+    // and will appear in the list/counts for arbitrary selected day.
     return StreamBuilder<List<Putnik>>(
-      stream: _putnikService.streamKombinovaniPutnici(),
+      stream: _putnikService.streamKombinovaniPutniciFiltered(
+        isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+      ),
       builder: (context, snapshot) {
         // 🚨 DEBUG: Log state information
         // 🚨 NOVO: Error handling sa specialized widgets
@@ -1573,8 +1578,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
           return dayMatch && timeMatch;
         });
-        // Additional filters for display
-        filtered = filtered.where((putnik) {
+        // Capture passengers for the selected day (but before applying the
+        // selected-time filter). We use this set for counting bottom-bar slots
+        // because the bottom counts should reflect the whole day (all times),
+        // not just the currently selected time.
+        final putniciZaDan = filtered.toList();
+
+        // Additional filters for display (applies time/grad/status and is used
+        // to build the visible list). This operates on the putniciZaDan list.
+        filtered = putniciZaDan.where((putnik) {
           final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
           final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
           final imaGrad = putnik.grad.toString().trim().isNotEmpty;
@@ -1609,9 +1621,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
         final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
-        // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN
-        // 🔧 POPRAVLJENO: Koristi isti metod kao Danas Screen za konzistentnost
-        // 🔧 JEDNOSTAVNO BROJANJE: Bez SlotUtils komplikacija
+        // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN (deduplikovane)
+        // Koristimo `putniciZaDan` iznad kao izvor za brojače kako bismo
+        // računali broj jedinstvenih putnika po polasku za ceo dan.
         final Map<String, int> brojPutnikaBC = {
           '5:00': 0,
           '6:00': 0,
@@ -1639,14 +1651,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           '19:00': 0,
         };
 
-        for (final p in allPutnici) {
+        // Use the filtered, deduplicated list so counts match the displayed list
+        // DEDUPLICIRAJ za računanje brojača (id + polazak + dan)
+        final Map<String, Putnik> uniqueForCounts = {};
+        for (final p in putniciZaDan) {
+          final key = '${p.id}_${p.polazak}_${p.dan}';
+          uniqueForCounts[key] = p;
+        }
+        final countCandidates = uniqueForCounts.values.toList();
+
+        for (final p in countCandidates) {
           if (!TextUtils.isStatusActive(p.status)) continue;
 
           final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-          final normAdresa = (p.adresa ?? '').toLowerCase();
+          // Normalize address (strip diacritics, lower-case, etc.) so checks/contains work
+          final normAdresa = GradAdresaValidator.normalizeString(p.adresa);
 
-          final jeBelaCrkva = normAdresa.contains('bela') || normAdresa.contains('bc');
-          final jeVrsac = normAdresa.contains('vrsac') || normAdresa.contains('vs');
+          // Use both heuristics: quick substring checks and membership in the
+          // curated naselja lists (which are normalized). This keeps behaviour
+          // predictable and allows us to exclude Pavliš / Središte as requested.
+          final jeBelaCrkva = normAdresa.contains('bela') ||
+              normAdresa.contains('bc') ||
+              GradAdresaValidator.naseljaOpstineBelaCrkva.any((n) => normAdresa.contains(n));
+          final jeVrsac = normAdresa.contains('vrsac') ||
+              normAdresa.contains('vs') ||
+              GradAdresaValidator.naseljaOpstineVrsac.any((n) => normAdresa.contains(n));
 
           if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
             brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
@@ -1770,15 +1799,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         // PRVI RED - Rezervacije
                         Container(
-                          height: 24,
+                          // increase height slightly and reduce font so it never drifts under the control row below
+                          height: 28,
                           alignment: Alignment.center,
                           child: Text(
                             'R E Z E R V A C I J E',
                             style: TextStyle(
-                              fontSize: 21,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: Theme.of(context).colorScheme.onPrimary,
-                              letterSpacing: 1.8,
+                              // slightly reduced letter spacing to keep the text compact on narrow screens
+                              letterSpacing: 1.4,
                               shadows: [
                                 Shadow(
                                   blurRadius: 12,
@@ -1793,7 +1824,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         // DRUGI RED - Driver, Tema, Update i Dropdown
                         Row(
                           children: [
@@ -2349,32 +2380,45 @@ class _HomeScreenButton extends StatelessWidget {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               icon,
-              color: Colors.white,
+              // keep icons consistent with the current theme (onPrimary may be white or themed)
+              color: Theme.of(context).colorScheme.onPrimary,
               size: 18, // Smanjeno sa 24 na 18
             ),
             const SizedBox(height: 4), // Smanjeno sa 8 na 4
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12, // restored to original for non-appbar buttons
-                fontWeight: FontWeight.w600,
-                shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                    color: Colors.black87,
+            // Keep the label to a single centered line; scale down if it's too big for narrow buttons
+            SizedBox(
+              height: 16,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 8,
+                        color: Colors.black87,
+                      ),
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 4,
+                        color: Colors.black54,
+                      ),
+                    ],
                   ),
-                  Shadow(
-                    offset: Offset(1, 1),
-                    blurRadius: 4,
-                    color: Colors.black54,
-                  ),
-                ],
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
