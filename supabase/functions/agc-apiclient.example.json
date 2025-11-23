@@ -1,0 +1,9 @@
+{
+    "type": "project_client_id",
+    "developer_id": "YOUR_DEVELOPER_ID",
+    "project_id": "YOUR_PROJECT_ID",
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_CLIENT_SECRET",
+    "configuration_version": "3.0",
+    "region": ""
+}

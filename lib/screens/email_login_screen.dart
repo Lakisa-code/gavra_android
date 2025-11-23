@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/auth_manager.dart';
-import '../services/firebase_auth_service.dart';
 import '../services/permission_service.dart';
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
@@ -10,6 +10,7 @@ import '../utils/vozac_boja.dart'; // 🎨 Import za boje vozača
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
 import 'home_screen.dart';
+import 'welcome_screen.dart';
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({Key? key}) : super(key: key);
@@ -401,14 +402,12 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         shadowColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
       ),
       child: _isLoading
-          ? SizedBox(
-              height: 24,
-              width: 24,
+          ? const SizedBox(
+              height: 20,
+              width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.onPrimary,
-                ),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
           : const Text(
@@ -547,10 +546,65 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
           }
         }
       } else {
-        _showErrorDialog(
-          'Neuspješna prijava',
-          result.message,
-        );
+        // Special case: Firebase unavailable on device (e.g., Huawei without
+        // Google Play Services). Provide a clearer message and offer an
+        // alternative action so the user isn't left with a confusing dialog.
+        if (result.message.toLowerCase().contains('inicijaliz')) {
+          // Log for debugging
+          // ignore: avoid_print
+          print('Auth: Firebase not initialized - showing friendly fallback');
+
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 2,
+                ),
+              ),
+              title: Text(
+                'Firebase nije dostupan',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+              content: Text(
+                'Prijavljivanje preko Firebase nije moguće na ovom uređaju. '
+                'Ako koristite Huawei uređaj bez Google Play servisa, '
+                'možete pokušati alternativni način prijave na početnom ekranu ili kontaktirati administratora.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    // Navigate back to welcome/selection screen where a device
+                    // or driver may be selected without Firebase login.
+                    Navigator.of(context).pop();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) => const WelcomeScreen(),
+                      ),
+                    );
+                  },
+                  child: Text('Idi na početak', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('OK', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                ),
+              ],
+            ),
+          );
+        } else {
+          _showErrorDialog(
+            'Neuspješna prijava',
+            result.message,
+          );
+        }
       }
     } catch (e) {
       _showErrorDialog(
@@ -565,7 +619,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
   Future<void> _handleForgotPassword() async {
     final email = _emailController.text.trim();
 
-    if (email.isEmpty || !FirebaseAuthService.isValidEmailFormat(email)) {
+    if (email.isEmpty || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
       _showErrorDialog(
         'Nevažeći email',
         'Unesite validnu email adresu da biste resetovali šifru.',
@@ -576,16 +630,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final success = await FirebaseAuthService.resetPasswordViaEmail(email);
-
-      if (success) {
-        _showSuccessDialog(
-          'Email poslan',
-          'Provjerite email za link za reset šifre.',
-        );
-      } else {
-        _showErrorDialog('Greška', 'Nije moguće poslati email za reset šifre.');
-      }
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      _showSuccessDialog(
+        'Email poslan',
+        'Provjerite email za link za reset šifre.',
+      );
     } catch (e) {
       _showErrorDialog('Greška', 'Došlo je do greške. Pokušajte ponovo.');
     } finally {

@@ -56,6 +56,7 @@ test/.test_coverage.dart
 !android/gavra-release-key-production.keystore
 key.properties
 android/app/agconnect-services.json
+agc-apiclient-*.json
 
 # Debug files
 debug_*.sql

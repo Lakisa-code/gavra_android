@@ -1804,7 +1804,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 child: Container(
                                   height: 33,
                                   padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: VozacBoja.get(_currentDriver), // opaque (100%)
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(

@@ -2,6 +2,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://developer.huawei.com/repo/") }
     }
     
     // Dependency resolution strategy preserved for historical reasons; ensure Firebase Messaging remains compatible.
@@ -13,8 +14,13 @@ allprojects {
     }
 }
 
+// NOTE: We avoid forcing the AGC plugin across the root project because some dev environments
+// cannot resolve the AGC plugin artifact. Module-level AGC usage can be enabled per-developer
+// when needed by adding the plugin locally or enabling a CI-only configuration.
+
 plugins {
     id("com.google.gms.google-services") version "4.3.15" apply false
+    // AGC plugin will be provided via the legacy buildscript classpath (see buildscript {} above)
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()

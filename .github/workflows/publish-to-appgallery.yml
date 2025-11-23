@@ -1,0 +1,63 @@
+name: 📦 Publish to Huawei AppGallery
+
+on:
+  release:
+    types: [published]
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  build_and_publish:
+    name: Build and Publish to AppGallery (optional)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.35.6'
+        channel: 'stable'
+
+    - name: Install deps & build AAB
+      run: |
+        flutter pub get
+        flutter build appbundle --release
+
+    - name: Upload artifact to job
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-aab
+        path: build/app/outputs/bundle/release/app-release.aab
+
+    - name: Try install AGC / publish CLI (multiple fallbacks)
+      run: |
+        set -e
+        echo "Trying to install known AppGallery publish tools (npm/pip). Failures are non-fatal — script will fall back to REST."
+        npm i -g @agconnect/cli || true
+        npm i -g hms-publish-tool || true
+        pip install hms-publish-tool || true
+        # If any CLI binary (agc / appgallery) exists it'll be used, script will detect it.
+
+    - name: Publish to AppGallery (placeholder)
+      if: ${{ secrets.AGC_CLIENT_ID && secrets.AGC_CLIENT_SECRET && secrets.AGC_APP_ID }}
+      run: |
+        echo "Running AppGallery publish helper script"
+        chmod +x .github/scripts/publish-to-appgallery.sh
+        .github/scripts/publish-to-appgallery.sh
+      env:
+        AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
+        AGC_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
+        AGC_APP_ID: ${{ secrets.AGC_APP_ID }}
+
+    - name: Publish step skipped (no secrets)
+      if: ${{ !(secrets.AGC_CLIENT_ID && secrets.AGC_CLIENT_SECRET && secrets.AGC_APP_ID) }}
+      run: echo "AGC upload disabled: set AGC_CLIENT_ID, AGC_CLIENT_SECRET and AGC_APP_ID in repository secrets to enable AppGallery publishing."

@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// Firebase messaging removed: counter will be updated through application
+// logic when notifications are received via the platform provider (FCM/Huawei)
 
 /// 🔔 REAL-TIME NOTIFICATION COUNTER SERVICE
 class RealtimeNotificationCounterService {
@@ -7,23 +8,16 @@ class RealtimeNotificationCounterService {
   static int _unreadCount = 0;
 
   /// 🔔 STREAM BROJAČA NOTIFIKACIJA
-  static Stream<int> get notificationCountStream =>
-      _notificationCountController.stream;
+  static Stream<int> get notificationCountStream => _notificationCountController.stream;
 
   /// 📊 TRENUTNI BROJ NEPROČITANIH
   static int get unreadCount => _unreadCount;
 
   /// 🔔 INITIALIZE NOTIFICATION COUNTING
   static void initialize() {
-    // Slušaj foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _incrementCount();
-    });
-
-    // Slušaj background messages
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      _decrementCount(); // Notifikacija je otvorena, smanji broj
-    });
+    // Initialization no-op — message listeners were provider-specific and the
+    // messaging plugins were removed for this branch. Callers can call
+    // addNotification()/markAllAsRead() directly when appropriate.
   }
 
   /// ⬆️ POVEĆAJ BROJ NOTIFIKACIJA
@@ -33,12 +27,7 @@ class RealtimeNotificationCounterService {
   }
 
   /// ⬇️ SMANJI BROJ NOTIFIKACIJA
-  static void _decrementCount() {
-    if (_unreadCount > 0) {
-      _unreadCount--;
-      _notificationCountController.add(_unreadCount);
-    }
-  }
+  // _decrementCount removed (previously used by Firebase background handlers)
 
   /// 🗑️ OZNAČI SVE KAO PROČITANE
   static void markAllAsRead() {

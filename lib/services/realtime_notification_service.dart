@@ -2,6 +2,10 @@ import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+// Firebase messaging removed for this branch; notification delivery is
+// handled server-side (Supabase functions) and platform-specific clients
+// (Huawei Push). This service focuses on server-side/in-app notification
+// helpers and local fallback notifications.
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -185,28 +189,23 @@ class RealtimeNotificationService {
   }
 
   /// Public helper to handle an initial/cold-start RemoteMessage (from getInitialMessage)
-  static Future<void> handleInitialMessage(RemoteMessage? message) async {
-    if (message == null) return;
+  static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
+    if (messageData == null) return;
     try {
-      await _handleFirebaseNotificationTap(message);
+      await _handleNotificationTap(messageData);
     } catch (e) {
-      // Logger removed
+      // ignore
     }
   }
 
   /// Initialize service with real-time notifications only
   static Future<void> initialize() async {
     try {
-      // Firebase messaging initialization only - push service removed
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
+      // If Firebase hasn't been initialized (eg: no GMS on device) bail out
+      // — accessing FirebaseMessaging.instance will throw if no default app.
+      // No-op: Firebase messaging removed. Leave permission management to
+      // platform-specific push helpers (HuaweiPushService) or local notification
+      // permission flows.
     } catch (e) {
       // ignore
     }
@@ -214,47 +213,43 @@ class RealtimeNotificationService {
 
   /// Setup foreground Firebase message listeners for real-time notifications
   static void listenForForegroundNotifications(BuildContext context) {
-    // Logger removed
+    // Initialize Firebase listeners if available.
+    if (Firebase.apps.isEmpty) return;
 
     // Listen for foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // Logger removed
+      try {
+        final data = message.data;
 
-      // Filtriraj notifikacije: samo za današnji dan i za tip "dodat"/"novi_putnik" ili "otkazan"/"otkazan_putnik"
-      final data = message.data;
-      final type = (data['type'] ?? '').toString().toLowerCase();
-      final datumString = (data['datum'] ?? data['date'] ?? '') as String;
-      final danas = DateTime.now();
-      bool isToday = false;
-      if (datumString.isNotEmpty) {
-        try {
-          final datum = DateTime.parse(datumString);
-          isToday = datum.year == danas.year &&
-              datum.month == danas.month &&
-              datum.day == danas.day;
-        } catch (_) {
-          isToday = false;
+        // Filtriraj notifikacije: samo za današnji dan i za tip "dodat"/"novi_putnik" ili "otkazan"/"otkazan_putnik"
+        final type = (data['type'] ?? '').toString().toLowerCase();
+        final datumString = (data['datum'] ?? data['date'] ?? '') as String;
+        final danas = DateTime.now();
+        bool isToday = false;
+        if (datumString.isNotEmpty) {
+          try {
+            final datum = DateTime.parse(datumString);
+            isToday = datum.year == danas.year && datum.month == danas.month && datum.day == danas.day;
+          } catch (_) {
+            isToday = false;
+          }
         }
-      }
 
-      if ((type == 'dodat' ||
-              type == 'novi_putnik' ||
-              type == 'otkazan' ||
-              type == 'otkazan_putnik') &&
-          isToday) {
-        LocalNotificationService.showRealtimeNotification(
-          title: message.notification?.title ?? 'Gavra Notification',
-          body: message.notification?.body ?? 'Nova poruka',
-          payload: (message.data['type'] as String?) ?? 'firebase_foreground',
-        );
-      } else {}
+        if ((type == 'dodat' || type == 'novi_putnik' || type == 'otkazan' || type == 'otkazan_putnik') && isToday) {
+          LocalNotificationService.showRealtimeNotification(
+            title: message.notification?.title ?? 'Gavra Notification',
+            body: message.notification?.body ?? 'Nova poruka',
+            payload: (data['type'] as String?) ?? 'firebase_foreground',
+          );
+        }
+      } catch (_) {}
     });
 
     // Listen for message taps
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      // Logger removed
-      // Handle navigation based on message data
-      _handleFirebaseNotificationTap(message);
+      try {
+        _handleNotificationTap(message.data);
+      } catch (_) {}
     });
   }
 
@@ -266,14 +261,11 @@ class RealtimeNotificationService {
     }
 
     try {
+      // No-op — topic subscription is provider-specific and removed for now.
       // Logger removed
 
       // Subscribe to general topic
-      await FirebaseMessaging.instance.subscribeToTopic('gavra_all_drivers');
-
-      // Subscribe to driver-specific topic
-      await FirebaseMessaging.instance
-          .subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+      // Topic subscription removed — handled server-side or via provider SDK.
 
       // Logger removed
     } catch (e) {
@@ -332,12 +324,9 @@ class RealtimeNotificationService {
   static Future<bool> hasNotificationPermissions() async {
     // Logger removed
     try {
-      NotificationSettings settings =
-          await FirebaseMessaging.instance.getNotificationSettings();
-      bool hasPermission =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
-      // Logger removed
-      return hasPermission;
+      // Messaging SDK removed; we don't expose per-provider permission status
+      // here. Return false so callers can run their own permission checks.
+      return false;
     } catch (e) {
       // Logger removed
       return false;
@@ -348,20 +337,10 @@ class RealtimeNotificationService {
   static Future<bool> requestNotificationPermissions() async {
     // Logger removed
     try {
-      // Check if Firebase is available first
-      if (!Firebase.apps.isNotEmpty) {
-        // Logger removed
-        return false;
-      }
-
-      NotificationSettings settings = await FirebaseMessaging.instance
-          .requestPermission()
-          .timeout(const Duration(seconds: 10));
-
-      bool granted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
-      // Logger removed
-      return granted;
+      // Requesting permissions is provider-specific (Huawei/FCM/Local). For
+      // the simplified branch return false to indicate the app should
+      // request permissions through platform-specific helpers when needed.
+      return false;
     } catch (e) {
       // Logger removed
       // Return false but don't crash the app
@@ -370,20 +349,17 @@ class RealtimeNotificationService {
   }
 
   /// Handle Firebase notification tap - navigate to specific passenger
-  static Future<void> _handleFirebaseNotificationTap(
-    RemoteMessage message,
-  ) async {
+  static Future<void> _handleNotificationTap(Map<String, dynamic> messageData) async {
     try {
       // Logger removed
 
-      // Extract notification type and passenger data from Firebase message
-      final notificationType = message.data['type'] ?? 'unknown';
-      final putnikDataString = message.data['putnik'] as String?;
+      // Extract notification type and passenger data from payload
+      final notificationType = messageData['type'] ?? 'unknown';
+      final putnikDataString = messageData['putnik'] as String?;
 
       if (putnikDataString != null) {
         // Parse passenger data from JSON string
-        final Map<String, dynamic> putnikData =
-            jsonDecode(putnikDataString) as Map<String, dynamic>;
+        final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
         // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(

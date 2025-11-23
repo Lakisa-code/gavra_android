@@ -106,7 +106,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                           ),
                         ),
                         TextButton(
-                            onPressed: () {
+                          onPressed: () {
                             setState(() {
                               _errorMessage = null;
                             });

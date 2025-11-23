@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_manager.dart';
-import '../services/firebase_auth_service.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
 
@@ -262,7 +261,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             if (value == null || value.isEmpty) {
               return 'Unesite email adresu';
             }
-            if (!FirebaseAuthService.isValidEmailFormat(value)) {
+            if (!AuthManager.isValidEmailFormat(value)) {
               return 'Unesite validnu email adresu';
             }
 
@@ -503,8 +502,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
 
       if (result.isSuccess) {
         // 📧 PROVERI DA LI JE EMAIL VERIFICATION POTREBAN
-        final currentUser = FirebaseAuthService.currentUser;
-        final needsVerification = currentUser != null && !currentUser.emailVerified;
+        final needsVerification = !AuthManager.isEmailVerified();
 
         if (needsVerification) {
           // Sakrij loading dialog

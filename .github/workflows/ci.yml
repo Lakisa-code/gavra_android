@@ -47,3 +47,21 @@ jobs:
         uses: aturner/secret-scanner-action@v2.2.0
         with:
           patterns: 'eyJ|BEGIN RSA|BEGIN PRIVATE KEY|AIza[0-9A-Za-z-_]{35}'
+
+    functions-tests:
+      name: Supabase Functions smoke tests
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Setup Node
+          uses: actions/setup-node@v4
+          with:
+            node-version: '18'
+
+        - name: Run send-push-notification smoke tests
+          working-directory: supabase/functions/send-push-notification
+          run: |
+            npm install
+            npm run test:smoke

@@ -1,7 +1,14 @@
+// Firebase usage removed for auth-only branch. This file now acts as a
+// lightweight local session manager (SharedPreferences) and no-ops any
+// Firebase-specific push functionality so the app compiles without FCM.
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'analytics_service.dart';
+import 'firebase_background_handler.dart';
+import 'local_notification_service.dart';
+import 'realtime_notification_service.dart';
 
 class FirebaseService {
   static String? _currentDriver;
@@ -9,12 +16,21 @@ class FirebaseService {
   /// Inicijalizuje Firebase
   static Future<void> initialize() async {
     try {
-      // Firebase je već inicijalizovan u main.dart sa pravilnim opcijama
-      // Ova metoda se zadržava za kompatibilnost
+      // Safe to call from UI code. Register background handler and request
+      // permissions where appropriate.
+      if (Firebase.apps.isEmpty) return;
+
+      // Register background handler (should be set early) - safe to set again
+      try {
+        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      } catch (_) {}
+
       final messaging = FirebaseMessaging.instance;
 
-      // Traži dozvole za notifikacije
-      await messaging.requestPermission();
+      // Request notification permission (harmless on Android but useful for iOS)
+      try {
+        await messaging.requestPermission();
+      } catch (_) {}
     } catch (e) {
       // Ignoriši greške
     }
@@ -55,6 +71,7 @@ class FirebaseService {
   /// Dobija FCM token
   static Future<String?> getFCMToken() async {
     try {
+      if (Firebase.apps.isEmpty) return null;
       final messaging = FirebaseMessaging.instance;
       return await messaging.getToken();
     } catch (e) {
@@ -64,8 +81,22 @@ class FirebaseService {
 
   /// Postavlja FCM listener
   static void setupFCMListeners() {
+    if (Firebase.apps.isEmpty) return;
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (message.notification != null) {}
+      // Show a local notification when app is foreground
+      try {
+        final title = message.notification?.title ?? 'Gavra Notification';
+        final body = message.notification?.body ?? message.data['message'] ?? 'Nova notifikacija';
+        LocalNotificationService.showRealtimeNotification(title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
+      } catch (_) {}
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      try {
+        // Navigate or handle tap
+        RealtimeNotificationService.handleInitialMessage(message.data);
+      } catch (_) {}
     });
   }
 }

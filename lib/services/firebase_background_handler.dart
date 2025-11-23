@@ -2,22 +2,36 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'local_notification_service.dart';
 
+// This file exposes two background handlers:
+//  - firebaseMessagingBackgroundHandler(RemoteMessage) which is registered
+//    with Firebase Messaging plugin for FCM background delivery.
+//  - backgroundNotificationHandler(Map<String,dynamic>) which is provider
+//    agnostic and can be used for Huawei or other push providers.
+
 // Top-level background handler required by Firebase Messaging plugin
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    // We cannot run complex UI logic here; show a basic notification
-    final title = message.notification?.title ?? 'Gavra Notification';
-    final body = message.notification?.body ??
-        message.data['message'] ??
-        'Nova notifikacija';
+    final payload = Map<String, dynamic>.from(message.data);
+    await backgroundNotificationHandler(payload);
+  } catch (_) {
+    // Ignore background handling failures
+  }
+}
 
-    // Use LocalNotificationService background-safe method
+// Generic background notification handler used for non-Firebase pushes.
+// Accepts a plain JSON payload map to remain provider-agnostic.
+Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
+  try {
+    final title = payload['title'] as String? ?? 'Gavra Notification';
+    final body = payload['body'] as String? ?? (payload['message'] as String?) ?? 'Nova notifikacija';
+    final rawData = payload['data'];
+
     await LocalNotificationService.showNotificationFromBackground(
       title: title,
       body: body,
-      payload: message.data.isNotEmpty ? message.data.toString() : null,
+      payload: rawData != null ? rawData.toString() : null,
     );
-  } catch (e) {
-    // Swallow errors in background handler
+  } catch (_) {
+    // Swallow errors in background handler — background execution is best-effort.
   }
 }

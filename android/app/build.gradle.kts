@@ -9,6 +9,12 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// The AGC plugin was causing resolution failures in some environments. For local debug runs we
+// don't need to apply the AGC Gradle plugin — it's used mainly for release / AGC-specific tasks.
+// If you need AGC plugin locally, uncomment the line below after ensuring the plugin artifact
+// is available in the configured repositories or your environment.
+// apply(plugin = "com.huawei.agconnect")
+
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
@@ -89,6 +95,9 @@ dependencies {
 
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+
+    // Huawei HMS
+    implementation(platform("com.huawei.hms:push:6.13.0.300"))
 
     // 🚀 Dependency Resolution - ensure versions for required Android libraries
     implementation("androidx.work:work-runtime:2.8.1")

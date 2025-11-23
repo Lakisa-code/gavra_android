@@ -162,8 +162,9 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient, // Gradijent preko celog ekrana
+      decoration: BoxDecoration(
+        // Use the active theme gradient so this screen follows dark/light themes
+        gradient: Theme.of(context).backgroundGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,

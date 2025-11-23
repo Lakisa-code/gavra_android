@@ -1,17 +1,22 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:google_api_availability/google_api_availability.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'firebase_options.dart';
 import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
+import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
+import 'services/huawei_push_service.dart';
 import 'services/offline_map_service.dart';
+import 'services/realtime_notification_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/voice_navigation_service.dart';
@@ -28,16 +33,73 @@ void main() async {
     // Ignoriši greške u monitoring-u
   }
 
-  // 🔥 FIREBASE INICIJALIZACIJA
+  // 🔥 CLOUD/NOTIFICATION PROVIDER INITIALIZATION
+  // Decide which push provider to use depending on device capabilities.
+  // bool firebaseAvailable = false; // track if Firebase/FCM inited (kept for future use)
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    await FirebaseService.initialize();
-    await AnalyticsService.initialize();
-    FirebaseService.setupFCMListeners();
+    final availability = await GoogleApiAvailability.instance.checkGooglePlayServicesAvailability();
+    final gmsOk = availability == GooglePlayServicesAvailability.success;
+
+    if (gmsOk) {
+      // Device has Google Play services -> initialize Firebase normally
+      try {
+        await Firebase.initializeApp();
+
+        // Register FCM background handler and initialize messaging helpers
+        try {
+          FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+        } catch (_) {}
+
+        await FirebaseService.initialize();
+        await AnalyticsService.initialize();
+        FirebaseService.setupFCMListeners();
+        // firebaseAvailable = true; // used to reflect successful Firebase init
+        print('Init: Google Play Services available -> Firebase/FCM enabled');
+
+        // Debug helper: dump FCM token to logs so testers can use it for E2E
+        if (kDebugMode) {
+          try {
+            final fcmToken = await FirebaseService.getFCMToken();
+            // mask token in logs when printing publicly — but during local testing we show full token
+            debugPrint('FCM token (debug): ${fcmToken ?? '[null]'}');
+          } catch (e) {
+            debugPrint('FCM token retrieval failed: $e');
+          }
+        }
+      } catch (e) {
+        // If Firebase init fails, fall through to Huawei initialization
+        print('Firebase init failed: $e - will try Huawei Push as fallback');
+      }
+    } else {
+      // No GMS available — initialize Huawei Push if possible
+      print('Init: Google Play Services NOT available (status=$availability) -> trying HMS');
+      try {
+        final token = await HuaweiPushService().initialize();
+        debugPrint('HMS init attempt returned token: ${token ?? 'null'}');
+      } catch (e) {
+        debugPrint('HMS initialization attempt failed: $e');
+      }
+    }
   } catch (e) {
-    // Continue without Firebase if it fails
+    // Unexpected checks failed — attempt graceful Firebase initialization as a fallback
+    try {
+      // await Firebase.initializeApp(
+      //   options: DefaultFirebaseOptions.currentPlatform,
+      // );
+      // await FirebaseService.initialize();
+      // await AnalyticsService.initialize();
+      // FirebaseService.setupFCMListeners();
+      // firebaseAvailable = true; // fallback succeeded
+      print('Fallback: Huawei Push initialized despite prior error: $e');
+      try {
+        final token = await HuaweiPushService().initialize();
+        debugPrint('HMS fallback init returned token (masked): ${token != null ? '[REDACTED]' : 'null'}');
+      } catch (e) {
+        debugPrint('HMS fallback initialization attempt failed: $e');
+      }
+    } catch (_) {
+      print('Fallback failed — continuing without push services: $e');
+    }
   }
 
   // 🌐 SUPABASE INICIJALIZACIJA
@@ -103,6 +165,10 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _initializeApp();
+    // Setup realtime notification listeners (FCM) for foreground handling
+    try {
+      RealtimeNotificationService.listenForForegroundNotifications(context);
+    } catch (_) {}
     _setupAuthListener();
   }
 

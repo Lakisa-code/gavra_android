@@ -1,10 +1,13 @@
 // 'dart:typed_data' not required; elements available via Flutter packages
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
@@ -97,33 +100,26 @@ class PrintingService {
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
           final odgovarajuciGrad =
-              normalizedPutnikGrad.contains(normalizedGrad) ||
-                  normalizedGrad.contains(normalizedPutnikGrad);
+              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           // Poređenje vremena - normalizuj oba formata
           final putnikPolazak = putnik.polazak.toString().trim();
           final selectedVremeStr = selectedVreme.trim();
-          final odgovarajuciPolazak =
-              normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
-                  (normalizeTime(putnikPolazak)
-                      .startsWith(normalizeTime(selectedVremeStr)));
+          final odgovarajuciPolazak = normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
+              (normalizeTime(putnikPolazak).startsWith(normalizeTime(selectedVremeStr)));
 
           // DODAJ FILTRIRANJE PO DANU I ZA MESEČNE PUTNIKE
-          final odgovarajuciDan =
-              putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
+          final odgovarajuciDan = putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
 
-          final result = odgovarajuciGrad &&
-              odgovarajuciPolazak &&
-              odgovarajuciDan &&
-              normalizedStatus != 'obrisan';
+          final result = odgovarajuciGrad && odgovarajuciPolazak && odgovarajuciDan && normalizedStatus != 'obrisan';
 
           return result;
         } else {
           // DNEVNI/OBIČNI PUTNICI - standardno filtriranje
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
-          final gradMatch = normalizedPutnikGrad.contains(normalizedGrad) ||
-              normalizedGrad.contains(normalizedPutnikGrad);
+          final gradMatch =
+              normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
           // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
           final odgovara = gradMatch &&
@@ -157,12 +153,18 @@ class PrintingService {
         selectedGrad,
       );
 
-      // Otvori pregled za štampanje
-      await Printing.layoutPdf(
-        onLayout: (PdfPageFormat format) async => pdf,
-        name:
-            'Spisak_putnika_${selectedDay}_${selectedVreme}_${selectedGrad}_${DateFormat('dd_MM_yyyy').format(DateTime.now())}.pdf',
-      );
+      // Save PDF to a local temporary file and open it.
+      // `_createPutniksPDF` already returns `Uint8List` bytes
+      final bytes = pdf;
+      final tempDir = await getTemporaryDirectory();
+      final fileName =
+          'Spisak_putnika_${selectedDay}_${selectedVreme}_${selectedGrad}_${DateFormat('dd_MM_yyyy').format(DateTime.now())}.pdf'
+              .replaceAll(' ', '_');
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(bytes, flush: true);
+
+      // Open the generated PDF using platform default viewer (Android will show print/share options)
+      await OpenFilex.open(file.path);
       // Debug logging removed for production
     } catch (e) {
       // Debug logging removed for production
@@ -189,8 +191,7 @@ class PrintingService {
     // Grupiši putnike po statusu
     final pokupljeni = putnici.where((p) => p.jePokupljen).toList();
     final otkazani = putnici.where((p) => p.jeOtkazan).toList();
-    final cekaju =
-        putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
+    final cekaju = putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
 
     // Sortiraj po gradu/destinaciji
     pokupljeni.sort((a, b) => a.grad.compareTo(b.grad));
