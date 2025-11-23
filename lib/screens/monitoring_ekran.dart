@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../services/simple_usage_monitor.dart';
 import '../theme.dart'; // 🎨 Import ThemeManager
-import '../utils/responsive.dart';
 
 /// Jednostavan i lep ekran za praćenje Supabase potrošnje
 class MonitoringEkran extends StatefulWidget {
@@ -164,11 +163,11 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
         padding: const EdgeInsets.all(25),
         child: Column(
           children: [
-            Text(
+            const Text(
               'TRENUTNO STANJE',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: Responsive.fontSize(context, 16),
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 1,
               ),
@@ -176,9 +175,9 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
             const SizedBox(height: 15),
             Text(
               status,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
-                fontSize: Responsive.fontSize(context, 32),
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -204,7 +203,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               '${_statistika['procenat']} od mesečnog limita',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9),
-                fontSize: Responsive.fontSize(context, 14),
+                fontSize: 14,
               ),
             ),
             const SizedBox(height: 8),
@@ -213,7 +212,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                 'Poslednje ažuriranje: ${_statistika['last_update']}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: Responsive.fontSize(context, 12),
+                  fontSize: 12,
                 ),
               ),
           ],
@@ -248,10 +247,10 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               children: [
                 const Icon(Icons.analytics, color: Colors.white, size: 24),
                 const SizedBox(width: 10),
-                Text(
+                const Text(
                   'DETALJI POTROŠNJE',
                   style: TextStyle(
-                    fontSize: Responsive.fontSize(context, 18),
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -320,7 +319,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Text(ikona, style: TextStyle(fontSize: Responsive.fontSize(context, 20))),
+          Text(ikona, style: const TextStyle(fontSize: 20)),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
@@ -328,17 +327,17 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               children: [
                 Text(
                   vrednost,
-                  style: TextStyle(
-                    fontSize: Responsive.fontSize(context, 18),
+                  style: const TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
                 if (opis.isNotEmpty)
-                    Text(
+                  Text(
                     opis,
                     style: TextStyle(
-                      fontSize: Responsive.fontSize(context, 12),
+                      fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
@@ -376,10 +375,10 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               children: [
                 const Icon(Icons.lightbulb, color: Colors.amber, size: 24),
                 const SizedBox(width: 10),
-                Text(
+                const Text(
                   'KORISNI SAVETI',
                   style: TextStyle(
-                    fontSize: Responsive.fontSize(context, 18),
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
