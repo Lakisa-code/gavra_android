@@ -459,6 +459,7 @@ class Putnik {
           vozac: vozac, // ✅ KORISTI vozač varijablu
           grad: 'Bela Crkva',
           adresa: map['adresa_bela_crkva'] as String? ?? 'Bela Crkva',
+          adresaId: map['adresa_bela_crkva_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
         ),
@@ -511,6 +512,7 @@ class Putnik {
           vozac: vozac, // ✅ KORISTI vozač varijablu
           grad: 'Vršac',
           adresa: map['adresa_vrsac'] as String? ?? 'Vršac',
+          adresaId: map['adresa_vrsac_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
         ),
