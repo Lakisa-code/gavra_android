@@ -335,7 +335,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                   ),
                 ),
                 if (opis.isNotEmpty)
-                  Text(
+                    Text(
                     opis,
                     style: TextStyle(
                       fontSize: Responsive.fontSize(context, 12),

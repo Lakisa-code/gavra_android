@@ -6,7 +6,6 @@ import '../services/auth_manager.dart';
 import '../services/permission_service.dart';
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
-import '../utils/responsive.dart';
 import '../utils/vozac_boja.dart'; // 🎨 Import za boje vozača
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
@@ -135,11 +134,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
               ),
             ),
           ),
-          title: Text(
+          title: const Text(
             'Prijava',
             style: TextStyle(
               color: Colors.white,
-              fontSize: Responsive.fontSize(context, 20),
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               shadows: [
                 Shadow(
@@ -212,7 +211,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             'Email Prijava',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimary,
-              fontSize: Responsive.fontSize(context, 28),
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
             ),
@@ -222,7 +221,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             'Prijavite se sa email adresom',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.9),
-              fontSize: Responsive.fontSize(context, 16),
+              fontSize: 16,
             ),
           ),
         ],
@@ -411,10 +410,10 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
-          : Text(
+          : const Text(
               'Prijavi se',
               style: TextStyle(
-                fontSize: Responsive.fontSize(context, 18),
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -428,7 +427,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         'Zaboravili ste šifru?',
         style: TextStyle(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
-          fontSize: Responsive.fontSize(context, 16),
+          fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -443,7 +442,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
           'Nemate nalog? ',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-            fontSize: Responsive.fontSize(context, 16),
+            fontSize: 16,
           ),
         ),
         TextButton(
@@ -459,7 +458,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             'Registrujte se',
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
-              fontSize: Responsive.fontSize(context, 16),
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),

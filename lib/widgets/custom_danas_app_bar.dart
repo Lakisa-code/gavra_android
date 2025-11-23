@@ -37,90 +37,61 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
     final yearStr = now.year.toString();
     final dayName = dayNames[now.weekday - 1];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Use flexible/fitted children so that date/time titles scale on narrow screens
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // LEVO - DATUM
-            Flexible(
-              fit: FlexFit.loose,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '$dayStr.$monthStr.$yearStr',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 1.8,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 3,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        // LEVO - DATUM
+        Text(
+          '$dayStr.$monthStr.$yearStr',
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 1.8,
+            shadows: [
+              Shadow(
+                offset: Offset(1, 1),
+                blurRadius: 3,
+                color: Colors.black54,
               ),
-            ),
-            const SizedBox(width: 8),
-            // SREDINA - DAN
-            Flexible(
-              fit: FlexFit.loose,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  dayName,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    letterSpacing: 1.8,
-                    shadows: const [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 3,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            ],
+          ),
+        ),
+        // SREDINA - DAN
+        Text(
+          dayName,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).colorScheme.onPrimary,
+            letterSpacing: 1.8,
+            shadows: const [
+              Shadow(
+                offset: Offset(1, 1),
+                blurRadius: 3,
+                color: Colors.black54,
               ),
-            ),
-            const SizedBox(width: 8),
-            // DESNO - VREME
-            Flexible(
-              fit: FlexFit.loose,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: ClockTicker(
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    letterSpacing: 1.8,
-                    shadows: const [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 3,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                  showSeconds: true,
-                ),
+            ],
+          ),
+        ),
+        // DESNO - VREME
+        ClockTicker(
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).colorScheme.onPrimary,
+            letterSpacing: 1.8,
+            shadows: const [
+              Shadow(
+                offset: Offset(1, 1),
+                blurRadius: 3,
+                color: Colors.black54,
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+          showSeconds: true,
+        ),
+      ],
     );
   }
 
@@ -245,19 +216,11 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: ElevatedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 12),
-        label: SizedBox(
-          height: 12,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
           ),
         ),
         style: ElevatedButton.styleFrom(

@@ -18,11 +18,11 @@ import '../services/realtime_service.dart';
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
+import '../utils/responsive.dart';
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
-import '../utils/responsive.dart';
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
@@ -1384,7 +1384,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Expanded(
                       flex: 3,
                       child: Container(
-                        height: Responsive.height(context, 35),
+                        height: 35,
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Rezervacije',
@@ -1409,7 +1409,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Expanded(
                       flex: 2,
                       child: Container(
-                        height: Responsive.height(context, 35),
+                        height: 35,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
@@ -1453,7 +1453,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     Expanded(
                       flex: 3,
                       child: Container(
-                        height: Responsive.height(context, 35),
+                        height: 35,
                       ),
                     ),
                   ],
@@ -1528,7 +1528,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Center(
                     child: Text(
                       'REZERVACIJE - ERROR',
-                      style: TextStyle(
+                        style: TextStyle(
                         fontSize: Responsive.fontSize(context, 17),
                         fontWeight: FontWeight.w800,
                         color: Theme.of(context).colorScheme.onError,
@@ -1723,8 +1723,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Scaffold(
             backgroundColor: Colors.transparent, // Transparentna pozadina
             appBar: PreferredSize(
-              preferredSize:
-                  Size.fromHeight(Responsive.height(context, 93)), // Povećano sa 80 na 95 zbog sezonskog indikatora
+              preferredSize: const Size.fromHeight(
+                93,
+              ), // Povećano sa 80 na 95 zbog sezonskog indikatora
               child: Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).glassContainer, // Transparentni glassmorphism
@@ -1745,7 +1746,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         // PRVI RED - Rezervacije
                         Container(
-                          height: Responsive.height(context, 24),
+                          height: 24,
                           alignment: Alignment.center,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
@@ -1783,7 +1784,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               Expanded(
                                 flex: 35,
                                 child: Container(
-                                  height: Responsive.height(context, 33),
+                                  height: 33,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: VozacBoja.get(_currentDriver), // opaque (100%)
@@ -1833,7 +1834,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 },
                                 borderRadius: BorderRadius.circular(12),
                                 child: Container(
-                                  height: Responsive.height(context, 33),
+                                  height: 33,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).glassContainer,
@@ -1871,7 +1872,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             Expanded(
                               flex: 35,
                               child: Container(
-                                height: Responsive.height(context, 33),
+                                height: 33,
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).glassContainer,
@@ -2318,7 +2319,7 @@ class _HomeScreenButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: EdgeInsets.all(Responsive.spacing(context, 6)), // Smanjeno sa 12 na 6
+        padding: const EdgeInsets.all(6), // Smanjeno sa 12 na 6
         decoration: BoxDecoration(
           color: Theme.of(context).glassContainer, // Transparentni glassmorphism
           border: Border.all(
@@ -2334,7 +2335,7 @@ class _HomeScreenButton extends StatelessWidget {
             Icon(
               icon,
               color: Colors.white,
-              size: Responsive.fontSize(context, 18), // Smanjeno sa 24 na 18
+              size: 18, // Smanjeno sa 24 na 18
             ),
             const SizedBox(height: 4), // Smanjeno sa 8 na 4
             Flexible(

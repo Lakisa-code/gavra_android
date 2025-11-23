@@ -15,7 +15,6 @@ import '../services/real_time_statistika_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
-import '../utils/responsive.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/mesecni_putnik_dialog.dart';
@@ -366,12 +365,12 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 child: Row(
                   children: [
                     const SizedBox.shrink(),
-                    Expanded(
+                    const Expanded(
                       child: Text(
                         'Mesečni Putnici',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: Responsive.fontSize(context, 20),
+                          fontSize: 20,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
                           shadows: [
@@ -437,9 +436,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                             child: Text(
                               '$_cachedBrojRadnika',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: Responsive.fontSize(context, 11),
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                               textAlign: TextAlign.center,
@@ -501,9 +500,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ),
                             child: Text(
                               '$_cachedBrojUcenika',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: Responsive.fontSize(context, 11),
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                               textAlign: TextAlign.center,
@@ -661,17 +660,17 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 builder: (context, snapshot) {
                   // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
+                    return const Center(
                       child: CircularProgressIndicator(),
                     );
                   }
 
                   if (snapshot.hasError) {
                     // Heartbeat indicator shows connection status
-                    return Center(
+                    return const Center(
                       child: Text(
                         'Greška pri učitavanju mesečnih putnika',
-                        style: TextStyle(fontSize: Responsive.fontSize(context, 16), color: Colors.grey),
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     );
                   }
@@ -725,7 +724,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           Text(
                             _searchController.text.isNotEmpty ? 'Nema rezultata pretrage' : 'Nema mesečnih putnika',
                             style: TextStyle(
-                              fontSize: Responsive.fontSize(context, 18),
+                              fontSize: 18,
                               color: Colors.grey.shade600,
                             ),
                           ),
@@ -823,8 +822,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       children: [
                         Text(
                           '$redniBroj.',
-                          style: TextStyle(
-                            fontSize: Responsive.fontSize(context, 16),
+                          style: const TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey,
                           ),
@@ -834,7 +833,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           child: Text(
                             putnik.putnikIme,
                             style: TextStyle(
-                              fontSize: Responsive.fontSize(context, 16),
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: bolovanje ? Colors.orange : null,
                             ),
@@ -850,7 +849,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                       Text(
                         bolovanje ? 'BOLUJE' : (putnik.aktivan ? 'AKTIVAN' : 'PAUZIRAN'),
                         style: TextStyle(
-                          fontSize: Responsive.fontSize(context, 11),
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: bolovanje ? Colors.orange : (putnik.aktivan ? Colors.green : Colors.orange),
                         ),
@@ -888,7 +887,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           style: TextStyle(
                             color: putnik.tip == 'radnik' ? Colors.blue.shade700 : Colors.green.shade700,
                             fontWeight: FontWeight.w600,
-                            fontSize: Responsive.fontSize(context, 13),
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -926,7 +925,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             style: TextStyle(
                               color: Colors.grey.shade700,
                               fontWeight: FontWeight.w500,
-                              fontSize: Responsive.fontSize(context, 12),
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -950,7 +949,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               putnik.tipSkole!,
                               style: TextStyle(
                                 color: Colors.grey.shade700,
-                                fontSize: Responsive.fontSize(context, 12),
+                                fontSize: 12,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -991,7 +990,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: Colors.blue.shade700,
-                              fontSize: Responsive.fontSize(context, 14),
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -1019,7 +1018,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     child: Text(
                                       'B.Crkva: ${putnik.getPolazakBelaCrkvaZaDan(danSaVremenom)}',
                                       style: TextStyle(
-                                        fontSize: Responsive.fontSize(context, 12),
+                                        fontSize: 12,
                                         color: Colors.grey.shade700,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -1045,7 +1044,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     child: Text(
                                       'Vršac: ${putnik.getPolazakVrsacZaDan(danSaVremenom)}',
                                       style: TextStyle(
-                                        fontSize: Responsive.fontSize(context, 12),
+                                        fontSize: 12,
                                         color: Colors.grey.shade700,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -1073,7 +1072,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                               child: Text(
                                 'Radni dani: ${putnik.radniDani}',
                                 style: TextStyle(
-                                  fontSize: Responsive.fontSize(context, 12),
+                                  fontSize: 12,
                                   color: Colors.grey.shade700,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1143,7 +1142,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           Text(
                             '${putnik.brojPutovanja}',
                             style: TextStyle(
-                              fontSize: Responsive.fontSize(context, 10),
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                               color: Colors.green.shade700,
                             ),
@@ -1182,7 +1181,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           Text(
                             '${putnik.brojOtkazivanja}',
                             style: TextStyle(
-                              fontSize: Responsive.fontSize(context, 10),
+                              fontSize: 10,
                               fontWeight: FontWeight.w500,
                               color: Colors.red.shade700,
                             ),
@@ -1280,7 +1279,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           label: Text(
             label,
             style: TextStyle(
-              fontSize: Responsive.fontSize(context, 10),
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: color,
             ),
@@ -1573,8 +1572,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           children: [
             Text(
               'Kontaktiraj ${putnik.putnikIme}',
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, 18),
+              style: const TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1711,7 +1710,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   Expanded(
                     child: Text(
                       'Plaćanje - ${putnik.putnikIme}',
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 16)),
+                      style: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ],
@@ -1753,7 +1752,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         Text(
                                           'Poslednje plaćanje: ${_formatDatum(putnik.vremePlacanja!)}',
                                           style: TextStyle(
-                                            fontSize: Responsive.fontSize(context, 12),
+                                            fontSize: 12,
                                             color: Colors.green.shade600,
                                           ),
                                         ),
@@ -1771,7 +1770,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                 Text(
                                                   'Plaćeno: ${DateFormat('dd.MM').format(putnik.vremePlacanja!)}',
                                                   style: TextStyle(
-                                                    fontSize: Responsive.fontSize(context, 12),
+                                                    fontSize: 12,
                                                     color: Colors.green.shade600,
                                                     fontWeight: FontWeight.w500,
                                                   ),
@@ -1780,7 +1779,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                   Text(
                                                     'Naplatio: $vozacIme',
                                                     style: TextStyle(
-                                                      fontSize: Responsive.fontSize(context, 11),
+                                                      fontSize: 11,
                                                       color: VozacBoja.get(
                                                         vozacIme,
                                                       ),
@@ -1816,7 +1815,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                     child: Text(
                                       'Dodavanje novog plaćanja (biće dodato na postojeća)',
                                       style: TextStyle(
-                                        fontSize: Responsive.fontSize(context, 12),
+                                        fontSize: 12,
                                         color: Colors.blue.shade700,
                                         fontStyle: FontStyle.italic,
                                       ),
@@ -1851,7 +1850,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           ),
                           style: TextStyle(
                             color: Colors.purple.shade700,
-                            fontSize: Responsive.fontSize(context, 16),
+                            fontSize: 16,
                           ),
                           menuMaxHeight: 300, // Ograniči visinu dropdown menija
                           onChanged: (String? newValue) {
@@ -1973,7 +1972,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   Expanded(
                     child: Text(
                       'Detaljne statistike - ${putnik.putnikIme}',
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 16)),
+                      style: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ],
@@ -2130,7 +2129,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                         style: TextStyle(
                                           color: Colors.red[700],
                                           fontWeight: FontWeight.bold,
-                                          fontSize: Responsive.fontSize(context, 12),
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ),
@@ -2206,7 +2205,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.blue[700],
-                  fontSize: Responsive.fontSize(context, 16),
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2242,7 +2241,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.green[700],
-                  fontSize: Responsive.fontSize(context, 16),
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2292,7 +2291,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: periodColor,
-                      fontSize: Responsive.fontSize(context, 16),
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -2333,7 +2332,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.grey[700],
-                  fontSize: Responsive.fontSize(context, 16),
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2504,8 +2503,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, 13),
+              style: const TextStyle(
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
               ),
@@ -2514,8 +2513,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, 13),
+              style: const TextStyle(
+                fontSize: 13,
                 color: Colors.black54,
               ),
               overflow: TextOverflow.ellipsis,
@@ -2862,8 +2861,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             Flexible(
               child: Text(
                 danNaziv,
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, 11),
+                style: const TextStyle(
+                  fontSize: 11,
                   color: Colors.white,
                   fontWeight: FontWeight.w500,
                 ),
@@ -2908,7 +2907,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
-                    fontSize: Responsive.fontSize(context, 16),
+                    fontSize: 16,
                     shadows: [
                       Shadow(
                         offset: const Offset(1, 1),
@@ -2930,7 +2929,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   'Unesite vremena polaska za svaki radni dan:',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white,
-                        fontSize: Responsive.fontSize(context, 14),
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -2944,35 +2943,32 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 tooltip: 'Standardna vremena',
                 onSelected: (value) => _popuniStandardnaVremena(value),
                 itemBuilder: (context) => [
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'jutarnja_smena',
                     child: Text(
                       'Jutarnja smena (06:00-14:00)',
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'popodnevna_smena',
                     child: Text(
                       'Popodnevna smena (14:00-22:00)',
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'skola',
                     child: Text(
                       'Škola (07:30-14:00)',
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'ocisti',
                     child: Text(
                       'Očisti sva vremena',
-                      style: TextStyle(
-                          fontSize: Responsive.fontSize(context, 13),
-                          color: Colors.red[300],
-                          fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 13, color: Colors.red[300], fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -3087,10 +3083,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           horizontal: 10,
                           vertical: 10,
                         ),
-                        labelStyle: TextStyle(fontSize: Responsive.fontSize(context, 12)),
-                        hintStyle: TextStyle(fontSize: Responsive.fontSize(context, 12), color: Colors.grey),
+                        labelStyle: const TextStyle(fontSize: 12),
+                        hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 14), height: 1.1),
+                      style: const TextStyle(fontSize: 14, height: 1.1),
                     ),
                   ),
                 ),
@@ -3119,10 +3115,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           horizontal: 10,
                           vertical: 10,
                         ),
-                        labelStyle: TextStyle(fontSize: Responsive.fontSize(context, 12)),
-                        hintStyle: TextStyle(fontSize: Responsive.fontSize(context, 12), color: Colors.grey),
+                        labelStyle: const TextStyle(fontSize: 12),
+                        hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
                       ),
-                      style: TextStyle(fontSize: Responsive.fontSize(context, 14), height: 1.1),
+                      style: const TextStyle(fontSize: 14, height: 1.1),
                     ),
                   ),
                 ),
@@ -3195,7 +3191,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             content: SingleChildScrollView(
               child: SelectableText(
                 csvData.toString(),
-                style: TextStyle(fontFamily: 'monospace', fontSize: Responsive.fontSize(context, 10)),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 10),
               ),
             ),
             actions: [

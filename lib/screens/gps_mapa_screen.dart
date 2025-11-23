@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
-import '../utils/responsive.dart';
 import '../widgets/custom_back_button.dart';
 
 class GpsMapaScreen extends StatefulWidget {
@@ -22,11 +21,10 @@ class _GpsMapaScreenState extends State<GpsMapaScreen> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           leading: const GradientBackButton(),
-          title: Text(
+          title: const Text(
             'GPS Mapa',
             style: TextStyle(
               color: Colors.white,
-              fontSize: Responsive.fontSize(context, 20),
               fontWeight: FontWeight.w700,
               shadows: [
                 Shadow(
@@ -54,12 +52,12 @@ class _GpsMapaScreenState extends State<GpsMapaScreen> {
             ),
           ),
         ),
-        body: Center(
+        body: const Center(
           child: Text(
             'GPS Mapa funkcionalnost će biti dodana uskoro',
             style: TextStyle(
               color: Colors.white,
-              fontSize: Responsive.fontSize(context, 16),
+              fontSize: 16,
             ),
           ),
         ),
