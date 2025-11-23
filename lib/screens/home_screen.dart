@@ -1772,34 +1772,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Container(
                           height: 24,
                           alignment: Alignment.center,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'R E Z E R V A C I J E',
-                              style: TextStyle(
-                                fontSize: 21,
-                                fontWeight: FontWeight.w800,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                letterSpacing: 1.8,
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: 12,
-                                    color: Colors.black87,
-                                  ),
-                                  Shadow(
-                                    offset: Offset(2, 2),
-                                    blurRadius: 6,
-                                    color: Colors.black54,
-                                  ),
-                                ],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
+                          child: Text(
+                            'R E Z E R V A C I J E',
+                            style: TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              letterSpacing: 1.8,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 12,
+                                  color: Colors.black87,
+                                ),
+                                Shadow(
+                                  offset: Offset(2, 2),
+                                  blurRadius: 6,
+                                  color: Colors.black54,
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         // DRUGI RED - Driver, Tema, Update i Dropdown
                         Row(
                           children: [
@@ -2353,7 +2347,7 @@ class _HomeScreenButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           // no boxShadow — keep transparent glass + border only
         ),
-            child: Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
@@ -2362,32 +2356,25 @@ class _HomeScreenButton extends StatelessWidget {
               size: 18, // Smanjeno sa 24 na 18
             ),
             const SizedBox(height: 4), // Smanjeno sa 8 na 4
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12, // restored to original for non-appbar buttons
-                    fontWeight: FontWeight.w600,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 8,
-                        color: Colors.black87,
-                      ),
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 4,
-                        color: Colors.black54,
-                      ),
-                    ],
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12, // restored to original for non-appbar buttons
+                fontWeight: FontWeight.w600,
+                shadows: [
+                  Shadow(
+                    blurRadius: 8,
+                    color: Colors.black87,
                   ),
-                  textAlign: TextAlign.center,
-                ),
+                  Shadow(
+                    offset: Offset(1, 1),
+                    blurRadius: 4,
+                    color: Colors.black54,
+                  ),
+                ],
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
