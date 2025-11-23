@@ -2438,16 +2438,16 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Dodao:',
                           style: TextStyle(
                             fontSize: 13,
-                            color: () {
-                              try {
-                                return VozacBoja.get(_putnik.dodaoVozac);
-                              } catch (e) {
-                                return Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.7);
-                              }
-                            }(),
+                            // Prefer the recorded driver (dodaoVozac). If missing/unknown,
+                            // fall back to the currently logged-in driver so action
+                            // lines don't show up grey when the current driver performed it.
+                            color: VozacBoja.getColorOrDefault(
+                              _putnik.dodaoVozac ?? widget.currentDriver,
+                              Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.7),
+                            ),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2459,16 +2459,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                   : 'sistem'),
                           style: TextStyle(
                             fontSize: 13,
-                            color: () {
-                              try {
-                                return VozacBoja.get(_putnik.dodaoVozac);
-                              } catch (e) {
-                                return Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.7);
-                              }
-                            }(),
+                            color: VozacBoja.getColorOrDefault(
+                              _putnik.dodaoVozac ?? widget.currentDriver,
+                              Theme.of(context).colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
+                            ),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -2482,8 +2477,8 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Otkazao:',
                             style: TextStyle(
                               fontSize: 13,
-                              color: VozacBoja.getColorOrDefault(
-                                _putnik.otkazaoVozac,
+                                color: VozacBoja.getColorOrDefault(
+                                _putnik.otkazaoVozac ?? widget.currentDriver,
                                 Theme.of(context)
                                     .colorScheme
                                     .onSurface
@@ -2499,7 +2494,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.getColorOrDefault(
-                                _putnik.otkazaoVozac,
+                                _putnik.otkazaoVozac ?? widget.currentDriver,
                                 Theme.of(context)
                                     .colorScheme
                                     .onSurface
@@ -2515,8 +2510,13 @@ class _PutnikCardState extends State<PutnikCard> {
                               ),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: VozacBoja.get(_putnik.otkazaoVozac)
-                                    .withValues(alpha: 0.8),
+                                color: VozacBoja.getColorOrDefault(
+                                  _putnik.otkazaoVozac ?? widget.currentDriver,
+                                  Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withValues(alpha: 0.5),
+                                ).withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -2569,11 +2569,11 @@ class _PutnikCardState extends State<PutnikCard> {
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.getColorOrDefault(
-                                _putnik.naplatioVozac,
+                                _putnik.naplatioVozac ?? widget.currentDriver,
                                 Theme.of(context)
-                                    .colorScheme
-                                    .onSurface
-                                    .withValues(alpha: 0.7),
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.7),
                               ),
                               fontWeight: FontWeight.w500,
                             ),
@@ -2583,7 +2583,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             style: TextStyle(
                               fontSize: 13,
                               color: VozacBoja.getColorOrDefault(
-                                _putnik.naplatioVozac,
+                                _putnik.naplatioVozac ?? widget.currentDriver,
                                 Theme.of(context)
                                     .colorScheme
                                     .onSurface
