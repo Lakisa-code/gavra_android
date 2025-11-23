@@ -1,0 +1,6 @@
+## DO NOT commit real secrets into this file
+## This is an example placeholder. Put secrets in GitHub Secrets instead.
+storePassword=CHANGEME_STORE_PASSWORD
+keyPassword=CHANGEME_KEY_PASSWORD
+keyAlias=CHANGEME_KEY_ALIAS
+storeFile=../gavra-release-key-production.keystore
