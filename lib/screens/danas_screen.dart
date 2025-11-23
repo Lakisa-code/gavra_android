@@ -27,6 +27,7 @@ import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
+import '../utils/responsive.dart';
 import '../utils/schedule_utils.dart'; // Za isZimski funkciju
 import '../utils/text_utils.dart'; // 🎯 DODANO za standardizovano filtriranje statusa
 import '../utils/vozac_boja.dart'; // 🎯 DODANO za konzistentne boje vozača
@@ -91,7 +92,9 @@ class _DanasScreenState extends State<DanasScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        child: const Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
+        child: Text('POPIS',
+            style:
+                TextStyle(fontWeight: FontWeight.bold, fontSize: Responsive.fontSize(context, 12), letterSpacing: 0.3)),
       ),
     );
   }
@@ -213,7 +216,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 Text(
                   sub['name'] as String,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: Responsive.fontSize(context, 11),
                     fontFamily: 'monospace',
                     fontWeight: isCritical ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -222,12 +225,14 @@ class _DanasScreenState extends State<DanasScreen> {
                 if (errorCount > 0)
                   Text(
                     '${errorCount}E',
-                    style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: Responsive.fontSize(context, 10), color: Colors.red, fontWeight: FontWeight.bold),
                   ),
                 if (isCritical)
-                  const Text(
+                  Text(
                     'CRIT',
-                    style: TextStyle(fontSize: 9, color: Colors.purple, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: Responsive.fontSize(context, 9), color: Colors.purple, fontWeight: FontWeight.bold),
                   ),
               ],
             ),
@@ -365,7 +370,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   Text(
                     '$dayStr.$monthStr.$yearStr',
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: Responsive.fontSize(context, 17),
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
@@ -376,7 +381,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   Text(
                     dayName,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: Responsive.fontSize(context, 17),
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
@@ -386,7 +391,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   // DESNO - VREME
                   ClockTicker(
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: Responsive.fontSize(context, 17),
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
                       letterSpacing: 1.8,
@@ -429,7 +434,7 @@ class _DanasScreenState extends State<DanasScreen> {
                           '${entry.key}: ${timeSince.inSeconds}s ago',
                           style: TextStyle(
                             fontFamily: 'monospace',
-                            fontSize: 12,
+                            fontSize: Responsive.fontSize(context, 12),
                             color: timeSince.inSeconds > 30 ? Colors.red : Colors.green,
                           ),
                         );
@@ -442,7 +447,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     ],
                   ),
                 ),
-                actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
+                actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('Zatvori'))],
               ),
             );
           },
@@ -480,10 +485,10 @@ class _DanasScreenState extends State<DanasScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               ),
-              child: const Text(
+              child: Text(
                 'ERR',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: Responsive.fontSize(context, 11),
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
                 ),
@@ -513,7 +518,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 Text(
                   '$ukupnoUjutro',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: Responsive.fontSize(context, 11),
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onPrimary,
                   ),
@@ -521,7 +526,8 @@ class _DanasScreenState extends State<DanasScreen> {
                 const SizedBox(width: 2),
                 Text(
                   '$ostalo',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                  style: TextStyle(
+                      fontSize: Responsive.fontSize(context, 11), fontWeight: FontWeight.bold, color: Colors.redAccent),
                 ),
               ],
             ),
@@ -567,7 +573,7 @@ class _DanasScreenState extends State<DanasScreen> {
             ),
             child: Text(
               _isRouteOptimized ? 'Reset' : 'Ruta',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: Responsive.fontSize(context, 13)),
             ),
           ),
         );
@@ -607,7 +613,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   child: Text(
                     speed.toStringAsFixed(0),
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: Responsive.fontSize(context, 14),
                       fontWeight: FontWeight.bold,
                       color: speedColor,
                       fontFamily: 'monospace',
@@ -652,7 +658,7 @@ class _DanasScreenState extends State<DanasScreen> {
             const SizedBox(width: 4),
             Text(
               _isGpsTracking ? 'STOP' : (hasOptimizedRoute ? 'NAV' : 'NAV'),
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: Responsive.fontSize(context, 11)),
             ),
           ],
         ),
@@ -708,9 +714,9 @@ class _DanasScreenState extends State<DanasScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Učenici koji imaju i jutarnji (BC) i popodnevni (VS) polazak',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: Responsive.fontSize(context, 12), color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -728,9 +734,9 @@ class _DanasScreenState extends State<DanasScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Učenici koji imaju samo jutarnji polazak (BC)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: Responsive.fontSize(context, 12), color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -748,16 +754,16 @@ class _DanasScreenState extends State<DanasScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Učenici koji su otkazali, na bolovanju ili godišnjem',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: Responsive.fontSize(context, 12), color: Colors.grey),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('Zatvori'))],
       ),
     );
   }
@@ -771,11 +777,11 @@ class _DanasScreenState extends State<DanasScreen> {
           const SizedBox(width: 8),
           Text(
             '$label: ',
-            style: TextStyle(color: Colors.grey[700], fontSize: 14), // 🎨 Tamniji tekst
+            style: TextStyle(color: Colors.grey[700], fontSize: Responsive.fontSize(context, 14)), // 🎨 Tamniji tekst
           ),
           Text(
             value.toString(),
-            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(color: color, fontSize: Responsive.fontSize(context, 14), fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -966,7 +972,8 @@ class _DanasScreenState extends State<DanasScreen> {
             Expanded(
               child: Text(
                 'POPIS - ${datum.day}.${datum.month}.${datum.year}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                style: TextStyle(
+                    fontSize: Responsive.fontSize(context, 16), fontWeight: FontWeight.bold, color: Colors.grey[800]),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -995,7 +1002,10 @@ class _DanasScreenState extends State<DanasScreen> {
                         const SizedBox(width: 8),
                         Text(
                           vozac,
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                          style: TextStyle(
+                              fontSize: Responsive.fontSize(context, 18),
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800]),
                         ),
                       ],
                     ),
@@ -1053,9 +1063,9 @@ class _DanasScreenState extends State<DanasScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.orange.shade200),
                       ),
-                      child: const Text(
+                      child: Text(
                         '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
-                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                        style: TextStyle(fontSize: Responsive.fontSize(context, 12), fontStyle: FontStyle.italic),
                       ),
                     ),
                   ],
@@ -1065,7 +1075,7 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Otkaži')),
           ElevatedButton.icon(
             onPressed: () => Navigator.pop(context, true),
             icon: const Icon(Icons.save),
@@ -1718,10 +1728,10 @@ class _DanasScreenState extends State<DanasScreen> {
 
                   if (snapshot.hasError) {
                     // Heartbeat indicator shows connection status
-                    return const Center(
+                    return Center(
                       child: Text(
                         'Nema putnika za izabrani polazak',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                        style: TextStyle(fontSize: Responsive.fontSize(context, 16), color: Colors.grey),
                       ),
                     );
                   }
@@ -1881,10 +1891,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Pazar',
                                           style: TextStyle(
-                                            fontSize: 12,
+                                            fontSize: Responsive.fontSize(context, 12),
                                             fontWeight: FontWeight.bold,
                                             color: Colors.green,
                                           ),
@@ -1892,8 +1902,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                         const SizedBox(height: 4),
                                         Text(
                                           ukupnoPazarVozac.toStringAsFixed(0),
-                                          style: const TextStyle(
-                                            fontSize: 16,
+                                          style: TextStyle(
+                                            fontSize: Responsive.fontSize(context, 16),
                                             fontWeight: FontWeight.bold,
                                             color: Colors.green,
                                           ),
@@ -1925,10 +1935,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Text(
+                                            Text(
                                               'Mesečne',
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: Responsive.fontSize(context, 12),
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.purple,
                                               ),
@@ -1936,8 +1946,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                             const SizedBox(height: 4),
                                             Text(
                                               brojMesecnih.toString(),
-                                              style: const TextStyle(
-                                                fontSize: 16,
+                                              style: TextStyle(
+                                                fontSize: Responsive.fontSize(context, 16),
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.purple,
                                               ),
@@ -1972,10 +1982,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Text(
+                                          Text(
                                             'Dugovi',
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: Responsive.fontSize(context, 12),
                                               fontWeight: FontWeight.bold,
                                               color: Colors.red,
                                             ),
@@ -1983,8 +1993,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                           const SizedBox(height: 4),
                                           Text(
                                             filteredDuznici.length.toString(),
-                                            style: const TextStyle(
-                                              fontSize: 16,
+                                            style: TextStyle(
+                                              fontSize: Responsive.fontSize(context, 16),
                                               fontWeight: FontWeight.bold,
                                               color: Colors.red,
                                             ),
@@ -2014,10 +2024,10 @@ class _DanasScreenState extends State<DanasScreen> {
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Text(
+                                            Text(
                                               'Kusur',
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: Responsive.fontSize(context, 12),
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.orange,
                                               ),
@@ -2025,8 +2035,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                             const SizedBox(height: 4),
                                             Text(
                                               sitanNovac > 0 ? sitanNovac.toStringAsFixed(0) : '-',
-                                              style: const TextStyle(
-                                                fontSize: 16,
+                                              style: TextStyle(
+                                                fontSize: Responsive.fontSize(context, 16),
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.orange,
                                               ),
@@ -2043,10 +2053,10 @@ class _DanasScreenState extends State<DanasScreen> {
                           ),
                           Expanded(
                             child: finalPutnici.isEmpty
-                                ? const Center(
+                                ? Center(
                                     child: Text(
                                       'Nema putnika za izabrani polazak',
-                                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                                      style: TextStyle(fontSize: Responsive.fontSize(context, 16), color: Colors.grey),
                                     ),
                                   )
                                 : Column(
@@ -2082,7 +2092,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                                               ? '🛰️ GPS Tracking AKTIVAN'
                                                               : 'Ruta optimizovana'),
                                                       style: TextStyle(
-                                                        fontSize: 12,
+                                                        fontSize: Responsive.fontSize(context, 12),
                                                         fontWeight: FontWeight.bold,
                                                         color: _isListReordered
                                                             ? Colors.orange[700]
@@ -2095,7 +2105,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                                       Text(
                                                         '👤 SLEDEĆI: ${_optimizedRoute[_currentPassengerIndex].ime}',
                                                         style: TextStyle(
-                                                          fontSize: 11,
+                                                          fontSize: Responsive.fontSize(context, 11),
                                                           color: Colors.orange[600],
                                                           fontWeight: FontWeight.w600,
                                                         ),
@@ -2105,7 +2115,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                                       Text(
                                                         '🧭 $_navigationStatus',
                                                         style: TextStyle(
-                                                          fontSize: 10,
+                                                          fontSize: Responsive.fontSize(context, 10),
                                                           color: Colors.indigo[600],
                                                           fontStyle: FontStyle.italic,
                                                         ),
@@ -2123,16 +2133,18 @@ class _DanasScreenState extends State<DanasScreen> {
                                                           return Text(
                                                             snapshot.data!,
                                                             style: TextStyle(
-                                                              fontSize: 10,
+                                                              fontSize: Responsive.fontSize(context, 10),
                                                               color: _isGpsTracking ? Colors.blue : Colors.green,
                                                             ),
                                                             maxLines: 2,
                                                             overflow: TextOverflow.ellipsis,
                                                           );
                                                         } else {
-                                                          return const Text(
+                                                          return Text(
                                                             'Učitavanje...',
-                                                            style: TextStyle(fontSize: 10, color: Colors.green),
+                                                            style: TextStyle(
+                                                                fontSize: Responsive.fontSize(context, 10),
+                                                                color: Colors.green),
                                                           );
                                                         }
                                                       },
