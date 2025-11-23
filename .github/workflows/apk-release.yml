@@ -3,6 +3,7 @@ name: Build Signed Release APK
 on:
   workflow_dispatch: {}
   push:
+    branches: [ main ]
     tags: [ 'v*' ]
 
 env:
@@ -79,3 +80,30 @@ jobs:
           TAG=${GITHUB_REF##*/}
           echo "Create or update release $TAG and attach APK artifacts"
           gh release create "$TAG" build/app/outputs/flutter-apk/app-release.apk --title "Release $TAG" --notes "Automated signed release build for $TAG" || true
+
+      - name: Update Latest Release (main push)
+        if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          # Delete existing latest release if it exists
+          gh release delete latest --yes || true
+          git push origin :refs/tags/latest || true
+          # Create new latest release
+          gh release create latest build/app/outputs/flutter-apk/app-release.apk \
+            --title "🚀 Gavra Android - Latest Build" \
+            --notes "📱 **Automatski build sa commit:** ${{ github.sha }}
+
+          ### 📱 QR Code Download:
+          Skenuj QR kod za direktan download:
+          \`\`\`
+          https://github.com/${{ github.repository }}/releases/latest/download/app-release.apk
+          \`\`\`
+
+          ### 🔄 Poslednje promene:
+          $(git log --oneline -5)
+
+          **Build vreme:** $(date '+%d.%m.%Y %H:%M')
+          **Commit:** ${{ github.sha }}" \
+            --latest
