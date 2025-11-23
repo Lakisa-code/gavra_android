@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../globals.dart';
+import '../screens/home_screen.dart';
 // ❌ DEPRECATED: Use daily_checkin_screen_v2.dart instead
 // import '../services/dnevni_kusur_service.dart';
 import '../services/simplified_daily_checkin.dart';
@@ -126,7 +128,19 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         // Pozovi callback posle kratkog delay-a
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
-            widget.onCompleted();
+            try {
+              widget.onCompleted();
+            } catch (e) {
+              // Fallback: direktna navigacija ako callback fail-uje (Huawei specifično)
+              final navContext = navigatorKey.currentContext;
+              if (navContext != null && navContext.mounted) {
+                Navigator.of(navContext).pushReplacement(
+                  MaterialPageRoute<void>(
+                    builder: (context) => const HomeScreen(),
+                  ),
+                );
+              }
+            }
           }
         });
       }
@@ -166,7 +180,19 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           // UVEK pozovi callback - app mora da nastavi!
           Future.delayed(const Duration(milliseconds: 200), () {
             if (mounted) {
-              widget.onCompleted();
+              try {
+                widget.onCompleted();
+              } catch (e) {
+                // Fallback: direktna navigacija ako callback fail-uje (Huawei specifično)
+                final navContext = navigatorKey.currentContext;
+                if (navContext != null && navContext.mounted) {
+                  Navigator.of(navContext).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const HomeScreen(),
+                    ),
+                  );
+                }
+              }
             }
           });
         } catch (fallbackError) {
@@ -176,7 +202,19 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           // IPAK DOZVOLI NASTAVAK NAKON 2 SEKUNDE!
           Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {
-              widget.onCompleted();
+              try {
+                widget.onCompleted();
+              } catch (e) {
+                // Fallback: direktna navigacija ako callback fail-uje (Huawei specifično)
+                final navContext = navigatorKey.currentContext;
+                if (navContext != null && navContext.mounted) {
+                  Navigator.of(navContext).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (context) => const HomeScreen(),
+                    ),
+                  );
+                }
+              }
             }
           });
         }
