@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/responsive.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -72,10 +73,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Dashboard',
             style: TextStyle(
               color: Colors.white,
+              fontSize: Responsive.fontSize(context, 20),
               fontWeight: FontWeight.w700,
               shadows: [
                 Shadow(
@@ -88,7 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
-          toolbarHeight: 80,
+          toolbarHeight: Responsive.height(context, 80),
           flexibleSpace: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).glassContainer,
@@ -113,11 +115,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSummaryCards(),
+                      _buildSummaryCards(context),
                       const SizedBox(height: 24),
-                      _buildChartsSection(),
+                      _buildChartsSection(context),
                       const SizedBox(height: 24),
-                      _buildQuickActions(),
+                      _buildQuickActions(context),
                     ],
                   ),
                 ),
@@ -126,36 +128,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCards() {
+  Widget _buildSummaryCards(BuildContext context) {
     if (dashboardData == null) return const SizedBox.shrink();
+
+    final crossAxisCount = Responsive.isSmallScreen(context) ? 1 : 2;
 
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
+      crossAxisCount: crossAxisCount,
       childAspectRatio: 1.5,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       children: [
         _buildSummaryCard(
+          context,
           'Ukupno putnika',
           '${dashboardData!['total_passengers']}',
           Icons.people,
           Colors.blue,
         ),
         _buildSummaryCard(
+          context,
           'Aktivni vozači',
           '${dashboardData!['active_drivers']}',
           Icons.drive_eta,
           Colors.green,
         ),
         _buildSummaryCard(
+          context,
           'Završene vožnje',
           '${dashboardData!['completed_trips']}',
           Icons.check_circle,
           Colors.orange,
         ),
         _buildSummaryCard(
+          context,
           'Prihod',
           '${dashboardData!['revenue']} RSD',
           Icons.attach_money,
@@ -166,6 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSummaryCard(
+    BuildContext context,
     String title,
     String value,
     IconData icon,
@@ -191,15 +200,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: Responsive.fontSize(context, 20),
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, 12),
                 color: Colors.grey,
               ),
               textAlign: TextAlign.center,
@@ -210,16 +219,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildChartsSection() {
+  Widget _buildChartsSection(BuildContext context) {
     if (dashboardData == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Statistike',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: Responsive.fontSize(context, 20),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -232,17 +241,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Mesečne vožnje',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: Responsive.fontSize(context, 16),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 200,
-                        child: _buildLineChart(),
+                        child: _buildLineChart(context),
                       ),
                     ],
                   ),
@@ -257,17 +266,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'Tipovi putnika',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: Responsive.fontSize(context, 16),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 200,
-                  child: _buildPieChart(),
+                  child: _buildPieChart(context),
                 ),
               ],
             ),
@@ -277,7 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildLineChart() {
+  Widget _buildLineChart(BuildContext context) {
     final monthlyData = dashboardData!['monthly_data'] as List<dynamic>;
 
     return LineChart(
@@ -293,7 +302,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (value.toInt() >= 0 && value.toInt() < monthlyData.length) {
                   return Text(
                     monthlyData[value.toInt()]['month'].toString(),
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
                   );
                 }
                 return const Text('');
@@ -326,7 +335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPieChart() {
+  Widget _buildPieChart(BuildContext context) {
     final passengerTypes = dashboardData!['passenger_types'] as Map<String, dynamic>;
     final colors = [Colors.blue, Colors.green, Colors.orange];
 
@@ -339,8 +348,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             title: '${entry.key}\n${entry.value}',
             color: colors[index % colors.length],
             radius: 100,
-            titleStyle: const TextStyle(
-              fontSize: 12,
+            titleStyle: TextStyle(
+              fontSize: Responsive.fontSize(context, 12),
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
@@ -352,14 +361,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Brze akcije',
           style: TextStyle(
-            fontSize: 20,
+            fontSize: Responsive.fontSize(context, 20),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -368,6 +377,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Expanded(
               child: _buildActionButton(
+                context,
                 'Dodaj putnika',
                 Icons.person_add,
                 Colors.blue,
@@ -377,6 +387,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: _buildActionButton(
+                context,
                 'Nova vožnja',
                 Icons.add_road,
                 Colors.green,
@@ -390,6 +401,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Expanded(
               child: _buildActionButton(
+                context,
                 'Vozači',
                 Icons.drive_eta,
                 Colors.orange,
@@ -399,6 +411,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: _buildActionButton(
+                context,
                 'Izveštaji',
                 Icons.assessment,
                 Colors.purple,
@@ -412,6 +425,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildActionButton(
+    BuildContext context,
     String label,
     IconData icon,
     Color color,
@@ -436,6 +450,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w500,
+                  fontSize: Responsive.fontSize(context, 14),
                 ),
               ),
             ],

@@ -5,6 +5,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../services/geocoding_stats_service.dart';
 import '../services/theme_manager.dart';
+import '../utils/responsive.dart';
 
 class GeocodingAdminScreen extends StatefulWidget {
   const GeocodingAdminScreen({Key? key}) : super(key: key);
@@ -374,12 +375,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           ),
 
           // Title
-          const Expanded(
+          Expanded(
             child: Text(
               'Geocoding Admin',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 20,
+                fontSize: Responsive.fontSize(context, 20),
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),
@@ -509,7 +510,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                 'Sortiranje:',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
+                  fontSize: Responsive.fontSize(context, 12),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -549,7 +550,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           label,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 12,
+            fontSize: Responsive.fontSize(context, 12),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -578,7 +579,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           label,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 11,
+            fontSize: Responsive.fontSize(context, 11),
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -643,9 +644,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: Responsive.fontSize(context, 16),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -653,7 +654,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             title,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 10,
+              fontSize: Responsive.fontSize(context, 10),
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -702,7 +703,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               'Nema rezultata',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 18,
+                fontSize: Responsive.fontSize(context, 18),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -711,7 +712,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
               'Probajte sa drugim kriterijumima pretrage',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.6),
-                fontSize: 14,
+                fontSize: Responsive.fontSize(context, 14),
               ),
               textAlign: TextAlign.center,
             ),
@@ -755,16 +756,16 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             style: TextStyle(
               color: _getCountColor(count),
               fontWeight: FontWeight.bold,
-              fontSize: 12,
+              fontSize: Responsive.fontSize(context, 12),
             ),
           ),
         ),
         title: Text(
           locationName,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: Responsive.fontSize(context, 14),
           ),
         ),
         subtitle: lastAccessed != null
@@ -772,7 +773,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                 'Poslednji pristup: ${_formatDateTime(lastAccessed)}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 12,
+                  fontSize: Responsive.fontSize(context, 12),
                 ),
               )
             : null,
@@ -787,7 +788,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
             style: TextStyle(
               color: _getCountColor(count),
               fontWeight: FontWeight.bold,
-              fontSize: 12,
+              fontSize: Responsive.fontSize(context, 12),
             ),
           ),
         ),

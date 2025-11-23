@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../models/mesecni_putnik.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 // foundation import not needed; using centralized logger
 import '../widgets/custom_back_button.dart';
 
@@ -197,7 +198,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
           ),
           title: Text(
             'Detalji - ${widget.putnik.putnikIme}',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               shadows: [
                 Shadow(
@@ -245,7 +246,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
               'Učitavam detalje...',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                fontSize: 16,
+                fontSize: Responsive.fontSize(context, 16),
               ),
             ),
           ],
@@ -270,17 +271,17 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
           // Tab bar
           Container(
             color: Colors.grey.shade100,
-            child: const TabBar(
+            child: TabBar(
               labelColor: Colors.indigo,
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.indigo,
               labelStyle: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontSize: Responsive.fontSize(context, 13),
               ),
               unselectedLabelStyle: TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 12,
+                fontSize: Responsive.fontSize(context, 12),
               ),
               indicatorWeight: 3,
               splashFactory: InkRipple.splashFactory,
@@ -348,9 +349,9 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 child: Text(
                   widget.putnik.putnikIme[0].toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: Responsive.fontSize(context, 20),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -362,8 +363,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                   children: [
                     Text(
                       widget.putnik.putnikIme,
-                      style: const TextStyle(
-                        fontSize: 20,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, 20),
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
@@ -386,7 +387,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                           color: widget.putnik.aktivan
                               ? Theme.of(context).colorScheme.onPrimaryContainer
                               : Theme.of(context).colorScheme.onErrorContainer,
-                          fontSize: 11,
+                          fontSize: Responsive.fontSize(context, 11),
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
                         ),
@@ -418,8 +419,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                     ),
                     child: Text(
                       '${widget.putnik.brojPutovanja} vožnji',
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, 13),
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -447,7 +448,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                     child: Text(
                       '${widget.putnik.brojOtkazivanja} otkaza',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: Responsive.fontSize(context, 13),
                         fontWeight: FontWeight.w700,
                         color: Theme.of(context).colorScheme.onErrorContainer,
                       ),
@@ -474,7 +475,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                   Text(
                     'Radni dani: ${_formatRadniDani(widget.putnik.radniDani)}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: Responsive.fontSize(context, 12),
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -527,7 +528,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
           Text(
             '${daniMapa[dan]}: ${vremena.join(', ')}',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: Responsive.fontSize(context, 11),
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
@@ -589,8 +590,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
               children: [
                 Text(
                   nedelja,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, 16),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -676,8 +677,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
               children: [
                 Text(
                   mesec,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, 16),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -767,8 +768,8 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
               children: [
                 Text(
                   godina,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, 18),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -808,7 +809,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                       children: [
                         Text(
                           '$brojVoznji vožnji',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.green,
                             fontWeight: FontWeight.w500,
                           ),
@@ -816,7 +817,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
                         const SizedBox(width: 12),
                         Text(
                           '$brojOtkaza otkaza',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.orange,
                             fontWeight: FontWeight.w500,
                           ),
@@ -930,7 +931,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
         text,
         style: TextStyle(
           color: color.shade700,
-          fontSize: 12,
+          fontSize: Responsive.fontSize(context, 12),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -955,7 +956,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
           Expanded(
             child: Text(
               '${DateFormat('dd.MM HH:mm').format(datum)} • $vozac • $relacija',
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
             ),
           ),
         ],
@@ -980,7 +981,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
           Expanded(
             child: Text(
               '${DateFormat('dd.MM HH:mm').format(datum)} • $vozac',
-              style: const TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: Responsive.fontSize(context, 12)),
             ),
           ),
         ],
@@ -1040,7 +1041,7 @@ class _MesecniPutnikDetaljiScreenState extends State<MesecniPutnikDetaljiScreen>
             child: Text(
               dan.toString(),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: Responsive.fontSize(context, 12),
                 fontWeight: aktivnost != null ? FontWeight.bold : FontWeight.normal,
               ),
             ),

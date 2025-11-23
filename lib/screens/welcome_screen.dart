@@ -9,6 +9,7 @@ import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
@@ -25,8 +26,7 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -113,8 +113,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       if (!mounted) return;
 
       // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn =
-          await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
 
       if (!hasCheckedIn) {
         // Navigate to DailyCheckInScreen
@@ -149,9 +148,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final firebaseUser = AuthManager.getCurrentUser();
     // 🔄 MAPIRANJE: email -> vozač ime umesto displayName
     // Map only via email to a whitelisted driver; don't fall back to displayName
-    final driverFromFirebase = firebaseUser?.email != null
-        ? VozacBoja.getVozacForEmail(firebaseUser!.email)
-        : null;
+    final driverFromFirebase = firebaseUser?.email != null ? VozacBoja.getVozacForEmail(firebaseUser!.email) : null;
 
     // 🔒 STRIKTNA PROVERA EMAIL VERIFIKACIJE
     if (AuthManager.isEmailAuthenticated() && !AuthManager.isEmailVerified()) {
@@ -164,8 +161,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final savedDriver = await AuthManager.getCurrentDriver();
 
     // Ako je neko ulogovan u Firebase, koristi to
-    if (driverFromFirebase != null &&
-        (savedDriver == null || savedDriver != driverFromFirebase)) {
+    if (driverFromFirebase != null && (savedDriver == null || savedDriver != driverFromFirebase)) {
       await AuthManager.setCurrentDriver(driverFromFirebase);
     }
 
@@ -179,8 +175,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await PermissionService.requestAllPermissionsOnFirstLaunch(context);
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn =
-          await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
@@ -227,8 +222,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
     );
 
@@ -297,8 +291,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       final rememberedName = rememberedDevice['driverName']!;
 
       // 🔄 FORSIRAJ REFRESH: Koristi VozacBoja mapiranje za ispravno ime
-      final correctName =
-          VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
+      final correctName = VozacBoja.getVozacForEmail(rememberedEmail) ?? rememberedName;
 
       if (correctName == driverName) {
         // Ovaj vozač je zapamćen na ovom uređaju - DIREKTNO AUTO-LOGIN
@@ -307,8 +300,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         if (!mounted) return;
 
         // Direktno na Daily Check-in ili Home Screen
-        final hasCheckedIn =
-            await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
+        final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
 
         if (!hasCheckedIn) {
           // Navigate to DailyCheckInScreen
@@ -391,21 +383,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           child: Text(
                             'DOBRODOŠLI',
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: Responsive.fontSize(context, 28),
                               fontWeight: FontWeight.bold,
                               letterSpacing: 3.5,
                               color: Colors.white,
                               shadows: [
                                 // Glavni glow efekat - plavi
                                 Shadow(
-                                  color: const Color(0xFF12D8FA)
-                                      .withValues(alpha: 0.8),
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
                                   blurRadius: 20,
                                 ),
                                 // Dodatni glow - svetliji plavi
                                 Shadow(
-                                  color: const Color(0xFF00E5FF)
-                                      .withValues(alpha: 0.6),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                                   blurRadius: 15,
                                 ),
                                 // Treći glow - još svetliji
@@ -429,7 +419,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           'Aplikacija za vozače',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 16,
+                            fontSize: Responsive.fontSize(context, 16),
                             fontWeight: FontWeight.w400,
                             letterSpacing: 1.2,
                           ),
@@ -452,8 +442,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               final driver = _drivers[index];
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical:
-                                      4.0, // Increased slightly for better visibility
+                                  vertical: 4.0, // Increased slightly for better visibility
                                 ),
                                 child: _buildDriverButton(
                                   driver['name'] as String,
@@ -509,21 +498,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             'GAVRA 013',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: Responsive.fontSize(context, 28),
                               fontWeight: FontWeight.w800,
                               letterSpacing: 3,
                               color: Colors.white,
                               shadows: [
                                 // Glavni glow efekat - plavi
                                 Shadow(
-                                  color: const Color(0xFF12D8FA)
-                                      .withValues(alpha: 0.8),
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
                                   blurRadius: 20,
                                 ),
                                 // Dodatni glow - svetliji plavi
                                 Shadow(
-                                  color: const Color(0xFF00E5FF)
-                                      .withValues(alpha: 0.6),
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
                                   blurRadius: 15,
                                 ),
                                 // Treći glow - još svetliji
@@ -554,13 +541,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       Text(
                         'Developed • Designed • Crafted with balls',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: Responsive.fontSize(context, 13),
                           letterSpacing: 1.0,
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF12D8FA)
-                                  .withValues(alpha: 0.6),
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.6),
                               blurRadius: 15,
                             ),
                             Shadow(
@@ -575,13 +561,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       Text(
                         'by Bojan Gavrilovic',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Responsive.fontSize(context, 12),
                           letterSpacing: 1.0,
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF00E5FF)
-                                  .withValues(alpha: 0.5),
+                              color: const Color(0xFF00E5FF).withValues(alpha: 0.5),
                               blurRadius: 12,
                             ),
                             Shadow(
@@ -596,13 +581,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       Text(
                         '03.2025 - 11.2025',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: Responsive.fontSize(context, 11),
                           letterSpacing: 1.2,
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: const Color(0xFF12D8FA)
-                                  .withValues(alpha: 0.4),
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.4),
                               blurRadius: 10,
                             ),
                             Shadow(
@@ -726,11 +710,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           maxLines: 1,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 13, // Further reduced to prevent overflow
+                            fontSize: Responsive.fontSize(context, 13), // Further reduced to prevent overflow
                             fontWeight: FontWeight.bold,
                             color: color,
-                            letterSpacing:
-                                1.0, // Further reduced to prevent overflow
+                            letterSpacing: 1.0, // Further reduced to prevent overflow
                             shadows: [
                               Shadow(
                                 color: Colors.white.withValues(alpha: 0.5),

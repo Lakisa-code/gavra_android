@@ -15,6 +15,7 @@ import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
 import '../theme.dart';
 import '../utils/date_utils.dart' as app_date_utils;
+import '../utils/responsive.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
@@ -275,7 +276,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 Text(
                                   'A D M I N   P A N E L',
                                   style: TextStyle(
-                                    fontSize: 17,
+                                    fontSize: Responsive.fontSize(context, 17),
                                     fontWeight: FontWeight.w800,
                                     color: Theme.of(context).colorScheme.onPrimary,
                                     letterSpacing: 1.8,
@@ -331,7 +332,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           ),
                                           // no boxShadow — keep transparent glass + border only
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Column(
@@ -342,7 +343,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                                   'Putnici',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
+                                                    fontSize: Responsive.fontSize(context, 14),
                                                     color: Colors.white,
                                                     shadows: const [
                                                       Shadow(
@@ -387,7 +388,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           ),
                                           // no boxShadow — keep transparent glass + border only
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Column(
@@ -398,7 +399,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                                   'Statistike',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
+                                                    fontSize: Responsive.fontSize(context, 14),
                                                     color: Colors.white,
                                                     shadows: const [
                                                       Shadow(
@@ -443,7 +444,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           ),
                                           // no boxShadow — keep transparent glass + border only
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Column(
@@ -454,7 +455,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                                   'API',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
+                                                    fontSize: Responsive.fontSize(context, 14),
                                                     color: Colors.white,
                                                     letterSpacing: 0.3,
                                                     shadows: const [
@@ -507,7 +508,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             ),
                                           ],
                                         ),
-                                        child: const Center(
+                                        child: Center(
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Column(
@@ -518,7 +519,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                                   'Istorija',
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
+                                                    fontSize: Responsive.fontSize(context, 14),
                                                     color: Colors.white,
                                                     shadows: const [
                                                       Shadow(
@@ -585,9 +586,9 @@ class _AdminScreenState extends State<AdminScreen> {
                                                         fit: BoxFit.scaleDown,
                                                         child: Text(
                                                           value,
-                                                          style: const TextStyle(
+                                                          style: TextStyle(
                                                             color: Colors.white,
-                                                            fontSize: 14,
+                                                            fontSize: Responsive.fontSize(context, 14),
                                                             fontWeight: FontWeight.w600,
                                                           ),
                                                           textAlign: TextAlign.center,
@@ -602,7 +603,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           },
                                           icon: const SizedBox.shrink(),
                                           dropdownColor: Theme.of(context).colorScheme.primary,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
                                           ),
                                           items: [
@@ -626,8 +627,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                                     fit: BoxFit.scaleDown,
                                                     child: Text(
                                                       dan,
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
+                                                      style: TextStyle(
+                                                        fontSize: Responsive.fontSize(context, 14),
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                       textAlign: TextAlign.center,
@@ -691,9 +692,9 @@ class _AdminScreenState extends State<AdminScreen> {
                     const SizedBox(height: 16),
                     const Text('Učitavanje admin panela...'),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Molimo sačekajte...',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: Responsive.fontSize(context, 12), color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
@@ -856,8 +857,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                   _currentDriver,
                                   'Dnevni pazar - $_selectedDan',
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 20,
+                                style: TextStyle(
+                                  fontSize: Responsive.fontSize(context, 20),
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white, // Bela boja
                                   shadows: [
@@ -910,7 +911,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     'Prikazuju se samo VAŠE naplate, vozač: $_currentDriver',
                                     style: TextStyle(
                                       color: Colors.green[700],
-                                      fontSize: 12,
+                                      fontSize: Responsive.fontSize(context, 12),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -949,10 +950,10 @@ class _AdminScreenState extends State<AdminScreen> {
                                         radius: 16,
                                         child: Text(
                                           vozac[0],
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                                            fontSize: Responsive.fontSize(context, 14),
                                           ),
                                         ),
                                       ),
@@ -961,7 +962,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         child: Text(
                                           vozac,
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: Responsive.fontSize(context, 14),
                                             fontWeight: FontWeight.bold,
                                             color: vozacBoje[vozac] ?? Colors.blueGrey,
                                           ),
@@ -978,7 +979,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           Text(
                                             '${(filteredPazar[vozac] ?? 0.0).toStringAsFixed(0)} RSD',
                                             style: TextStyle(
-                                              fontSize: 15,
+                                              fontSize: Responsive.fontSize(context, 15),
                                               fontWeight: FontWeight.bold,
                                               color: vozacBoje[vozac] ?? Colors.blueGrey,
                                             ),
@@ -1038,7 +1039,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           ),
                                         ],
                                       ),
-                                      child: const Row(
+                                      child: Row(
                                         children: [
                                           Icon(
                                             Icons.savings,
@@ -1051,7 +1052,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             style: TextStyle(
                                               color: Colors.purple,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 10,
+                                              fontSize: Responsive.fontSize(context, 10),
                                             ),
                                           ),
                                           Expanded(
@@ -1059,7 +1060,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                               child: Text(
                                                 '0 RSD',
                                                 style: TextStyle(
-                                                  fontSize: 11,
+                                                  fontSize: Responsive.fontSize(context, 11),
                                                   color: Colors.grey,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -1109,7 +1110,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           style: TextStyle(
                                             color: Colors.purple[800],
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 10,
+                                            fontSize: Responsive.fontSize(context, 10),
                                           ),
                                         ),
                                         Expanded(
@@ -1130,7 +1131,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: Text(
                                               '${kusurBruda.toStringAsFixed(0)} RSD',
                                               style: TextStyle(
-                                                fontSize: 11,
+                                                fontSize: Responsive.fontSize(context, 11),
                                                 color: Colors.purple[800],
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -1172,7 +1173,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           ),
                                         ],
                                       ),
-                                      child: const Row(
+                                      child: Row(
                                         children: [
                                           Icon(
                                             Icons.savings,
@@ -1185,7 +1186,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             style: TextStyle(
                                               color: Colors.orange,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 10,
+                                              fontSize: Responsive.fontSize(context, 10),
                                             ),
                                           ),
                                           Expanded(
@@ -1193,7 +1194,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                               child: Text(
                                                 '0 RSD',
                                                 style: TextStyle(
-                                                  fontSize: 11,
+                                                  fontSize: Responsive.fontSize(context, 11),
                                                   color: Colors.grey,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -1243,7 +1244,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           style: TextStyle(
                                             color: Colors.orange[800],
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 10,
+                                            fontSize: Responsive.fontSize(context, 10),
                                           ),
                                         ),
                                         Expanded(
@@ -1264,7 +1265,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                             child: Text(
                                               '${kusurBilevski.toStringAsFixed(0)} RSD',
                                               style: TextStyle(
-                                                fontSize: 11,
+                                                fontSize: Responsive.fontSize(context, 11),
                                                 color: Colors.orange[800],
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -1328,7 +1329,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                     style: TextStyle(
                                       color: Colors.green[900],
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 18,
+                                      fontSize: Responsive.fontSize(context, 18),
                                     ),
                                   ),
                                 ],
@@ -1374,11 +1375,11 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: const Column(
+                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(
-                                          Icons.location_on,
+                                          Icons.analytics,
                                           color: Colors.white,
                                           size: 16,
                                           shadows: [
@@ -1394,7 +1395,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 10,
+                                            fontSize: Responsive.fontSize(context, 10),
                                             shadows: [
                                               Shadow(
                                                 offset: Offset(1, 1),
@@ -1440,7 +1441,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ),
                                       ],
                                     ),
-                                    child: const Column(
+                                    child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(
@@ -1460,7 +1461,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 10,
+                                            fontSize: Responsive.fontSize(context, 10),
                                             shadows: [
                                               Shadow(
                                                 offset: Offset(1, 1),

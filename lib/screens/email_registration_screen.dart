@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_manager.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../utils/vozac_boja.dart';
 
 class EmailRegistrationScreen extends StatefulWidget {
@@ -83,11 +84,11 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
               ),
             ),
           ),
-          title: const Text(
+          title: Text(
             'Registracija',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: Responsive.fontSize(context, 20),
               fontWeight: FontWeight.w700,
               shadows: [
                 Shadow(
@@ -149,11 +150,11 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             color: Colors.white,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Email Registracija',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: Responsive.fontSize(context, 28),
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
             ),
@@ -163,7 +164,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             'Registrujte se sa email adresom',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 16,
+              fontSize: Responsive.fontSize(context, 16),
             ),
           ),
         ],
@@ -296,10 +297,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
                 const SizedBox(width: 8),
                 Text(
                   'Prepoznat vozač: $_selectedDriver',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: Responsive.fontSize(context, 14),
                   ),
                 ),
               ],
@@ -440,10 +441,10 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
-          : const Text(
+          : Text(
               'Registrujte se',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: Responsive.fontSize(context, 18),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -456,11 +457,11 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
         Navigator.of(context).pop();
       },
       icon: const Icon(Icons.arrow_back, color: Colors.blue),
-      label: const Text(
+      label: Text(
         'Nazad na prijavu',
         style: TextStyle(
           color: Colors.blue,
-          fontSize: 16,
+          fontSize: Responsive.fontSize(context, 16),
         ),
       ),
     );
@@ -586,9 +587,9 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
               const SizedBox(height: 16),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: Responsive.fontSize(context, 16),
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -598,7 +599,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
                 message,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 14,
+                  fontSize: Responsive.fontSize(context, 14),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -616,7 +617,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
         backgroundColor: const Color(0xFF1A1A2E),
         insetPadding: const EdgeInsets.all(16),
         contentPadding: const EdgeInsets.all(20),
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_circle, color: Colors.green, size: 24),
@@ -624,7 +625,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             Flexible(
               child: Text(
                 'Registracija uspešna!',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: Colors.white, fontSize: Responsive.fontSize(context, 16)),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -638,7 +639,7 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
           child: SingleChildScrollView(
             child: Text(
               'Vaš nalog je uspešno kreiran i možete se prijaviti.',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: Responsive.fontSize(context, 14)),
             ),
           ),
         ),

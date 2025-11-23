@@ -82,7 +82,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
   Widget _buildPopisButton() {
     return SizedBox(
-      height: 26,
+      height: Responsive.height(context, 26),
       child: ElevatedButton(
         onPressed: (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) ? null : () => _showPopisDana(),
         style: ElevatedButton.styleFrom(
@@ -452,7 +452,7 @@ class _DanasScreenState extends State<DanasScreen> {
             );
           },
           child: SizedBox(
-            height: 26,
+            height: Responsive.height(context, 26),
             child: Container(
               decoration: BoxDecoration(
                 color: isHealthy ? Colors.green.shade700 : Colors.red.shade700,
@@ -502,7 +502,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final ukupnoUjutro = statistike['ukupno_ujutro'] ?? 0; // 30 - ukupno ujutro
 
         return SizedBox(
-          height: 26, // povećao sa 24 na 26
+          height: Responsive.height(context, 26), // povećao sa 24 na 26
           child: ElevatedButton(
             onPressed: () => _showDjackiDialog(statistike),
             style: ElevatedButton.styleFrom(
@@ -551,7 +551,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final hasPassengers = filtriraniPutnici.isNotEmpty;
         final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
         return SizedBox(
-          height: 26,
+          height: Responsive.height(context, 26),
           child: ElevatedButton(
             onPressed: _isLoading || !hasPassengers || !isDriverValid
                 ? null
@@ -596,7 +596,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     : Theme.of(context).colorScheme.onSurface;
 
         return SizedBox(
-          height: 26,
+          height: Responsive.height(context, 26),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
@@ -633,7 +633,7 @@ class _DanasScreenState extends State<DanasScreen> {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
     final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
     return SizedBox(
-      height: 26,
+      height: Responsive.height(context, 26),
       child: ElevatedButton(
         onPressed: hasOptimizedRoute && isDriverValid
             ? () => (_isGpsTracking ? _stopSmartNavigation() : _startSmartNavigation())
@@ -1616,7 +1616,7 @@ class _DanasScreenState extends State<DanasScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent, // Transparentna pozadina
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
+          preferredSize: Size.fromHeight(Responsive.height(context, 80)),
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).glassContainer, // Transparentni glassmorphism

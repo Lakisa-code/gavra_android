@@ -10,6 +10,7 @@ import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 
 class AdminMapScreen extends StatefulWidget {
   const AdminMapScreen({Key? key}) : super(key: key);
@@ -262,9 +263,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   ),
                   Text(
                     vozacId.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: Responsive.fontSize(context, 12),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -376,12 +377,12 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 child: Row(
                   children: [
                     const SizedBox.shrink(),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         '🗺️ Admin GPS Mapa',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: Responsive.fontSize(context, 18),
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
                           shadows: [
@@ -527,7 +528,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         Text(
                           '🗺️ Učitavam GPS podatke...',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: Responsive.fontSize(context, 18),
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[800],
                             letterSpacing: 0.5,
@@ -537,7 +538,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         Text(
                           'Realtime monitoring aktiviran',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: Responsive.fontSize(context, 12),
                             color: Colors.grey[600],
                             fontStyle: FontStyle.italic,
                           ),
@@ -591,7 +592,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                           'Legenda',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: Responsive.fontSize(context, 14),
                             color: Theme.of(context).primaryColor,
                             letterSpacing: 0.5,
                           ),
@@ -628,7 +629,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                           Text(
                             'OpenStreetMap',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: Responsive.fontSize(context, 10),
                               color: Colors.green[700],
                               fontWeight: FontWeight.w500,
                             ),
@@ -672,7 +673,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: Responsive.fontSize(context, 11),
               fontWeight: FontWeight.w500,
               color: Colors.grey[800],
               letterSpacing: 0.3,

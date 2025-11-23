@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import '../utils/responsive.dart';
 import 'welcome_screen.dart';
 
 // 🔄 V3.0 Loading Stages
@@ -259,9 +260,9 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                 child: Text(
                   message,
                   key: ValueKey(message),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: Responsive.fontSize(context, 16),
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.5,
                   ),
@@ -284,7 +285,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                 'Korak ${stage.index + 1} od ${LoadingStage.values.length}',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
+                  fontSize: Responsive.fontSize(context, 12),
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -394,7 +395,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
           'GAVRA TRANSPORT',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 28,
+            fontSize: Responsive.fontSize(context, 28),
             fontWeight: FontWeight.w800,
             letterSpacing: 2.0,
             shadows: [
@@ -411,7 +412,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
           'Sistem za upravljanje prevozom',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.9),
-            fontSize: 14,
+            fontSize: Responsive.fontSize(context, 14),
             fontWeight: FontWeight.w400,
             letterSpacing: 0.5,
           ),
@@ -464,7 +465,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
               '${(progress * 100).toInt()}%',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 12,
+                fontSize: Responsive.fontSize(context, 12),
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -42,4 +42,11 @@ class Responsive {
 
   /// A convenience helper to compute adaptive heights (fractional)
   static double adaptiveHeight(BuildContext context, double fraction) => MediaQuery.of(context).size.height * fraction;
+
+  /// Use for heights like appBar height. Scales based on screen height but clamped.
+  static double height(BuildContext context, double base) {
+    final heightFactor = MediaQuery.of(context).size.height / 800; // baseline 800
+    final factor = heightFactor.clamp(0.8, 1.3);
+    return base * factor;
+  }
 }

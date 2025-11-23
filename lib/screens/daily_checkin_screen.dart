@@ -10,6 +10,7 @@ import '../screens/home_screen.dart';
 // import '../services/dnevni_kusur_service.dart';
 import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../utils/smart_colors.dart';
 import '../utils/vozac_boja.dart';
 
@@ -261,8 +262,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         appBar: AppBar(
           title: Text(
             'Dnevna Prijava - ${widget.vozac}',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
+              fontSize: Responsive.fontSize(context, 20),
               fontWeight: FontWeight.w700,
               shadows: [
                 Shadow(
@@ -341,7 +343,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       Text(
                         'Dobro jutro',
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: Responsive.fontSize(context, 32),
                           fontWeight: FontWeight.w300,
                           color: primaryTextColor,
                           shadows: [
@@ -358,7 +360,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                       Text(
                         widget.vozac,
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: Responsive.fontSize(context, 28),
                           fontWeight: FontWeight.bold,
                           color: vozacColor.withValues(alpha: 0.9),
                           letterSpacing: 1.2,
@@ -403,7 +405,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                                 'Unesite iznos sitnog novca za kusur',
                                 style: TextStyle(
                                   color: secondaryTextColor,
-                                  fontSize: 16,
+                                  fontSize: Responsive.fontSize(context, 16),
                                 ),
                               ),
                             ),
@@ -431,7 +433,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                           keyboardType: TextInputType.number,
                           style: TextStyle(
                             color: primaryTextColor,
-                            fontSize: 24,
+                            fontSize: Responsive.fontSize(context, 24),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                           ),
@@ -440,12 +442,12 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                             hintText: '0',
                             hintStyle: TextStyle(
                               color: primaryTextColor.withValues(alpha: 0.4),
-                              fontSize: 24,
+                              fontSize: Responsive.fontSize(context, 24),
                             ),
                             suffixText: 'RSD',
                             suffixStyle: TextStyle(
                               color: vozacColor,
-                              fontSize: 18,
+                              fontSize: Responsive.fontSize(context, 18),
                               fontWeight: FontWeight.w600,
                             ),
                             filled: true,
@@ -501,10 +503,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                                     strokeWidth: 2,
                                   ),
                                 )
-                              : const Text(
+                              : Text(
                                   'Potvrdi',
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: Responsive.fontSize(context, 18),
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1.0,
                                   ),
@@ -581,7 +583,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
               style: TextStyle(
                 color: vozacColor,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: Responsive.fontSize(context, 16),
               ),
             ),
           ],
@@ -604,7 +606,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                     child: Text(
                       '👤 VOZAČ: ${widget.vozac}',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: Responsive.fontSize(context, 16),
                         fontWeight: FontWeight.bold,
                         color: vozacColor,
                       ),
@@ -678,7 +680,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         child: Text(
                           '💡 Sada možete uneti sitan novac za današnji dan.',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: Responsive.fontSize(context, 12),
                             fontStyle: FontStyle.italic,
                             color: vozacColor.withValues(alpha: 0.8),
                           ),
@@ -732,7 +734,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
               child: Text(
                 '🤖 AUTOMATSKI POPIS - ${datum.day}.${datum.month}.${datum.year}',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Responsive.fontSize(context, 16),
                   fontWeight: FontWeight.bold,
                   color: vozacColor, // PROMENJEN: Koristi boju vozača
                 ),
@@ -774,7 +776,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                             child: Text(
                               'Pošto niste uradili ručni popis juče, aplikacija je automatski generisala popis.',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: Responsive.fontSize(context, 12),
                                 color: deepVozacColor, // TAMNA verzija vozačeve boje
                               ),
                             ),
@@ -799,7 +801,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
                         child: Text(
                           '🤖 AUTOMATSKI VOZAČ: ${widget.vozac}',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: Responsive.fontSize(context, 16),
                             fontWeight: FontWeight.bold,
                             color: deepVozacColor, // TAMNA verzija vozačeve boje
                           ),
@@ -878,7 +880,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: Responsive.fontSize(context, 13), fontWeight: FontWeight.w500),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -890,7 +892,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
             child: Text(
               value,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: Responsive.fontSize(context, 13),
                 fontWeight: FontWeight.bold,
                 color: color,
               ),

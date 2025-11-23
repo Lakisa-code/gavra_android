@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gavra_android/services/address_geocoding_batch_service.dart';
 
 import '../../theme.dart';
+import '../../utils/responsive.dart';
 
 /// Admin screen za batch geocoding adresa
 class AddressGeocodingScreen extends StatefulWidget {
@@ -168,11 +169,11 @@ class _AddressGeocodingScreenState extends State<AddressGeocodingScreen> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: SingleChildScrollView(
-                            child: Text(
+                              child: Text(
                               _log.isEmpty ? 'Nema log poruka...' : _log,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'monospace',
-                                fontSize: 12,
+                                fontSize: Responsive.fontSize(context, 12),
                               ),
                             ),
                           ),

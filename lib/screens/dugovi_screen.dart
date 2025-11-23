@@ -6,6 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../theme.dart';
+import '../utils/responsive.dart';
 import '../widgets/custom_back_button.dart';
 import '../widgets/putnik_list.dart';
 
@@ -307,7 +308,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                             'Dužnici',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
+                              fontSize: Responsive.fontSize(context, 18),
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
                               shadows: [
@@ -415,7 +416,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         color: Colors.indigo.shade600,
                       ),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: Responsive.fontSize(context, 13),
                         color: Colors.indigo.shade800,
                         fontWeight: FontWeight.w500,
                       ),
@@ -459,7 +460,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     value: _sortBy,
                     icon: Icon(Icons.sort, color: Colors.indigo.shade600),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: Responsive.fontSize(context, 13),
                       color: Colors.indigo.shade800,
                       fontWeight: FontWeight.w500,
                     ),
@@ -508,7 +509,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       Text(
                         isHealthy ? 'Prikazano: $filteredCount od $totalCount dužnika' : 'Podaci se učitavaju...',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: Responsive.fontSize(context, 12),
                           color: Colors.indigo.shade600,
                           fontStyle: isHealthy ? FontStyle.normal : FontStyle.italic,
                         ),
@@ -518,7 +519,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         Text(
                           'Ukupan dug: ${totalDebt.toStringAsFixed(0)} RSD',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: Responsive.fontSize(context, 11),
                             color: Colors.red.shade600,
                             fontWeight: FontWeight.w600,
                           ),
@@ -640,7 +641,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
           Text(
             'Nema neplaćenih putnika!',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: Responsive.fontSize(context, 18),
               color: Colors.green.shade600,
               fontWeight: FontWeight.w600,
             ),
