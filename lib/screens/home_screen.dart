@@ -18,6 +18,7 @@ import '../services/realtime_service.dart';
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
+import '../utils/responsive.dart';
 import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
@@ -1527,8 +1528,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Center(
                     child: Text(
                       'REZERVACIJE - ERROR',
-                      style: TextStyle(
-                        fontSize: 17,
+                        style: TextStyle(
+                        fontSize: Responsive.fontSize(context, 17),
                         fontWeight: FontWeight.w800,
                         color: Theme.of(context).colorScheme.onError,
                         letterSpacing: 1.8,
@@ -1574,31 +1575,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return dayMatch && timeMatch;
         });
         // Additional filters for display
-        filtered = filtered.where((putnik) {
-          final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
-          final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
-          final imaGrad = putnik.grad.toString().trim().isNotEmpty;
-          final imaDan = putnik.dan.toString().trim().isNotEmpty;
-          final danBaza = _selectedDay;
-          final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
-          final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
-          final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
-          final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
-            putnik.grad,
-            putnik.adresa,
-            _selectedGrad,
-          );
-          final odgovarajuceVreme =
-              GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
-          final prikazi = imaVreme &&
-              imaGrad &&
-              imaDan &&
-              odgovarajuciDan &&
-              odgovarajuciGrad &&
-              odgovarajuceVreme &&
-              normalizedStatus != 'obrisan';
-          return prikazi;
-        });
+        // (No extra filter here — keep the earlier day/time filter only)
         final sviPutnici = filtered.toList();
 
         // DEDUPLIKACIJA PO COMPOSITE KLJUČU: id + polazak + dan
@@ -1607,9 +1584,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final key = '${p.id}_${p.polazak}_${p.dan}';
           uniquePutnici[key] = p;
         }
-        final sviPutniciBezDuplikata = uniquePutnici.values.toList();
-
-        // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN
         // 🔧 POPRAVLJENO: Koristi isti metod kao Danas Screen za konzistentnost
         // 🔧 JEDNOSTAVNO BROJANJE: Bez SlotUtils komplikacija
         final Map<String, int> brojPutnikaBC = {
@@ -1704,6 +1678,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return kopija;
         }
 
+        // Remove duplicates and prepare list for display
+        final sviPutniciBezDuplikata = uniquePutnici.values.toList();
         final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
 
         // Sortiranje putnika
@@ -1777,7 +1753,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             child: Text(
                               'R E Z E R V A C I J E',
                               style: TextStyle(
-                                fontSize: 21,
+                                fontSize: Responsive.fontSize(context, 21),
                                 fontWeight: FontWeight.w800,
                                 color: Theme.of(context).colorScheme.onPrimary,
                                 letterSpacing: 1.8,
@@ -2353,7 +2329,7 @@ class _HomeScreenButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           // no boxShadow — keep transparent glass + border only
         ),
-            child: Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
