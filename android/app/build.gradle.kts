@@ -9,14 +9,6 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-apply(plugin = "com.huawei.agconnect")
-
-// The AGC plugin was causing resolution failures in some environments. For local debug runs we
-// don't need to apply the AGC Gradle plugin — it's used mainly for release / AGC-specific tasks.
-// If you need AGC plugin locally, uncomment the line below after ensuring the plugin artifact
-// is available in the configured repositories or your environment.
-// apply(plugin = "com.huawei.agconnect")
-
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
@@ -26,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 36
+    compileSdk = 34
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -39,24 +31,16 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
-    packaging {
-        jniLibs.pickFirsts.add("**/libc++_shared.so")
-        jniLibs.pickFirsts.add("**/libjsc.so")
-    }
-
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        minSdk = 21
+        targetSdk = 34
         
         // 🎮 XIAOMI GAMING OPTIMIZACIJE - Flutter handles ABI filtering automatically
         versionCode = 1
         versionName = "6.0.0"
-        
-        // 🔧 Multidex support for large APKs
-        multiDexEnabled = true
     }
 
     // 🔐 PRODUCTION SIGNING CONFIGURATION
@@ -73,9 +57,9 @@ android {
 
     buildTypes {
         release {
-            // 🚀 PRODUCTION OPTIMIZATIONS - Temporarily disabled minification for debugging
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // 🚀 PRODUCTION OPTIMIZATIONS
+            isMinifyEnabled = true
+            isShrinkResources = true
             
             // ProGuard configuration for code obfuscation
             proguardFiles(
@@ -92,34 +76,31 @@ android {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
-    // 🔧 Multidex support
-    implementation("androidx.multidex:multidex:2.0.1")
-
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
 
-    // Huawei HMS
-    implementation(platform("com.huawei.hms:push:6.13.0.300"))
+    // Add Firebase Cloud Messaging
+    implementation("com.google.firebase:firebase-messaging")
 
-    // 🚀 Dependency Resolution - ensure versions for required Android libraries
-    implementation("androidx.work:work-runtime:2.8.1")
-    implementation("androidx.cardview:cardview:1.0.0")
-    implementation("androidx.browser:browser:1.3.0")
+    // 🚀 OneSignal Dependency Resolution - Force compatible versions
+    implementation("androidx.work:work-runtime:2.8.1") {
+        because("OneSignal requires work-runtime")
+    }
+    implementation("androidx.cardview:cardview:1.0.0") {
+        because("OneSignal in-app-messages requires cardview")
+    }
+    implementation("androidx.browser:browser:1.3.0") {
+        because("OneSignal in-app-messages requires browser")
+    }
 
-    // Force Firebase messaging to a known-good version
-    implementation("com.google.firebase:firebase-messaging:23.4.0")
+    // Force Firebase messaging version for OneSignal compatibility
+    implementation("com.google.firebase:firebase-messaging:23.4.0") {
+        because("OneSignal requires firebase-messaging [21.0.0, 23.4.99]")
+    }
 
-    // 🚀 Google Play Core - Resolved dependency conflict
-    configurations.all {
-        resolutionStrategy {
-            // Force all Google Play Core dependencies to use the same version
-            force("com.google.android.play:core-common:2.0.3")
-            force("com.google.android.play:feature-delivery:2.1.0")
-            // Completely exclude the conflicting old version
-            exclude(group = "com.google.android.play", module = "core")
-        }
-        // Exclude all transitive dependencies of the old core library
-        exclude(group = "com.google.android.play", module = "core")
+    // 🚀 Google Play Core for production features (R8 fix)
+    implementation("com.google.android.play:core:1.10.3") {
+        because("Required for Flutter Play Store integration and R8 compatibility")
     }
 }
 
