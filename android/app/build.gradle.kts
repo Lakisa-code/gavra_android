@@ -19,88 +19,9 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
-android {
-    namespace = "com.gavra013.gavra_android"
-    // Use SDK 35 locally (matches current toolchain); this was a user-local change preserved
-    // while we reverted the unified build commit that adjusted some CI settings.
-    compileSdk = 35
-    ndkVersion = "27.0.12077973"
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
-    }
-
-    defaultConfig {
-        applicationId = "com.gavra013.gavra_android"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = 35
-        
-        // 🎮 XIAOMI GAMING OPTIMIZACIJE - Flutter handles ABI filtering automatically
-        versionCode = 1
-        versionName = "6.0.0"
-    }
-
-    // 🔐 PRODUCTION SIGNING CONFIGURATION
-    signingConfigs {
-        create("release") {
-            if (keystoreProperties.containsKey("keyAlias")) {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-            }
-        }
-    }
-
-    buildTypes {
-        release {
-            // 🚀 PRODUCTION OPTIMIZATIONS
-            isMinifyEnabled = true
-            isShrinkResources = true
-            
-            // ProGuard configuration for code obfuscation
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            
-            // 🔐 Production signing configuration
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
-
-    packaging {
-        jniLibs.pickFirsts.add("**/libc++_shared.so")
-        jniLibs.pickFirsts.add("**/libjsc.so")
-    }
-
-    // 🔧 Multidex support for large APKs
-    defaultConfig {
-        // (handled above)
-    }
-
-    // 🔐 PRODUCTION SIGNING CONFIGURATION remains unchanged above
-
-    buildTypes {
-        named("release") {
-            isMinifyEnabled = false
-            isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            signingConfig = signingConfigs.getByName("release")
-        }
-    }
-}
+// The 'android' configuration below (further down) contains the latest local build options
+// (compileSdk=35, packaging, multidex, and release buildType). The earlier duplicate block
+// has been removed to avoid conflicts and duplicate SigningConfig definitions.
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
