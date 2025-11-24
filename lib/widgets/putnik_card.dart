@@ -1816,24 +1816,28 @@ class _PutnikCardState extends State<PutnikCard> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // 📅 MESEČNA KARTA TEKST - sa fiksnom visinom da ne utiče na poravnavanje
-                              SizedBox(
-                                height: _putnik.mesecnaKarta == true ? 16 : 0,
-                                child: _putnik.mesecnaKarta == true
-                                    ? Padding(
-                                        padding: const EdgeInsets.only(bottom: 4),
-                                        child: Text(
-                                          '📅 MESEČNA KARTA',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context).colorScheme.successPrimary,
-                                            letterSpacing: 0.3,
-                                          ),
-                                        ),
-                                      )
-                                    : null,
-                              ),
+                              // 📅 MESEČNA KARTA BADGE — make it a proper badge above icons
+                              if (_putnik.mesecnaKarta == true)
+                                Align(
+                                  alignment: Alignment.topRight,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '📅 MESEČNA',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.successPrimary,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               // 🎯 ULTRA-SAFE ADAPTIVE ACTION IKONE - potpuno eliminiše overflow
                               LayoutBuilder(
                                 builder: (context, constraints) {

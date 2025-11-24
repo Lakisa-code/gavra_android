@@ -5,7 +5,9 @@ buildscript {
         maven { url = uri("https://developer.huawei.com/repo/") }
     }
     dependencies {
-        classpath("com.huawei.agconnect:agcp:1.6.5.300")
+        // upgraded to 8.6.0 to match settings.gradle.kts; keeps root buildscript consistent
+        classpath("com.android.tools.build:gradle:8.6.0")
+        classpath("com.huawei.agconnect:agcp:1.9.4.300")
     }
 }
 

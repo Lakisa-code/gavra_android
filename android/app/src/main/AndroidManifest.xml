@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  xmlns:tools="http://schemas.android.com/tools">
+  xmlns:tools="http://schemas.android.com/tools"
+  package="com.gavra013.gavra_android">
 
   <!-- 🗺️ GPS/Location permissions -->
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
