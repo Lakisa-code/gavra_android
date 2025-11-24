@@ -9,6 +9,8 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+apply(plugin = "com.huawei.agconnect")
+
 // The AGC plugin was causing resolution failures in some environments. For local debug runs we
 // don't need to apply the AGC Gradle plugin — it's used mainly for release / AGC-specific tasks.
 // If you need AGC plugin locally, uncomment the line below after ensuring the plugin artifact

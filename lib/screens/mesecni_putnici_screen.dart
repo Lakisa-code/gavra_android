@@ -1789,7 +1789,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                                   'Plaćeno: ${DateFormat('dd.MM').format(putnik.vremePlacanja!)}',
                                                   style: TextStyle(
                                                     fontSize: 12,
-                                                    color: Colors.green.shade600,
+                                                    // Ako imamo ime vozača iz strema, koristimo njegovu boju
+                                                    color: VozacBoja.getColorOrDefault(
+                                                      vozacIme,
+                                                      Colors.green.shade600,
+                                                    ),
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                 ),

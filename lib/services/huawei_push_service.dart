@@ -30,18 +30,18 @@ class HuaweiPushService {
         if (newToken != null) await _registerTokenWithServer(newToken);
       });
 
-      // Some plugin versions provide a synchronous token fetch method. We'll try
-      // to call it, but ignore errors — the stream listener will catch updates.
+      // The plugin emits tokens asynchronously on the stream. Wait a short while for the first
+      // non-null stream value so that initialization can report a token when
+      // one is available immediately after startup.
       try {
-        // Many versions of the plugin expose a getToken method; if its signature
-        // differs this call may throw and that's fine — we rely on the stream.
-        final dynamic maybeToken = await (Push as dynamic).getToken('');
-        if (maybeToken is String && maybeToken.isNotEmpty) {
-          await _registerTokenWithServer(maybeToken);
-          return maybeToken;
+        final firstValue = await Push.getTokenStream.first.timeout(const Duration(seconds: 3));
+        if (firstValue.isNotEmpty) {
+          await _registerTokenWithServer(firstValue);
+          return firstValue;
         }
       } catch (_) {
-        // Ignore - stream handler will pick up tokens when available
+        // No token arriving quickly — that's OK, the long-lived stream will
+        // still handle tokens once they become available.
       }
 
       return null;

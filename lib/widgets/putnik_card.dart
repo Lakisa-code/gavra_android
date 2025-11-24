@@ -1700,7 +1700,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                         0xFF0D47A1,
                                       ) // 🔵 PLAVO za pokupljene neplaćene
                                 : Colors.black, // ⚪ BELO za nepokupljene
-                    size: 20,
+                    size: 18,
                   ),
                   const SizedBox(width: 7),
                   Expanded(
@@ -1728,8 +1728,10 @@ class _PutnikCardState extends State<PutnikCard> {
                                         : Colors.black, // ⚪ BELO za nepokupljene
                             letterSpacing: 0.5,
                           ),
+                          // Allow the name to wrap to two lines on narrower screens
+                          // so it doesn't get aggressively truncated by the action icons.
                           overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                          maxLines: 2,
                         ),
                         // 🏠 ADRESE - prikaži adrese za mesečne putnike ili staru adresu za dnevne
                         if (_putnik.mesecnaKarta == true)
@@ -1854,9 +1856,14 @@ class _PutnikCardState extends State<PutnikCard> {
                                           ? 18 // smanjio sa 21
                                           : 20); // smanjio sa 24
 
-                                  return Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
+                                  // Use a Wrap for action icons so they can flow to a
+                                  // second line on very narrow devices instead of
+                                  // compressing the name text down to a single line.
+                                  return Wrap(
+                                    alignment: WrapAlignment.end,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    spacing: 6,
+                                    runSpacing: 4,
                                     children: [
                                       // 📍 GPS IKONA ZA NAVIGACIJU - ako postoji adresa (mesečni ili dnevni putnik)
                                       if ((_putnik.mesecnaKarta == true) ||
@@ -2130,9 +2137,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(
-                                          width: 0,
-                                        ), // Adaptive spacing - uvek 0
+                                        // keep spacing minimal for compact layout
                                       ],
                                       // 📞 TELEFON IKONA - ako putnik ima telefon
                                       if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) ...[
@@ -2153,7 +2158,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 0),
+                                        // spacer removed to let Wrap spacing control gaps
                                       ],
                                       // 💰 IKONA ZA PLAĆANJE - za sve korisnike (3. po redu)
                                       if (!_putnik.jeOtkazan &&
@@ -2176,7 +2181,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 0),
+                                        // spacer removed to let Wrap spacing control gaps
                                       ],
                                       // ❌ IKS DUGME - za sve korisnike (4. po redu)
                                       // Vozači: direktno otkazivanje | Admini: popup sa opcijama

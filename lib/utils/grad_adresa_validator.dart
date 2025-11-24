@@ -176,7 +176,7 @@ class GradAdresaValidator {
     );
   }
 
-  /// ⏰ NORMALIZUJ VREME - konvertuj "05:00:00" u "05:00", osiguraj vodeću nulu za minute
+  /// ⏰ NORMALIZUJ VREME - konvertuj "05:00:00" u "5:00", osiguraj vodeću nulu za minute
   static String normalizeTime(String? time) {
     if (time == null || time.isEmpty) {
       return '';
@@ -190,10 +190,10 @@ class GradAdresaValidator {
       normalized = '${parts[0]}:${parts[1]}';
     }
 
-    // Ensure minutes have leading zero
+    // Ensure minutes have leading zero, remove leading zero from hours
     final parts = normalized.split(':');
     if (parts.length == 2) {
-      final h = parts[0];
+      final h = int.tryParse(parts[0])?.toString() ?? parts[0];
       final m = parts[1].padLeft(2, '0');
       normalized = '$h:$m';
     }

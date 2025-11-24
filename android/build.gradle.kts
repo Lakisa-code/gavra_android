@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://developer.huawei.com/repo/") }
+    }
+    dependencies {
+        classpath("com.huawei.agconnect:agcp:1.6.5.300")
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -20,7 +31,6 @@ allprojects {
 
 plugins {
     id("com.google.gms.google-services") version "4.3.15" apply false
-    // AGC plugin will be provided via the legacy buildscript classpath (see buildscript {} above)
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()

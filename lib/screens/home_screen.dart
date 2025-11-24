@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -66,6 +67,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
+
+  // Debug-only cache for last printed count values so we don't spam logs
+  int? _lastBc6Count;
+  int? _lastBcTotalCount;
 
   // 🚨 REALTIME MONITORING VARIABLES
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
@@ -1685,8 +1690,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           }
         }
 
-        print('🏠 HOME: BC 6:00 = ${brojPutnikaBC['6:00']}');
-        print('🏠 HOME: Ukupno BC putnika = ${brojPutnikaBC.values.fold(0, (a, b) => a + b)}');
+        if (kDebugMode) {
+          final bc600 = brojPutnikaBC['6:00'] ?? 0;
+          final ukupno = brojPutnikaBC.values.fold(0, (a, b) => a + b);
+          if (_lastBc6Count != bc600 || _lastBcTotalCount != ukupno) {
+            debugPrint('🏠 HOME: BC 6:00 = $bc600');
+            debugPrint('🏠 HOME: Ukupno BC putnika = $ukupno');
+            _lastBc6Count = bc600;
+            _lastBcTotalCount = ukupno;
+          }
+        }
 
         // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
         List<Putnik> sortiraniPutnici(List<Putnik> lista) {

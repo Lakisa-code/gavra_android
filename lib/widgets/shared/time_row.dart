@@ -63,7 +63,7 @@ class TimeRow extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             margin: const EdgeInsets.only(left: 6, right: 6),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.08),
+                              color: Colors.blue.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(text,
@@ -118,7 +118,7 @@ class TimeRow extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             margin: const EdgeInsets.only(left: 6, right: 6),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.08),
+                              color: Colors.blue.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(text,

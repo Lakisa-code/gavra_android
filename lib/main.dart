@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_api_availability/google_api_availability.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -75,7 +75,8 @@ void main() async {
       print('Init: Google Play Services NOT available (status=$availability) -> trying HMS');
       try {
         final token = await HuaweiPushService().initialize();
-        debugPrint('HMS init attempt returned token: ${token ?? 'null'}');
+        debugPrint(
+            'HMS init attempt returned token: ${token ?? 'null'} (no immediate token available — stream will register later if a token arrives)');
       } catch (e) {
         debugPrint('HMS initialization attempt failed: $e');
       }
@@ -93,7 +94,8 @@ void main() async {
       print('Fallback: Huawei Push initialized despite prior error: $e');
       try {
         final token = await HuaweiPushService().initialize();
-        debugPrint('HMS fallback init returned token (masked): ${token != null ? '[REDACTED]' : 'null'}');
+        debugPrint(
+            'HMS fallback init returned token (masked): ${token != null ? '[REDACTED]' : 'null'} (no immediate token — stream may register later)');
       } catch (e) {
         debugPrint('HMS fallback initialization attempt failed: $e');
       }
