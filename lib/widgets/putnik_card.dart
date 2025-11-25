@@ -2241,9 +2241,9 @@ class _PutnikCardState extends State<PutnikCard> {
                           'Dodao:',
                           style: TextStyle(
                             fontSize: 13,
-                            // Uvek koristimo boju vozača ako je poznat, u suprotnom default
+                            // Koristi boju vozača koji je dodao, ili trenutnog vozača kao fallback
                             color: VozacBoja.getColorOrDefault(
-                              _putnik.dodaoVozac,
+                              _putnik.dodaoVozac ?? widget.currentDriver,
                               Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                             fontWeight: FontWeight.w500,
@@ -2255,9 +2255,9 @@ class _PutnikCardState extends State<PutnikCard> {
                               : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem'),
                           style: TextStyle(
                             fontSize: 13,
-                            // Izričito koristimo boju vozača za datum/vreme dodavanja
+                            // Koristi boju vozača koji je dodao, ili trenutnog vozača kao fallback
                             color: VozacBoja.getColorOrDefault(
-                              _putnik.dodaoVozac,
+                              _putnik.dodaoVozac ?? widget.currentDriver,
                               Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                             fontWeight: FontWeight.w500,
@@ -2346,8 +2346,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             'Plaćeno',
                             style: TextStyle(
                               fontSize: 13,
+                              // Koristi boju vozača koji je naplatio, ili trenutnog vozača kao fallback
                               color: VozacBoja.getColorOrDefault(
-                                _putnik.naplatioVozac,
+                                _putnik.naplatioVozac ?? widget.currentDriver,
                                 Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                               fontWeight: FontWeight.w500,
@@ -2357,8 +2358,9 @@ class _PutnikCardState extends State<PutnikCard> {
                             '${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
                             style: TextStyle(
                               fontSize: 13,
+                              // Koristi boju vozača koji je naplatio, ili trenutnog vozača kao fallback
                               color: VozacBoja.getColorOrDefault(
-                                _putnik.naplatioVozac,
+                                _putnik.naplatioVozac ?? widget.currentDriver,
                                 Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                               fontStyle: FontStyle.italic,

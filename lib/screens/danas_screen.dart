@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 🎨 DODANO za SystemUiOverlayStyle
 import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 
@@ -1599,58 +1600,60 @@ class _DanasScreenState extends State<DanasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: ThemeManager().currentGradient, // Theme-aware gradijent
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent, // Transparentna pozadina
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-              border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)),
-              // No boxShadow — AppBar should be fully transparent and show only the glass border
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // DATUM TEKST - kao rezervacije
-                    Center(child: _buildDigitalDateDisplay()), // dodano Center widget
-                    const SizedBox(height: 4),
-                    // DUGMAD U APP BAR-U - dinamički broj dugmića
-                    Row(
-                      children: [
-                        // � CLEAN STATS INDIKATOR
-                        Expanded(child: _buildHeartbeatIndicator()),
-                        const SizedBox(width: 2),
-                        // �🎓 ĐAČKI BROJAČ
-                        Expanded(child: _buildDjackiBrojacButton()),
-                        const SizedBox(width: 2),
-                        // 🚀 DUGME ZA OPTIMIZACIJU RUTE
-                        Expanded(child: _buildOptimizeButton()),
-                        const SizedBox(width: 2),
-                        // 📋 DUGME ZA POPIS DANA
-                        Expanded(child: _buildPopisButton()),
-                        const SizedBox(width: 2),
-                        // 🗺️ DUGME ZA NAVIGACIJU (OpenStreetMap / free)
-                        Expanded(child: _buildMapsButton()),
-                        const SizedBox(width: 2),
-                        // ⚡ SPEEDOMETER
-                        Expanded(child: _buildSpeedometerButton()),
-                      ],
-                    ),
-                  ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light, // 🎨 Bele ikonice u status baru
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: ThemeManager().currentGradient, // Theme-aware gradijent
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent, // Transparentna pozadina
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+                border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(25), bottomRight: Radius.circular(25)),
+                // No boxShadow — AppBar should be fully transparent and show only the glass border
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // DATUM TEKST - kao rezervacije
+                      Center(child: _buildDigitalDateDisplay()), // dodano Center widget
+                      const SizedBox(height: 4),
+                      // DUGMAD U APP BAR-U - dinamički broj dugmića
+                      Row(
+                        children: [
+                          // � CLEAN STATS INDIKATOR
+                          Expanded(child: _buildHeartbeatIndicator()),
+                          const SizedBox(width: 2),
+                          // �🎓 ĐAČKI BROJAČ
+                          Expanded(child: _buildDjackiBrojacButton()),
+                          const SizedBox(width: 2),
+                          // 🚀 DUGME ZA OPTIMIZACIJU RUTE
+                          Expanded(child: _buildOptimizeButton()),
+                          const SizedBox(width: 2),
+                          // 📋 DUGME ZA POPIS DANA
+                          Expanded(child: _buildPopisButton()),
+                          const SizedBox(width: 2),
+                          // 🗺️ DUGME ZA NAVIGACIJU (OpenStreetMap / free)
+                          Expanded(child: _buildMapsButton()),
+                          const SizedBox(width: 2),
+                          // ⚡ SPEEDOMETER
+                          Expanded(child: _buildSpeedometerButton()),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : StreamBuilder<List<Putnik>>(
@@ -2301,7 +2304,6 @@ class _DanasScreenState extends State<DanasScreen> {
                         try {
                           await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
                           await RealtimeService.instance.refreshNow();
-                        } catch (e) {
                         } finally {
                           if (mounted) {
                             if (mounted) setState(() => _resettingSlots.remove(key));
@@ -2333,7 +2335,6 @@ class _DanasScreenState extends State<DanasScreen> {
                           try {
                             await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
                             await RealtimeService.instance.refreshNow();
-                          } catch (e) {
                           } finally {
                             if (mounted) {
                               if (mounted) setState(() => _resettingSlots.remove(key));
@@ -2346,7 +2347,7 @@ class _DanasScreenState extends State<DanasScreen> {
           },
         ),
       ), // Zatvaranje Container wrapper-a
-    );
+    ); // Zatvaranje AnnotatedRegion
   }
 
   // 🗺️ NAVIGATION HANDLING IS MANAGED BY SmartNavigationService
