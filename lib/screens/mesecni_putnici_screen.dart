@@ -958,11 +958,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
               const SizedBox(height: 12),
 
-              // � RADNO VREME - prikaži polazak vremena ako je definisan bar jedan dan
+              // 🕐 RADNO VREME - prikaži polazak vremena ako je definisan bar jedan dan
               if (_daniOrder
                   .any((d) => putnik.getPolazakBelaCrkvaZaDan(d) != null || putnik.getPolazakVrsacZaDan(d) != null))
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: Colors.blue.withValues(alpha: 0.05),
@@ -974,107 +974,48 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.schedule,
-                            size: 16,
-                            color: Colors.blue.shade700,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Radno vreme',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade700,
-                              fontSize: 14,
+                      // Kompaktni prikaz - sve u jednom Wrap-u
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _daniOrder.map((dan) {
+                          final bc = putnik.getPolazakBelaCrkvaZaDan(dan);
+                          final vs = putnik.getPolazakVrsacZaDan(dan);
+                          if (bc == null && vs == null) return const SizedBox.shrink();
+
+                          final label =
+                              {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Čet', 'pet': 'Pet'}[dan] ?? dan;
+
+                          // Formatiranje: "Pon: 13→6" umesto dugačkog teksta
+                          String timeText = '';
+                          if (bc != null && vs != null) {
+                            // Oba smera - skraćeno
+                            final bcShort = bc.replaceAll(':00', '');
+                            final vsShort = vs.replaceAll(':00', '');
+                            timeText = '$bcShort→$vsShort';
+                          } else if (bc != null) {
+                            timeText = '🅱️${bc.replaceAll(':00', '')}';
+                          } else if (vs != null) {
+                            timeText = '🅥${vs.replaceAll(':00', '')}';
+                          }
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          // Polazak iz Bele Crkve
-                          // Prikaži sve dane koji imaju polaske (po redu pon..pet)
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _daniOrder.map((dan) {
-                                final bc = putnik.getPolazakBelaCrkvaZaDan(dan);
-                                final vs = putnik.getPolazakVrsacZaDan(dan);
-                                if (bc == null && vs == null) return const SizedBox.shrink();
-
-                                // Lokalizovana kratka oznaka dana
-                                final label =
-                                    {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Čet', 'pet': 'Pet'}[dan] ?? dan;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 36,
-                                        child: Text(
-                                          label + ':',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade600,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      if (bc != null) ...[
-                                        const SizedBox(width: 6),
-                                        Icon(
-                                          Icons.departure_board,
-                                          size: 14,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            'B.Crkva: $bc',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade700,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                      if (vs != null) ...[
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          Icons.departure_board,
-                                          size: 14,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            'Vršac: $vs',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade700,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
+                            child: Text(
+                              '$label: $timeText',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue.shade800,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-
-                          // (BC i VS su prikazani unutar liste po danima iznad)
-                        ],
+                          );
+                        }).toList(),
                       ),
-
                       // Radni dani
                       if (putnik.radniDani.isNotEmpty) ...[
                         const SizedBox(height: 6),

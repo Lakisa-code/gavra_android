@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
@@ -1372,147 +1373,154 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     // ✅ PROVERAVAJ LOADING STANJE ODMAH
     if (_isLoading) {
-      return Scaffold(
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(74),
-          child: Container(
-            decoration: BoxDecoration(
-              // Keep appbar fully transparent so underlying gradient shows
-              color: Theme.of(context).glassContainer,
-              border: Border.all(
-                color: Theme.of(context).glassBorder,
-                width: 1.5,
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(74),
+            child: Container(
+              decoration: BoxDecoration(
+                // Keep appbar fully transparent so underlying gradient shows
+                color: Theme.of(context).glassContainer,
+                border: Border.all(
+                  color: Theme.of(context).glassBorder,
+                  width: 1.5,
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(25),
+                  bottomRight: Radius.circular(25),
+                ),
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    // REZERVACIJE - levo
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        height: 35,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Rezervacije',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            letterSpacing: 0.5,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(1, 1),
-                                blurRadius: 3,
-                                color: Colors.black54,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      // REZERVACIJE - levo
+                      Expanded(
+                        flex: 3,
+                        child: Container(
+                          height: 35,
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Rezervacije',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                letterSpacing: 0.5,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(1, 1),
+                                    blurRadius: 3,
+                                    color: Colors.black54,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // LOADING - sredina
+                      Expanded(
+                        flex: 2,
+                        child: Container(
+                          height: 35,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Učitavam...',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    color: Theme.of(context).colorScheme.onPrimary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
 
-                    // LOADING - sredina
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        height: 35,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Theme.of(context).colorScheme.onPrimary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                'Učitavam...',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.onPrimary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                      // PRAZAN PROSTOR - desno
+                      Expanded(
+                        flex: 3,
+                        child: Container(
+                          height: 35,
                         ),
                       ),
-                    ),
-
-                    // PRAZAN PROSTOR - desno
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        height: 35,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: ThemeManager().currentGradient, // 🎨 Dinamički gradijent iz tema
+            ),
+            child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
           ),
-          child: ShimmerWidgets.putnikListShimmer(itemCount: 8),
+          // 🔧 DODAJ BOTTOM NAVIGATION BAR I U LOADING STANJU!
+          bottomNavigationBar: isZimski(DateTime.now())
+              ? BottomNavBarZimski(
+                  sviPolasci: _sviPolasci,
+                  selectedGrad: _selectedGrad,
+                  selectedVreme: _selectedVreme,
+                  getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
+                  onPolazakChanged: (grad, vreme) {
+                    if (mounted) {
+                      setState(() {
+                        _selectedGrad = grad;
+                        _selectedVreme = vreme;
+                        _selectedGradSubject.add(grad);
+                      });
+                    }
+                  },
+                )
+              : BottomNavBarLetnji(
+                  sviPolasci: _sviPolasci,
+                  selectedGrad: _selectedGrad,
+                  selectedVreme: _selectedVreme,
+                  getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
+                  onPolazakChanged: (grad, vreme) {
+                    if (mounted) {
+                      setState(() {
+                        _selectedGrad = grad;
+                        _selectedVreme = vreme;
+                        _selectedGradSubject.add(grad);
+                      });
+                    }
+                  },
+                ),
         ),
-        // 🔧 DODAJ BOTTOM NAVIGATION BAR I U LOADING STANJU!
-        bottomNavigationBar: isZimski(DateTime.now())
-            ? BottomNavBarZimski(
-                sviPolasci: _sviPolasci,
-                selectedGrad: _selectedGrad,
-                selectedVreme: _selectedVreme,
-                getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
-                onPolazakChanged: (grad, vreme) {
-                  if (mounted) {
-                    setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                      _selectedGradSubject.add(grad);
-                    });
-                  }
-                },
-              )
-            : BottomNavBarLetnji(
-                sviPolasci: _sviPolasci,
-                selectedGrad: _selectedGrad,
-                selectedVreme: _selectedVreme,
-                getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
-                onPolazakChanged: (grad, vreme) {
-                  if (mounted) {
-                    setState(() {
-                      _selectedGrad = grad;
-                      _selectedVreme = vreme;
-                      _selectedGradSubject.add(grad);
-                    });
-                  }
-                },
-              ),
       );
     }
 
@@ -1521,360 +1529,486 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Use a parametric stream filtered to the currently selected day
     // so monthly passengers (mesecni_putnici) are created for that day
     // and will appear in the list/counts for arbitrary selected day.
-    return StreamBuilder<List<Putnik>>(
-      stream: _putnikService.streamKombinovaniPutniciFiltered(
-        isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
-      ),
-      builder: (context, snapshot) {
-        // 🚨 DEBUG: Log state information
-        // 🚨 NOVO: Error handling sa specialized widgets
-        if (snapshot.hasError) {
-          return Scaffold(
-            appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(93),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).glassContainer,
-                  border: Border.all(
-                    color: Theme.of(context).glassBorder,
-                    width: 1.5,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: StreamBuilder<List<Putnik>>(
+        stream: _putnikService.streamKombinovaniPutniciFiltered(
+          isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+        ),
+        builder: (context, snapshot) {
+          // 🚨 DEBUG: Log state information
+          // 🚨 NOVO: Error handling sa specialized widgets
+          if (snapshot.hasError) {
+            return Scaffold(
+              appBar: PreferredSize(
+                preferredSize: const Size.fromHeight(93),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).glassContainer,
+                    border: Border.all(
+                      color: Theme.of(context).glassBorder,
+                      width: 1.5,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(25),
+                      bottomRight: Radius.circular(25),
+                    ),
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
-                  ),
-                ),
-                child: SafeArea(
-                  child: Center(
-                    child: Text(
-                      'REZERVACIJE - ERROR',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.onError,
-                        letterSpacing: 1.8,
+                  child: SafeArea(
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'REZERVACIJE - ERROR',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onError,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            body: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        // 🔧 POPRAVLJENO: Prikažemo prazan UI umesto beskonačnog loading-a
-        if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
-          // Umesto beskonačnog čekanja, nastavi sa praznom listom
-          // StreamBuilder će se ažurirati kada podaci stignu
-        }
-
-        final allPutnici = snapshot.data ?? [];
-
-        // Get target day abbreviation for additional filtering
-        final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
-        final date = DateTime.parse(targetDateIso);
-        const dayAbbrs = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-        final targetDayAbbr = dayAbbrs[date.weekday - 1];
-
-        // Additional client-side filtering like danas_screen
-        Iterable<Putnik> filtered = allPutnici.where((p) {
-          // Dan u nedelji filter za mesečne putnike
-          final dayMatch =
-              p.datum != null ? p.datum == targetDateIso : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
-
-          // Vremski filter - samo poslednja nedelja za dnevne putnike
-          bool timeMatch = true;
-          if (p.mesecnaKarta != true && p.vremeDodavanja != null) {
-            final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
-            timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
+              body: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
           }
 
-          return dayMatch && timeMatch;
-        });
-        // Capture passengers for the selected day (but before applying the
-        // selected-time filter). We use this set for counting bottom-bar slots
-        // because the bottom counts should reflect the whole day (all times),
-        // not just the currently selected time.
-        final putniciZaDan = filtered.toList();
-
-        // Additional filters for display (applies time/grad/status and is used
-        // to build the visible list). This operates on the putniciZaDan list.
-        filtered = putniciZaDan.where((putnik) {
-          final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
-          final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
-          final imaGrad = putnik.grad.toString().trim().isNotEmpty;
-          final imaDan = putnik.dan.toString().trim().isNotEmpty;
-          final danBaza = _selectedDay;
-          final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
-          final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
-          final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
-          final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
-            putnik.grad,
-            putnik.adresa,
-            _selectedGrad,
-          );
-          final odgovarajuceVreme =
-              GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
-          final prikazi = imaVreme &&
-              imaGrad &&
-              imaDan &&
-              odgovarajuciDan &&
-              odgovarajuciGrad &&
-              odgovarajuceVreme &&
-              normalizedStatus != 'obrisan';
-          return prikazi;
-        });
-        final sviPutnici = filtered.toList();
-
-        // DEDUPLIKACIJA PO COMPOSITE KLJUČU: id + polazak + dan
-        final Map<String, Putnik> uniquePutnici = {};
-        for (final p in sviPutnici) {
-          final key = '${p.id}_${p.polazak}_${p.dan}';
-          uniquePutnici[key] = p;
-        }
-        final sviPutniciBezDuplikata = uniquePutnici.values.toList();
-
-        // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN (deduplikovane)
-        // Koristimo `putniciZaDan` iznad kao izvor za brojače kako bismo
-        // računali broj jedinstvenih putnika po polasku za ceo dan.
-        final Map<String, int> brojPutnikaBC = {
-          '5:00': 0,
-          '6:00': 0,
-          '7:00': 0,
-          '8:00': 0,
-          '9:00': 0,
-          '11:00': 0,
-          '12:00': 0,
-          '13:00': 0,
-          '14:00': 0,
-          '15:30': 0,
-          '18:00': 0,
-        };
-        final Map<String, int> brojPutnikaVS = {
-          '6:00': 0,
-          '7:00': 0,
-          '8:00': 0,
-          '10:00': 0,
-          '11:00': 0,
-          '12:00': 0,
-          '13:00': 0,
-          '14:00': 0,
-          '15:30': 0,
-          '17:00': 0,
-          '19:00': 0,
-        };
-
-        // Use the filtered, deduplicated list so counts match the displayed list
-        // DEDUPLICIRAJ za računanje brojača (id + polazak + dan)
-        final Map<String, Putnik> uniqueForCounts = {};
-        for (final p in putniciZaDan) {
-          final key = '${p.id}_${p.polazak}_${p.dan}';
-          uniqueForCounts[key] = p;
-        }
-        final countCandidates = uniqueForCounts.values.toList();
-
-        for (final p in countCandidates) {
-          if (!TextUtils.isStatusActive(p.status)) continue;
-
-          final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-          // Normalize address (strip diacritics, lower-case, etc.) so checks/contains work
-          final normAdresa = GradAdresaValidator.normalizeString(p.adresa);
-
-          // Use both heuristics: quick substring checks and membership in the
-          // curated naselja lists (which are normalized). This keeps behaviour
-          // predictable and allows us to exclude Pavliš / Središte as requested.
-          final jeBelaCrkva = normAdresa.contains('bela') ||
-              normAdresa.contains('bc') ||
-              GradAdresaValidator.naseljaOpstineBelaCrkva.any((n) => normAdresa.contains(n));
-          final jeVrsac = normAdresa.contains('vrsac') ||
-              normAdresa.contains('vs') ||
-              GradAdresaValidator.naseljaOpstineVrsac.any((n) => normAdresa.contains(n));
-
-          if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
-            brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
-          }
-          if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
-            brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
-          }
-        }
-
-        if (kDebugMode) {
-          final bc600 = brojPutnikaBC['6:00'] ?? 0;
-          final ukupno = brojPutnikaBC.values.fold(0, (a, b) => a + b);
-          if (_lastBc6Count != bc600 || _lastBcTotalCount != ukupno) {
-            debugPrint('🏠 HOME: BC 6:00 = $bc600');
-            debugPrint('🏠 HOME: Ukupno BC putnika = $ukupno');
-            _lastBc6Count = bc600;
-            _lastBcTotalCount = ukupno;
-          }
-        }
-
-        // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
-        List<Putnik> sortiraniPutnici(List<Putnik> lista) {
-          int sortKey(Putnik p) {
-            final status = TextUtils.normalizeText(p.status ?? '');
-            // Leave/inactive (bolovanje, godišnji, obrisan) always at the bottom
-            if (status == 'bolovanje' || status == 'godisnji') {
-              return 100;
-            }
-            if (status == 'otkazano' || status == 'otkazan') {
-              return 101;
-            }
-            if (status == 'obrisan' || p.obrisan) {
-              return 102;
-            }
-            // Mesečni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
-            if (p.mesecnaKarta == true) {
-              if (p.vremePokupljenja == null) {
-                return 0; // bela
-              }
-              if (p.iznosPlacanja != null && p.iznosPlacanja! > 0) {
-                return 2; // zelena
-              }
-              return 1; // plava
-            }
-            // Dnevni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
-            if (p.vremePokupljenja == null) return 0; // bela
-            if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
-              return 1; // plava
-            }
-            if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
-              return 2; // zelena
-            }
-            return 99;
+          // 🔧 POPRAVLJENO: Prikažemo prazan UI umesto beskonačnog loading-a
+          if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null) {
+            // Umesto beskonačnog čekanja, nastavi sa praznom listom
+            // StreamBuilder će se ažurirati kada podaci stignu
           }
 
-          final kopija = [...lista];
-          kopija.sort((a, b) {
-            final cmp = sortKey(a).compareTo(sortKey(b));
-            if (cmp != 0) return cmp;
-            // Optionally, secondary sort by ime
-            return a.ime.compareTo(b.ime);
+          final allPutnici = snapshot.data ?? [];
+
+          // Get target day abbreviation for additional filtering
+          final targetDateIso = _getTargetDateIsoFromSelectedDay(_selectedDay);
+          final date = DateTime.parse(targetDateIso);
+          const dayAbbrs = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          final targetDayAbbr = dayAbbrs[date.weekday - 1];
+
+          // Additional client-side filtering like danas_screen
+          Iterable<Putnik> filtered = allPutnici.where((p) {
+            // Dan u nedelji filter za mesečne putnike
+            final dayMatch =
+                p.datum != null ? p.datum == targetDateIso : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+
+            // Vremski filter - samo poslednja nedelja za dnevne putnike
+            bool timeMatch = true;
+            if (p.mesecnaKarta != true && p.vremeDodavanja != null) {
+              final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
+              timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
+            }
+
+            return dayMatch && timeMatch;
           });
-          return kopija;
-        }
+          // Capture passengers for the selected day (but before applying the
+          // selected-time filter). We use this set for counting bottom-bar slots
+          // because the bottom counts should reflect the whole day (all times),
+          // not just the currently selected time.
+          final putniciZaDan = filtered.toList();
 
-        final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
-
-        // Sortiranje putnika
-
-        // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
-        // Koristimo prekompjutovane mape `brojPutnikaBC` i `brojPutnikaVS`
-        // koje su izračunate iz `allPutnici` iznad. Ovo rešava slučaj kada
-        // je prikaz svuda 0.
-        int getPutnikCount(String grad, String vreme) {
-          try {
-            final count = grad == 'Bela Crkva' ? brojPutnikaBC[vreme] ?? 0 : brojPutnikaVS[vreme] ?? 0;
-            return count;
-          } catch (e) {
-            // Log error and continue to fallback
-          }
-
-          // Fallback: brzo prebroj ako grad nije standardan
-          return allPutnici.where((putnik) {
-            final gradMatch = GradAdresaValidator.isGradMatch(
+          // Additional filters for display (applies time/grad/status and is used
+          // to build the visible list). This operates on the putniciZaDan list.
+          filtered = putniciZaDan.where((putnik) {
+            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
+            final imaVreme = putnik.polazak.toString().trim().isNotEmpty;
+            final imaGrad = putnik.grad.toString().trim().isNotEmpty;
+            final imaDan = putnik.dan.toString().trim().isNotEmpty;
+            final danBaza = _selectedDay;
+            final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
+            final normalizedDanBaza = GradAdresaValidator.normalizeString(_getDayAbbreviation(danBaza));
+            final odgovarajuciDan = normalizedPutnikDan.contains(normalizedDanBaza);
+            final odgovarajuciGrad = GradAdresaValidator.isGradMatch(
               putnik.grad,
               putnik.adresa,
-              grad,
+              _selectedGrad,
             );
-            final vremeMatch = _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
-            final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
-            final normalizedDanBaza = GradAdresaValidator.normalizeString(
-              _getDayAbbreviation(_selectedDay),
-            );
-            final danMatch = normalizedPutnikDan.contains(normalizedDanBaza);
-            final statusOk = TextUtils.isStatusActive(putnik.status);
-            return gradMatch && vremeMatch && danMatch && statusOk;
-          }).length;
-        }
+            final odgovarajuceVreme =
+                GradAdresaValidator.normalizeTime(putnik.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
+            final prikazi = imaVreme &&
+                imaGrad &&
+                imaDan &&
+                odgovarajuciDan &&
+                odgovarajuciGrad &&
+                odgovarajuceVreme &&
+                normalizedStatus != 'obrisan';
+            return prikazi;
+          });
+          final sviPutnici = filtered.toList();
 
-        // (totalFilteredCount removed)
+          // DEDUPLIKACIJA PO COMPOSITE KLJUČU: id + polazak + dan
+          final Map<String, Putnik> uniquePutnici = {};
+          for (final p in sviPutnici) {
+            final key = '${p.id}_${p.polazak}_${p.dan}';
+            uniquePutnici[key] = p;
+          }
+          final sviPutniciBezDuplikata = uniquePutnici.values.toList();
 
-        return Container(
-          decoration: BoxDecoration(
-            gradient: ThemeManager().currentGradient, // Dinamički gradijent iz tema
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.transparent, // Transparentna pozadina
-            appBar: PreferredSize(
-              preferredSize: const Size.fromHeight(
-                93,
-              ), // Povećano sa 80 na 95 zbog sezonskog indikatora
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).glassContainer, // Transparentni glassmorphism
-                  border: Border.all(
-                    color: Theme.of(context).glassBorder,
-                    width: 1.5,
+          // 🎯 BROJAČ PUTNIKA - koristi SVE putnice za SELEKTOVANI DAN (deduplikovane)
+          // Koristimo `putniciZaDan` iznad kao izvor za brojače kako bismo
+          // računali broj jedinstvenih putnika po polasku za ceo dan.
+          final Map<String, int> brojPutnikaBC = {
+            '5:00': 0,
+            '6:00': 0,
+            '7:00': 0,
+            '8:00': 0,
+            '9:00': 0,
+            '11:00': 0,
+            '12:00': 0,
+            '13:00': 0,
+            '14:00': 0,
+            '15:30': 0,
+            '18:00': 0,
+          };
+          final Map<String, int> brojPutnikaVS = {
+            '6:00': 0,
+            '7:00': 0,
+            '8:00': 0,
+            '10:00': 0,
+            '11:00': 0,
+            '12:00': 0,
+            '13:00': 0,
+            '14:00': 0,
+            '15:30': 0,
+            '17:00': 0,
+            '19:00': 0,
+          };
+
+          // Use the filtered, deduplicated list so counts match the displayed list
+          // DEDUPLICIRAJ za računanje brojača (id + polazak + dan)
+          final Map<String, Putnik> uniqueForCounts = {};
+          for (final p in putniciZaDan) {
+            final key = '${p.id}_${p.polazak}_${p.dan}';
+            uniqueForCounts[key] = p;
+          }
+          final countCandidates = uniqueForCounts.values.toList();
+
+          for (final p in countCandidates) {
+            if (!TextUtils.isStatusActive(p.status)) continue;
+
+            final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+            // Normalize address (strip diacritics, lower-case, etc.) so checks/contains work
+            final normAdresa = GradAdresaValidator.normalizeString(p.adresa);
+
+            // Use both heuristics: quick substring checks and membership in the
+            // curated naselja lists (which are normalized). This keeps behaviour
+            // predictable and allows us to exclude Pavliš / Središte as requested.
+            final jeBelaCrkva = normAdresa.contains('bela') ||
+                normAdresa.contains('bc') ||
+                GradAdresaValidator.naseljaOpstineBelaCrkva.any((n) => normAdresa.contains(n));
+            final jeVrsac = normAdresa.contains('vrsac') ||
+                normAdresa.contains('vs') ||
+                GradAdresaValidator.naseljaOpstineVrsac.any((n) => normAdresa.contains(n));
+
+            if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
+              brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
+            }
+            if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
+              brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
+            }
+          }
+
+          if (kDebugMode) {
+            final bc600 = brojPutnikaBC['6:00'] ?? 0;
+            final ukupno = brojPutnikaBC.values.fold(0, (a, b) => a + b);
+            if (_lastBc6Count != bc600 || _lastBcTotalCount != ukupno) {
+              debugPrint('🏠 HOME: BC 6:00 = $bc600');
+              debugPrint('🏠 HOME: Ukupno BC putnika = $ukupno');
+              _lastBc6Count = bc600;
+              _lastBcTotalCount = ukupno;
+            }
+          }
+
+          // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
+          List<Putnik> sortiraniPutnici(List<Putnik> lista) {
+            int sortKey(Putnik p) {
+              final status = TextUtils.normalizeText(p.status ?? '');
+              // Leave/inactive (bolovanje, godišnji, obrisan) always at the bottom
+              if (status == 'bolovanje' || status == 'godisnji') {
+                return 100;
+              }
+              if (status == 'otkazano' || status == 'otkazan') {
+                return 101;
+              }
+              if (status == 'obrisan' || p.obrisan) {
+                return 102;
+              }
+              // Mesečni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
+              if (p.mesecnaKarta == true) {
+                if (p.vremePokupljenja == null) {
+                  return 0; // bela
+                }
+                if (p.iznosPlacanja != null && p.iznosPlacanja! > 0) {
+                  return 2; // zelena
+                }
+                return 1; // plava
+              }
+              // Dnevni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
+              if (p.vremePokupljenja == null) return 0; // bela
+              if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
+                return 1; // plava
+              }
+              if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
+                return 2; // zelena
+              }
+              return 99;
+            }
+
+            final kopija = [...lista];
+            kopija.sort((a, b) {
+              final cmp = sortKey(a).compareTo(sortKey(b));
+              if (cmp != 0) return cmp;
+              // Optionally, secondary sort by ime
+              return a.ime.compareTo(b.ime);
+            });
+            return kopija;
+          }
+
+          final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
+
+          // Sortiranje putnika
+
+          // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
+          // Koristimo prekompjutovane mape `brojPutnikaBC` i `brojPutnikaVS`
+          // koje su izračunate iz `allPutnici` iznad. Ovo rešava slučaj kada
+          // je prikaz svuda 0.
+          int getPutnikCount(String grad, String vreme) {
+            try {
+              final count = grad == 'Bela Crkva' ? brojPutnikaBC[vreme] ?? 0 : brojPutnikaVS[vreme] ?? 0;
+              return count;
+            } catch (e) {
+              // Log error and continue to fallback
+            }
+
+            // Fallback: brzo prebroj ako grad nije standardan
+            return allPutnici.where((putnik) {
+              final gradMatch = GradAdresaValidator.isGradMatch(
+                putnik.grad,
+                putnik.adresa,
+                grad,
+              );
+              final vremeMatch = _normalizeTime(putnik.polazak) == _normalizeTime(vreme);
+              final normalizedPutnikDan = GradAdresaValidator.normalizeString(putnik.dan);
+              final normalizedDanBaza = GradAdresaValidator.normalizeString(
+                _getDayAbbreviation(_selectedDay),
+              );
+              final danMatch = normalizedPutnikDan.contains(normalizedDanBaza);
+              final statusOk = TextUtils.isStatusActive(putnik.status);
+              return gradMatch && vremeMatch && danMatch && statusOk;
+            }).length;
+          }
+
+          // (totalFilteredCount removed)
+
+          return Container(
+            decoration: BoxDecoration(
+              gradient: ThemeManager().currentGradient, // Dinamički gradijent iz tema
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.transparent, // Transparentna pozadina
+              appBar: PreferredSize(
+                preferredSize: const Size.fromHeight(
+                  93,
+                ), // Povećano sa 80 na 95 zbog sezonskog indikatora
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).glassContainer, // Transparentni glassmorphism
+                    border: Border.all(
+                      color: Theme.of(context).glassBorder,
+                      width: 1.5,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(25),
+                      bottomRight: Radius.circular(25),
+                    ),
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(25),
-                    bottomRight: Radius.circular(25),
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // PRVI RED - Rezervacije
-                        Container(
-                          // increase height slightly and reduce font so it never drifts under the control row below
-                          height: 28,
-                          alignment: Alignment.center,
-                          child: Text(
-                            'R E Z E R V A C I J E',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              // slightly reduced letter spacing to keep the text compact on narrow screens
-                              letterSpacing: 1.4,
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 12,
-                                  color: Colors.black87,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // PRVI RED - Rezervacije
+                          Container(
+                            // increase height slightly and reduce font so it never drifts under the control row below
+                            height: 28,
+                            alignment: Alignment.center,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'R E Z E R V A C I J E',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                  // slightly reduced letter spacing to keep the text compact on narrow screens
+                                  letterSpacing: 1.4,
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: 12,
+                                      color: Colors.black87,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(2, 2),
+                                      blurRadius: 6,
+                                      color: Colors.black54,
+                                    ),
+                                  ],
                                 ),
-                                Shadow(
-                                  offset: Offset(2, 2),
-                                  blurRadius: 6,
-                                  color: Colors.black54,
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        // DRUGI RED - Driver, Tema, Update i Dropdown
-                        Row(
-                          children: [
-                            // DRIVER - levo
-                            if (_currentDriver != null && _currentDriver!.isNotEmpty)
+                          const SizedBox(height: 8),
+                          // DRUGI RED - Driver, Tema, Update i Dropdown
+                          Row(
+                            children: [
+                              // DRIVER - levo
+                              if (_currentDriver != null && _currentDriver!.isNotEmpty)
+                                Expanded(
+                                  flex: 35,
+                                  child: Container(
+                                    height: 33,
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: VozacBoja.get(_currentDriver), // opaque (100%)
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context).glassBorder,
+                                        width: 1.5,
+                                      ),
+                                      // no boxShadow — keep transparent glass + border only
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        _currentDriver!,
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          shadows: [
+                                            Shadow(
+                                              blurRadius: 8,
+                                              color: Colors.black87,
+                                            ),
+                                            Shadow(
+                                              offset: Offset(1, 1),
+                                              blurRadius: 4,
+                                              color: Colors.black54,
+                                            ),
+                                          ],
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              const SizedBox(width: 2),
+
+                              // TEMA - levo-sredina (sada konzistentan sa dugmićima ispod appbara)
+                              Expanded(
+                                flex: 25,
+                                child: InkWell(
+                                  onTap: () async {
+                                    await ThemeManager().nextTheme();
+                                    if (mounted) setState(() {});
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    height: 33,
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).glassContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context).glassBorder,
+                                        width: 1.5,
+                                      ),
+                                      // no boxShadow — keep transparent glass + border only
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'Tema',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          shadows: [
+                                            Shadow(blurRadius: 8, color: Colors.black87),
+                                            Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(width: 2),
+
+                              // DROPDOWN - desno (sada ima isti glassmorphism izgled kao dugmad)
                               Expanded(
                                 flex: 35,
                                 child: Container(
                                   height: 33,
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: VozacBoja.get(_currentDriver), // opaque (100%)
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: Theme.of(context).glassContainer,
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
                                       color: Theme.of(context).glassBorder,
                                       width: 1.5,
                                     ),
                                     // no boxShadow — keep transparent glass + border only
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      _currentDriver!,
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton2<String>(
+                                      value: _selectedDay,
+                                      // custom button will include arrow icon to preserve layout
+                                      customButton: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Expanded(
+                                            child: Center(
+                                              child: Text(
+                                                _selectedDay,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onPrimary,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      dropdownStyleData: DropdownStyleData(
+                                        decoration: BoxDecoration(
+                                          gradient: Theme.of(context).backgroundGradient,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        elevation: 8,
+                                      ),
                                       style: TextStyle(
                                         color: Theme.of(context).colorScheme.onPrimary,
-                                        fontSize: 15,
                                         fontWeight: FontWeight.w600,
+                                        fontSize: 16,
                                         shadows: [
                                           Shadow(
                                             blurRadius: 8,
@@ -1887,351 +2021,234 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           ),
                                         ],
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                            const SizedBox(width: 2),
-
-                            // TEMA - levo-sredina (sada konzistentan sa dugmićima ispod appbara)
-                            Expanded(
-                              flex: 25,
-                              child: InkWell(
-                                onTap: () async {
-                                  await ThemeManager().nextTheme();
-                                  if (mounted) setState(() {});
-                                },
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  height: 33,
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).glassContainer,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Theme.of(context).glassBorder,
-                                      width: 1.5,
-                                    ),
-                                    // no boxShadow — keep transparent glass + border only
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'Tema',
-                                      style: TextStyle(
-                                        color: Theme.of(context).colorScheme.onPrimary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        shadows: [
-                                          Shadow(blurRadius: 8, color: Colors.black87),
-                                          Shadow(offset: Offset(1, 1), blurRadius: 4, color: Colors.black54),
-                                        ],
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(width: 2),
-
-                            // DROPDOWN - desno (sada ima isti glassmorphism izgled kao dugmad)
-                            Expanded(
-                              flex: 35,
-                              child: Container(
-                                height: 33,
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).glassContainer,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Theme.of(context).glassBorder,
-                                    width: 1.5,
-                                  ),
-                                  // no boxShadow — keep transparent glass + border only
-                                ),
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton2<String>(
-                                    value: _selectedDay,
-                                    // custom button will include arrow icon to preserve layout
-                                    customButton: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Expanded(
-                                          child: Center(
-                                            child: Text(
-                                              _selectedDay,
-                                              style: TextStyle(
-                                                color: Theme.of(context).colorScheme.onPrimary,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                                      // button decoration: keep a glass look for the closed button
+                                      buttonStyleData: ButtonStyleData(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    dropdownStyleData: DropdownStyleData(
-                                      decoration: BoxDecoration(
-                                        gradient: Theme.of(context).backgroundGradient,
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: Theme.of(context).glassBorder,
-                                          width: 1.5,
-                                        ),
                                       ),
-                                      elevation: 8,
-                                    ),
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.onPrimary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: 8,
-                                          color: Colors.black87,
-                                        ),
-                                        Shadow(
-                                          offset: Offset(1, 1),
-                                          blurRadius: 4,
-                                          color: Colors.black54,
-                                        ),
-                                      ],
-                                    ),
-                                    // button decoration: keep a glass look for the closed button
-                                    buttonStyleData: ButtonStyleData(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).glassContainer,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Theme.of(context).glassBorder,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                    isExpanded: true,
-                                    // using customButton, selectedItemBuilder is not needed
-                                    items: _dani
-                                        .map(
-                                          (dan) => DropdownMenuItem(
-                                            value: dan,
-                                            child: Center(
-                                              child: Text(
-                                                dan,
-                                                style: TextStyle(
-                                                  color: Theme.of(context).colorScheme.onPrimary,
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 16,
+                                      isExpanded: true,
+                                      // using customButton, selectedItemBuilder is not needed
+                                      items: _dani
+                                          .map(
+                                            (dan) => DropdownMenuItem(
+                                              value: dan,
+                                              child: Center(
+                                                child: Text(
+                                                  dan,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).colorScheme.onPrimary,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 16,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
                                                 ),
-                                                textAlign: TextAlign.center,
-                                                overflow: TextOverflow.ellipsis,
-                                                maxLines: 1,
                                               ),
                                             ),
-                                          ),
-                                        )
-                                        .toList(),
-                                    onChanged: (value) {
-                                      if (mounted) setState(() => _selectedDay = value!);
-                                      // 🔄 Stream će se automatski ažurirati preko StreamBuilder-a
-                                      // Ne treba eksplicitno pozivati _loadPutnici()
-                                    },
+                                          )
+                                          .toList(),
+                                      onChanged: (value) {
+                                        if (mounted) setState(() => _selectedDay = value!);
+                                        // 🔄 Stream će se automatski ažurirati preko StreamBuilder-a
+                                        // Ne treba eksplicitno pozivati _loadPutnici()
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            body: Column(
-              children: [
-                // Action buttons
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      // Dugmad za akcije
-                      Expanded(
-                        child: _HomeScreenButton(
-                          label: 'Dodaj',
-                          icon: Icons.person_add,
-                          onTap: _showAddPutnikDialog,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      if (_currentDriver == 'Bruda' ||
-                          _currentDriver == 'Bilevski' ||
-                          _currentDriver == 'Bojan' ||
-                          _currentDriver == 'Svetlana')
+              body: Column(
+                children: [
+                  // Action buttons
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        // Dugmad za akcije
                         Expanded(
                           child: _HomeScreenButton(
-                            label: 'Danas',
-                            icon: Icons.today,
-                            onTap: () {
-                              // Navigate to DanasScreen
-                              AnimatedNavigation.pushSmooth(
-                                context,
-                                const DanasScreen(),
-                              );
-                            },
+                            label: 'Dodaj',
+                            icon: Icons.person_add,
+                            onTap: _showAddPutnikDialog,
                           ),
                         ),
-                      if (['Bojan', 'Svetlana'].contains(_currentDriver)) const SizedBox(width: 4),
-                      if (['Bojan', 'Svetlana'].contains(_currentDriver))
-                        Expanded(
-                          child: _HomeScreenButton(
-                            label: 'Admin',
-                            icon: Icons.admin_panel_settings,
-                            onTap: () {
-                              // Navigate to AdminScreen
-                              AnimatedNavigation.pushSmooth(
-                                context,
-                                const AdminScreen(),
-                              );
-                            },
-                          ),
-                        ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: _HomeScreenButton(
-                          label: 'Štampaj',
-                          icon: Icons.print,
-                          onTap: () async {
-                            await PrintingService.printPutniksList(
-                              _selectedDay,
-                              _selectedVreme,
-                              _selectedGrad,
-                              context,
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: _HomeScreenButton(
-                          label: 'Logout',
-                          icon: Icons.logout,
-                          onTap: _logout,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Lista putnika
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
-                      border: Border.all(
-                        color: Theme.of(context).glassBorder,
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        Theme.of(context).glassShadow,
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: putniciZaPrikaz.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'Nema putnika za ovaj polazak.',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  shadows: [
-                                    Shadow(
-                                      blurRadius: 8,
-                                      color: Colors.black87,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: putniciZaPrikaz.length,
-                              itemBuilder: (context, index) {
-                                final putnik = putniciZaPrikaz[index];
-                                return AnimatedCard(
-                                  delay: index * 100, // Staggered animation
-                                  child: PutnikCard(
-                                    putnik: putnik,
-                                    currentDriver: _currentDriver,
-                                    redniBroj: index + 1,
-                                    selectedVreme: _selectedVreme, // 🆕 Proslijedi trenutno vreme
-                                    selectedGrad: _selectedGrad, // 🆕 Proslijedi trenutni grad
-                                    onChanged: () {
-                                      // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
-                                      if (mounted) {
-                                        if (mounted) {
-                                          setState(() {
-                                            // Trigger rebuild-a StreamBuilder-a
-                                          });
-                                        }
-                                      }
-                                    },
-                                  ),
+                        const SizedBox(width: 4),
+                        if (_currentDriver == 'Bruda' ||
+                            _currentDriver == 'Bilevski' ||
+                            _currentDriver == 'Bojan' ||
+                            _currentDriver == 'Svetlana')
+                          Expanded(
+                            child: _HomeScreenButton(
+                              label: 'Danas',
+                              icon: Icons.today,
+                              onTap: () {
+                                // Navigate to DanasScreen
+                                AnimatedNavigation.pushSmooth(
+                                  context,
+                                  const DanasScreen(),
                                 );
                               },
                             ),
+                          ),
+                        if (['Bojan', 'Svetlana'].contains(_currentDriver)) const SizedBox(width: 4),
+                        if (['Bojan', 'Svetlana'].contains(_currentDriver))
+                          Expanded(
+                            child: _HomeScreenButton(
+                              label: 'Admin',
+                              icon: Icons.admin_panel_settings,
+                              onTap: () {
+                                // Navigate to AdminScreen
+                                AnimatedNavigation.pushSmooth(
+                                  context,
+                                  const AdminScreen(),
+                                );
+                              },
+                            ),
+                          ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: _HomeScreenButton(
+                            label: 'Štampaj',
+                            icon: Icons.print,
+                            onTap: () async {
+                              await PrintingService.printPutniksList(
+                                _selectedDay,
+                                _selectedVreme,
+                                _selectedGrad,
+                                context,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: _HomeScreenButton(
+                            label: 'Logout',
+                            icon: Icons.logout,
+                            onTap: _logout,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ), // Zatvaranje Column
-            bottomNavigationBar: isZimski(DateTime.now())
-                ? BottomNavBarZimski(
-                    sviPolasci: _sviPolasci,
-                    selectedGrad: _selectedGrad,
-                    selectedVreme: _selectedVreme,
-                    getPutnikCount: getPutnikCount,
-                    onPolazakChanged: (grad, vreme) {
-                      // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
-                      if (mounted) {
-                        setState(() {
-                          _selectedGrad = grad;
-                          _selectedVreme = vreme;
-                          _selectedGradSubject.add(grad); // Ažuriraj stream
-                        });
-                      }
-                    },
-                  )
-                : BottomNavBarLetnji(
-                    sviPolasci: _sviPolasci,
-                    selectedGrad: _selectedGrad,
-                    selectedVreme: _selectedVreme,
-                    getPutnikCount: getPutnikCount,
-                    onPolazakChanged: (grad, vreme) async {
-                      if (mounted) {
-                        setState(() {
-                          _selectedGrad = grad;
-                          _selectedVreme = vreme;
-                          _selectedGradSubject.add(grad);
-                        });
-                      }
-                    },
+
+                  // Lista putnika
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
+                        border: Border.all(
+                          color: Theme.of(context).glassBorder,
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          Theme.of(context).glassShadow,
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: putniciZaPrikaz.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Nema putnika za ovaj polazak.',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    shadows: [
+                                      Shadow(
+                                        blurRadius: 8,
+                                        color: Colors.black87,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: putniciZaPrikaz.length,
+                                itemBuilder: (context, index) {
+                                  final putnik = putniciZaPrikaz[index];
+                                  return AnimatedCard(
+                                    delay: index * 100, // Staggered animation
+                                    child: PutnikCard(
+                                      putnik: putnik,
+                                      currentDriver: _currentDriver,
+                                      redniBroj: index + 1,
+                                      selectedVreme: _selectedVreme, // 🆕 Proslijedi trenutno vreme
+                                      selectedGrad: _selectedGrad, // 🆕 Proslijedi trenutni grad
+                                      onChanged: () {
+                                        // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
+                                        if (mounted) {
+                                          if (mounted) {
+                                            setState(() {
+                                              // Trigger rebuild-a StreamBuilder-a
+                                            });
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ),
                   ),
-          ), // Zatvaranje Container wrapper-a
-        );
-      }, // Zatvaranje StreamBuilder builder funkcije
-    ); // Zatvaranje StreamBuilder widgeta
+                ],
+              ), // Zatvaranje Column
+              bottomNavigationBar: isZimski(DateTime.now())
+                  ? BottomNavBarZimski(
+                      sviPolasci: _sviPolasci,
+                      selectedGrad: _selectedGrad,
+                      selectedVreme: _selectedVreme,
+                      getPutnikCount: getPutnikCount,
+                      onPolazakChanged: (grad, vreme) {
+                        // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
+                        if (mounted) {
+                          setState(() {
+                            _selectedGrad = grad;
+                            _selectedVreme = vreme;
+                            _selectedGradSubject.add(grad); // Ažuriraj stream
+                          });
+                        }
+                      },
+                    )
+                  : BottomNavBarLetnji(
+                      sviPolasci: _sviPolasci,
+                      selectedGrad: _selectedGrad,
+                      selectedVreme: _selectedVreme,
+                      getPutnikCount: getPutnikCount,
+                      onPolazakChanged: (grad, vreme) async {
+                        if (mounted) {
+                          setState(() {
+                            _selectedGrad = grad;
+                            _selectedVreme = vreme;
+                            _selectedGradSubject.add(grad);
+                          });
+                        }
+                      },
+                    ),
+            ), // Zatvaranje Container wrapper-a
+          );
+        }, // Zatvaranje StreamBuilder builder funkcije
+      ), // Zatvaranje StreamBuilder widgeta
+    ); // Zatvaranje AnnotatedRegion
   } // Zatvaranje build metode
 
   @override

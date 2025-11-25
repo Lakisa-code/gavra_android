@@ -221,16 +221,18 @@ class CustomDanasAppBar extends StatelessWidget implements PreferredSizeWidget {
         // (e.g. "POPIS") never get clipped on narrow screens
         label: Container(
           alignment: Alignment.center,
-          constraints: const BoxConstraints(minWidth: 56),
-          child: Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+          constraints: const BoxConstraints(minWidth: 40, maxWidth: 56),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              textAlign: TextAlign.center,
             ),
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.visible,
           ),
         ),
         style: ElevatedButton.styleFrom(

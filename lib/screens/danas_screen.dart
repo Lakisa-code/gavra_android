@@ -92,7 +92,10 @@ class _DanasScreenState extends State<DanasScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        child: const Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
+        child: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
+        ),
       ),
     );
   }
@@ -363,37 +366,54 @@ class _DanasScreenState extends State<DanasScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // LEVO - DATUM
-                  Text(
-                    '$dayStr.$monthStr.$yearStr',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 1.8,
-                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '$dayStr.$monthStr.$yearStr',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          letterSpacing: 1.8,
+                          shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                        ),
+                      ),
                     ),
                   ),
                   // SREDINA - DAN
-                  Text(
-                    dayName,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 1.8,
-                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        dayName,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          letterSpacing: 1.8,
+                          shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                        ),
+                      ),
                     ),
                   ),
                   // DESNO - VREME
-                  ClockTicker(
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 1.8,
-                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: ClockTicker(
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          letterSpacing: 1.8,
+                          shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                        ),
+                        showSeconds: true,
+                      ),
                     ),
-                    showSeconds: true,
                   ),
                 ],
               ),
@@ -566,9 +586,12 @@ class _DanasScreenState extends State<DanasScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             ),
-            child: Text(
-              _isRouteOptimized ? 'Reset' : 'Ruta',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _isRouteOptimized ? 'Reset' : 'Ruta',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
             ),
           ),
         );
@@ -651,9 +674,12 @@ class _DanasScreenState extends State<DanasScreen> {
               color: Theme.of(context).colorScheme.onPrimary,
             ),
             const SizedBox(width: 4),
-            Text(
-              _isGpsTracking ? 'STOP' : (hasOptimizedRoute ? 'NAV' : 'NAV'),
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _isGpsTracking ? 'STOP' : (hasOptimizedRoute ? 'NAV' : 'NAV'),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+              ),
             ),
           ],
         ),
