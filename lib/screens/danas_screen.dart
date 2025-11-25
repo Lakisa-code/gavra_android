@@ -701,7 +701,12 @@ class _DanasScreenState extends State<DanasScreen> {
           children: [
             const Icon(Icons.school, color: Colors.blue),
             const SizedBox(width: 8),
-            Text('Đaci - Danas ($reseni/$ostalo)'),
+            Flexible(
+              child: Text(
+                'Đaci - Danas ($reseni/$ostalo)',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -798,11 +803,17 @@ class _DanasScreenState extends State<DanasScreen> {
           const SizedBox(width: 8),
           Text(
             '$label: ',
-            style: TextStyle(color: Colors.grey[700], fontSize: 14), // 🎨 Tamniji tekst
+            style: TextStyle(color: Colors.grey[700], fontSize: 14),
           ),
-          Text(
-            value.toString(),
-            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value.toString(),
+                style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
@@ -1919,43 +1930,47 @@ class _DanasScreenState extends State<DanasScreen> {
                                 children: [
                                   Expanded(
                                     child: Container(
-                                      height: 69, // smanjio sa 70 na 69
-                                      padding: const EdgeInsets.all(8),
+                                      height: 69,
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.green.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(color: Colors.green[300]!),
                                       ),
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'Pazar',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green,
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text(
+                                              'Pazar',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            ukupnoPazarVozac.toStringAsFixed(0),
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green,
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              ukupnoPazarVozac.toStringAsFixed(0),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green,
+                                              ),
+                                              textAlign: TextAlign.center,
                                             ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Container(
-                                      height: 69, // smanjio sa 70 na 69
-                                      padding: const EdgeInsets.all(8),
+                                      height: 69,
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.purple.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
@@ -1969,29 +1984,32 @@ class _DanasScreenState extends State<DanasScreen> {
                                         ),
                                         builder: (context, mesecneSnapshot) {
                                           final brojMesecnih = mesecneSnapshot.data ?? 0;
-                                          return Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Text(
-                                                'Mesečne',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.purple,
+                                          return FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Text(
+                                                  'Mesečne',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.purple,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                brojMesecnih.toString(),
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.purple,
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  brojMesecnih.toString(),
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.purple,
+                                                  ),
+                                                  textAlign: TextAlign.center,
                                                 ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           );
                                         },
                                       ),
@@ -2000,8 +2018,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Container(
-                                      height: 69, // smanjio sa 70 na 69
-                                      padding: const EdgeInsets.all(8),
+                                      height: 69,
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.red.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
@@ -2016,29 +2034,32 @@ class _DanasScreenState extends State<DanasScreen> {
                                             ),
                                           );
                                         },
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Text(
-                                              'Dugovi',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.red,
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text(
+                                                'Dugovi',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              filteredDuznici.length.toString(),
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.red,
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                filteredDuznici.length.toString(),
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red,
+                                                ),
+                                                textAlign: TextAlign.center,
                                               ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -2047,8 +2068,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                   // 🌅 NOVA KOCKA ZA SITAN NOVAC
                                   Expanded(
                                     child: Container(
-                                      height: 69, // smanjio sa 70 na 69
-                                      padding: const EdgeInsets.all(8),
+                                      height: 69,
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
@@ -2058,29 +2079,32 @@ class _DanasScreenState extends State<DanasScreen> {
                                         stream: SimplifiedDailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
                                         builder: (context, sitanSnapshot) {
                                           final sitanNovac = sitanSnapshot.data ?? 0.0;
-                                          return Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Text(
-                                                'Kusur',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.orange,
+                                          return FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Text(
+                                                  'Kusur',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.orange,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                sitanNovac > 0 ? sitanNovac.toStringAsFixed(0) : '-',
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.orange,
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  sitanNovac > 0 ? sitanNovac.toStringAsFixed(0) : '-',
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.orange,
+                                                  ),
+                                                  textAlign: TextAlign.center,
                                                 ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
+                                              ],
+                                            ),
                                           );
                                         },
                                       ),

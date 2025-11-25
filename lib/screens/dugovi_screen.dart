@@ -414,6 +414,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedFilter,
+                      isExpanded: true,
                       icon: Icon(
                         Icons.arrow_drop_down,
                         color: Colors.indigo.shade600,
@@ -449,48 +450,51 @@ class _DugoviScreenState extends State<DugoviScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
               // Sort dropdown
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.indigo.shade200),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _sortBy,
-                    icon: Icon(Icons.sort, color: Colors.indigo.shade600),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.indigo.shade800,
-                      fontWeight: FontWeight.w500,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.indigo.shade200),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _sortBy,
+                      isExpanded: true,
+                      icon: Icon(Icons.sort, color: Colors.indigo.shade600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.indigo.shade800,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      onChanged: (value) {
+                        if (mounted) {
+                          setState(() {
+                            _sortBy = value!;
+                            _sortDugovi(_cachedDugovi);
+                          });
+                        }
+                      },
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'iznos',
+                          child: Text('Po iznosu'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'vreme',
+                          child: Text('Po vremenu'),
+                        ),
+                        DropdownMenuItem<String>(value: 'ime', child: Text('Po imenu')),
+                        DropdownMenuItem(
+                          value: 'vozac',
+                          child: Text('Po vozaču'),
+                        ),
+                      ],
                     ),
-                    onChanged: (value) {
-                      if (mounted) {
-                        setState(() {
-                          _sortBy = value!;
-                          _sortDugovi(_cachedDugovi);
-                        });
-                      }
-                    },
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'iznos',
-                        child: Text('Po iznosu'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'vreme',
-                        child: Text('Po vremenu'),
-                      ),
-                      DropdownMenuItem<String>(value: 'ime', child: Text('Po imenu')),
-                      DropdownMenuItem(
-                        value: 'vozac',
-                        child: Text('Po vozaču'),
-                      ),
-                    ],
                   ),
                 ),
               ),
