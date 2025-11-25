@@ -148,6 +148,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // target date calculation handled elsewhere
 
   // Convert selected full day name (Ponedeljak) into ISO date string for target week
+  // 🎯 FIX: Uvek idi u budućnost - ako je dan prošao ove nedelje, koristi sledeću nedelju
+  // Ovo je konzistentno sa Putnik._getDateForDay() koji se koristi za upis u bazu
   String _getTargetDateIsoFromSelectedDay(String fullDay) {
     final now = DateTime.now();
 
@@ -180,15 +182,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return now.toIso8601String().split('T')[0];
     }
 
-    // 🔧 POPRAVLJENO: Traži prethodni ili sledeći put kada je bio/će biti taj dan
-    // Ali uvek vrati najbliži datum (prethodni ili sledeći)
     int daysToAdd = targetDayIndex - currentDayIndex;
-    if (daysToAdd <= -4) {
-      // Ako je više od 4 dana unazad, uzmi sledeći put
+
+    // 🎯 UVEK U BUDUĆNOST: Ako je dan već prošao ove nedelje, idi na sledeću nedelju
+    // Ovo je konzistentno sa Putnik._getDateForDay() koji se koristi za upis u bazu
+    if (daysToAdd < 0) {
       daysToAdd += 7;
-    } else if (daysToAdd >= 4) {
-      // Ako je više od 4 dana unapred, uzmi prethodni put
-      daysToAdd -= 7;
     }
 
     final targetDate = now.add(Duration(days: daysToAdd));
