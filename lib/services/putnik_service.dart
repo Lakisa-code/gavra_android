@@ -1568,17 +1568,22 @@ class PutnikService {
         : Map<String, dynamic>.from(response as Map);
     _addToUndoStack('odsustvo', id, undoOdsustvo);
 
+    // 🎯 FIX: Konvertuj 'godisnji' u 'godišnji' za bazu (constraint zahteva dijakritiku)
+    String statusZaBazu = tipOdsustva.toLowerCase();
+    if (statusZaBazu == 'godisnji') {
+      statusZaBazu = 'godišnji';
+    }
+
     if (tabela == 'mesecni_putnici') {
-      // ✅ JEDNOSTAVNO - samo setuj status na bolovanje/godisnji
+      // ✅ JEDNOSTAVNO - samo setuj status na bolovanje/godišnji
       await supabase.from(tabela).update({
-        'status': tipOdsustva.toLowerCase(), // 'bolovanje' ili 'godisnji'
+        'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id as String);
     } else {
       // Za putovanja_istorija koristi 'status' kolonu
       await supabase.from(tabela).update({
-        'status': tipOdsustva.toLowerCase(), // 'bolovanje' ili 'godisnji'
-        // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
+        'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
       }).eq('id', id as String);
     }
   }
