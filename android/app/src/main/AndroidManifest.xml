@@ -82,7 +82,10 @@
     </intent>
 
     <!-- 🗺️ NAVIGATION APPS - Required for Android 11+ to query navigation intents -->
-    <!-- Google Maps -->
+    <!-- Google Maps (explicit package for GBox compatibility) -->
+    <package android:name="com.google.android.apps.maps"/>
+    
+    <!-- Google Maps intent -->
     <intent>
       <action android:name="android.intent.action.VIEW"/>
       <data android:scheme="google.navigation"/>

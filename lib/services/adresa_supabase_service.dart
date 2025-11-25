@@ -317,4 +317,90 @@ class AdresaSupabaseService {
       return '$icon $naziv ($count putovanja)';
     }).toList();
   }
+
+  /// 📍 GPS LEARN: Ažuriraj koordinate adrese na osnovu GPS lokacije pri pokupljenju
+  /// Ova funkcija se poziva kada vozač pokupi putnika - pamti tačnu lokaciju
+  static Future<bool> updateKoordinateFromGps({
+    required String adresaId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      // Validacija koordinata za Srbiju (širina: 42-46.5, dužina: 18-23)
+      if (latitude < 42.0 || latitude > 46.5 || longitude < 18.0 || longitude > 23.0) {
+        print('⚠️ GPS Learn: Koordinate van Srbije, preskačem ažuriranje');
+        return false;
+      }
+
+      // Proveri da li adresa već ima koordinate
+      final existing = await getAdresaByUuid(adresaId);
+      if (existing?.hasValidCoordinates == true) {
+        // Ako već ima koordinate, ne prepisuj ih (možda su tačnije)
+        print('ℹ️ GPS Learn: Adresa već ima koordinate, preskačem');
+        return false;
+      }
+
+      // Kreiraj JSONB koordinate
+      final koordinate = {
+        'lat': latitude,
+        'lng': longitude,
+        'source': 'gps_learn', // Oznaka da su koordinate naučene iz GPS-a
+        'learned_at': DateTime.now().toIso8601String(),
+      };
+
+      // Ažuriraj u bazi
+      await supabase.from('adrese').update({
+        'koordinate': koordinate,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', adresaId);
+
+      // Invalidate cache
+      _cache.remove(adresaId);
+
+      print('✅ GPS Learn: Koordinate sačuvane za adresu $adresaId → ($latitude, $longitude)');
+      return true;
+    } catch (e) {
+      print('❌ GPS Learn greška: $e');
+      return false;
+    }
+  }
+
+  /// 📍 GPS LEARN: Pokušaj reverse geocoding da dobiješ tačnu adresu
+  /// Koristi Nominatim za pretvaranje koordinata u ulicu i broj
+  static Future<String?> reverseGeocodeFromGps({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&zoom=18&addressdetails=1',
+      );
+
+      final response = await supabase.functions.invoke(
+        'nominatim-proxy',
+        body: {'url': url.toString()},
+      );
+
+      if (response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        final address = data['address'] as Map<String, dynamic>?;
+
+        if (address != null) {
+          final road = address['road'] as String?;
+          final houseNumber = address['house_number'] as String?;
+
+          if (road != null) {
+            if (houseNumber != null) {
+              return '$road $houseNumber';
+            }
+            return road;
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      print('❌ Reverse geocoding greška: $e');
+      return null;
+    }
+  }
 }

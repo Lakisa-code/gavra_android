@@ -495,24 +495,57 @@ class Putnik {
 
   // HELPER METODE za mapiranje
   static String _determineGradFromMesecni(Map<String, dynamic> map) {
-    // Proverava adrese da odredi grad
-    final adresaVS = map['adresa_vrsac'] as String?;
+    // Odredi grad na osnovu AKTIVNOG polaska za danas
+    final weekday = DateTime.now().weekday;
+    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final danKratica = daniKratice[weekday - 1];
 
-    // Ako ima adresu u Vršcu, to je Vršac
+    // Proveri koji polazak postoji za danas
+    final bcPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'bc');
+    final vsPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'vs');
+
+    // Ako ima BC polazak danas, putnik putuje IZ Bela Crkva (pokupljaš ga tamo)
+    if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
+      return 'Bela Crkva';
+    }
+
+    // Ako ima VS polazak danas, putnik putuje IZ Vršac (pokupljaš ga tamo)
+    if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
+      return 'Vršac';
+    }
+
+    // Fallback: proveri adrese ako nema polazaka danas
+    final adresaVS = map['adresa_vrsac'] as String?;
     if (adresaVS != null && adresaVS.trim().isNotEmpty) {
       return 'Vršac';
     }
 
-    // Ako nema adresu u Vršcu, default je Bela Crkva
     return 'Bela Crkva';
   }
 
   static String? _determineAdresaFromMesecni(Map<String, dynamic> map) {
-    // Koristi stvarne adrese iz mesečnih putnika
+    // Koristi istu logiku kao _determineGradFromMesecni za konzistentnost
+    final weekday = DateTime.now().weekday;
+    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+    final danKratica = daniKratice[weekday - 1];
+
+    final bcPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'bc');
+    final vsPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'vs');
+
     final adresaBC = map['adresa_bela_crkva'] as String?;
     final adresaVS = map['adresa_vrsac'] as String?;
 
-    // Vrati prvu dostupnu adresu ili fallback
+    // Ako ima BC polazak danas, koristi BC adresu (gde ga pokupljaš)
+    if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
+      return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
+    }
+
+    // Ako ima VS polazak danas, koristi VS adresu (gde ga pokupljaš)
+    if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
+      return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
+    }
+
+    // Fallback: vrati prvu dostupnu adresu
     return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
   }
 

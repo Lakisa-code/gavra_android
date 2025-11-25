@@ -12,6 +12,7 @@ import '../services/haptic_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
+import '../services/realtime_gps_service.dart'; // 📍 GPS LEARN
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/global_cache_manager.dart'; // 🔄 DODATO za globalni cache manager
@@ -106,7 +107,10 @@ class _PutnikCardState extends State<PutnikCard> {
         try {
           await PutnikService().oznaciPokupljen(_putnik.id!, widget.currentDriver!);
 
-          // � FORSIRAJ UI REFRESH NA PARENT WIDGET
+          // 📍 GPS LEARN: Sačuvaj koordinate ako adresa nema koordinate
+          _tryGpsLearn();
+
+          // 🔄 FORSIRAJ UI REFRESH NA PARENT WIDGET
           if (mounted && widget.onChanged != null) {
             widget.onChanged!();
           }
@@ -153,6 +157,50 @@ class _PutnikCardState extends State<PutnikCard> {
       } catch (e) {
         // Greška pri označavanju kao pokupljen
       }
+    }
+  }
+
+  /// 📍 GPS LEARN: Sačuvaj trenutnu GPS lokaciju za adresu putnika
+  /// Ovo omogućava da sledeći put navigacija zna tačno gde je putnik pokupljen
+  Future<void> _tryGpsLearn() async {
+    try {
+      // Proveri da li putnik ima adresaId
+      final adresaId = _putnik.adresaId;
+      if (adresaId == null || adresaId.isEmpty) {
+        return; // Nema adresu za učenje
+      }
+
+      // Dobij trenutnu GPS lokaciju
+      final position = await RealtimeGpsService.getCurrentPosition();
+
+      // Sačuvaj koordinate u bazu
+      final success = await AdresaSupabaseService.updateKoordinateFromGps(
+        adresaId: adresaId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+
+      if (success && mounted) {
+        // Opciono: pokaži diskretnu notifikaciju
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.location_on, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('📍 Lokacija naučena!'),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          ),
+        );
+      }
+    } catch (e) {
+      // Silently ignore GPS learn errors - nije kritična funkcija
+      print('⚠️ GPS Learn nije uspeo: $e');
     }
   }
 
@@ -1365,13 +1413,21 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Dobija koordinate za destinaciju - UNIFIKOVANO za sve putnike
   Future<String?> _getKoordinateZaAdresu(String? grad, String? adresa, String? adresaId) async {
-    // 🎯 PRIORITET 1: Ako imamo adresaId (UUID), koristi tabelu adrese
+    // 🎯 PRIORITET 1: Ako imamo adresaId (UUID), direktno dohvati adresu sa koordinatama
     if (adresaId != null && adresaId.isNotEmpty) {
       try {
-        final adresaObj = await AdresaSupabaseService.getNazivAdreseByUuid(adresaId);
-        if (adresaObj != null && adresaObj.isNotEmpty) {
-          // Traži koordinate za ovu adresu
-          final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(adresaObj, grad ?? '');
+        final adresaObj = await AdresaSupabaseService.getAdresaByUuid(adresaId);
+        if (adresaObj != null && adresaObj.hasValidCoordinates) {
+          // Adresa ima koordinate - koristi ih direktno!
+          return '${adresaObj.latitude},${adresaObj.longitude}';
+        }
+
+        // Ako nema koordinate, pokušaj pronaći po nazivu
+        if (adresaObj != null && adresaObj.naziv.isNotEmpty) {
+          final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(
+            adresaObj.naziv,
+            adresaObj.grad ?? grad ?? '',
+          );
           if (koordinate?.hasValidCoordinates == true) {
             return '${koordinate!.latitude},${koordinate.longitude}';
           }
