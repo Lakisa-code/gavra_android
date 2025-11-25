@@ -94,6 +94,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   DateTime? _lastPaymentUpdate;
   Set<String> _lastPutnikIds = {};
 
+  // 💰 CACHE ZA PLAĆENE MESECE - Set meseci (format: "mesec-godina") za svakog putnika
+  final Map<String, Set<String>> _placeniMeseci = {};
+
   // 🔄 CACHE za broj radnika da se izbegnu višestruki StreamBuilder-i
   int _cachedBrojRadnika = 0;
   int _cachedBrojUcenika = 0;
@@ -213,6 +216,30 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       }
     } catch (e) {
       // Greška u učitavanju stvarnih plaćanja
+    }
+  }
+
+  // 💰 UČITAJ PLAĆENE MESECE za putnika - sva plaćanja sa placeni_mesec i placena_godina
+  Future<void> _ucitajPlaceneMesece(MesecniPutnik putnik) async {
+    try {
+      final svaPlacanja = await _mesecniPutnikService.dohvatiPlacanjaZaPutnika(putnik.putnikIme);
+      final Set<String> placeni = {};
+
+      for (var placanje in svaPlacanja) {
+        final mesec = placanje['placeniMesec'];
+        final godina = placanje['placenaGodina'];
+        if (mesec != null && godina != null) {
+          placeni.add('$mesec-$godina');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _placeniMeseci[putnik.id] = placeni;
+        });
+      }
+    } catch (e) {
+      // Greška u učitavanju plaćenih meseci
     }
   }
 
@@ -1645,8 +1672,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  // �💰 PRIKAZ DIJALOGA ZA PLAĆANJE
+  // 💰 PRIKAZ DIJALOGA ZA PLAĆANJE
   Future<void> _prikaziPlacanje(MesecniPutnik putnik) async {
+    // Učitaj sva plaćanja za ovog putnika da bi se prikazali plaćeni meseci zeleno
+    await _ucitajPlaceneMesece(putnik);
+
     final TextEditingController iznosController = TextEditingController();
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 
@@ -2633,11 +2663,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 💰 PROVERI DA LI JE MESEC PLAĆEN
   bool _isMonthPaid(String monthYear, MesecniPutnik putnik) {
-    final stvarniIznos = _stvarnaPlacanja[putnik.id] ?? 0;
-    if (stvarniIznos <= 0) {
-      return false;
-    }
-
     // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
     final parts = monthYear.split(' ');
     if (parts.length != 2) return false;
@@ -2649,24 +2674,25 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     final monthNumber = _getMonthNumber(monthName);
     if (monthNumber == 0) return false;
 
-    // 1. PRIORITET: Precizni podaci o plaćenom mesecu
-    if (putnik.placeniMesec != null && putnik.placenaGodina != null) {
-      return putnik.placeniMesec == monthNumber && putnik.placenaGodina == year;
+    // 1. PRIORITET: Proveri cache plaćenih meseci (sva plaćanja)
+    final placeniZaPutnika = _placeniMeseci[putnik.id];
+    if (placeniZaPutnika != null && placeniZaPutnika.contains('$monthNumber-$year')) {
+      return true;
     }
 
-    // 2. FALLBACK: Koristi vreme plaćanja ako postoji
+    // 2. FALLBACK: Precizni podaci o plaćenom mesecu iz modela (poslednje plaćanje)
+    if (putnik.placeniMesec != null && putnik.placenaGodina != null) {
+      if (putnik.placeniMesec == monthNumber && putnik.placenaGodina == year) {
+        return true;
+      }
+    }
+
+    // 3. FALLBACK: Koristi vreme plaćanja ako postoji
     if (putnik.vremePlacanja != null) {
       final paymentDate = putnik.vremePlacanja!;
-      return paymentDate.year == year && paymentDate.month == monthNumber;
-    }
-
-    // 3. DODATNA LOGIKA: Ako putnik ima pozitivan iznos plaćanja, možda je plaćen za više meseci
-    // Proverava da li je ukupan iznos dovoljno veliki da pokrije ovaj mesec
-    final mesecnaCena = putnik.cena ?? 0;
-    if (mesecnaCena > 0 && stvarniIznos >= mesecnaCena) {
-      // Ako je iznos plaćanja bar jednako mesečnoj ceni, smatra se da je ovaj mesec plaćen
-      // Ova logika radi za slučajeve gde korisnik plati za celu godinu ili više meseci odjednom
-      return true;
+      if (paymentDate.year == year && paymentDate.month == monthNumber) {
+        return true;
+      }
     }
 
     return false;
