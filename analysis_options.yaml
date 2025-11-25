@@ -1,0 +1,24 @@
+include: package:flutter_lints/flutter.yaml
+
+# Project-specific linter overrides
+linter:
+  rules:
+    # Keep safety and correctness lints enabled (e.g. use_build_context_synchronously,
+    # await_only_futures) but reduce noisy/style lints that flood the output.
+    # Turn off some stylistic rules to reduce noise across a large existing codebase.
+
+    # Stylistic / low-value rules to disable (set false):
+    avoid_print: false
+    prefer_const_declarations: false
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    unnecessary_brace_in_string_interps: false
+    prefer_adjacent_string_concatenation: false
+    prefer_interpolation_to_compose_strings: false
+    avoid_function_literals_in_foreach_calls: false
+    no_leading_underscores_for_local_identifiers: false
+    unnecessary_const: false
+
+    # We keep more important/runtime-safe rules enabled so they surface real issues:
+    # use_build_context_synchronously (left enabled) - this catches async context bugs
+    # await_only_futures (left enabled) - this catches improper use of await

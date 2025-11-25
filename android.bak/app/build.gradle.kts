@@ -4,11 +4,14 @@ import java.io.FileInputStream
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
 
+// AGC plugin is intentionally commented-out for local/dev builds. It is only required for some
+// CI/release tasks and may cause resolution issues in some environments. Uncomment if your
+// environment has access to the AGC artifact and you need AGC-specific Gradle tasks.
+// apply(plugin = "com.huawei.agconnect")
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
@@ -16,6 +19,9 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// The 'android' configuration below (further down) contains the latest local build options
+// (compileSdk=35, packaging, multidex, and release buildType). The earlier duplicate block
+// has been removed to avoid conflicts and duplicate SigningConfig definitions.
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
@@ -53,7 +59,7 @@ flutter {
 
 android {
     namespace = "com.gavra013.gavra_android"
-    compileSdk = 36
+    compileSdk = 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -73,10 +79,16 @@ android {
 
     defaultConfig {
         applicationId = "com.gavra013.gavra_android"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = 35
+        
+        // 🎮 XIAOMI GAMING OPTIMIZACIJE - Flutter handles ABI filtering automatically
         versionCode = 1
         versionName = "6.0.0"
+        
+        // 🔧 Multidex support for large APKs
         multiDexEnabled = true
     }
 

@@ -1712,7 +1712,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontStyle: FontStyle.italic,
-                            fontSize: 15,
+                            fontSize: 14, // 🔧 Smanjeno sa 15 za bolji fit na svim uređajima
                             color: _putnik.jeOdsustvo
                                 ? Colors.orange[600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
                                 : _putnik.jeOtkazan
@@ -1726,12 +1726,10 @@ class _PutnikCardState extends State<PutnikCard> {
                                                 0xFF0D47A1,
                                               ) // 🔵 PLAVO za pokupljene neplaćene
                                         : Colors.black, // ⚪ BELO za nepokupljene
-                            letterSpacing: 0.5,
                           ),
-                          // Allow the name to wrap to two lines on narrower screens
-                          // so it doesn't get aggressively truncated by the action icons.
+                          // 🔧 FIX: Forsiraj jedan red kao na Samsung-u
                           overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
+                          maxLines: 1,
                         ),
                         // 🏠 ADRESE - prikaži adrese za mesečne putnike ili staru adresu za dnevne
                         if (_putnik.mesecnaKarta == true)
@@ -1806,8 +1804,10 @@ class _PutnikCardState extends State<PutnikCard> {
                   ),
                   // 🎯 OPTIMIZOVANE ACTION IKONE - koristi Flexible + Wrap umesto fiksne širine
                   // da spreči overflow na manjim ekranima ili kada ima više ikona
+                  // 🔧 FIX: Smanjen flex na 0 da ikone ne "kradu" prostor od imena
                   if ((isAdmin || isBrudaOrBilevski) && widget.showActions && (driver ?? '').isNotEmpty)
                     Flexible(
+                      flex: 0, // Ne uzimaj dodatni prostor - koristi samo minimalno potreban
                       child: Transform.translate(
                         offset: const Offset(-1, 0), // Pomera ikone levo za 1px
                         child: Container(

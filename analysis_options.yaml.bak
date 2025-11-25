@@ -1,0 +1,8 @@
+# BACKUP - original analysis_options.yaml
+# Created automatically before cleaning by Copilot assistant
+
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Project-specific linter rules can be added here.
