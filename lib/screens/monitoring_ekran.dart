@@ -67,66 +67,57 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
           ),
           backgroundColor: Colors.transparent, // Transparent appBar
           elevation: 0,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer,
-              border: Border.all(
-                color: Theme.of(context).glassBorder,
-                width: 1.5,
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
-            ),
-            child: Column(
-              children: [
-                if (_errorMessage != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.2),
-                      border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.warning, color: Colors.orange),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _errorMessage = null;
-                            });
-                            _ucitajStatistiku();
-                          },
-                          child: const Text(
-                            'Pokušaj ponovo',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              if (_errorMessage != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                _napraviGlavnuKarticu(),
-                const SizedBox(height: 20),
-                _napraviDetaljeKarticu(),
-                const SizedBox(height: 20),
-                _napraviSaveteKarticu(),
-              ],
-            ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning, color: Colors.orange, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _errorMessage = null;
+                          });
+                          _ucitajStatistiku();
+                        },
+                        child: const Text(
+                          'Pokušaj ponovo',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              _napraviGlavnuKarticu(),
+              const SizedBox(height: 12),
+              _napraviDetaljeKarticu(),
+              const SizedBox(height: 12),
+              _napraviSaveteKarticu(),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
       ),
@@ -150,69 +141,71 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: boja.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(25),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
           children: [
             const Text(
               'TRENUTNO STANJE',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 1,
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 4),
             Text(
               status,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 32,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             Container(
-              height: 8,
+              height: 5,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: FractionallySizedBox(
                 widthFactor: procenat / 100,
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Text(
               '${_statistika['procenat']} od mesečnog limita',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9),
-                fontSize: 14,
+                fontSize: 11,
               ),
             ),
-            const SizedBox(height: 8),
             if (_statistika['last_update'] != null)
-              Text(
-                'Poslednje ažuriranje: ${_statistika['last_update']}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 12,
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  'Ažurirano: ${_statistika['last_update']}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 9,
+                  ),
                 ),
               ),
           ],
@@ -225,39 +218,39 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).glassContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).glassBorder,
-          width: 1.5,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.analytics, color: Colors.white, size: 24),
-                const SizedBox(width: 10),
+                const Icon(Icons.analytics, color: Colors.white, size: 16),
+                const SizedBox(width: 6),
                 const Text(
                   'DETALJI POTROŠNJE',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             _napraviRedDetalja(
               '📅 API poziva danas',
               _statistika['dnevni_pozivi'] ?? '0',
@@ -283,24 +276,24 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
               _statistika['egress_limit'] ?? '5 GB',
               'Free tier',
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(15),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info, color: Colors.white),
-                  const SizedBox(width: 10),
+                  const Icon(Icons.info, color: Colors.white, size: 16),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       _statistika['poruka'] ?? '',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -316,11 +309,28 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
 
   Widget _napraviRedDetalja(String ikona, String vrednost, String opis) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(ikona, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 15),
+          SizedBox(
+            width: 130,
+            child: Row(
+              children: [
+                Text(ikona.substring(0, 2), style: const TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    ikona.substring(2).trim(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +338,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                 Text(
                   vrednost,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -337,8 +347,8 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
                   Text(
                     opis,
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 9,
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
               ],
@@ -353,39 +363,39 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).glassContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).glassBorder,
-          width: 1.5,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.lightbulb, color: Colors.amber, size: 24),
-                const SizedBox(width: 10),
+                const Icon(Icons.lightbulb, color: Colors.amber, size: 16),
+                const SizedBox(width: 6),
                 const Text(
                   'KORISNI SAVETI',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             _napraviSavet(
               '🎉',
               'ODLIČO! API pozivi su sada UNLIMITED u Free tier!',
@@ -423,20 +433,20 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
 
   Widget _napraviSavet(String ikona, String tekst) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(ikona, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 12),
+          Text(ikona, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               tekst,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 11,
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
-                height: 1.3,
+                height: 1.2,
               ),
             ),
           ),
