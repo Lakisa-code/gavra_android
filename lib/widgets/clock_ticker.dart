@@ -7,16 +7,16 @@ import 'package:flutter/material.dart';
 /// surrounding widgets. It pauses updates when the app is in background.
 class ClockTicker extends StatefulWidget {
   const ClockTicker({
-    Key? key,
+    super.key,
     this.style,
     this.showSeconds = true,
-  }) : super(key: key);
+  });
 
   final TextStyle? style;
   final bool showSeconds;
 
   @override
-  _ClockTickerState createState() => _ClockTickerState();
+  State<ClockTicker> createState() => _ClockTickerState();
 }
 
 class _ClockTickerState extends State<ClockTicker> with WidgetsBindingObserver {

@@ -598,7 +598,7 @@ class PutovanjaIstorijaService {
       if (query != null && query.length > 2) {
         cacheKey = _getSearchCacheKey(query);
         final cached =
-            await CacheService.getFromMemory<List<PutovanjaIstorija>>(cacheKey);
+            CacheService.getFromMemory<List<PutovanjaIstorija>>(cacheKey);
         if (cached != null) {
           // Debug logging removed for production
           return cached;
@@ -806,7 +806,7 @@ class PutovanjaIstorijaService {
 
       final ukupno = putovanja.length;
       final pokupljeni = putovanja.where((p) => p.jePokupljen).length;
-      final nisu_se_pojavili =
+      final nisuSePojavili =
           putovanja.where((p) => p.status == 'nije_se_pojavio').length;
       final ukupnaZarada =
           putovanja.fold<double>(0.0, (sum, p) => sum + p.cena);
@@ -832,7 +832,7 @@ class PutovanjaIstorijaService {
       return {
         'ukupno_putovanja': ukupno,
         'pokupljeni': pokupljeni,
-        'nisu_se_pojavili': nisu_se_pojavili,
+        'nisu_se_pojavili': nisuSePojavili,
         'procenat_pokupljenih':
             ukupno > 0 ? (pokupljeni / ukupno * 100).round() : 0,
         'ukupna_zarada': ukupnaZarada,

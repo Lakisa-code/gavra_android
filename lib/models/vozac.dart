@@ -82,8 +82,9 @@ class Vozac {
 
   /// Validira telefon format (srpski broj)
   bool get isValidTelefon {
-    if (brojTelefona == null || brojTelefona!.isEmpty)
+    if (brojTelefona == null || brojTelefona!.isEmpty) {
       return true; // Optional field
+    }
 
     final telefon = brojTelefona!.replaceAll(RegExp(r'[^\d+]'), '');
 

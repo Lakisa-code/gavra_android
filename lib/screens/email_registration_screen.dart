@@ -327,10 +327,11 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             color: Colors.blue,
           ),
           onPressed: () {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _isPasswordVisible = !_isPasswordVisible;
               });
+            }
           },
         ),
         filled: true,
@@ -381,10 +382,11 @@ class _EmailRegistrationScreenState extends State<EmailRegistrationScreen> with 
             color: Colors.blue,
           ),
           onPressed: () {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
               });
+            }
           },
         ),
         filled: true,

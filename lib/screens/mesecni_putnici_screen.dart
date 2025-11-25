@@ -61,7 +61,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   late ValueNotifier<bool> _isNetworkConnected;
 
   // Working days state
-  Map<String, bool> _noviRadniDani = {
+  final Map<String, bool> _noviRadniDani = {
     'pon': true,
     'uto': true,
     'sre': true,
@@ -1876,10 +1876,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                           ),
                           menuMaxHeight: 300, // Ograniči visinu dropdown menija
                           onChanged: (String? newValue) {
-                            if (mounted)
+                            if (mounted) {
                               setState(() {
                                 selectedMonth = newValue!;
                               });
+                            }
                           },
                           items: _getMonthOptions().map<DropdownMenuItem<String>>((String value) {
                             // Proveri da li je mesec plaćen
@@ -2082,10 +2083,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ]),
                           onChanged: (String? newValue) {
                             if (newValue != null) {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() {
                                   selectedPeriod = newValue;
                                 });
+                              }
                             }
                           },
                         ),
@@ -2869,10 +2871,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 child: Checkbox(
                   value: _noviRadniDani[danKod] ?? false,
                   onChanged: (bool? value) {
-                    if (mounted)
+                    if (mounted) {
                       setState(() {
                         _noviRadniDani[danKod] = value ?? false;
                       });
+                    }
                   },
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
@@ -3248,7 +3251,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       return;
     }
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         // Kopiraj na sve ostale označene radne dane
         for (final dan in _noviRadniDani.entries) {
@@ -3262,6 +3265,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           }
         }
       });
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -3274,16 +3278,17 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 🗑️ OČISTI VREMENA ZA DAN
   void _ocistiVremenaZaDan(String dan) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _getControllerBelaCrkva(dan).clear();
         _getControllerVrsac(dan).clear();
       });
+    }
   }
 
   /// ⏰ POPUNI STANDARDNA VREMENA
   void _popuniStandardnaVremena(String template) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         // Popuni samo označene radne dane
         final daniZaPopunjavanje =
@@ -3316,6 +3321,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             break;
         }
       });
+    }
 
     // Prikaži potvrdu
     final message =

@@ -44,19 +44,21 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
     // Listen za connectivity changes
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen((result) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isOnline = !result.contains(ConnectivityResult.none);
         });
+      }
     });
   }
 
   Future<void> _checkConnectivity() async {
     final result = await Connectivity().checkConnectivity();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isOnline = !result.contains(ConnectivityResult.none);
       });
+    }
   }
 
   /// Dobija ikonu na osnovu tipa adrese/mesta
@@ -152,21 +154,23 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
 
   Future<void> _loadAdrese() async {
     final adrese = await AdreseService.getAdreseZaGrad(widget.grad);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _filteredAdrese = adrese;
       });
+    }
   }
 
   Future<void> _filterAdrese(String query) async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
       });
+    }
 
     try {
       final adrese = await AdreseService.pretraziAdrese(widget.grad, query);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _filteredAdrese = adrese;
           _isLoading = false;
@@ -177,11 +181,13 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
             _removeOverlay();
           }
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
+      }
     }
   }
 

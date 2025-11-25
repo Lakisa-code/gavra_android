@@ -29,16 +29,13 @@ class RealTimeStatistikaService {
 
   /// 🔄 GLAVNI KOMBINOVANI STREAM - koristi se svugde
   Stream<List<dynamic>> get kombinovaniPutniciStream {
-    if (_kombinovaniStream == null) {
-      // Debug logging removed for production
-      _kombinovaniStream = CombineLatestStream.combine2(
+    _kombinovaniStream ??= CombineLatestStream.combine2(
         PutnikService().streamKombinovaniPutniciFiltered(),
         MesecniPutnikService.streamAktivniMesecniPutnici(),
         (List<Putnik> putnici, List<MesecniPutnik> mesecni) {
           return [putnici, mesecni];
         },
-      ).shareReplay(maxSize: 1); // 🔧 SHARE REPLAY za cache
-    }
+      ).shareReplay(maxSize: 1);
 
     return _kombinovaniStream!;
   }

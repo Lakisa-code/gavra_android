@@ -87,7 +87,9 @@ class RealtimePriorityService {
 
       // HITNA OBAVEŠTENJA
       await _checkEmergencyNotifications();
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   /// ⚡ PROCESS MEDIUM UPDATES (5s)
@@ -100,7 +102,9 @@ class RealtimePriorityService {
 
       // VOZAC DATA
       await _updateDriverData();
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   /// 🔄 PROCESS LOW PRIORITY UPDATES (NO BATTERY BULLSHIT!)
@@ -111,7 +115,9 @@ class RealtimePriorityService {
     try {
       // OSTALI PODACI - uvek update bez battery sranja
       await _updateOtherData();
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   /// 🎯 CHECK PASSENGER UPDATES (CRITICAL!)
@@ -284,10 +290,7 @@ class RealtimePriorityService {
         'battery_level': prefs.getInt('battery_level') ?? 100,
       };
 
-      await Supabase.instance.client
-          .from('vozaci')
-          .update(driverData)
-          .eq('id', currentDriver);
+      await Supabase.instance.client.from('vozaci').update(driverData).eq('id', currentDriver);
 
       // Sačuvaj lokalno timestamp poslednjeg ažuriranja
       await prefs.setInt(

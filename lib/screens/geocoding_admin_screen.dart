@@ -125,11 +125,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   void _initializeRealtimeStream() {
     _statsSubscription?.cancel();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
+    }
 
     // Simulate stream-like behavior with periodic updates
     _loadData();
@@ -149,10 +150,11 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   }
 
   void _performSearch(String query) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         // Trigger rebuild with filtered data
       });
+    }
   }
 
   void _loadInitialData() {
@@ -168,13 +170,14 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       final popular = await GeocodingStatsService.getPopularLocations();
 
       if (mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _cachedStats = stats;
             _cachedPopularLocations = popular;
             _isLoading = false;
             _errorMessage = null;
           });
+        }
 
         // Sort locations
         _sortLocations();
@@ -182,11 +185,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     } catch (e) {
       if (mounted) {
         _geocodingStreamHealthy.value = false;
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
             _errorMessage = e.toString();
           });
+        }
 // 🔄 AUTO RETRY after 10 seconds for admin screens
         Timer(const Duration(seconds: 10), () {
           if (mounted && _autoRefreshEnabled) {
@@ -392,10 +396,11 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
           const SizedBox(width: 8),
           IconButton(
             onPressed: () {
-              if (mounted)
+              if (mounted) {
                 setState(() {
                   _autoRefreshEnabled = !_autoRefreshEnabled;
                 });
+              }
             },
             icon: Icon(
               _autoRefreshEnabled ? Icons.sync : Icons.sync_disabled,
@@ -531,10 +536,11 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final isSelected = _selectedFilter == value;
     return GestureDetector(
       onTap: () {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _selectedFilter = value;
           });
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -562,11 +568,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     final isSelected = _sortBy == value;
     return GestureDetector(
       onTap: () {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _sortBy = value;
             _sortLocations();
           });
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

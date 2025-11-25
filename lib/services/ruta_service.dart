@@ -144,7 +144,7 @@ class RutaService with BatchDatabaseMixin {
     try {
       // Pokušaj cache prvo
       final cacheKey = _getByIdCacheKey(id);
-      final cached = await CacheService.getFromMemory<Ruta>(cacheKey);
+      final cached = CacheService.getFromMemory<Ruta>(cacheKey);
       if (cached != null) {
         // Debug logging removed for production
         return cached;
@@ -396,7 +396,7 @@ class RutaService with BatchDatabaseMixin {
           minUdaljenost == null &&
           maxUdaljenost == null) {
         cacheKey = _getSearchCacheKey(query);
-        final cached = await CacheService.getFromMemory<List<Ruta>>(cacheKey);
+        final cached = CacheService.getFromMemory<List<Ruta>>(cacheKey);
         if (cached != null) {
           // Debug logging removed for production
           return cached;

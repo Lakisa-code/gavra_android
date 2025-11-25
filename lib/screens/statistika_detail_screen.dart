@@ -55,32 +55,35 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   void _initializeRealtimeMonitoring() {
     _putnikSubscription?.cancel();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
+    }
 
     _putnikSubscription =
         PutnikService().streamKombinovaniPutniciFiltered().timeout(const Duration(seconds: 30)).listen(
       (putnici) {
         if (mounted) {
-          if (mounted)
+          if (mounted) {
             setState(() {
               _cachedPutnici = putnici;
               _isLoading = false;
               _errorMessage = null;
               _hasData = putnici.isNotEmpty;
             });
+          }
         }
       },
       onError: (Object error) {
         if (mounted) {
-          if (mounted)
+          if (mounted) {
             setState(() {
               _isLoading = false;
               _errorMessage = 'Greška pri učitavanju: $error';
             });
+          }
         }
       },
     );
@@ -813,10 +816,11 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
     );
 
     if (picked != null) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _selectedRange = picked;
         });
+      }
       _loadData();
     }
   }
@@ -825,11 +829,12 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
   Future<void> _loadData() async {
     if (!mounted) return;
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
+    }
 
     try {
       // Clear cache when date range changes
@@ -838,18 +843,20 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
 
       // Trigger UI update
       if (mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
           });
+        }
       }
     } catch (e) {
       if (mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
             _errorMessage = 'Greška pri učitavanju podataka: $e';
           });
+        }
       }
     }
   }

@@ -174,11 +174,12 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     _timeoutTimer?.cancel();
     _loadingTimer?.cancel();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _hasError.value = true;
         _errorMessage.value = error;
       });
+    }
   }
 
   void _navigateToMainApp() {

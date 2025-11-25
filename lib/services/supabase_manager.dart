@@ -28,10 +28,7 @@ class SupabaseManager {
 
   /// Dobij optimizovani Supabase klijent
   static SupabaseClient get client {
-    if (_client == null) {
-      // Debug logging removed for production
-      _client = Supabase.instance.client;
-    }
+    _client ??= Supabase.instance.client;
     return _client!;
   }
 

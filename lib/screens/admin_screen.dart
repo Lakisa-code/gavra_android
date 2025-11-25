@@ -130,15 +130,17 @@ class _AdminScreenState extends State<AdminScreen> {
           return null;
         },
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _currentDriver = driver;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _currentDriver = null;
         });
+      }
     }
   }
 
@@ -639,10 +641,11 @@ class _AdminScreenState extends State<AdminScreen> {
                                           }).toList(),
                                           onChanged: (value) {
                                             if (value != null) {
-                                              if (mounted)
+                                              if (mounted) {
                                                 setState(() {
                                                   _selectedDan = value;
                                                 });
+                                              }
                                             }
                                           },
                                         ),

@@ -82,7 +82,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
           _globalAudioPlayer = null;
         }
       });
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore audio errors
+    }
   }
 
   late AnimationController _fadeController;
@@ -346,10 +348,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             color: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _isPasswordVisible = !_isPasswordVisible;
               });
+            }
           },
         ),
         filled: true,
@@ -554,6 +557,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
           // ignore: avoid_print
           print('Auth: Firebase not initialized - showing friendly fallback');
 
+          if (!mounted) return;
           showDialog<void>(
             context: context,
             builder: (context) => AlertDialog(

@@ -56,12 +56,13 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 if (mounted) {
                   try {
                     final gpsLokacije = data.map((json) => GPSLokacija.fromMap(json)).toList();
-                    if (mounted)
+                    if (mounted) {
                       setState(() {
                         _gpsLokacije = gpsLokacije;
                         _isLoading = false;
                         _updateMarkers();
                       });
+                    }
                   } catch (e) {
 // Fallback to cached data
                     if (_gpsLokacije.isEmpty) {
@@ -86,11 +87,12 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         if (mounted) {
           try {
             final putnici = data.map((json) => Putnik.fromMap(json)).toList();
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _putnici = putnici;
                 _updateMarkers();
               });
+            }
           } catch (e) {
 // Fallback to cached data
             if (_putnici.isEmpty) {
@@ -126,13 +128,16 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     try {
       final putnikService = PutnikService();
       final putnici = await putnikService.getAllPutniciFromBothTables();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _putnici = putnici;
           _lastPutniciLoad = DateTime.now();
         });
+      }
       _updateMarkers();
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -149,17 +154,20 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
           // desiredAccuracy: deprecated, use settings parameter
           );
 
-      if (mounted)
+      if (mounted) {
         setState(() {
           _currentPosition = position;
         });
+      }
 
       // Centriraj mapu na trenutnu poziciju
       _mapController.move(
         LatLng(position.latitude, position.longitude),
         13.0,
       );
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   Future<void> _loadGpsLokacije() async {
@@ -169,10 +177,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
 
     try {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoading = true;
         });
+      }
 
       // Prvo pokušaj da dobiješ strukturu tabele
       final response =
@@ -181,15 +190,18 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       for (final json in response as List<dynamic>) {
         try {
           gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
-        } catch (e) {}
+        } catch (e) {
+          // Silently ignore malformed GPS data
+        }
       }
-      if (mounted)
+      if (mounted) {
         setState(() {
           _gpsLokacije = gpsLokacije;
           _lastGpsLoad = DateTime.now();
           _updateMarkers();
           _isLoading = false;
         });
+      }
 
       // Automatski fokusiraj na sve vozače nakon učitavanja
       if (_markers.isNotEmpty) {
@@ -197,11 +209,12 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         _fitAllMarkers();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _gpsLokacije = []; // Postavi praznu listu
           _isLoading = false;
         });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -281,10 +294,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       _addPassengerMarkers(markers);
     }
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _markers = markers;
       });
+    }
   }
 
   Color _getDriverColor(GPSLokacija lokacija) {
@@ -401,10 +415,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         color: _showDrivers ? Colors.white : Colors.white54,
                       ),
                       onPressed: () {
-                        if (mounted)
+                        if (mounted) {
                           setState(() {
                             _showDrivers = !_showDrivers;
                           });
+                        }
                         _updateMarkers();
                       },
                       tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
@@ -416,10 +431,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         color: _showPassengers ? Colors.white : Colors.white54,
                       ),
                       onPressed: () {
-                        if (mounted)
+                        if (mounted) {
                           setState(() {
                             _showPassengers = !_showPassengers;
                           });
+                        }
                         _updateMarkers();
                       },
                       tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',

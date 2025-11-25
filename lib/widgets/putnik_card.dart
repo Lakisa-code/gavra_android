@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -114,10 +116,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
           final updatedPutnik = await PutnikService().getPutnikFromAnyTable(_putnik.id!);
           if (updatedPutnik != null && mounted) {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _putnik = updatedPutnik;
               });
+            }
 
             // 🎉 PRIKAZ USPEŠNE PORUKE
             if (mounted) {
@@ -128,10 +131,11 @@ class _PutnikCardState extends State<PutnikCard> {
           } else {
             // Forsiraj UI ažuriranje
             if (mounted) {
-              if (mounted)
+              if (mounted) {
                 setState(() {
                   // Jednostavno forsiranje rebuild-a widgeta
                 });
+              }
             }
           }
         } catch (e) {
@@ -168,10 +172,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
           // 🔄 FORSIRAJ UI REFRESH za promenu boje kartice
           if (mounted) {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 // Forsiranje rebuild-a za ažuriranje boje
               });
+            }
           }
 
           // 📳 Haptic feedback za pokupljanje - SUCCESS pattern!
@@ -238,13 +243,14 @@ class _PutnikCardState extends State<PutnikCard> {
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
       if (updatedPutnik != null && mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _putnik = updatedPutnik;
           });
+        }
       } else if (mounted) {
         // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
-        if (mounted)
+        if (mounted) {
           setState(() {
             _putnik = Putnik(
               id: _putnik.id,
@@ -264,6 +270,7 @@ class _PutnikCardState extends State<PutnikCard> {
               brojTelefona: _putnik.brojTelefona,
             );
           });
+        }
       }
 
       if (mounted) {
@@ -349,6 +356,7 @@ class _PutnikCardState extends State<PutnikCard> {
           subtitle: Text(_putnik.brojTelefona!),
           onTap: () async {
             Navigator.pop(context);
+
             await _pozoviBroj();
           },
         ),
@@ -363,6 +371,7 @@ class _PutnikCardState extends State<PutnikCard> {
           subtitle: Text(_putnik.brojTelefona!),
           onTap: () async {
             Navigator.pop(context);
+
             await _posaljiSMS(_putnik.brojTelefona!);
           },
         ),
@@ -378,6 +387,7 @@ class _PutnikCardState extends State<PutnikCard> {
           subtitle: Text(mesecniPutnik.brojTelefonaOca!),
           onTap: () async {
             Navigator.pop(context);
+
             await _pozoviBrojRoditelja(mesecniPutnik!.brojTelefonaOca!);
           },
         ),
@@ -389,6 +399,7 @@ class _PutnikCardState extends State<PutnikCard> {
           subtitle: Text(mesecniPutnik.brojTelefonaOca!),
           onTap: () async {
             Navigator.pop(context);
+
             await _posaljiSMS(mesecniPutnik!.brojTelefonaOca!);
           },
         ),
@@ -406,6 +417,7 @@ class _PutnikCardState extends State<PutnikCard> {
           subtitle: Text(mesecniPutnik.brojTelefonaMajke!),
           onTap: () async {
             Navigator.pop(context);
+
             await _pozoviBrojRoditelja(mesecniPutnik!.brojTelefonaMajke!);
           },
         ),
@@ -417,6 +429,7 @@ class _PutnikCardState extends State<PutnikCard> {
           subtitle: Text(mesecniPutnik.brojTelefonaMajke!),
           onTap: () async {
             Navigator.pop(context);
+
             await _posaljiSMS(mesecniPutnik!.brojTelefonaMajke!);
           },
         ),
@@ -962,10 +975,11 @@ class _PutnikCardState extends State<PutnikCard> {
                         }).toList(),
                         onChanged: (String? newMonth) {
                           if (newMonth != null) {
-                            if (mounted)
+                            if (mounted) {
                               setState(() {
                                 selectedMonth = newMonth;
                               });
+                            }
                           }
                         },
                       ),

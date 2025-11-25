@@ -23,29 +23,32 @@ class _CleanStatistikaWidgetState extends State<CleanStatistikaWidget> {
   Future<void> _ucitajStatistike() async {
     try {
       if (mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _loading = true;
             _error = null;
           });
+        }
       }
 
       final stats = await CleanStatistikaService.dohvatiUkupneStatistike();
 
       if (mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _statistike = stats;
             _loading = false;
           });
+        }
       }
     } catch (e) {
       if (mounted) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _error = e.toString();
             _loading = false;
           });
+        }
       }
     }
   }

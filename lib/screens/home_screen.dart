@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // CACHE UKLONJEN - nepotrebne varijable uklonjene
   // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnih Timer-a
-  List<Putnik> _allPutnici = [];
+  final List<Putnik> _allPutnici = [];
 
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
@@ -275,8 +275,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       // CACHE UKLONJEN - koristimo direktne Supabase pozive
 
       // Inicijalizuj lokalne notifikacije za heads-up i zvuk
-      LocalNotificationService.initialize(context);
-      RealtimeNotificationService.listenForForegroundNotifications(context);
+      if (mounted) {
+        LocalNotificationService.initialize(context);
+        RealtimeNotificationService.listenForForegroundNotifications(context);
+      }
 
       // 🔄 Auto-update removed per request
 
@@ -312,11 +314,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeCurrentDriver() async {
     final driver = await FirebaseService.getCurrentDriver();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         // Inicijalizacija driver-a
         _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
       });
+    }
   }
 
   Future<void> _initializeRealtimeService() async {
@@ -340,7 +343,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _checkRealtimeHealth,
         isPeriodic: true,
       );
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore timer errors
+    }
   }
 
   // 🚨 Check realtime system health
@@ -502,7 +507,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     if (shouldLogout == true) {
       // Koristi centralizovani AuthManager za logout
-      await AuthManager.logout(context);
+      if (mounted) {
+        await AuthManager.logout(context);
+      }
     }
   }
 
@@ -1221,14 +1228,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           setStateDialog(() {
                                             isDialogLoading = false;
                                           });
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                '❌ Greška: Sličan putnik za izabrani dan/vreme već postoji',
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  '❌ Greška: Sličan putnik za izabrani dan/vreme već postoji',
+                                                ),
+                                                backgroundColor: Colors.red,
                                               ),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
+                                            );
+                                          }
                                           return;
                                         }
                                       } catch (e) {
@@ -1480,12 +1489,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedVreme: _selectedVreme,
                 getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
-                  if (mounted)
+                  if (mounted) {
                     setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                       _selectedGradSubject.add(grad);
                     });
+                  }
                 },
               )
             : BottomNavBarLetnji(
@@ -1494,12 +1504,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedVreme: _selectedVreme,
                 getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
                 onPolazakChanged: (grad, vreme) {
-                  if (mounted)
+                  if (mounted) {
                     setState(() {
                       _selectedGrad = grad;
                       _selectedVreme = vreme;
                       _selectedGradSubject.add(grad);
                     });
+                  }
                 },
               ),
       );
@@ -2169,10 +2180,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     onChanged: () {
                                       // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
                                       if (mounted) {
-                                        if (mounted)
+                                        if (mounted) {
                                           setState(() {
                                             // Trigger rebuild-a StreamBuilder-a
                                           });
+                                        }
                                       }
                                     },
                                   ),
@@ -2192,12 +2204,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     getPutnikCount: getPutnikCount,
                     onPolazakChanged: (grad, vreme) {
                       // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
-                      if (mounted)
+                      if (mounted) {
                         setState(() {
                           _selectedGrad = grad;
                           _selectedVreme = vreme;
                           _selectedGradSubject.add(grad); // Ažuriraj stream
                         });
+                      }
                     },
                   )
                 : BottomNavBarLetnji(
@@ -2206,12 +2219,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     selectedVreme: _selectedVreme,
                     getPutnikCount: getPutnikCount,
                     onPolazakChanged: (grad, vreme) async {
-                      if (mounted)
+                      if (mounted) {
                         setState(() {
                           _selectedGrad = grad;
                           _selectedVreme = vreme;
                           _selectedGradSubject.add(grad);
                         });
+                      }
                     },
                   ),
           ), // Zatvaranje Container wrapper-a
@@ -2231,13 +2245,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (!_selectedGradSubject.isClosed) {
         _selectedGradSubject.close();
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
 
     // 🧹 CLEANUP REAL-TIME SUBSCRIPTIONS
     try {
       _realtimeSubscription?.cancel();
       _networkStatusSubscription?.cancel();
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
 
     // No overlay cleanup needed currently
 
@@ -2246,7 +2264,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) {
         _isRealtimeHealthy.dispose();
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
     super.dispose();
   }
 }

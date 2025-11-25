@@ -149,6 +149,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           );
 
           // 🎯 KONZISTENTNA PORUKA - isto kao i uspešno slanje
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -521,7 +522,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
           _showAutomaticReportDialog(automatskiPopis);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   // 📊 DIALOG ZA PRIKAZ POPISA IZ PRETHODNOG DANA

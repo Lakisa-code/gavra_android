@@ -29,7 +29,7 @@ Future<void> backgroundNotificationHandler(Map<String, dynamic> payload) async {
     await LocalNotificationService.showNotificationFromBackground(
       title: title,
       body: body,
-      payload: rawData != null ? rawData.toString() : null,
+      payload: rawData?.toString(),
     );
   } catch (_) {
     // Swallow errors in background handler — background execution is best-effort.

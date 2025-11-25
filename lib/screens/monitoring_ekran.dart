@@ -5,10 +5,10 @@ import '../theme.dart'; // 🎨 Import ThemeManager
 
 /// Jednostavan i lep ekran za praćenje Supabase potrošnje
 class MonitoringEkran extends StatefulWidget {
-  const MonitoringEkran({Key? key}) : super(key: key);
+  const MonitoringEkran({super.key});
 
   @override
-  _MonitoringEkranState createState() => _MonitoringEkranState();
+  State<MonitoringEkran> createState() => _MonitoringEkranState();
 }
 
 class _MonitoringEkranState extends State<MonitoringEkran> {

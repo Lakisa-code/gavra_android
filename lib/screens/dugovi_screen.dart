@@ -117,11 +117,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
   void _initializeRealtimeStream() {
     _dugoviSubscription?.cancel();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
+    }
 
     _dugoviSubscription = PutnikService()
         .streamKombinovaniPutniciFiltered(
@@ -148,22 +149,24 @@ class _DugoviScreenState extends State<DugoviScreen> {
           // Sort dužnike
           _sortDugovi(duznici);
 
-          if (mounted)
+          if (mounted) {
             setState(() {
               _cachedDugovi = duznici;
               _isLoading = false;
               _errorMessage = null;
             });
+          }
         }
       },
       onError: (Object error) {
         if (mounted) {
           _dugoviStreamHealthy.value = false;
-          if (mounted)
+          if (mounted) {
             setState(() {
               _isLoading = false;
               _errorMessage = error.toString();
             });
+          }
 // 🔄 AUTO RETRY after 5 seconds
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
@@ -189,10 +192,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
   }
 
   void _performSearch(String query) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         // Trigger rebuild with filtered data
       });
+    }
   }
 
   void _loadInitialData() {
@@ -420,10 +424,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                       onChanged: (value) {
-                        if (mounted)
+                        if (mounted) {
                           setState(() {
                             _selectedFilter = value!;
                           });
+                        }
                         _filterSubject.add(value!);
                       },
                       items: const [
@@ -464,11 +469,12 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                     onChanged: (value) {
-                      if (mounted)
+                      if (mounted) {
                         setState(() {
                           _sortBy = value!;
                           _sortDugovi(_cachedDugovi);
                         });
+                      }
                     },
                     items: const [
                       DropdownMenuItem(

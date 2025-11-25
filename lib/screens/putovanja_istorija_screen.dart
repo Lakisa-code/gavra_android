@@ -123,11 +123,12 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   void _initializeRealtimeStream() {
     _putovanjaSubscription?.cancel();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
+    }
 
     _putovanjaSubscription =
         PutovanjaIstorijaService.streamPutovanjaZaDatum(_selectedDate).timeout(const Duration(seconds: 30)).listen(
@@ -136,22 +137,24 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           _registerStreamHeartbeat('putovanja_stream');
           _putovanjaStreamHealthy.value = true;
 
-          if (mounted)
+          if (mounted) {
             setState(() {
               _cachedPutovanja = putovanja;
               _isLoading = false;
               _errorMessage = null;
             });
+          }
         }
       },
       onError: (Object error) {
         if (mounted) {
           _putovanjaStreamHealthy.value = false;
-          if (mounted)
+          if (mounted) {
             setState(() {
               _isLoading = false;
               _errorMessage = error.toString();
             });
+          }
 // 🔄 AUTO RETRY after 5 seconds
           Timer(const Duration(seconds: 5), () {
             if (mounted) {
@@ -189,10 +192,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
           (putovanje.napomene?.toLowerCase().contains(query.toLowerCase()) ?? false);
     }).toList();
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         // This will trigger rebuild with filtered data
       });
+    }
   }
 
   void _loadInitialData() {
@@ -290,10 +294,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                         ),
                       ),
                       onSelected: (value) {
-                        if (mounted)
+                        if (mounted) {
                           setState(() {
                             _selectedFilter = value;
                           });
+                        }
                         _filterSubject.add(value);
                       },
                       itemBuilder: (context) => [
@@ -459,10 +464,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                             onChanged: (value) {
-                              if (mounted)
+                              if (mounted) {
                                 setState(() {
                                   _selectedFilter = value!;
                                 });
+                              }
                               _filterSubject.add(value!);
                             },
                             items: [
@@ -1149,7 +1155,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
 
   // 📊 SORT DATA IMPLEMENTATION
   void _sortData(String sortBy) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         switch (sortBy) {
           case 'vreme':
@@ -1166,6 +1172,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
             break;
         }
       });
+    }
   }
 
   // 📄 EXPORT DATA FUNCTIONALITY
@@ -1220,6 +1227,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         await _preparePrintData(filteredData);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Greška pri eksportu: $e'),
@@ -1241,6 +1249,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
       if (csvContent.isNotEmpty) {
         // U realnoj aplikaciji, ovde bi bio kod za čuvanje fajla
         // ili deljenje kroz share API
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Eksportovano ${data.length} putovanja u CSV'),
@@ -1256,6 +1265,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('CSV export greška: $e'),
@@ -1290,10 +1300,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
 
     if (picked != null && picked != _selectedDate) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _selectedDate = picked;
         });
+      }
 
       // 🔄 REINITIALIZE STREAM FOR NEW DATE
       _initializeRealtimeStream();
@@ -1303,13 +1314,14 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   // 📝 DODAJ NOVO PUTOVANJE
   void _dodajNovoPutovanje() {
     // Reset forme
-    if (mounted)
+    if (mounted) {
       setState(() {
         _noviPutnikIme = '';
         _noviPutnikTelefon = '';
         _novaCena = 0.0;
         _noviTipPutnika = 'regularni';
       });
+    }
 
     showDialog<void>(
       context: context,
@@ -1408,13 +1420,14 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         );
 
         // Resetuj forme
-        if (mounted)
+        if (mounted) {
           setState(() {
             _noviPutnikIme = '';
             _noviPutnikTelefon = '';
             _novaCena = 0.0;
             _noviTipPutnika = 'regularni';
           });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1428,7 +1441,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   // ✏️ EDIT PUTOVANJE
   void _editPutovanje(PutovanjaIstorija putovanje) {
     // Postavi vrednosti za edit
-    if (mounted)
+    if (mounted) {
       setState(() {
         _noviPutnikIme = putovanje.putnikIme;
         _noviPutnikTelefon =
@@ -1436,6 +1449,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         _novaCena = putovanje.cena;
         _noviTipPutnika = putovanje.tipPutnika;
       });
+    }
 
     showDialog<void>(
       context: context,

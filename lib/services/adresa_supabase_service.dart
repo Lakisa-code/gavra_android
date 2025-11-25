@@ -242,4 +242,79 @@ class AdresaSupabaseService {
       return [];
     }
   }
+
+  /// 📊 NOVO: Dobij najčešće korišćene adrese (na osnovu putovanja_istorija)
+  /// Vraća listu adresa sa brojem putovanja, sortiranu po popularnosti
+  static Future<List<Map<String, dynamic>>> getNajcesceKorisceneAdrese({
+    int limit = 10,
+    String? grad,
+  }) async {
+    try {
+      // Dohvati sve adrese koje imaju putovanja
+      var query = supabase
+          .from('putovanja_istorija')
+          .select('adresa_id, adrese!inner(id, naziv, grad, koordinate)')
+          .not('adresa_id', 'is', null);
+
+      if (grad != null) {
+        query = query.eq('adrese.grad', grad);
+      }
+
+      final response = await query;
+
+      // Prebroj koliko puta se svaka adresa pojavljuje
+      final Map<String, Map<String, dynamic>> adresaCounts = {};
+
+      for (final row in response) {
+        final adresaId = row['adresa_id'] as String?;
+        if (adresaId == null) continue;
+
+        final adresaData = row['adrese'] as Map<String, dynamic>?;
+        if (adresaData == null) continue;
+
+        if (adresaCounts.containsKey(adresaId)) {
+          adresaCounts[adresaId]!['count'] = (adresaCounts[adresaId]!['count'] as int) + 1;
+        } else {
+          final adresa = Adresa.fromMap(adresaData);
+          adresaCounts[adresaId] = {
+            'adresa': adresa,
+            'count': 1,
+            'icon': adresa.addressIcon,
+            'naziv': adresa.naziv,
+            'grad': adresa.grad,
+          };
+        }
+      }
+
+      // Sortiraj po broju putovanja (najviše korišćene prvo)
+      final sortedList = adresaCounts.values.toList()..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+
+      // Vrati samo prvih N
+      return sortedList.take(limit).toList();
+    } catch (e) {
+      print('❌ Greška pri dohvatanju najčešćih adresa: $e');
+      return [];
+    }
+  }
+
+  /// 📊 NOVO: Dobij statistiku adresa sa ikonama
+  /// Vraća formatirani string za prikaz (npr. "🏥 Ambulanta Jasenovo (45 putovanja)")
+  static Future<List<String>> getNajcesceKorisceneAdreseFormatted({
+    int limit = 10,
+    String? grad,
+  }) async {
+    final adrese = await getNajcesceKorisceneAdrese(limit: limit, grad: grad);
+
+    return adrese.map((data) {
+      final icon = data['icon'] as String;
+      final naziv = data['naziv'] as String;
+      final gradAdrese = data['grad'] as String?;
+      final count = data['count'] as int;
+
+      if (gradAdrese != null && gradAdrese.isNotEmpty) {
+        return '$icon $naziv, $gradAdrese ($count putovanja)';
+      }
+      return '$icon $naziv ($count putovanja)';
+    }).toList();
+  }
 }

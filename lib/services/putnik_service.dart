@@ -774,7 +774,9 @@ class PutnikService {
             );
             sviPutnici.addAll(mesecniPutnici);
           } else {}
-        } catch (e) {}
+        } catch (e) {
+          // Silently ignore parsing errors
+        }
       }
 
       // 2. DNEVNI PUTNICI - koristi događaje iz putovanja_istorija stream-a filtrirane na danas
@@ -792,9 +794,13 @@ class PutnikService {
             final putnik =
                 Putnik.fromPutovanjaIstorija(item as Map<String, dynamic>);
             sviPutnici.add(putnik);
-          } catch (e) {}
+          } catch (e) {
+            // Silently ignore
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        // Silently ignore
+      }
 
       // 3. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
       try {
@@ -805,9 +811,13 @@ class PutnikService {
           try {
             final putnik = Putnik.fromPutovanjaIstorija(item);
             sviPutnici.add(putnik);
-          } catch (e) {}
+          } catch (e) {
+            // Silently ignore
+          }
         }
-      } catch (e) {} // ✅ SORTIRANJE: Otkazani na dno liste
+      } catch (e) {
+        // Silently ignore
+      } // ✅ SORTIRANJE: Otkazani na dno liste
       sviPutnici.sort((a, b) {
         if (a.jeOtkazan && !b.jeOtkazan) return 1;
         if (!a.jeOtkazan && b.jeOtkazan) return -1;
@@ -1090,7 +1100,9 @@ class PutnikService {
       // 🔄 AUTOMATSKA SINHRONIZACIJA - ažuriraj brojPutovanja iz istorije
       try {
         await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(id);
-      } catch (e) {}
+      } catch (e) {
+        // Silently ignore sync errors
+      }
     } else {
       // Za putovanja_istorija koristi novu 'status' kolonu
 
@@ -1704,7 +1716,9 @@ class PutnikService {
             }).eq('id', putnik['id'] as String);
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        // Silently ignore reset errors
+      }
 
       // Resetuj dnevne putnike koji su pokupljeni van trenutnog vremena polaska
       try {

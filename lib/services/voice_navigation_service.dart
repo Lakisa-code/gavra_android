@@ -15,7 +15,7 @@ class VoiceNavigationService {
   static AudioSession? _audioSession;
   static bool _isInitialized = false;
   static bool _isSpeaking = false;
-  static String _currentLanguage = 'sr-RS'; // Srpski jezik
+  static final String _currentLanguage = 'sr-RS'; // Srpski jezik
 
   // Navigation state
   static List<TurnByTurnInstruction> _currentInstructions = [];

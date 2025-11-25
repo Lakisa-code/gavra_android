@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// 🚀 PerformanceUtils - brze optimizacije za Flutter performanse
 class PerformanceUtils {
   /// Debounce za search funkcije - sprečava prebrze API pozive
-  static Map<String, Future<void>?> _debouncedCalls = {};
+  static final Map<String, Future<void>?> _debouncedCalls = {};
 
   static Future<T> debounce<T>(
     String key,

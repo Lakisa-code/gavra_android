@@ -171,21 +171,6 @@ class _MyAppState extends State<MyApp> {
     try {
       RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (_) {}
-    _setupAuthListener();
-  }
-
-  // 🔐 SETUP AUTH STATE LISTENER ZA EMAIL VERIFICATION
-  void _setupAuthListener() {
-    try {
-      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-        final AuthChangeEvent event = data.event;
-        final Session? session = data.session;
-
-        if (event == AuthChangeEvent.signedIn && session != null) {
-          // Korisnik je uspešno ulogovan nakon email verification
-        }
-      });
-    } catch (e) {}
   }
 
   Future<void> _initializeApp() async {
