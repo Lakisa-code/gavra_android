@@ -1451,8 +1451,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
       // 🚗 LISTA NAVIGACIJSKIH APLIKACIJA (Huawei/GBox kompatibilno)
       final navigacijeUrls = [
-        // OpenStreetMap (preferirana besplatna opcija)
-        'https://www.openstreetmap.org/directions?to=$lat,$lng',
+        // Google Maps (Samsung i većina Android uređaja)
+        'google.navigation:q=$lat,$lng',
+
+        // Waze
+        'waze://?ll=$lat,$lng&navigate=yes',
 
         // Petal Maps (Huawei)
         'petalmaps://route?daddr=$lat,$lng',
@@ -1460,17 +1463,14 @@ class _PutnikCardState extends State<PutnikCard> {
         // HERE WeGo (Huawei kompatibilan)
         'here-route://mylocation/$lat,$lng',
 
-        // Waze
-        'waze://?ll=$lat,$lng&navigate=yes',
-
         // Yandex Maps
         'yandexmaps://build_route_on_map?lat_to=$lat&lon_to=$lng',
 
-        // Generic geo intent (Android fallback)
+        // Generic geo intent (Android fallback - otvara Google Maps ako je instaliran)
         'geo:$lat,$lng?q=$lat,$lng',
 
-        // Browser fallback using OpenStreetMap
-        'https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng',
+        // Browser fallback using OpenStreetMap (poslednja opcija)
+        'https://www.openstreetmap.org/directions?to=$lat,$lng',
       ];
 
       bool uspesno = false;
