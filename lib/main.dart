@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'globals.dart';
 import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
+import 'services/adresa_supabase_service.dart'; // 🧹 Za čišćenje koordinata
 import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
@@ -116,6 +117,17 @@ void main() async {
       await VozacMappingService.initialize();
     } catch (e) {
       // Nastavi bez vozac mapping-a ako ne uspe
+    }
+
+    // 🧹 JEDNOM: Očisti koordinate centra grada iz baze
+    // Ovo omogućava GPS Learn da nauči prave koordinate
+    try {
+      final clearedCount = await AdresaSupabaseService.clearCityCenterCoordinates();
+      if (clearedCount > 0) {
+        print('🧹 Očišćeno $clearedCount adresa sa koordinatama centra grada');
+      }
+    } catch (e) {
+      print('⚠️ Čišćenje koordinata nije uspelo: $e');
     }
   } catch (e) {
     // Continue without Supabase if it fails

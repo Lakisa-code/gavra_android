@@ -332,11 +332,11 @@ class AdresaSupabaseService {
         return false;
       }
 
-      // Proveri da li adresa već ima koordinate
+      // Proveri da li adresa već ima SPECIFIČNE koordinate (ne centar grada)
       final existing = await getAdresaByUuid(adresaId);
-      if (existing?.hasValidCoordinates == true) {
-        // Ako već ima koordinate, ne prepisuj ih (možda su tačnije)
-        print('ℹ️ GPS Learn: Adresa već ima koordinate, preskačem');
+      if (existing?.hasValidCoordinates == true && !_isCityCenterCoordinate(existing!.latitude, existing.longitude)) {
+        // Ako već ima specifične koordinate (naučene iz GPS-a), ne prepisuj ih
+        print('ℹ️ GPS Learn: Adresa već ima specifične koordinate, preskačem');
         return false;
       }
 
@@ -362,6 +362,68 @@ class AdresaSupabaseService {
     } catch (e) {
       print('❌ GPS Learn greška: $e');
       return false;
+    }
+  }
+
+  /// 🎯 Proveri da li su koordinate centar grada (beskorisne za navigaciju)
+  static bool _isCityCenterCoordinate(double? lat, double? lng) {
+    if (lat == null || lng == null) return false;
+    
+    const double tolerance = 0.001; // ~100m tolerancija
+    
+    // Centar Bele Crkve
+    const double belaCrkvaLat = 44.9013448;
+    const double belaCrkvaLng = 21.4240519;
+    if ((lat - belaCrkvaLat).abs() < tolerance && (lng - belaCrkvaLng).abs() < tolerance) {
+      return true;
+    }
+    
+    // Centar Vršca
+    const double vrsacLat = 45.1167;
+    const double vrsacLng = 21.3;
+    if ((lat - vrsacLat).abs() < tolerance && (lng - vrsacLng).abs() < tolerance) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// 🧹 Očisti koordinate centra grada iz baze (postavi na NULL)
+  /// Pozovi ovo jednom da očistiš beskorisne koordinate
+  static Future<int> clearCityCenterCoordinates() async {
+    try {
+      // Dohvati sve adrese
+      final response = await supabase
+          .from('adrese')
+          .select('id, koordinate');
+      
+      int count = 0;
+      for (final row in response) {
+        final koordinate = row['koordinate'];
+        if (koordinate != null) {
+          final lat = (koordinate['lat'] as num?)?.toDouble();
+          final lng = (koordinate['lng'] as num?)?.toDouble();
+          
+          if (_isCityCenterCoordinate(lat, lng)) {
+            // Obriši koordinate centra grada
+            await supabase.from('adrese').update({
+              'koordinate': null,
+              'updated_at': DateTime.now().toIso8601String(),
+            }).eq('id', row['id']);
+            count++;
+            print('🧹 Obrisane koordinate centra grada za adresu: ${row['id']}');
+          }
+        }
+      }
+      
+      // Invalidate cache
+      _cache.clear();
+      
+      print('🧹 Ukupno očišćeno $count adresa sa koordinatama centra grada');
+      return count;
+    } catch (e) {
+      print('❌ Greška pri čišćenju koordinata: $e');
+      return 0;
     }
   }
 
