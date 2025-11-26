@@ -1590,6 +1590,10 @@ class _DanasScreenState extends State<DanasScreen> {
             .map((p) => p.adresa?.split(',').first ?? p.ime)
             .join(' → ');
 
+        // 🆕 Proveri da li ima preskočenih putnika
+        final skipped = result.skippedPutnici;
+        final hasSkipped = skipped != null && skipped.isNotEmpty;
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1606,10 +1610,22 @@ class _DanasScreenState extends State<DanasScreen> {
                   Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
                   if (result.totalDistance != null)
                     Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
+                  // 🆕 Poruka o preskočenim putnicima
+                  if (hasSkipped) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '⚠️ ${skipped.length} bez koordinata: ${skipped.take(3).map((p) => p.ime.split(' ').first).join(', ')}${skipped.length > 3 ? '...' : ''}',
+                      style: const TextStyle(color: Colors.yellow),
+                    ),
+                    const Text(
+                      '💡 Pokupite ih ručno da se nauče lokacije!',
+                      style: TextStyle(fontSize: 11, color: Colors.yellow),
+                    ),
+                  ],
                 ],
               ),
-              duration: const Duration(seconds: 6),
-              backgroundColor: Colors.green,
+              duration: Duration(seconds: hasSkipped ? 8 : 6),
+              backgroundColor: hasSkipped ? Colors.orange : Colors.green,
             ),
           );
         }

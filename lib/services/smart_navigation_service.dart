@@ -27,6 +27,9 @@ class SmartNavigationService {
       // 2. DOBIJ KOORDINATE ZA SVE ADRESE
       final Map<Putnik, Position> coordinates = await _getCoordinatesForPutnici(putnici);
 
+      // 🆕 Nađi preskočene putnike (nemaju koordinate)
+      final skipped = putnici.where((p) => !coordinates.containsKey(p)).toList();
+
       if (coordinates.isEmpty) {
         return NavigationResult.error(
           '❌ Nijedan putnik nema validnu adresu za navigaciju',
@@ -49,6 +52,7 @@ class SmartNavigationService {
           optimizedRoute,
           coordinates,
         ),
+        skippedPutnici: skipped.isNotEmpty ? skipped : null,
       );
     } catch (e) {
       return NavigationResult.error('❌ Greška pri optimizaciji: $e');
@@ -565,18 +569,21 @@ class NavigationResult {
     required this.message,
     this.optimizedPutnici,
     this.totalDistance,
+    this.skippedPutnici,
   });
 
   factory NavigationResult.success({
     required String message,
     required List<Putnik> optimizedPutnici,
     double? totalDistance,
+    List<Putnik>? skippedPutnici,
   }) {
     return NavigationResult._(
       success: true,
       message: message,
       optimizedPutnici: optimizedPutnici,
       totalDistance: totalDistance,
+      skippedPutnici: skippedPutnici,
     );
   }
 
@@ -590,4 +597,5 @@ class NavigationResult {
   final String message;
   final List<Putnik>? optimizedPutnici;
   final double? totalDistance;
+  final List<Putnik>? skippedPutnici; // 🆕 Putnici bez koordinata
 }
