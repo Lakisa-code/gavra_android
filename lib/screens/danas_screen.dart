@@ -1610,24 +1610,97 @@ class _DanasScreenState extends State<DanasScreen> {
                   Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
                   if (result.totalDistance != null)
                     Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
-                  // 🆕 Poruka o preskočenim putnicima
-                  if (hasSkipped) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '⚠️ ${skipped.length} bez koordinata: ${skipped.take(3).map((p) => p.ime.split(' ').first).join(', ')}${skipped.length > 3 ? '...' : ''}',
-                      style: const TextStyle(color: Colors.yellow),
-                    ),
-                    const Text(
-                      '💡 Pokupite ih ručno da se nauče lokacije!',
-                      style: TextStyle(fontSize: 11, color: Colors.yellow),
-                    ),
-                  ],
                 ],
               ),
-              duration: Duration(seconds: hasSkipped ? 8 : 6),
-              backgroundColor: hasSkipped ? Colors.orange : Colors.green,
+              duration: const Duration(seconds: 4),
+              backgroundColor: Colors.green,
             ),
           );
+
+          // 🆕 Prikaži POSEBAN DIALOG za preskočene putnike - upadljivije!
+          if (hasSkipped) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: Colors.orange.shade100,
+                  title: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${skipped.length} PUTNIKA BEZ LOKACIJE',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Ovi putnici nisu uključeni u optimizovanu rutu:',
+                        style: TextStyle(fontWeight: FontWeight.w500, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 12),
+                      ...skipped.take(5).map((p) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_off, color: Colors.red, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                p.ime,
+                                style: const TextStyle(fontSize: 15, color: Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                      if (skipped.length > 5)
+                        Text(
+                          '... i još ${skipped.length - 5}',
+                          style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
+                        ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.lightbulb, color: Colors.blue, size: 24),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Pokupite ih ručno!\nAplikacija će zapamtiti lokaciju za sledeći put.',
+                                style: TextStyle(fontSize: 13, color: Colors.black87),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('RAZUMEM', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
         }
       } else {
         // SmartNavigationService nije uspeo - fallback na osnovno sortiranje
