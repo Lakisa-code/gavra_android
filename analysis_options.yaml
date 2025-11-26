@@ -18,6 +18,18 @@ linter:
     avoid_function_literals_in_foreach_calls: false
     no_leading_underscores_for_local_identifiers: false
     unnecessary_const: false
+    # Additional performance-heavy rules to disable for faster analysis
+    avoid_types_as_parameter_names: false
+    avoid_unused_constructor_parameters: false
+    prefer_final_locals: false
+    prefer_final_in_for_each: false
+    prefer_final_parameters: false
+    unnecessary_lambdas: false
+    unnecessary_null_checks: false
+    prefer_if_null_operators: false
+    prefer_null_aware_operators: false
+    avoid_renaming_method_parameters: false
+    avoid_positional_boolean_parameters: false
 
     # We keep more important/runtime-safe rules enabled so they surface real issues:
     # use_build_context_synchronously (left enabled) - this catches async context bugs

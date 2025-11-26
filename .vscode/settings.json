@@ -73,5 +73,35 @@
         "copilot/gpt-5-mini"
       ]
     }
-  }
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/android/**": true,
+    "**/ios/**": true,
+    "**/build/**": true,
+    "**/.dart_tool/**": true,
+    "**/coverage/**": true,
+    "**/test/**": true
+  },
+  "search.exclude": {
+    "**/android/**": true,
+    "**/ios/**": true,
+    "**/build/**": true,
+    "**/.dart_tool/**": true,
+    "**/coverage/**": true,
+    "**/test/**": true
+  },
+  "dart.analysisExcludedFolders": [
+    "android",
+    "ios",
+    "build",
+    ".dart_tool",
+    "coverage",
+    "test"
+  ],
+  "dart.vmAdditionalArgs": [
+    "--old_gen_heap_size=1024"
+  ]
 }

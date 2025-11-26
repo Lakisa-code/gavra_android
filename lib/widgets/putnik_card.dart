@@ -1379,9 +1379,15 @@ class _PutnikCardState extends State<PutnikCard> {
   // Postavi odsustvo za putnika
   Future<void> _postaviOdsustvo(String status) async {
     try {
+      // 🔍 DEBUG: Proveri ID pre poziva
+      final putnikId = _putnik.id;
+      if (putnikId == null || putnikId.isEmpty) {
+        throw Exception('Putnik nema validan ID (id=$putnikId)');
+      }
+      
       // Pozovi service za postavljanje statusa
       await PutnikService().oznaciBolovanjeGodisnji(
-        _putnik.id!,
+        putnikId,
         status,
         widget.currentDriver ?? '',
       );
@@ -1398,6 +1404,11 @@ class _PutnikCardState extends State<PutnikCard> {
             duration: const Duration(seconds: 2),
           ),
         );
+        
+        // 🔄 FORSIRAJ REFRESH LISTE
+        if (widget.onChanged != null) {
+          widget.onChanged!();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1807,6 +1818,7 @@ class _PutnikCardState extends State<PutnikCard> {
                           FutureBuilder<String>(
                             future: _getMesecniPutnikAdrese(),
                             builder: (context, snapshot) {
+                              print('🏠 KARTICA ${_putnik.ime}: mesecna=${_putnik.mesecnaKarta}, adresa=${_putnik.adresa}');
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const SizedBox.shrink(); // Ne prikazuj loading
                               }
@@ -1845,7 +1857,11 @@ class _PutnikCardState extends State<PutnikCard> {
                           )
                         else
                         // Za dnevne putnike koristi staro TEXT polje
-                        if (_putnik.adresa != null && _putnik.adresa!.isNotEmpty)
+                        if (_putnik.adresa != null && _putnik.adresa!.isNotEmpty) ...[
+                          Builder(builder: (context) {
+                            print('🏠 DNEVNI ${_putnik.ime}: adresa=${_putnik.adresa}');
+                            return const SizedBox.shrink();
+                          }),
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
@@ -1869,6 +1885,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),

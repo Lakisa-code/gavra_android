@@ -180,11 +180,8 @@ class Putnik {
           ),
       grad: map['grad'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
       otkazaoVozac: map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
-      adresa: map['adresa'] as String? ??
-          ((map['napomene'] as String?)?.contains('Adresa:') == true
-              ? (map['napomene'] as String?)?.replaceFirst('Adresa: ', '')
-              : null),
-      adresaId: map['adresa_id'] as String?, // ✅ NOVO - UUID reference u tabelu adrese
+      adresa: map['adresa'] as String?,
+      adresaId: map['adresa_id'] as String?, // ✅ UUID reference u tabelu adrese
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
     );
@@ -692,9 +689,7 @@ class Putnik {
       'vreme_polaska': polazak,
       'putnik_ime': ime,
       'grad': grad, // ✅ DODANO: grad kolona
-      // ✅ PRAVO REŠENJE: koristi adresa_id umesto napomena hack-a
-      'adresa_id': null, // Ostaće null - adresa se dodaje asinhrono u servisu
-      'napomene': adresa != null ? 'Adresa: $adresa' : 'Putovanje dodato ${DateTime.now().toIso8601String()}',
+      'adresa_id': null, // Ostaće null - adresa se dodaje asinhrono u toPutovanjaIstorijaMapWithAdresa
       'cena': iznosPlacanja ?? 0.0,
       'status': status ?? 'nije_se_pojavio',
       'obrisan': obrisan,

@@ -130,12 +130,11 @@ class DailyCheckInService {
     }
 
     // 🌐 REMOTE ČUVANJE - asinhrono u pozadini sa timeout-om
-    // HITNO ONEMOGUĆENO
-    // try {
-    //   await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
-    // } catch (e) {
-    //   // Ako remote save ne uspe, ali lokalna je OK, nastavi dalje
-    // }
+    try {
+      await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
+    } catch (e) {
+      // Ako remote save ne uspe, ali lokalna je OK, nastavi dalje
+    }
   }
 
   /// 🚨 EMERGENCY LOCAL SAVE - kada se sve ostalo zaglavi!
@@ -205,8 +204,6 @@ class DailyCheckInService {
   }
 
   /// Sačuvaj u Supabase tabelu daily_checkins
-  // HITNO ONEMOGUĆENO - može blokirati UI
-  /*
   static Future<Map<String, dynamic>?> _saveToSupabase(
     String vozac,
     double sitanNovac,
@@ -261,21 +258,17 @@ class DailyCheckInService {
       rethrow;
     }
   }
-  */
 
   /// Kreiraj tabelu daily_checkins ako ne postoji
-  // HITNO ONEMOGUĆENO
-  /*
   static Future<void> _createDailyCheckinsTable() async {
     try {
       final supabase = Supabase.instance.client;
       // Pokušaj kreiranje preko RPC ako postoji
-      await supabase.rpc<void>('create_daily_checins_table_if_not_exists');
+      await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
     } catch (e) {
       // Ne bacaj grešku jer tabela možda postoji ali RPC ne radi
     }
   }
-  */
 
   /// 🛠️ FORSIRAJ KREIRANJE TABELE - za ekstremne slučajeve
   static Future<bool> forceCreateTable() async {
