@@ -32,6 +32,7 @@ import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_card.dart';
+import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
@@ -2148,66 +2149,68 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                   // Lista putnika
                   Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).glassContainer, // 🌟 GLASSMORPHISM
-                        border: Border.all(
-                          color: Theme.of(context).glassBorder,
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          Theme.of(context).glassShadow,
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: putniciZaPrikaz.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'Nema putnika za ovaj polazak.',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    shadows: [
-                                      Shadow(
-                                        blurRadius: 8,
-                                        color: Colors.black87,
-                                      ),
-                                    ],
-                                  ),
+                    child: putniciZaPrikaz.isEmpty
+                        ? Center(
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).glassContainer,
+                                border: Border.all(
+                                  color: Theme.of(context).glassBorder,
+                                  width: 1.5,
                                 ),
-                              )
-                            : ListView.builder(
-                                itemCount: putniciZaPrikaz.length,
-                                itemBuilder: (context, index) {
-                                  final putnik = putniciZaPrikaz[index];
-                                  return AnimatedCard(
-                                    delay: index * 100, // Staggered animation
-                                    child: PutnikCard(
-                                      putnik: putnik,
-                                      currentDriver: _currentDriver,
-                                      redniBroj: index + 1,
-                                      selectedVreme: _selectedVreme, // 🆕 Proslijedi trenutno vreme
-                                      selectedGrad: _selectedGrad, // 🆕 Proslijedi trenutni grad
-                                      onChanged: () {
-                                        // 🚀 FORSIRAJ UI REFRESH kada se putnik ažurira
-                                        if (mounted) {
-                                          if (mounted) {
-                                            setState(() {
-                                              // Trigger rebuild-a StreamBuilder-a
-                                            });
-                                          }
-                                        }
-                                      },
-                                    ),
-                                  );
-                                },
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  Theme.of(context).glassShadow,
+                                ],
                               ),
-                      ),
-                    ),
+                              child: const Text(
+                                'Nema putnika za ovaj polazak.',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  shadows: [
+                                    Shadow(
+                                      blurRadius: 8,
+                                      color: Colors.black87,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : PutnikList(
+                            putnici: putniciZaPrikaz,
+                            currentDriver: _currentDriver,
+                            bcVremena: const [
+                              '5:00',
+                              '6:00',
+                              '7:00',
+                              '8:00',
+                              '9:00',
+                              '11:00',
+                              '12:00',
+                              '13:00',
+                              '14:00',
+                              '15:30',
+                              '18:00',
+                            ],
+                            vsVremena: const [
+                              '6:00',
+                              '7:00',
+                              '8:00',
+                              '10:00',
+                              '11:00',
+                              '12:00',
+                              '13:00',
+                              '14:00',
+                              '15:30',
+                              '17:00',
+                              '19:00',
+                            ],
+                          ),
                   ),
                 ],
               ), // Zatvaranje Column

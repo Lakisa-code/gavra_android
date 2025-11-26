@@ -79,6 +79,11 @@ class _PutnikCardState extends State<PutnikCard> {
         '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
   }
 
+  // Kraći format za kompaktan prikaz (bez godine)
+  String _formatVremeDodavanjaKratko(DateTime vreme) {
+    return '${vreme.day}.${vreme.month}. ${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
+  }
+
   String _formatVreme(DateTime vreme) {
     return '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
   }
@@ -1003,17 +1008,17 @@ class _PutnikCardState extends State<PutnikCard> {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.calendar_today,
+                                  isPlacen ? Icons.check_circle : Icons.calendar_today,
                                   size: 16,
                                   color: isPlacen
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.primary,
+                                      ? Theme.of(context).colorScheme.successPrimary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   monthYear,
                                   style: TextStyle(
-                                    color: isPlacen ? Theme.of(context).colorScheme.primary : null,
+                                    color: isPlacen ? Theme.of(context).colorScheme.successPrimary : null,
                                     fontWeight: isPlacen ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
@@ -1675,7 +1680,7 @@ class _PutnikCardState extends State<PutnikCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        margin: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
+        margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
         decoration: BoxDecoration(
           gradient: _putnik.jeOdsustvo
               ? LinearGradient(
@@ -1740,20 +1745,21 @@ class _PutnikCardState extends State<PutnikCard> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14.0),
+          padding: const EdgeInsets.all(6.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.redniBroj != null)
                     Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
+                      padding: const EdgeInsets.only(right: 4.0),
                       child: Text(
                         '${widget.redniBroj}.',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          fontSize: 20,
+                          fontSize: 14,
                           color: _putnik.jeOdsustvo
                               ? Colors.orange[600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
                               : _putnik.jeOtkazan
@@ -1768,22 +1774,6 @@ class _PutnikCardState extends State<PutnikCard> {
                         ),
                       ),
                     ),
-                  Icon(
-                    Icons.person,
-                    color: _putnik.jeOdsustvo
-                        ? Colors.orange[600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
-                        : _putnik.jeOtkazan
-                            ? Colors.red[400] // 🔴 CRVENO za otkazane
-                            : isSelected
-                                ? (isMesecna || isPlaceno)
-                                    ? Theme.of(context).colorScheme.successPrimary // 🟢 ZELENO za mesečne/plaćene
-                                    : const Color(
-                                        0xFF0D47A1,
-                                      ) // 🔵 PLAVO za pokupljene neplaćene
-                                : Colors.black, // ⚪ BELO za nepokupljene
-                    size: 18,
-                  ),
-                  const SizedBox(width: 7),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1835,7 +1825,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                 child: Text(
                                   snapshot.data!,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 14,
                                     color: (_putnik.jeOtkazan
                                             ? Colors.red[300]
                                             : _putnik.jeOdsustvo
@@ -1867,7 +1857,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             child: Text(
                               _putnik.adresa!,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 14,
                                 color: (_putnik.jeOtkazan
                                         ? Colors.red[300]
                                         : _putnik.jeOdsustvo
@@ -1917,7 +1907,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                     child: Text(
                                       '📅 MESEČNA',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context).colorScheme.successPrimary,
                                         letterSpacing: 0.3,
@@ -2313,109 +2303,59 @@ class _PutnikCardState extends State<PutnikCard> {
                     ),
                 ],
               ),
-              // Info row: Dodao, Pokupio, Plaćeno (jedan red)
+              // Info row: Dodao, Pokupio, Plaćeno (jedan red - kompaktan prikaz)
               Padding(
-                padding: const EdgeInsets.only(top: 6.0),
-                child: Wrap(
-                  spacing: 16,
-                  runSpacing: 2,
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Row(
                   children: [
-                    // ✅ UVEK PRIKAŽI INFO O DODAVANJU - čak i kad nema podatke
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Dodao:',
-                          style: TextStyle(
-                            fontSize: 13,
-                            // Koristi boju vozača koji je dodao, ili trenutnog vozača kao fallback
-                            color: VozacBoja.getColorOrDefault(
-                              _putnik.dodaoVozac ?? widget.currentDriver,
-                              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                            fontWeight: FontWeight.w500,
-                          ),
+                    // ✅ DODAO INFO - kompaktno
+                    Text(
+                      'Dodao: ${_putnik.vremeDodavanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeDodavanja!) : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem')}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: VozacBoja.getColorOrDefault(
+                          _putnik.dodaoVozac ?? widget.currentDriver,
+                          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
-                        Text(
-                          _putnik.vremeDodavanja != null
-                              ? _formatVremeDodavanja(_putnik.vremeDodavanja!)
-                              : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem'),
-                          style: TextStyle(
-                            fontSize: 13,
-                            // Koristi boju vozača koji je dodao, ili trenutnog vozača kao fallback
-                            color: VozacBoja.getColorOrDefault(
-                              _putnik.dodaoVozac ?? widget.currentDriver,
-                              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    if (_putnik.jeOtkazan)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Otkazao:',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.getColorOrDefault(
-                                _putnik.otkazaoVozac,
-                                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            _putnik.otkazaoVozac?.isNotEmpty == true ? _putnik.otkazaoVozac! : 'sistem',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.getColorOrDefault(
-                                _putnik.otkazaoVozac,
-                                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                              ).withValues(alpha: 0.8),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          if (_putnik.statusVreme != null)
-                            Text(
-                              _formatVremeDodavanja(
-                                DateTime.parse(_putnik.statusVreme!),
-                              ),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: VozacBoja.get(_putnik.otkazaoVozac).withValues(alpha: 0.8),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                        ],
-                      ),
-                    // Prikaz statusa bolovanja ili godišnjeg
-                    if (_putnik.jeOdsustvo)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _putnik.jeBolovanje
-                                ? 'Bolovanje'
-                                : _putnik.jeGodisnji
-                                    ? 'Godišnji'
-                                    : 'Odsustvo',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange.shade700,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    if (_putnik.vremePokupljenja != null)
+                    // Otkazano info
+                    if (_putnik.jeOtkazan) ...[
+                      const SizedBox(width: 12),
                       Text(
-                        () {
-                          final vreme = _putnik.vremePokupljenja!;
-                          return 'Pokupljen ${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
-                        }(),
+                        'Otkazao: ${_putnik.otkazaoVozac?.isNotEmpty == true ? _putnik.otkazaoVozac! : 'sistem'}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: VozacBoja.getColorOrDefault(
+                            _putnik.otkazaoVozac,
+                            Colors.red,
+                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    // Odsustvo info
+                    if (_putnik.jeOdsustvo) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        _putnik.jeBolovanje
+                            ? 'Bolovanje'
+                            : _putnik.jeGodisnji
+                                ? 'Godišnji'
+                                : 'Odsustvo',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    // Pokupljen info
+                    if (_putnik.vremePokupljenja != null) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        'Pokupljen ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
                         style: TextStyle(
                           fontSize: 13,
                           color: VozacBoja.getColorOrDefault(
@@ -2425,36 +2365,22 @@ class _PutnikCardState extends State<PutnikCard> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    if (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Plaćeno',
-                            style: TextStyle(
-                              fontSize: 13,
-                              // Koristi boju vozača koji je naplatio, ili trenutnog vozača kao fallback
-                              color: VozacBoja.getColorOrDefault(
-                                _putnik.naplatioVozac ?? widget.currentDriver,
-                                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                              fontWeight: FontWeight.w500,
-                            ),
+                    ],
+                    // Plaćeno info
+                    if (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0) ...[
+                      const SizedBox(width: 12),
+                      Text(
+                        'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: VozacBoja.getColorOrDefault(
+                            _putnik.naplatioVozac ?? widget.currentDriver,
+                            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
-                          Text(
-                            '${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              // Koristi boju vozača koji je naplatio, ili trenutnog vozača kao fallback
-                              color: VozacBoja.getColorOrDefault(
-                                _putnik.naplatioVozac ?? widget.currentDriver,
-                                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                    ],
                   ],
                 ),
               ),

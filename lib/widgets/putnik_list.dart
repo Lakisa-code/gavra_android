@@ -115,16 +115,19 @@ class PutnikList extends StatelessWidget {
             itemCount: prikaz.length,
             itemBuilder: (context, index) {
               final putnik = prikaz[index];
-              // Redni broj: broji samo one koji nisu otkazani
+              // Redni broj: broji samo one koji nisu otkazani i nisu na odsustvu
               int? redniBroj;
               if (!useProvidedOrder) {
-                if (!(putnik.status?.toLowerCase() == 'otkazano' ||
-                    putnik.status?.toLowerCase() == 'otkazan')) {
-                  // Redni broj je pozicija među svim neotkazanim putnicima
+                if (!putnik.jeOdsustvo &&
+                    !(putnik.status?.toLowerCase() == 'otkazano' ||
+                        putnik.status?.toLowerCase() == 'otkazan')) {
+                  // Redni broj je pozicija među svim neotkazanim putnicima koji nisu na odsustvu
                   redniBroj = prikaz
                       .take(index + 1)
-                      .where((p) => !(p.status?.toLowerCase() == 'otkazano' ||
-                          p.status?.toLowerCase() == 'otkazan'))
+                      .where((p) =>
+                          !p.jeOdsustvo &&
+                          !(p.status?.toLowerCase() == 'otkazano' ||
+                              p.status?.toLowerCase() == 'otkazan'))
                       .length;
                 }
               } else {
