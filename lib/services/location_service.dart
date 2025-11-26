@@ -14,19 +14,9 @@ class LocationService {
         return false;
       }
 
-      // Proveri postojeće permisije
+      // Proveri postojeće permisije (traže se samo jednom pri instalaciji u PermissionService)
       LocationPermission permission = await Geolocator.checkPermission();
-
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          // Logger removed
-          return false;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        // Logger removed
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         return false;
       }
 

@@ -574,7 +574,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     if (_isRouteOptimized) {
                       _resetOptimization();
                     } else {
-                      _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: true);
+                      _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
                     }
                   },
             style: ElevatedButton.styleFrom(
@@ -665,23 +665,23 @@ class _DanasScreenState extends State<DanasScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              _isGpsTracking ? Icons.stop : Icons.navigation,
-              size: 12,
-              color: Theme.of(context).colorScheme.onPrimary,
-            ),
-            const SizedBox(width: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _isGpsTracking ? 'STOP' : (hasOptimizedRoute ? 'NAV' : 'NAV'),
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _isGpsTracking ? Icons.stop : Icons.navigation,
+                size: 10,
+                color: Theme.of(context).colorScheme.onPrimary,
               ),
-            ),
-          ],
+              const SizedBox(width: 2),
+              Text(
+                _isGpsTracking ? 'STOP' : 'NAV',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1529,20 +1529,23 @@ class _DanasScreenState extends State<DanasScreen> {
       return; // gotova optimizacija
     }
 
-    // 🎯 SAMO REORDER PUTNIKA - bez otvaranja mape
+    // 🎯 PRAVI FILTER - koristi putnike koji su već prikazani na ekranu
+    // Mesečni putnici imaju adresaId koji pokazuje na pravu adresu
+    print('🔍 FILTER DEBUG: Ukupno putnika: ${putnici.length}');
+    
     final filtriraniPutnici = putnici.where((p) {
-      final vremeMatch =
-          GradAdresaValidator.normalizeTime(p.polazak) == GradAdresaValidator.normalizeTime(_selectedVreme);
-
-      // 🏘️ KORISTI NOVU OGRANIČENU LOGIKU - samo Bela Crkva i Vršac
-      final gradMatch = _isGradMatch(p.grad, p.adresa, _selectedGrad);
-
-      final danMatch = p.dan == _getTodayForDatabase();
-      final statusOk = TextUtils.isStatusActive(p.status);
-      final hasAddress = p.adresa != null && p.adresa!.isNotEmpty;
-
-      return vremeMatch && gradMatch && danMatch && statusOk && hasAddress;
+      // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
+      // Za dnevne putnike: imaju adresu direktno
+      final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) || 
+                              (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
+      
+      print('   📍 ${p.ime}: adresa="${p.adresa}", adresaId="${p.adresaId}", mesecna=${p.mesecnaKarta}, hasValidAddress=$hasValidAddress');
+      
+      return hasValidAddress;
     }).toList();
+    
+    print('🔍 FILTER RESULT: ${filtriraniPutnici.length} putnika sa adresama');
+    
     if (filtriraniPutnici.isEmpty) {
       if (mounted) {
         setState(() {
@@ -1559,49 +1562,80 @@ class _DanasScreenState extends State<DanasScreen> {
     }
 
     try {
-      // 🎯 JEDNOSTAVNA OPTIMIZACIJA - sortuj putnice po adresi
-      final optimizedPutnici = List<Putnik>.from(filtriraniPutnici)
-        ..sort((a, b) => (a.adresa ?? '').compareTo(b.adresa ?? ''));
+      // 🎯 KORISTI SMART NAVIGATION SERVICE ZA PRAVU OPTIMIZACIJU RUTE
+      print('🚀 Pozivam SmartNavigationService.optimizeRouteOnly...');
+      final result = await SmartNavigationService.optimizeRouteOnly(
+        putnici: filtriraniPutnici,
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+      );
 
-      if (mounted) {
-        setState(() {
-          _optimizedRoute = optimizedPutnici;
-          _isRouteOptimized = true;
-          _isListReordered = true; // ✅ Lista je reorderovana
-          _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
-          _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
-          // _lastGpsUpdate = DateTime.now(); // 🛰️ REMOVED - Google APIs disabled
-          _isLoading = false; // ✅ ZAUSTAVI LOADING
-        });
-      }
+      if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
+        final optimizedPutnici = result.optimizedPutnici!;
+        print('✅ Optimizacija uspela! Broj putnika: ${optimizedPutnici.length}');
 
-      // Prikaži rezultat reorderovanja
-      final routeString = optimizedPutnici
-          .take(3) // Prikaži prva 3 putnika
-          .map((p) => p.adresa?.split(',').first ?? p.ime)
-          .join(' → ');
+        if (mounted) {
+          setState(() {
+            _optimizedRoute = optimizedPutnici;
+            _isRouteOptimized = true;
+            _isListReordered = true; // ✅ Lista je reorderovana
+            _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
+            _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
+            _isLoading = false; // ✅ ZAUSTAVI LOADING
+          });
+        }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '🎯 LISTA PUTNIKA REORDEROVANA za $_selectedGrad $_selectedVreme!',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text('📍 Sledeći putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
-                Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
-                const Text('🛰️ Sledite listu odozgo nadole!'),
-              ],
+        // Prikaži rezultat reorderovanja
+        final routeString = optimizedPutnici
+            .take(3) // Prikaži prva 3 putnika
+            .map((p) => p.adresa?.split(',').first ?? p.ime)
+            .join(' → ');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🎯 RUTA OPTIMIZOVANA za $_selectedGrad $_selectedVreme!',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('📍 Sledeći putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
+                  Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
+                  if (result.totalDistance != null)
+                    Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
+                ],
+              ),
+              duration: const Duration(seconds: 6),
+              backgroundColor: Colors.green,
             ),
-            duration: const Duration(seconds: 6),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
+      } else {
+        // SmartNavigationService nije uspeo - fallback na osnovno sortiranje
+        print('⚠️ SmartNavigationService nije uspeo: ${result.message}');
+        final optimizedPutnici = List<Putnik>.from(filtriraniPutnici)
+          ..sort((a, b) => (a.adresa ?? '').compareTo(b.adresa ?? ''));
+
+        if (mounted) {
+          setState(() {
+            _optimizedRoute = optimizedPutnici;
+            _isRouteOptimized = true;
+            _isListReordered = true;
+            _currentPassengerIndex = 0;
+            _isGpsTracking = true;
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ ${result.message}\nKoristim osnovno sortiranje.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     } catch (e) {
       try {
@@ -1687,19 +1721,19 @@ class _DanasScreenState extends State<DanasScreen> {
                         children: [
                           // � CLEAN STATS INDIKATOR
                           Expanded(child: _buildHeartbeatIndicator()),
-                          const SizedBox(width: 2),
+                          const SizedBox(width: 1),
                           // �🎓 ĐAČKI BROJAČ
                           Expanded(child: _buildDjackiBrojacButton()),
-                          const SizedBox(width: 2),
+                          const SizedBox(width: 1),
                           // 🚀 DUGME ZA OPTIMIZACIJU RUTE
                           Expanded(child: _buildOptimizeButton()),
-                          const SizedBox(width: 2),
+                          const SizedBox(width: 1),
                           // 📋 DUGME ZA POPIS DANA
                           Expanded(child: _buildPopisButton()),
-                          const SizedBox(width: 2),
+                          const SizedBox(width: 1),
                           // 🗺️ DUGME ZA NAVIGACIJU (OpenStreetMap / free)
                           Expanded(child: _buildMapsButton()),
-                          const SizedBox(width: 2),
+                          const SizedBox(width: 1),
                           // ⚡ SPEEDOMETER
                           Expanded(child: _buildSpeedometerButton()),
                         ],
@@ -2215,31 +2249,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                               ],
                                             ),
                                           ),
-                                        // 🧭 NOVO: Real-time navigation widget
-                                        if (_useAdvancedNavigation && _optimizedRoute.isNotEmpty)
-                                          RealTimeNavigationWidget(
-                                            optimizedRoute: _optimizedRoute,
-                                            onStatusUpdate: (message) {
-                                              if (mounted) {
-                                                setState(() {
-                                                  _navigationStatus = message;
-                                                });
-                                              }
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                      content: Text(message), duration: const Duration(seconds: 2)),
-                                                );
-                                              }
-                                            },
-                                            onRouteUpdate: (newRoute) {
-                                              if (mounted) {
-                                                setState(() {
-                                                  _optimizedRoute = newRoute;
-                                                });
-                                              }
-                                            },
-                                          ),
+                                        // 🧭 RealTimeNavigationWidget UKLONJEN - koriste se samo kartice + dugme za mapu
                                         Expanded(
                                           child: PutnikList(
                                             putnici: finalPutnici,

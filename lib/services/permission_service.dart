@@ -323,23 +323,15 @@ class PermissionService {
   /// 🛰️ SPECIJALNO ZAHTEVANJE LOKACIJSKIH DOZVOLA
   static Future<bool> _requestLocationPermission() async {
     try {
-      // Prvo proveri da li je Location Service uključen
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        // Pokušaj da uključi automatski
-        await Geolocator.openLocationSettings();
-        // Proveri ponovo
-        serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      }
-
-      // Zatim zahtevaj dozvole
+      // Zahtevaj dozvole (samo jednom pri prvom pokretanju)
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
 
-      return serviceEnabled &&
-          permission != LocationPermission.denied &&
+      // GPS servis se uključuje po potrebi kada korisnik koristi navigaciju
+      // Ne forsiramo uključivanje ovde
+      return permission != LocationPermission.denied &&
           permission != LocationPermission.deniedForever;
     } catch (e) {
       return false;

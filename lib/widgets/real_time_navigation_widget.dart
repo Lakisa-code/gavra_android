@@ -67,26 +67,46 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
 
     try {
       if (mounted) {
-        if (mounted) {
-          setState(() {
-            _isLoading = true;
-            _statusMessage = 'Dobijam trenutnu GPS poziciju...';
-          });
+        setState(() {
+          _isLoading = true;
+          _statusMessage = 'Proveravam GPS...';
+        });
+      }
+
+      // Proveri da li je GPS uključen
+      bool isLocationEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!isLocationEnabled) {
+        // Otvori sistemski dialog za uključivanje GPS-a
+        await Geolocator.openLocationSettings();
+        
+        // Sačekaj da korisnik uključi GPS
+        await Future.delayed(const Duration(seconds: 2));
+        
+        isLocationEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!isLocationEnabled) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _statusMessage = 'GPS nije uključen';
+            });
+          }
+          return;
         }
       }
 
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Dobijam GPS poziciju...';
+        });
+      }
+
       // Dobij trenutnu poziciju
-      _currentPosition = await Geolocator.getCurrentPosition(
-          // desiredAccuracy: deprecated, use settings parameter
-          );
+      _currentPosition = await Geolocator.getCurrentPosition();
 
       if (mounted) {
-        if (mounted) {
-          setState(() {
-            _statusMessage =
-                'Optimizujem rutu sa lokalnom optimizacijom (OSRM/Valhalla)...';
-          });
-        }
+        setState(() {
+          _statusMessage = 'Navigacija spremna';
+        });
       }
 
       // Generiši optimizovanu rutu sa turn-by-turn instrukcijama - SERVIS UKLONJEN
@@ -137,22 +157,112 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         // Pokreni real-time praćenje
         _startGPSTracking();
       } else {
-        throw Exception('Nije moguće generisati optimizovanu rutu');
-      }
-    } catch (e) {
-      if (mounted) {
+        // Nema optimizovane rute - koristi tihi fallback
         if (mounted) {
           setState(() {
             _isLoading = false;
-            _statusMessage = 'Greška: ${e.toString()}';
+            _statusMessage = 'Navigacija spremna';
           });
         }
+        // Ne prikazuj grešku - samo tihi fallback
       }
-      widget.onStatusUpdate?.call('❌ Greška inicijalizacije: $e');
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = 'Navigacija spremna';
+        });
+      }
+      // Tihi fallback - ne prikazuj grešku korisniku
     }
   }
 
-  /// 🛰️ Pokreni real-time GPS praćenje
+  /// 🛰️ Pokreni optimizaciju rute i GPS praćenje
+  Future<void> _startOptimizationAndTracking() async {
+    if (_remainingPassengers.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _statusMessage = 'Nema putnika za optimizaciju';
+        });
+      }
+      return;
+    }
+
+    try {
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _statusMessage = '🔄 Optimizujem redosled putnika...';
+        });
+      }
+
+      // Proveri da li je GPS uključen
+      bool isLocationEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!isLocationEnabled) {
+        await Geolocator.openLocationSettings();
+        await Future.delayed(const Duration(seconds: 2));
+        isLocationEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!isLocationEnabled) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _statusMessage = 'GPS nije uključen';
+            });
+          }
+          return;
+        }
+      }
+
+      // Dobij trenutnu poziciju
+      _currentPosition = await Geolocator.getCurrentPosition();
+
+      // Optimizuj rutu pomoću SmartNavigationService (samo sortiranje, bez otvaranja mape)
+      final result = await SmartNavigationService.optimizeRouteOnly(
+        putnici: _remainingPassengers,
+        startCity: 'Bela Crkva',
+      );
+
+      if (result.success && result.optimizedPutnici != null) {
+        if (mounted) {
+          setState(() {
+            _remainingPassengers = result.optimizedPutnici!;
+            _isNavigating = true;
+            _isLoading = false;
+            _statusMessage = '✅ Ruta optimizovana - ${_remainingPassengers.length} putnika';
+          });
+        }
+
+        // Obavesti parent widget o novoj ruti (ažurira kartice)
+        widget.onRouteUpdate?.call(_remainingPassengers);
+
+        // Pokreni GPS tracking
+        _positionSubscription = Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 10,
+          ),
+        ).listen((Position position) {
+          _updateNavigationBasedOnGPS(position);
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _statusMessage = result.message;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = 'Greška: $e';
+        });
+      }
+    }
+  }
+
+  /// 🛰️ Stari _startGPSTracking - sada samo pali tracking bez optimizacije
   void _startGPSTracking() {
     if (mounted) {
       if (mounted) {
@@ -677,8 +787,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed:
-                      _isNavigating ? _stopNavigation : _startGPSTracking,
+                  onPressed: _isNavigating 
+                      ? _stopNavigation 
+                      : _startOptimizationAndTracking,
                   icon: Icon(_isNavigating ? Icons.stop : Icons.play_arrow),
                   label: Text(_isNavigating ? 'Zaustavi' : 'Pokreni'),
                   style: ElevatedButton.styleFrom(

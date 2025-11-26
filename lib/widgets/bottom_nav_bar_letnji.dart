@@ -154,39 +154,42 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // top-right total removed (per user request)
-              _PolazakRow(
-                label: 'BC',
-                vremena: bcVremena,
-                selectedGrad: widget.selectedGrad,
-                selectedVreme: widget.selectedVreme,
-                grad: 'Bela Crkva',
-                onPolazakChanged: widget.onPolazakChanged,
-                getPutnikCount: widget.getPutnikCount,
-                isSlotLoading: widget.isSlotLoading,
-                scrollController: _bcScrollController,
-                currentThemeId: currentThemeId,
-              ),
-              _PolazakRow(
-                label: 'VS',
-                vremena: vsVremena,
-                selectedGrad: widget.selectedGrad,
-                selectedVreme: widget.selectedVreme,
-                grad: 'Vršac',
-                onPolazakChanged: widget.onPolazakChanged,
-                getPutnikCount: widget.getPutnikCount,
-                isSlotLoading: widget.isSlotLoading,
-                scrollController: _vsScrollController,
-                currentThemeId: currentThemeId,
-              ),
-            ],
+      child: SafeArea(
+        top: false,
+        child: Material(
+          color: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // top-right total removed (per user request)
+                _PolazakRow(
+                  label: 'BC',
+                  vremena: bcVremena,
+                  selectedGrad: widget.selectedGrad,
+                  selectedVreme: widget.selectedVreme,
+                  grad: 'Bela Crkva',
+                  onPolazakChanged: widget.onPolazakChanged,
+                  getPutnikCount: widget.getPutnikCount,
+                  isSlotLoading: widget.isSlotLoading,
+                  scrollController: _bcScrollController,
+                  currentThemeId: currentThemeId,
+                ),
+                _PolazakRow(
+                  label: 'VS',
+                  vremena: vsVremena,
+                  selectedGrad: widget.selectedGrad,
+                  selectedVreme: widget.selectedVreme,
+                  grad: 'Vršac',
+                  onPolazakChanged: widget.onPolazakChanged,
+                  getPutnikCount: widget.getPutnikCount,
+                  isSlotLoading: widget.isSlotLoading,
+                  scrollController: _vsScrollController,
+                  currentThemeId: currentThemeId,
+                ),
+              ],
+            ),
           ),
         ),
       ),

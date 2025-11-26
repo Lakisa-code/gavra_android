@@ -156,15 +156,17 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // top-right total removed (per user request)
-              _PolazakRow(
+      child: SafeArea(
+        top: false,
+        child: Material(
+          color: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // top-right total removed (per user request)
+                _PolazakRow(
                 label: 'BC',
                 vremena: bcVremena,
                 selectedGrad: widget.selectedGrad,
@@ -188,7 +190,8 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
                 scrollController: _vsScrollController,
                 currentThemeId: currentThemeId,
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

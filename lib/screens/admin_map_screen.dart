@@ -142,17 +142,13 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _getCurrentLocation() async {
     try {
+      // Proveri dozvole (traže se samo jednom pri instalaciji u PermissionService)
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return;
-        }
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        return;
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-          // desiredAccuracy: deprecated, use settings parameter
-          );
+      Position position = await Geolocator.getCurrentPosition();
 
       if (mounted) {
         setState(() {

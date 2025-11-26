@@ -104,19 +104,10 @@ class GpsService {
         // Logger removed
       }
 
-      // Provera dozvola
+      // Provera dozvola (traže se samo jednom pri instalaciji u PermissionService)
       LocationPermission permission = await Geolocator.checkPermission();
-      // Logger removed
-
-      if (permission == LocationPermission.denied) {
-        // Logger removed
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('GPS dozvola odbijena');
-        }
-      }
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception('GPS dozvola trajno odbijena');
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        throw Exception('GPS dozvole nisu odobrene');
       }
 
       // Uzimanje lokacije

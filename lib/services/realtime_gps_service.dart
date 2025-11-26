@@ -16,17 +16,10 @@ class RealtimeGpsService {
   /// 🛰️ START GPS TRACKING
   static Future<void> startTracking() async {
     try {
-      // Proveri dozvole
+      // Proveri dozvole (traže se samo jednom pri instalaciji u PermissionService)
       LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'GPS dozvole odbačene';
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'GPS dozvole trajno odbačene';
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        throw 'GPS dozvole nisu odobrene';
       }
 
       // Konfiguriši GPS settings za visoku preciznost

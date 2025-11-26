@@ -1693,18 +1693,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             if (!TextUtils.isStatusActive(p.status)) continue;
 
             final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-            // Normalize address (strip diacritics, lower-case, etc.) so checks/contains work
-            final normAdresa = GradAdresaValidator.normalizeString(p.adresa);
+            // 🔧 ISPRAVKA: Koristi grad umesto adrese za klasifikaciju polazaka
+            // Adresa može biti npr. "Bolnica" bez grada, ali p.grad je uvek postavljen
+            final putnikGrad = p.grad.toLowerCase();
 
-            // Use both heuristics: quick substring checks and membership in the
-            // curated naselja lists (which are normalized). This keeps behaviour
-            // predictable and allows us to exclude Pavliš / Središte as requested.
-            final jeBelaCrkva = normAdresa.contains('bela') ||
-                normAdresa.contains('bc') ||
-                GradAdresaValidator.naseljaOpstineBelaCrkva.any((n) => normAdresa.contains(n));
-            final jeVrsac = normAdresa.contains('vrsac') ||
-                normAdresa.contains('vs') ||
-                GradAdresaValidator.naseljaOpstineVrsac.any((n) => normAdresa.contains(n));
+            final jeBelaCrkva =
+                putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
+            final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
 
             if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
               brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
