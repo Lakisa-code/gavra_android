@@ -262,7 +262,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
           final gradNormalized = TextUtils.normalizeText(mp.grad ?? '');
           final selectedGradNorm = TextUtils.normalizeText(selectedGrad);
-          final gradMatch = selectedGrad.isEmpty || gradNormalized == selectedGradNorm;
+          // 🔧 FIX: Ako učenik nema grad (NULL), prikaži ga bez obzira na filter
+          final gradMatch = selectedGrad.isEmpty || gradNormalized.isEmpty || gradNormalized == selectedGradNorm;
 
           return dayMatch && isUcenik && gradMatch;
         }).toList();
@@ -528,23 +529,26 @@ class _DanasScreenState extends State<DanasScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$ukupnoUjutro',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onPrimary,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$ukupnoUjutro',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  '$ostalo',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.redAccent),
-                ),
-              ],
+                  const SizedBox(width: 2),
+                  Text(
+                    '$ostalo',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -622,23 +626,17 @@ class _DanasScreenState extends State<DanasScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: speedColor.withValues(alpha: 0.4)),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    speed.toStringAsFixed(0),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: speedColor,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                speed.toStringAsFixed(0),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: speedColor,
+                  fontFamily: 'monospace',
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -976,6 +974,66 @@ class _DanasScreenState extends State<DanasScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  // 🎯 REOPTIMIZACIJA RUTE NAKON PROMENE STATUSA PUTNIKA
+  Future<void> _reoptimizeAfterStatusChange() async {
+    if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
+
+    // Filtriraj samo nepokupljene i neotkazane putnike
+    final preostaliPutnici = _optimizedRoute.where((p) {
+      final status = p.status?.toLowerCase() ?? '';
+      final isPokupljen = p.vremePokupljenja != null;
+      final isOtkazan = status == 'otkazano' || status == 'otkazan';
+      return !isPokupljen && !isOtkazan;
+    }).toList();
+
+    if (preostaliPutnici.isEmpty) {
+      // Svi putnici su pokupljeni ili otkazani
+      if (mounted) {
+        setState(() {
+          _optimizedRoute.clear();
+          _isRouteOptimized = false;
+          _isListReordered = false;
+          _currentPassengerIndex = 0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Svi putnici su pokupljeni!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Reoptimizuj rutu od trenutne GPS pozicije
+    try {
+      final result = await SmartNavigationService.optimizeRouteOnly(
+        putnici: preostaliPutnici,
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+      );
+
+      if (result.success && result.optimizedPutnici != null) {
+        if (mounted) {
+          setState(() {
+            _optimizedRoute = result.optimizedPutnici!;
+            _currentPassengerIndex = 0;
+          });
+          
+          final sledeci = _optimizedRoute.isNotEmpty ? _optimizedRoute.first.ime : 'N/A';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${_optimizedRoute.length} preostalo)'),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Greška pri reoptimizaciji: $e');
+    }
   }
 
   // 📊 DIALOG ZA PRIKAZ POPISA DANA - IDENTIČAN FORMAT SA STATISTIKA SCREEN
@@ -1498,7 +1556,7 @@ class _DanasScreenState extends State<DanasScreen> {
           _isRouteOptimized = true;
           _isListReordered = true;
           _currentPassengerIndex = 0;
-          _isGpsTracking = true;
+          // NE postavljaj _isGpsTracking ovde - to se radi samo kad korisnik pritisne NAV
           _isLoading = false;
         });
       }
@@ -1579,7 +1637,7 @@ class _DanasScreenState extends State<DanasScreen> {
             _isRouteOptimized = true;
             _isListReordered = true; // ✅ Lista je reorderovana
             _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
-            _isGpsTracking = true; // 🛰️ Pokreni GPS tracking
+            // NE postavljaj _isGpsTracking - aktivira se tek kad korisnik pritisne NAV
             _isLoading = false; // ✅ ZAUSTAVI LOADING
           });
         }
@@ -1714,7 +1772,7 @@ class _DanasScreenState extends State<DanasScreen> {
             _isRouteOptimized = true;
             _isListReordered = true;
             _currentPassengerIndex = 0;
-            _isGpsTracking = true;
+            // NE postavljaj _isGpsTracking - aktivira se tek kad korisnik pritisne NAV
             _isLoading = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1740,8 +1798,7 @@ class _DanasScreenState extends State<DanasScreen> {
             _isRouteOptimized = true;
             _isListReordered = true;
             _currentPassengerIndex = 0;
-            _isGpsTracking = true;
-            // _lastGpsUpdate = DateTime.now(); // REMOVED - Google APIs disabled
+            // NE postavljaj _isGpsTracking - aktivira se tek kad korisnik pritisne NAV
             _isLoading = false; // ✅ RESETUJ LOADING
           });
         }
@@ -2344,6 +2401,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                             putnici: finalPutnici,
                                             useProvidedOrder: _isListReordered,
                                             currentDriver: _currentDriver,
+                                            onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
                                             bcVremena: const [
                                               '5:00',
                                               '6:00',

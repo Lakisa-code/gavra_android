@@ -103,5 +103,11 @@
   ],
   "dart.vmAdditionalArgs": [
     "--old_gen_heap_size=1024"
-  ]
+  ],
+  "github.copilot.chat.mcp": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    }
+  }
 }

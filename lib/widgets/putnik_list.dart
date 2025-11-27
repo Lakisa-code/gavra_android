@@ -16,6 +16,7 @@ class PutnikList extends StatelessWidget {
     this.bcVremena,
     this.vsVremena,
     this.useProvidedOrder = false,
+    this.onPutnikStatusChanged, // 🎯 NOVO: callback kad se promeni status
   }) : super(key: key);
   final bool showActions;
   final String? currentDriver;
@@ -24,6 +25,7 @@ class PutnikList extends StatelessWidget {
   final List<String>? bcVremena;
   final List<String>? vsVremena;
   final bool useProvidedOrder;
+  final VoidCallback? onPutnikStatusChanged; // 🎯 NOVO
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +154,7 @@ class PutnikList extends StatelessWidget {
                 redniBroj: redniBroj,
                 bcVremena: bcVremena,
                 vsVremena: vsVremena,
+                onChanged: onPutnikStatusChanged, // 🎯 NOVO
               );
             },
           );
@@ -201,6 +204,7 @@ class PutnikList extends StatelessWidget {
               redniBroj: redniBroj,
               bcVremena: bcVremena,
               vsVremena: vsVremena,
+              onChanged: onPutnikStatusChanged, // 🎯 NOVO
             );
           },
         );
@@ -296,6 +300,7 @@ class PutnikList extends StatelessWidget {
             redniBroj: redniBroj,
             bcVremena: bcVremena,
             vsVremena: vsVremena,
+            onChanged: onPutnikStatusChanged, // 🎯 NOVO
           );
         },
       );

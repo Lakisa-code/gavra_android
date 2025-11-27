@@ -23,6 +23,7 @@ class SmartNavigationService {
     try {
       // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
       final currentPosition = await _getCurrentPosition();
+      print('📍 VOZAČ POZICIJA: lat=${currentPosition.latitude}, lng=${currentPosition.longitude}');
 
       // 2. DOBIJ KOORDINATE ZA SVE ADRESE
       final Map<Putnik, Position> coordinates = await _getCoordinatesForPutnici(putnici);
@@ -43,6 +44,20 @@ class SmartNavigationService {
         optimizeForTime: optimizeForTime,
       );
 
+      // 🔍 DEBUG: Prikaži distance za svakog putnika
+      print('📊 === DISTANCE OD VOZAČA ===');
+      for (final putnik in coordinates.keys) {
+        final pos = coordinates[putnik]!;
+        final distance = Geolocator.distanceBetween(
+          currentPosition.latitude,
+          currentPosition.longitude,
+          pos.latitude,
+          pos.longitude,
+        );
+        print('   📍 ${putnik.ime}: ${distance.toStringAsFixed(0)}m (lat=${pos.latitude}, lng=${pos.longitude})');
+      }
+      print('📊 ========================');
+
       // 4. VRATI OPTIMIZOVANU RUTU BEZ OTVARANJA MAPE
       return NavigationResult.success(
         message: '✅ Ruta optimizovana',
@@ -60,17 +75,20 @@ class SmartNavigationService {
   }
 
   /// 🚗 GLAVNA FUNKCIJA - Otvori mapu sa optimizovanom rutom (preferirano OSM/OSRM)
+  /// 🎯 skipOptimization=true: koristi prosleđenu listu bez re-optimizacije (za NAV dugme)
   static Future<NavigationResult> startOptimizedNavigation({
     required List<Putnik> putnici,
     required String startCity, // 'Bela Crkva' ili 'Vršac'
     bool optimizeForTime = true, // true = vreme, false = distanca
     bool useTrafficData = false, // 🚦 NOVO: traffic-aware routing
+    bool skipOptimization = true, // 🎯 NOVO: preskoči re-optimizaciju ako je ruta već optimizovana
   }) async {
     print('');
     print('🗺️🗺️🗺️ ===== START OPTIMIZED NAVIGATION ===== 🗺️🗺️🗺️');
     print('🗺️ Broj putnika: ${putnici.length}');
     print('🗺️ Start city: $startCity');
     print('🗺️ useTrafficData: $useTrafficData');
+    print('🗺️ skipOptimization: $skipOptimization');
     print('');
     try {
       // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
@@ -85,10 +103,14 @@ class SmartNavigationService {
         );
       }
 
-      // 3. OPTIMIZUJ REDOSLED PUTNIKA
+      // 3. OPTIMIZUJ REDOSLED PUTNIKA (ili koristi već optimizovanu listu)
       List<Putnik> optimizedRoute;
 
-      if (useTrafficData) {
+      if (skipOptimization) {
+        // 🎯 KORISTI VEĆ OPTIMIZOVANU LISTU (od "Ruta" dugmeta)
+        print('🎯 Koristi već optimizovanu rutu (skipOptimization=true)');
+        optimizedRoute = putnici;
+      } else if (useTrafficData) {
         // 🚦 TRAFFIC-AWARE OPTIMIZACIJA
 
         // DISABLED: Google APIs too expensive - use standard optimization instead
@@ -106,17 +128,26 @@ class SmartNavigationService {
         );
       }
 
-      // 4. OTVORI RUTU U PREFERIRANOJ NAVIGACIONOJ APLIKACIJI (OpenStreetMap/OSM)
-      final success = await _openOSMNavigation(
+      // 4. OTVORI RUTU U GOOGLE MAPS SA WAYPOINT-IMA (max 10)
+      final success = await _openGoogleMapsNavigation(
         currentPosition,
         optimizedRoute,
         startCity,
-        useTrafficData: useTrafficData, // 🚦 Prosledi traffic parametar
+        useTrafficData: useTrafficData,
       );
 
+      // Informacija o broju putnika
+      final maxWaypoints = 10;
+      final shownCount = optimizedRoute.length > maxWaypoints ? maxWaypoints : optimizedRoute.length;
+      final remainingCount = optimizedRoute.length > maxWaypoints ? optimizedRoute.length - maxWaypoints : 0;
+
       if (success) {
+        String message = '🎯 Google Maps: $shownCount putnika';
+        if (remainingCount > 0) {
+          message += ' (još $remainingCount posle)';
+        }
         return NavigationResult.success(
-          message: '🎯 Navigacija pokrenuta sa ${optimizedRoute.length} putnika',
+          message: message,
           optimizedPutnici: optimizedRoute,
           totalDistance: await _calculateTotalDistance(
             currentPosition,
@@ -329,7 +360,7 @@ class SmartNavigationService {
     }
   }
 
-  /// 🎯 Optimizuj redosled putnika (TSP algoritam)
+  /// 🎯 Optimizuj redosled putnika (Nearest Neighbor - uvek najbliži prvi)
   static Future<List<Putnik>> _optimizeRoute({
     required Position startPosition,
     required Map<Putnik, Position> coordinates,
@@ -339,20 +370,12 @@ class SmartNavigationService {
 
     if (putnici.length <= 1) return putnici;
 
-    // Za manje od 8 putnika koristi brute force, inače nearest neighbor
-    if (putnici.length <= 8) {
-      return await _bruteForceOptimization(
-        startPosition,
-        coordinates,
-        optimizeForTime,
-      );
-    } else {
-      return await _nearestNeighborOptimization(
-        startPosition,
-        coordinates,
-        optimizeForTime,
-      );
-    }
+    // 🎯 UVEK koristi Nearest Neighbor - intuitivnije za gradsku vožnju
+    return await _nearestNeighborOptimization(
+      startPosition,
+      coordinates,
+      optimizeForTime,
+    );
   }
 
   /// 🔥 Brute force optimizacija (za <= 8 putnika)
@@ -463,47 +486,68 @@ class SmartNavigationService {
     );
   }
 
-  /// 🗺️ Otvori OpenStreetMap sa optimizovanom rutom
-  static Future<bool> _openOSMNavigation(
+  /// 🗺️ Otvori Google Maps sa svim putnicima
+  /// Google sam optimizuje rutu - uzima u obzir puteve, saobraćaj, jednosmerne ulice
+  static Future<bool> _openGoogleMapsNavigation(
     Position startPosition,
     List<Putnik> optimizedRoute,
     String startCity, {
-    bool useTrafficData = false, // 🚦 DODATO za traffic parametere
+    bool useTrafficData = false,
   }) async {
     try {
-      // Kreiraj OpenStreetMap URL za navigaciju (koristi osmand ili maps.me)
-      String osmNavigationUrl = 'https://www.openstreetmap.org/directions?';
+      if (optimizedRoute.isEmpty) {
+        print('❌ Nema putnika za navigaciju');
+        return false;
+      }
 
-      // Dodaj početnu poziciju
-      osmNavigationUrl += 'from=${startPosition.latitude}%2C${startPosition.longitude}';
+      // 🎯 Google Maps podržava max 10 waypoint-a
+      final maxWaypoints = 10;
+      final putnici = optimizedRoute.take(maxWaypoints).toList();
+      
+      print('🗺️ Otvaram Google Maps sa ${putnici.length} putnika');
 
-      // Za OpenStreetMap, koristimo prvi i poslednji destination
-      if (optimizedRoute.isNotEmpty) {
-        final lastPutnik = optimizedRoute.last;
-        if (lastPutnik.adresa != null && lastPutnik.adresa!.isNotEmpty) {
-          final improvedAddress = _improveAddressForGeocoding(lastPutnik.adresa!, lastPutnik.grad);
-          final encodedAddress = Uri.encodeComponent(
-            '$improvedAddress, ${lastPutnik.grad}, Serbia',
-          );
-          osmNavigationUrl += '&to=$encodedAddress';
+      // 🎯 Dobij koordinate za sve putnike
+      final coordinates = await _getCoordinatesForPutnici(putnici);
+      
+      if (coordinates.isEmpty) {
+        print('❌ Nema koordinata za putnike');
+        return false;
+      }
+
+      // 🎯 Kreiraj Google Maps URL sa svim putnicima
+      // Format: /dir/origin/wp1/wp2/.../destination
+      String googleMapsUrl = 'https://www.google.com/maps/dir/${startPosition.latitude},${startPosition.longitude}';
+
+      for (final putnik in putnici) {
+        if (coordinates.containsKey(putnik)) {
+          final pos = coordinates[putnik]!;
+          googleMapsUrl += '/${pos.latitude},${pos.longitude}';
+          print('   📍 ${putnik.ime}: ${pos.latitude},${pos.longitude}');
         }
       }
 
-      // Dodaj parametre za navigaciju
-      osmNavigationUrl += '&route=car';
+      googleMapsUrl += '?travelmode=driving';
 
-      final Uri uri = Uri.parse(osmNavigationUrl);
+      print('🗺️ Google Maps URL: $googleMapsUrl');
 
-      // Pokušaj da otvoriš OpenStreetMap ili navigaciju
+      final Uri uri = Uri.parse(googleMapsUrl);
+
       if (await canLaunchUrl(uri)) {
-        return await launchUrl(
+        final launched = await launchUrl(
           uri,
-          mode: LaunchMode.externalApplication, // Otvori u navigacionoj aplikaciji
+          mode: LaunchMode.externalApplication,
         );
+        
+        if (launched && optimizedRoute.length > maxWaypoints) {
+          print('⚠️ Ima još ${optimizedRoute.length - maxWaypoints} putnika posle ovih ${maxWaypoints}');
+        }
+        
+        return launched;
       } else {
-        throw Exception('Ne mogu da otvorim navigaciju');
+        throw Exception('Ne mogu da otvorim Google Maps');
       }
     } catch (e) {
+      print('❌ Greška pri otvaranju Google Maps: $e');
       return false;
     }
   }
