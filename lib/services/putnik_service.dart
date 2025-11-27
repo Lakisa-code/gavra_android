@@ -654,7 +654,7 @@ class PutnikService {
         // ✅ PROVERAVA DA LI MESEČNI PUTNIK VEĆ POSTOJI
         final existingPutnici = await supabase
             .from('mesecni_putnici')
-            .select('id, putnik_ime, aktivan')
+            .select('id, putnik_ime, aktivan, polasci_po_danu, radni_dani')
             .eq('putnik_ime', putnik.ime)
             .eq('aktivan', true);
 
@@ -664,8 +664,49 @@ class PutnikService {
               'Idite na: Meni → Mesečni putnici da kreirate novog mesečnog putnika.');
         }
 
-        // 🎯 NOVA LOGIKA: Za mesečne putnike se prisustvo evidentira kroz mesecni_putnici tabelu
-        // ℹ️ Ne dodajemo duplikate u putovanja_istorija jer to kvari statistike
+        // 🎯 AŽURIRAJ polasci_po_danu za mesečnog putnika sa novim polaskom
+        final mesecniPutnik = existingPutnici.first;
+        final putnikId = mesecniPutnik['id'] as String;
+        
+        // Dohvati postojeće polaske ili kreiraj novi map
+        Map<String, dynamic> polasciPoDanu = {};
+        if (mesecniPutnik['polasci_po_danu'] != null) {
+          polasciPoDanu = Map<String, dynamic>.from(mesecniPutnik['polasci_po_danu'] as Map);
+        }
+        
+        // Odredi dan kratica (pon, uto, sre, cet, pet)
+        final danKratica = putnik.dan?.toLowerCase() ?? '';
+        
+        // Odredi grad (bc ili vs)
+        final gradKey = putnik.grad.toLowerCase().contains('bela') ? 'bc' : 'vs';
+        
+        // Normalizuj vreme polaska
+        final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
+        
+        // Dodaj ili ažuriraj polazak za taj dan
+        if (!polasciPoDanu.containsKey(danKratica)) {
+          polasciPoDanu[danKratica] = {'bc': null, 'vs': null};
+        }
+        final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
+        danPolasci[gradKey] = polazakVreme;
+        polasciPoDanu[danKratica] = danPolasci;
+        
+        // Ažuriraj radni_dani ako dan nije već uključen
+        String radniDani = mesecniPutnik['radni_dani'] as String? ?? '';
+        final radniDaniList = radniDani.split(',').map((d) => d.trim().toLowerCase()).where((d) => d.isNotEmpty).toList();
+        if (!radniDaniList.contains(danKratica) && danKratica.isNotEmpty) {
+          radniDaniList.add(danKratica);
+          radniDani = radniDaniList.join(',');
+        }
+        
+        // Ažuriraj mesečnog putnika u bazi
+        await supabase.from('mesecni_putnici').update({
+          'polasci_po_danu': polasciPoDanu,
+          'radni_dani': radniDani,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', putnikId);
+        
+        print('✅ Ažuriran mesečni putnik ${putnik.ime}: polasci_po_danu=$polasciPoDanu, radni_dani=$radniDani');
       } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
         final insertData = await putnik.toPutovanjaIstorijaMapWithAdresa(); // ✅ KORISTI PRAVO REŠENJE
