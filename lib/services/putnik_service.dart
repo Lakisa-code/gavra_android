@@ -103,20 +103,20 @@ class PutnikService {
           // ✅ ISPRAVKA: Izvuci adresu iz nested adrese objekta
           final map = Map<String, dynamic>.from(d as Map<String, dynamic>);
           final adreseData = map['adrese'] as Map<String, dynamic>?;
-          
+
           // ✅ Izvuci adresu iz JOIN-a ako postoji
           if (adreseData != null) {
             final naziv = adreseData['naziv'] as String?;
             final ulica = adreseData['ulica'] as String?;
             final broj = adreseData['broj'] as String?;
-            
+
             if (naziv != null && naziv.isNotEmpty) {
               map['adresa'] = naziv;
             } else if (ulica != null && ulica.isNotEmpty) {
               map['adresa'] = '$ulica ${broj ?? ''}'.trim();
             }
           }
-          
+
           final putnik = Putnik.fromPutovanjaIstorija(map);
 
           // ✅ DODAJ CLIENT-SIDE FILTERING za dnevne putnike po gradu/vremenu
@@ -667,22 +667,22 @@ class PutnikService {
         // 🎯 AŽURIRAJ polasci_po_danu za mesečnog putnika sa novim polaskom
         final mesecniPutnik = existingPutnici.first;
         final putnikId = mesecniPutnik['id'] as String;
-        
+
         // Dohvati postojeće polaske ili kreiraj novi map
         Map<String, dynamic> polasciPoDanu = {};
         if (mesecniPutnik['polasci_po_danu'] != null) {
           polasciPoDanu = Map<String, dynamic>.from(mesecniPutnik['polasci_po_danu'] as Map);
         }
-        
+
         // Odredi dan kratica (pon, uto, sre, cet, pet)
-        final danKratica = putnik.dan?.toLowerCase() ?? '';
-        
+        final danKratica = putnik.dan.toLowerCase();
+
         // Odredi grad (bc ili vs)
         final gradKey = putnik.grad.toLowerCase().contains('bela') ? 'bc' : 'vs';
-        
+
         // Normalizuj vreme polaska
         final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
-        
+
         // Dodaj ili ažuriraj polazak za taj dan
         if (!polasciPoDanu.containsKey(danKratica)) {
           polasciPoDanu[danKratica] = {'bc': null, 'vs': null};
@@ -690,22 +690,23 @@ class PutnikService {
         final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
         danPolasci[gradKey] = polazakVreme;
         polasciPoDanu[danKratica] = danPolasci;
-        
+
         // Ažuriraj radni_dani ako dan nije već uključen
         String radniDani = mesecniPutnik['radni_dani'] as String? ?? '';
-        final radniDaniList = radniDani.split(',').map((d) => d.trim().toLowerCase()).where((d) => d.isNotEmpty).toList();
+        final radniDaniList =
+            radniDani.split(',').map((d) => d.trim().toLowerCase()).where((d) => d.isNotEmpty).toList();
         if (!radniDaniList.contains(danKratica) && danKratica.isNotEmpty) {
           radniDaniList.add(danKratica);
           radniDani = radniDaniList.join(',');
         }
-        
+
         // Ažuriraj mesečnog putnika u bazi
         await supabase.from('mesecni_putnici').update({
           'polasci_po_danu': polasciPoDanu,
           'radni_dani': radniDani,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', putnikId);
-        
+
         print('✅ Ažuriran mesečni putnik ${putnik.ime}: polasci_po_danu=$polasciPoDanu, radni_dani=$radniDani');
       } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
@@ -1521,7 +1522,7 @@ class PutnikService {
   ) async {
     // 🔍 DEBUG LOG
     print('🏥 oznaciBolovanjeGodisnji: id=$id, tip=$tipOdsustva, driver=$currentDriver');
-    
+
     // ✅ dynamic umesto int
     // Određi tabelu na osnovu ID-ja
     final tabela = await _getTableForPutnik(id);

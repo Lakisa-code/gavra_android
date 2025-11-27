@@ -133,12 +133,9 @@ void main() async {
     // Continue without Supabase if it fails
   }
 
-  // 🛰️ INITIALIZE BACKGROUND GPS SERVICE (OPTIONAL - Disabled for stability)
-  // try {
-  //   await BackgroundGpsService.initialize();
-  // } catch (e) {
-  //   // Ignoriši greške u background GPS - optional feature
-  // }
+  // 🛰️ GPS MANAGER - centralizovani GPS singleton
+  // GpsManager.instance se koristi lazy - ne treba inicijalizacija ovde
+  // Tracking se pokreće kad je potreban (danas_screen, navigation widget)
 
   // 🗺️ INITIALIZE OFFLINE MAPS
   try {

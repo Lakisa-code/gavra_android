@@ -35,6 +35,7 @@ class PutnikCard extends StatefulWidget {
     this.selectedVreme, // 🆕 Trenutno selektovano vreme polaska
     this.selectedGrad, // 🆕 Trenutno selektovani grad
     this.onChanged, // 🆕 Callback za UI refresh
+    this.onPokupljen, // 🔊 Callback za glasovnu najavu sledećeg putnika
   }) : super(key: key);
   final Putnik putnik;
   final bool showActions;
@@ -45,6 +46,7 @@ class PutnikCard extends StatefulWidget {
   final String? selectedVreme; // 🆕 Trenutno selektovano vreme polaska
   final String? selectedGrad; // 🆕 Trenutno selektovani grad
   final VoidCallback? onChanged;
+  final VoidCallback? onPokupljen; // 🔊 Callback za glasovnu najavu sledećeg
 
   @override
   State<PutnikCard> createState() => _PutnikCardState();
@@ -74,6 +76,7 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
+  // ignore: unused_element
   String _formatVremeDodavanja(DateTime vreme) {
     return '${vreme.day.toString().padLeft(2, '0')}.${vreme.month.toString().padLeft(2, '0')}.${vreme.year}. '
         '${vreme.hour.toString().padLeft(2, '0')}:${vreme.minute.toString().padLeft(2, '0')}';
@@ -136,6 +139,11 @@ class _PutnikCardState extends State<PutnikCard> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SmartSnackBar.success('${_putnik.ime} je pokupljen', context),
               );
+            }
+
+            // 🔊 NAJAVI SLEDEĆEG PUTNIKA (callback na danas_screen)
+            if (widget.onPokupljen != null) {
+              widget.onPokupljen!();
             }
           } else {
             // Forsiraj UI ažuriranje
@@ -1389,7 +1397,7 @@ class _PutnikCardState extends State<PutnikCard> {
       if (putnikId == null || putnikId.isEmpty) {
         throw Exception('Putnik nema validan ID (id=$putnikId)');
       }
-      
+
       // Pozovi service za postavljanje statusa
       await PutnikService().oznaciBolovanjeGodisnji(
         putnikId,
@@ -1409,7 +1417,7 @@ class _PutnikCardState extends State<PutnikCard> {
             duration: const Duration(seconds: 2),
           ),
         );
-        
+
         // 🔄 FORSIRAJ REFRESH LISTE
         if (widget.onChanged != null) {
           widget.onChanged!();
@@ -1808,7 +1816,8 @@ class _PutnikCardState extends State<PutnikCard> {
                           FutureBuilder<String>(
                             future: _getMesecniPutnikAdrese(),
                             builder: (context, snapshot) {
-                              print('🏠 KARTICA ${_putnik.ime}: mesecna=${_putnik.mesecnaKarta}, adresa=${_putnik.adresa}');
+                              print(
+                                  '🏠 KARTICA ${_putnik.ime}: mesecna=${_putnik.mesecnaKarta}, adresa=${_putnik.adresa}');
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const SizedBox.shrink(); // Ne prikazuj loading
                               }

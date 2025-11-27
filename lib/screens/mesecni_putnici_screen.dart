@@ -1677,6 +1677,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     // Učitaj sva plaćanja za ovog putnika da bi se prikazali plaćeni meseci zeleno
     await _ucitajPlaceneMesece(putnik);
 
+    // 🛡️ Proveri da li je widget još uvek mountovan nakon async operacije
+    if (!mounted) return;
+
     final TextEditingController iznosController = TextEditingController();
     String selectedMonth = _getCurrentMonthYear(); // Default current month
 

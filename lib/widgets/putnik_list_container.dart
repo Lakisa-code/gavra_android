@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/route_config.dart';
 import '../models/putnik.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart';
@@ -96,32 +97,9 @@ class PutnikListContainer extends StatelessWidget {
             putnici: finalPutnici,
             useProvidedOrder: isListReordered,
             currentDriver: currentDriver,
-            bcVremena: const [
-              '5:00',
-              '6:00',
-              '7:00',
-              '8:00',
-              '9:00',
-              '11:00',
-              '12:00',
-              '13:00',
-              '14:00',
-              '15:30',
-              '18:00',
-            ],
-            vsVremena: const [
-              '6:00',
-              '7:00',
-              '8:00',
-              '10:00',
-              '11:00',
-              '12:00',
-              '13:00',
-              '14:00',
-              '15:30',
-              '17:00',
-              '19:00',
-            ],
+            // 🎯 Koristi centralizovana vremena iz RouteConfig (zimski kao default)
+            bcVremena: RouteConfig.bcVremenaZimski,
+            vsVremena: RouteConfig.vsVremenaZimski,
           ),
         ),
       ],

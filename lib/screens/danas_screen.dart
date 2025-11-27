@@ -26,6 +26,7 @@ import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
+import '../services/voice_navigation_service.dart'; // 🔊 DODANO za glasovnu najavu
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/schedule_utils.dart'; // Za isZimski funkciju
@@ -35,7 +36,6 @@ import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
-import '../widgets/real_time_navigation_widget.dart'; // 🧭 NOVO navigation widget
 import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
@@ -927,9 +927,15 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   bool _isLoading = false;
+  String _loadingMessage = 'Učitavam...'; // 🆕 Poruka za loading
 
   Future<void> _loadPutnici() async {
-    if (mounted) setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadingMessage = 'Učitavam putnike...';
+      });
+    }
     // Osloni se na stream, ali možeš ovde dodati logiku za ručno osvežavanje ako bude potrebno
     await Future<void>.delayed(const Duration(milliseconds: 100)); // simulacija
     if (mounted) setState(() => _isLoading = false);
@@ -1020,7 +1026,7 @@ class _DanasScreenState extends State<DanasScreen> {
             _optimizedRoute = result.optimizedPutnici!;
             _currentPassengerIndex = 0;
           });
-          
+
           final sledeci = _optimizedRoute.isNotEmpty ? _optimizedRoute.first.ime : 'N/A';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1534,6 +1540,7 @@ class _DanasScreenState extends State<DanasScreen> {
     if (mounted) {
       setState(() {
         _isLoading = true; // ✅ POKRENI LOADING
+        _loadingMessage = 'Optimizujem rutu...'; // 🆕 Informativna poruka
       });
     }
 
@@ -1590,20 +1597,21 @@ class _DanasScreenState extends State<DanasScreen> {
     // 🎯 PRAVI FILTER - koristi putnike koji su već prikazani na ekranu
     // Mesečni putnici imaju adresaId koji pokazuje na pravu adresu
     print('🔍 FILTER DEBUG: Ukupno putnika: ${putnici.length}');
-    
+
     final filtriraniPutnici = putnici.where((p) {
       // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
       // Za dnevne putnike: imaju adresu direktno
-      final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) || 
-                              (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
-      
-      print('   📍 ${p.ime}: adresa="${p.adresa}", adresaId="${p.adresaId}", mesecna=${p.mesecnaKarta}, hasValidAddress=$hasValidAddress');
-      
+      final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
+          (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
+
+      print(
+          '   📍 ${p.ime}: adresa="${p.adresa}", adresaId="${p.adresaId}", mesecna=${p.mesecnaKarta}, hasValidAddress=$hasValidAddress');
+
       return hasValidAddress;
     }).toList();
-    
+
     print('🔍 FILTER RESULT: ${filtriraniPutnici.length} putnika sa adresama');
-    
+
     if (filtriraniPutnici.isEmpty) {
       if (mounted) {
         setState(() {
@@ -1670,8 +1678,22 @@ class _DanasScreenState extends State<DanasScreen> {
                     Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
                 ],
               ),
-              duration: const Duration(seconds: 4),
+              duration: const Duration(seconds: 5),
               backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: '🔊 NAJAVI',
+                textColor: Colors.white,
+                onPressed: () {
+                  // Najavi prvog putnika glasom
+                  if (optimizedPutnici.isNotEmpty) {
+                    final prvi = optimizedPutnici.first;
+                    final adresa = prvi.adresa ?? prvi.grad;
+                    VoiceNavigationService.speak(
+                      'Sledeći putnik: ${prvi.ime}, $adresa',
+                    );
+                  }
+                },
+              ),
             ),
           );
 
@@ -1707,20 +1729,20 @@ class _DanasScreenState extends State<DanasScreen> {
                       ),
                       const SizedBox(height: 12),
                       ...skipped.take(5).map((p) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_off, color: Colors.red, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                p.ime,
-                                style: const TextStyle(fontSize: 15, color: Colors.black87),
-                              ),
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_off, color: Colors.red, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    p.ime,
+                                    style: const TextStyle(fontSize: 15, color: Colors.black87),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      )),
+                          )),
                       if (skipped.length > 5)
                         Text(
                           '... i još ${skipped.length - 5}',
@@ -1891,7 +1913,22 @@ class _DanasScreenState extends State<DanasScreen> {
             ),
           ),
           body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        _loadingMessage,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               : StreamBuilder<List<Putnik>>(
                   stream: _putnikService.streamKombinovaniPutniciFiltered(
                     isoDate: DateTime.now().toIso8601String().split('T')[0],
@@ -2402,6 +2439,12 @@ class _DanasScreenState extends State<DanasScreen> {
                                             useProvidedOrder: _isListReordered,
                                             currentDriver: _currentDriver,
                                             onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
+                                            onPokupljen: () {
+                                              // 🔊 Najavi sledećeg putnika nakon pokupljenja
+                                              if (_optimizedRoute.isNotEmpty) {
+                                                VoiceNavigationService.announceNextPassenger(_optimizedRoute);
+                                              }
+                                            },
                                             bcVremena: const [
                                               '5:00',
                                               '6:00',

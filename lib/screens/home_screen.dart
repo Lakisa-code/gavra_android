@@ -20,7 +20,6 @@ import '../services/realtime_service.dart';
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
-import '../utils/animation_utils.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
 import '../utils/page_transitions.dart';
@@ -31,7 +30,6 @@ import '../widgets/autocomplete_adresa_field.dart';
 import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
-import '../widgets/putnik_card.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
@@ -1697,8 +1695,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             // Adresa može biti npr. "Bolnica" bez grada, ali p.grad je uvek postavljen
             final putnikGrad = p.grad.toLowerCase();
 
-            final jeBelaCrkva =
-                putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
+            final jeBelaCrkva = putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
             final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
 
             if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {

@@ -40,11 +40,9 @@ class VoiceNavigationService {
       await _audioSession!.configure(
         const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.duckOthers,
+          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
           avAudioSessionMode: AVAudioSessionMode.spokenAudio,
-          avAudioSessionRouteSharingPolicy:
-              AVAudioSessionRouteSharingPolicy.longFormAudio,
+          avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.longFormAudio,
           androidAudioAttributes: AndroidAudioAttributes(
             contentType: AndroidAudioContentType.speech,
             flags: AndroidAudioFlags.audibilityEnforced,
@@ -133,13 +131,27 @@ class VoiceNavigationService {
 
   /// 📢 ANNOUNCE PASSENGER PICKUP
   static Future<void> announcePassengerPickup(Putnik putnik) async {
-    final kartaTip =
-        (putnik.mesecnaKarta == true) ? 'Mesečna karta.' : 'Jednokratna karta.';
+    final kartaTip = (putnik.mesecnaKarta == true) ? 'Mesečna karta.' : 'Jednokratna karta.';
     final announcement = 'Sledeći putnik: ${putnik.ime}. '
         'Adresa: ${putnik.adresa}. '
         '$kartaTip';
 
     await speak(announcement);
+  }
+
+  /// 📢 ANNOUNCE NEXT UNPICKED PASSENGER FROM OPTIMIZED ROUTE
+  /// Pronalazi sledećeg nepokupljenog putnika i najavljuje ga
+  static Future<void> announceNextPassenger(List<Putnik> optimizedRoute) async {
+    // Pronađi prvog nepokupljenog (koji nije otkazan i nije na odsustvu)
+    final next = optimizedRoute.where((p) => p.vremePokupljenja == null && !p.jeOtkazan && !p.jeOdsustvo).firstOrNull;
+
+    if (next != null) {
+      await announcePassengerPickup(next);
+    } else {
+      // Svi pokupljeni
+      final pokupljeno = optimizedRoute.where((p) => p.vremePokupljenja != null).length;
+      await announceRouteCompletion(pokupljeno);
+    }
   }
 
   /// 📢 ANNOUNCE ROUTE COMPLETION
@@ -226,16 +238,10 @@ class VoiceNavigationService {
         .replaceAll('°', 'stepeni');
 
     // Fix common mispronunciations
-    processed = processed
-        .replaceAll('GPS', 'Ges Pe Es')
-        .replaceAll('API', 'A Pe I')
-        .replaceAll('URL', 'U Er El');
+    processed = processed.replaceAll('GPS', 'Ges Pe Es').replaceAll('API', 'A Pe I').replaceAll('URL', 'U Er El');
 
     // Add pauses for better comprehension
-    processed = processed
-        .replaceAll('.', '. ')
-        .replaceAll(',', ', ')
-        .replaceAll(';', '; ');
+    processed = processed.replaceAll('.', '. ').replaceAll(',', ', ').replaceAll(';', '; ');
 
     return processed.trim();
   }
@@ -337,8 +343,7 @@ class VoiceNavigationService {
 
   /// 📍 HANDLE GPS UPDATE FOR NAVIGATION
   static void _handleGpsUpdate(Position position) async {
-    if (_currentInstructions.isEmpty ||
-        _currentInstructionIndex >= _currentInstructions.length) {
+    if (_currentInstructions.isEmpty || _currentInstructionIndex >= _currentInstructions.length) {
       return;
     }
 

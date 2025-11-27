@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
 
@@ -14,8 +15,7 @@ import '../models/putnik.dart';
 /// Koristi OpenStreetMap tiles + lokalna SQLite baza za geocoding
 class OfflineMapService {
   static Database? _database;
-  static final String _tileUrlTemplate =
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  static final String _tileUrlTemplate = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
   // Granice Vršac/Bela Crkva regiona
   static const double _minLat = 44.7; // Južno od Vršca
@@ -29,6 +29,116 @@ class OfflineMapService {
   static Future<void> initialize() async {
     await _initializeDatabase();
     await _preloadCriticalAddresses();
+    // 🆕 Sync sa Supabase u pozadini (ne blokira startup)
+    _syncAddressesFromSupabase();
+  }
+
+  /// 🔄 SYNC ADRESE IZ SUPABASE (pozadinski task)
+  static Future<void> _syncAddressesFromSupabase() async {
+    try {
+      final db = await _getDatabase();
+
+      // 1. Učitaj sve adrese iz 'adrese' tabele koje imaju koordinate
+      final response = await Supabase.instance.client
+          .from('adrese')
+          .select('id, ulica, broj, grad, latitude, longitude')
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null);
+
+      if (response.isEmpty) {
+        print('📍 Offline sync: Nema adresa sa koordinatama u Supabase');
+        return;
+      }
+
+      int syncCount = 0;
+      for (final row in response) {
+        final ulica = row['ulica'] as String? ?? '';
+        final broj = row['broj'] as String? ?? '';
+        final grad = row['grad'] as String? ?? '';
+        final lat = row['latitude'];
+        final lng = row['longitude'];
+
+        if (lat == null || lng == null) continue;
+
+        final adresa = broj.isNotEmpty ? '$ulica $broj' : ulica;
+        if (adresa.isEmpty || grad.isEmpty) continue;
+
+        await db.insert(
+          'addresses',
+          {
+            'grad': grad,
+            'adresa': adresa,
+            'latitude': (lat is int) ? lat.toDouble() : lat as double,
+            'longitude': (lng is int) ? lng.toDouble() : lng as double,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        syncCount++;
+      }
+
+      print('📍 Offline sync: Sinhronizovano $syncCount adresa iz Supabase');
+    } catch (e) {
+      print('⚠️ Offline sync greška: $e');
+      // Ne prekidaj - offline baza i dalje ima hardkodirane adrese
+    }
+  }
+
+  /// 🔄 FORCE SYNC - pozovi ručno kad treba refresh
+  static Future<int> forceSyncFromSupabase() async {
+    try {
+      final db = await _getDatabase();
+
+      final response = await Supabase.instance.client
+          .from('adrese')
+          .select('id, ulica, broj, grad, latitude, longitude')
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null);
+
+      if (response.isEmpty) return 0;
+
+      int syncCount = 0;
+      for (final row in response) {
+        final ulica = row['ulica'] as String? ?? '';
+        final broj = row['broj'] as String? ?? '';
+        final grad = row['grad'] as String? ?? '';
+        final lat = row['latitude'];
+        final lng = row['longitude'];
+
+        if (lat == null || lng == null) continue;
+
+        final adresa = broj.isNotEmpty ? '$ulica $broj' : ulica;
+        if (adresa.isEmpty || grad.isEmpty) continue;
+
+        await db.insert(
+          'addresses',
+          {
+            'grad': grad,
+            'adresa': adresa,
+            'latitude': (lat is int) ? lat.toDouble() : lat as double,
+            'longitude': (lng is int) ? lng.toDouble() : lng as double,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        syncCount++;
+      }
+
+      return syncCount;
+    } catch (e) {
+      print('⚠️ Force sync greška: $e');
+      return 0;
+    }
+  }
+
+  /// 📊 GET OFFLINE STATS
+  static Future<Map<String, int>> getOfflineStats() async {
+    try {
+      final db = await _getDatabase();
+      final result = await db.rawQuery('SELECT COUNT(*) as count FROM addresses');
+      final count = result.first['count'] as int? ?? 0;
+      return {'totalAddresses': count};
+    } catch (e) {
+      return {'totalAddresses': 0};
+    }
   }
 
   /// 📱 GET FLUTTER MAP WIDGET ZA OFFLINE UPOTREBU
@@ -176,8 +286,7 @@ class OfflineMapService {
         double shortestDistance = double.infinity;
 
         for (final putnik in unvisited) {
-          final distance =
-              _calculateDistance(currentPosition, coordinates[putnik]!);
+          final distance = _calculateDistance(currentPosition, coordinates[putnik]!);
           if (distance < shortestDistance) {
             shortestDistance = distance;
             nearest = putnik;
@@ -206,8 +315,7 @@ class OfflineMapService {
   }) async {
     try {
       final double latDelta = radiusKm / 111.0; // 1 stepen ≈ 111km
-      final double lngDelta =
-          radiusKm / (111.0 * math.cos(center.latitude * math.pi / 180));
+      final double lngDelta = radiusKm / (111.0 * math.cos(center.latitude * math.pi / 180));
 
       final LatLng southwest = LatLng(
         math.max(_minLat, center.latitude - latDelta),
@@ -248,8 +356,7 @@ class OfflineMapService {
         ''');
 
         // Index za brže pretrage
-        await db
-            .execute('CREATE INDEX idx_grad_adresa ON addresses(grad, adresa)');
+        await db.execute('CREATE INDEX idx_grad_adresa ON addresses(grad, adresa)');
         await db.execute(
           'CREATE INDEX idx_coordinates ON addresses(latitude, longitude)',
         );
