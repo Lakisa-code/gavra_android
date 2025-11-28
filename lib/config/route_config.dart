@@ -115,27 +115,6 @@ class RouteConfig {
     'Vršac': [vrsacLat, vrsacLng],
   };
 
-  /// Tolerancija za proveru da li su koordinate centar grada (u stepenima)
-  /// ~100m tolerancija
-  static const double centerTolerance = 0.001;
-
-  /// Proveri da li su koordinate centar nekog grada (beskorisne za navigaciju)
-  static bool isCityCenterCoordinate(double? lat, double? lng) {
-    if (lat == null || lng == null) return false;
-
-    // Proveri Belu Crkvu
-    if ((lat - belaCrkvaLat).abs() < centerTolerance && (lng - belaCrkvaLng).abs() < centerTolerance) {
-      return true;
-    }
-
-    // Proveri Vršac
-    if ((lat - vrsacLat).abs() < centerTolerance && (lng - vrsacLng).abs() < centerTolerance) {
-      return true;
-    }
-
-    return false;
-  }
-
   /// Dobij centar grada po imenu
   static LatLng? getCenterForGrad(String grad) {
     final normalized = grad.toLowerCase().trim();
@@ -216,12 +195,14 @@ class RouteConfig {
   static const int bruteForceThreshold = 8;
 
   /// Maksimalan broj paralelnih geocoding zahteva
-  static const int maxParallelGeocoding = 5;
+  /// ⚠️ ZA NOMINATIM FREE API MORA BITI 1
+  static const int maxParallelGeocoding = 1;
 
   /// Batch size za Nominatim rate limiting
-  static const int nominatimBatchSize = 5;
+  static const int nominatimBatchSize = 1;
 
   /// Delay između Nominatim batch-eva
+  /// ⚠️ ZA NOMINATIM FREE API MORA BITI MIN 1 SEKUNDA
   static const Duration nominatimBatchDelay = Duration(seconds: 1);
 
   // ═══════════════════════════════════════════════════════════════════════

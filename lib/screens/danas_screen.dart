@@ -26,7 +26,6 @@ import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
-import '../services/voice_navigation_service.dart'; // 🔊 DODANO za glasovnu najavu
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/schedule_utils.dart'; // Za isZimski funkciju
@@ -927,15 +926,9 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   bool _isLoading = false;
-  String _loadingMessage = 'Učitavam...'; // 🆕 Poruka za loading
 
   Future<void> _loadPutnici() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _loadingMessage = 'Učitavam putnike...';
-      });
-    }
+    if (mounted) setState(() => _isLoading = true);
     // Osloni se na stream, ali možeš ovde dodati logiku za ručno osvežavanje ako bude potrebno
     await Future<void>.delayed(const Duration(milliseconds: 100)); // simulacija
     if (mounted) setState(() => _isLoading = false);
@@ -1540,7 +1533,6 @@ class _DanasScreenState extends State<DanasScreen> {
     if (mounted) {
       setState(() {
         _isLoading = true; // ✅ POKRENI LOADING
-        _loadingMessage = 'Optimizujem rutu...'; // 🆕 Informativna poruka
       });
     }
 
@@ -1678,22 +1670,8 @@ class _DanasScreenState extends State<DanasScreen> {
                     Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
                 ],
               ),
-              duration: const Duration(seconds: 5),
+              duration: const Duration(seconds: 4),
               backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: '🔊 NAJAVI',
-                textColor: Colors.white,
-                onPressed: () {
-                  // Najavi prvog putnika glasom
-                  if (optimizedPutnici.isNotEmpty) {
-                    final prvi = optimizedPutnici.first;
-                    final adresa = prvi.adresa ?? prvi.grad;
-                    VoiceNavigationService.speak(
-                      'Sledeći putnik: ${prvi.ime}, $adresa',
-                    );
-                  }
-                },
-              ),
             ),
           );
 
@@ -1913,22 +1891,7 @@ class _DanasScreenState extends State<DanasScreen> {
             ),
           ),
           body: _isLoading
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        _loadingMessage,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+              ? const Center(child: CircularProgressIndicator())
               : StreamBuilder<List<Putnik>>(
                   stream: _putnikService.streamKombinovaniPutniciFiltered(
                     isoDate: DateTime.now().toIso8601String().split('T')[0],
@@ -2439,12 +2402,6 @@ class _DanasScreenState extends State<DanasScreen> {
                                             useProvidedOrder: _isListReordered,
                                             currentDriver: _currentDriver,
                                             onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
-                                            onPokupljen: () {
-                                              // 🔊 Najavi sledećeg putnika nakon pokupljenja
-                                              if (_optimizedRoute.isNotEmpty) {
-                                                VoiceNavigationService.announceNextPassenger(_optimizedRoute);
-                                              }
-                                            },
                                             bcVremena: const [
                                               '5:00',
                                               '6:00',

@@ -1,28 +1,22 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/route_config.dart';
 import '../models/putnik.dart';
-import 'osrm_service.dart';
-import 'unified_geocoding_service.dart';
+import 'adresa_supabase_service.dart'; // 🎯 DODANO za koordinate iz baze
+import 'geocoding_service.dart';
 
 /// 🎯 SMART NAVIGATION SERVICE
 /// Implementira pravu GPS navigaciju sa optimizovanim redosledom putnika
-/// Koristi OSRM (OpenStreetMap Routing Machine) za pravu optimizaciju ruta
-/// 
-/// REFACTORED: Koristi UnifiedGeocodingService i RouteConfig
+/// Koristi OpenStreetMap / self-hosted OSRM/Valhalla ili platform-specific aplikacije za otvaranje rute.
 class SmartNavigationService {
-  SmartNavigationService._();
-
   /// 🎯 SAMO OPTIMIZACIJA RUTE (bez otvaranja mape) - za "Pokreni" dugme
   static Future<NavigationResult> optimizeRouteOnly({
     required List<Putnik> putnici,
     required String startCity,
     bool optimizeForTime = true,
-    GeocodingProgressCallback? onProgress,
   }) async {
     print('');
-    print('🚀🚀🚀 ===== OPTIMIZE ROUTE ONLY (OSRM) ===== 🚀🚀🚀');
+    print('🚀🚀🚀 ===== OPTIMIZE ROUTE ONLY STARTED ===== 🚀🚀🚀');
     print('🚀 Broj putnika: ${putnici.length}');
     print('🚀 Start city: $startCity');
     print('');
@@ -31,35 +25,10 @@ class SmartNavigationService {
       final currentPosition = await _getCurrentPosition();
       print('📍 VOZAČ POZICIJA: lat=${currentPosition.latitude}, lng=${currentPosition.longitude}');
 
-      // 2. 🗺️ KORISTI OSRM ZA OPTIMIZACIJU (sa progress callback)
-      final osrmResult = await OsrmService.optimizeRoute(
-        startPosition: currentPosition,
-        putnici: putnici,
-        onGeocodingProgress: onProgress,
-      );
+      // 2. DOBIJ KOORDINATE ZA SVE ADRESE
+      final Map<Putnik, Position> coordinates = await _getCoordinatesForPutnici(putnici);
 
-      if (osrmResult.success && osrmResult.optimizedPutnici != null) {
-        print('✅ Optimizacija uspešna${osrmResult.usedFallback ? " (fallback)" : ""}');
-        
-        // Nađi preskočene putnike
-        final skipped = putnici.where((p) => 
-            !osrmResult.optimizedPutnici!.contains(p)).toList();
-
-        return NavigationResult.success(
-          message: osrmResult.message,
-          optimizedPutnici: osrmResult.optimizedPutnici!,
-          totalDistance: osrmResult.totalDistanceKm,
-          skippedPutnici: skipped.isNotEmpty ? skipped : null,
-        );
-      }
-
-      // 3. FALLBACK: Ako OSRM ne radi, koristi UnifiedGeocodingService
-      print('⚠️ OSRM nije dostupan, koristim fallback');
-      
-      final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
-        putnici,
-        onProgress: onProgress,
-      );
+      // 🆕 Nađi preskočene putnike (nemaju koordinate)
       final skipped = putnici.where((p) => !coordinates.containsKey(p)).toList();
 
       if (coordinates.isEmpty) {
@@ -68,18 +37,32 @@ class SmartNavigationService {
         );
       }
 
-      // Fallback na Nearest Neighbor + 2-opt
-      final optimizedRoute = await UnifiedGeocodingService.fallbackOptimization(
+      // 3. OPTIMIZUJ REDOSLED PUTNIKA
+      final optimizedRoute = await _optimizeRoute(
         startPosition: currentPosition,
-        putnici: putnici,
         coordinates: coordinates,
-        use2opt: true,
+        optimizeForTime: optimizeForTime,
       );
 
+      // 🔍 DEBUG: Prikaži distance za svakog putnika
+      print('📊 === DISTANCE OD VOZAČA ===');
+      for (final putnik in coordinates.keys) {
+        final pos = coordinates[putnik]!;
+        final distance = Geolocator.distanceBetween(
+          currentPosition.latitude,
+          currentPosition.longitude,
+          pos.latitude,
+          pos.longitude,
+        );
+        print('   📍 ${putnik.ime}: ${distance.toStringAsFixed(0)}m (lat=${pos.latitude}, lng=${pos.longitude})');
+      }
+      print('📊 ========================');
+
+      // 4. VRATI OPTIMIZOVANU RUTU BEZ OTVARANJA MAPE
       return NavigationResult.success(
-        message: '✅ Ruta optimizovana (lokalno)',
+        message: '✅ Ruta optimizovana',
         optimizedPutnici: optimizedRoute,
-        totalDistance: _calculateTotalDistance(
+        totalDistance: await _calculateTotalDistance(
           currentPosition,
           optimizedRoute,
           coordinates,
@@ -91,65 +74,61 @@ class SmartNavigationService {
     }
   }
 
-  /// 🚗 GLAVNA FUNKCIJA - Otvori mapu sa optimizovanom rutom
+  /// 🚗 GLAVNA FUNKCIJA - Otvori mapu sa optimizovanom rutom (preferirano OSM/OSRM)
   /// 🎯 skipOptimization=true: koristi prosleđenu listu bez re-optimizacije (za NAV dugme)
   static Future<NavigationResult> startOptimizedNavigation({
     required List<Putnik> putnici,
-    required String startCity,
-    bool optimizeForTime = true,
-    bool useTrafficData = false,
-    bool skipOptimization = true,
-    GeocodingProgressCallback? onProgress,
+    required String startCity, // 'Bela Crkva' ili 'Vršac'
+    bool optimizeForTime = true, // true = vreme, false = distanca
+    bool useTrafficData = false, // 🚦 NOVO: traffic-aware routing
+    bool skipOptimization = true, // 🎯 NOVO: preskoči re-optimizaciju ako je ruta već optimizovana
   }) async {
     print('');
-    print('🗺️🗺️🗺️ ===== START NAVIGATION (OSRM) ===== 🗺️🗺️🗺️');
+    print('🗺️🗺️🗺️ ===== START OPTIMIZED NAVIGATION ===== 🗺️🗺️🗺️');
     print('🗺️ Broj putnika: ${putnici.length}');
     print('🗺️ Start city: $startCity');
+    print('🗺️ useTrafficData: $useTrafficData');
     print('🗺️ skipOptimization: $skipOptimization');
     print('');
     try {
       // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
       final currentPosition = await _getCurrentPosition();
 
-      // 2. OPTIMIZUJ REDOSLED PUTNIKA (ili koristi već optimizovanu listu)
+      // 2. DOBIJ KOORDINATE ZA SVE ADRESE
+      final Map<Putnik, Position> coordinates = await _getCoordinatesForPutnici(putnici);
+
+      if (coordinates.isEmpty) {
+        return NavigationResult.error(
+          '❌ Nijedan putnik nema validnu adresu za navigaciju',
+        );
+      }
+
+      // 3. OPTIMIZUJ REDOSLED PUTNIKA (ili koristi već optimizovanu listu)
       List<Putnik> optimizedRoute;
-      double? totalDistanceKm;
 
       if (skipOptimization) {
         // 🎯 KORISTI VEĆ OPTIMIZOVANU LISTU (od "Ruta" dugmeta)
         print('🎯 Koristi već optimizovanu rutu (skipOptimization=true)');
         optimizedRoute = putnici;
-      } else {
-        // 🗺️ KORISTI OSRM ZA OPTIMIZACIJU
-        final osrmResult = await OsrmService.optimizeRoute(
-          startPosition: currentPosition,
-          putnici: putnici,
-          onGeocodingProgress: onProgress,
-        );
+      } else if (useTrafficData) {
+        // 🚦 TRAFFIC-AWARE OPTIMIZACIJA
 
-        if (osrmResult.success && osrmResult.optimizedPutnici != null) {
-          optimizedRoute = osrmResult.optimizedPutnici!;
-          totalDistanceKm = osrmResult.totalDistanceKm;
-          print('✅ Optimizacija uspešna: ${totalDistanceKm?.toStringAsFixed(1)} km');
-        } else {
-          // Fallback: koristi UnifiedGeocodingService
-          final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
-            putnici,
-            onProgress: onProgress,
-          );
-          if (coordinates.isEmpty) {
-            return NavigationResult.error('❌ Nijedan putnik nema validnu adresu');
-          }
-          optimizedRoute = await UnifiedGeocodingService.fallbackOptimization(
-            startPosition: currentPosition,
-            putnici: putnici,
-            coordinates: coordinates,
-            use2opt: true,
-          );
-        }
+        // DISABLED: Google APIs too expensive - use standard optimization instead
+        optimizedRoute = await _optimizeRoute(
+          startPosition: currentPosition,
+          coordinates: coordinates,
+          optimizeForTime: optimizeForTime,
+        );
+      } else {
+        // 🎯 STANDARDNA TSP OPTIMIZACIJA
+        optimizedRoute = await _optimizeRoute(
+          startPosition: currentPosition,
+          coordinates: coordinates,
+          optimizeForTime: optimizeForTime,
+        );
       }
 
-      // 3. OTVORI RUTU U GOOGLE MAPS SA WAYPOINT-IMA (max 10)
+      // 4. OTVORI RUTU U GOOGLE MAPS SA WAYPOINT-IMA (max 10)
       final success = await _openGoogleMapsNavigation(
         currentPosition,
         optimizedRoute,
@@ -170,7 +149,11 @@ class SmartNavigationService {
         return NavigationResult.success(
           message: message,
           optimizedPutnici: optimizedRoute,
-          totalDistance: totalDistanceKm,
+          totalDistance: await _calculateTotalDistance(
+            currentPosition,
+            optimizedRoute,
+            coordinates,
+          ),
         );
       } else {
         return NavigationResult.error('❌ Greška pri otvaranju navigacije');
@@ -187,10 +170,10 @@ class SmartNavigationService {
     if (!isLocationEnabled) {
       // Otvori sistemski dialog za uključivanje GPS-a (jedan klik!)
       isLocationEnabled = await Geolocator.openLocationSettings();
-      
+
       // Sačekaj malo da se GPS uključi
       await Future.delayed(const Duration(seconds: 2));
-      
+
       // Proveri ponovo
       isLocationEnabled = await Geolocator.isLocationServiceEnabled();
       if (!isLocationEnabled) {
@@ -200,13 +183,213 @@ class SmartNavigationService {
 
     // Dozvole su već odobrene pri instalaciji, ali proveri za svaki slučaj
     LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied || 
-        permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
       throw Exception('GPS dozvole nisu odobrene');
     }
 
     // Dobij poziciju sa visokom tačnošću
     return await Geolocator.getCurrentPosition();
+  }
+
+  /// 🗺️ Dobij koordinate za sve putnike
+  /// 🎯 OPTIMIZOVANO: Prvo proverava bazu, pa tek onda Nominatim API
+  static Future<Map<Putnik, Position>> _getCoordinatesForPutnici(
+    List<Putnik> putnici,
+  ) async {
+    final Map<Putnik, Position> coordinates = {};
+
+    print('🗺️ === GEOCODING DEBUG ===');
+    print('🗺️ Broj putnika za geocoding: ${putnici.length}');
+
+    for (final putnik in putnici) {
+      if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) {
+        print('⚠️ ${putnik.ime}: NEMA ADRESU - preskačem');
+        continue;
+      }
+
+      print('📍 ${putnik.ime}: adresa="${putnik.adresa}", grad="${putnik.grad}", adresaId="${putnik.adresaId}"');
+
+      try {
+        Position? position;
+        String? realAddressName; // Pravi naziv adrese iz baze
+
+        // 🎯 PRIORITET 1: Učitaj adresu iz baze da dobijemo NAZIV (ulica, broj)
+        if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
+          final adresaFromDb = await AdresaSupabaseService.getAdresaByUuid(putnik.adresaId!);
+          if (adresaFromDb != null) {
+            realAddressName = adresaFromDb.naziv; // npr. "Proleterska 35"
+            print('   📫 Naziv adrese iz baze: "$realAddressName"');
+
+            // Ako ima koordinate u bazi, koristi ih
+            if (adresaFromDb.latitude != null && adresaFromDb.longitude != null) {
+              position = Position(
+                latitude: adresaFromDb.latitude!,
+                longitude: adresaFromDb.longitude!,
+                timestamp: DateTime.now(),
+                accuracy: 0,
+                altitude: 0,
+                altitudeAccuracy: 0,
+                heading: 0,
+                headingAccuracy: 0,
+                speed: 0,
+                speedAccuracy: 0,
+              );
+              print('   ✅ IZ BAZE: lat=${adresaFromDb.latitude}, lng=${adresaFromDb.longitude}');
+            } else {
+              print('   ⚠️ Nema koordinate u bazi - treba geocodirati');
+            }
+          } else {
+            print('   ⚠️ adresaId postoji ali adresa nije nađena u bazi');
+          }
+        }
+
+        // 🎯 PRIORITET 2: Ako nema specifične koordinate, geocodiraj po PRAVOM nazivu adrese
+        if (position == null) {
+          // Koristi pravi naziv adrese ako postoji, inače fallback na putnik.adresa
+          final addressToGeocode = realAddressName ?? putnik.adresa!;
+          final improvedAddress = _improveAddressForGeocoding(addressToGeocode, putnik.grad);
+          print('   🔍 Nominatim API: "$improvedAddress"');
+
+          // Dobij koordinate preko GeocodingService
+          final coordsString = await GeocodingService.getKoordinateZaAdresu(
+            putnik.grad,
+            improvedAddress,
+          );
+
+          if (coordsString != null && coordsString.contains(',')) {
+            final parts = coordsString.split(',');
+            final lat = double.tryParse(parts[0].trim());
+            final lng = double.tryParse(parts[1].trim());
+
+            if (lat != null && lng != null) {
+              position = Position(
+                latitude: lat,
+                longitude: lng,
+                timestamp: DateTime.now(),
+                accuracy: 0,
+                altitude: 0,
+                altitudeAccuracy: 0,
+                heading: 0,
+                headingAccuracy: 0,
+                speed: 0,
+                speedAccuracy: 0,
+              );
+              print('   ✅ IZ NOMINATIM: lat=$lat, lng=$lng');
+
+              // 🎯 BONUS: Sačuvaj koordinate u bazu za sledeći put
+              await _saveCoordinatesToDatabase(
+                putnik: putnik,
+                lat: lat,
+                lng: lng,
+              );
+            } else {
+              print('   ❌ Nominatim vratio nevalidan format: $coordsString');
+            }
+          } else {
+            print('   ❌ Nominatim nije našao koordinate');
+          }
+        }
+
+        if (position != null) {
+          coordinates[putnik] = position;
+        } else {
+          print('   ❌ NEMA KOORDINATE - putnik će biti preskočen u optimizaciji!');
+        }
+      } catch (e) {
+        print('   ❌ GREŠKA: $e');
+      }
+    }
+
+    print('🗺️ === GEOCODING REZULTAT ===');
+    print('🗺️ Uspešno geocodirano: ${coordinates.length}/${putnici.length} putnika');
+    for (final entry in coordinates.entries) {
+      print('   📍 ${entry.key.ime}: (${entry.value.latitude}, ${entry.value.longitude})');
+    }
+    print('🗺️ ========================');
+
+    return coordinates;
+  }
+
+  /// 🎯 Sačuvaj koordinate u bazu za buduće korišćenje
+  static Future<void> _saveCoordinatesToDatabase({
+    required Putnik putnik,
+    required double lat,
+    required double lng,
+  }) async {
+    try {
+      // Ako putnik već ima adresaId, ažuriraj koordinate
+      if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
+        await AdresaSupabaseService.updateKoordinate(
+          putnik.adresaId!,
+          lat: lat,
+          lng: lng,
+        );
+        return;
+      }
+
+      // Ako nema adresaId, kreiraj novu adresu sa koordinatama
+      if (putnik.adresa != null && putnik.adresa!.isNotEmpty) {
+        await AdresaSupabaseService.createOrGetAdresa(
+          naziv: putnik.adresa!,
+          grad: putnik.grad,
+          lat: lat,
+          lng: lng,
+        );
+      }
+    } catch (e) {
+      // Ignoriši greške - koordinate će se ponovo dohvatiti sledeći put
+    }
+  }
+
+  /// 🎯 Optimizuj redosled putnika (Nearest Neighbor - uvek najbliži prvi)
+  static Future<List<Putnik>> _optimizeRoute({
+    required Position startPosition,
+    required Map<Putnik, Position> coordinates,
+    bool optimizeForTime = true,
+  }) async {
+    final putnici = coordinates.keys.toList();
+
+    if (putnici.length <= 1) return putnici;
+
+    // 🎯 UVEK koristi Nearest Neighbor - intuitivnije za gradsku vožnju
+    return await _nearestNeighborOptimization(
+      startPosition,
+      coordinates,
+      optimizeForTime,
+    );
+  }
+
+  /// ⚡ Nearest neighbor optimizacija (za >8 putnika)
+  static Future<List<Putnik>> _nearestNeighborOptimization(
+    Position start,
+    Map<Putnik, Position> coordinates,
+    bool optimizeForTime,
+  ) async {
+    final unvisited = coordinates.keys.toList();
+    final route = <Putnik>[];
+    Position currentPosition = start;
+
+    while (unvisited.isNotEmpty) {
+      Putnik? nearest;
+      double shortestDistance = double.infinity;
+
+      // Nađi najbliži neposećen grad
+      for (final putnik in unvisited) {
+        final distance = _calculateDistance(currentPosition, coordinates[putnik]!);
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearest = putnik;
+        }
+      }
+
+      if (nearest != null) {
+        route.add(nearest);
+        currentPosition = coordinates[nearest]!;
+        unvisited.remove(nearest);
+      }
+    }
+
+    return route;
   }
 
   /// 📐 Izračunaj distancu između dve pozicije (Haversine formula)
@@ -234,14 +417,14 @@ class SmartNavigationService {
       }
 
       // 🎯 Google Maps podržava max 10 waypoint-a
-      const maxWaypoints = RouteConfig.googleMapsMaxWaypoints;
+      final maxWaypoints = 10;
       final putnici = optimizedRoute.take(maxWaypoints).toList();
-      
+
       print('🗺️ Otvaram Google Maps sa ${putnici.length} putnika');
 
-      // 🎯 Dobij koordinate za sve putnike (koristi UnifiedGeocodingService)
-      final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(putnici);
-      
+      // 🎯 Dobij koordinate za sve putnike
+      final coordinates = await _getCoordinatesForPutnici(putnici);
+
       if (coordinates.isEmpty) {
         print('❌ Nema koordinata za putnike');
         return false;
@@ -270,11 +453,11 @@ class SmartNavigationService {
           uri,
           mode: LaunchMode.externalApplication,
         );
-        
+
         if (launched && optimizedRoute.length > maxWaypoints) {
-          print('⚠️ Ima još ${optimizedRoute.length - maxWaypoints} putnika posle ovih $maxWaypoints');
+          print('⚠️ Ima još ${optimizedRoute.length - maxWaypoints} putnika posle ovih ${maxWaypoints}');
         }
-        
+
         return launched;
       } else {
         throw Exception('Ne mogu da otvorim Google Maps');
@@ -285,23 +468,36 @@ class SmartNavigationService {
     }
   }
 
+  /// 🛠️ Poboljšaj adresu za geocoding
+  static String _improveAddressForGeocoding(String address, String grad) {
+    // Normalizuj adresu
+    String improved = address.trim();
+
+    // Dodaj grad ako nije prisutan
+    if (!improved.toLowerCase().contains(grad.toLowerCase()) &&
+        !improved.toLowerCase().contains('serbia') &&
+        !improved.toLowerCase().contains('srbija')) {
+      improved = '$improved, $grad';
+    }
+
+    return improved;
+  }
+
   /// 📊 Izračunaj ukupnu distancu optimizovane rute
-  static double _calculateTotalDistance(
+  static Future<double> _calculateTotalDistance(
     Position start,
     List<Putnik> route,
     Map<Putnik, Position> coordinates,
-  ) {
+  ) async {
     if (route.isEmpty) return 0.0;
 
     double totalDistance = 0.0;
     Position currentPos = start;
 
     for (final putnik in route) {
-      if (coordinates.containsKey(putnik)) {
-        final nextPos = coordinates[putnik]!;
-        totalDistance += _calculateDistance(currentPos, nextPos);
-        currentPos = nextPos;
-      }
+      final nextPos = coordinates[putnik]!;
+      totalDistance += _calculateDistance(currentPos, nextPos);
+      currentPos = nextPos;
     }
 
     return totalDistance / 1000; // Konvertuj u kilometre

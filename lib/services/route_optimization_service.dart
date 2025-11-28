@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/grad_adresa_validator.dart';
-import 'osrm_service.dart';
 
 class _CacheEntry {
   _CacheEntry({required this.data, required this.expiry});
@@ -62,8 +61,7 @@ class RouteOptimizationService {
     );
   }
 
-  /// 🗺️ NOVA FUNKCIJA: Prava geografska optimizacija pomoću OSRM (OpenStreetMap)
-  /// Koristi OSRM Trip API koji rešava TSP problem na serveru
+  /// 🗺️ NOVA FUNKCIJA: Prava geografska optimizacija na osnovu GPS lokacije vozača
   static Future<List<Putnik>> optimizeRouteGeographically(
     List<Putnik> putnici, {
     Position? driverPosition, // Trenutna lokacija vozača
@@ -93,48 +91,106 @@ class RouteOptimizationService {
 
       if (driverPosition != null) {
         startLocation = driverPosition;
+      } else if (startAddress != null) {
+        // Geokodiraj početnu adresu u koordinate
+        startLocation = await _geocodeAddress(startAddress);
       } else {
         // Pokušaj da dohvatiš trenutnu GPS lokaciju
         try {
-          startLocation = await Geolocator.getCurrentPosition();
+          startLocation = await Geolocator.getCurrentPosition(
+              // desiredAccuracy: deprecated, use settings parameter
+              // timeLimit: const Duration(seconds: 5), // deprecated, use settings parameter
+              );
         } catch (e) {
           return _fallbackToOriginalOrder(aktivniPutnici);
         }
       }
 
-      // 2. 🗺️ KORISTI OSRM ZA OPTIMIZACIJU (umesto lokalnog TSP)
-      final osrmResult = await OsrmService.optimizeRoute(
-        startPosition: startLocation,
-        putnici: aktivniPutnici,
-      );
-
-      if (osrmResult.success && osrmResult.optimizedPutnici != null) {
-        print('✅ OSRM optimizacija uspešna');
-        return osrmResult.optimizedPutnici!;
-      }
-
-      // 3. Fallback na lokalni Nearest Neighbor ako OSRM ne radi
-      print('⚠️ OSRM nije dostupan, koristim fallback optimizaciju');
-      final coordinates = await OsrmService.getCoordinatesForPutnici(aktivniPutnici);
-      
-      if (coordinates.isEmpty) {
+      if (startLocation == null) {
         return _fallbackToOriginalOrder(aktivniPutnici);
       }
 
-      return await OsrmService.fallbackOptimization(
-        startPosition: startLocation,
-        putnici: aktivniPutnici,
-        coordinates: coordinates,
+      // 2. Geokodiraj sve adrese putnika u koordinate
+      final putnikCoordinates = <Putnik, Position>{};
+
+      for (final putnik in aktivniPutnici) {
+        final coordinates = await _geocodeAddress(putnik.adresa!);
+        if (coordinates != null) {
+          putnikCoordinates[putnik] = coordinates;
+        }
+      }
+
+      if (putnikCoordinates.isEmpty) {
+        return _fallbackToOriginalOrder(aktivniPutnici);
+      }
+
+      // 3. Koristi Traveling Salesman Problem (TSP) algoritam
+      final optimizedRoute = await _solveTSP(
+        startLocation,
+        putnikCoordinates,
       );
+
+      return optimizedRoute;
     } catch (e) {
-      print('❌ Greška pri optimizaciji: $e');
       return _fallbackToOriginalOrder(aktivniPutnici);
     }
   }
 
-  // 🗺️ STARE TSP METODE UKLONJENE - sada koristi OsrmService
+  /// 🌍 Geocoding uklonjen - koristi se lokalna optimizacija
+  static Future<Position?> _geocodeAddress(String address) async {
+    // 🔒 GOOGLE GEOCODING API UKLONJEN ZA BEZBEDNOST
+    // Vraćamo null da se koristi lokalna optimizacija
+    return null;
+  }
 
-  /// 🔄 Jednostavno vrati originalni redosled ako GPS optimizacija ne uspe
+  /// 🧮 Reši Traveling Salesman Problem (TSP) - Nearest Neighbor algoritam
+  static Future<List<Putnik>> _solveTSP(
+    Position start,
+    Map<Putnik, Position> destinations,
+  ) async {
+    final List<Putnik> optimizedRoute = [];
+    final unvisited = Set<Putnik>.from(destinations.keys);
+    Position currentPosition = start;
+
+    // Nearest Neighbor algoritam
+    while (unvisited.isNotEmpty) {
+      Putnik? nearest;
+      double shortestDistance = double.infinity;
+
+      // Pronađi najbližu destinaciju
+      for (final putnik in unvisited) {
+        final distance = _calculateDistance(
+          currentPosition,
+          destinations[putnik]!,
+        );
+
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearest = putnik;
+        }
+      }
+
+      if (nearest != null) {
+        optimizedRoute.add(nearest);
+        currentPosition = destinations[nearest]!;
+        unvisited.remove(nearest);
+      }
+    }
+
+    return optimizedRoute;
+  }
+
+  /// 📐 Izračunaj udaljenost između dve geografske tačke (Haversine formula)
+  static double _calculateDistance(Position pos1, Position pos2) {
+    return Geolocator.distanceBetween(
+      pos1.latitude,
+      pos1.longitude,
+      pos2.latitude,
+      pos2.longitude,
+    );
+  }
+
+  /// � Jednostavno vrati originalni redosled ako GPS optimizacija ne uspe
   static List<Putnik> _fallbackToOriginalOrder(List<Putnik> putnici) {
     // Jednostavno vrati putnice u originalnom redosledu
     // Originalni redosled iz baze je često logičan i pošten (FIFO)

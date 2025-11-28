@@ -56,34 +56,33 @@ class UnifiedGeocodingService {
     bool saveToDatabase = true,
   }) async {
     final Map<Putnik, Position> coordinates = {};
-    final List<Future<GeocodingResult>> futures = [];
+    // final List<Future<GeocodingResult>> futures = []; // REMOVED: Unused
 
     // Filtriraj putnike sa adresama
-    final putniciSaAdresama =
-        putnici.where((p) => _hasValidAddress(p)).toList();
+    final putniciSaAdresama = putnici.where((p) => _hasValidAddress(p)).toList();
 
     if (putniciSaAdresama.isEmpty) {
       return coordinates;
     }
 
-    // Kreiraj futures za paralelni fetch (max 5 concurrent)
+    // Kreiraj funkcije za sekvencijalno izvršavanje
+    final List<Future<GeocodingResult> Function()> tasks = [];
     int completed = 0;
     final int total = putniciSaAdresama.length;
 
     for (final putnik in putniciSaAdresama) {
-      futures.add(_getCoordinatesForPutnik(putnik, saveToDatabase).then((
-        result,
-      ) {
+      tasks.add(() async {
+        final result = await _getCoordinatesForPutnik(putnik, saveToDatabase);
         completed++;
         onProgress?.call(completed, total, putnik.adresa ?? putnik.ime);
         return result;
-      }));
+      });
     }
 
-    // Čekaj sve rezultate (paralelno, ali rate-limited)
+    // Izvrši taskove sekvencijalno sa pauzom
     final results = await _executeWithRateLimit(
-      futures,
-      maxConcurrent: RouteConfig.maxParallelGeocoding,
+      tasks,
+      delay: RouteConfig.nominatimBatchDelay,
     );
 
     // Popuni mapu sa uspešnim rezultatima
@@ -114,13 +113,8 @@ class UnifiedGeocodingService {
         if (adresaFromDb != null) {
           realAddressName = adresaFromDb.naziv;
 
-          // Proveri da li ima SPECIFIČNE koordinate (ne centar grada)
-          if (adresaFromDb.latitude != null &&
-              adresaFromDb.longitude != null &&
-              !RouteConfig.isCityCenterCoordinate(
-                adresaFromDb.latitude,
-                adresaFromDb.longitude,
-              )) {
+          // Ako ima koordinate u bazi, koristi ih
+          if (adresaFromDb.latitude != null && adresaFromDb.longitude != null) {
             position = _createPosition(
               adresaFromDb.latitude!,
               adresaFromDb.longitude!,
@@ -216,8 +210,7 @@ class UnifiedGeocodingService {
     bool use2opt = true,
   }) async {
     // Filtriraj samo putnike sa koordinatama
-    final putniciWithCoords =
-        putnici.where((p) => coordinates.containsKey(p)).toList();
+    final putniciWithCoords = putnici.where((p) => coordinates.containsKey(p)).toList();
 
     if (putniciWithCoords.isEmpty) return [];
     if (putniciWithCoords.length == 1) return putniciWithCoords;
@@ -349,8 +342,7 @@ class UnifiedGeocodingService {
       return false;
     }
     // Proveri da adresa nije samo naziv grada
-    if (putnik.adresa!.toLowerCase().trim() ==
-        putnik.grad.toLowerCase().trim()) {
+    if (putnik.adresa!.toLowerCase().trim() == putnik.grad.toLowerCase().trim()) {
       return false;
     }
     return true;
@@ -451,31 +443,22 @@ class UnifiedGeocodingService {
     return total;
   }
 
-  /// Izvršava futures sa rate limitom (max concurrent)
+  /// Izvršava taskove sekvencijalno sa pauzom između zahteva
   static Future<List<GeocodingResult>> _executeWithRateLimit(
-    List<Future<GeocodingResult>> futures, {
-    required int maxConcurrent,
+    List<Future<GeocodingResult> Function()> tasks, {
+    required Duration delay,
   }) async {
     final results = <GeocodingResult>[];
-    final batches = <List<Future<GeocodingResult>>>[];
 
-    // Podeli u batch-eve
-    for (int i = 0; i < futures.length; i += maxConcurrent) {
-      final end =
-          (i + maxConcurrent < futures.length)
-              ? i + maxConcurrent
-              : futures.length;
-      batches.add(futures.sublist(i, end));
-    }
+    for (int i = 0; i < tasks.length; i++) {
+      // Izvrši task
+      final result = await tasks[i]();
+      results.add(result);
 
-    // Izvršavaj batch po batch
-    for (final batch in batches) {
-      final batchResults = await Future.wait(batch);
-      results.addAll(batchResults);
-
-      // Kratka pauza između batch-eva za rate limiting
-      if (batches.indexOf(batch) < batches.length - 1) {
-        await Future.delayed(const Duration(milliseconds: 100));
+      // Ako je rezultat došao sa interneta (Nominatim), napravi pauzu
+      // Ako je iz keša/baze, ne treba pauza
+      if (result.source == 'nominatim' && i < tasks.length - 1) {
+        await Future.delayed(delay);
       }
     }
 
