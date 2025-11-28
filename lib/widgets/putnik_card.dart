@@ -1437,12 +1437,18 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Dobija koordinate za destinaciju - UNIFIKOVANO za sve putnike
   Future<String?> _getKoordinateZaAdresu(String? grad, String? adresa, String? adresaId) async {
+    print('🔍 GEOCODING: Tražim koordinate za: ime=${_putnik.ime}, grad=$grad, adresa=$adresa, adresaId=$adresaId');
+
     // 🎯 PRIORITET 1: Ako imamo adresaId (UUID), direktno dohvati adresu sa koordinatama
     if (adresaId != null && adresaId.isNotEmpty) {
       try {
         final adresaObj = await AdresaSupabaseService.getAdresaByUuid(adresaId);
+        print(
+            '🔍 GEOCODING ${_putnik.ime}: adresaObj=${adresaObj?.naziv}, hasCoords=${adresaObj?.hasValidCoordinates}, lat=${adresaObj?.latitude}, lng=${adresaObj?.longitude}');
         if (adresaObj != null && adresaObj.hasValidCoordinates) {
           // Adresa ima koordinate - koristi ih direktno!
+          print(
+              '✅ GEOCODING ${_putnik.ime}: Pronađene koordinate iz baze: ${adresaObj.latitude},${adresaObj.longitude}');
           return '${adresaObj.latitude},${adresaObj.longitude}';
         }
 
@@ -1457,6 +1463,7 @@ class _PutnikCardState extends State<PutnikCard> {
           }
         }
       } catch (e) {
+        print('❌ GEOCODING ${_putnik.ime}: Greška pri dohvatanju iz baze: $e');
         // Nastavi sa fallback opcijama
       }
     }
@@ -1464,16 +1471,23 @@ class _PutnikCardState extends State<PutnikCard> {
     // 🎯 PRIORITET 2: Ako imamo naziv adrese, traži u tabeli adrese
     if (adresa != null && adresa.isNotEmpty && adresa != 'Adresa nije definisana') {
       try {
+        print('🔍 GEOCODING ${_putnik.ime}: Tražim po nazivu: $adresa, grad: $grad');
         final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(adresa, grad ?? '');
         if (koordinate?.hasValidCoordinates == true) {
-          return '${koordinate!.latitude},${koordinate.longitude}';
+          print(
+              '✅ GEOCODING ${_putnik.ime}: Pronađene koordinate po nazivu: ${koordinate!.latitude},${koordinate.longitude}');
+          return '${koordinate.latitude},${koordinate.longitude}';
+        } else {
+          print('⚠️ GEOCODING ${_putnik.ime}: Adresa "$adresa" nema koordinate u bazi');
         }
       } catch (e) {
+        print('❌ GEOCODING ${_putnik.ime}: Greška pri traženju po nazivu: $e');
         // Nastavi sa fallback opcijama
       }
     }
 
     // 🎯 PRIORITET 3: Fallback na transport logiku (centar destinacije)
+    print('⚠️ GEOCODING ${_putnik.ime}: Koristim FALLBACK - centar destinacije za grad: $grad');
     // 🚌 TRANSPORT LOGIKA: Navigiraj do centra destinacije
     // Svi iz Bela Crkva opštine → Vršac centar
     // Svi iz Vršac opštine → Bela Crkva centar

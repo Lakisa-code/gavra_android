@@ -111,6 +111,14 @@ void main() async {
       anonKey: supabaseAnonKey,
     ).timeout(const Duration(seconds: 5));
 
+    // If Huawei Push initialized earlier and a token arrived before
+    // Supabase was ready, attempt to register that token now.
+    try {
+      await HuaweiPushService().tryRegisterPendingToken();
+    } catch (e) {
+      debugPrint('Error registering pending Huawei token after Supabase init: $e');
+    }
+
     // 🗂️ INICIJALIZUJ VOZAC MAPPING CACHE
     try {
       await VozacMappingService.initialize();
@@ -158,18 +166,37 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool _isInitialized = false;
   String? _initError;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeApp();
     // Setup realtime notification listeners (FCM) for foreground handling
     try {
       RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When app is resumed, try registering pending tokens (if any)
+    if (state == AppLifecycleState.resumed) {
+      try {
+        HuaweiPushService().tryRegisterPendingToken();
+      } catch (e) {
+        debugPrint('Error while trying pending token registration on resume: $e');
+      }
+    }
   }
 
   Future<void> _initializeApp() async {

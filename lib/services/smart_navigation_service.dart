@@ -431,18 +431,27 @@ class SmartNavigationService {
       }
 
       // 🎯 Kreiraj Google Maps URL sa svim putnicima
-      // Format: /dir/origin/wp1/wp2/.../destination
-      String googleMapsUrl = 'https://www.google.com/maps/dir/${startPosition.latitude},${startPosition.longitude}';
-
-      for (final putnik in putnici) {
+      // Format: google.navigation sa waypoints - čuva NAŠ redosled!
+      final destination = coordinates[putnici.last]!;
+      
+      // Waypoints su svi osim poslednjeg (koji je destinacija)
+      final waypointsList = <String>[];
+      for (int i = 0; i < putnici.length - 1; i++) {
+        final putnik = putnici[i];
         if (coordinates.containsKey(putnik)) {
           final pos = coordinates[putnik]!;
-          googleMapsUrl += '/${pos.latitude},${pos.longitude}';
-          print('   📍 ${putnik.ime}: ${pos.latitude},${pos.longitude}');
+          waypointsList.add('${pos.latitude},${pos.longitude}');
+          print('   📍 WP${i + 1}: ${putnik.ime}: ${pos.latitude},${pos.longitude}');
         }
       }
-
-      googleMapsUrl += '?travelmode=driving';
+      print('   🏁 DEST: ${putnici.last.ime}: ${destination.latitude},${destination.longitude}');
+      
+      // Google Maps intent format - ČUVA REDOSLED waypointa!
+      String googleMapsUrl = 'google.navigation:q=${destination.latitude},${destination.longitude}';
+      if (waypointsList.isNotEmpty) {
+        googleMapsUrl += '&waypoints=${waypointsList.join('|')}';
+      }
+      googleMapsUrl += '&mode=d'; // d = driving
 
       print('🗺️ Google Maps URL: $googleMapsUrl');
 
