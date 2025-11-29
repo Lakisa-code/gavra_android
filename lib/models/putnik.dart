@@ -739,4 +739,33 @@ class Putnik {
         return null;
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🎯 EQUALITY OPERATORS - za stabilno mapiranje u Map<Putnik, Position>
+  // ═══════════════════════════════════════════════════════════════════════
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Putnik) return false;
+
+    // Ako oba imaju id, koristi id za poređenje
+    if (id != null && other.id != null) {
+      return id == other.id;
+    }
+
+    // Fallback: koristi ime + grad + polazak za jedinstvenu identifikaciju
+    return ime == other.ime && grad == other.grad && polazak == other.polazak;
+  }
+
+  @override
+  int get hashCode {
+    // Ako ima id, koristi ga za hash
+    if (id != null) {
+      return id.hashCode;
+    }
+
+    // Fallback: kombinacija ime + grad + polazak
+    return Object.hash(ime, grad, polazak);
+  }
 }

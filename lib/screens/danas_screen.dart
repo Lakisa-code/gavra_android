@@ -996,6 +996,7 @@ class _DanasScreenState extends State<DanasScreen> {
   // Optimizacija rute - zadržavam zbog postojeće logike
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
+  Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate za Google Maps
 
   // Status varijable - pojednostavljeno
   String _navigationStatus = '';
@@ -1693,6 +1694,7 @@ class _DanasScreenState extends State<DanasScreen> {
         if (mounted) {
           setState(() {
             _optimizedRoute = optimizedPutnici;
+            _cachedCoordinates = result.cachedCoordinates; // 🎯 Sačuvaj koordinate za NAV
             _isRouteOptimized = true;
             _isListReordered = true; // ✅ Lista je reorderovana
             _currentPassengerIndex = 0; // ✅ Počni od prvog putnika
@@ -2652,12 +2654,14 @@ class _DanasScreenState extends State<DanasScreen> {
       final result = await SmartNavigationService.startOptimizedNavigation(
         putnici: _optimizedRoute,
         startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+        cachedCoordinates: _cachedCoordinates, // 🎯 Proslijedi keširane koordinate
       );
 
       if (result.success) {
         if (mounted) {
           setState(() {
             _optimizedRoute = result.optimizedPutnici ?? _optimizedRoute;
+            _cachedCoordinates = result.cachedCoordinates; // 🎯 Ažuriraj keširane koordinate
             _isRouteOptimized = true;
             _isGpsTracking = true;
             _navigationStatus = result.message;

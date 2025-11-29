@@ -49,7 +49,10 @@ class RouteOptimizationService {
     );
   }
 
-  /// 🗺️ NOVA FUNKCIJA: Prava geografska optimizacija na osnovu GPS lokacije vozača
+  /// 🗺️ LEGACY: Geografska optimizacija
+  /// ⚠️ DEPRECATED: Koristi SmartNavigationService.optimizeRouteOnly() umesto ove metode
+  /// SmartNavigationService koristi OSRM za pravu TSP optimizaciju sa fallback na 2-opt
+  @Deprecated('Koristi SmartNavigationService.optimizeRouteOnly() za bolju optimizaciju')
   static Future<List<Putnik>> optimizeRouteGeographically(
     List<Putnik> putnici, {
     Position? driverPosition, // Trenutna lokacija vozača
