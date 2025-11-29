@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/text_utils.dart';
 import 'advanced_geocoding_service.dart';
 
 /// 🧠 SMART ADDRESS AUTOCOMPLETE - Machine Learning powered
@@ -57,8 +59,7 @@ class SmartAddressAutocompleteService {
       final suggestions = <AddressSuggestion>[];
 
       // 1. 📚 LOCAL HISTORY SUGGESTIONS - personalizovane na bazi istorije
-      final historySuggestions =
-          await _getHistorySuggestions(query, currentVozac);
+      final historySuggestions = await _getHistorySuggestions(query, currentVozac);
       suggestions.addAll(historySuggestions);
 
       // 2. 🎯 CONTEXTUAL SUGGESTIONS - na bazi konteksta (vreme, lokacija)
@@ -74,13 +75,11 @@ class SmartAddressAutocompleteService {
       }
 
       // 3. 📊 PATTERN MATCHING - smart pattern recognition
-      final patternSuggestions =
-          await _getPatternSuggestions(query, currentCity);
+      final patternSuggestions = await _getPatternSuggestions(query, currentCity);
       suggestions.addAll(patternSuggestions);
 
       // 4. 🌍 GEOCODING SUGGESTIONS - external API suggestions
-      final geocodingSuggestions =
-          await _getGeocodingSuggestions(query, currentCity);
+      final geocodingSuggestions = await _getGeocodingSuggestions(query, currentCity);
       suggestions.addAll(geocodingSuggestions);
 
       // 5. 🏢 POPULAR PLACES - često korišćene lokacije
@@ -121,8 +120,7 @@ class SmartAddressAutocompleteService {
     String? vozac,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    final historyKey =
-        vozac != null ? '$_historyPrefix$vozac' : '${_historyPrefix}global';
+    final historyKey = vozac != null ? '$_historyPrefix$vozac' : '${_historyPrefix}global';
     final historyJson = prefs.getString(historyKey) ?? '[]';
 
     try {
@@ -176,8 +174,7 @@ class SmartAddressAutocompleteService {
 
     // Time-based suggestions
     if (timeContext != null) {
-      final timeSuggestions =
-          await _getTimeBasedSuggestions(query, timeContext, vozac);
+      final timeSuggestions = await _getTimeBasedSuggestions(query, timeContext, vozac);
       suggestions.addAll(timeSuggestions);
     }
 
@@ -193,8 +190,7 @@ class SmartAddressAutocompleteService {
 
     // Day-of-week patterns
     final dayOfWeek = DateTime.now().weekday;
-    final dayPatterns =
-        await _getDayPatternSuggestions(query, dayOfWeek, vozac);
+    final dayPatterns = await _getDayPatternSuggestions(query, dayOfWeek, vozac);
     suggestions.addAll(dayPatterns);
 
     return suggestions;
@@ -295,8 +291,7 @@ class SmartAddressAutocompleteService {
       final baseAddress = query.trim().replaceAll(RegExp(r'\d+$'), '').trim();
       if (baseAddress.isNotEmpty) {
         for (int i = 1; i <= 10; i++) {
-          final suggestedAddress =
-              '$baseAddress ${query.trim().replaceAll(RegExp(r'[^\d]'), '')}$i';
+          final suggestedAddress = '$baseAddress ${query.trim().replaceAll(RegExp(r'[^\d]'), '')}$i';
           suggestions.add(
             AddressSuggestion(
               address: suggestedAddress,
@@ -324,8 +319,7 @@ class SmartAddressAutocompleteService {
           prefix.toLowerCase().startsWith(query.toLowerCase())) {
         suggestions.add(
           AddressSuggestion(
-            address:
-                '$prefix ${query.toLowerCase() == prefix.toLowerCase() ? '' : query}',
+            address: '$prefix ${query.toLowerCase() == prefix.toLowerCase() ? '' : query}',
             displayText: '$prefix...',
             score: 25.0,
             source: 'pattern_prefix',
@@ -344,8 +338,7 @@ class SmartAddressAutocompleteService {
     String currentCity,
   ) async {
     try {
-      final geocodeResult =
-          await AdvancedGeocodingService.getAdvancedCoordinates(
+      final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
         grad: currentCity,
         adresa: query,
       );
@@ -354,15 +347,13 @@ class SmartAddressAutocompleteService {
         return [
           AddressSuggestion(
             address: geocodeResult.formattedAddress,
-            displayText:
-                '${geocodeResult.formattedAddress} (${geocodeResult.confidence.toInt()}%)',
+            displayText: '${geocodeResult.formattedAddress} (${geocodeResult.confidence.toInt()}%)',
             score: geocodeResult.confidence,
             source: 'geocoding_${geocodeResult.provider}',
             metadata: {
               'confidence': geocodeResult.confidence,
               'provider': geocodeResult.provider,
-              'coordinates':
-                  '${geocodeResult.latitude},${geocodeResult.longitude}',
+              'coordinates': '${geocodeResult.latitude},${geocodeResult.longitude}',
             },
           ),
         ];
@@ -426,8 +417,7 @@ class SmartAddressAutocompleteService {
 
     // Time-based predictions
     if (timeContext != null) {
-      final timePredictions =
-          await _getTimeBasedPredictions(timeContext, vozac);
+      final timePredictions = await _getTimeBasedPredictions(timeContext, vozac);
       suggestions.addAll(timePredictions.take(2));
     }
 
@@ -463,8 +453,7 @@ class SmartAddressAutocompleteService {
       });
 
       // Combine with original score (weighted average)
-      suggestion.score =
-          suggestion.score * 0.6 + mlScore * 40; // 60% original, 40% ML
+      suggestion.score = suggestion.score * 0.6 + mlScore * 40; // 60% original, 40% ML
     }
   }
 
@@ -485,8 +474,7 @@ class SmartAddressAutocompleteService {
     // Recency feature
     if (suggestion.metadata.containsKey('last_used')) {
       try {
-        final lastUsed =
-            DateTime.parse(suggestion.metadata['last_used'] as String);
+        final lastUsed = DateTime.parse(suggestion.metadata['last_used'] as String);
         final daysSince = DateTime.now().difference(lastUsed).inDays;
         features['recency'] = math.max(0, 100 - daysSince * 3).toDouble();
       } catch (e) {
@@ -497,22 +485,16 @@ class SmartAddressAutocompleteService {
     }
 
     // Context match feature
-    features['context_match'] =
-        _calculateContextMatch(suggestion, query, timeContext);
+    features['context_match'] = _calculateContextMatch(suggestion, query, timeContext);
 
     // Location proximity (mock calculation)
     features['location_proximity'] = locationContext != null ? 75.0 : 0.0;
 
     // Time similarity
-    features['time_similarity'] = timeContext != null
-        ? _calculateTimeSimilarity(suggestion, timeContext)
-        : 0.0;
+    features['time_similarity'] = timeContext != null ? _calculateTimeSimilarity(suggestion, timeContext) : 0.0;
 
     // User preference (mock)
-    features['user_preference'] =
-        vozac != null && suggestion.metadata.containsKey('preferred_by_$vozac')
-            ? 100.0
-            : 0.0;
+    features['user_preference'] = vozac != null && suggestion.metadata.containsKey('preferred_by_$vozac') ? 100.0 : 0.0;
 
     return features;
   }
@@ -568,8 +550,7 @@ class SmartAddressAutocompleteService {
     if (a.isEmpty && b.isEmpty) return 1.0;
     if (a.isEmpty || b.isEmpty) return 0.0;
 
-    final matrix =
-        List.generate(a.length + 1, (_) => List<int>.filled(b.length + 1, 0));
+    final matrix = List.generate(a.length + 1, (_) => List<int>.filled(b.length + 1, 0));
 
     for (int i = 0; i <= a.length; i++) {
       matrix[i][0] = i;
@@ -750,14 +731,8 @@ class SmartAddressAutocompleteService {
 
   /// 🚫 HELPER - proveri da li je grad van servisne oblasti
   static bool _isCityOutsideServiceArea(String city) {
-    final normalizedCity = city
-        .toLowerCase()
-        .trim()
-        .replaceAll('š', 's')
-        .replaceAll('đ', 'd')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z');
+    // Koristi centralizovanu normalizaciju iz TextUtils
+    final normalizedCity = TextUtils.normalizeText(city);
 
     // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
     final serviceAreaCities = [
@@ -768,8 +743,7 @@ class SmartAddressAutocompleteService {
       'kruscica', 'kusic', 'crvena crkva',
     ];
     return !serviceAreaCities.any(
-      (allowed) =>
-          normalizedCity.contains(allowed) || allowed.contains(normalizedCity),
+      (allowed) => normalizedCity.contains(allowed) || allowed.contains(normalizedCity),
     );
   }
 }
@@ -784,8 +758,7 @@ class AddressSuggestion {
     this.metadata = const {},
   });
 
-  factory AddressSuggestion.fromJson(Map<String, dynamic> json) =>
-      AddressSuggestion(
+  factory AddressSuggestion.fromJson(Map<String, dynamic> json) => AddressSuggestion(
         address: json['address'] as String,
         displayText: json['display_text'] as String,
         score: (json['score'] as num).toDouble(),

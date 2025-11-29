@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:uuid/uuid.dart';
 
+import '../utils/text_utils.dart';
+
 /// Model za adrese
 class Adresa {
   Adresa({
@@ -203,14 +205,8 @@ class Adresa {
   bool get isValidGrad {
     if (grad == null || grad!.trim().isEmpty) return true; // Now optional
 
-    final normalizedGrad = grad!
-        .toLowerCase()
-        .trim()
-        .replaceAll('š', 's')
-        .replaceAll('đ', 'd')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z');
+    // Koristi centralizovanu normalizaciju iz TextUtils
+    final normalizedGrad = TextUtils.normalizeText(grad!);
 
     // Allowed municipalities: Bela Crkva and Vršac
     const allowedCities = [

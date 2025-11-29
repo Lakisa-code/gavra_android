@@ -1,3 +1,5 @@
+import 'text_utils.dart';
+
 /// 🏘️ UTIL ZA VALIDACIJU GRADOVA I ADRESA
 /// Ograničava aplikaciju na opštine Bela Crkva i Vršac
 class GradAdresaValidator {
@@ -51,25 +53,21 @@ class GradAdresaValidator {
   ];
 
   /// 🔤 NORMALIZUJ SRPSKE KARAKTERE
+  /// Koristi TextUtils.normalizeText() kao bazu i dodaje specifične zamene
   static String normalizeString(String? input) {
     if (input == null) {
       return '';
     }
 
-    String normalized = input.toString().trim().toLowerCase();
+    // Koristi centralizovanu normalizaciju iz TextUtils
+    String normalized = TextUtils.normalizeText(input);
 
-    // Normalizuj srpske karaktere
+    // Dodatne specifične zamene za ovaj validator
     normalized = normalized
-        .replaceAll('š', 's')
-        .replaceAll('đ', 'd')
-        .replaceAll('č', 'c')
-        .replaceAll('ć', 'c')
-        .replaceAll('ž', 'z')
-        .replaceAll('vršac', 'vrsac')
-        .replaceAll('vr?ac', 'vrsac')
-        .replaceAll('četvrtak', 'cetvrtak')
-        .replaceAll('čet', 'cet')
-        .replaceAll('pošta', 'posta');
+        .replaceAll('vrsac', 'vrsac') // već normalizovano
+        .replaceAll('cetvrtak', 'cetvrtak') // već normalizovano
+        .replaceAll('cet', 'cet') // već normalizovano
+        .replaceAll('posta', 'posta'); // već normalizovano
 
     return normalized;
   }

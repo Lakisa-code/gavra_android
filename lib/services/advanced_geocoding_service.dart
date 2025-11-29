@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/text_utils.dart';
 import 'cache_service.dart';
 import 'geocoding_stats_service.dart';
 
@@ -96,10 +97,8 @@ class AdvancedGeocodingService {
       // 4. 🤖 AUTO-CORRECTION - pokušaj sa ispravkama
       if (bestResult == null || bestScore < 70.0) {
         if (enableAutoCorrection) {
-          final correctedResult =
-              await _tryAutoCorrection(processedGrad, processedAdresa);
-          if (correctedResult != null &&
-              correctedResult.confidence > bestScore) {
+          final correctedResult = await _tryAutoCorrection(processedGrad, processedAdresa);
+          if (correctedResult != null && correctedResult.confidence > bestScore) {
             bestResult = correctedResult;
           }
         }
@@ -165,8 +164,7 @@ class AdvancedGeocodingService {
 
     // Pronađi alias
     for (final entry in _cityAliases.entries) {
-      if (entry.value
-          .any((alias) => alias.toLowerCase() == normalized.toLowerCase())) {
+      if (entry.value.any((alias) => alias.toLowerCase() == normalized.toLowerCase())) {
         return entry.key;
       }
     }
@@ -297,8 +295,7 @@ class AdvancedGeocodingService {
         return GeocodeResult(
           latitude: (coords[1] as num).toDouble(),
           longitude: (coords[0] as num).toDouble(),
-          formattedAddress:
-              (props['name'] ?? props['label'] ?? '$adresa, $grad') as String,
+          formattedAddress: (props['name'] ?? props['label'] ?? '$adresa, $grad') as String,
           confidence: confidence,
           provider: 'photon',
           components: _parsePhotonComponents(props),
@@ -317,12 +314,7 @@ class AdvancedGeocodingService {
     String adresa,
   ) async {
     final corrections = [
-      adresa
-          .replaceAll('č', 'c')
-          .replaceAll('ć', 'c')
-          .replaceAll('ž', 'z')
-          .replaceAll('š', 's')
-          .replaceAll('đ', 'd'),
+      TextUtils.normalizeText(adresa), // normalizovano bez kvačica
       adresa.replaceAll(' ', ''), // bez space-ova
       adresa.replaceAll(RegExp(r'\d+'), ''), // bez brojeva
       '$adresa bb', // dodaj "bez broja"
@@ -337,8 +329,7 @@ class AdvancedGeocodingService {
             latitude: result.latitude,
             longitude: result.longitude,
             formattedAddress: result.formattedAddress,
-            confidence:
-                math.max(result.confidence - 10, 0), // penalty za korekciju
+            confidence: math.max(result.confidence - 10, 0), // penalty za korekciju
             provider: result.provider,
             components: result.components,
             autocorrected: true,
@@ -373,10 +364,7 @@ class AdvancedGeocodingService {
     }
 
     // Address matching
-    final resultText =
-        (result['display_name'] ?? result['name'] ?? result['label'] ?? '')
-            .toString()
-            .toLowerCase();
+    final resultText = (result['display_name'] ?? result['name'] ?? result['label'] ?? '').toString().toLowerCase();
     final queryLower = query.toLowerCase();
 
     if (resultText.contains(queryLower)) {
@@ -403,8 +391,7 @@ class AdvancedGeocodingService {
     if (a.isEmpty) return b.isEmpty ? 1.0 : 0.0;
     if (b.isEmpty) return 0.0;
 
-    final matrix =
-        List.generate(a.length + 1, (i) => List<int>.filled(b.length + 1, 0));
+    final matrix = List.generate(a.length + 1, (i) => List<int>.filled(b.length + 1, 0));
 
     for (int i = 0; i <= a.length; i++) {
       matrix[i][0] = i;
@@ -556,20 +543,13 @@ class GeocodeResult {
       };
 
   @override
-  String toString() =>
-      '$formattedAddress (${confidence.toStringAsFixed(1)}% via $provider)';
+  String toString() => '$formattedAddress (${confidence.toStringAsFixed(1)}% via $provider)';
 }
 
 /// 🚫 HELPER FUNKCIJA - proveri da li je grad van servisne oblasti
 bool _isCityOutsideServiceArea(String grad) {
-  final normalizedGrad = grad
-      .toLowerCase()
-      .trim()
-      .replaceAll('š', 's')
-      .replaceAll('đ', 'd')
-      .replaceAll('č', 'c')
-      .replaceAll('ć', 'c')
-      .replaceAll('ž', 'z');
+  // Koristi centralizovanu normalizaciju iz TextUtils
+  final normalizedGrad = TextUtils.normalizeText(grad);
 
   // ✅ SERVISNA OBLAST: SAMO Bela Crkva i Vršac opštine
   final serviceAreaCities = [
