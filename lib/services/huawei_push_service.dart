@@ -96,16 +96,12 @@ class HuaweiPushService {
 
   /// Calls a Supabase Edge Function (register-push-token) to store token.
   /// The server-side function should validate and persist tokens securely.
+  ///
+  /// NAPOMENA: Ako Edge Function ne postoji (404), token se čuva lokalno
+  /// i može se registrovati kasnije kada funkcija bude dostupna.
   Future<void> _registerTokenWithServer(String token) async {
     try {
-      // Retry loop: Supabase may not be initialized yet if we initialize
-      // Huawei Push before Supabase in main(), so try a few times with
-      // exponential backoff before giving up and persisting the token
-      // locally for later registration.
-      final int maxAttempts = 5;
-      for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        try {
-          final supabase = Supabase.instance.client;
+      final supabase = Supabase.instance.client;
 
       // Send token to server for safe storage; provider identifies 'huawei'
       // Try to attach current driver/user id if set in app session so server
@@ -123,27 +119,35 @@ class HuaweiPushService {
         'user_id': driverName, // nullable
       };
 
-          await supabase.functions.invoke('register-push-token', body: payload);
-      debugPrint('Huawei token registered with server (masked). user=${driverName ?? 'null'}');
-          return; // success
-        } catch (e) {
-          debugPrint('Attempt ${attempt + 1} to register Huawei token failed: $e');
-          // If this was the last attempt, persist token for later
-          if (attempt == maxAttempts - 1) {
-            try {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('pending_huawei_token', token);
-              debugPrint('Saved pending Huawei token for later registration');
-            } catch (e2) {
-              debugPrint('Failed to persist pending Huawei token: $e2');
-            }
-            return;
-          }
-          await Future.delayed(Duration(seconds: 2 * (attempt + 1)));
+      try {
+        await supabase.functions.invoke('register-push-token', body: payload);
+        debugPrint('✅ Huawei token registered with server. user=${driverName ?? 'null'}');
+      } on FunctionException catch (e) {
+        // Edge Function ne postoji ili vraća grešku
+        if (e.status == 404) {
+          // 404 = Edge Function ne postoji - ovo je očekivano ako nije deploy-ovana
+          debugPrint('⚠️ HMS: Edge Function "register-push-token" ne postoji (404). Token sačuvan lokalno.');
+        } else {
+          debugPrint('⚠️ HMS: Edge Function greška (${e.status}): ${e.details}');
         }
+        // Sačuvaj token lokalno za kasnije
+        await _savePendingToken(token);
       }
     } catch (e) {
-      debugPrint('Failed to register Huawei token with server: $e');
+      debugPrint('⚠️ HMS token registration failed: $e');
+      // Sačuvaj token lokalno za kasnije
+      await _savePendingToken(token);
+    }
+  }
+
+  /// Sačuvaj token lokalno za kasniju registraciju
+  Future<void> _savePendingToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_huawei_token', token);
+      debugPrint('📱 HMS token sačuvan lokalno za kasnije');
+    } catch (e) {
+      debugPrint('❌ Greška pri čuvanju HMS tokena: $e');
     }
   }
 

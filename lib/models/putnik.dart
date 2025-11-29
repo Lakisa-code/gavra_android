@@ -3,7 +3,6 @@ import 'dart:convert';
 import '../services/adresa_supabase_service.dart'; // DODATO za pravo rešenje adresa
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 import '../utils/mesecni_helpers.dart';
-import 'mesecni_putnik.dart';
 
 // Enum za statuse putnika
 enum PutnikStatus { otkazano, pokupljen, bolovanje, godisnji }
@@ -190,26 +189,6 @@ class Putnik {
   // Helper metoda za čitanje polaska za određeni dan iz novih kolona
   // ...existing code...
 
-  // NOVI: Factory za konverziju iz MesecniPutnik u Putnik
-  factory Putnik.fromMesecniPutnik(MesecniPutnik mesecniPutnik) {
-    // Odredi kraticu dana (pon, uto, ...)
-    final weekday = DateTime.now().weekday;
-    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final danKratica = daniKratice[weekday - 1];
-    // Pronađi prvi polazak za taj dan iz polasciPoDanu
-    String polazak = mesecniPutnik.polasciPoDanu[danKratica]?.first ?? '6:00';
-    return Putnik(
-      id: mesecniPutnik.id,
-      ime: mesecniPutnik.putnikIme,
-      polazak: polazak,
-      grad: 'Bela Crkva',
-      dan: DateTime.now().toIso8601String().split('T')[0],
-      mesecnaKarta: true,
-      placeno: true,
-      cena: 14000.0,
-      status: 'radi',
-    );
-  }
   final dynamic id; // ✅ Može biti int (putovanja_istorija) ili String (mesecni_putnici)
   final String ime;
   final String polazak;

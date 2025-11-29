@@ -1185,13 +1185,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     }
 
                                     try {
-                                      // STRIKTNA VALIDACIJA VOZAČA - PRVO PROVERI DA NIJE NULL
-                                      if (_currentDriver == null || _currentDriver!.isEmpty) {
+                                      // STRIKTNA VALIDACIJA VOZAČA - PROVERI NULL, EMPTY I VALID DRIVER
+                                      if (_currentDriver == null ||
+                                          _currentDriver!.isEmpty ||
+                                          !VozacBoja.isValidDriver(_currentDriver)) {
                                         if (!mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
+                                          SnackBar(
                                             content: Text(
-                                              '❌ GREŠKA: Niste ulogovani! Molimo ponovo pokrenite aplikaciju.',
+                                              '❌ GREŠKA: Nepoznat vozač "$_currentDriver". Molimo ponovo se ulogujte.',
                                             ),
                                             backgroundColor: Colors.red,
                                           ),
@@ -1199,7 +1201,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         return;
                                       }
 
-                                      // Uklonjena validacija vozača - dozvoljava sve vozače
+                                      // ✅ Validacija vozača koristi VozacBoja.isValidDriver()
 
                                       // POKAZI LOADING STATE - lokalno za dijalog
                                       setStateDialog(() {
@@ -1219,30 +1221,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         adresa:
                                             adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
                                       );
-                                      // Proveri da li već postoji isti dnevni putnik
-                                      try {
-                                        final exists = await _putnikService.existsDuplicatePutnik(putnik);
-                                        if (exists && putnik.mesecnaKarta != true) {
-                                          // Ukloni loading state
-                                          setStateDialog(() {
-                                            isDialogLoading = false;
-                                          });
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  '❌ Greška: Sličan putnik za izabrani dan/vreme već postoji',
-                                                ),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          }
-                                          return;
-                                        }
-                                      } catch (e) {
-                                        // Ignoriši grešku u proveri - nastavi sa dodavanjem
-                                      }
 
+                                      // Duplikat provera se vrši u PutnikService.dodajPutnika()
                                       await _putnikService.dodajPutnika(putnik);
 
                                       // 🔄 FORSIRAJ REALTIME REFRESH da se stream ažurira
@@ -1258,20 +1238,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       setStateDialog(() {
                                         isDialogLoading = false;
                                       });
-                                      if (mounted) {
-                                        // ignore: use_build_context_synchronously
-                                        Navigator.pop(context);
-                                        // ignore: use_build_context_synchronously
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              '✅ Putnik je uspešno dodat',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                            duration: Duration(seconds: 2),
+
+                                      // ignore: use_build_context_synchronously
+                                      Navigator.pop(context);
+                                      // ignore: use_build_context_synchronously
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            '✅ Putnik je uspešno dodat',
                                           ),
-                                        );
-                                      }
+                                          backgroundColor: Colors.green,
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
                                     } catch (e) {
                                       // ensure dialog loading is cleared
                                       setStateDialog(() {
@@ -1280,17 +1259,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                       if (!mounted) return;
 
-                                      if (mounted) {
-                                        // ignore: use_build_context_synchronously
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              '❌ Greška pri dodavanju: $e',
-                                            ),
-                                            backgroundColor: Colors.red,
+                                      // ignore: use_build_context_synchronously
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '❌ Greška pri dodavanju: $e',
                                           ),
-                                        );
-                                      }
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
                                     }
                                   },
                             child: isDialogLoading
@@ -1331,7 +1308,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
-                                        Icons.add_circle,
+                                        Icons.person_add,
                                         color: Colors.white,
                                         size: 20,
                                       ),
@@ -2176,6 +2153,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         : PutnikList(
                             putnici: putniciZaPrikaz,
                             currentDriver: _currentDriver,
+                            selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
+                            selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
                             bcVremena: const [
                               '5:00',
                               '6:00',

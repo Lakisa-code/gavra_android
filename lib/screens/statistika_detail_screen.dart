@@ -409,61 +409,6 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header sa periodom
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: [
-                    Text(
-                      'Detaljne statistike',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.analytics,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Period info
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.date_range,
-                      color: Colors.blue[600],
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Period: ${_formatDate(_selectedRange!.start)} - ${_formatDate(_selectedRange!.end)}',
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               // Vozači kartice (stil kao admin screen)
               Column(
                 children: statistike.entries.map((entry) {

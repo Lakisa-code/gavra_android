@@ -67,7 +67,7 @@ class StatistikaService {
     return _calculatePazarSync(putnici, vozac, fromDate, toDate);
   }
 
-  /// 🔄 REAL-TIME PAZAR STREAM ZA ODREĐENOG VOZAČA - JEDNOSTAVNO BEZ DUPLIKOVANJA
+  /// 🔄 REAL-TIME PAZAR STREAM ZA ODREĐENOG VOZAČA
   static Stream<double> streamPazarZaVozaca(
     String vozac, {
     DateTime? from,
@@ -77,11 +77,10 @@ class StatistikaService {
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    // 🔧 SAMO STVARNI PODACI IZ putovanja_istorija - bez duplikovanja mesečnih karata!
     return _streamStvarniPazarZaVozaca(vozac, fromDate, toDate);
   }
 
-  /// � NOVI STREAM: Čita SAMO STVARNI naplaćeni novac iz putovanja_istorija tabele
+  /// 💰 STREAM: Čita sva plaćanja iz putovanja_istorija (uključujući mesečne karte)
   static Stream<double> _streamStvarniPazarZaVozaca(
     String vozac,
     DateTime fromDate,

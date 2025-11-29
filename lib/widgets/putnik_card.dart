@@ -2645,7 +2645,7 @@ class _PutnikCardState extends State<PutnikCard> {
                 ListTile(
                   leading: const Icon(Icons.delete_outline, color: Colors.red),
                   title: const Text('Obriši putnika'),
-                  subtitle: const Text('Trajno ukloni iz baze'),
+                  subtitle: const Text('Ukloni sa liste rezervacija'),
                   onTap: () {
                     Navigator.pop(context);
                     _handleBrisanje();

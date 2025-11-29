@@ -163,8 +163,9 @@ class GeocodingService {
       results.addAll(fromCache);
 
       // 🌐 Batch API pozivi sa rate limiting
+      // ⚠️ NOMINATIM ZAHTEVA MAX 1 REQUEST/SEC - STROGO POŠTOVATI!
       if (needsApi.isNotEmpty) {
-        const int batchSize = 5; // Nominatim rate limit
+        const int batchSize = 1; // 🔴 FIX: Nominatim free API = 1 req/sec
         const Duration delayBetweenBatches = Duration(seconds: 1);
 
         for (int i = 0; i < needsApi.length; i += batchSize) {

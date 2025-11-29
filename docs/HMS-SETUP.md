@@ -12,6 +12,23 @@ Supabase Edge Functions — minimal guidance
 -----------------------------------------
 1. Create two Edge Functions: `register-push-token` and `send-push-notification`.
 2. `register-push-token` stores tokens in a `push_tokens` table. It expects `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in environment.
+
+Deployment (recommended):
+1. Copy `supabase/.env.example` to `supabase/.env` and fill values for `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_PROJECT_REF`.
+2. Run `scripts/deploy-supabase-functions.ps1` from the repo root to deploy DB migrations and Edge functions.
+
+This script requires the `supabase` CLI to be installed and logged in, and will attempt to push DB migrations and deploy functions using `supabase`.
+
+Important: Store `SUPABASE_SERVICE_ROLE_KEY` securely (not in public repo), but for local deployment you can fill it in the `.env` file.
+Testing the deployed function (local test):
+1. If you have a token you want to register manually, you can invoke the Edge function directly using `scripts/register-pending-token.ps1`:
+
+```
+.\scripts\register-pending-token.ps1 -Token "<token value>" -UserId "someuser"
+```
+
+2. Alternatively, run the app on a device after deploy; the app uses the `register-push-token` Edge function and will register tokens on startup. Check logs for the message `Huawei token registered with server (masked)`.
+
 3. `send-push-notification` can route messages to FCM or HMS. For FCM you need `FCM_SERVER_KEY` in env. For HMS use `AGC_APICLIENT_JSON` (or credentials stored with a secret name) and install the AGC Server SDK on your function runtime.
 
 Example environment variables (set in Supabase UI or your CI):

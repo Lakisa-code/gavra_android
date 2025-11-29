@@ -3,18 +3,16 @@
         "supabase-hosted": {
             "type": "http",
             "url": "https://mcp.supabase.com/mcp?project_ref=gjtabtwudbrmfeyjiicu&read_only=false"
-        }
-    }
-}
-{
-    "mcpServers": {
-        "supabase-hosted": {
-            "type": "http",
-            "url": "https://mcp.supabase.com/mcp?project_ref=gjtabtwudbrmfeyjiicu&read_only=false"
         },
-        "supabase-local": {
-            "type": "http",
-            "url": "http://localhost:54321/mcp?project_ref=127.0.0.1:54322&read_only=false"
+        "huawei-appgallery": {
+            "command": "node",
+            "args": [
+                "C:/Users/Bojan/gavra_android/huawei-appgallery-mcp/dist/index.js"
+            ],
+            "env": {
+                "HUAWEI_CLIENT_ID": "1825559368939142080",
+                "HUAWEI_CLIENT_SECRET": "1F4A1FEE55AC46A497B3AF46511BA7390BE3A98FB1305E03D9815AB1A84C5685"
+            }
         }
     }
 }

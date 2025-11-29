@@ -75,7 +75,8 @@ class PutnikService {
                 .from('putovanja_istorija')
                 .select('*, adrese:adresa_id(naziv, ulica, broj, grad)')
                 .eq('datum_putovanja', isoDate)
-                .eq('tip_putnika', 'dnevni');
+                .eq('tip_putnika', 'dnevni')
+                .eq('obrisan', false);
             print('🔍 DNEVNI QUERY za $isoDate: ${dnevniResponse.length} redova');
             if (dnevniResponse.isNotEmpty) {
               print('🔍 PRVI RED: ${dnevniResponse.first}');
@@ -85,6 +86,7 @@ class PutnikService {
                 .from('putovanja_istorija')
                 .select('*, adrese:adresa_id(naziv, ulica, broj, grad)')
                 .eq('tip_putnika', 'dnevni')
+                .eq('obrisan', false)
                 .order('created_at', ascending: false);
             print('🔍 DNEVNI QUERY (svi): ${dnevniResponse.length} redova');
           }

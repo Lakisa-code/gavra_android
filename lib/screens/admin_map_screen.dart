@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
+import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 
 class AdminMapScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   Position? _currentPosition;
   bool _isLoading = true;
   bool _showDrivers = true;
-  bool _showPassengers = false;
+  // _showPassengers uklonjen - funkcionalnost nije implementirana
   List<Marker> _markers = [];
   DateTime? _lastGpsLoad;
   DateTime? _lastPutniciLoad;
@@ -34,6 +35,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   // V3.0 Clean Monitoring - realtime streams za admin bez heartbeat
   StreamSubscription<List<Map<String, dynamic>>>? _gpsSubscription;
   StreamSubscription<List<Map<String, dynamic>>>? _putnikSubscription;
+  int _retryCount = 0; // ✅ ISPRAVKA: Retry limit
+  static const int _maxRetries = 3;
 
   // Početna pozicija - Bela Crkva/Vršac region
   static const LatLng _initialCenter = LatLng(44.9, 21.4);
@@ -49,10 +52,15 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   // V3.0 Clean - Setup realtime monitoring with resilience
   void _initializeRealtimeMonitoring() {
+    // ✅ ISPRAVKA: Otkaži stare subscriptions pre kreiranja novih
+    _gpsSubscription?.cancel();
+    _putnikSubscription?.cancel();
+
     // GPS Realtime Stream with error recovery
     _gpsSubscription =
         Supabase.instance.client.from('gps_lokacije').stream(primaryKey: ['id']).order('timestamp').listen(
               (data) {
+                _retryCount = 0; // Reset retry count on success
                 if (mounted) {
                   try {
                     final gpsLokacije = data.map((json) => GPSLokacija.fromMap(json)).toList();
@@ -64,7 +72,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       });
                     }
                   } catch (e) {
-// Fallback to cached data
+                    // Fallback to cached data
                     if (_gpsLokacije.isEmpty) {
                       _loadGpsLokacije();
                     }
@@ -72,12 +80,15 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 }
               },
               onError: (Object error) {
-// V3.0 Resilience - Auto retry after 5 seconds
-                Timer(const Duration(seconds: 5), () {
-                  if (mounted) {
-                    _initializeRealtimeMonitoring();
-                  }
-                });
+                // ✅ ISPRAVKA: Retry sa limitom
+                if (_retryCount < _maxRetries && mounted) {
+                  _retryCount++;
+                  Timer(const Duration(seconds: 5), () {
+                    if (mounted) {
+                      _initializeRealtimeMonitoring();
+                    }
+                  });
+                }
               },
             );
 
@@ -94,7 +105,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               });
             }
           } catch (e) {
-// Fallback to cached data
+            // Fallback to cached data
             if (_putnici.isEmpty) {
               _loadPutnici();
             }
@@ -102,12 +113,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         }
       },
       onError: (Object error) {
-// V3.0 Resilience - Auto retry after 3 seconds
-        Timer(const Duration(seconds: 3), () {
-          if (mounted) {
-            _initializeRealtimeMonitoring();
-          }
-        });
+        // Putnik stream error - koristi fallback
+        if (_putnici.isEmpty) {
+          _loadPutnici();
+        }
       },
     );
   }
@@ -242,7 +251,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       }
 
       // Kreiraj markere za svakog vozača
-      najnovijeLokacije.forEach((vozacId, lokacija) {
+      najnovijeLokacije.forEach((vozacUuid, lokacija) {
+        // ✅ ISPRAVKA: Konvertuj UUID u ime vozača
+        final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacUuid) ?? 'Nepoznat';
+
         markers.add(
           Marker(
             point: LatLng(lokacija.latitude, lokacija.longitude),
@@ -250,7 +262,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: _getDriverColor(lokacija),
+                color: _getDriverColor(vozacIme),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
                 boxShadow: const [
@@ -270,7 +282,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                     size: 20,
                   ),
                   Text(
-                    vozacId.substring(0, 1).toUpperCase(),
+                    vozacIme.isNotEmpty ? vozacIme.substring(0, 1).toUpperCase() : '?',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -285,10 +297,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       });
     }
 
-    // PUTNICI - ako su uključeni
-    if (_showPassengers) {
-      _addPassengerMarkers(markers);
-    }
+    // PUTNICI - funkcionalnost nije implementirana (geocoding potreban)
+    // TODO: Implementirati _addPassengerMarkers sa geocoding-om
 
     if (mounted) {
       setState(() {
@@ -297,11 +307,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
   }
 
-  Color _getDriverColor(GPSLokacija lokacija) {
-    // Koristimo vozac_id umesto name
-    final vozacId = lokacija.vozacId?.toLowerCase() ?? 'nepoznat';
+  // ✅ ISPRAVKA: Prima ime vozača umesto GPSLokacija
+  Color _getDriverColor(String vozacIme) {
+    final ime = vozacIme.toLowerCase();
 
-    switch (vozacId) {
+    switch (ime) {
       case 'bojan':
         return const Color(0xFF00E5FF); // svetla cyan plava
       case 'svetlana':
@@ -319,15 +329,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
   }
 
-  void _addPassengerMarkers(List<Marker> markers) {
-    // Dodaj markere za putnike sa adresama (sync verzija)
-    for (final putnik in _putnici) {
-      if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) continue;
-
-      // Za sada skip putničke markere jer zahtevaju async geocoding
-      // Možemo dodati kasnije ako bude potrebno
-    }
-  }
+  // TODO: Implementirati _addPassengerMarkers sa geocoding-om kad bude potrebno
 
   void _fitAllMarkers() {
     if (_markers.isEmpty) return;
@@ -385,7 +387,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    const SizedBox.shrink(),
                     const Expanded(
                       child: Text(
                         '🗺️ Admin GPS Mapa',
@@ -420,25 +421,12 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       },
                       tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
                     ),
-                    // 👥 Putnici toggle
-                    IconButton(
-                      icon: Icon(
-                        _showPassengers ? Icons.people : Icons.people_outline,
-                        color: _showPassengers ? Colors.white : Colors.white54,
-                      ),
-                      onPressed: () {
-                        if (mounted) {
-                          setState(() {
-                            _showPassengers = !_showPassengers;
-                          });
-                        }
-                        _updateMarkers();
-                      },
-                      tooltip: _showPassengers ? 'Sakrij putnike' : 'Prikaži putnike',
-                    ),
+                    // 👥 Putnici toggle - DISABLED (geocoding nije implementiran)
+                    // TODO: Implementirati geocoding za putničke markere
                     // 🔄 Refresh dugme
                     TextButton(
                       onPressed: () {
+                        _retryCount = 0; // Reset retry count
                         _loadGpsLokacije();
                         _loadPutnici();
                       },
@@ -617,7 +605,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                       _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
                     ],
-                    if (_showPassengers) _buildLegendItem(Colors.green, '👤 Putnici'),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(

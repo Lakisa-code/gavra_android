@@ -39,11 +39,11 @@ class OfflineMapService {
       final db = await _getDatabase();
 
       // 1. Učitaj sve adrese iz 'adrese' tabele koje imaju koordinate
+      // NAPOMENA: Koordinate su u JSONB polju 'koordinate' sa 'lat' i 'lng' ključevima
       final response = await Supabase.instance.client
           .from('adrese')
-          .select('id, ulica, broj, grad, latitude, longitude')
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null);
+          .select('id, ulica, broj, grad, koordinate')
+          .not('koordinate', 'is', null);
 
       if (response.isEmpty) {
         print('📍 Offline sync: Nema adresa sa koordinatama u Supabase');
@@ -55,8 +55,17 @@ class OfflineMapService {
         final ulica = row['ulica'] as String? ?? '';
         final broj = row['broj'] as String? ?? '';
         final grad = row['grad'] as String? ?? '';
-        final lat = row['latitude'];
-        final lng = row['longitude'];
+        final koordinate = row['koordinate'];
+
+        // Parsiraj lat/lng iz JSONB koordinata
+        double? lat;
+        double? lng;
+        if (koordinate is Map<String, dynamic>) {
+          final latVal = koordinate['lat'];
+          final lngVal = koordinate['lng'];
+          lat = latVal is num ? latVal.toDouble() : null;
+          lng = lngVal is num ? lngVal.toDouble() : null;
+        }
 
         if (lat == null || lng == null) continue;
 
@@ -68,8 +77,8 @@ class OfflineMapService {
           {
             'grad': grad,
             'adresa': adresa,
-            'latitude': (lat is int) ? lat.toDouble() : lat as double,
-            'longitude': (lng is int) ? lng.toDouble() : lng as double,
+            'latitude': lat,
+            'longitude': lng,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
@@ -88,11 +97,11 @@ class OfflineMapService {
     try {
       final db = await _getDatabase();
 
+      // NAPOMENA: Koordinate su u JSONB polju 'koordinate' sa 'lat' i 'lng' ključevima
       final response = await Supabase.instance.client
           .from('adrese')
-          .select('id, ulica, broj, grad, latitude, longitude')
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null);
+          .select('id, ulica, broj, grad, koordinate')
+          .not('koordinate', 'is', null);
 
       if (response.isEmpty) return 0;
 
@@ -101,8 +110,17 @@ class OfflineMapService {
         final ulica = row['ulica'] as String? ?? '';
         final broj = row['broj'] as String? ?? '';
         final grad = row['grad'] as String? ?? '';
-        final lat = row['latitude'];
-        final lng = row['longitude'];
+        final koordinate = row['koordinate'];
+
+        // Parsiraj lat/lng iz JSONB koordinata
+        double? lat;
+        double? lng;
+        if (koordinate is Map<String, dynamic>) {
+          final latVal = koordinate['lat'];
+          final lngVal = koordinate['lng'];
+          lat = latVal is num ? latVal.toDouble() : null;
+          lng = lngVal is num ? lngVal.toDouble() : null;
+        }
 
         if (lat == null || lng == null) continue;
 
@@ -114,8 +132,8 @@ class OfflineMapService {
           {
             'grad': grad,
             'adresa': adresa,
-            'latitude': (lat is int) ? lat.toDouble() : lat as double,
-            'longitude': (lng is int) ? lng.toDouble() : lng as double,
+            'latitude': lat,
+            'longitude': lng,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );

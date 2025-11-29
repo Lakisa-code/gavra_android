@@ -78,23 +78,31 @@ class _DanasScreenState extends State<DanasScreen> {
   // bool _wasRealtimeHealthy = true;
 
   // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM
+  bool _isPopisLoading = false; // ✅ ISPRAVKA: Loading state za POPIS dugme
 
   Widget _buildPopisButton() {
+    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
     return SizedBox(
       height: 26,
       child: ElevatedButton(
-        onPressed: (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) ? null : () => _showPopisDana(),
+        onPressed: (!isDriverValid || _isPopisLoading) ? null : () => _showPopisDana(),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.secondary,
+          backgroundColor: _isPopisLoading ? Colors.grey.shade400 : Theme.of(context).colorScheme.secondary,
           foregroundColor: Theme.of(context).colorScheme.onSecondary,
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         ),
-        child: const FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
-        ),
+        child: _isPopisLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
+              ),
       ),
     );
   }
@@ -299,9 +307,6 @@ class _DanasScreenState extends State<DanasScreen> {
           }
         }
 
-        // RAČUNAJ OSTALO
-        final ostalo = ukupnoUjutro - reseniUcenici - otkazaliUcenici;
-
         // Uključi današnje "zakupljeno" iz putovanja_istorija da ne bismo propustili grupne rezervacije
         int zakupljenoCount = 0;
         try {
@@ -326,14 +331,17 @@ class _DanasScreenState extends State<DanasScreen> {
           }
         } catch (_) {}
 
-        // Po defaultu uključujemo zakupljeno u ukupnoUjutro
+        // ✅ ISPRAVKA: Računaj ukupno SA zakupljenim pre računanja ostalo
         final ukupnoSaZakupljeno = ukupnoUjutro + zakupljenoCount;
 
+        // ✅ ISPRAVKA: Računaj ostalo NAKON uključivanja zakupljenih za konzistentnost
+        final ostalo = ukupnoSaZakupljeno - reseniUcenici - otkazaliUcenici;
+
         return {
-          'ukupno_ujutro': ukupnoSaZakupljeno, // 30 - ukupno koji idu ujutro (incl. zakupljeno)
-          'reseni': reseniUcenici, // 15 - upisani za oba pravca
-          'otkazali': otkazaliUcenici, // 5 - otkazani
-          'ostalo': ostalo, // 10 - ostalo da se vrati
+          'ukupno_ujutro': ukupnoSaZakupljeno, // ukupno koji idu ujutro (incl. zakupljeno)
+          'reseni': reseniUcenici, // upisani za oba pravca
+          'otkazali': otkazaliUcenici, // otkazani
+          'ostalo': ostalo, // ostalo da se vrati (konzistentno sa ukupno)
         };
       } catch (e) {
         return {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
@@ -544,7 +552,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   const SizedBox(width: 2),
                   Text(
                     '$ostalo',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange),
                   ),
                 ],
               ),
@@ -556,16 +564,57 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU
+  // ✅ ISPRAVKA: Koristi widget.filterGrad/filterVreme i key za reaktivnost
   Widget _buildOptimizeButton() {
+    // ✅ ISPRAVKA #3: Koristi widget.filterGrad ?? _selectedGrad za konzistentnost
+    final selectedGrad = widget.filterGrad ?? _selectedGrad;
+    final selectedVreme = widget.filterVreme ?? _selectedVreme;
+
     return FutureBuilder<List<Putnik>>(
+      // ✅ ISPRAVKA #1: Dodaj key koji se menja kada se filteri promene
+      key: ValueKey('route_$selectedGrad$selectedVreme${_lastDriverPosition?.latitude}'),
       future: _routeOptimizationService.fetchPassengersForRoute(
-        grad: _selectedGrad,
-        vreme: _selectedVreme,
+        grad: selectedGrad,
+        vreme: selectedVreme,
         driverPosition: _lastDriverPosition,
       ),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return Container();
-        final filtriraniPutnici = snapshot.data!;
+        // ✅ ISPRAVKA #2: Pravilno rukovanje sa loading/error stanjima
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            height: 26,
+            child: ElevatedButton(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey.shade400,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              ),
+              child: const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return SizedBox(
+            height: 26,
+            child: ElevatedButton(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade400,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              ),
+              child: const Text('!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          );
+        }
+
+        final filtriraniPutnici = snapshot.data ?? [];
         final hasPassengers = filtriraniPutnici.isNotEmpty;
         final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
         return SizedBox(
@@ -832,6 +881,9 @@ class _DanasScreenState extends State<DanasScreen> {
     }
     final vozac = _currentDriver!;
 
+    // ✅ ISPRAVKA: Pokreni loading indikator
+    if (mounted) setState(() => _isPopisLoading = true);
+
     try {
       // 1. OSNOVNI PODACI
       final today = DateTime.now();
@@ -839,10 +891,11 @@ class _DanasScreenState extends State<DanasScreen> {
       final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
 
       // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
+      // ✅ ISPRAVKA: Koristi postojeću _putnikService instancu
       late List<Putnik> putnici;
       try {
         final isoDate = DateTime.now().toIso8601String().split('T')[0];
-        final stream = PutnikService().streamKombinovaniPutniciFiltered(
+        final stream = _putnikService.streamKombinovaniPutniciFiltered(
           isoDate: isoDate,
           grad: widget.filterGrad ?? _selectedGrad,
           vreme: widget.filterVreme ?? _selectedVreme,
@@ -922,6 +975,9 @@ class _DanasScreenState extends State<DanasScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('❌ Greška pri učitavanju popisa: $e'), backgroundColor: Colors.red));
       }
+    } finally {
+      // ✅ ISPRAVKA: Uvek ugasi loading indikator
+      if (mounted) setState(() => _isPopisLoading = false);
     }
   }
 
@@ -1469,6 +1525,9 @@ class _DanasScreenState extends State<DanasScreen> {
     // 🛑 Zaustavi realtime tracking kad se ekran zatvori
     // DISABLED: Google APIs removed
     // RealtimeRouteTrackingService.stopRouteTracking();
+
+    // ✅ ISPRAVKA: Zaustavi GPS tracking da se spreči memory leak
+    RealtimeGpsService.stopTracking();
 
     // 🧹 CLEANUP TIMER MEMORY LEAKS - KORISTI TIMER MANAGER
     TimerManager.cancelTimer('danas_screen_reset_debounce');
@@ -2101,7 +2160,6 @@ class _DanasScreenState extends State<DanasScreen> {
                         }
                         double ukupnoPazarVozac = pazarSnapshot.data!;
 
-                        // Mesečne karte su već uključene u pazarZaVozaca funkciju
                         return Column(
                           children: [
                             Container(
@@ -2401,6 +2459,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                             putnici: finalPutnici,
                                             useProvidedOrder: _isListReordered,
                                             currentDriver: _currentDriver,
+                                            selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
+                                            selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
                                             onPutnikStatusChanged: _reoptimizeAfterStatusChange, // 🎯 NOVO
                                             bcVremena: const [
                                               '5:00',
@@ -2636,9 +2696,10 @@ class _DanasScreenState extends State<DanasScreen> {
         _isGpsTracking = false;
         _navigationStatus = '';
       });
+      // ✅ ISPRAVKA: SnackBar unutar mounted provere
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('🛑 Navigacija zaustavljena'), backgroundColor: Colors.orange),
+      );
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('🛑 Navigacija zaustavljena'), backgroundColor: Colors.orange));
   }
 }

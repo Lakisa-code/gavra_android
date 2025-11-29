@@ -40,16 +40,14 @@ if (-not $clientId -or -not $clientSecret -or -not $projectId) {
 }
 
 Write-Host "Setting GitHub secrets: AGC_CLIENT_ID, AGC_CLIENT_SECRET, AGC_APP_ID"
-gh secret set AGC_CLIENT_ID --body $clientId || Write-Warning "gh secret set AGC_CLIENT_ID failed"
-gh secret set AGC_CLIENT_SECRET --body $clientSecret || Write-Warning "gh secret set AGC_CLIENT_SECRET failed"
-gh secret set AGC_APP_ID --body $projectId || Write-Warning "gh secret set AGC_APP_ID failed"
+gh secret set AGC_CLIENT_ID --body $clientId; if ($LASTEXITCODE -ne 0) { Write-Warning "gh secret set AGC_CLIENT_ID failed" }
+gh secret set AGC_CLIENT_SECRET --body $clientSecret; if ($LASTEXITCODE -ne 0) { Write-Warning "gh secret set AGC_CLIENT_SECRET failed" }
+gh secret set AGC_APP_ID --body $projectId; if ($LASTEXITCODE -ne 0) { Write-Warning "gh secret set AGC_APP_ID failed" }
 
 if (Get-Command supabase -ErrorAction SilentlyContinue) {
     Write-Host "Setting Supabase Edge Function secrets: AGC_APICLIENT_JSON, AGC_APP_ID"
-    supabase secrets set AGC_APICLIENT_JSON --value "$raw" || Write-Warning "supabase secrets set AGC_APICLIENT_JSON failed"
-    supabase secrets set AGC_APP_ID --value $projectId || Write-Warning "supabase secrets set AGC_APP_ID failed"
+    supabase secrets set AGC_APICLIENT_JSON="$raw"; if ($LASTEXITCODE -ne 0) { Write-Warning "supabase secrets set AGC_APICLIENT_JSON failed" }
+    supabase secrets set AGC_APP_ID=$projectId; if ($LASTEXITCODE -ne 0) { Write-Warning "supabase secrets set AGC_APP_ID failed" }
 } else {
-    Write-Host "Supabase CLI not found — skip adding Supabase secrets (install supabase CLI to enable)."
+    Write-Host "Supabase CLI not found - skip adding Supabase secrets (install supabase CLI to enable)."
 }
-
-Write-Host "Done. To trigger publish: run scripts/trigger-publish.ps1 or create a new release/tag in GitHub."

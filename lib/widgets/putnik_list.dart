@@ -18,6 +18,8 @@ class PutnikList extends StatelessWidget {
     this.useProvidedOrder = false,
     this.onPutnikStatusChanged, // 🎯 NOVO: callback kad se promeni status
     this.onPokupljen, // 🔊 NOVO: callback za glasovnu najavu sledećeg
+    this.selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
+    this.selectedVreme, // 📍 NOVO: za GPS navigaciju
   }) : super(key: key);
   final bool showActions;
   final String? currentDriver;
@@ -28,6 +30,8 @@ class PutnikList extends StatelessWidget {
   final bool useProvidedOrder;
   final VoidCallback? onPutnikStatusChanged; // 🎯 NOVO
   final VoidCallback? onPokupljen; // 🔊 NOVO: za glasovnu najavu
+  final String? selectedGrad; // 📍 NOVO: za GPS navigaciju mesečnih putnika
+  final String? selectedVreme; // 📍 NOVO: za GPS navigaciju
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +154,8 @@ class PutnikList extends StatelessWidget {
                 redniBroj: redniBroj,
                 bcVremena: bcVremena,
                 vsVremena: vsVremena,
+                selectedGrad: selectedGrad, // 📍 NOVO: za GPS navigaciju
+                selectedVreme: selectedVreme, // 📍 NOVO: za GPS navigaciju
                 onChanged: onPutnikStatusChanged, // 🎯 NOVO
                 onPokupljen: onPokupljen, // 🔊 glasovna najava
               );
@@ -199,6 +205,8 @@ class PutnikList extends StatelessWidget {
               redniBroj: redniBroj,
               bcVremena: bcVremena,
               vsVremena: vsVremena,
+              selectedGrad: selectedGrad, // 📍 NOVO: za GPS navigaciju
+              selectedVreme: selectedVreme, // 📍 NOVO: za GPS navigaciju
               onChanged: onPutnikStatusChanged, // 🎯 NOVO
               onPokupljen: onPokupljen, // 🔊 glasovna najava
             );
@@ -288,6 +296,8 @@ class PutnikList extends StatelessWidget {
             redniBroj: redniBroj,
             bcVremena: bcVremena,
             vsVremena: vsVremena,
+            selectedGrad: selectedGrad, // 📍 NOVO: za GPS navigaciju
+            selectedVreme: selectedVreme, // 📍 NOVO: za GPS navigaciju
             onChanged: onPutnikStatusChanged, // 🎯 NOVO
             onPokupljen: onPokupljen, // 🔊 glasovna najava
           );

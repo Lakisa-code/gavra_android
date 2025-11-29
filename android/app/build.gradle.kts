@@ -9,6 +9,9 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Apply AGConnect as a plugin via buildscript classpath
+apply(plugin = "com.huawei.agconnect")
+
 // 🔐 PRODUCTION KEYSTORE CONFIGURATION
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
