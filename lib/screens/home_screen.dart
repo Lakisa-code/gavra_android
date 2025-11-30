@@ -2242,6 +2242,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             currentDriver: _currentDriver,
                             selectedGrad: _selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
                             selectedVreme: _selectedVreme, // 📍 NOVO: za GPS navigaciju
+                            onPutnikStatusChanged: () {
+                              // 🔄 Forsiraj rebuild kad se promeni status putnika
+                              if (mounted) setState(() {});
+                            },
                             bcVremena: const [
                               '5:00',
                               '6:00',

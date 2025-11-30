@@ -149,6 +149,33 @@ class PutnikService {
         }
         danKratica ??= _getDayAbbreviationFromName(_getTodayName());
 
+        // 🔍 Dohvati sve mesečne zapise iz putovanja_istorija za ovaj dan
+        // (otkazivanja, pokupljenja itd.) da bismo ih isključili/zamenili
+        final Map<String, Map<String, dynamic>> mesecniOverrides = {};
+        if (isoDate != null) {
+          try {
+            final mesecniIstorija = await supabase
+                .from('putovanja_istorija')
+                .select()
+                .eq('datum_putovanja', isoDate)
+                .eq('tip_putnika', 'mesecni')
+                .not('mesecni_putnik_id', 'is', null);
+
+            for (final row in mesecniIstorija) {
+              final mpId = row['mesecni_putnik_id']?.toString();
+              final rowGrad = row['grad']?.toString() ?? '';
+              final rowVreme = GradAdresaValidator.normalizeTime(row['vreme_polaska']?.toString() ?? '');
+              if (mpId != null) {
+                // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
+                final key = '${mpId}_${rowGrad}_$rowVreme';
+                mesecniOverrides[key] = Map<String, dynamic>.from(row as Map);
+              }
+            }
+          } catch (_) {
+            // Ignorisi greške
+          }
+        }
+
         // Query mesecni_putnici - uzmi aktivne mesečne putnike za ciljani dan
         final mesecni =
             await supabase.from('mesecni_putnici').select(mesecniFields).eq('aktivan', true).eq('obrisan', false);
@@ -168,7 +195,16 @@ class PutnikService {
               continue;
             }
 
-            combined.add(p);
+            // 🔍 Proveri da li postoji override (otkazivanje/pokupljenje) za ovog mesečnog putnika
+            final overrideKey = '${p.id}_${p.grad}_$normVreme';
+            if (mesecniOverrides.containsKey(overrideKey)) {
+              // Zameni sa podacima iz putovanja_istorija (ima status otkazan, pokupljen itd.)
+              final overrideData = mesecniOverrides[overrideKey]!;
+              final overridePutnik = Putnik.fromPutovanjaIstorija(overrideData);
+              combined.add(overridePutnik);
+            } else {
+              combined.add(p);
+            }
           }
         }
 

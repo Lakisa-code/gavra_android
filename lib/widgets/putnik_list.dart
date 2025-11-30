@@ -211,6 +211,15 @@ class PutnikList extends StatelessWidget {
         );
       }
 
+      // 🎯 SORTIRAJ PO GRUPAMA: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
+      filteredPutnici.sort((a, b) {
+        final aSortKey = _putnikSortKey(a);
+        final bSortKey = _putnikSortKey(b);
+        final cmp = aSortKey.compareTo(bSortKey);
+        if (cmp != 0) return cmp;
+        return a.ime.compareTo(b.ime);
+      });
+
       if (filteredPutnici.isEmpty) {
         return const Center(child: Text('Nema putnika za prikaz.'));
       }
