@@ -1904,4 +1904,51 @@ class PutnikService {
       'nevalidni_mesecni_naplatio': 0,
     };
   }
+
+  /// 🔄 PREBACI PUTNIKA DRUGOM VOZAČU
+  /// Ažurira `vozac_id` kolonu u mesecni_putnici tabeli (za mesečne putnike)
+  /// ili `dodao_vozac` u putovanja_istorija tabeli (za dnevne putnike)
+  Future<void> prebacijPutnikaVozacu(String putnikId, String noviVozac) async {
+    // Validacija vozača
+    if (!VozacBoja.isValidDriver(noviVozac)) {
+      throw Exception(
+        'Nevalidan vozač: "$noviVozac". Dozvoljeni: ${VozacBoja.validDrivers.join(", ")}',
+      );
+    }
+
+    try {
+      // Dobij UUID vozača
+      final vozacUuid = await VozacMappingService.getVozacUuid(noviVozac);
+
+      if (vozacUuid == null) {
+        throw Exception('Vozač "$noviVozac" nije pronađen u bazi');
+      }
+
+      // Proveri da li je mesečni putnik (UUID format) ili dnevni (int format)
+      final isMesecni = putnikId.contains('-'); // UUID ima crtice
+
+      if (isMesecni) {
+        // 🎯 MESEČNI PUTNIK - ažuriraj vozac_id u mesecni_putnici
+        await supabase.from('mesecni_putnici').update({
+          'vozac_id': vozacUuid,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', putnikId);
+      } else {
+        // 📅 DNEVNI PUTNIK - ažuriraj dodao_vozac u putovanja_istorija
+        await supabase.from('putovanja_istorija').update({
+          'dodao_vozac': noviVozac,
+          'vozac_id': vozacUuid,
+        }).eq('id', putnikId);
+      }
+
+      // Forsiraj refresh realtime servisa
+      try {
+        await RealtimeService.instance.refreshNow();
+      } catch (e) {
+        // Ignoriši greške u refresh-u
+      }
+    } catch (e) {
+      throw Exception('Greška pri prebacivanju putnika: $e');
+    }
+  }
 }

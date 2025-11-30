@@ -131,7 +131,12 @@ class Putnik {
             )
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
-      dodaoVozac: map['dodao_vozac'] as String? ?? 'Bojan', // ✅ FALLBACK: Sistemski vozač za mesečne putnike
+      // 🎯 PRIORITET: vozac_id (UUID) -> konvertuj u ime, fallback na dodao_vozac ili 'Nepoznat'
+      dodaoVozac: VozacMappingService.getVozacImeWithFallbackSync(
+            map['vozac_id'] as String?,
+          ) ??
+          map['dodao_vozac'] as String? ??
+          'Nepoznat',
       grad: grad,
       adresa: _determineAdresaFromMesecni(map),
       adresaId: _determineAdresaIdFromMesecni(map, grad), // ✅ NOVO - UUID adrese
@@ -517,8 +522,27 @@ class Putnik {
     final bcPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'bc');
     final vsPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'vs');
 
-    final adresaBC = map['adresa_bela_crkva'] as String?;
-    final adresaVS = map['adresa_vrsac'] as String?;
+    // ✅ NOVO: Čitaj adresu iz JOIN objekta (adresa_bc, adresa_vs)
+    String? adresaBC;
+    String? adresaVS;
+
+    // Proveri da li postoji JOIN objekat za BC adresu
+    final adresaBcObj = map['adresa_bc'] as Map<String, dynamic>?;
+    if (adresaBcObj != null) {
+      adresaBC = adresaBcObj['naziv'] as String? ?? '${adresaBcObj['ulica'] ?? ''} ${adresaBcObj['broj'] ?? ''}'.trim();
+      if (adresaBC.isEmpty) adresaBC = null;
+    }
+    // Fallback na staru kolonu ako nema JOIN
+    adresaBC ??= map['adresa_bela_crkva'] as String?;
+
+    // Proveri da li postoji JOIN objekat za VS adresu
+    final adresaVsObj = map['adresa_vs'] as Map<String, dynamic>?;
+    if (adresaVsObj != null) {
+      adresaVS = adresaVsObj['naziv'] as String? ?? '${adresaVsObj['ulica'] ?? ''} ${adresaVsObj['broj'] ?? ''}'.trim();
+      if (adresaVS.isEmpty) adresaVS = null;
+    }
+    // Fallback na staru kolonu ako nema JOIN
+    adresaVS ??= map['adresa_vrsac'] as String?;
 
     // Ako ima BC polazak danas, koristi BC adresu (gde ga pokupljaš)
     if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {

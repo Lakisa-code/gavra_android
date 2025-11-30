@@ -11,9 +11,9 @@ import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
-import 'email_login_screen.dart';
 import 'home_screen.dart';
 import 'o_nama_screen.dart';
+import 'vozac_login_screen.dart';
 import 'vozac_screen.dart';
 import 'zahtev_pristupa_screen.dart';
 
@@ -357,12 +357,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       }
     }
 
-    // AKO NIJE REMEMBERED DEVICE - IDI NA EMAIL LOGIN PRVO
+    // AKO NIJE REMEMBERED DEVICE - IDI NA VOZAČ LOGIN
     if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (context) => const EmailLoginScreen(),
+        builder: (context) => VozacLoginScreen(vozacIme: driverName),
       ),
     );
   }

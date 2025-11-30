@@ -19,12 +19,14 @@ import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
 import 'auth_screen.dart'; // DODANO za auth admin
+import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'statistika_detail_screen.dart'; // DODANO za statistike
+import 'vozac_screen.dart'; // DODANO za vozac screen
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -658,7 +660,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // TREĆI RED - Auth dugme
+                          // TREĆI RED - Auth i Vozač dugmad
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -709,6 +711,105 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 70,
+                                child: InkWell(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => const VozacScreen(),
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    height: 28,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).glassContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context).glassBorder,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'Vozač',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            shadows: [
+                                              Shadow(
+                                                offset: Offset(1, 1),
+                                                blurRadius: 3,
+                                                color: Colors.black54,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // 🎯 DUGME DODELI - samo za Bojan i Svetlana
+                              if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ...[
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 70,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const DodeliPutnikeScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).glassContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Theme.of(context).glassBorder,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'Dodeli',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                              shadows: [
+                                                Shadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 3,
+                                                  color: Colors.black54,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ],

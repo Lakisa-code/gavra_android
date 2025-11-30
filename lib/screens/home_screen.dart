@@ -34,6 +34,7 @@ import '../widgets/putnik_list.dart';
 import '../widgets/shimmer_widgets.dart';
 import 'admin_screen.dart';
 import 'danas_screen.dart';
+import 'promena_sifre_screen.dart';
 import 'welcome_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -2103,10 +2104,97 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(width: 4),
                         Expanded(
-                          child: _HomeScreenButton(
-                            label: 'Logout',
-                            icon: Icons.logout,
-                            onTap: _logout,
+                          child: PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'logout') {
+                                _logout();
+                              } else if (value == 'sifra') {
+                                final vozac = await AuthManager.getCurrentDriver();
+                                if (vozac != null && mounted) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => PromenaSifreScreen(vozacIme: vozac),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'sifra',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.lock, color: Colors.amber),
+                                    SizedBox(width: 8),
+                                    Text('Promeni šifru'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'logout',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Logout'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).glassContainer,
+                                border: Border.all(
+                                  color: Theme.of(context).glassBorder,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.settings,
+                                    color: Theme.of(context).colorScheme.onPrimary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    height: 16,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'Opcije',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.onPrimary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          shadows: [
+                                            Shadow(
+                                              blurRadius: 8,
+                                              color: Colors.black87,
+                                            ),
+                                            Shadow(
+                                              offset: Offset(1, 1),
+                                              blurRadius: 4,
+                                              color: Colors.black54,
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
