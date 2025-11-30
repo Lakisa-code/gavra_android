@@ -59,6 +59,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
+    print('👋 WELCOME: initState() POZVAN!');
     WidgetsBinding.instance.addObserver(this); // Dodano za lifecycle
 
     _setupAnimations();
@@ -478,11 +479,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                         onTap: () async {
                           try {
                             await _audioPlayer.setAsset('assets/kasno_je.mp3');
-                            await _audioPlayer.setVolume(0.5); // 50% jačine
+                            await _audioPlayer.setVolume(0.5);
                             await _audioPlayer.play();
-                          } catch (e) {
-                            // Swallow audio errors silently in production
-                          }
+                          } catch (_) {}
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -549,7 +548,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   child: Column(
                     children: [
                       Text(
-                        'Developed • Designed • Crafted with balls',
+                        'Designed • Developed • Crafted with balls',
                         style: TextStyle(
                           fontSize: 13,
                           letterSpacing: 1.0,

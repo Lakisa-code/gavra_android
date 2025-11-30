@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../globals.dart';
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
 import 'analytics_service.dart';
@@ -137,11 +138,15 @@ class AuthManager {
 
   /// Centralizovan logout - briše sve session podatke
   static Future<void> logout(BuildContext context) async {
+    // 🔧 FIX: Koristi GLOBALNI navigatorKey umesto context-a
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+
     // Prikaži loading
     showDialog<void>(
-      context: context,
+      context: navigator.context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (ctx) => const Center(
         child: CircularProgressIndicator(),
       ),
     );
@@ -153,19 +158,15 @@ class AuthManager {
       // 1. Obriši Supabase Auth session
       await Supabase.instance.client.auth.signOut();
 
-      // 2. Obriši SharedPreferences - ali sačuvaj zapamćene uređaje
-      // Ukloni jedino active session ključeve
+      // 2. Obriši SharedPreferences - SVE session podatke uključujući zapamćene uređaje
       await prefs.remove(_driverKey);
       await prefs.remove(_authSessionKey);
+      await prefs.remove(_rememberedDevicesKey);
 
       // 3. Očisti Firebase session (ako postoji)
       try {
         await FirebaseService.clearCurrentDriver();
-        // Push service removed - using only realtime notifications
-        // Firebase Messaging removed - using Supabase realtime
-      } catch (e) {
-        // Firebase clear greška
-      }
+      } catch (_) {}
 
       // 4. Analytics
       if (currentDriver != null) {
@@ -177,26 +178,20 @@ class AuthManager {
       }
 
       // 5. Zatvori loading i navigiraj
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Zatvori loading
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      // Logout greška
-      // Zatvori loading čak i ako ima greška
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        // Forsiraj navigaciju na welcome screen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute<void>(builder: (context) => const WelcomeScreen()),
-          (route) => false,
-        );
-      }
+      navigator.pop();
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
+        (route) => false,
+      );
+    } catch (_) {
+      // Logout greška - svejedno navigiraj na welcome
+      try {
+        navigator.pop(); // Zatvori loading
+      } catch (_) {}
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),
+        (route) => false,
+      );
     }
   }
 

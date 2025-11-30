@@ -446,12 +446,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Prikaži confirmation dialog
     final bool? shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(dialogContext).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-            color: Theme.of(context).colorScheme.dangerPrimary.withValues(alpha: 0.5),
+            color: Theme.of(dialogContext).colorScheme.dangerPrimary.withValues(alpha: 0.5),
             width: 2,
           ),
         ),
@@ -459,14 +459,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             Icon(
               Icons.logout,
-              color: Theme.of(context).colorScheme.error,
+              color: Theme.of(dialogContext).colorScheme.error,
               size: 40,
             ),
             const SizedBox(height: 12),
             Text(
               'Logout',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
+                color: Theme.of(dialogContext).colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -476,13 +476,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         content: Text(
           'Da li ste sigurni da se želite odjaviti?',
           style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+            color: Theme.of(dialogContext).colorScheme.onSurface.withValues(alpha: 0.8),
             fontSize: 16,
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text(
               'Otkaži',
               style: TextStyle(color: Colors.grey),
@@ -490,25 +490,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           HapticElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             hapticType: HapticType.medium,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Logout'),
           ),
         ],
       ),
     );
 
-    if (shouldLogout == true) {
-      // Koristi centralizovani AuthManager za logout
-      if (mounted) {
-        await AuthManager.logout(context);
-      }
+    if (shouldLogout == true && mounted) {
+      await AuthManager.logout(context);
     }
   }
 
@@ -2226,6 +2223,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    print('🏠 HOME: dispose() POZVAN!');
+
     // 🕐 KORISTI TIMER MANAGER za cleanup - SPREČAVA MEMORY LEAK
     TimerManager.cancelTimer('home_screen_smart_notifikacije');
     TimerManager.cancelTimer('home_screen_realtime_health');
