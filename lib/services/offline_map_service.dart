@@ -432,7 +432,7 @@ class OfflineMapService {
       },
 
       // SELA VRŠAC
-      {'grad': 'Straža', 'adresa': 'Centar', 'lat': 45.1000, 'lng': 21.2500},
+      {'grad': 'Straža', 'adresa': 'Centar', 'lat': 44.974348, 'lng': 21.299610},
       {
         'grad': 'Vojvodinci',
         'adresa': 'Centar',

@@ -247,7 +247,7 @@ class RouteConfig {
       'lat': 44.8975,
       'lng': 21.4178,
     },
-    {'grad': 'Straža', 'adresa': 'Centar', 'lat': 45.1000, 'lng': 21.2500},
+    {'grad': 'Straža', 'adresa': 'Centar', 'lat': 44.974348, 'lng': 21.299610},
     {
       'grad': 'Vršac',
       'adresa': 'Železnička stanica',
