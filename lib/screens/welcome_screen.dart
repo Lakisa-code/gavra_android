@@ -451,12 +451,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           child: Text(
                             'O nama',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 1.2,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Colors.white.withValues(alpha: 0.5),
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 2.0,
+                              shadows: [
+                                Shadow(
+                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
+                                  blurRadius: 20,
+                                ),
+                                Shadow(
+                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                                  blurRadius: 15,
+                                ),
+                                Shadow(
+                                  color: Colors.cyan.withValues(alpha: 0.4),
+                                  blurRadius: 10,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -491,32 +503,81 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             // 📝 "Zatraži pristup" dugme
                             Padding(
                               padding: const EdgeInsets.only(top: 12),
-                              child: TextButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const ZahtevPristupaScreen(),
+                              child: AnimatedBuilder(
+                                animation: _slideController,
+                                builder: (context, child) {
+                                  // Index 5 - nastavlja niz posle vozača
+                                  final delayFactor = (5 * 0.1).clamp(0.0, 1.0);
+                                  final adjustedValue = (_slideController.value - delayFactor).clamp(0.0, 1.0);
+                                  final scale = 0.8 + (0.2 * adjustedValue);
+
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const ZahtevPristupaScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width * 0.85,
+                                        constraints: const BoxConstraints(
+                                          minHeight: 55,
+                                          maxHeight: 65,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 6,
+                                          horizontal: 16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              const Color(0xFF00FFCC).withValues(alpha: 0.85),
+                                              Colors.white.withValues(alpha: 0.08),
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(24),
+                                          border: Border.all(
+                                            color: const Color(0xFF00FFCC).withValues(alpha: 0.7),
+                                            width: 2,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFF00FFCC).withValues(alpha: 0.35),
+                                              blurRadius: 15,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.person_add,
+                                              color: Colors.white,
+                                              size: 24,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              'Zatraži pristup',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.0,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   );
                                 },
-                                icon: const Icon(Icons.person_add, color: Colors.amber, size: 18),
-                                label: const Text(
-                                  'Zatraži pristup',
-                                  style: TextStyle(
-                                    color: Colors.amber,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                style: TextButton.styleFrom(
-                                  backgroundColor: Colors.white.withOpacity(0.1),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: BorderSide(color: Colors.amber.withOpacity(0.5)),
-                                  ),
-                                ),
                               ),
                             ),
                           ],
