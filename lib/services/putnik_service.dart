@@ -77,10 +77,6 @@ class PutnikService {
                 .eq('datum_putovanja', isoDate)
                 .eq('tip_putnika', 'dnevni')
                 .eq('obrisan', false);
-            print('🔍 DNEVNI QUERY za $isoDate: ${dnevniResponse.length} redova');
-            if (dnevniResponse.isNotEmpty) {
-              print('🔍 PRVI RED: ${dnevniResponse.first}');
-            }
           } else {
             dnevniResponse = await supabase
                 .from('putovanja_istorija')
@@ -88,7 +84,6 @@ class PutnikService {
                 .eq('tip_putnika', 'dnevni')
                 .eq('obrisan', false)
                 .order('created_at', ascending: false);
-            print('🔍 DNEVNI QUERY (svi): ${dnevniResponse.length} redova');
           }
 //           // print('📊 DIREKTNI QUERY SUCCESS: ${dnevniResponse.length} redova');
         } catch (e) {
@@ -271,12 +266,11 @@ class PutnikService {
   Future<String> _getTableForPutnik(dynamic id) async {
     try {
       // Pokušaj prvo putovanja_istorija (int ili string ID)
-      final resp = await SupabaseSafe.run(
-        () => supabase.from('putovanja_istorija').select('id').eq('id', id as String).single(),
-      );
+      final idStr = id.toString();
+      final resp = await supabase.from('putovanja_istorija').select('id').eq('id', idStr).maybeSingle();
       if (resp != null) return 'putovanja_istorija';
-    } catch (e) {
-      return 'mesecni_putnici';
+    } catch (_) {
+      // Greška pri upitu - nastavi sa proverom mesecni_putnici
     }
     // Ako nije pronađeno u putovanja_istorija vrati mesecni_putnici
     return 'mesecni_putnici';
@@ -711,8 +705,6 @@ class PutnikService {
           'radni_dani': radniDani,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', putnikId);
-
-        print('✅ Ažuriran mesečni putnik ${putnik.ime}: polasci_po_danu=$polasciPoDanu, radni_dani=$radniDani');
       } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
         final insertData = await putnik.toPutovanjaIstorijaMapWithAdresa(); // ✅ KORISTI PRAVO REŠENJE
@@ -1192,19 +1184,25 @@ class PutnikService {
     String? selectedGrad,
   }) async {
     try {
-      // ✅ dynamic umesto int
+      final idStr = id.toString();
       // Određi tabelu na osnovu ID-ja
-      final tabela = await _getTableForPutnik(id);
+      final tabela = await _getTableForPutnik(idStr);
 
       // Prvo dohvati podatke putnika za notifikaciju
       final response = await SupabaseSafe.run(
-        () => supabase.from(tabela).select().eq('id', id as String).single(),
+        () => supabase.from(tabela).select().eq('id', idStr).single(),
       );
       final respMap = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
       final cancelName = (respMap['putnik_ime'] ?? respMap['ime']) ?? '';
 
+      // ⚠️ Proveri da li je putnik već otkazan
+      final currentStatus = respMap['status']?.toString().toLowerCase() ?? '';
+      if (currentStatus == 'otkazan' || currentStatus == 'otkazano') {
+        throw Exception('Putnik je već otkazan');
+      }
+
       // 📝 DODAJ U UNDO STACK
-      _addToUndoStack('cancel', id, respMap);
+      _addToUndoStack('cancel', idStr, respMap);
 
       if (tabela == 'mesecni_putnici') {
         // 🆕 NOVI PRISTUP: Za mesečne putnike kreiraj zapis u putovanja_istorija za konkretan dan
@@ -1214,15 +1212,32 @@ class PutnikService {
 
         // Kreiraj zapis otkazivanja za današnji dan sa ActionLog
         final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
-        final actionLog = ActionLog.empty().addAction(
-          ActionType.cancelled,
-          vozacUuid ?? '',
-          'Otkazano',
-        );
+        final now = DateTime.now().toIso8601String();
 
-        await SupabaseSafe.run(
-          () => supabase.from('putovanja_istorija').upsert({
+        // ✅ FIX: Ručno kreiraj action_log kao Map (ne String) - isto kao u bazi
+        final actionLogMap = {
+          'created_by': vozacUuid,
+          'paid_by': null,
+          'picked_by': null,
+          'cancelled_by': vozacUuid,
+          'primary_driver': null,
+          'created_at': now,
+          'actions': [
+            {
+              'type': 'cancelled',
+              'vozac_id': vozacUuid,
+              'timestamp': now,
+              'note': 'Otkazano',
+            },
+          ],
+        };
+
+        // ✅ FIX: Direktan insert bez SupabaseSafe wrappera
+        try {
+          await supabase.from('putovanja_istorija').insert({
+            'mesecni_putnik_id': id.toString(), // ✅ UUID kao string
             'putnik_ime': respMap['putnik_ime'],
+            'tip_putnika': 'mesecni',
             'datum_putovanja': danas,
             'vreme_polaska': polazak,
             'grad': grad,
@@ -1230,10 +1245,11 @@ class PutnikService {
             'cena': 0,
             'vozac_id': null,
             'created_by': vozacUuid,
-            'action_log': actionLog.toJsonString(),
-          }),
-          fallback: <dynamic>[],
-        );
+            'action_log': actionLogMap, // ✅ Kao Map, ne String
+          });
+        } catch (insertError) {
+          rethrow;
+        }
       } else {
         // Za putovanja_istorija koristi ActionLog
         final currentData = await supabase.from(tabela).select('action_log').eq('id', id.toString()).single();
@@ -1526,18 +1542,14 @@ class PutnikService {
     String currentDriver,
   ) async {
     // 🔍 DEBUG LOG
-    print('🏥 oznaciBolovanjeGodisnji: id=$id, tip=$tipOdsustva, driver=$currentDriver');
-
     // ✅ dynamic umesto int
     // Određi tabelu na osnovu ID-ja
     final tabela = await _getTableForPutnik(id);
-    print('🏥 Tabela za putnika: $tabela');
 
     // Prvo dohvati podatke putnika za undo stack
     final response = await SupabaseSafe.run(
       () => supabase.from(tabela).select().eq('id', id as String).single(),
     );
-    print('🏥 Response iz baze: $response');
 
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
     final undoOdsustvo = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
@@ -1548,27 +1560,22 @@ class PutnikService {
     if (statusZaBazu == 'godisnji') {
       statusZaBazu = 'godišnji';
     }
-    print('🏥 Status za bazu: $statusZaBazu');
 
     try {
       if (tabela == 'mesecni_putnici') {
         // ✅ DIREKTNO SETOVANJE STATUSA - zahteva ALTER constraint u bazi
-        // Constraint mora dozvoliti: 'bolovanje', 'godišnji'
         await supabase.from(tabela).update({
           'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
           'aktivan': true, // Putnik ostaje aktivan, samo je na odsustvu
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', id as String);
-        print('🏥 ✅ Uspešno ažurirano u mesecni_putnici');
       } else {
         // Za putovanja_istorija koristi 'status' kolonu
         await supabase.from(tabela).update({
           'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
         }).eq('id', id as String);
-        print('🏥 ✅ Uspešno ažurirano u putovanja_istorija');
       }
     } catch (e) {
-      print('🏥 ❌ GREŠKA pri ažuriranju: $e');
       rethrow;
     }
   }

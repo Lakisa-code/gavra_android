@@ -9,8 +9,7 @@ import 'package:flutter/widgets.dart';
 class MemoryManagementService {
   factory MemoryManagementService() => _instance;
   MemoryManagementService._internal();
-  static final MemoryManagementService _instance =
-      MemoryManagementService._internal();
+  static final MemoryManagementService _instance = MemoryManagementService._internal();
 
   // 📊 MEMORY TRACKING
   final Map<String, DateTime> _streamControllers = {};
@@ -31,15 +30,13 @@ class MemoryManagementService {
   }
 
   /// 🔄 Register StreamController for monitoring
-  void registerStreamController(
-      String id, StreamController<dynamic> controller) {
+  void registerStreamController(String id, StreamController<dynamic> controller) {
     _streamControllers[id] = DateTime.now();
 
     // Auto-dispose after timeout
     Timer(_resourceTimeout, () {
       if (_streamControllers.containsKey(id) && !controller.isClosed) {
-        _addWarning(
-            'StreamController $id not disposed after ${_resourceTimeout.inMinutes} minutes');
+        _addWarning('StreamController $id not disposed after ${_resourceTimeout.inMinutes} minutes');
         try {
           controller.close();
         } catch (e) {
@@ -57,8 +54,7 @@ class MemoryManagementService {
     // Auto-cancel after timeout if still active
     Timer(_resourceTimeout, () {
       if (_timers.containsKey(id) && timer.isActive) {
-        _addWarning(
-            'Timer $id not cancelled after ${_resourceTimeout.inMinutes} minutes');
+        _addWarning('Timer $id not cancelled after ${_resourceTimeout.inMinutes} minutes');
         try {
           timer.cancel();
         } catch (e) {
@@ -70,15 +66,13 @@ class MemoryManagementService {
   }
 
   /// 🔄 Register Subscription for monitoring
-  void registerSubscription(
-      String id, StreamSubscription<dynamic> subscription) {
+  void registerSubscription(String id, StreamSubscription<dynamic> subscription) {
     _subscriptions[id] = DateTime.now();
 
     // Auto-cancel after timeout
     Timer(_resourceTimeout, () {
       if (_subscriptions.containsKey(id)) {
-        _addWarning(
-            'Subscription $id not cancelled after ${_resourceTimeout.inMinutes} minutes');
+        _addWarning('Subscription $id not cancelled after ${_resourceTimeout.inMinutes} minutes');
         try {
           subscription.cancel();
         } catch (e) {
@@ -143,8 +137,7 @@ class MemoryManagementService {
     });
 
     // Force garbage collection if too many resources
-    final totalResources =
-        _streamControllers.length + _timers.length + _subscriptions.length;
+    final totalResources = _streamControllers.length + _timers.length + _subscriptions.length;
     if (totalResources > 100) {
       _forceGarbageCollection();
     }
@@ -155,8 +148,7 @@ class MemoryManagementService {
     try {
       // Suggest garbage collection
       // Note: Dart doesn't have explicit GC control, but we can encourage it
-      _addWarning(
-          'Suggesting garbage collection - ${getTotalResources()} active resources');
+      _addWarning('Suggesting garbage collection - ${getTotalResources()} active resources');
     } catch (e) {
       _addWarning('Error during garbage collection suggestion: $e');
     }
@@ -243,8 +235,7 @@ mixin MemoryAwareMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Create and register a Timer
-  Timer createManagedTimer(Duration duration, void Function() callback,
-      [String? id]) {
+  Timer createManagedTimer(Duration duration, void Function() callback, [String? id]) {
     final timer = Timer(duration, callback);
     final resourceId = id ?? '${T.toString()}_${timer.hashCode}';
 
@@ -255,9 +246,7 @@ mixin MemoryAwareMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Create and register a periodic Timer
-  Timer createManagedPeriodicTimer(
-      Duration duration, void Function(Timer) callback,
-      [String? id]) {
+  Timer createManagedPeriodicTimer(Duration duration, void Function(Timer) callback, [String? id]) {
     final timer = Timer.periodic(duration, callback);
     final resourceId = id ?? '${T.toString()}_${timer.hashCode}';
 
@@ -268,8 +257,7 @@ mixin MemoryAwareMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Register an existing subscription
-  void registerManagedSubscription(StreamSubscription<dynamic> subscription,
-      [String? id]) {
+  void registerManagedSubscription(StreamSubscription<dynamic> subscription, [String? id]) {
     final resourceId = id ?? '${T.toString()}_${subscription.hashCode}';
 
     MemoryManagementService().registerSubscription(resourceId, subscription);

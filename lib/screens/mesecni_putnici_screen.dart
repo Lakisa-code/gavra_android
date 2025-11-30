@@ -1008,7 +1008,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         children: _daniOrder.map((dan) {
                           final bc = putnik.getPolazakBelaCrkvaZaDan(dan);
                           final vs = putnik.getPolazakVrsacZaDan(dan);
-                          if (bc == null && vs == null) return const SizedBox.shrink();
+                          if (bc == null && vs == null) {
+                            return const SizedBox.shrink();
+                          }
 
                           final label =
                               {'pon': 'Pon', 'uto': 'Uto', 'sre': 'Sre', 'cet': 'Čet', 'pet': 'Pet'}[dan] ?? dan;

@@ -13,8 +13,7 @@ bool isZimski(DateTime date) {
 
   // From Jan 1 until Jun 30 => still zimski
   final jan1 = DateTime(year);
-  if (date.isAfter(jan1.subtract(const Duration(days: 1))) &&
-      date.isBefore(jul1)) {
+  if (date.isAfter(jan1.subtract(const Duration(days: 1))) && date.isBefore(jul1)) {
     return true;
   }
 

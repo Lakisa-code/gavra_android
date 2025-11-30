@@ -67,19 +67,11 @@ class DailyCheckin {
       sitanNovac: (map['sitan_novac'] as num?)?.toDouble() ?? 0.0,
       dnevniPazari: (map['dnevni_pazari'] as num?)?.toDouble() ?? 0.0,
       ukupno: (map['ukupno'] as num?)?.toDouble() ?? 0.0,
-      checkinVreme: map['checkin_vreme'] != null
-          ? DateTime.parse(map['checkin_vreme'] as String)
-          : DateTime.now(),
-      createdAt: map['created_at'] != null
-          ? DateTime.parse(map['created_at'] as String)
-          : DateTime.now(),
-      updatedAt: map['updated_at'] != null
-          ? DateTime.parse(map['updated_at'] as String)
-          : DateTime.now(),
+      checkinVreme: map['checkin_vreme'] != null ? DateTime.parse(map['checkin_vreme'] as String) : DateTime.now(),
+      createdAt: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : DateTime.now(),
+      updatedAt: map['updated_at'] != null ? DateTime.parse(map['updated_at'] as String) : DateTime.now(),
       obrisan: map['obrisan'] as bool? ?? false,
-      deletedAt: map['deleted_at'] != null
-          ? DateTime.parse(map['deleted_at'] as String)
-          : null,
+      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
       status: DailyCheckinStatusExtension.fromString(
         map['status'] as String? ?? 'otvoren',
       ),
@@ -181,9 +173,7 @@ class DailyCheckin {
   /// Da li je checkin iz danas
   bool get isToday {
     final today = DateTime.now();
-    return datum.year == today.year &&
-        datum.month == today.month &&
-        datum.day == today.day;
+    return datum.year == today.year && datum.month == today.month && datum.day == today.day;
   }
 
   /// Da li je checkin iz tekuće nedelje
@@ -296,10 +286,7 @@ class DailyCheckin {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is DailyCheckin &&
-        other.id == id &&
-        other.vozac == vozac &&
-        other.datum == datum;
+    return other is DailyCheckin && other.id == id && other.vozac == vozac && other.datum == datum;
   }
 
   @override

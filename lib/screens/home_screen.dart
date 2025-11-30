@@ -2023,7 +2023,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           )
                                           .toList(),
                                       onChanged: (value) {
-                                        if (mounted) setState(() => _selectedDay = value!);
+                                        if (mounted) {
+                                          setState(() => _selectedDay = value!);
+                                        }
                                         // 🔄 Stream će se automatski ažurirati preko StreamBuilder-a
                                         // Ne treba eksplicitno pozivati _loadPutnici()
                                       },
@@ -2110,14 +2112,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 _logout();
                               } else if (value == 'sifra') {
                                 final vozac = await AuthManager.getCurrentDriver();
-                                if (vozac != null && mounted) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PromenaSifreScreen(vozacIme: vozac),
-                                    ),
-                                  );
-                                }
+                                if (!mounted || vozac == null) return;
+                                Navigator.push(
+                                  // ignore: use_build_context_synchronously
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PromenaSifreScreen(vozacIme: vozac),
+                                  ),
+                                );
                               }
                             },
                             itemBuilder: (context) => [
@@ -2311,8 +2313,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    print('🏠 HOME: dispose() POZVAN!');
-
     // 🕐 KORISTI TIMER MANAGER za cleanup - SPREČAVA MEMORY LEAK
     TimerManager.cancelTimer('home_screen_smart_notifikacije');
     TimerManager.cancelTimer('home_screen_realtime_health');

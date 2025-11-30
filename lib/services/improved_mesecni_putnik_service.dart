@@ -30,9 +30,7 @@ class ImprovedMesecniPutnikService {
         },
       );
 
-      return response
-          .map((json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
-          .toList();
+      return response.map((json) => MesecniPutnik.fromMap(json as Map<String, dynamic>)).toList();
     } catch (e) {
       // Fallback na standardnu logiku ako SQL funkcija nije dostupna
       // print('⚠️ SQL funkcija nije dostupna, koristim fallback: $e');
@@ -52,11 +50,7 @@ class ImprovedMesecniPutnikService {
     String filterType = 'svi',
     bool activeOnly = true,
   }) {
-    return _supabase
-        .from('mesecni_putnici')
-        .stream(primaryKey: ['id'])
-        .order('putnik_ime')
-        .map((data) {
+    return _supabase.from('mesecni_putnici').stream(primaryKey: ['id']).order('putnik_ime').map((data) {
           final listRaw = data as List<dynamic>;
 
           return listRaw
@@ -102,9 +96,7 @@ class ImprovedMesecniPutnikService {
   /// 📊 NOVE METODE: Statistike mesečnih putnika
   Future<Map<String, int>> getStatistikeMesecnihPutnika() async {
     try {
-      final sviPutnici = await _supabase
-          .from('mesecni_putnici')
-          .select('tip, status, aktivan, obrisan');
+      final sviPutnici = await _supabase.from('mesecni_putnici').select('tip, status, aktivan, obrisan');
 
       final stats = <String, int>{
         'ukupno': 0,
@@ -167,9 +159,7 @@ class ImprovedMesecniPutnikService {
 
     final response = await query.order('putnik_ime') as List<dynamic>;
 
-    var putnici = response
-        .map((json) => MesecniPutnik.fromMap(json as Map<String, dynamic>))
-        .toList();
+    var putnici = response.map((json) => MesecniPutnik.fromMap(json as Map<String, dynamic>)).toList();
 
     // Dodatno Dart filtriranje za search
     if (searchTerm != null && searchTerm.isNotEmpty) {

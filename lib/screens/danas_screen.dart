@@ -317,7 +317,9 @@ class _DanasScreenState extends State<DanasScreen> {
               final putnikZ = Putnik.fromPutovanjaIstorija(z);
               // Filtriraj po gradu/selectedGrad
               final gradNorm = TextUtils.normalizeText(putnikZ.grad);
-              if (TextUtils.normalizeText(selectedGrad) != gradNorm && selectedGrad.isNotEmpty) continue;
+              if (TextUtils.normalizeText(selectedGrad) != gradNorm && selectedGrad.isNotEmpty) {
+                continue;
+              }
               // Proveri da li polazak odgovara BC (jutarnji) - heuristika: if grad == 'Bela Crkva'
               if (putnikZ.grad.toLowerCase().contains('bela')) {
                 // De-dupe using name match to avoid double counting the same mesecni putnik
@@ -1189,8 +1191,8 @@ class _DanasScreenState extends State<DanasScreen> {
           );
         }
       }
-    } catch (e) {
-      print('❌ Greška pri reoptimizaciji: $e');
+    } catch (_) {
+      // Greška pri reoptimizaciji
     }
   }
 
@@ -1485,7 +1487,7 @@ class _DanasScreenState extends State<DanasScreen> {
     // 🚨 INICIJALIZUJ FAIL-FAST STREAM MANAGER
     // Registruj kritične stream-ove koji ne smeju da ne rade
     FailFastStreamManager.instance.registerCriticalStream('putnici_stream');
-    FailFastStreamManager.instance.registerCriticalStream('pazar_stream');
+    // NAPOMENA: pazar_stream NIJE kritičan - to je samo prikaz statistike
 
     // ✅ SETUP FILTERS FROM NOTIFICATION DATA
     if (widget.filterGrad != null) {
@@ -1750,22 +1752,13 @@ class _DanasScreenState extends State<DanasScreen> {
 
     // 🎯 PRAVI FILTER - koristi putnike koji su već prikazani na ekranu
     // Mesečni putnici imaju adresaId koji pokazuje na pravu adresu
-    print('🔍 FILTER DEBUG: Ukupno putnika: ${putnici.length}');
-
     final filtriraniPutnici = putnici.where((p) {
       // Za mesečne putnike: imaju adresaId koji pokazuje na pravu adresu
       // Za dnevne putnike: imaju adresu direktno
       final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
           (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
-
-      print(
-          '   📍 ${p.ime}: adresa="${p.adresa}", adresaId="${p.adresaId}", mesecna=${p.mesecnaKarta}, hasValidAddress=$hasValidAddress');
-
       return hasValidAddress;
     }).toList();
-
-    print('🔍 FILTER RESULT: ${filtriraniPutnici.length} putnika sa adresama');
-
     if (filtriraniPutnici.isEmpty) {
       if (mounted) {
         setState(() {
@@ -1783,7 +1776,6 @@ class _DanasScreenState extends State<DanasScreen> {
 
     try {
       // 🎯 KORISTI SMART NAVIGATION SERVICE ZA PRAVU OPTIMIZACIJU RUTE
-      print('🚀 Pozivam SmartNavigationService.optimizeRouteOnly...');
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
         startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
@@ -1791,8 +1783,6 @@ class _DanasScreenState extends State<DanasScreen> {
 
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
         final optimizedPutnici = result.optimizedPutnici!;
-        print('✅ Optimizacija uspela! Broj putnika: ${optimizedPutnici.length}');
-
         if (mounted) {
           setState(() {
             _optimizedRoute = optimizedPutnici;
@@ -1925,7 +1915,6 @@ class _DanasScreenState extends State<DanasScreen> {
         }
       } else {
         // SmartNavigationService nije uspeo - fallback na osnovno sortiranje
-        print('⚠️ SmartNavigationService nije uspeo: ${result.message}');
         final optimizedPutnici = List<Putnik>.from(filtriraniPutnici)
           ..sort((a, b) => (a.adresa ?? '').compareTo(b.adresa ?? ''));
 
@@ -2207,34 +2196,10 @@ class _DanasScreenState extends State<DanasScreen> {
                         _currentDriver ?? '',
                         from: dayStart,
                         to: dayEnd,
-                      ), // 🔄 REAL-TIME PAZAR STREAM
+                      ),
                       builder: (context, pazarSnapshot) {
-                        // 💓 REGISTRUJ HEARTBEAT ZA PAZAR STREAM
-                        _registerStreamHeartbeat('pazar_stream');
-
-                        // 🚥 REGISTRUJ NETWORK STATUS - SUCCESS/ERROR
-                        if (pazarSnapshot.hasData && !pazarSnapshot.hasError) {
-                          RealtimeNetworkStatusService.instance.registerStreamResponse(
-                            'pazar_stream',
-                            const Duration(milliseconds: 800), // Estimated response time
-                          );
-                        } else if (pazarSnapshot.hasError) {
-                          RealtimeNetworkStatusService.instance.registerStreamResponse(
-                            'pazar_stream',
-                            const Duration(seconds: 30), // Error timeout
-                            hasError: true,
-                          );
-                        }
-
-                        if (pazarSnapshot.hasError) {
-                          // Heartbeat indicator shows connection status
-                          return const Center(child: CircularProgressIndicator());
-                        }
-
-                        if (!pazarSnapshot.hasData) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        double ukupnoPazarVozac = pazarSnapshot.data!;
+                        // Pazar vrednost - 0.0 ako nema podataka
+                        final ukupnoPazarVozac = pazarSnapshot.data ?? 0.0;
 
                         return Column(
                           children: [
@@ -2681,7 +2646,7 @@ class _DanasScreenState extends State<DanasScreen> {
                             await RealtimeService.instance.refreshNow();
                           } finally {
                             if (mounted) {
-                              if (mounted) setState(() => _resettingSlots.remove(key));
+                              setState(() => _resettingSlots.remove(key));
                             }
                           }
                         });
@@ -2715,13 +2680,15 @@ class _DanasScreenState extends State<DanasScreen> {
                           const Duration(milliseconds: 150),
                           () async {
                             final key = '$grad|$vreme';
-                            if (mounted) setState(() => _resettingSlots.add(key));
+                            if (mounted) {
+                              setState(() => _resettingSlots.add(key));
+                            }
                             try {
                               await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
                               await RealtimeService.instance.refreshNow();
                             } finally {
                               if (mounted) {
-                                if (mounted) setState(() => _resettingSlots.remove(key));
+                                setState(() => _resettingSlots.remove(key));
                               }
                             }
                           },
@@ -2793,7 +2760,6 @@ class _DanasScreenState extends State<DanasScreen> {
   Future<void> _startPickupTracking() async {
     final coords = _cachedCoordinates;
     if (coords == null || coords.isEmpty) {
-      print('⚠️ Nema keširanih koordinata za pickup tracking');
       return;
     }
 
@@ -2804,15 +2770,12 @@ class _DanasScreenState extends State<DanasScreen> {
       putnici: _optimizedRoute,
       coordinates: coords,
       onPickedUp: (putnik, status) async {
-        print('✅ Putnik pokupljen: ${putnik.ime}');
-
         // 🔄 REALTIME: Ažuriraj status putnika u bazi
         if (putnik.id != null && _currentDriver != null) {
           try {
             await _putnikService.oznaciPokupljen(putnik.id!, _currentDriver!);
-            print('✅ Putnik ${putnik.ime} označen kao pokupljen u bazi');
-          } catch (e) {
-            print('❌ Greška pri ažuriranju statusa: $e');
+          } catch (_) {
+            // Greška pri označavanju
           }
         }
 
@@ -2827,7 +2790,6 @@ class _DanasScreenState extends State<DanasScreen> {
         }
       },
       onSkipped: (putnik) {
-        print('⏭️ Putnik preskočen: ${putnik.ime}');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2840,10 +2802,8 @@ class _DanasScreenState extends State<DanasScreen> {
       },
       onApproaching: (putnik, distance) {
         // Opciono: prikaži distancu u UI
-        print('📍 Približavanje: ${putnik.ime} - ${distance.toStringAsFixed(0)}m');
       },
       onCompleted: () {
-        print('🎉 Svi putnici obrađeni!');
         if (mounted) {
           setState(() {
             _isGpsTracking = false;
@@ -2861,10 +2821,7 @@ class _DanasScreenState extends State<DanasScreen> {
     );
 
     if (started) {
-      print('✅ Pickup tracking pokrenut');
-    } else {
-      print('❌ Pickup tracking nije pokrenut');
-    }
+    } else {}
   }
 
   void _stopSmartNavigation() {

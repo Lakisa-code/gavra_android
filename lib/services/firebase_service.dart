@@ -88,7 +88,8 @@ class FirebaseService {
       try {
         final title = message.notification?.title ?? 'Gavra Notification';
         final body = message.notification?.body ?? message.data['message'] ?? 'Nova notifikacija';
-        LocalNotificationService.showRealtimeNotification(title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
+        LocalNotificationService.showRealtimeNotification(
+            title: title, body: body, payload: message.data.isNotEmpty ? message.data.toString() : null);
       } catch (_) {}
     });
 

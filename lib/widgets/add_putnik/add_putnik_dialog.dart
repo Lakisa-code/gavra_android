@@ -285,8 +285,7 @@ class _AddPutnikDialogState extends State<AddPutnikDialog> {
                     ],
                   ),
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _formController.isLoading ? null : _sacuvajPutnika,
+                    onPressed: _formController.isLoading ? null : _sacuvajPutnika,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -301,8 +300,7 @@ class _AddPutnikDialogState extends State<AddPutnikDialog> {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Icon(
@@ -360,8 +358,7 @@ class _AddPutnikDialogState extends State<AddPutnikDialog> {
       String? adresaBelaCrkvaId;
       String? adresaVrsacId;
 
-      if (formData.adresaBelaCrkva != null &&
-          formData.adresaBelaCrkva!.isNotEmpty) {
+      if (formData.adresaBelaCrkva != null && formData.adresaBelaCrkva!.isNotEmpty) {
         final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
           naziv: formData.adresaBelaCrkva!,
           grad: 'Bela Crkva',
@@ -391,14 +388,12 @@ class _AddPutnikDialogState extends State<AddPutnikDialog> {
         adresaVrsacId: adresaVrsacId,
         radniDani: formData.radniDaniString,
         datumPocetkaMeseca: DateTime(DateTime.now().year, DateTime.now().month),
-        datumKrajaMeseca:
-            DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
+        datumKrajaMeseca: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final dodatiPutnik =
-          await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+      final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
       // Refresh realtime service
       try {

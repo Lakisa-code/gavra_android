@@ -39,8 +39,7 @@ class GeocodingStatsService {
       final locations = prefs.getStringList(_popularLocationsKey) ?? [];
 
       // Dodaj ili povećaj brojač za lokaciju
-      final existingIndex =
-          locations.indexWhere((loc) => loc.startsWith('$location:'));
+      final existingIndex = locations.indexWhere((loc) => loc.startsWith('$location:'));
 
       if (existingIndex != -1) {
         // Povećaj brojač
@@ -81,8 +80,7 @@ class GeocodingStatsService {
         'cache_hit_rate': cacheHitRate.toStringAsFixed(1),
         'cache_entries': cacheCount,
         'last_reset': lastReset ?? 'Nikad',
-        'cache_size_estimate':
-            '${(cacheCount * 0.5).toStringAsFixed(1)} KB', // Aproksimacija
+        'cache_size_estimate': '${(cacheCount * 0.5).toStringAsFixed(1)} KB', // Aproksimacija
       };
     } catch (e) {
       // Logger removed
@@ -109,8 +107,7 @@ class GeocodingStatsService {
       }
 
       // Sortiraj po broju pretrage (opadajuće)
-      popularList
-          .sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+      popularList.sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
 
       return popularList.take(10).toList(); // Top 10
     } catch (e) {

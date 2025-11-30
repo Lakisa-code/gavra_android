@@ -77,8 +77,7 @@ class DugButton extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 4),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: backgroundColor ??
-                Theme.of(context).glassContainer, // Glassmorphism
+            color: backgroundColor ?? Theme.of(context).glassContainer, // Glassmorphism
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: Theme.of(context).glassBorder, // Transparentni border

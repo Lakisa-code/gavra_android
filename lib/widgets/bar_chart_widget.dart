@@ -31,10 +31,7 @@ class BarChartWidget extends StatelessWidget {
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,
-              maxY: (data.values.isEmpty
-                      ? 1
-                      : (data.values.reduce((a, b) => a > b ? a : b) * 1.2))
-                  .toDouble(),
+              maxY: (data.values.isEmpty ? 1 : (data.values.reduce((a, b) => a > b ? a : b) * 1.2)).toDouble(),
               barTouchData: BarTouchData(enabled: true),
               titlesData: FlTitlesData(
                 leftTitles: const AxisTitles(

@@ -69,7 +69,6 @@ class OsrmService {
       final hasEndDestination = endDestination != null;
       if (hasEndDestination) {
         coordsList.add('${endDestination.longitude},${endDestination.latitude}');
-        print('🏁 Krajnja destinacija: ${endDestination.latitude}, ${endDestination.longitude}');
       }
 
       final coordsString = coordsList.join(';');
@@ -79,7 +78,6 @@ class OsrmService {
 
       if (osrmResponse == null) {
         // 🎯 FALLBACK 1: Pokušaj Huawei Map Kit
-        print('⚠️ OSRM nije dostupan, pokušavam Huawei Map Kit...');
         final huaweiResult = await _tryHuaweiOptimization(
           startPosition: startPosition,
           putnici: putniciWithCoords,
@@ -91,7 +89,6 @@ class OsrmService {
         }
 
         // 🎯 FALLBACK 2: Lokalni algoritam
-        print('⚠️ Huawei nije dostupan, koristim lokalni 2-opt algoritam');
         final fallbackRoute = await UnifiedGeocodingService.fallbackOptimization(
           startPosition: startPosition,
           putnici: putniciWithCoords,
@@ -127,7 +124,6 @@ class OsrmService {
         coordinates: coordinates,
       );
     } catch (e) {
-      print('❌ OSRM greška: $e');
       return OsrmResult.error('Greška pri optimizaciji: $e');
     }
   }
@@ -150,8 +146,6 @@ class OsrmService {
             '&overview=simplified'
             '&annotations=distance,duration';
 
-        print('🗺️ OSRM Trip API pokušaj $attempt: $url');
-
         final response = await http.get(
           Uri.parse(url),
           headers: {'Accept': 'application/json'},
@@ -164,19 +158,16 @@ class OsrmService {
           if (data['code'] == 'Ok' && data['trips'] != null && (data['trips'] as List).isNotEmpty) {
             return data;
           }
-
-          print('⚠️ OSRM vratio nevažeći odgovor: ${data['code']}');
         } else {
-          print('⚠️ OSRM HTTP greška: ${response.statusCode}');
+          // HTTP greška
         }
       } catch (e) {
-        print('⚠️ OSRM pokušaj $attempt neuspešan: $e');
+        // OSRM pokušaj neuspešan
       }
 
       // Exponential backoff pre sledećeg pokušaja
       if (attempt < RouteConfig.osrmMaxRetries) {
         final delay = RouteConfig.getRetryDelay(attempt);
-        print('⏳ Čekam ${delay.inMilliseconds}ms pre sledećeg pokušaja...');
         await Future.delayed(delay);
       }
     }
@@ -224,10 +215,6 @@ class OsrmService {
         ));
       }
 
-      if (hasEndDestination) {
-        print('🏁 Ignorišem poslednji waypoint (krajnja destinacija)');
-      }
-
       // Sortiraj po waypoint_index da dobijemo optimalni redosled
       waypointMapping.sort((a, b) => a.waypointIndex.compareTo(b.waypointIndex));
 
@@ -243,7 +230,6 @@ class OsrmService {
 
       // Ako nedostaju putnici, dodaj ih na kraj
       if (orderedPutnici.length != putniciWithCoords.length) {
-        print('⚠️ OSRM vratio ${orderedPutnici.length} od ${putniciWithCoords.length} putnika');
         for (final p in putniciWithCoords) {
           if (!orderedPutnici.contains(p)) {
             orderedPutnici.add(p);
@@ -255,18 +241,12 @@ class OsrmService {
       final distance = (trip['distance'] as num).toDouble() / 1000; // u km
       final duration = (trip['duration'] as num).toDouble() / 60; // u minutima
 
-      print('✅ OSRM optimizacija uspešna:');
-      print('   📏 Distanca: ${distance.toStringAsFixed(1)} km');
-      print('   ⏱️ Vreme: ${duration.toStringAsFixed(0)} min');
-      print('   👥 Putnici: ${orderedPutnici.map((p) => p.ime).join(' → ')}');
-
       return _OsrmParseResult(
         orderedPutnici: orderedPutnici,
         distanceKm: distance,
         durationMin: duration,
       );
     } catch (e) {
-      print('❌ Greška pri parsiranju OSRM odgovora: $e');
       return null;
     }
   }
@@ -306,7 +286,6 @@ class OsrmService {
       );
 
       if (huaweiResult.success && huaweiResult.optimizedPutnici != null) {
-        print('✅ Huawei Map Kit optimizacija uspešna');
         return OsrmResult.success(
           optimizedPutnici: huaweiResult.optimizedPutnici!,
           totalDistanceKm: huaweiResult.totalDistanceKm ?? 0,
@@ -316,7 +295,7 @@ class OsrmService {
         );
       }
     } catch (e) {
-      print('⚠️ Huawei Map Kit greška: $e');
+      // Huawei Map Kit greška
     }
 
     return null; // Huawei nije uspešan, nastavi sa sledećim fallback-om

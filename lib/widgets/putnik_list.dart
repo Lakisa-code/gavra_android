@@ -33,6 +33,37 @@ class PutnikList extends StatelessWidget {
   final String? selectedGrad; // 📍 NOVO: za GPS navigaciju mesečnih putnika
   final String? selectedVreme; // 📍 NOVO: za GPS navigaciju
 
+  // Helper metoda za sortiranje putnika po grupama
+  int _putnikSortKey(Putnik p) {
+    final status = TextUtils.normalizeText(p.status ?? '');
+
+    // ŽUTE - Odsustvo ima najveći sort key (na dno)
+    if (p.jeOdsustvo) {
+      return 5; // žute na dno liste
+    }
+
+    // CRVENE - Otkazane
+    if (status == 'otkazano' || status == 'otkazan') {
+      return 4; // crvene pre žutih
+    }
+
+    // MESEČNI PUTNICI
+    if (p.mesecnaKarta == true) {
+      // BELE vs ZELENE
+      return p.vremePokupljenja == null ? 1 : 3; // bela ili zelena
+    }
+
+    // OBIČNI PUTNICI
+    if (p.vremePokupljenja == null) return 1; // BELE - nepokupljeni
+    if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
+      return 2; // PLAVE - pokupljeni neplaćeni
+    }
+    if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
+      return 3; // ZELENE - pokupljeni plaćeni
+    }
+    return 99;
+  }
+
   @override
   Widget build(BuildContext context) {
     bool prikaziPutnika(Putnik p) {
@@ -66,54 +97,20 @@ class PutnikList extends StatelessWidget {
           }
           var filteredPutnici = snapshot.data!.where(prikaziPutnika).toList();
           filteredPutnici = deduplicatePutnici(filteredPutnici);
-          // Sortiranje po novom prioritetu (VIZUELNI REDOSLED U LISTI):
-          // 1) BELE - Nepokupljeni (na vrhu)
-          // 2) PLAVE - Pokupljeni neplaćeni
-          // 3) ZELENE - Pokupljeni plaćeni/sa mesečnom
-          // 4) CRVENE - Otkazani
-          // 5) ŽUTE - Odsustvo (godišnji/bolovanje) (na dnu)
-          int putnikSortKey(Putnik p) {
-            final status = TextUtils.normalizeText(p.status ?? '');
+          // 🎯 UVEK KORISTI STANDARDNO GRUPNO SORTIRANJE: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
+          // Ovo je prioritet nad optimizovanom rutom jer korisnik želi striktne grupe
+          filteredPutnici.sort((a, b) {
+            final aSortKey = _putnikSortKey(a);
+            final bSortKey = _putnikSortKey(b);
 
-            // ŽUTE - Odsustvo ima najveći sort key (na dno)
-            if (p.jeOdsustvo) {
-              return 5; // žute na dno liste
-            }
+            final cmp = aSortKey.compareTo(bSortKey);
+            if (cmp != 0) return cmp;
 
-            // CRVENE - Otkazane
-            if (status == 'otkazano' || status == 'otkazan') {
-              return 4; // crvene pre žutih
-            }
+            // Ako su u istoj grupi, sortiraj alfabetski po imenu
+            return a.ime.compareTo(b.ime);
+          });
 
-            // MESEČNI PUTNICI
-            if (p.mesecnaKarta == true) {
-              // BELE vs ZELENE
-              return p.vremePokupljenja == null ? 1 : 3; // bela ili zelena
-            }
-
-            // OBIČNI PUTNICI
-            if (p.vremePokupljenja == null) return 1; // BELE - nepokupljeni
-            if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
-              return 2; // PLAVE - pokupljeni neplaćeni
-            }
-            if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
-              return 3; // ZELENE - pokupljeni plaćeni
-            }
-            return 99;
-          }
-
-          // 🎯 NOVO: Ako je lista reorderovana, koristi optimized route redosled
-          List<Putnik> prikaz;
-          // Standardno sortiranje
-          if (!useProvidedOrder) {
-            filteredPutnici.sort((a, b) {
-              final cmp = putnikSortKey(a).compareTo(putnikSortKey(b));
-              if (cmp != 0) return cmp;
-              // Ako su u istoj grupi, sortiraj alfabetski po imenu
-              return a.ime.compareTo(b.ime);
-            });
-          }
-          prikaz = filteredPutnici;
+          final prikaz = filteredPutnici;
           if (prikaz.isEmpty) {
             return const Center(child: Text('Nema putnika za prikaz.'));
           }
@@ -214,74 +211,20 @@ class PutnikList extends StatelessWidget {
         );
       }
 
-      final bele = filteredPutnici
-          .where(
-            (p) =>
-                !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() != 'otkazano' && p.status?.toLowerCase() != 'otkazan') &&
-                (p.vremePokupljenja == null),
-          )
-          .toList()
-        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
-
-      final plave = filteredPutnici
-          .where(
-            (p) =>
-                !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() != 'otkazano' && p.status?.toLowerCase() != 'otkazan') &&
-                (p.vremePokupljenja != null) &&
-                (p.mesecnaKarta != true) &&
-                ((p.iznosPlacanja == null || p.iznosPlacanja == 0)),
-          )
-          .toList()
-        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
-
-      final zelene = filteredPutnici
-          .where(
-            (p) =>
-                !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() != 'otkazano' && p.status?.toLowerCase() != 'otkazan') &&
-                (p.vremePokupljenja != null) &&
-                (p.mesecnaKarta == true || (p.iznosPlacanja != null && p.iznosPlacanja! > 0)),
-          )
-          .toList()
-        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
-
-      final crvene = filteredPutnici
-          .where(
-            (p) =>
-                !p.jeOdsustvo && // nije na odsustvu
-                (p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'),
-          )
-          .toList()
-        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
-
-      final zute = filteredPutnici
-          .where((p) => p.jeOdsustvo) // na odsustvu (godišnji/bolovanje)
-          .toList()
-        ..sort((a, b) => a.ime.compareTo(b.ime)); // Alfabetsko sortiranje
-
-      final prikaz = [
-        ...bele, // 1. BELE na vrhu
-        ...plave, // 2. PLAVE
-        ...zelene, // 3. ZELENE
-        ...crvene, // 4. CRVENE
-        ...zute, // 5. ŽUTE na dnu
-      ];
-      if (prikaz.isEmpty) {
+      if (filteredPutnici.isEmpty) {
         return const Center(child: Text('Nema putnika za prikaz.'));
       }
       return ListView.builder(
-        itemCount: prikaz.length,
+        itemCount: filteredPutnici.length,
         itemBuilder: (context, index) {
-          final putnik = prikaz[index];
-          // Redni broj: broji samo BELE + PLAVE + ZELENE (ne broji CRVENE i ŽUTE)
+          final putnik = filteredPutnici[index];
+          // Redni broj: broji samo one koji nisu otkazani i nisu na odsustvu
           int? redniBroj;
-          if (!putnik.jeOdsustvo && // nije ŽUTA (odsustvo)
+          if (!putnik.jeOdsustvo &&
               !(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
-            // nije CRVENA (otkazana)
+            // nije CRVENA (otkazana) ili ŽUTA (odsustvo)
             // Broji koliko je neotkazanih i ne-odsutnih putnika pre ovog
-            redniBroj = prikaz
+            redniBroj = filteredPutnici
                 .take(index + 1)
                 .where(
                   (p) =>

@@ -51,12 +51,10 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color:
-                  (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.1),
+              color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                    .withValues(alpha: 0.3),
+                color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.3),
                 width: 1.5,
               ),
             ),
@@ -96,8 +94,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                                  .withValues(alpha: 0.8),
+                              color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -129,9 +126,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
                     Expanded(
                       child: _buildStatCard(
                         '💰 Prosek',
-                        avgPlacanjeObicno > 0
-                            ? '${avgPlacanjeObicno.toStringAsFixed(0)} RSD'
-                            : '0 RSD',
+                        avgPlacanjeObicno > 0 ? '${avgPlacanjeObicno.toStringAsFixed(0)} RSD' : '0 RSD',
                         Colors.green,
                       ),
                     ),
@@ -142,9 +137,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
 
                 // Istorija naplate
                 IstorijaHaplataWidget(
-                  detaljiNaplata:
-                      stats['detaljiNaplata'] as List<Map<String, dynamic>>? ??
-                          [],
+                  detaljiNaplata: stats['detaljiNaplata'] as List<Map<String, dynamic>>? ?? [],
                   vozac: vozac,
                 ),
               ],

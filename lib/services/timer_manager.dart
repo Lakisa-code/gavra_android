@@ -17,9 +17,7 @@ class TimerManager {
     // Ukloni postojeći timer sa istim imenom
     cancelTimer(name);
 
-    final timer = isPeriodic
-        ? Timer.periodic(duration, (timer) => callback())
-        : Timer(duration, callback);
+    final timer = isPeriodic ? Timer.periodic(duration, (timer) => callback()) : Timer(duration, callback);
 
     _activeTimers[name] = timer;
     _timerStartTimes[name] = DateTime.now();

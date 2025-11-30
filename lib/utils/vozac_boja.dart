@@ -6,7 +6,7 @@ class VozacBoja {
     'Bilevski': Color(0xFFFF9800), // narandžasta
     'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
     'Svetlana': Color(0xFFFF1493), // drecava pink (DeepPink)
-    'Vlajic': Color(0xFF5A5A5A), // tamnija siva
+    'Vlajic': Color(0xFF8B4513), // braon (SaddleBrown)
   };
 
   // 🔒 DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!

@@ -67,8 +67,7 @@ class PerformanceAnalyticsService {
         _metrics[metricName] = PerformanceMetric(metricName);
       }
 
-      _metrics[metricName]!
-          .addValue(value, isError: isError, metadata: metadata);
+      _metrics[metricName]!.addValue(value, isError: isError, metadata: metadata);
 
       // Add to time series
       if (!_timeSeries.containsKey(metricName)) {
@@ -129,8 +128,7 @@ class PerformanceAnalyticsService {
     Map<String, dynamic>? metadata,
   }) {
     try {
-      final resultId =
-          '${testName}_${variant}_${DateTime.now().millisecondsSinceEpoch}';
+      final resultId = '${testName}_${variant}_${DateTime.now().millisecondsSinceEpoch}';
 
       _abTestResults[resultId] = ABTestResult(
         testName: testName,
@@ -159,8 +157,7 @@ class PerformanceAnalyticsService {
 
     try {
       // 📈 PERFORMANCE METRICS
-      dashboard.metrics =
-          _metrics.values.map((metric) => metric.toSummary()).toList();
+      dashboard.metrics = _metrics.values.map((metric) => metric.toSummary()).toList();
 
       // ⚡ REAL-TIME STATUS
       dashboard.systemStatus = _generateSystemStatus();
@@ -170,11 +167,9 @@ class PerformanceAnalyticsService {
       dashboard.cachePerformance = CachePerformanceSummary(
         hitRatio: cacheStats.hitRatio,
         totalRequests: cacheStats.totalRequests,
-        avgResponseTime:
-            cacheStats.avgResponseTimeMicros / 1000, // Convert to ms
-        l1HitRatio: cacheStats.totalRequests > 0
-            ? (cacheStats.toJson()['l1_hits'] as num) / cacheStats.totalRequests
-            : 0,
+        avgResponseTime: cacheStats.avgResponseTimeMicros / 1000, // Convert to ms
+        l1HitRatio:
+            cacheStats.totalRequests > 0 ? (cacheStats.toJson()['l1_hits'] as num) / cacheStats.totalRequests : 0,
       );
 
       // 👥 USER BEHAVIOR ANALYTICS
@@ -226,8 +221,7 @@ class PerformanceAnalyticsService {
       final exportData = <String, dynamic>{};
 
       // Filter data by date range
-      final start =
-          startDate ?? DateTime.now().subtract(const Duration(days: 7));
+      final start = startDate ?? DateTime.now().subtract(const Duration(days: 7));
       final end = endDate ?? DateTime.now();
 
       // Export metrics
@@ -238,9 +232,7 @@ class PerformanceAnalyticsService {
         if (_metrics.containsKey(metricName)) {
           final timeSeries = _timeSeries[metricName]
                   ?.where(
-                    (point) =>
-                        point.timestamp.isAfter(start) &&
-                        point.timestamp.isBefore(end),
+                    (point) => point.timestamp.isAfter(start) && point.timestamp.isBefore(end),
                   )
                   .toList() ??
               [];
@@ -255,8 +247,7 @@ class PerformanceAnalyticsService {
       // Export user behavior
       final behaviorEvents = _userBehavior.values
           .where(
-            (event) =>
-                event.timestamp.isAfter(start) && event.timestamp.isBefore(end),
+            (event) => event.timestamp.isAfter(start) && event.timestamp.isBefore(end),
           )
           .map((event) => event.toJson())
           .toList();
@@ -265,9 +256,7 @@ class PerformanceAnalyticsService {
       // Export A/B test results
       final abTestEvents = _abTestResults.values
           .where(
-            (result) =>
-                result.timestamp.isAfter(start) &&
-                result.timestamp.isBefore(end),
+            (result) => result.timestamp.isAfter(start) && result.timestamp.isBefore(end),
           )
           .map((result) => result.toJson())
           .toList();
@@ -283,9 +272,7 @@ class PerformanceAnalyticsService {
         'total_ab_test_results': abTestEvents.length,
       };
 
-      return format == 'json'
-          ? const JsonEncoder.withIndent('  ').convert(exportData)
-          : _convertToCsv(exportData);
+      return format == 'json' ? const JsonEncoder.withIndent('  ').convert(exportData) : _convertToCsv(exportData);
     } catch (e) {
       // Logger removed
       return '{"error": "Export failed: $e"}';
@@ -354,8 +341,7 @@ class PerformanceAnalyticsService {
 
   static UserBehaviorSummary _generateUserBehaviorSummary() {
     final events = _userBehavior.values.toList();
-    final uniqueUsers =
-        events.map((e) => e.userId).where((id) => id != null).toSet().length;
+    final uniqueUsers = events.map((e) => e.userId).where((id) => id != null).toSet().length;
 
     // Count events by type
     final eventCounts = <String, int>{};
@@ -370,8 +356,7 @@ class PerformanceAnalyticsService {
     return UserBehaviorSummary(
       totalEvents: events.length,
       uniqueUsers: uniqueUsers,
-      topEvents: eventCounts.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value)),
+      topEvents: eventCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value)),
       commonUserFlows: userFlows.entries.take(5).toList(),
     );
   }
@@ -403,10 +388,8 @@ class PerformanceAnalyticsService {
         variantSummaries[variant] = ABTestVariantSummary(
           variant: variant,
           sampleSize: results.length,
-          averageValue: results.map((r) => r.value).reduce((a, b) => a + b) /
-              results.length,
-          conversionRate: results.where((r) => r.outcome == 'success').length /
-              results.length,
+          averageValue: results.map((r) => r.value).reduce((a, b) => a + b) / results.length,
+          conversionRate: results.where((r) => r.outcome == 'success').length / results.length,
         );
       });
 
@@ -482,8 +465,7 @@ class PerformanceAnalyticsService {
             alerts.add(
               PerformanceAlert(
                 type: 'warning',
-                message:
-                    'High $name: ${currentValue.toStringAsFixed(2)} (threshold: ${threshold.toStringAsFixed(2)})',
+                message: 'High $name: ${currentValue.toStringAsFixed(2)} (threshold: ${threshold.toStringAsFixed(2)})',
                 severity: currentValue > threshold * 1.5 ? 'high' : 'medium',
                 timestamp: DateTime.now(),
               ),
@@ -535,8 +517,7 @@ class PerformanceAnalyticsService {
       final threshold = _performanceThresholds[metricName]!;
       final isHigherBetter = metricName == 'cache_hit_ratio';
 
-      bool isAlert =
-          isHigherBetter ? value < threshold * 0.5 : value > threshold * 2;
+      bool isAlert = isHigherBetter ? value < threshold * 0.5 : value > threshold * 2;
 
       if (isAlert) {
         // In production, send to monitoring service
@@ -548,10 +529,8 @@ class PerformanceAnalyticsService {
   static double _calculateTrend(List<DataPoint> dataPoints) {
     if (dataPoints.length < 2) return 0.0;
 
-    final firstHalf =
-        dataPoints.take(dataPoints.length ~/ 2).map((p) => p.value).toList();
-    final secondHalf =
-        dataPoints.skip(dataPoints.length ~/ 2).map((p) => p.value).toList();
+    final firstHalf = dataPoints.take(dataPoints.length ~/ 2).map((p) => p.value).toList();
+    final secondHalf = dataPoints.skip(dataPoints.length ~/ 2).map((p) => p.value).toList();
 
     final firstAvg = firstHalf.reduce((a, b) => a + b) / firstHalf.length;
     final secondAvg = secondHalf.reduce((a, b) => a + b) / secondHalf.length;
@@ -573,11 +552,9 @@ class PerformanceAnalyticsService {
     for (int i = 0; i < bucketCount; i++) {
       final bucketMin = min + i * bucketSize;
       final bucketMax = min + (i + 1) * bucketSize;
-      final key =
-          '${bucketMin.toStringAsFixed(1)}-${bucketMax.toStringAsFixed(1)}';
+      final key = '${bucketMin.toStringAsFixed(1)}-${bucketMax.toStringAsFixed(1)}';
 
-      histogram[key] =
-          values.where((v) => v >= bucketMin && v < bucketMax).length;
+      histogram[key] = values.where((v) => v >= bucketMin && v < bucketMax).length;
     }
 
     return histogram;
@@ -638,16 +615,14 @@ class PerformanceAnalyticsService {
   static Future<void> _loadPersistedMetrics() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final keys =
-          prefs.getKeys().where((key) => key.startsWith(_metricsPrefix));
+      final keys = prefs.getKeys().where((key) => key.startsWith(_metricsPrefix));
 
       for (final key in keys) {
         final metricJson = prefs.getString(key);
         if (metricJson != null) {
           try {
             final metricData = json.decode(metricJson);
-            final metric =
-                PerformanceMetric.fromJson(metricData as Map<String, dynamic>);
+            final metric = PerformanceMetric.fromJson(metricData as Map<String, dynamic>);
             _metrics[metric.name] = metric;
           } catch (e) {
             // Logger removed
@@ -668,8 +643,7 @@ class PerformanceAnalyticsService {
     metrics.forEach((metricName, metricData) {
       final dataPoints = metricData['data_points'] as List<dynamic>? ?? [];
       for (final point in dataPoints) {
-        final metadata =
-            point['metadata']?.toString().replaceAll(',', ';') ?? '';
+        final metadata = point['metadata']?.toString().replaceAll(',', ';') ?? '';
         lines.add(
           '$metricName,${point['timestamp']},${point['value']},$metadata',
         );
@@ -687,15 +661,9 @@ class PerformanceMetric {
 
   factory PerformanceMetric.fromJson(Map<String, dynamic> json) {
     final metric = PerformanceMetric(json['name'] as String);
-    final values = (json['values'] as List<dynamic>)
-        .map((v) => (v as num).toDouble())
-        .toList();
-    final timestamps = (json['timestamps'] as List<dynamic>)
-        .map((t) => DateTime.parse(t as String))
-        .toList();
-    final metadata = (json['metadata'] as List<dynamic>)
-        .map((m) => Map<String, dynamic>.from(m as Map))
-        .toList();
+    final values = (json['values'] as List<dynamic>).map((v) => (v as num).toDouble()).toList();
+    final timestamps = (json['timestamps'] as List<dynamic>).map((t) => DateTime.parse(t as String)).toList();
+    final metadata = (json['metadata'] as List<dynamic>).map((m) => Map<String, dynamic>.from(m as Map)).toList();
 
     for (int i = 0; i < values.length; i++) {
       metric._values.add(values[i]);
@@ -731,8 +699,7 @@ class PerformanceMetric {
     }
   }
 
-  double get average =>
-      _values.isEmpty ? 0.0 : _values.reduce((a, b) => a + b) / _values.length;
+  double get average => _values.isEmpty ? 0.0 : _values.reduce((a, b) => a + b) / _values.length;
   double get min => _values.isEmpty ? 0.0 : _values.reduce(math.min);
   double get max => _values.isEmpty ? 0.0 : _values.reduce(math.max);
   int get count => _values.length;

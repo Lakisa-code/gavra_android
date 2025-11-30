@@ -36,9 +36,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
           focusNode: focusNode,
           enabled: widget.enabled,
           decoration: InputDecoration(
-            hintText: widget.mesecnaKarta
-                ? 'Ime putnika (samo dozvoljena imena)'
-                : (widget.hintText ?? 'Ime putnika'),
+            hintText: widget.mesecnaKarta ? 'Ime putnika (samo dozvoljena imena)' : (widget.hintText ?? 'Ime putnika'),
             hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.7)),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -89,9 +87,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
 
         // Za mesečne karte koristi dozvoljena imena
         if (widget.mesecnaKarta && widget.dozvoljenaImena != null) {
-          return widget.dozvoljenaImena!
-              .where((ime) => ime.toLowerCase().contains(pattern.toLowerCase()))
-              .toList();
+          return widget.dozvoljenaImena!.where((ime) => ime.toLowerCase().contains(pattern.toLowerCase())).toList();
         }
 
         // Inače koristi česta imena iz servisa
@@ -111,9 +107,7 @@ class _AutocompleteImeFieldState extends State<AutocompleteImeField> {
             ),
           ),
           subtitle: Text(
-            widget.mesecnaKarta
-                ? 'Dozvoljen za mesečnu kartu'
-                : 'Često korišćeno ime',
+            widget.mesecnaKarta ? 'Dozvoljen za mesečnu kartu' : 'Često korišćeno ime',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.withValues(alpha: 0.7),

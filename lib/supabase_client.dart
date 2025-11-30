@@ -15,8 +15,8 @@
 
 // Use compile-time environment variables (set via --dart-define)
 // to avoid committing secrets into source control.
-const String supabaseUrl = String.fromEnvironment('SUPABASE_URL',
-    defaultValue: 'https://gjtabtwudbrmfeyjiicu.supabase.co');
+const String supabaseUrl =
+    String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://gjtabtwudbrmfeyjiicu.supabase.co');
 const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY',
     defaultValue:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqdGFidHd1ZGJybWZleWppaWN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0MzYyOTIsImV4cCI6MjA2MzAxMjI5Mn0.TwAfvlyLIpnVf-WOixvApaQr6NpK9u-VHpRkmbkAKYk');
@@ -24,8 +24,7 @@ const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY',
 // Service role key (admin) MUST NOT be committed. Provide it at build time
 // using --dart-define=SUPABASE_SERVICE_ROLE_KEY=your-service-key OR via
 // CI/Server environment secrets. Default is empty to ensure it isn't leaked.
-const String supabaseServiceRoleKey =
-    String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
+const String supabaseServiceRoleKey = String.fromEnvironment('SUPABASE_SERVICE_ROLE_KEY', defaultValue: '');
 
 // 📖 БРЗА РЕФЕРЕНЦА - REST API ПРИМЕРИ:
 //

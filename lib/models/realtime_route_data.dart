@@ -12,9 +12,7 @@ class RealtimeRouteData {
     required this.timestamp,
     this.currentSpeed,
     this.estimatedTimeToNextDestination,
-  }) : remainingPassengers = currentRoute
-            .where((p) => p.vremePokupljenja == null && p.status != 'otkazan')
-            .length;
+  }) : remainingPassengers = currentRoute.where((p) => p.vremePokupljenja == null && p.status != 'otkazan').length;
   final Position currentPosition;
   final List<Putnik> currentRoute;
   final String? optimalRoute;
@@ -42,8 +40,7 @@ class RealtimeRouteData {
   double get routeCompletionPercentage {
     if (currentRoute.isEmpty) return 100.0;
 
-    final pickedUp =
-        currentRoute.where((p) => p.vremePokupljenja != null).length;
+    final pickedUp = currentRoute.where((p) => p.vremePokupljenja != null).length;
     return (pickedUp / currentRoute.length) * 100;
   }
 

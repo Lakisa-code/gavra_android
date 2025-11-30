@@ -11,10 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Inteligentno upravljanje memorijom - bolje od Redis!
 class AdvancedCachingService {
   // 🧠 CACHE LEVELS HIERARCHY
-  static final Map<String, dynamic> _level1MemoryCache =
-      {}; // L1: In-memory (najbrži)
-  static final Map<String, CacheEntry> _level2LruCache =
-      {}; // L2: LRU memory cache
+  static final Map<String, dynamic> _level1MemoryCache = {}; // L1: In-memory (najbrži)
+  static final Map<String, CacheEntry> _level2LruCache = {}; // L2: LRU memory cache
   static SharedPreferences? _level3Preferences; // L3: SharedPreferences
   static Directory? _level4FileCache; // L4: File cache
   static Directory? _level5NetworkCache; // L5: Network response cache
@@ -180,9 +178,8 @@ class AdvancedCachingService {
     int? customTTLSeconds,
   }) async {
     try {
-      final ttl = customTTLSeconds != null
-          ? Duration(seconds: customTTLSeconds)
-          : _cacheTTL[type] ?? const Duration(hours: 1);
+      final ttl =
+          customTTLSeconds != null ? Duration(seconds: customTTLSeconds) : _cacheTTL[type] ?? const Duration(hours: 1);
 
       // 1️⃣ LEVEL 1: Always set to memory for fastest access
       _level1MemoryCache[key] = value;
@@ -237,8 +234,7 @@ class AdvancedCachingService {
 
       // Remove from network cache
       if (_level5NetworkCache != null) {
-        final file =
-            File('${_level5NetworkCache!.path}/${_hashKey(key)}.cache');
+        final file = File('${_level5NetworkCache!.path}/${_hashKey(key)}.cache');
         if (file.existsSync()) {
           await file.delete();
         }
@@ -259,10 +255,7 @@ class AdvancedCachingService {
 
       // Clear SharedPreferences cache
       if (_level3Preferences != null) {
-        final keys = _level3Preferences!
-            .getKeys()
-            .where((key) => key.startsWith('cache_'))
-            .toList();
+        final keys = _level3Preferences!.getKeys().where((key) => key.startsWith('cache_')).toList();
         for (final key in keys) {
           await _level3Preferences!.remove(key);
         }
@@ -538,8 +531,7 @@ class AdvancedCachingService {
     if (dir == null || !dir.existsSync()) return;
 
     try {
-      final files =
-          await dir.list().where((e) => e is File).cast<File>().toList();
+      final files = await dir.list().where((e) => e is File).cast<File>().toList();
       files.sort(
         (a, b) => a.statSync().modified.compareTo(b.statSync().modified),
       );
@@ -564,10 +556,7 @@ class AdvancedCachingService {
     try {
       // Clean expired SharedPreferences entries
       if (_level3Preferences != null) {
-        final keys = _level3Preferences!
-            .getKeys()
-            .where((key) => key.startsWith('cache_meta_'))
-            .toList();
+        final keys = _level3Preferences!.getKeys().where((key) => key.startsWith('cache_meta_')).toList();
 
         for (final key in keys) {
           final metaJson = _level3Preferences!.getString(key);
@@ -620,9 +609,7 @@ class AdvancedCachingService {
   // 🛠️ UTILITY METHODS
 
   static bool _shouldPersist(CacheType type) {
-    return type == CacheType.userPreferences ||
-        type == CacheType.geocoding ||
-        type == CacheType.routes;
+    return type == CacheType.userPreferences || type == CacheType.geocoding || type == CacheType.routes;
   }
 
   static bool _shouldFileCache(dynamic value, CacheType type) {
@@ -689,8 +676,7 @@ class CacheStats {
   int get totalHits => _l1Hits + _l2Hits + _l3Hits + _l4Hits + _l5Hits;
   int get totalRequests => totalHits + _misses;
   double get hitRatio => totalRequests > 0 ? totalHits / totalRequests : 0.0;
-  double get avgResponseTimeMicros =>
-      totalRequests > 0 ? _totalResponseTime / totalRequests : 0.0;
+  double get avgResponseTimeMicros => totalRequests > 0 ? _totalResponseTime / totalRequests : 0.0;
 
   void reset() {
     _l1Hits = _l2Hits = _l3Hits = _l4Hits = _l5Hits = 0;

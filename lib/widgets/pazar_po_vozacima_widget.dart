@@ -43,19 +43,15 @@ class PazarPoVozacimaWidget extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                  .withValues(alpha: 0.25), // 🎨 POJAČAO sa 0.08 na 0.25
-              borderRadius:
-                  BorderRadius.circular(12), // 🎨 Povećao border radius
+              color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.25), // 🎨 POJAČAO sa 0.08 na 0.25
+              borderRadius: BorderRadius.circular(12), // 🎨 Povećao border radius
               border: Border.all(
-                color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                    .withValues(alpha: 0.6), // 🎨 POJAČAO sa 0.3 na 0.6
+                color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.6), // 🎨 POJAČAO sa 0.3 na 0.6
                 width: 2, // 🎨 Povećao debljinu bordera
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (vozacBoje[vozac] ?? Colors.blueGrey)
-                      .withValues(alpha: 0.1),
+                  color: (vozacBoje[vozac] ?? Colors.blueGrey).withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),

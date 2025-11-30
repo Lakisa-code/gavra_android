@@ -197,7 +197,7 @@ class _AdminScreenState extends State<AdminScreen> {
     DateTime from,
     DateTime to,
   ) {
-    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana'];
+    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Vlajic'];
 
     // Kreiraj stream za svakog vozača
     final streamList = vozaciRedosled
@@ -992,6 +992,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   'Bilevski',
                   'Bojan',
                   'Svetlana',
+                  'Vlajic',
                 ];
 
                 // Filter vozače redosled na osnovu trenutnog vozača

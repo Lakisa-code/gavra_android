@@ -56,7 +56,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     },
     {
       'name': 'Vlajic',
-      'color': const Color(0xFF5A5A5A), // tamnija siva
+      'color': const Color(0xFF8B4513), // braon
       'icon': Icons.directions_car,
     },
     {
@@ -74,7 +74,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
-    print('👋 WELCOME: initState() POZVAN!');
     WidgetsBinding.instance.addObserver(this); // Dodano za lifecycle
 
     _setupAnimations();

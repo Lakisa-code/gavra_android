@@ -17,8 +17,7 @@ class ValidationResult {
   String? get firstError => errors.isNotEmpty ? errors.values.first : null;
 
   @override
-  String toString() =>
-      'ValidationResult{errors: ${errors.length}, isValid: $isValid}';
+  String toString() => 'ValidationResult{errors: ${errors.length}, isValid: $isValid}';
 }
 
 /// 🔍 Napredni validator za podatke putnika

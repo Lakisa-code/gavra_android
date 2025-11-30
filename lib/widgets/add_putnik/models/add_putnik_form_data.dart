@@ -131,8 +131,7 @@ class AddPutnikFormData {
   bool get hasWorkingDays => radniDani.values.any((selected) => selected);
 
   /// 📊 Broj označenih radnih dana
-  int get workingDaysCount =>
-      radniDani.values.where((selected) => selected).length;
+  int get workingDaysCount => radniDani.values.where((selected) => selected).length;
 
   /// 🕒 Lista radnih dana sa vremenima (BC + VS)
   Map<String, List<String>> get polasciPoDanu {

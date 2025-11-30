@@ -49,8 +49,7 @@ class AdminSecurityService {
 
     // Vozač vidi samo svoj pazar
     return {
-      if (pazarData.containsKey(currentDriver))
-        currentDriver: pazarData[currentDriver]!,
+      if (pazarData.containsKey(currentDriver)) currentDriver: pazarData[currentDriver]!,
     };
   }
 

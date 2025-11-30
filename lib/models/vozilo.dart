@@ -29,9 +29,7 @@ class Vozilo {
       brojSedista: map['broj_mesta'] as int? ?? 50,
       aktivan: map['aktivan'] as bool? ?? true,
       obrisan: map['obrisan'] as bool? ?? false,
-      deletedAt: map['deleted_at'] != null
-          ? DateTime.parse(map['deleted_at'] as String)
-          : null,
+      deletedAt: map['deleted_at'] != null ? DateTime.parse(map['deleted_at'] as String) : null,
       status: map['status'] as String? ?? 'aktivan',
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),

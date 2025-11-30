@@ -60,12 +60,9 @@ class SupabaseManager {
     Map<String, dynamic>? filters,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    return executeWithConnectionLimit<List<Map<String, dynamic>>>(
-        (client) async {
+    return executeWithConnectionLimit<List<Map<String, dynamic>>>((client) async {
       var queryBuilder = client.from(table);
-      var query = columns != null
-          ? queryBuilder.select(columns)
-          : queryBuilder.select();
+      var query = columns != null ? queryBuilder.select(columns) : queryBuilder.select();
 
       if (filters != null) {
         for (final entry in filters.entries) {
@@ -108,8 +105,7 @@ class SupabaseManager {
     Map<String, dynamic> filters, {
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    return executeWithConnectionLimit<List<Map<String, dynamic>>>(
-        (client) async {
+    return executeWithConnectionLimit<List<Map<String, dynamic>>>((client) async {
       try {
         var query = client.from(table).update(data);
 
@@ -134,12 +130,7 @@ class SupabaseManager {
   }) async {
     return executeWithConnectionLimit<Map<String, dynamic>?>((client) async {
       try {
-        final response = await client
-            .from(table)
-            .insert(data)
-            .select()
-            .single()
-            .timeout(timeout);
+        final response = await client.from(table).insert(data).select().single().timeout(timeout);
         return response;
       } catch (e) {
         // Debug logging removed for production
@@ -153,8 +144,7 @@ class SupabaseManager {
     return {
       'activeConnections': _activeConnections,
       'maxConnections': _maxConnections,
-      'utilizationPercent':
-          (_activeConnections / _maxConnections * 100).round(),
+      'utilizationPercent': (_activeConnections / _maxConnections * 100).round(),
     };
   }
 

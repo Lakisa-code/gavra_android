@@ -556,8 +556,6 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
         if (result.message.toLowerCase().contains('inicijaliz')) {
           // Log for debugging
           // ignore: avoid_print
-          print('Auth: Firebase not initialized - showing friendly fallback');
-
           if (!mounted) return;
           showDialog<void>(
             context: context,

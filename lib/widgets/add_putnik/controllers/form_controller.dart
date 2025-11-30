@@ -61,8 +61,7 @@ class AddPutnikFormController extends ChangeNotifier {
         default:
           if (fieldName.startsWith('vreme_bc_')) {
             final dan = fieldName.replaceFirst('vreme_bc_', '');
-            _controllers[fieldName]!.text =
-                _formData.vremenaBelaCrkva[dan] ?? '';
+            _controllers[fieldName]!.text = _formData.vremenaBelaCrkva[dan] ?? '';
           } else if (fieldName.startsWith('vreme_vs_')) {
             final dan = fieldName.replaceFirst('vreme_vs_', '');
             _controllers[fieldName]!.text = _formData.vremenaVrsac[dan] ?? '';
@@ -91,31 +90,25 @@ class AddPutnikFormController extends ChangeNotifier {
         _formData = _formData.copyWith(tipSkole: value.isEmpty ? null : value);
         break;
       case 'brojTelefona':
-        _formData =
-            _formData.copyWith(brojTelefona: value.isEmpty ? null : value);
+        _formData = _formData.copyWith(brojTelefona: value.isEmpty ? null : value);
         break;
       case 'brojTelefonaOca':
-        _formData =
-            _formData.copyWith(brojTelefonaOca: value.isEmpty ? null : value);
+        _formData = _formData.copyWith(brojTelefonaOca: value.isEmpty ? null : value);
         break;
       case 'brojTelefonaMajke':
-        _formData =
-            _formData.copyWith(brojTelefonaMajke: value.isEmpty ? null : value);
+        _formData = _formData.copyWith(brojTelefonaMajke: value.isEmpty ? null : value);
         break;
       case 'adresaBelaCrkva':
-        _formData =
-            _formData.copyWith(adresaBelaCrkva: value.isEmpty ? null : value);
+        _formData = _formData.copyWith(adresaBelaCrkva: value.isEmpty ? null : value);
         break;
       case 'adresaVrsac':
-        _formData =
-            _formData.copyWith(adresaVrsac: value.isEmpty ? null : value);
+        _formData = _formData.copyWith(adresaVrsac: value.isEmpty ? null : value);
         break;
       default:
         // Handle vremena
         if (fieldName.startsWith('vreme_bc_')) {
           final dan = fieldName.replaceFirst('vreme_bc_', '');
-          final novaVremena =
-              Map<String, String>.from(_formData.vremenaBelaCrkva);
+          final novaVremena = Map<String, String>.from(_formData.vremenaBelaCrkva);
           novaVremena[dan] = value;
           _formData = _formData.copyWith(vremenaBelaCrkva: novaVremena);
         } else if (fieldName.startsWith('vreme_vs_')) {

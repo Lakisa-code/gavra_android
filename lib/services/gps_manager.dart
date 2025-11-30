@@ -3,25 +3,25 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
 /// 🛰️ GPS MANAGER - CENTRALIZOVANI GPS SINGLETON
-/// 
+///
 /// Zamenjuje fragmentirane GPS servise:
 /// - RealtimeGpsService (stream pozicija)
 /// - LocationService.getCurrentPosition()
 /// - GpsService GPS deo
 /// - SmartNavigationService._getCurrentPosition()
 /// - BackgroundGpsService GPS deo
-/// 
+///
 /// Korišćenje:
 /// ```dart
 /// // Dobij singleton instancu
 /// final gps = GpsManager.instance;
-/// 
+///
 /// // Stream pozicija
 /// gps.positionStream.listen((position) => ...);
-/// 
+///
 /// // Stream brzine
 /// gps.speedStream.listen((speedKmh) => ...);
-/// 
+///
 /// // Jedna pozicija
 /// final pos = await gps.getCurrentPosition();
 /// ```
@@ -32,9 +32,9 @@ class GpsManager {
 
   static final GpsManager _instance = GpsManager._internal();
   static GpsManager get instance => _instance;
-  
+
   factory GpsManager() => _instance;
-  
+
   GpsManager._internal();
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -44,7 +44,7 @@ class GpsManager {
   final _positionController = StreamController<Position>.broadcast();
   final _speedController = StreamController<double>.broadcast();
   final _trackingStateController = StreamController<bool>.broadcast();
-  
+
   StreamSubscription<Position>? _positionSubscription;
   bool _isTracking = false;
   Position? _lastPosition;
@@ -94,26 +94,22 @@ class GpsManager {
       // 1. Proveri da li je GPS uključen
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('⚠️ GPS servis nije uključen');
         return false;
       }
 
       // 2. Proveri dozvole
       LocationPermission permission = await checkPermission();
-      
+
       if (permission == LocationPermission.denied) {
         permission = await requestPermission();
       }
 
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        print('⚠️ GPS dozvole odbijene');
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
         return false;
       }
 
       return true;
     } catch (e) {
-      print('❌ Greška pri proveri GPS dozvola: $e');
       return false;
     }
   }
@@ -130,7 +126,6 @@ class GpsManager {
     LocationAccuracy accuracy = LocationAccuracy.high,
   }) async {
     if (_isTracking) {
-      print('ℹ️ GPS tracking već aktivan');
       return true;
     }
 
@@ -159,17 +154,13 @@ class GpsManager {
           final speedKmh = position.speed * 3.6;
           _speedController.add(speedKmh);
         },
-        onError: (error) {
-          print('❌ GPS stream greška: $error');
-        },
+        onError: (error) {},
       );
 
       _isTracking = true;
       _trackingStateController.add(true);
-      print('✅ GPS tracking pokrenut');
       return true;
     } catch (e) {
-      print('❌ Greška pri pokretanju GPS tracking-a: $e');
       return false;
     }
   }
@@ -180,7 +171,6 @@ class GpsManager {
     _positionSubscription = null;
     _isTracking = false;
     _trackingStateController.add(false);
-    print('🛑 GPS tracking zaustavljen');
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -208,7 +198,6 @@ class GpsManager {
       _lastPosition = position;
       return position;
     } catch (e) {
-      print('❌ Greška pri dobijanju pozicije: $e');
       return _lastPosition; // Vrati poslednju ako postoji
     }
   }
@@ -244,11 +233,12 @@ class GpsManager {
   double? distanceToDestination(double destLat, double destLng) {
     if (_lastPosition == null) return null;
     return distanceBetween(
-      _lastPosition!.latitude,
-      _lastPosition!.longitude,
-      destLat,
-      destLng,
-    ) / 1000; // Convert to km
+          _lastPosition!.latitude,
+          _lastPosition!.longitude,
+          destLat,
+          destLng,
+        ) /
+        1000; // Convert to km
   }
 
   /// Izračunaj bearing (smer) prema destinaciji

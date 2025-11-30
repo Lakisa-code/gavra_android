@@ -8,8 +8,7 @@ import 'performance_optimizer_service.dart';
 class BatchDatabaseService {
   factory BatchDatabaseService() => _instance;
   BatchDatabaseService._internal();
-  static final BatchDatabaseService _instance =
-      BatchDatabaseService._internal();
+  static final BatchDatabaseService _instance = BatchDatabaseService._internal();
 
   // 🔄 BATCH OPERATION QUEUES
   final Map<String, List<Map<String, dynamic>>> _insertBatches = {};
@@ -82,9 +81,7 @@ class BatchDatabaseService {
       // Log error but don't throw to prevent breaking the app
     } finally {
       stopwatch.stop();
-      final batchToProcess = operation == 'insert'
-          ? _insertBatches[tableName]
-          : _updateBatches[tableName];
+      final batchToProcess = operation == 'insert' ? _insertBatches[tableName] : _updateBatches[tableName];
       PerformanceOptimizerService().trackOperation(
         'batch_${operation}_${tableName}_${batchToProcess?.length ?? 0}',
         stopwatch.elapsed,
@@ -96,8 +93,7 @@ class BatchDatabaseService {
   }
 
   /// 📥 Execute batch INSERT
-  Future<void> _executeBatchInsert(
-      String tableName, List<Map<String, dynamic>> batch) async {
+  Future<void> _executeBatchInsert(String tableName, List<Map<String, dynamic>> batch) async {
     if (batch.isEmpty) return;
 
     try {
@@ -116,8 +112,7 @@ class BatchDatabaseService {
   }
 
   /// 📝 Execute batch UPDATE (more complex - needs individual handling)
-  Future<void> _executeBatchUpdate(
-      String tableName, List<Map<String, dynamic>> batch) async {
+  Future<void> _executeBatchUpdate(String tableName, List<Map<String, dynamic>> batch) async {
     if (batch.isEmpty) return;
 
     // Group updates by primary key for efficiency

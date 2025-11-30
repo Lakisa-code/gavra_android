@@ -55,8 +55,6 @@ void main() async {
         await AnalyticsService.initialize();
         FirebaseService.setupFCMListeners();
         // firebaseAvailable = true; // used to reflect successful Firebase init
-        print('Init: Google Play Services available -> Firebase/FCM enabled');
-
         // Debug helper: dump FCM token to logs so testers can use it for E2E
         if (kDebugMode) {
           try {
@@ -69,11 +67,9 @@ void main() async {
         }
       } catch (e) {
         // If Firebase init fails, fall through to Huawei initialization
-        print('Firebase init failed: $e - will try Huawei Push as fallback');
       }
     } else {
       // No GMS available — initialize Huawei Push if possible
-      print('Init: Google Play Services NOT available (status=$availability) -> trying HMS');
       try {
         final token = await HuaweiPushService().initialize();
         debugPrint(
@@ -92,7 +88,6 @@ void main() async {
       // await AnalyticsService.initialize();
       // FirebaseService.setupFCMListeners();
       // firebaseAvailable = true; // fallback succeeded
-      print('Fallback: Huawei Push initialized despite prior error: $e');
       try {
         final token = await HuaweiPushService().initialize();
         debugPrint(
@@ -100,9 +95,7 @@ void main() async {
       } catch (e) {
         debugPrint('HMS fallback initialization attempt failed: $e');
       }
-    } catch (_) {
-      print('Fallback failed — continuing without push services: $e');
-    }
+    } catch (_) {}
   }
 
   // 🌐 SUPABASE INICIJALIZACIJA

@@ -28,17 +28,13 @@ class NotificationNavigationService {
             title: Row(
               children: [
                 Icon(
-                  type == 'novi_putnik'
-                      ? Icons.person_add
-                      : Icons.person_remove,
+                  type == 'novi_putnik' ? Icons.person_add : Icons.person_remove,
                   color: type == 'novi_putnik' ? Colors.green : Colors.red,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    type == 'novi_putnik'
-                        ? 'Novi putnik dodat'
-                        : 'Putnik otkazan',
+                    type == 'novi_putnik' ? 'Novi putnik dodat' : 'Putnik otkazan',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

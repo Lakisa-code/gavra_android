@@ -183,10 +183,7 @@ class TripleBlueFashionTema {
 
   static BoxDecoration toggleOff = BoxDecoration(
     gradient: LinearGradient(
-      colors: [
-        Colors.white.withValues(alpha: 0.3),
-        Colors.white.withValues(alpha: 0.1)
-      ],
+      colors: [Colors.white.withValues(alpha: 0.3), Colors.white.withValues(alpha: 0.1)],
     ),
     borderRadius: BorderRadius.circular(14),
     border: Border.all(

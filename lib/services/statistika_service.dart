@@ -130,6 +130,9 @@ class StatistikaService {
               if (!direktnoPodudaranje && vozac == 'Bilevski' && vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
                 direktnoPodudaranje = true;
               }
+              if (!direktnoPodudaranje && vozac == 'Vlajic' && vozacUuid == '67ea0a22-689c-41b8-b576-5b27145e8e5e') {
+                direktnoPodudaranje = true;
+              }
             }
 
             if (direktnoPodudaranje) {
@@ -170,6 +173,8 @@ class StatistikaService {
         targetUuid = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
       } else if (vozac == 'Bilevski') {
         targetUuid = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
+      } else if (vozac == 'Vlajic') {
+        targetUuid = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
       }
     }
 
@@ -179,19 +184,76 @@ class StatistikaService {
     }
 
     // 🔧 NOVO: Broji mesečne karte na osnovu plaćanja iz putovanja_istorija, ne po vozaču koji vozi
+    // 🆘 FIX: Proveravamo i vozac_id i created_by jer ako foreign key constraint
+    // propade, vozac_id će biti null ali created_by može sadržavati ime vozača u napomenama
     return Supabase.instance.client
         .from('putovanja_istorija')
         .stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
       return data.where((item) {
-        return item['tip_putnika'] == 'mesecni' &&
-            item['status'] == 'placeno' &&
-            item['vozac_id'] == targetUuid &&
-            item['created_at'] != null &&
-            _jeUVremenskomOpsegu(
-              DateTime.parse(item['created_at'] as String),
-              fromDate,
-              toDate,
-            );
+        // Osnovni uslovi
+        final jeMesecni = item['tip_putnika'] == 'mesecni';
+        final jePlaceno = item['status'] == 'placeno';
+        final imaCreatedAt = item['created_at'] != null;
+
+        if (!jeMesecni || !jePlaceno || !imaCreatedAt) return false;
+
+        // 🔍 Proveri vremenski opseg
+        final createdAt = DateTime.parse(item['created_at'] as String);
+        if (!_jeUVremenskomOpsegu(createdAt, fromDate, toDate)) return false;
+
+        // 🎯 Proveri vozača - više načina identifikacije
+        final vozacId = item['vozac_id'] as String?;
+        final createdBy = item['created_by'] as String?;
+        final napomene = item['napomene'] as String? ?? '';
+
+        // 1. Direktno podudaranje vozac_id
+        if (vozacId == targetUuid) return true;
+
+        // 2. Podudaranje preko created_by
+        if (createdBy == targetUuid) return true;
+
+        // 3. Fallback: proveri da li napomene sadrže ime vozača
+        if (napomene.toLowerCase().contains(vozac.toLowerCase())) return true;
+
+        return false;
+      }).length;
+    });
+  }
+
+  /// 💳 STREAM BROJ DUŽNIKA ZA ODREĐENOG VOZAČA
+  /// Dužnik = putnik koji je pokupljen ali nije platio (iznosPlacanja == null || 0)
+  static Stream<int> streamBrojDuznikaZaVozaca(
+    String vozac, {
+    DateTime? from,
+    DateTime? to,
+  }) {
+    final now = _normalizeDateTime(DateTime.now());
+    final fromDate = from ?? DateTime(now.year, now.month, now.day);
+    // toDate se koristi za konzistentnost API-ja, ali za dužnike koristimo samo targetDate
+    final targetDate = fromDate.toIso8601String().split('T')[0];
+
+    return Supabase.instance.client.from('putnici').stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
+      return data.where((item) {
+        // Nije platio
+        final iznosPlacanja = item['iznos_placanja'] as num?;
+        final nijePlatio = iznosPlacanja == null || iznosPlacanja == 0;
+
+        // Nije otkazan
+        final status = item['status'] as String?;
+        final nijeOtkazan = status != 'otkazan' && status != 'Otkazano';
+
+        // Nije mesečni
+        final mesecnaKarta = item['mesecna_karta'] as bool? ?? false;
+        final nijeMesecni = !mesecnaKarta;
+
+        // Je pokupljen
+        final pokupljen = item['je_pokupljen'] as bool? ?? false;
+
+        // Datum putovanja
+        final datumPutovanja = item['datum_putovanja'] as String?;
+        final jeDanas = datumPutovanja == targetDate;
+
+        return nijePlatio && nijeOtkazan && nijeMesecni && pokupljen && jeDanas;
       }).length;
     });
   }

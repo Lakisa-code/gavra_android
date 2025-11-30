@@ -46,11 +46,9 @@ class OfflineMapService {
           .not('koordinate', 'is', null);
 
       if (response.isEmpty) {
-        print('📍 Offline sync: Nema adresa sa koordinatama u Supabase');
         return;
       }
 
-      int syncCount = 0;
       for (final row in response) {
         final ulica = row['ulica'] as String? ?? '';
         final broj = row['broj'] as String? ?? '';
@@ -82,12 +80,8 @@ class OfflineMapService {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-        syncCount++;
       }
-
-      print('📍 Offline sync: Sinhronizovano $syncCount adresa iz Supabase');
     } catch (e) {
-      print('⚠️ Offline sync greška: $e');
       // Ne prekidaj - offline baza i dalje ima hardkodirane adrese
     }
   }
@@ -142,7 +136,6 @@ class OfflineMapService {
 
       return syncCount;
     } catch (e) {
-      print('⚠️ Force sync greška: $e');
       return 0;
     }
   }

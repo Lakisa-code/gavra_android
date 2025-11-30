@@ -105,8 +105,7 @@ class TimeValidator {
 
   /// Gets suggested times based on common departure patterns
   static List<String> getSuggestedTimes(String city) {
-    if (city.toLowerCase().contains('bela') ||
-        city.toLowerCase().contains('crkva')) {
+    if (city.toLowerCase().contains('bela') || city.toLowerCase().contains('crkva')) {
       return [
         '05:00',
         '06:00',

@@ -14,8 +14,7 @@ class ThemeManager extends ChangeNotifier {
 
   String _currentThemeId = 'triple_blue_fashion';
   ThemeDefinition? _currentTheme;
-  final ValueNotifier<ThemeData> _themeNotifier =
-      ValueNotifier(ThemeRegistry.defaultTheme.themeData);
+  final ValueNotifier<ThemeData> _themeNotifier = ValueNotifier(ThemeRegistry.defaultTheme.themeData);
 
   /// Trenutna tema ID
   String get currentThemeId => _currentThemeId;
@@ -25,8 +24,7 @@ class ThemeManager extends ChangeNotifier {
 
   /// Trenutna tema definicija
   ThemeDefinition get currentTheme {
-    _currentTheme ??=
-        ThemeRegistry.getTheme(_currentThemeId) ?? ThemeRegistry.defaultTheme;
+    _currentTheme ??= ThemeRegistry.getTheme(_currentThemeId) ?? ThemeRegistry.defaultTheme;
     return _currentTheme!;
   }
 
@@ -102,8 +100,7 @@ class ThemeManager extends ChangeNotifier {
   Future<void> previousTheme() async {
     final themeNames = ThemeRegistry.themeNames;
     final currentIndex = themeNames.indexOf(_currentThemeId);
-    final previousIndex =
-        (currentIndex - 1 + themeNames.length) % themeNames.length;
+    final previousIndex = (currentIndex - 1 + themeNames.length) % themeNames.length;
     await changeTheme(themeNames[previousIndex]);
   }
 

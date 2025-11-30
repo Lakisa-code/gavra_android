@@ -331,8 +331,7 @@ class PermissionService {
 
       // GPS servis se uključuje po potrebi kada korisnik koristi navigaciju
       // Ne forsiramo uključivanje ovde
-      return permission != LocationPermission.denied &&
-          permission != LocationPermission.deniedForever;
+      return permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
     } catch (e) {
       return false;
     }

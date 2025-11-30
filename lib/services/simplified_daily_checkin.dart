@@ -7,8 +7,7 @@ import 'daily_checkin_service.dart';
 /// 🚀 SIMPLIFIKOVANI DAILY CHECK-IN SERVIS
 /// Wrapper oko DailyCheckInService za kompatibilnost
 class SimplifiedDailyCheckInService {
-  static final StreamController<double> _streamController =
-      StreamController<double>.broadcast();
+  static final StreamController<double> _streamController = StreamController<double>.broadcast();
 
   /// 📡 GLAVNI STREAM ZA KUSUR KOCKU
   static Stream<double> streamTodayAmount(String vozac) {
@@ -63,8 +62,7 @@ class SimplifiedDailyCheckInService {
       try {
         final prefs = await SharedPreferences.getInstance();
         final today = DateTime.now();
-        final todayKey =
-            'daily_checkin_${vozac}_${today.year}_${today.month}_${today.day}';
+        final todayKey = 'daily_checkin_${vozac}_${today.year}_${today.month}_${today.day}';
         await prefs.setBool(todayKey, true);
         await prefs.setDouble('${todayKey}_amount', sitanNovac);
         await prefs.setDouble('${todayKey}_pazari', dnevniPazari);

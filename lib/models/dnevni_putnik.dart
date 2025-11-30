@@ -48,8 +48,7 @@ extension DnevniPutnikStatusExtension on DnevniPutnikStatus {
       case 'otkazan':
         return DnevniPutnikStatus.otkazan;
       default:
-        return DnevniPutnikStatus
-            .kreiran; // default kao u bazi je 'aktivno' -> 'kreiran'
+        return DnevniPutnikStatus.kreiran; // default kao u bazi je 'aktivno' -> 'kreiran'
     }
   }
 }
@@ -152,9 +151,7 @@ class DnevniPutnik {
   bool get jePokupljen => status == DnevniPutnikStatus.pokupljen;
   bool get jePlacen => status == DnevniPutnikStatus.naplacen;
   bool get jeOtkazan => status == DnevniPutnikStatus.otkazan;
-  bool get jeOdsustvo =>
-      status ==
-      DnevniPutnikStatus.zavrsen; // završen status je najbliži odsustvu
+  bool get jeOdsustvo => status == DnevniPutnikStatus.zavrsen; // završen status je najbliži odsustvu
 
   /// Konvertuje DnevniPutnik u legacy Putnik format za kompatibilnost sa UI
   Putnik toPutnik(Adresa adresa, Ruta ruta) {
@@ -196,11 +193,7 @@ class DnevniPutnik {
 
   /// Validira da li su sva obavezna polja popunjena
   bool get isValid {
-    return ime.trim().isNotEmpty &&
-        adresaId.isNotEmpty &&
-        rutaId.isNotEmpty &&
-        cena >= 0 &&
-        vremePolaska.isNotEmpty;
+    return ime.trim().isNotEmpty && adresaId.isNotEmpty && rutaId.isNotEmpty && cena >= 0 && vremePolaska.isNotEmpty;
   }
 
   /// Validira format vremena polaska (HH:mm)
@@ -356,17 +349,13 @@ class DnevniPutnik {
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        ime.hashCode ^
-        datumPutovanja.hashCode ^
-        vremePolaska.hashCode;
+    return id.hashCode ^ ime.hashCode ^ datumPutovanja.hashCode ^ vremePolaska.hashCode;
   }
 
   // ✅ HELPER METODE ZA ACTIONLOG
 
   /// Ko je kreirao putnika
-  String? get createdByVozac =>
-      actionLog.getVozacForAction(ActionType.created) ?? createdBy;
+  String? get createdByVozac => actionLog.getVozacForAction(ActionType.created) ?? createdBy;
 
   /// Ko je naplatio putnika
   String? get paidByVozac => actionLog.getVozacForAction(ActionType.paid);
@@ -375,16 +364,13 @@ class DnevniPutnik {
   String? get pickedByVozac => actionLog.getVozacForAction(ActionType.picked);
 
   /// Ko je otkazao putnika
-  String? get cancelledByVozac =>
-      actionLog.getVozacForAction(ActionType.cancelled);
+  String? get cancelledByVozac => actionLog.getVozacForAction(ActionType.cancelled);
 
   /// Da li je putnik naplaton
-  bool get isNaplaton =>
-      actionLog.hasAction(ActionType.paid) || paidByVozac != null;
+  bool get isNaplaton => actionLog.hasAction(ActionType.paid) || paidByVozac != null;
 
   /// Da li je putnik otkazan
-  bool get isOtkazan =>
-      actionLog.hasAction(ActionType.cancelled) || cancelledByVozac != null;
+  bool get isOtkazan => actionLog.hasAction(ActionType.cancelled) || cancelledByVozac != null;
 
   /// Dodaje akciju u log
   DnevniPutnik addAction(ActionType type, String vozacId, [String? note]) {

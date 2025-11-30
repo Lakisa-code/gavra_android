@@ -26,8 +26,7 @@ class EnhancedNavigationWidget extends StatefulWidget {
   final VoidCallback onStartGPSTracking;
 
   @override
-  State<EnhancedNavigationWidget> createState() =>
-      _EnhancedNavigationWidgetState();
+  State<EnhancedNavigationWidget> createState() => _EnhancedNavigationWidgetState();
 }
 
 class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
@@ -45,16 +44,14 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
 
   /// 📊 CHECK STATUS OF ALL SERVICES
   Future<void> _checkServicesStatus() async {
-    final isBackgroundActive =
-        await BackgroundGpsService.isBackgroundTrackingActive();
+    final isBackgroundActive = await BackgroundGpsService.isBackgroundTrackingActive();
     final isVoiceReady = VoiceNavigationService.isInitialized;
 
     if (mounted) {
       setState(() {
         _isBackgroundTrackingActive = isBackgroundActive;
         _isVoiceNavigationActive = isVoiceReady;
-        _isOfflineMapReady =
-            true; // OfflineMapService is always ready after init
+        _isOfflineMapReady = true; // OfflineMapService is always ready after init
       });
     }
   }
@@ -174,8 +171,7 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
 
   /// 🗺️ BUILD OFFLINE MAP PREVIEW
   Widget _buildOfflineMapPreview() {
-    final center =
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    final center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
 
     // Create markers for passengers
     final markers = widget.putnici
@@ -237,9 +233,7 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
               ),
               title: const Text('Background GPS Tracking'),
               subtitle: Text(
-                _isBackgroundTrackingActive
-                    ? 'GPS tracking active in background'
-                    : 'Start continuous GPS tracking',
+                _isBackgroundTrackingActive ? 'GPS tracking active in background' : 'Start continuous GPS tracking',
               ),
               trailing: Switch(
                 value: _isBackgroundTrackingActive,
@@ -257,9 +251,7 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
               ),
               title: const Text('Voice Navigation'),
               subtitle: Text(
-                _isVoiceNavigationActive
-                    ? 'Voice instructions enabled'
-                    : 'Enable voice turn-by-turn',
+                _isVoiceNavigationActive ? 'Voice instructions enabled' : 'Enable voice turn-by-turn',
               ),
               trailing: Switch(
                 value: _isVoiceNavigationActive,
@@ -273,8 +265,7 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed:
-                    widget.putnici.isEmpty ? null : _startEnhancedNavigation,
+                onPressed: widget.putnici.isEmpty ? null : _startEnhancedNavigation,
                 icon: const Icon(Icons.navigation),
                 label: const Text('🚀 Start Enhanced Navigation'),
                 style: ElevatedButton.styleFrom(
@@ -375,8 +366,7 @@ class _EnhancedNavigationWidgetState extends State<EnhancedNavigationWidget> {
     try {
       // 1. Optimize route offline
       if (_currentPosition != null) {
-        final center =
-            LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+        final center = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
         final optimizedRoute = await OfflineMapService.optimizeRouteOffline(
           widget.putnici,
           center,

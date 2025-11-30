@@ -79,8 +79,7 @@ class FailFastStreamManager {
     final errorCount = _errorCounts[streamName]!;
 
     // FAIL-FAST for critical streams
-    if (_criticalStreams.contains(streamName) &&
-        errorCount >= maxErrorsBeforeFail) {
+    if (_criticalStreams.contains(streamName) && errorCount >= maxErrorsBeforeFail) {
       // Cancel all subscriptions and terminate app
       _emergencyShutdown(streamName, error, stackTrace);
       return;
@@ -151,8 +150,7 @@ class FailFastStreamManager {
       'totalErrors': _errorCounts.values.fold(0, (sum, count) => sum + count),
       'subscriptions': _activeSubscriptions.keys.map((name) {
         final startTime = _subscriptionStartTimes[name];
-        final age =
-            startTime != null ? now.difference(startTime) : Duration.zero;
+        final age = startTime != null ? now.difference(startTime) : Duration.zero;
 
         return {
           'name': name,
@@ -187,8 +185,7 @@ class FailFastStreamManager {
 
   /// 📈 GET HEALTH METRICS
   bool get isHealthy {
-    final totalErrors =
-        _errorCounts.values.fold(0, (sum, count) => sum + count);
+    final totalErrors = _errorCounts.values.fold(0, (sum, count) => sum + count);
     final hasStaleSubscriptions = _subscriptionStartTimes.values.any(
       (startTime) => DateTime.now().difference(startTime) > maxSubscriptionAge,
     );

@@ -24,8 +24,7 @@ class RealtimeNetworkStatusService {
   }
 
   // 🚥 STATUS TRACKING
-  final ValueNotifier<NetworkStatus> _networkStatus =
-      ValueNotifier(NetworkStatus.excellent);
+  final ValueNotifier<NetworkStatus> _networkStatus = ValueNotifier(NetworkStatus.excellent);
   ValueNotifier<NetworkStatus> get networkStatus => _networkStatus;
 
   // 📊 METRICS TRACKING
@@ -54,8 +53,7 @@ class RealtimeNetworkStatusService {
 
   /// 🔌 CONNECTIVITY MONITORING
   void _startConnectivityMonitoring() {
-    _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
       _isConnected = !result.contains(ConnectivityResult.none);
       _updateNetworkStatus();
 
@@ -113,9 +111,7 @@ class RealtimeNetworkStatusService {
 
       // Calculate average response time
       if (_recentResponseTimes.isNotEmpty) {
-        final total = _recentResponseTimes
-            .map((d) => d.inMilliseconds)
-            .reduce((a, b) => a + b);
+        final total = _recentResponseTimes.map((d) => d.inMilliseconds).reduce((a, b) => a + b);
         _averageResponseTime = total / _recentResponseTimes.length;
       }
     }
@@ -187,8 +183,7 @@ class RealtimeNetworkStatusService {
     }
 
     // If no successful ping in last 2 minutes, consider offline
-    if (_lastSuccessfulPing == null ||
-        now.difference(_lastSuccessfulPing!).inMinutes > 2) {
+    if (_lastSuccessfulPing == null || now.difference(_lastSuccessfulPing!).inMinutes > 2) {
       _setNetworkStatusDeferred(NetworkStatus.offline);
       return;
     }
@@ -210,13 +205,9 @@ class RealtimeNetworkStatusService {
     // Determine status based on metrics
     if (recentErrors == 0 && staleStreams == 0 && _averageResponseTime < 2000) {
       _setNetworkStatusDeferred(NetworkStatus.excellent);
-    } else if (recentErrors <= 1 &&
-        staleStreams <= 1 &&
-        _averageResponseTime < 5000) {
+    } else if (recentErrors <= 1 && staleStreams <= 1 && _averageResponseTime < 5000) {
       _setNetworkStatusDeferred(NetworkStatus.good);
-    } else if (recentErrors <= 2 &&
-        staleStreams <= 2 &&
-        _averageResponseTime < 10000) {
+    } else if (recentErrors <= 2 && staleStreams <= 2 && _averageResponseTime < 10000) {
       _setNetworkStatusDeferred(NetworkStatus.poor);
     } else {
       _setNetworkStatusDeferred(NetworkStatus.offline);
@@ -231,8 +222,7 @@ class RealtimeNetworkStatusService {
     try {
       // If scheduler is idle or we're not in a build phase, set directly.
       final phase = SchedulerBinding.instance.schedulerPhase;
-      if (phase == SchedulerPhase.idle ||
-          phase == SchedulerPhase.postFrameCallbacks) {
+      if (phase == SchedulerPhase.idle || phase == SchedulerPhase.postFrameCallbacks) {
         _networkStatus.value = status;
         return;
       }
@@ -258,8 +248,7 @@ class RealtimeNetworkStatusService {
       'lastSuccessfulPing': _lastSuccessfulPing?.toIso8601String(),
       'streamCount': _lastResponseTimes.length,
       'errorCounts': Map<String, dynamic>.from(_errorCounts),
-      'lastResponseTimes':
-          _lastResponseTimes.map((k, v) => MapEntry(k, v.toIso8601String())),
+      'lastResponseTimes': _lastResponseTimes.map((k, v) => MapEntry(k, v.toIso8601String())),
     };
   }
 

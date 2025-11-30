@@ -4,12 +4,7 @@
 class MesecniFilterFix {
   /// ✅ ISPRAVKA 1: Tačno matchovanje dana umesto contains()
   static bool matchesDan(String radniDani, String dan) {
-    final daniList = radniDani
-        .toLowerCase()
-        .split(',')
-        .map((d) => d.trim())
-        .where((d) => d.isNotEmpty)
-        .toList();
+    final daniList = radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
 
     return daniList.contains(dan.toLowerCase().trim());
   }
@@ -95,31 +90,21 @@ class MesecniFilterFix {
 
     // 2. Proveri status (osim ako nije eksplicitno dozvoljeno)
     if (!includeInactiveStatuses) {
-      final status = putnik is Map
-          ? putnik['status'] as String?
-          : putnik.status as String?;
+      final status = putnik is Map ? putnik['status'] as String? : putnik.status as String?;
       if (!isValidStatus(status)) return false;
     }
 
     // 3. Proveri dan (ako je specifikovan)
     if (targetDay != null) {
-      final radniDani = putnik is Map
-          ? (putnik['radni_dani'] ?? '') as String
-          : (putnik.radniDani ?? '') as String;
+      final radniDani = putnik is Map ? (putnik['radni_dani'] ?? '') as String : (putnik.radniDani ?? '') as String;
       if (!matchesDan(radniDani, targetDay)) return false;
     }
 
     // 4. Proveri search term
     if (searchTerm != null && searchTerm.isNotEmpty) {
-      final ime = putnik is Map
-          ? (putnik['putnik_ime'] ?? '') as String
-          : (putnik.putnikIme ?? '') as String;
-      final tip = putnik is Map
-          ? (putnik['tip'] ?? '') as String
-          : (putnik.tip ?? '') as String;
-      final tipSkole = putnik is Map
-          ? (putnik['tip_skole'] ?? '') as String
-          : (putnik.tipSkole ?? '') as String;
+      final ime = putnik is Map ? (putnik['putnik_ime'] ?? '') as String : (putnik.putnikIme ?? '') as String;
+      final tip = putnik is Map ? (putnik['tip'] ?? '') as String : (putnik.tip ?? '') as String;
+      final tipSkole = putnik is Map ? (putnik['tip_skole'] ?? '') as String : (putnik.tipSkole ?? '') as String;
 
       final searchLower = searchTerm.toLowerCase();
       if (!(ime.toLowerCase().contains(searchLower) ||

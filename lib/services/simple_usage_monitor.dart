@@ -86,8 +86,7 @@ class SimpleUsageMonitor {
       'database_limit': '500 MB',
       'storage_limit': '1 GB',
       'egress_limit': '5 GB',
-      'last_update':
-          DateTime.now().toString().substring(0, 19), // YYYY-MM-DD HH:mm:ss
+      'last_update': DateTime.now().toString().substring(0, 19), // YYYY-MM-DD HH:mm:ss
     };
 
     // Cache rezultate

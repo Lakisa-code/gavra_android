@@ -26,7 +26,6 @@ class GeocodingService {
     try {
       // PROVERI DA LI JE GRAD DOZVOLJEN (samo Bela Crkva i Vrsac)
       if (_isCityBlocked(grad)) {
-        print('GeocodingService: GRAD BLOKIRAN: $grad');
         return null;
       }
 

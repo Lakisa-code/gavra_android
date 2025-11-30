@@ -82,18 +82,18 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-    
+
     // 1. Prvo proveri lokalno
     final localCheckedIn = prefs.getBool(todayKey) ?? false;
     if (localCheckedIn) {
       return true;
     }
-    
+
     // 2. Ako lokalno nema, proveri Supabase (za drugi uređaj)
     try {
       final supabase = Supabase.instance.client;
       final todayStr = today.toIso8601String().split('T')[0]; // YYYY-MM-DD
-      
+
       final response = await supabase
           .from('daily_checkins')
           .select('sitan_novac, dnevni_pazari')
@@ -101,28 +101,28 @@ class DailyCheckInService {
           .eq('datum', todayStr)
           .maybeSingle()
           .timeout(const Duration(seconds: 3));
-      
+
       if (response != null) {
         // 🔄 SINHRONIZUJ lokalno sa Supabase podacima!
         final sitanNovac = (response['sitan_novac'] as num?)?.toDouble() ?? 0.0;
         final dnevniPazari = (response['dnevni_pazari'] as num?)?.toDouble() ?? 0.0;
-        
+
         await prefs.setBool(todayKey, true);
         await prefs.setDouble('${todayKey}_amount', sitanNovac);
         await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
         await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
-        
+
         // Emituj update za stream
         if (!_sitanNovacController.isClosed) {
           _sitanNovacController.add(sitanNovac);
         }
-        
+
         return true;
       }
     } catch (e) {
       // Supabase nije dostupan - nastavi sa lokalnom proverom
     }
-    
+
     return false;
   }
 

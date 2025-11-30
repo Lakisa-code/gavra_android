@@ -213,7 +213,6 @@ class _PutnikCardState extends State<PutnikCard> {
       }
     } catch (e) {
       // Silently ignore GPS learn errors - nije kritična funkcija
-      print('⚠️ GPS Learn nije uspeo: $e');
     }
   }
 
@@ -770,7 +769,7 @@ class _PutnikCardState extends State<PutnikCard> {
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
     // Validacija vozača pre pokušaja plaćanja
-    final validni = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana'];
+    final validni = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Vlajic'];
     if (!validni.contains(widget.currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1437,18 +1436,12 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Dobija koordinate za destinaciju - UNIFIKOVANO za sve putnike
   Future<String?> _getKoordinateZaAdresu(String? grad, String? adresa, String? adresaId) async {
-    print('🔍 GEOCODING: Tražim koordinate za: ime=${_putnik.ime}, grad=$grad, adresa=$adresa, adresaId=$adresaId');
-
     // 🎯 PRIORITET 1: Ako imamo adresaId (UUID), direktno dohvati adresu sa koordinatama
     if (adresaId != null && adresaId.isNotEmpty) {
       try {
         final adresaObj = await AdresaSupabaseService.getAdresaByUuid(adresaId);
-        print(
-            '🔍 GEOCODING ${_putnik.ime}: adresaObj=${adresaObj?.naziv}, hasCoords=${adresaObj?.hasValidCoordinates}, lat=${adresaObj?.latitude}, lng=${adresaObj?.longitude}');
         if (adresaObj != null && adresaObj.hasValidCoordinates) {
           // Adresa ima koordinate - koristi ih direktno!
-          print(
-              '✅ GEOCODING ${_putnik.ime}: Pronađene koordinate iz baze: ${adresaObj.latitude},${adresaObj.longitude}');
           return '${adresaObj.latitude},${adresaObj.longitude}';
         }
 
@@ -1463,7 +1456,6 @@ class _PutnikCardState extends State<PutnikCard> {
           }
         }
       } catch (e) {
-        print('❌ GEOCODING ${_putnik.ime}: Greška pri dohvatanju iz baze: $e');
         // Nastavi sa fallback opcijama
       }
     }
@@ -1471,23 +1463,16 @@ class _PutnikCardState extends State<PutnikCard> {
     // 🎯 PRIORITET 2: Ako imamo naziv adrese, traži u tabeli adrese
     if (adresa != null && adresa.isNotEmpty && adresa != 'Adresa nije definisana') {
       try {
-        print('🔍 GEOCODING ${_putnik.ime}: Tražim po nazivu: $adresa, grad: $grad');
         final koordinate = await AdresaSupabaseService.findAdresaByNazivAndGrad(adresa, grad ?? '');
-        if (koordinate?.hasValidCoordinates == true) {
-          print(
-              '✅ GEOCODING ${_putnik.ime}: Pronađene koordinate po nazivu: ${koordinate!.latitude},${koordinate.longitude}');
+        if (koordinate != null && koordinate.hasValidCoordinates) {
           return '${koordinate.latitude},${koordinate.longitude}';
-        } else {
-          print('⚠️ GEOCODING ${_putnik.ime}: Adresa "$adresa" nema koordinate u bazi');
         }
       } catch (e) {
-        print('❌ GEOCODING ${_putnik.ime}: Greška pri traženju po nazivu: $e');
         // Nastavi sa fallback opcijama
       }
     }
 
     // 🎯 PRIORITET 3: Fallback na transport logiku (centar destinacije)
-    print('⚠️ GEOCODING ${_putnik.ime}: Koristim FALLBACK - centar destinacije za grad: $grad');
     // 🚌 TRANSPORT LOGIKA: Navigiraj do centra destinacije
     // Svi iz Bela Crkva opštine → Vršac centar
     // Svi iz Vršac opštine → Bela Crkva centar
@@ -1689,6 +1674,8 @@ class _PutnikCardState extends State<PutnikCard> {
     final bool isSvetlana = driver == 'Svetlana';
     final bool isAdmin = isBojan || isSvetlana; // Full admin prava
     final bool isBrudaOrBilevski = driver == 'Bruda' || driver == 'Bilevski';
+    final bool isVlajic = driver == 'Vlajic';
+    final bool isVozac = isBrudaOrBilevski || isVlajic; // Svi vozači
 
     if (_putnik.ime.toLowerCase().contains('rado') ||
         _putnik.ime.toLowerCase().contains('radoš') ||
@@ -1830,8 +1817,6 @@ class _PutnikCardState extends State<PutnikCard> {
                           FutureBuilder<String>(
                             future: _getMesecniPutnikAdrese(),
                             builder: (context, snapshot) {
-                              print(
-                                  '🏠 KARTICA ${_putnik.ime}: mesecna=${_putnik.mesecnaKarta}, adresa=${_putnik.adresa}');
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return const SizedBox.shrink(); // Ne prikazuj loading
                               }
@@ -1871,10 +1856,6 @@ class _PutnikCardState extends State<PutnikCard> {
                         else
                         // Za dnevne putnike koristi staro TEXT polje
                         if (_putnik.adresa != null && _putnik.adresa!.isNotEmpty) ...[
-                          Builder(builder: (context) {
-                            print('🏠 DNEVNI ${_putnik.ime}: adresa=${_putnik.adresa}');
-                            return const SizedBox.shrink();
-                          }),
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
@@ -1905,7 +1886,7 @@ class _PutnikCardState extends State<PutnikCard> {
                   // 🎯 OPTIMIZOVANE ACTION IKONE - koristi Flexible + Wrap umesto fiksne širine
                   // da spreči overflow na manjim ekranima ili kada ima više ikona
                   // 🔧 FIX: Smanjen flex na 0 da ikone ne "kradu" prostor od imena
-                  if ((isAdmin || isBrudaOrBilevski) && widget.showActions && (driver ?? '').isNotEmpty)
+                  if ((isAdmin || isVozac) && widget.showActions && (driver ?? '').isNotEmpty)
                     Flexible(
                       flex: 0, // Ne uzimaj dodatni prostor - koristi samo minimalno potreban
                       child: Transform.translate(
@@ -2543,7 +2524,6 @@ class _PutnikCardState extends State<PutnikCard> {
 
         // FALLBACK sa pravim UUID-om vozača Bojan
         vozacUuid = uuid ?? '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e'; // Bojan UUID iz baze
-        print('🔍 PUTNIK_CARD: final vozacUuid = $vozacUuid');
       }
 
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
@@ -2746,8 +2726,43 @@ class _PutnikCardState extends State<PutnikCard> {
           selectedGrad: widget.selectedGrad,
         );
 
+        // ✅ FIX: Ažuriraj lokalni _putnik sa novim statusom
         if (mounted) {
-          if (mounted) setState(() {});
+          setState(() {
+            _putnik = Putnik(
+              id: _putnik.id,
+              ime: _putnik.ime,
+              polazak: _putnik.polazak,
+              pokupljen: _putnik.pokupljen,
+              vremeDodavanja: _putnik.vremeDodavanja,
+              mesecnaKarta: _putnik.mesecnaKarta,
+              dan: _putnik.dan,
+              status: 'otkazano', // ✅ Postavi status na otkazano
+              statusVreme: _putnik.statusVreme,
+              vremePokupljenja: _putnik.vremePokupljenja,
+              vremePlacanja: _putnik.vremePlacanja,
+              placeno: _putnik.placeno,
+              cena: _putnik.cena,
+              naplatioVozac: _putnik.naplatioVozac,
+              pokupioVozac: _putnik.pokupioVozac,
+              dodaoVozac: _putnik.dodaoVozac,
+              vozac: _putnik.vozac,
+              grad: _putnik.grad,
+              otkazaoVozac: widget.currentDriver,
+              vremeOtkazivanja: DateTime.now(),
+              adresa: _putnik.adresa,
+              adresaId: _putnik.adresaId,
+              obrisan: _putnik.obrisan,
+              priority: _putnik.priority,
+              brojTelefona: _putnik.brojTelefona,
+              datum: _putnik.datum,
+            );
+          });
+        }
+
+        // ✅ FIX: Pozovi parent callback da se lista ponovo sortira
+        if (widget.onChanged != null) {
+          widget.onChanged!();
         }
       } catch (e) {
         // Greška pri otkazivanju putnika - ignorisana

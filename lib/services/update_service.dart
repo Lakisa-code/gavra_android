@@ -11,8 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UpdateService {
   static const String repoOwner = 'bojanbc83';
   static const String repoName = 'gavra_android';
-  static const String githubApiUrl =
-      'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
+  static const String githubApiUrl = 'https://api.github.com/repos/$repoOwner/$repoName/releases/latest';
   static const String _lastCheckKey = 'last_update_check';
   // removed last_found_version key - no manual storage for update info
 
@@ -165,13 +164,11 @@ class UpdateService {
         bool hasUpdate = _isNewerVersion(currentVersion, latestVersion);
 
         if (hasUpdate && publishedAt != null) {
-          final daysSincePublish =
-              DateTime.now().difference(publishedAt).inDays;
+          final daysSincePublish = DateTime.now().difference(publishedAt).inDays;
 
           // STROŽIJA PROVERA: Ako je release stariji od 7 dana, ne prikazuj update osim ako nije major verzija
           if (daysSincePublish > 7) {
-            bool isMajorUpdate =
-                _isMajorVersionDifference(currentVersion, latestVersion);
+            bool isMajorUpdate = _isMajorVersionDifference(currentVersion, latestVersion);
             if (!isMajorUpdate) {
               // Release is too old, skipping update
               await _saveLastCheckTime();
@@ -181,9 +178,7 @@ class UpdateService {
 
           // Dodatno: Proverava da li je release "nightly" build - ne prikazuj update za nightly
           String releaseTag = (data['tag_name'] as String).toLowerCase();
-          if (releaseTag.contains('nightly') ||
-              releaseTag.contains('beta') ||
-              releaseTag.contains('alpha')) {
+          if (releaseTag.contains('nightly') || releaseTag.contains('beta') || releaseTag.contains('alpha')) {
             // Nightly/Beta release - skip update
             await _saveLastCheckTime();
             return false;
@@ -204,10 +199,8 @@ class UpdateService {
   /// Poredi da li je nova verzija novija od trenutne
   static bool _isNewerVersion(String current, String latest) {
     try {
-      List<int> currentParts =
-          current.split('.').map((e) => int.parse(e)).toList();
-      List<int> latestParts =
-          latest.split('.').map((e) => int.parse(e)).toList();
+      List<int> currentParts = current.split('.').map((e) => int.parse(e)).toList();
+      List<int> latestParts = latest.split('.').map((e) => int.parse(e)).toList();
 
       // Dopuni sa nulama ako je potrebno
       while (currentParts.length < 3) {
@@ -230,10 +223,8 @@ class UpdateService {
   /// Proverava da li je razlika u verziji major (prva cifra)
   static bool _isMajorVersionDifference(String current, String latest) {
     try {
-      List<int> currentParts =
-          current.split('.').map((e) => int.parse(e)).toList();
-      List<int> latestParts =
-          latest.split('.').map((e) => int.parse(e)).toList();
+      List<int> currentParts = current.split('.').map((e) => int.parse(e)).toList();
+      List<int> latestParts = latest.split('.').map((e) => int.parse(e)).toList();
 
       if (currentParts.isNotEmpty && latestParts.isNotEmpty) {
         return latestParts[0] > currentParts[0];

@@ -116,8 +116,7 @@ class Ruta {
   /// Proverava da li ruta sadrži query u nazivu ili opisu
   bool containsQuery(String query) {
     final lowerQuery = query.toLowerCase().trim();
-    return naziv.toLowerCase().contains(lowerQuery) ||
-        (opis?.toLowerCase().contains(lowerQuery) ?? false);
+    return naziv.toLowerCase().contains(lowerQuery) || (opis?.toLowerCase().contains(lowerQuery) ?? false);
   }
 
   // 📋 COMPARISON METODE

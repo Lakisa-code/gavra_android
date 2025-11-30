@@ -79,12 +79,10 @@ class ImenaService {
     }
 
     // Sortira imena po učestalosti
-    final sortiranaImena = imenaCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final sortiranaImena = imenaCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
     // Uzima top 30 imena
-    final cestaImena =
-        sortiranaImena.take(30).map((entry) => entry.key).toList();
+    final cestaImena = sortiranaImena.take(30).map((entry) => entry.key).toList();
 
     // Dodaj postojeća imena da ne izgubimo default-e
     final postojecaImena = await getCestaImena();
@@ -104,10 +102,7 @@ class ImenaService {
     final imena = await getCestaImena();
     final queryLower = query.toLowerCase();
 
-    return imena
-        .where((ime) => ime.toLowerCase().startsWith(queryLower))
-        .take(10)
-        .toList();
+    return imena.where((ime) => ime.toLowerCase().startsWith(queryLower)).take(10).toList();
   }
 
   static Future<void> _sacuvajImena(List<String> imena) async {
