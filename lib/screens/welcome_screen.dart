@@ -13,8 +13,18 @@ import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'email_login_screen.dart';
 import 'home_screen.dart';
+import 'o_nama_screen.dart';
+import 'vozac_screen.dart';
+import 'zahtev_pristupa_screen.dart';
 
 Widget _getHomeScreen() {
+  return const HomeScreen();
+}
+
+Widget _getScreenForDriver(String driverName) {
+  if (driverName == 'Vlajic') {
+    return const VozacScreen();
+  }
   return const HomeScreen();
 }
 
@@ -53,6 +63,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       'name': 'Svetlana',
       'color': VozacBoja.get('Svetlana'),
       'icon': Icons.favorite,
+    },
+    {
+      'name': 'Vlajic',
+      'color': const Color(0xFF5A5A5A), // tamnija siva
+      'icon': Icons.directions_car,
     },
   ];
 
@@ -131,7 +146,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (context) => const HomeScreen(),
+                    builder: (context) => _getScreenForDriver(driverName),
                   ),
                 );
               },
@@ -143,7 +158,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         Navigator.pushReplacement(
           context,
           MaterialPageRoute<void>(
-            builder: (context) => _getHomeScreen(),
+            builder: (context) => _getScreenForDriver(driverName),
           ),
         );
       }
@@ -323,7 +338,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (context) => _getHomeScreen(),
+                      builder: (context) => _getScreenForDriver(correctName),
                     ),
                   );
                 },
@@ -335,7 +350,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
           Navigator.pushReplacement(
             context,
             MaterialPageRoute<void>(
-              builder: (context) => _getHomeScreen(),
+              builder: (context) => _getScreenForDriver(correctName),
             ),
           );
         }
@@ -426,13 +441,23 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          'Aplikacija za vozače',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: 1.2,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ONamaScreen()),
+                            );
+                          },
+                          child: Text(
+                            'O nama',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: 1.2,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.white.withValues(alpha: 0.5),
+                            ),
                           ),
                         ),
                       ],
@@ -463,6 +488,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                 ),
                               );
                             }),
+                            // 📝 "Zatraži pristup" dugme
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const ZahtevPristupaScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.person_add, color: Colors.amber, size: 18),
+                                label: const Text(
+                                  'Zatraži pristup',
+                                  style: TextStyle(
+                                    color: Colors.amber,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.white.withOpacity(0.1),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(color: Colors.amber.withOpacity(0.5)),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),

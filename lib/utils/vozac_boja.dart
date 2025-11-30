@@ -6,6 +6,7 @@ class VozacBoja {
     'Bilevski': Color(0xFFFF9800), // narandžasta
     'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
     'Svetlana': Color(0xFFFF1493), // drecava pink (DeepPink)
+    'Vlajic': Color(0xFF5A5A5A), // tamnija siva
   };
 
   // 🔒 DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
@@ -14,6 +15,7 @@ class VozacBoja {
     'Bruda': 'igor.jovanovic.1984@icloud.com',
     'Bilevski': 'bilyboy1983@gmail.com',
     'Svetlana': 'risticsvetlana2911@yahoo.com',
+    'Vlajic': 'kadpitamkurac@gmail.com',
   };
 
   // 🔒 VALIDACIJA: email -> vozač mapiranje
@@ -22,6 +24,16 @@ class VozacBoja {
     'igor.jovanovic.1984@icloud.com': 'Bruda',
     'bilyboy1983@gmail.com': 'Bilevski',
     'risticsvetlana2911@yahoo.com': 'Svetlana',
+    'kadpitamkurac@gmail.com': 'Vlajic',
+  };
+
+  // 📞 BROJEVI TELEFONA VOZAČA
+  static const Map<String, String> telefoni = {
+    'Bojan': '0641162560',
+    'Bruda': '0641202844',
+    'Bilevski': '0638466418',
+    'Svetlana': '0658464160',
+    'Vlajic': '0605073073',
   };
 
   static Color get(String? ime) {
@@ -30,8 +42,7 @@ class VozacBoja {
     }
 
     // Trebalo bi da se poziva samo za validne vozače
-    throw ArgumentError(
-        'Nepoznat vozač: $ime. Validni vozači: ${boje.keys.join(", ")}');
+    throw ArgumentError('Nepoznat vozač: $ime. Validni vozači: ${boje.keys.join(", ")}');
   }
 
   /// Proverava da li je vozač prepoznat/valjan
@@ -72,4 +83,9 @@ class VozacBoja {
   }
 
   static List<String> get sviDozvoljenEmails => dozvoljenEmails.values.toList();
+
+  // 📞 HELPER ZA TELEFON
+  static String? getTelefonForVozac(String? vozac) {
+    return vozac != null ? telefoni[vozac] : null;
+  }
 }

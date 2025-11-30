@@ -10,6 +10,7 @@ import '../utils/vozac_boja.dart'; // 🎨 Import za boje vozača
 import 'daily_checkin_screen.dart';
 import 'email_registration_screen.dart';
 import 'home_screen.dart';
+import 'vozac_screen.dart';
 import 'welcome_screen.dart';
 
 class EmailLoginScreen extends StatefulWidget {
@@ -528,7 +529,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (context) => const HomeScreen(),
+                          builder: (context) => driverName == 'Vlajic' ? const VozacScreen() : const HomeScreen(),
                         ),
                       );
                     }
@@ -543,7 +544,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             Navigator.pushReplacement(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => const HomeScreen(),
+                builder: (context) => driverName == 'Vlajic' ? const VozacScreen() : const HomeScreen(),
               ),
             );
           }

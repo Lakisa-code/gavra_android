@@ -18,6 +18,7 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
+import 'auth_screen.dart'; // DODANO za auth admin
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
@@ -243,7 +244,7 @@ class _AdminScreenState extends State<AdminScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent, // Transparentna pozadina
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
+          preferredSize: const Size.fromHeight(115),
           child: Container(
             decoration: BoxDecoration(
               color: Theme.of(context).glassContainer, // Transparentni glassmorphism
@@ -269,7 +270,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         children: [
                           // PRVI RED - Admin Panel sa Heartbeat
                           Container(
-                            height: 24,
+                            height: 20,
                             alignment: Alignment.center,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -277,7 +278,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 Text(
                                   'A D M I N   P A N E L',
                                   style: TextStyle(
-                                    fontSize: 17,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w800,
                                     color: Theme.of(context).colorScheme.onPrimary,
                                     letterSpacing: 1.8,
@@ -655,6 +656,60 @@ class _AdminScreenState extends State<AdminScreen> {
                                 ],
                               );
                             },
+                          ),
+                          const SizedBox(height: 4),
+                          // TREĆI RED - Auth dugme
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 70,
+                                child: InkWell(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => const AuthScreen(),
+                                    ),
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    height: 28,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).glassContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context).glassBorder,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'Auth',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            shadows: [
+                                              Shadow(
+                                                offset: Offset(1, 1),
+                                                blurRadius: 3,
+                                                color: Colors.black54,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
