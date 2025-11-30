@@ -1,14 +1,22 @@
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
+import 'multi_provider_navigation_service.dart';
 import 'osrm_service.dart'; // 🎯 OSRM za pravu TSP optimizaciju
 import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geocoding
 
 /// 🎯 SMART NAVIGATION SERVICE
 /// Implementira pravu GPS navigaciju sa optimizovanim redosledom putnika
 /// Koristi OpenStreetMap / self-hosted OSRM/Valhalla ili platform-specific aplikacije za otvaranje rute.
+///
+/// 🧭 MULTI-PROVIDER SUPPORT (v2.0):
+/// - Google Maps (10 waypoints) - prioritet za GMS uređaje
+/// - HERE WeGo (10 waypoints) - preporučeno za Huawei
+/// - Petal Maps (5 waypoints) - fallback za Huawei
+/// - Automatska segmentacija rute kada prelazi limit waypoinata
 class SmartNavigationService {
   /// 🏁 Vrati krajnju destinaciju na osnovu startCity
   /// Ako krećeš iz Bele Crkve, krajnja destinacija je Vršac i obrnuto
@@ -122,9 +130,93 @@ class SmartNavigationService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🧭 MULTI-PROVIDER NAVIGATION (v2.0)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /// 🧭 NOVA GLAVNA FUNKCIJA - Multi-provider navigacija
+  /// Automatski bira Google Maps, HERE WeGo ili Petal Maps
+  /// Podržava Huawei uređaje i automatsku segmentaciju rute
+  ///
+  /// [context] - BuildContext za dijaloge
+  /// [putnici] - Lista optimizovanih putnika
+  /// [cachedCoordinates] - Keširane koordinate iz optimizeRouteOnly
+  /// [startCity] - Početni grad (za krajnju destinaciju)
+  static Future<NavigationResult> startMultiProviderNavigation({
+    required BuildContext context,
+    required List<Putnik> putnici,
+    required String startCity,
+    Map<Putnik, Position>? cachedCoordinates,
+  }) async {
+    print('');
+    print('🧭🧭🧭 ===== MULTI-PROVIDER NAVIGATION ===== 🧭🧭🧭');
+    print('🧭 Putnici: ${putnici.length}');
+    print('🧭 Start city: $startCity');
+    print('');
+
+    try {
+      // 1. DOBIJ KOORDINATE
+      Map<Putnik, Position> coordinates;
+      if (cachedCoordinates != null && cachedCoordinates.isNotEmpty) {
+        coordinates = cachedCoordinates;
+      } else {
+        coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
+          putnici,
+          onProgress: (completed, total, address) {
+            print('📍 Geocoding: $completed/$total - $address');
+          },
+        );
+      }
+
+      if (coordinates.isEmpty) {
+        return NavigationResult.error('❌ Nijedan putnik nema validnu adresu');
+      }
+
+      // 2. ODREDI KRAJNJU DESTINACIJU
+      final endDestination = _getEndDestination(startCity);
+
+      // 3. POKRENI MULTI-PROVIDER NAVIGACIJU
+      if (!context.mounted) {
+        return NavigationResult.error('❌ Context nije više aktivan');
+      }
+      final result = await MultiProviderNavigationService.startNavigation(
+        context: context,
+        putnici: putnici,
+        coordinates: coordinates,
+        endDestination: endDestination,
+      );
+
+      // 4. KONVERTUJ REZULTAT
+      if (result.success) {
+        return NavigationResult.success(
+          message: result.message,
+          optimizedPutnici: result.launchedPutnici ?? putnici,
+          cachedCoordinates: coordinates,
+        );
+      } else {
+        return NavigationResult.error(result.message);
+      }
+    } catch (e) {
+      print('❌ Greška pri multi-provider navigaciji: $e');
+      return NavigationResult.error('❌ Greška: $e');
+    }
+  }
+
+  /// 📊 Proveri status navigacionih aplikacija na uređaju
+  static Future<NavigationStatus> checkNavigationStatus() async {
+    return MultiProviderNavigationService.checkNavigationStatus();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // 🗺️ LEGACY: GOOGLE MAPS ONLY (za backward compatibility)
+  // ═══════════════════════════════════════════════════════════════════════
+
   /// 🚗 GLAVNA FUNKCIJA - Otvori mapu sa optimizovanom rutom (preferirano OSM/OSRM)
   /// 🎯 skipOptimization=true: koristi prosleđenu listu bez re-optimizacije (za NAV dugme)
   /// 🎯 cachedCoordinates: prosleđene koordinate iz optimizeRouteOnly (izbegava duplo geocodiranje)
+  ///
+  /// ⚠️ DEPRECATED: Koristi startMultiProviderNavigation za podršku Huawei uređaja
+  @Deprecated('Koristi startMultiProviderNavigation za podršku Huawei uređaja')
   static Future<NavigationResult> startOptimizedNavigation({
     required List<Putnik> putnici,
     required String startCity, // 'Bela Crkva' ili 'Vršac'

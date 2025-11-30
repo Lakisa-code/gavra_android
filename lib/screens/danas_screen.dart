@@ -796,12 +796,12 @@ class _DanasScreenState extends State<DanasScreen> {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
     try {
-      // Koristi SmartNavigationService koji već ima logiku za waypoints
-      final result = await SmartNavigationService.startOptimizedNavigation(
+      // Koristi SmartNavigationService sa multi-provider podrškom (Google Maps, HERE WeGo, Petal Maps)
+      final result = await SmartNavigationService.startMultiProviderNavigation(
+        context: context,
         putnici: _optimizedRoute,
         startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
         cachedCoordinates: _cachedCoordinates,
-        skipOptimization: true, // Koristi već optimizovanu listu
       );
 
       if (result.success) {
@@ -2741,10 +2741,12 @@ class _DanasScreenState extends State<DanasScreen> {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
     try {
-      final result = await SmartNavigationService.startOptimizedNavigation(
+      // Koristi multi-provider navigaciju (Google Maps, HERE WeGo, Petal Maps)
+      final result = await SmartNavigationService.startMultiProviderNavigation(
+        context: context,
         putnici: _optimizedRoute,
         startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
-        cachedCoordinates: _cachedCoordinates, // 🎯 Proslijedi keširane koordinate
+        cachedCoordinates: _cachedCoordinates,
       );
 
       if (result.success) {
