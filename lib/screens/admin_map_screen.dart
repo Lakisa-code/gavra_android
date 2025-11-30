@@ -298,7 +298,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
 
     // PUTNICI - funkcionalnost nije implementirana (geocoding potreban)
-    // TODO: Implementirati _addPassengerMarkers sa geocoding-om
 
     if (mounted) {
       setState(() {
@@ -328,8 +327,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         return const Color(0xFF607D8B); // Siva
     }
   }
-
-  // TODO: Implementirati _addPassengerMarkers sa geocoding-om kad bude potrebno
 
   void _fitAllMarkers() {
     if (_markers.isEmpty) return;
@@ -422,7 +419,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
                     ),
                     // 👥 Putnici toggle - DISABLED (geocoding nije implementiran)
-                    // TODO: Implementirati geocoding za putničke markere
                     // 🔄 Refresh dugme
                     TextButton(
                       onPressed: () {

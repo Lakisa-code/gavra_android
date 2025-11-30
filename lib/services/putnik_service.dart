@@ -216,8 +216,11 @@ class PutnikService {
   }
 
   // Fields to explicitly request from mesecni_putnici
+  // ✅ DODATO: JOIN sa adrese tabelom za obe adrese
   static const String mesecniFields = '*,'
-      'polasci_po_danu';
+      'polasci_po_danu,'
+      'adresa_bc:adresa_bela_crkva_id(id,naziv,ulica,broj,grad,koordinate),'
+      'adresa_vs:adresa_vrsac_id(id,naziv,ulica,broj,grad,koordinate)';
 
   // 📚 UNDO STACK - Čuva poslednje akcije (max 10)
   static final List<UndoAction> _undoStack = [];

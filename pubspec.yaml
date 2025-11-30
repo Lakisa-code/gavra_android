@@ -87,3 +87,4 @@ flutter:
     - assets/svetlana.mp3 # 💖 Svetlanina specijalna pesma "Hiljson Mandela & Miach - Anđeo"
     - assets/bruda.mp3 # 🎵 Brudina specijalna pesma
     - assets/bilevski.mp3 # 🎵 Bilevskijeva specijalna pesma
+    - assets/agconnect-services.json # 🗺️ Huawei Map Kit API config

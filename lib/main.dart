@@ -14,6 +14,7 @@ import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
+import 'services/huawei_map_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/offline_map_service.dart';
 import 'services/realtime_notification_service.dart';
@@ -134,6 +135,13 @@ void main() async {
   // 🛰️ GPS MANAGER - centralizovani GPS singleton
   // GpsManager.instance se koristi lazy - ne treba inicijalizacija ovde
   // Tracking se pokreće kad je potreban (danas_screen, navigation widget)
+
+  // 🗺️ INITIALIZE HUAWEI MAP SERVICE (za routing bez Google Maps)
+  try {
+    await HuaweiMapService.initializeFromAssets();
+  } catch (e) {
+    debugPrint('Huawei Map Service initialization failed: $e');
+  }
 
   // 🗺️ INITIALIZE OFFLINE MAPS
   try {

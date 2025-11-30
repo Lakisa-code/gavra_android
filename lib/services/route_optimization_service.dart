@@ -483,6 +483,7 @@ class RouteOptimizationService {
         List<Putnik> optimized = [];
         if (driverPosition != null) {
           // pokušaj GPS optimizacije
+          // ignore: deprecated_member_use_from_same_package
           optimized = await optimizeRouteGeographically(
             filtered,
             driverPosition: driverPosition,

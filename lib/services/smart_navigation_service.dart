@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/route_config.dart';
 import '../models/putnik.dart';
 import 'osrm_service.dart'; // 🎯 OSRM za pravu TSP optimizaciju
 import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geocoding
@@ -9,6 +10,46 @@ import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geoc
 /// Implementira pravu GPS navigaciju sa optimizovanim redosledom putnika
 /// Koristi OpenStreetMap / self-hosted OSRM/Valhalla ili platform-specific aplikacije za otvaranje rute.
 class SmartNavigationService {
+  /// 🏁 Vrati krajnju destinaciju na osnovu startCity
+  /// Ako krećeš iz Bele Crkve, krajnja destinacija je Vršac i obrnuto
+  static Position? _getEndDestination(String startCity) {
+    final normalized = startCity.toLowerCase().trim();
+
+    if (normalized.contains('bela') || normalized.contains('bc')) {
+      // Kreće iz Bele Crkve -> krajnja destinacija je Vršac
+      return Position(
+        latitude: RouteConfig.vrsacLat,
+        longitude: RouteConfig.vrsacLng,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: 0,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      );
+    }
+
+    if (normalized.contains('vrsac') || normalized.contains('vršac') || normalized.contains('vs')) {
+      // Kreće iz Vršca -> krajnja destinacija je Bela Crkva
+      return Position(
+        latitude: RouteConfig.belaCrkvaLat,
+        longitude: RouteConfig.belaCrkvaLng,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: 0,
+        heading: 0,
+        speed: 0,
+        speedAccuracy: 0,
+        altitudeAccuracy: 0,
+        headingAccuracy: 0,
+      );
+    }
+
+    return null; // Nije prepoznat grad
+  }
+
   /// 🎯 SAMO OPTIMIZACIJA RUTE (bez otvaranja mape) - za "Pokreni" dugme
   static Future<NavigationResult> optimizeRouteOnly({
     required List<Putnik> putnici,
@@ -25,10 +66,17 @@ class SmartNavigationService {
       final currentPosition = await _getCurrentPosition();
       print('📍 VOZAČ POZICIJA: lat=${currentPosition.latitude}, lng=${currentPosition.longitude}');
 
+      // 🏁 Odredi krajnju destinaciju (suprotni grad)
+      final endDestination = _getEndDestination(startCity);
+      if (endDestination != null) {
+        print('🏁 KRAJNJA DESTINACIJA: ${startCity.contains('Bela') ? 'Vršac' : 'Bela Crkva'}');
+      }
+
       // 2. 🎯 KORISTI OSRM ZA PRAVU TSP OPTIMIZACIJU (sa fallback na lokalni algoritam)
       final osrmResult = await OsrmService.optimizeRoute(
         startPosition: currentPosition,
         putnici: putnici,
+        endDestination: endDestination,
         onGeocodingProgress: (completed, total, address) {
           print('📍 Geocoding: $completed/$total - $address');
         },
@@ -63,7 +111,7 @@ class SmartNavigationService {
       return NavigationResult.success(
         message: osrmResult.usedFallback ? '✅ Ruta optimizovana (lokalno)' : '✅ Ruta optimizovana (OSRM)',
         optimizedPutnici: optimizedRoute,
-        totalDistance: osrmResult.totalDistanceKm != null 
+        totalDistance: osrmResult.totalDistanceKm != null
             ? osrmResult.totalDistanceKm! * 1000 // km -> m
             : await _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
         skippedPutnici: skipped.isNotEmpty ? skipped : null,
@@ -99,7 +147,7 @@ class SmartNavigationService {
 
       // 2. 🎯 KORISTI KEŠIRANE KOORDINATE ILI GEOCODIRAJ
       Map<Putnik, Position> coordinates;
-      
+
       if (cachedCoordinates != null && cachedCoordinates.isNotEmpty) {
         // ✅ Koristi keširane koordinate (brže, bez API poziva)
         print('✅ Koristi keširane koordinate');
@@ -128,10 +176,14 @@ class SmartNavigationService {
         print('🎯 Koristi već optimizovanu rutu (skipOptimization=true)');
         optimizedRoute = putnici;
       } else {
+        // 🏁 Odredi krajnju destinaciju (suprotni grad)
+        final endDestination = _getEndDestination(startCity);
+
         // 🎯 KORISTI OSRM ZA OPTIMIZACIJU
         final osrmResult = await OsrmService.optimizeRoute(
           startPosition: currentPosition,
           putnici: putnici,
+          endDestination: endDestination,
         );
         if (osrmResult.success && osrmResult.optimizedPutnici != null) {
           optimizedRoute = osrmResult.optimizedPutnici!;
@@ -245,7 +297,7 @@ class SmartNavigationService {
 
       // 🎯 Filtriraj samo putnike koji imaju koordinate
       final putniciWithCoords = putnici.where((p) => coordinates.containsKey(p)).toList();
-      
+
       if (putniciWithCoords.isEmpty) {
         print('❌ Nema koordinata za putnike');
         return false;

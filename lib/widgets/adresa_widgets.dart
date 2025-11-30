@@ -277,14 +277,16 @@ class _AdresaAutocompleteWidgetState extends State<AdresaAutocompleteWidget> {
         );
       },
       displayStringForOption: (option) => option['naziv'] as String,
-      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-        // Sinhronizuj sa spoljnim kontrolerom
-        if (widget.controller != null && _controller != widget.controller) {
-          _controller = widget.controller!;
+      fieldViewBuilder: (context, autocompleteController, focusNode, onFieldSubmitted) {
+        // Postavi inicijalni tekst iz eksternog controllera (samo jednom)
+        if (widget.controller != null && autocompleteController.text.isEmpty && widget.controller!.text.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            autocompleteController.text = widget.controller!.text;
+          });
         }
 
         return TextFormField(
-          controller: _controller,
+          controller: autocompleteController,
           focusNode: focusNode,
           decoration: InputDecoration(
             labelText: widget.label,
@@ -295,6 +297,16 @@ class _AdresaAutocompleteWidgetState extends State<AdresaAutocompleteWidget> {
             fillColor: Colors.white.withValues(alpha: 0.9),
           ),
           onFieldSubmitted: (value) => onFieldSubmitted(),
+          onChanged: (value) {
+            // Kada korisnik ručno menja tekst, resetuj selektovani ID
+            // tako da će se nova adresa kreirati pri čuvanju ako nije izabrana iz sugestija
+            _selectedAdresaId = null;
+            widget.onChanged(null, value);
+            // Sinhronizuj sa eksternim controllerom
+            if (widget.controller != null) {
+              widget.controller!.text = value;
+            }
+          },
         );
       },
       onSelected: (option) {

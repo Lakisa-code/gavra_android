@@ -1021,6 +1021,23 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     return polasci;
   }
 
+  /// Vraća polasci_po_danu u formatu koji baza očekuje: {dan: {bc: time, vs: time}}
+  Map<String, Map<String, String?>> _getPolasciPoDanuMap() {
+    final Map<String, Map<String, String?>> normalizedPolasci = {};
+
+    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
+      final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
+
+      final bc = bcRaw.isNotEmpty ? MesecniHelpers.normalizeTime(bcRaw) : null;
+      final vs = vsRaw.isNotEmpty ? MesecniHelpers.normalizeTime(vsRaw) : null;
+
+      normalizedPolasci[dan] = {'bc': bc, 'vs': vs};
+    }
+
+    return normalizedPolasci;
+  }
+
   String? _validateForm() {
     final ime = _imeController.text.trim();
     if (ime.isEmpty) {
@@ -1128,85 +1145,96 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   }
 
   Future<void> _updateExistingPutnik() async {
-    // Resolve address UUIDs: if the user cleared the field -> null; if provided -> createOrGet
-    // Prefer currently selected IDs from autocomplete; start from existing putnik as fallback
-    String? adresaBelaCrkvaId = _adresaBelaCrkvaId ?? widget.existingPutnik!.adresaBelaCrkvaId;
-    String? adresaVrsacId = _adresaVrsacId ?? widget.existingPutnik!.adresaVrsacId;
+    // Resolve address UUIDs:
+    // - Ako je _adresaBelaCrkvaId postavljen (korisnik je izabrao iz autocomplete) -> koristi taj ID
+    // - Ako je null ali ima teksta u polju -> korisnik je ručno uneo/promenio adresu, kreiraj novu
+    // - Ako je polje prazno -> postavi null
+    String? adresaBelaCrkvaId;
+    String? adresaVrsacId;
 
-    // If the user cleared the field -> set to null
+    // Adresa Bela Crkva
     if (_adresaBelaCrkvaController.text.isEmpty) {
       adresaBelaCrkvaId = null;
+    } else if (_adresaBelaCrkvaId != null) {
+      // Korisnik je izabrao adresu iz autocomplete-a
+      adresaBelaCrkvaId = _adresaBelaCrkvaId;
     } else {
-      // If no UUID currently known but user typed free text -> create or find
-      if (adresaBelaCrkvaId == null && _adresaBelaCrkvaController.text.isNotEmpty) {
-        final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
-          naziv: _adresaBelaCrkvaController.text.trim(),
-          grad: 'Bela Crkva',
-        );
-        adresaBelaCrkvaId = adresaBC?.id;
-      }
+      // Korisnik je ručno uneo tekst, kreiraj ili pronađi adresu
+      final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
+        naziv: _adresaBelaCrkvaController.text.trim(),
+        grad: 'Bela Crkva',
+      );
+      adresaBelaCrkvaId = adresaBC?.id;
     }
 
+    // Adresa Vršac
     if (_adresaVrsacController.text.isEmpty) {
       adresaVrsacId = null;
+    } else if (_adresaVrsacId != null) {
+      // Korisnik je izabrao adresu iz autocomplete-a
+      adresaVrsacId = _adresaVrsacId;
     } else {
-      if (adresaVrsacId == null && _adresaVrsacController.text.isNotEmpty) {
-        final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
-          naziv: _adresaVrsacController.text.trim(),
-          grad: 'Vršac',
-        );
-        adresaVrsacId = adresaVS?.id;
-      }
+      // Korisnik je ručno uneo tekst, kreiraj ili pronađi adresu
+      final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
+        naziv: _adresaVrsacController.text.trim(),
+        grad: 'Vršac',
+      );
+      adresaVrsacId = adresaVS?.id;
     }
 
-    final editovanPutnik = widget.existingPutnik!.copyWith(
-      putnikIme: _imeController.text.trim(),
-      tip: _tip,
-      tipSkole: _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
-      brojTelefona: _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
-      brojTelefonaOca: _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
-      brojTelefonaMajke: _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
-      polasciPoDanu: _getPolasciPoDanu(),
-      radniDani: _getRadniDaniString(),
-      adresaBelaCrkvaId: adresaBelaCrkvaId,
-      adresaVrsacId: adresaVrsacId,
-    );
+    // 🔧 DIREKTNO KREIRAJ MAPU ZA UPDATE - zaobilazi copyWith problem sa null vrednostima
+    final updateMap = <String, dynamic>{
+      'putnik_ime': _imeController.text.trim(),
+      'tip': _tip,
+      'tip_skole': _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
+      'broj_telefona': _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
+      'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
+      'broj_telefona_majke':
+          _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
+      'polasci_po_danu': _getPolasciPoDanuMap(),
+      'radni_dani': _getRadniDaniString(),
+      // ✅ KLJUČNO: Eksplicitno postavi adrese (uključujući null za brisanje)
+      'adresa_bela_crkva_id': adresaBelaCrkvaId,
+      'adresa_vrsac_id': adresaVrsacId,
+    };
 
-    final updated = await _mesecniPutnikService.azurirajMesecnogPutnika(editovanPutnik);
+    try {
+      final updated = await _mesecniPutnikService.updateMesecniPutnik(
+        widget.existingPutnik!.id,
+        updateMap,
+      );
 
-    if (updated == null) {
+      // Create daily travels for updated passenger
+      try {
+        await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
+          updated,
+          DateTime.now().add(const Duration(days: 1)),
+        );
+      } catch (_) {
+        // Ignore errors in daily travel creation
+      }
+
       if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Greška pri ažuriranju u bazi. Pokušajte ponovo.'),
+            content: Text('✅ Mesečni putnik je uspešno ažuriran'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Call callback to refresh parent screen
+        widget.onSaved?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška pri ažuriranju u bazi: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      return;
-    }
-
-    // Create daily travels for updated passenger
-    try {
-      await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
-        editovanPutnik,
-        DateTime.now().add(const Duration(days: 1)),
-      );
-    } catch (_) {
-      // Ignore errors in daily travel creation
-    }
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Mesečni putnik je uspešno ažuriran'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Call callback to refresh parent screen
-      widget.onSaved?.call();
     }
   }
 }

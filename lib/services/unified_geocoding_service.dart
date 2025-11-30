@@ -338,6 +338,12 @@ class UnifiedGeocodingService {
 
   /// Proveri da li putnik ima validnu adresu
   static bool _hasValidAddress(Putnik putnik) {
+    // 🎯 MESEČNI PUTNICI: Imaju adresaId koji pokazuje na pravu adresu
+    if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
+      return true;
+    }
+
+    // DNEVNI PUTNICI: Moraju imati adresu koja nije samo grad
     if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) {
       return false;
     }

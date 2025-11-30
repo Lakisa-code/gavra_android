@@ -360,6 +360,15 @@ class Putnik {
     final polazakBC = MesecniHelpers.getPolazakForDay(map, targetDan, 'bc');
     final polazakVS = MesecniHelpers.getPolazakForDay(map, targetDan, 'vs');
 
+    // ✅ NOVO: Čitaj adrese iz JOIN-a sa adrese tabelom (ako postoji)
+    // JOIN format: adresa_bc: {id, naziv, ulica, broj, grad, koordinate}
+    final adresaBcJoin = map['adresa_bc'] as Map<String, dynamic>?;
+    final adresaVsJoin = map['adresa_vs'] as Map<String, dynamic>?;
+
+    // Koristi naziv iz JOIN-a, fallback na staro TEXT polje
+    final adresaBelaCrkva = adresaBcJoin?['naziv'] as String? ?? map['adresa_bela_crkva'] as String? ?? 'Bela Crkva';
+    final adresaVrsac = adresaVsJoin?['naziv'] as String? ?? map['adresa_vrsac'] as String? ?? 'Vršac';
+
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
       // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
@@ -399,7 +408,7 @@ class Putnik {
           dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
           vozac: vozac, // ✅ KORISTI vozač varijablu
           grad: 'Bela Crkva',
-          adresa: map['adresa_bela_crkva'] as String? ?? 'Bela Crkva',
+          adresa: adresaBelaCrkva, // ✅ KORISTI adresu iz JOIN-a sa adrese tabelom
           adresaId: map['adresa_bela_crkva_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
@@ -446,7 +455,7 @@ class Putnik {
           dodaoVozac: map['dodao_vozac'] as String?, // ✅ NOVA KOLONA za dodavanje
           vozac: vozac, // ✅ KORISTI vozač varijablu
           grad: 'Vršac',
-          adresa: map['adresa_vrsac'] as String? ?? 'Vršac',
+          adresa: adresaVrsac, // ✅ KORISTI adresu iz JOIN-a sa adrese tabelom
           adresaId: map['adresa_vrsac_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO

@@ -1,5 +1,6 @@
 import '../globals.dart';
 import '../models/adresa.dart';
+import 'advanced_geocoding_service.dart';
 
 /// Servis za rad sa normalizovanim adresama iz Supabase tabele
 /// 🎯 KORISTI UUID REFERENCE umesto TEXT polja
@@ -78,6 +79,7 @@ class AdresaSupabaseService {
   }
 
   /// Kreira novu adresu ili vraća postojeću
+  /// 🎯 AUTOMATSKI GEOCODING: Ako adresa nema koordinate, poziva geocoding API
   static Future<Adresa?> createOrGetAdresa({
     required String naziv,
     required String grad,
@@ -94,6 +96,16 @@ class AdresaSupabaseService {
       final postojeca = await findAdresaByNazivAndGrad(naziv, grad);
       if (postojeca != null) {
         print('🏠 Found existing address: ${postojeca.id}');
+
+        // 🎯 KLJUČNO: Ako postojeća adresa NEMA koordinate, pokreni geocoding
+        if (!postojeca.hasValidCoordinates) {
+          print('🌍 Address exists but has NO coordinates - triggering geocoding...');
+          final updatedAdresa = await _geocodeAndUpdateAdresa(postojeca, grad);
+          if (updatedAdresa != null) {
+            return updatedAdresa;
+          }
+        }
+
         return postojeca;
       }
       print('🏠 No existing address found, creating new...');
@@ -101,7 +113,30 @@ class AdresaSupabaseService {
       print('❌ Error searching for existing address: $e');
     }
 
-    // Kreiraj novu
+    // 🎯 Pokušaj geocoding pre kreiranja nove adrese
+    double? geoLat = lat;
+    double? geoLng = lng;
+
+    if (geoLat == null || geoLng == null) {
+      print('🌍 Geocoding new address: "$naziv", grad: "$grad"');
+      try {
+        final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
+          grad: grad,
+          adresa: naziv,
+        );
+        if (geocodeResult != null && geocodeResult.confidence > 50) {
+          geoLat = geocodeResult.latitude;
+          geoLng = geocodeResult.longitude;
+          print('✅ Geocoding successful: lat=$geoLat, lng=$geoLng (confidence: ${geocodeResult.confidence}%)');
+        } else {
+          print('⚠️ Geocoding failed or low confidence for "$naziv"');
+        }
+      } catch (e) {
+        print('❌ Geocoding error: $e');
+      }
+    }
+
+    // Kreiraj novu sa koordinatama (ako ih imamo)
     try {
       print('🏠 Inserting new address...');
       final response = await supabase
@@ -112,7 +147,7 @@ class AdresaSupabaseService {
             'ulica': ulica ?? naziv,
             'broj': broj,
             // Dodaj koordinate kao JSONB objekat ako su dostupne
-            if (lat != null && lng != null) 'koordinate': {'lat': lat, 'lng': lng},
+            if (geoLat != null && geoLng != null) 'koordinate': {'lat': geoLat, 'lng': geoLng},
           })
           .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
           .single();
@@ -120,12 +155,48 @@ class AdresaSupabaseService {
       print('🏠 Insert response: $response');
       final adresa = Adresa.fromMap(response);
       _cache[adresa.id] = adresa;
-      print('🏠 Successfully created address: ${adresa.id}');
+      print('🏠 Successfully created address: ${adresa.id} with coords: ${adresa.hasValidCoordinates}');
       return adresa;
     } catch (e) {
       print('❌ Error creating new address: $e');
       return null;
     }
+  }
+
+  /// 🌍 Geocodira adresu i ažurira u bazi
+  static Future<Adresa?> _geocodeAndUpdateAdresa(Adresa adresa, String grad) async {
+    try {
+      final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
+        grad: grad,
+        adresa: adresa.naziv,
+      );
+
+      if (geocodeResult != null && geocodeResult.confidence > 50) {
+        print(
+            '✅ Geocoding successful for "${adresa.naziv}": lat=${geocodeResult.latitude}, lng=${geocodeResult.longitude}');
+
+        // Ažuriraj u bazi
+        final response = await supabase
+            .from('adrese')
+            .update({
+              'koordinate': {'lat': geocodeResult.latitude, 'lng': geocodeResult.longitude},
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', adresa.id)
+            .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
+            .single();
+
+        final updatedAdresa = Adresa.fromMap(response);
+        _cache[updatedAdresa.id] = updatedAdresa;
+        print('✅ Address updated in database with coordinates');
+        return updatedAdresa;
+      } else {
+        print('⚠️ Geocoding failed or low confidence for "${adresa.naziv}"');
+      }
+    } catch (e) {
+      print('❌ Error geocoding/updating address: $e');
+    }
+    return null;
   }
 
   /// Pretraži adrese po nazivu (za autocomplete)
