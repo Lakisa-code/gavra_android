@@ -13,6 +13,8 @@ class BottomNavBarZimski extends StatefulWidget {
     required this.onPolazakChanged,
     required this.getPutnikCount,
     this.isSlotLoading,
+    this.bcVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
+    this.vsVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
   });
   final List<String> sviPolasci;
   final String selectedGrad;
@@ -20,6 +22,8 @@ class BottomNavBarZimski extends StatefulWidget {
   final void Function(String grad, String vreme) onPolazakChanged;
   final int Function(String grad, String vreme) getPutnikCount;
   final bool Function(String grad, String vreme)? isSlotLoading;
+  final List<String>? bcVremena; // ✅ Custom BC vremena
+  final List<String>? vsVremena; // ✅ Custom VS vremena
 
   @override
   State<BottomNavBarZimski> createState() => _BottomNavBarZimskiState();
@@ -50,9 +54,9 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // 🎯 Koristi centralizovana vremena iz RouteConfig
-    final bcVremena = RouteConfig.bcVremenaZimski;
-    final vsVremena = RouteConfig.vsVremenaZimski;
+    // 🎯 Koristi prosleđena vremena ili fallback na RouteConfig
+    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
+    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
 
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
@@ -86,9 +90,9 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎯 Koristi centralizovana vremena iz RouteConfig
-    final bcVremena = RouteConfig.bcVremenaZimski;
-    final vsVremena = RouteConfig.vsVremenaZimski;
+    // 🎯 Koristi prosleđena vremena ili fallback na RouteConfig
+    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
+    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
     final currentThemeId = ThemeManager().currentThemeId;
 
     return Container(

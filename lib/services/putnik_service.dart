@@ -152,28 +152,30 @@ class PutnikService {
         // 🔍 Dohvati sve mesečne zapise iz putovanja_istorija za ovaj dan
         // (otkazivanja, pokupljenja itd.) da bismo ih isključili/zamenili
         final Map<String, Map<String, dynamic>> mesecniOverrides = {};
-        if (isoDate != null) {
-          try {
-            final mesecniIstorija = await supabase
-                .from('putovanja_istorija')
-                .select()
-                .eq('datum_putovanja', isoDate)
-                .eq('tip_putnika', 'mesecni')
-                .not('mesecni_putnik_id', 'is', null);
+        // ✅ FIX: Uvek učitavaj overrides za današnji dan, ne samo ako isoDate != null
+        final overrideDate = isoDate ?? DateTime.now().toIso8601String().split('T')[0];
+        try {
+          final mesecniIstorija = await supabase
+              .from('putovanja_istorija')
+              .select()
+              .eq('datum_putovanja', overrideDate)
+              .eq('tip_putnika', 'mesecni')
+              .eq('obrisan', false) // ✅ Ignoriši soft-deleted zapise
+              .not('mesecni_putnik_id', 'is', null);
 
-            for (final row in mesecniIstorija) {
-              final mpId = row['mesecni_putnik_id']?.toString();
-              final rowGrad = row['grad']?.toString() ?? '';
-              final rowVreme = GradAdresaValidator.normalizeTime(row['vreme_polaska']?.toString() ?? '');
-              if (mpId != null) {
-                // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
-                final key = '${mpId}_${rowGrad}_$rowVreme';
-                mesecniOverrides[key] = Map<String, dynamic>.from(row as Map);
-              }
+          for (final row in mesecniIstorija) {
+            final mpId = row['mesecni_putnik_id']?.toString();
+            final rowGrad = TextUtils.normalizeText(row['grad']?.toString() ?? ''); // ✅ Normalizuj grad
+            final rowVreme = GradAdresaValidator.normalizeTime(row['vreme_polaska']?.toString() ?? '');
+            if (mpId != null) {
+              // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
+              final key = '${mpId}_${rowGrad}_$rowVreme';
+              mesecniOverrides[key] = Map<String, dynamic>.from(row as Map);
+              print('📥 UČITAN OVERRIDE: ime=${row['putnik_ime']} key=$key status=${row['status']}');
             }
-          } catch (_) {
-            // Ignorisi greške
           }
+        } catch (_) {
+          // Ignorisi greške
         }
 
         // Query mesecni_putnici - uzmi aktivne mesečne putnike za ciljani dan
@@ -184,6 +186,8 @@ class PutnikService {
           // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan kao u getAllPutniciFromBothTables
           final putniciZaDan = Putnik.fromMesecniPutniciMultipleForDay(m, danKratica);
           for (final p in putniciZaDan) {
+            print(
+                '📊 UČITAN MESEČNI PUTNIK: ${p.ime} status=${p.status} jeOtkazan=${p.jeOtkazan} grad=${p.grad} polazak=${p.polazak}');
             // apply grad/vreme filter if provided
             final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
             final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
@@ -196,11 +200,16 @@ class PutnikService {
             }
 
             // 🔍 Proveri da li postoji override (otkazivanje/pokupljenje) za ovog mesečnog putnika
-            final overrideKey = '${p.id}_${p.grad}_$normVreme';
+            final normGrad = TextUtils.normalizeText(p.grad); // ✅ Normalizuj grad za poređenje
+            final overrideKey = '${p.id}_${normGrad}_$normVreme';
+            print(
+                '🔍 PROVERA OVERRIDE: ${p.ime} key=$overrideKey postoji=${mesecniOverrides.containsKey(overrideKey)}');
             if (mesecniOverrides.containsKey(overrideKey)) {
               // Zameni sa podacima iz putovanja_istorija (ima status otkazan, pokupljen itd.)
               final overrideData = mesecniOverrides[overrideKey]!;
               final overridePutnik = Putnik.fromPutovanjaIstorija(overrideData);
+              print(
+                  '✅ PRIMENJEN OVERRIDE: ${overridePutnik.ime} status=${overridePutnik.status} jeOtkazan=${overridePutnik.jeOtkazan}');
               combined.add(overridePutnik);
             } else {
               combined.add(p);
@@ -1243,7 +1252,7 @@ class PutnikService {
       if (tabela == 'mesecni_putnici') {
         // 🆕 NOVI PRISTUP: Za mesečne putnike kreiraj zapis u putovanja_istorija za konkretan dan
         final danas = DateTime.now().toIso8601String().split('T')[0];
-        final polazak = selectedVreme ?? '5:00'; // Koristi proslijećeno vreme ili default
+        final polazak = GradAdresaValidator.normalizeTime(selectedVreme ?? '5:00'); // Normalize vreme for overriding
         final grad = selectedGrad ?? 'Bela Crkva'; // Koristi proslijećeni grad ili default
 
         // Kreiraj zapis otkazivanja za današnji dan sa ActionLog
@@ -1621,7 +1630,27 @@ class PutnikService {
     try {
       if (currentDriver.isEmpty) {
         throw Exception('Funkcija zahteva specificiranje vozača');
-      } // Pokušaj reset u mesecni_putnici tabeli
+      }
+
+      final danas = DateTime.now().toIso8601String().split('T')[0];
+
+      // 🔴 PRVO: Resetuj override zapise iz putovanja_istorija za danas (otkazivanja mesečnih)
+      // Umesto DELETE koristimo UPDATE da postavimo status na 'resetovan' ili obrišemo soft-delete
+      try {
+        await supabase
+            .from('putovanja_istorija')
+            .update({
+              'status': 'resetovan',
+              'obrisan': true, // Soft delete
+            })
+            .eq('putnik_ime', imePutnika)
+            .eq('datum_putovanja', danas)
+            .eq('tip_putnika', 'mesecni');
+      } catch (_) {
+        // Ignore - možda nema zapisa
+      }
+
+      // Pokušaj reset u mesecni_putnici tabeli
       try {
         final mesecniResponse =
             await supabase.from('mesecni_putnici').select().eq('putnik_ime', imePutnika).maybeSingle();
@@ -1657,28 +1686,38 @@ class PutnikService {
         // Ako nema u mesecni_putnici, nastavi sa putovanja_istorija
       }
 
-      // Pokušaj reset u putovanja_istorija tabeli
-      final danas = DateTime.now().toIso8601String().split('T')[0];
+      // Pokušaj reset u putovanja_istorija tabeli (za DNEVNE putnike)
       final putovanjaResponse = await supabase
           .from('putovanja_istorija')
           .select()
           .eq('putnik_ime', imePutnika)
           .eq('datum_putovanja', danas)
+          .eq('tip_putnika', 'dnevni')
           .maybeSingle();
 
       if (putovanjaResponse != null) {
+        // Reset action_log da ukloni cancelled_by
+        final cleanActionLog = {
+          'created_by': putovanjaResponse['created_by'],
+          'paid_by': null,
+          'picked_by': null,
+          'cancelled_by': null, // ✅ UKLONI cancelled_by
+          'primary_driver': null,
+          'created_at': putovanjaResponse['created_at'],
+          'actions': [], // ✅ OČISTI sve akcije
+        };
+
         await supabase
             .from('putovanja_istorija')
             .update({
-              'status': 'nije_se_pojavio', // ✅ POČETNO STANJE umesto null
+              'status': 'nije_se_pojavio', // ✅ POČETNO STANJE
               'cena': 0, // ✅ VRATI cenu na 0
-              // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
-              'vozac': null, // ✅ UKLONI vozača
+              'vozac_id': null, // ✅ UKLONI vozača
+              'action_log': cleanActionLog, // ✅ RESET action_log
             })
             .eq('putnik_ime', imePutnika)
-            .eq('datum_putovanja', danas);
-      } else {
-        // Nema zapis u putovanja_istorija za danas - nastavi
+            .eq('datum_putovanja', danas)
+            .eq('tip_putnika', 'dnevni');
       }
     } catch (e) {
       // Greška pri resetovanju kartice

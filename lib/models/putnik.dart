@@ -147,6 +147,45 @@ class Putnik {
 
   // NOVI: Factory za putovanja_istorija tabelu
   factory Putnik.fromPutovanjaIstorija(Map<String, dynamic> map) {
+    // 🔍 Izvuci cancelled_by i vreme otkazivanja iz action_log
+    String? cancelledByVozac;
+    DateTime? vremeOtkazivanja;
+    final actionLog = map['action_log'];
+    if (actionLog != null) {
+      Map<String, dynamic>? logMap;
+      if (actionLog is String) {
+        try {
+          logMap = Map<String, dynamic>.from(
+            (actionLog.isNotEmpty) ? (Map<String, dynamic>.from(Map.castFrom(jsonDecode(actionLog)))) : {},
+          );
+        } catch (_) {}
+      } else if (actionLog is Map) {
+        logMap = Map<String, dynamic>.from(actionLog);
+      }
+      if (logMap != null) {
+        // Izvuci cancelled_by UUID i mapiraj na ime
+        final cancelledByUuid = logMap['cancelled_by'] as String?;
+        if (cancelledByUuid != null && cancelledByUuid.isNotEmpty) {
+          cancelledByVozac = VozacMappingService.getVozacImeWithFallbackSync(cancelledByUuid);
+        }
+        // Izvuci vreme otkazivanja iz actions liste
+        final actions = logMap['actions'] as List<dynamic>?;
+        if (actions != null) {
+          for (final action in actions) {
+            if (action is Map && action['type'] == 'cancelled') {
+              final ts = action['timestamp'] as String?;
+              if (ts != null) {
+                try {
+                  vremeOtkazivanja = DateTime.parse(ts);
+                } catch (_) {}
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+
     return Putnik(
       id: map['id'], // ✅ UUID iz putovanja_istorija
       ime: map['putnik_ime'] as String? ?? '',
@@ -183,7 +222,8 @@ class Putnik {
             map['vozac_id'] as String?,
           ),
       grad: map['grad'] as String? ?? 'Bela Crkva', // ✅ KORISTI grad kolonu
-      otkazaoVozac: map['otkazao_vozac'] as String?, // ✅ NOVA KOLONA za otkazivanje
+      otkazaoVozac: cancelledByVozac ?? (map['otkazao_vozac'] as String?), // ✅ Izvučeno iz action_log
+      vremeOtkazivanja: vremeOtkazivanja, // ✅ NOVO: Vreme otkazivanja iz action_log
       adresa: map['adresa'] as String?,
       adresaId: map['adresa_id'] as String?, // ✅ UUID reference u tabelu adrese
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone

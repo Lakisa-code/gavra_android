@@ -17,6 +17,7 @@ import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/global_cache_manager.dart'; // 🔄 DODATO za globalni cache manager
 import '../utils/smart_colors.dart';
+import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart';
 
 /// Widget za prikaz putnik kartice sa podrškom za mesečne i dnevne putnike
@@ -72,6 +73,8 @@ class _PutnikCardState extends State<PutnikCard> {
     super.didUpdateWidget(oldWidget);
     // Ažuriraj _putnik kada se promeni widget.putnik iz StreamBuilder-a
     if (widget.putnik != oldWidget.putnik) {
+      debugPrint(
+          '🔄 DIDUPDATEWIDGET: ${_putnik.ime} stari status=${oldWidget.putnik.status} novi status=${widget.putnik.status} jeOtkazan=${widget.putnik.jeOtkazan}');
       _putnik = widget.putnik;
     }
   }
@@ -121,6 +124,15 @@ class _PutnikCardState extends State<PutnikCard> {
           // 🔄 FORSIRAJ UI REFRESH NA PARENT WIDGET
           if (mounted && widget.onChanged != null) {
             widget.onChanged!();
+          }
+
+          // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
+          // Ensures UI reflects persisted pokupljen state on navigation refresh
+          try {
+            await GlobalCacheManager.clearAllCachesAndRefresh();
+          } catch (e) {
+            // Ignore cache refresh errors but log for debugging
+            debugPrint('❌ Greška pri cache refresh-u nakon pokupljenja: $e');
           }
 
           // 🆕 DODAJ KRATKU PAUZU pre dohvatanja (da se baza ažurira)
@@ -288,6 +300,11 @@ class _PutnikCardState extends State<PutnikCard> {
 
   // Proverava da li se kartica može resetovati
   bool _canResetCard() {
+    // Allow reset if putnik is marked as absent (bolovanje/godišnji)
+    if (TextUtils.isStatusInCategory(_putnik.status, TextUtils.bolovanjeGodisnji)) {
+      return true;
+    }
+
     final canReset = _putnik.jePokupljen || _putnik.jePlacen || _putnik.jeOtkazan;
     return canReset;
   }
@@ -2328,7 +2345,7 @@ class _PutnikCardState extends State<PutnikCard> {
                     if (_putnik.jeOtkazan) ...[
                       const SizedBox(width: 12),
                       Text(
-                        'Otkazao: ${_putnik.otkazaoVozac?.isNotEmpty == true ? _putnik.otkazaoVozac! : 'sistem'}',
+                        'Otkazao: ${_putnik.vremeOtkazivanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeOtkazivanja!) : 'ranije'}',
                         style: TextStyle(
                           fontSize: 13,
                           color: VozacBoja.getColorOrDefault(
@@ -2722,9 +2739,11 @@ class _PutnikCardState extends State<PutnikCard> {
         await PutnikService().otkaziPutnika(
           _putnik.id!,
           widget.currentDriver ?? '',
-          selectedVreme: widget.selectedVreme,
-          selectedGrad: widget.selectedGrad,
+          selectedVreme: _putnik.polazak,
+          selectedGrad: _putnik.grad,
         );
+
+        debugPrint('✅ OTKAZIVANJE USPEŠNO: ${_putnik.ime} - baza ažurirana');
 
         // ✅ FIX: Ažuriraj lokalni _putnik sa novim statusom
         if (mounted) {
@@ -2757,6 +2776,8 @@ class _PutnikCardState extends State<PutnikCard> {
               brojTelefona: _putnik.brojTelefona,
               datum: _putnik.datum,
             );
+            debugPrint(
+                '✅ LOKALNI _PUTNIK AŽURIRAN: ${_putnik.ime} status=${_putnik.status} jeOtkazan=${_putnik.jeOtkazan}');
           });
         }
 
@@ -2764,8 +2785,22 @@ class _PutnikCardState extends State<PutnikCard> {
         if (widget.onChanged != null) {
           widget.onChanged!();
         }
+
+        // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
+        // Ovo osigurava da override entries (putovanja_istorija) postanu
+        // vidljivi prilikom povratka na ekran (kartica ostaje crvena)
+        try {
+          await GlobalCacheManager.clearAllCachesAndRefresh();
+        } catch (e) {
+          debugPrint('❌ Greška pri čišćenju cache-a nakon otkazivanja: $e');
+        }
       } catch (e) {
-        // Greška pri otkazivanju putnika - ignorisana
+        debugPrint('❌ OTKAZIVANJE GREŠKA: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          );
+        }
       }
     }
   }
