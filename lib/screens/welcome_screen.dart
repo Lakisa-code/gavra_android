@@ -45,19 +45,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   // Lista vozača za email sistem - koristi VozacBoja utility
   final List<Map<String, dynamic>> _drivers = [
     {
-      'name': 'Bilevski',
-      'color': VozacBoja.get('Bilevski'),
-      'icon': Icons.directions_car,
-    },
-    {
       'name': 'Bruda',
       'color': VozacBoja.get('Bruda'),
       'icon': Icons.local_taxi,
     },
     {
-      'name': 'Bojan',
-      'color': VozacBoja.get('Bojan'),
-      'icon': Icons.airport_shuttle,
+      'name': 'Bilevski',
+      'color': VozacBoja.get('Bilevski'),
+      'icon': Icons.directions_car,
+    },
+    {
+      'name': 'Vlajic',
+      'color': const Color(0xFF5A5A5A), // tamnija siva
+      'icon': Icons.directions_car,
     },
     {
       'name': 'Svetlana',
@@ -65,9 +65,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       'icon': Icons.favorite,
     },
     {
-      'name': 'Vlajic',
-      'color': const Color(0xFF5A5A5A), // tamnija siva
-      'icon': Icons.directions_car,
+      'name': 'Bojan',
+      'color': VozacBoja.get('Bojan'),
+      'icon': Icons.airport_shuttle,
     },
   ];
 
