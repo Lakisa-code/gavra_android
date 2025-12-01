@@ -131,12 +131,16 @@ class Putnik {
             )
           : null,
       pokupioVozac: map['pokupljanje_vozac'] as String?,
-      // 🎯 PRIORITET: vozac_id (UUID) -> konvertuj u ime, fallback na dodao_vozac ili 'Nepoznat'
-      dodaoVozac: VozacMappingService.getVozacImeWithFallbackSync(
-            map['vozac_id'] as String?,
-          ) ??
-          map['dodao_vozac'] as String? ??
-          'Nepoznat',
+      // 🎯 PRIORITET: updated_by (ko je menjao) -> created_by (ko je kreirao) -> fallback
+      dodaoVozac: (VozacMappingService.getVozacImeWithFallbackSync(
+                map['updated_by'] as String?,
+              ) ??
+              _mapUuidToVozacHardcoded(map['updated_by'] as String?)) ??
+          (VozacMappingService.getVozacImeWithFallbackSync(
+                map['created_by'] as String?,
+              ) ??
+              _mapUuidToVozacHardcoded(map['created_by'] as String?)) ??
+          map['dodao_vozac'] as String?,
       grad: grad,
       adresa: _determineAdresaFromMesecni(map),
       adresaId: _determineAdresaIdFromMesecni(map, grad), // ✅ NOVO - UUID adrese

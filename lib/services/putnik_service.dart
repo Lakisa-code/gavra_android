@@ -745,9 +745,13 @@ class PutnikService {
         }
 
         // Ažuriraj mesečnog putnika u bazi
+        // ✅ Konvertuj ime vozača u UUID za updated_by
+        final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
+        
         await supabase.from('mesecni_putnici').update({
           'polasci_po_danu': polasciPoDanu,
           'radni_dani': radniDani,
+          'updated_by': updatedByUuid, // ✅ NOVO: Ko je ažurirao raspored
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', putnikId);
       } else {
