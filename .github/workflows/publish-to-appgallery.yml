@@ -36,6 +36,9 @@ jobs:
         mkdir -p android/app
         echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
         echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
+          # Also write a copy inside android/ in case the signing storeFile path points there
+          mkdir -p android
+          cp gavra-release-key-production.keystore android/gavra-release-key-production.keystore
 
     - name: Create placeholder agconnect-services.json (no secrets provided)
       env:

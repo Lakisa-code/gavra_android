@@ -67,6 +67,9 @@ jobs:
         run: |
           echo "Writing keystore to gavra-release-key-production.keystore"
           echo "$KEYSTORE_BASE64" | base64 --decode > gavra-release-key-production.keystore
+            # Also write a copy inside android/ in case the signing storeFile path points there
+            mkdir -p android
+            cp gavra-release-key-production.keystore android/gavra-release-key-production.keystore
 
       - name: Create android/key.properties using secrets
         env:
