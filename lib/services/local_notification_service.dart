@@ -115,7 +115,7 @@ class LocalNotificationService {
               htmlFormatBigText: true,
               contentTitle: title,
               htmlFormatContentTitle: true,
-              summaryText: 'Gavra Transport',
+              summaryText: 'Gavra 013',
               htmlFormatSummaryText: true,
             ),
           ),

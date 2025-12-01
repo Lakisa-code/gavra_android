@@ -392,7 +392,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     return Column(
       children: [
         Text(
-          'GAVRA TRANSPORT',
+          'Gavra 013',
           style: TextStyle(
             color: Colors.white,
             fontSize: 28,

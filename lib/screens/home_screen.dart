@@ -1301,8 +1301,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                         adresa:
                                             adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
-                                        brojTelefona:
-                                            telefonController.text.trim().isEmpty ? null : telefonController.text.trim(),
+                                        brojTelefona: telefonController.text.trim().isEmpty
+                                            ? null
+                                            : telefonController.text.trim(),
                                       );
 
                                       // Duplikat provera se vrši u PutnikService.dodajPutnika()
