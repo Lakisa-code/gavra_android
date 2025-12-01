@@ -747,7 +747,7 @@ class PutnikService {
         // Ažuriraj mesečnog putnika u bazi
         // ✅ Konvertuj ime vozača u UUID za updated_by
         final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
-        
+
         await supabase.from('mesecni_putnici').update({
           'polasci_po_danu': polasciPoDanu,
           'radni_dani': radniDani,

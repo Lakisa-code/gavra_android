@@ -513,6 +513,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _showAddPutnikDialog() async {
     final imeController = TextEditingController();
     final adresaController = TextEditingController();
+    final telefonController = TextEditingController(); // 📞 OPCIONO: Broj telefona
     bool mesecnaKarta = false;
     bool manuelnoOznaceno = false; // 🔧 NOVO: prati da li je manuelno označeno
 
@@ -870,6 +871,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ],
                                   ),
                                 ),
+
+                              const SizedBox(height: 12),
+
+                              // 📞 TELEFON FIELD (OPCIONO)
+                              TextField(
+                                controller: telefonController,
+                                keyboardType: TextInputType.phone,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  labelText: 'Telefon (opciono)',
+                                  hintText: 'Npr: 0641234567',
+                                  labelStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                  ),
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.phone,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Colors.white.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white.withValues(alpha: 0.1),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1262,6 +1301,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                         adresa:
                                             adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
+                                        brojTelefona:
+                                            telefonController.text.trim().isEmpty ? null : telefonController.text.trim(),
                                       );
 
                                       // Duplikat provera se vrši u PutnikService.dodajPutnika()

@@ -753,6 +753,7 @@ class Putnik {
       'putnik_ime': ime,
       'grad': grad, // ✅ DODANO: grad kolona
       'adresa_id': null, // Ostaće null - adresa se dodaje asinhrono u toPutovanjaIstorijaMapWithAdresa
+      'broj_telefona': brojTelefona, // ✅ DODATO: broj telefona putnika
       'cena': iznosPlacanja ?? 0.0,
       'status': status ?? 'nije_se_pojavio',
       'obrisan': obrisan,
