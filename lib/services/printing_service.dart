@@ -256,9 +256,8 @@ class PrintingService {
                 putnici.length > 8 ? putnici.length : 8,
                 (index) {
                   final broj = index + 1;
-                  final imePutnika = index < putnici.length 
-                      ? putnici[index].ime 
-                      : '______________________________________';
+                  final imePutnika =
+                      index < putnici.length ? putnici[index].ime : '______________________________________';
                   return pw.Padding(
                     padding: const pw.EdgeInsets.symmetric(vertical: 6),
                     child: pw.Row(

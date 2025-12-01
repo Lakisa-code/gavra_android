@@ -199,7 +199,9 @@ class Putnik {
       datum: map['datum_putovanja'] as String? ?? map['datum'] as String?,
       status: map['status'] as String?, // ✅ DIREKTNO IZ NOVE KOLONE
       statusVreme: map['updated_at'] as String?, // ✅ KORISTI updated_at
-      // vremePokupljenja: null, // ✅ NEMA U SHEMI - default je null
+      vremePokupljenja: map['vreme_pokupljenja'] != null
+          ? DateTime.parse(map['vreme_pokupljenja'] as String)
+          : null, // ✅ FIXED: Čitaj vreme_pokupljenja
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String)
           : null, // ✅ FIXED: Koristi vreme_placanja umesto datum_putovanja
@@ -210,7 +212,7 @@ class Putnik {
               map['vozac_id'] as String?,
             )
           : null, // ✅ Samo ako je stvarno plaćeno
-      // pokupioVozac: null, // ✅ NEMA U SHEMI - default je null
+      pokupioVozac: map['pokupljanje_vozac'] as String?, // ✅ FIXED: Čitaj pokupljanje_vozac
       dodaoVozac: VozacMappingService.getVozacImeWithFallbackSync(
             map['created_by'] as String?,
           ) ??
