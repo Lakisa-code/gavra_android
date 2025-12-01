@@ -166,7 +166,8 @@ class Putnik {
         // Izvuci cancelled_by UUID i mapiraj na ime
         final cancelledByUuid = logMap['cancelled_by'] as String?;
         if (cancelledByUuid != null && cancelledByUuid.isNotEmpty) {
-          cancelledByVozac = VozacMappingService.getVozacImeWithFallbackSync(cancelledByUuid);
+          cancelledByVozac = VozacMappingService.getVozacImeWithFallbackSync(cancelledByUuid) ??
+              _mapUuidToVozacHardcoded(cancelledByUuid); // ✅ FALLBACK
         }
         // Izvuci vreme otkazivanja iz actions liste
         final actions = logMap['actions'] as List<dynamic>?;
@@ -208,10 +209,11 @@ class Putnik {
       placeno: _parseDouble(map['cena']) > 0,
       cena: _parseDouble(map['cena']),
       naplatioVozac: _parseDouble(map['cena']) > 0
-          ? VozacMappingService.getVozacImeWithFallbackSync(
-              map['vozac_id'] as String?,
-            )
-          : null, // ✅ Samo ako je stvarno plaćeno
+          ? (VozacMappingService.getVozacImeWithFallbackSync(
+                map['vozac_id'] as String?,
+              ) ??
+              _mapUuidToVozacHardcoded(map['vozac_id'] as String?))
+          : null, // ✅ Samo ako je stvarno plaćeno + FALLBACK
       pokupioVozac: map['pokupljanje_vozac'] as String?, // ✅ FIXED: Čitaj pokupljanje_vozac
       dodaoVozac: VozacMappingService.getVozacImeWithFallbackSync(
             map['created_by'] as String?,
@@ -729,6 +731,9 @@ class Putnik {
           case 'Bilevski':
             vozacUuid = '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g';
             break;
+          case 'Vlajic':
+            vozacUuid = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
+            break;
           default:
             vozacUuid = null; // Za nepoznate vozače
         }
@@ -810,6 +815,8 @@ class Putnik {
         return 'Bruda';
       case '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g':
         return 'Bilevski';
+      case '67ea0a22-689c-41b8-b576-5b27145e8e5e':
+        return 'Vlajic';
       default:
         return null;
     }

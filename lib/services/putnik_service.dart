@@ -1217,6 +1217,7 @@ class PutnikService {
       await supabase.from(tabela).update({
         'cena': iznos,
         'vozac_id': validVozacId, // ✅ STANDARDIZOVANO - samo vozac_id (UUID)
+        'vreme_placanja': DateTime.now().toIso8601String(), // ✅ DODATO - vreme plaćanja
         'status': 'placeno', // ✅ DODAJ STATUS plaćanja (konzistentno)
       }).eq('id', id as String);
     } // (Uklonjeno slanje notifikacije za plaćanje)

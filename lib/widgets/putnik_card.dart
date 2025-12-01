@@ -2380,7 +2380,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         style: TextStyle(
                           fontSize: 13,
                           color: VozacBoja.getColorOrDefault(
-                            _putnik.pokupioVozac ?? widget.currentDriver,
+                            _putnik.pokupioVozac,
                             Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                           fontWeight: FontWeight.w500,
@@ -2395,7 +2395,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         style: TextStyle(
                           fontSize: 13,
                           color: VozacBoja.getColorOrDefault(
-                            _putnik.naplatioVozac ?? widget.currentDriver,
+                            _putnik.naplatioVozac,
                             Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                           fontWeight: FontWeight.w500,

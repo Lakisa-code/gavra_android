@@ -165,6 +165,7 @@ class VozacMappingService {
       'Bilevski',
       'Bojan',
       'Svetlana',
+      'Vlajic',
     ]; // VozacBoja.validDrivers
     final dynamicDrivers = _vozacNameToUuid?.keys.toList() ?? [];
 
