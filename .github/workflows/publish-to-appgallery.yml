@@ -5,6 +5,8 @@ on:
     types: [published]
   push:
     tags: [ 'v*' ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build_and_publish:
