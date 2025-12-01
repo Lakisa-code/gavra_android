@@ -1,114 +1,105 @@
-name: 📦 Publish to Huawei AppGallery
+name: Publish to Huawei AppGallery
 
 on:
+  workflow_dispatch: {}
   release:
     types: [published]
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    branches: [ main ]
+    tags: [ 'v*' ]
+
+env:
+  FLUTTER_VERSION: '3.35.6'
 
 jobs:
-  build_and_publish:
-    name: Build and Publish to AppGallery (optional)
+  build-and-publish:
+    name: Build AAB and Publish to AppGallery
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'zulu'
-        java-version: '17'
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.35.6'
-        channel: 'stable'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
 
-    - name: Prepare agconnect-services.json (from secret)
-      env:
-        AGC_BASE64: ${{ secrets.AGC_BASE64 || '' }}
-      if: ${{ env.AGC_BASE64 != '' }}
-      run: |
-        mkdir -p assets
-        mkdir -p android/app
-        echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
-        echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
+      - name: Prepare agconnect-services.json (from secret)
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 || '' }}
+        if: ${{ env.AGC_BASE64 != '' }}
+        run: |
+          mkdir -p assets
+          mkdir -p android/app
+          echo "$AGC_BASE64" | base64 --decode > assets/agconnect-services.json
+          echo "$AGC_BASE64" | base64 --decode > android/app/agconnect-services.json
 
-    - name: Create placeholder agconnect-services.json (no secrets provided)
-      env:
-        AGC_BASE64: ${{ secrets.AGC_BASE64 || '' }}
-      if: ${{ env.AGC_BASE64 == '' }}
-      run: |
-        mkdir -p assets
-        mkdir -p android/app
-        cat > assets/agconnect-services.json <<'EOF'
-        { "client": { "package_name": "com.gavra013.gavra_android", "client_info": {}, "services": {} } }
-        EOF
-        cat > android/app/agconnect-services.json <<'EOF'
-        { "client": { "package_name": "com.gavra013.gavra_android", "client_info": {}, "services": {} } }
-        EOF
+      - name: Create placeholder agconnect-services.json (no secrets provided)
+        env:
+          AGC_BASE64: ${{ secrets.AGC_BASE64 || '' }}
+        if: ${{ env.AGC_BASE64 == '' }}
+        run: |
+          mkdir -p assets
+          mkdir -p android/app
+          cat > assets/agconnect-services.json <<'EOF'
+          { "client": { "package_name": "com.gavra013.gavra_android", "client_info": {}, "services": {} } }
+          EOF
+          cat > android/app/agconnect-services.json <<'EOF'
+          { "client": { "package_name": "com.gavra013.gavra_android", "client_info": {}, "services": {} } }
+          EOF
 
-    - name: Restore keystore from secret
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      run: |
-        echo "$KEYSTORE_BASE64" | base64 --decode > gavra-release-key-production.keystore
-        # Copy to android/ directory as well for path compatibility
-        cp gavra-release-key-production.keystore android/gavra-release-key-production.keystore
+      - name: Restore keystore from secret
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > gavra-release-key-production.keystore
+          cp gavra-release-key-production.keystore android/gavra-release-key-production.keystore
 
-    - name: Create key.properties
-      env:
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-      run: |
-        cat > android/key.properties <<EOF
-        storePassword=$KEYSTORE_PASSWORD
-        keyPassword=$KEY_PASSWORD
-        keyAlias=$KEY_ALIAS
-        storeFile=../gavra-release-key-production.keystore
-        EOF
+      - name: Create key.properties
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=../gavra-release-key-production.keystore
+          EOF
 
-    - name: Install deps & build AAB
-      run: |
-        flutter pub get
-        flutter build appbundle --release
+      - name: Install dependencies
+        run: flutter pub get
 
-    - name: Upload artifact to job
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release-aab
-        path: build/app/outputs/bundle/release/app-release.aab
+      - name: Build AAB
+        run: flutter build appbundle --release
 
-    - name: Try install AGC / publish CLI (multiple fallbacks)
-      run: |
-        set -e
-        echo "Trying to install known AppGallery publish tools (npm/pip). Failures are non-fatal — script will fall back to REST."
-        npm i -g @agconnect/cli || true
-        npm i -g hms-publish-tool || true
-        pip install hms-publish-tool || true
-        # If any CLI binary (agc / appgallery) exists it'll be used, script will detect it.
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
 
-    - name: Publish to AppGallery (placeholder)
-      env:
-        AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
-        AGC_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET }}
-        AGC_APP_ID: ${{ secrets.AGC_APP_ID }}
-      if: ${{ env.AGC_CLIENT_ID != '' && env.AGC_CLIENT_SECRET != '' && env.AGC_APP_ID != '' }}
-      run: |
-        echo "Running AppGallery publish helper script"
-        chmod +x .github/scripts/publish-to-appgallery.sh
-        .github/scripts/publish-to-appgallery.sh
+      - name: Publish to AppGallery
+        env:
+          AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID || '' }}
+          AGC_CLIENT_SECRET: ${{ secrets.AGC_CLIENT_SECRET || '' }}
+          AGC_APP_ID: ${{ secrets.AGC_APP_ID || '' }}
+        if: ${{ env.AGC_CLIENT_ID != '' && env.AGC_CLIENT_SECRET != '' && env.AGC_APP_ID != '' }}
+        run: |
+          echo "Running AppGallery publish helper script"
+          chmod +x .github/scripts/publish-to-appgallery.sh
+          .github/scripts/publish-to-appgallery.sh
 
-    - name: Publish step skipped (no secrets)
-      env:
-        AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID }}
-      if: ${{ env.AGC_CLIENT_ID == '' }}
-      run: echo "AGC upload disabled: set AGC_CLIENT_ID, AGC_CLIENT_SECRET and AGC_APP_ID in repository secrets to enable AppGallery publishing."
+      - name: Publish step skipped (no secrets)
+        env:
+          AGC_CLIENT_ID: ${{ secrets.AGC_CLIENT_ID || '' }}
+        if: ${{ env.AGC_CLIENT_ID == '' }}
+        run: echo "AppGallery upload disabled - set AGC_CLIENT_ID, AGC_CLIENT_SECRET and AGC_APP_ID secrets to enable"
