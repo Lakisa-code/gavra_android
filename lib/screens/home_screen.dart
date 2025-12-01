@@ -522,7 +522,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final dozvoljenaImena = lista
         .where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan)
         .map((MesecniPutnik putnik) => putnik.putnikIme)
-        .toList();
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
     if (!mounted) return;
 
@@ -709,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                               // IZBOR IMENA - drugačiji UI za mesečne i obične putnike
                               if (mesecnaKarta)
-                                // DROPDOWN ZA MESEČNE PUTNIKE
+                                // DROPDOWN ZA MESEČNE PUTNIKE SA PRETRAGOM
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -722,10 +723,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     ),
                                     const SizedBox(height: 8),
-                                    DropdownButtonFormField<String>(
+                                    DropdownButtonFormField2<String>(
                                       isExpanded: true,
-                                      dropdownColor: Theme.of(context).colorScheme.surface,
-                                      initialValue: imeController.text.trim().isEmpty
+                                      value: imeController.text.trim().isEmpty
                                           ? null
                                           : (dozvoljenaImena.contains(
                                               imeController.text.trim(),
@@ -744,6 +744,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         ),
                                         fillColor: Theme.of(context).colorScheme.surface,
                                         filled: true,
+                                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      dropdownStyleData: DropdownStyleData(
+                                        maxHeight: 300,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(8),
+                                          color: Theme.of(context).colorScheme.surface,
+                                        ),
+                                      ),
+                                      dropdownSearchData: DropdownSearchData(
+                                        searchController: TextEditingController(),
+                                        searchInnerWidgetHeight: 50,
+                                        searchInnerWidget: Container(
+                                          height: 50,
+                                          padding: const EdgeInsets.only(
+                                            top: 8,
+                                            bottom: 4,
+                                            right: 8,
+                                            left: 8,
+                                          ),
+                                          child: TextFormField(
+                                            expands: true,
+                                            maxLines: null,
+                                            decoration: InputDecoration(
+                                              isDense: true,
+                                              contentPadding: const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 8,
+                                              ),
+                                              hintText: 'Pretraži...',
+                                              hintStyle: const TextStyle(fontSize: 14),
+                                              prefixIcon: const Icon(Icons.search, size: 20),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        searchMatchFn: (item, searchValue) {
+                                          return item.value
+                                              .toString()
+                                              .toLowerCase()
+                                              .contains(searchValue.toLowerCase());
+                                        },
                                       ),
                                       items: dozvoljenaImena
                                           .map(
