@@ -2335,7 +2335,7 @@ class _PutnikCardState extends State<PutnikCard> {
                       style: TextStyle(
                         fontSize: 13,
                         color: VozacBoja.getColorOrDefault(
-                          _putnik.dodaoVozac ?? widget.currentDriver,
+                          _putnik.dodaoVozac,
                           Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                         fontWeight: FontWeight.w500,
