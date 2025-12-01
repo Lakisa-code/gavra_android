@@ -6,11 +6,15 @@ if [[ -z "${AGC_CLIENT_ID:-}" || -z "${AGC_CLIENT_SECRET:-}" || -z "${AGC_APP_ID
   exit 1
 fi
 
-echo "Fetching OAuth token from Huawei..."
+# Use AppGallery Connect API endpoint (not OAuth Login endpoint)
+AUTH_URL="https://connect-api.cloud.huawei.com/api/oauth2/v1/token"
+API_BASE="https://connect-api.cloud.huawei.com/api/publish/v2"
+
+echo "Fetching OAuth token from Huawei AppGallery Connect API..."
 TOKEN_RESPONSE=$(curl -s -X POST \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d "grant_type=client_credentials&client_id=${AGC_CLIENT_ID}&client_secret=${AGC_CLIENT_SECRET}" \
-  https://oauth-login.cloud.huawei.com/oauth2/v3/token)
+  -H 'Content-Type: application/json' \
+  -d "{\"grant_type\":\"client_credentials\",\"client_id\":\"${AGC_CLIENT_ID}\",\"client_secret\":\"${AGC_CLIENT_SECRET}\"}" \
+  "$AUTH_URL")
 
 echo "Token response: $TOKEN_RESPONSE"
 
