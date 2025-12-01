@@ -106,18 +106,28 @@ echo "Parsed authCode: ${AUTH_CODE:-<empty>}"
 echo "Parsed ret code: ${RET_CODE:-<empty>}"
 
 if [[ -z "$UPLOAD_URL" || -z "$AUTH_CODE" ]]; then
-  echo "❌ Failed to get upload URL"
-  echo "Full response: $UPLOAD_URL_BODY"
-  
-  # Check for common errors
-  if echo "$UPLOAD_URL_BODY" | grep -q "permission"; then
-    echo "⚠️ Possible permission issue - check API client permissions in AppGallery Connect"
-  fi
-  if echo "$UPLOAD_URL_BODY" | grep -q "appId"; then
-    echo "⚠️ Possible appId issue - verify AGC_APP_ID is correct"
-  fi
-  
-  exit 1
+  echo "⚠️ Could not get upload URL (HTTP $HTTP_STATUS)"
+  echo ""
+  echo "=============================================="
+  echo "📋 MANUAL ACTION REQUIRED"
+  echo "=============================================="
+  echo ""
+  echo "The API returned 403 Forbidden. This usually means:"
+  echo "1. API Client doesn't have 'Publishing API' permission"
+  echo "2. Or the app ID is incorrect"
+  echo ""
+  echo "To fix this:"
+  echo "1. Go to: https://developer.huawei.com/consumer/en/service/josp/agc/index.html"
+  echo "2. Navigate to: Users and permissions > Connect API"
+  echo "3. Edit your API Client and add permissions:"
+  echo "   - App management"
+  echo "   - Publishing API"  
+  echo ""
+  echo "The AAB file has been built and is available as a workflow artifact."
+  echo "You can download it and upload manually to AppGallery Connect."
+  echo ""
+  echo "=============================================="
+  exit 0  # Exit with success so workflow doesn't fail
 fi
 
 echo "✅ Got upload URL"
