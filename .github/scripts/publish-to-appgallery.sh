@@ -84,21 +84,39 @@ echo "✅ Found artifact: $ARTIFACT ($FILE_SIZE bytes)"
 echo ""
 echo "🔗 Step 3: Getting upload URL..."
 
-UPLOAD_URL_RESPONSE=$(curl -s -X GET \
+UPLOAD_URL_RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H "client_id: ${AGC_CLIENT_ID}" \
   "${API_BASE}/upload-url?appId=${AGC_APP_ID}&suffix=${SUFFIX}")
 
-echo "Upload URL response: $UPLOAD_URL_RESPONSE"
+# Get HTTP status code (last line)
+HTTP_STATUS=$(echo "$UPLOAD_URL_RESPONSE" | tail -n1)
+UPLOAD_URL_BODY=$(echo "$UPLOAD_URL_RESPONSE" | sed '$d')
 
-# Parse response
-UPLOAD_URL=$(echo "$UPLOAD_URL_RESPONSE" | sed -n 's/.*"uploadUrl":"\([^"]*\)".*/\1/p')
-AUTH_CODE=$(echo "$UPLOAD_URL_RESPONSE" | sed -n 's/.*"authCode":"\([^"]*\)".*/\1/p')
-RET_CODE=$(echo "$UPLOAD_URL_RESPONSE" | sed -n 's/.*"code":\([0-9]*\).*/\1/p')
+echo "HTTP Status: $HTTP_STATUS"
+echo "Upload URL response body: $UPLOAD_URL_BODY"
+
+# Parse response using grep/sed
+UPLOAD_URL=$(echo "$UPLOAD_URL_BODY" | grep -oP '"uploadUrl"\s*:\s*"\K[^"]+' || true)
+AUTH_CODE=$(echo "$UPLOAD_URL_BODY" | grep -oP '"authCode"\s*:\s*"\K[^"]+' || true)
+RET_CODE=$(echo "$UPLOAD_URL_BODY" | grep -oP '"code"\s*:\s*\K[0-9]+' || true)
+
+echo "Parsed uploadUrl: ${UPLOAD_URL:-<empty>}"
+echo "Parsed authCode: ${AUTH_CODE:-<empty>}"
+echo "Parsed ret code: ${RET_CODE:-<empty>}"
 
 if [[ -z "$UPLOAD_URL" || -z "$AUTH_CODE" ]]; then
   echo "❌ Failed to get upload URL"
-  echo "Response: $UPLOAD_URL_RESPONSE"
+  echo "Full response: $UPLOAD_URL_BODY"
+  
+  # Check for common errors
+  if echo "$UPLOAD_URL_BODY" | grep -q "permission"; then
+    echo "⚠️ Possible permission issue - check API client permissions in AppGallery Connect"
+  fi
+  if echo "$UPLOAD_URL_BODY" | grep -q "appId"; then
+    echo "⚠️ Possible appId issue - verify AGC_APP_ID is correct"
+  fi
+  
   exit 1
 fi
 
