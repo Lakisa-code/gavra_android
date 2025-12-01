@@ -767,10 +767,11 @@ class PutnikService {
 
       // Proverava da li je putnik za današnji dan u nedelji
       if (putnik.dan == todayName) {
-        RealtimeNotificationService.sendRealtimeNotification(
-          'Novi putnik',
-          'Dodjen je novi putnik ${putnik.ime}',
-          {
+        // 📣 ŠALJI PUSH SVIM VOZAČIMA (FCM + Huawei Push)
+        RealtimeNotificationService.sendNotificationToAllDrivers(
+          title: 'Novi putnik',
+          body: 'Dodat je novi putnik ${putnik.ime} (${putnik.grad}, ${putnik.polazak})',
+          data: {
             'type': 'novi_putnik',
             'putnik': {
               'ime': putnik.ime,
@@ -780,7 +781,7 @@ class PutnikService {
             },
           },
         );
-      } else {}
+      }
 
       // 🔄 FORCE REFRESH SVA DVA STREAM-A
 //       // print('🔄 POZIVAM RealtimeService.refreshNow()...');
@@ -1325,10 +1326,12 @@ class PutnikService {
         final todayLowerCase = todayName.toLowerCase();
 
         if (danLowerCase.contains(todayLowerCase) || putnikDan == todayName) {
-          RealtimeNotificationService.sendRealtimeNotification(
-            'Otkazan putnik',
-            'Otkazan je putnik $cancelName',
-            {
+          // 📣 ŠALJI PUSH SVIM VOZAČIMA (FCM + Huawei Push)
+          RealtimeNotificationService.sendNotificationToAllDrivers(
+            title: 'Otkazan putnik',
+            body:
+                'Otkazan je putnik $cancelName (${respMap['grad'] ?? ''}, ${respMap['vreme_polaska'] ?? respMap['polazak'] ?? ''})',
+            data: {
               'type': 'otkazan_putnik',
               'putnik': {
                 'ime': respMap['putnik_ime'],
@@ -1338,7 +1341,7 @@ class PutnikService {
               },
             },
           );
-        } else {}
+        }
       } catch (notifError) {
         // Nastavi dalje - notifikacija nije kritična
       }

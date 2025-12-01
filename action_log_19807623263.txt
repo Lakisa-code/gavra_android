@@ -1,0 +1,547 @@
+﻿Build signed release APK	Set up job	∩╗┐2025-12-01T00:51:21.3667662Z Current runner version: '2.329.0'
+Build signed release APK	Set up job	2025-12-01T00:51:21.3693688Z ##[group]Runner Image Provisioner
+Build signed release APK	Set up job	2025-12-01T00:51:21.3694570Z Hosted Compute Agent
+Build signed release APK	Set up job	2025-12-01T00:51:21.3695172Z Version: 20251016.436
+Build signed release APK	Set up job	2025-12-01T00:51:21.3695930Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+Build signed release APK	Set up job	2025-12-01T00:51:21.3696698Z Build Date: 2025-10-15T20:44:12Z
+Build signed release APK	Set up job	2025-12-01T00:51:21.3697355Z ##[endgroup]
+Build signed release APK	Set up job	2025-12-01T00:51:21.3698029Z ##[group]Operating System
+Build signed release APK	Set up job	2025-12-01T00:51:21.3698575Z Ubuntu
+Build signed release APK	Set up job	2025-12-01T00:51:21.3699762Z 24.04.3
+Build signed release APK	Set up job	2025-12-01T00:51:21.3700426Z LTS
+Build signed release APK	Set up job	2025-12-01T00:51:21.3700938Z ##[endgroup]
+Build signed release APK	Set up job	2025-12-01T00:51:21.3701423Z ##[group]Runner Image
+Build signed release APK	Set up job	2025-12-01T00:51:21.3702085Z Image: ubuntu-24.04
+Build signed release APK	Set up job	2025-12-01T00:51:21.3702678Z Version: 20251112.124.1
+Build signed release APK	Set up job	2025-12-01T00:51:21.3703758Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251112.124/images/ubuntu/Ubuntu2404-Readme.md
+Build signed release APK	Set up job	2025-12-01T00:51:21.3705207Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251112.124
+Build signed release APK	Set up job	2025-12-01T00:51:21.3706466Z ##[endgroup]
+Build signed release APK	Set up job	2025-12-01T00:51:21.3709140Z ##[group]GITHUB_TOKEN Permissions
+Build signed release APK	Set up job	2025-12-01T00:51:21.3712192Z Actions: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3712860Z ArtifactMetadata: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3713470Z Attestations: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3714102Z Checks: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3714616Z Contents: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3715206Z Deployments: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3715814Z Discussions: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3716405Z Issues: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3716907Z Metadata: read
+Build signed release APK	Set up job	2025-12-01T00:51:21.3717483Z Models: read
+Build signed release APK	Set up job	2025-12-01T00:51:21.3718022Z Packages: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3718592Z Pages: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3719169Z PullRequests: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3720139Z RepositoryProjects: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3720873Z SecurityEvents: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3721542Z Statuses: write
+Build signed release APK	Set up job	2025-12-01T00:51:21.3722148Z ##[endgroup]
+Build signed release APK	Set up job	2025-12-01T00:51:21.3724271Z Secret source: Actions
+Build signed release APK	Set up job	2025-12-01T00:51:21.3725400Z Prepare workflow directory
+Build signed release APK	Set up job	2025-12-01T00:51:21.4134004Z Prepare all required actions
+Build signed release APK	Set up job	2025-12-01T00:51:21.4172467Z Getting action download info
+Build signed release APK	Set up job	2025-12-01T00:51:21.7898223Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+Build signed release APK	Set up job	2025-12-01T00:51:22.1839768Z Download action repository 'actions/setup-java@v3' (SHA:17f84c3641ba7b8f6deff6309fc4c864478f5d62)
+Build signed release APK	Set up job	2025-12-01T00:51:22.6534650Z Download action repository 'subosito/flutter-action@v2' (SHA:fd55f4c5af5b953cc57a2be44cb082c8f6635e8e)
+Build signed release APK	Set up job	2025-12-01T00:51:22.9328076Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+Build signed release APK	Set up job	2025-12-01T00:51:23.1651423Z Getting action download info
+Build signed release APK	Set up job	2025-12-01T00:51:23.2913205Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+Build signed release APK	Set up job	2025-12-01T00:51:23.5075218Z Complete job name: Build signed release APK
+Build signed release APK	Checkout	∩╗┐2025-12-01T00:51:23.5934300Z ##[group]Run actions/checkout@v4
+Build signed release APK	Checkout	2025-12-01T00:51:23.5935746Z with:
+Build signed release APK	Checkout	2025-12-01T00:51:23.5936563Z   repository: bojanbc83/gavra_android
+Build signed release APK	Checkout	2025-12-01T00:51:23.5937958Z   token: ***
+Build signed release APK	Checkout	2025-12-01T00:51:23.5938758Z   ssh-strict: true
+Build signed release APK	Checkout	2025-12-01T00:51:23.5939815Z   ssh-user: git
+Build signed release APK	Checkout	2025-12-01T00:51:23.5940708Z   persist-credentials: true
+Build signed release APK	Checkout	2025-12-01T00:51:23.5941598Z   clean: true
+Build signed release APK	Checkout	2025-12-01T00:51:23.5942436Z   sparse-checkout-cone-mode: true
+Build signed release APK	Checkout	2025-12-01T00:51:23.5943436Z   fetch-depth: 1
+Build signed release APK	Checkout	2025-12-01T00:51:23.5944246Z   fetch-tags: false
+Build signed release APK	Checkout	2025-12-01T00:51:23.5945042Z   show-progress: true
+Build signed release APK	Checkout	2025-12-01T00:51:23.5945859Z   lfs: false
+Build signed release APK	Checkout	2025-12-01T00:51:23.5946647Z   submodules: false
+Build signed release APK	Checkout	2025-12-01T00:51:23.5947470Z   set-safe-directory: true
+Build signed release APK	Checkout	2025-12-01T00:51:23.5948893Z env:
+Build signed release APK	Checkout	2025-12-01T00:51:23.5949986Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Checkout	2025-12-01T00:51:23.5950854Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:23.7131737Z Syncing repository: bojanbc83/gavra_android
+Build signed release APK	Checkout	2025-12-01T00:51:23.7135073Z ##[group]Getting Git version info
+Build signed release APK	Checkout	2025-12-01T00:51:23.7136498Z Working directory is '/home/runner/work/gavra_android/gavra_android'
+Build signed release APK	Checkout	2025-12-01T00:51:23.7138535Z [command]/usr/bin/git version
+Build signed release APK	Checkout	2025-12-01T00:51:23.7202404Z git version 2.51.2
+Build signed release APK	Checkout	2025-12-01T00:51:23.7232554Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:23.7257165Z Temporarily overriding HOME='/home/runner/work/_temp/3bd71a91-e840-410f-a55c-9f94d2632598' before making global git config changes
+Build signed release APK	Checkout	2025-12-01T00:51:23.7262183Z Adding repository directory to the temporary git global config as a safe directory
+Build signed release APK	Checkout	2025-12-01T00:51:23.7266112Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/gavra_android/gavra_android
+Build signed release APK	Checkout	2025-12-01T00:51:23.7379198Z Deleting the contents of '/home/runner/work/gavra_android/gavra_android'
+Build signed release APK	Checkout	2025-12-01T00:51:23.7383178Z ##[group]Initializing the repository
+Build signed release APK	Checkout	2025-12-01T00:51:23.7384707Z [command]/usr/bin/git init /home/runner/work/gavra_android/gavra_android
+Build signed release APK	Checkout	2025-12-01T00:51:23.7447941Z hint: Using 'master' as the name for the initial branch. This default branch name
+Build signed release APK	Checkout	2025-12-01T00:51:23.7450475Z hint: is subject to change. To configure the initial branch name to use in all
+Build signed release APK	Checkout	2025-12-01T00:51:23.7453223Z hint: of your new repositories, which will suppress this warning, call:
+Build signed release APK	Checkout	2025-12-01T00:51:23.7455648Z hint:
+Build signed release APK	Checkout	2025-12-01T00:51:23.7457401Z hint: 	git config --global init.defaultBranch <name>
+Build signed release APK	Checkout	2025-12-01T00:51:23.7459716Z hint:
+Build signed release APK	Checkout	2025-12-01T00:51:23.7461646Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Build signed release APK	Checkout	2025-12-01T00:51:23.7464677Z hint: 'development'. The just-created branch can be renamed via this command:
+Build signed release APK	Checkout	2025-12-01T00:51:23.7467210Z hint:
+Build signed release APK	Checkout	2025-12-01T00:51:23.7468613Z hint: 	git branch -m <name>
+Build signed release APK	Checkout	2025-12-01T00:51:23.7470338Z hint:
+Build signed release APK	Checkout	2025-12-01T00:51:23.7472268Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Build signed release APK	Checkout	2025-12-01T00:51:23.7475196Z Initialized empty Git repository in /home/runner/work/gavra_android/gavra_android/.git/
+Build signed release APK	Checkout	2025-12-01T00:51:23.7478446Z [command]/usr/bin/git remote add origin https://github.com/bojanbc83/gavra_android
+Build signed release APK	Checkout	2025-12-01T00:51:23.7506794Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:23.7509232Z ##[group]Disabling automatic garbage collection
+Build signed release APK	Checkout	2025-12-01T00:51:23.7511808Z [command]/usr/bin/git config --local gc.auto 0
+Build signed release APK	Checkout	2025-12-01T00:51:23.7543786Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:23.7546102Z ##[group]Setting up auth
+Build signed release APK	Checkout	2025-12-01T00:51:23.7551921Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build signed release APK	Checkout	2025-12-01T00:51:23.7586184Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build signed release APK	Checkout	2025-12-01T00:51:23.7952873Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build signed release APK	Checkout	2025-12-01T00:51:23.7986392Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build signed release APK	Checkout	2025-12-01T00:51:23.8210888Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build signed release APK	Checkout	2025-12-01T00:51:23.8241359Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build signed release APK	Checkout	2025-12-01T00:51:23.8480641Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Build signed release APK	Checkout	2025-12-01T00:51:23.8520798Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:23.8522626Z ##[group]Fetching the repository
+Build signed release APK	Checkout	2025-12-01T00:51:23.8530148Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +155bcd5b179ecb93791e030980b4b751b6daa15e:refs/remotes/origin/main
+Build signed release APK	Checkout	2025-12-01T00:51:24.4167521Z From https://github.com/bojanbc83/gavra_android
+Build signed release APK	Checkout	2025-12-01T00:51:24.4170562Z  * [new ref]         155bcd5b179ecb93791e030980b4b751b6daa15e -> origin/main
+Build signed release APK	Checkout	2025-12-01T00:51:24.4206697Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:24.4207586Z ##[group]Determining the checkout info
+Build signed release APK	Checkout	2025-12-01T00:51:24.4208553Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:24.4216410Z [command]/usr/bin/git sparse-checkout disable
+Build signed release APK	Checkout	2025-12-01T00:51:24.4263914Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Build signed release APK	Checkout	2025-12-01T00:51:24.4294670Z ##[group]Checking out the ref
+Build signed release APK	Checkout	2025-12-01T00:51:24.4299482Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+Build signed release APK	Checkout	2025-12-01T00:51:24.4959915Z Switched to a new branch 'main'
+Build signed release APK	Checkout	2025-12-01T00:51:24.4961687Z branch 'main' set up to track 'origin/main'.
+Build signed release APK	Checkout	2025-12-01T00:51:24.4972736Z ##[endgroup]
+Build signed release APK	Checkout	2025-12-01T00:51:24.5012015Z [command]/usr/bin/git log -1 --format=%H
+Build signed release APK	Checkout	2025-12-01T00:51:24.5035827Z 155bcd5b179ecb93791e030980b4b751b6daa15e
+Build signed release APK	Setup Java	∩╗┐2025-12-01T00:51:24.5282043Z ##[group]Run actions/setup-java@v3
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5282470Z with:
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5282771Z   distribution: zulu
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5283079Z   java-version: 17
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5283380Z   java-package: jdk
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5283676Z   check-latest: false
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5283968Z   server-id: github
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5284272Z   server-username: GITHUB_ACTOR
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5284627Z   server-password: GITHUB_TOKEN
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5284973Z   overwrite-settings: true
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5285319Z   job-status: success
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5285801Z   token: ***
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5286071Z env:
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5286339Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Setup Java	2025-12-01T00:51:24.5286653Z ##[endgroup]
+Build signed release APK	Setup Java	2025-12-01T00:51:24.7321241Z ##[group]Installed distributions
+Build signed release APK	Setup Java	2025-12-01T00:51:24.7352415Z Trying to resolve the latest version from remote
+Build signed release APK	Setup Java	2025-12-01T00:51:24.8216661Z Resolved latest version as 17.0.17+10
+Build signed release APK	Setup Java	2025-12-01T00:51:24.8217260Z Trying to download...
+Build signed release APK	Setup Java	2025-12-01T00:51:24.8217972Z Downloading Java 17.0.17+10 (Zulu) from https://cdn.azul.com/zulu/bin/zulu17.62.19-ca-crac-jdk17.0.17-linux_x64.tar.gz ...
+Build signed release APK	Setup Java	2025-12-01T00:51:26.9084937Z Extracting Java archive...
+Build signed release APK	Setup Java	2025-12-01T00:51:26.9199923Z [command]/usr/bin/tar xz --warning=no-unknown-keyword -C /home/runner/work/_temp/f4a840de-d980-4914-bdbf-7f30507e249c -f /home/runner/work/_temp/7d3340c5-895e-432e-8261-88e6ab2d9b50
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6690545Z Java 17.0.17+10 was downloaded
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6691156Z Setting Java 17.0.17+10 as the default
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6701940Z Creating toolchains.xml for JDK version 17 from zulu
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6781793Z Writing to /home/runner/.m2/toolchains.xml
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6782250Z 
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6782423Z Java configuration:
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6783223Z   Distribution: zulu
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6783592Z   Version: 17.0.17+10
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6784064Z   Path: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6784415Z 
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6785429Z ##[endgroup]
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6800788Z Creating settings.xml with server-id: github
+Build signed release APK	Setup Java	2025-12-01T00:51:29.6803347Z Writing to /home/runner/.m2/settings.xml
+Build signed release APK	Setup Flutter	∩╗┐2025-12-01T00:51:29.7072343Z ##[group]Run subosito/flutter-action@v2
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7072680Z with:
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7072887Z   flutter-version: 3.35.6
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7073111Z   channel: stable
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7073323Z   architecture: X64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7073521Z   cache: false
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7073727Z   pub-cache-path: default
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7073971Z   dry-run: false
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7074231Z   git-source: https://github.com/flutter/flutter.git
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7074543Z env:
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7074720Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7075010Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7075406Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7075728Z ##[endgroup]
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7168579Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7169017Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7210369Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7210820Z env:
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7211033Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7211348Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7211771Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7212101Z ##[endgroup]
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7354397Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7354978Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7355276Z [36;1m  -n '3.35.6' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7355498Z [36;1m  -f '' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7355701Z [36;1m  -a 'X64' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7355912Z [36;1m  -k '' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7356110Z [36;1m  -c '' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7356296Z [36;1m  -l '' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7356501Z [36;1m  -d 'default' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7356811Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7357138Z [36;1m  stable[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7391646Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7392010Z env:
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7392196Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7392499Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7392911Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.7393236Z ##[endgroup]
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9905015Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9905400Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9905679Z [36;1m  -n '3.35.6' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9905911Z [36;1m  -a 'x64' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9906210Z [36;1m  -c '/opt/hostedtoolcache/flutter/stable-3.35.6-x64' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9906569Z [36;1m  -d '/home/runner/.pub-cache' \[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9906848Z [36;1m  stable[0m
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9946920Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9947325Z env:
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9947526Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9947863Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9948289Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Setup Flutter	2025-12-01T00:51:29.9948633Z ##[endgroup]
+Build signed release APK	Setup Flutter	2025-12-01T00:51:30.1571665Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+Build signed release APK	Setup Flutter	2025-12-01T00:51:30.1572498Z                                  Dload  Upload   Total   Spent    Left  Speed
+Build signed release APK	Setup Flutter	2025-12-01T00:51:30.1572755Z 
+Build signed release APK	Setup Flutter	2025-12-01T00:51:30.6497028Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+Build signed release APK	Setup Flutter	2025-12-01T00:51:31.6493387Z   1 1372M    1 20.5M    0     0  41.6M      0  0:00:32 --:--:--  0:00:32 41.6M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:32.6485492Z   6 1372M    6 94.2M    0     0  63.1M      0  0:00:21  0:00:01  0:00:20 63.2M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:33.6482470Z  12 1372M   12  171M    0     0  69.0M      0  0:00:19  0:00:02  0:00:17 68.9M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:34.6469215Z  17 1372M   17  245M    0     0  70.4M      0  0:00:19  0:00:03  0:00:16 70.4M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:35.6490142Z  23 1372M   23  329M    0     0  73.2M      0  0:00:18  0:00:04  0:00:14 73.2M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:36.6474689Z  28 1372M   28  391M    0     0  71.2M      0  0:00:19  0:00:05  0:00:14 74.1M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:37.6469663Z  33 1372M   33  453M    0     0  69.9M      0  0:00:19  0:00:06  0:00:13 71.9M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:38.6481994Z  36 1372M   36  507M    0     0  67.7M      0  0:00:20  0:00:07  0:00:13 67.1M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:39.6467190Z  41 1372M   41  572M    0     0  67.4M      0  0:00:20  0:00:08  0:00:12 65.3M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:40.6468231Z  46 1372M   46  636M    0     0  67.0M      0  0:00:20  0:00:09  0:00:11 61.4M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:41.6468231Z  51 1372M   51  701M    0     0  66.8M      0  0:00:20  0:00:10  0:00:10 61.9M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:42.6469808Z  56 1372M   56  771M    0     0  67.1M      0  0:00:20  0:00:11  0:00:09 63.6M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:43.6480626Z  61 1372M   61  850M    0     0  68.0M      0  0:00:20  0:00:12  0:00:08 68.4M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:44.6469199Z  67 1372M   67  929M    0     0  68.8M      0  0:00:19  0:00:13  0:00:06 71.2M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:45.6474888Z  72 1372M   72 1000M    0     0  69.0M      0  0:00:19  0:00:14  0:00:05 72.7M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:46.6501166Z  78 1372M   78 1078M    0     0  69.6M      0  0:00:19  0:00:15  0:00:04 75.4M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:47.6469652Z  83 1372M   83 1149M    0     0  69.6M      0  0:00:19  0:00:16  0:00:03 75.4M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:48.6466527Z  89 1372M   89 1226M    0     0  70.1M      0  0:00:19  0:00:17  0:00:02 75.3M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:49.6543155Z  92 1372M   92 1268M    0     0  68.6M      0  0:00:20  0:00:18  0:00:02 67.9M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:50.1599827Z  96 1372M   96 1331M    0     0  68.2M      0  0:00:20  0:00:19  0:00:01 66.1M
+Build signed release APK	Setup Flutter	2025-12-01T00:51:50.1600408Z 100 1372M  100 1372M    0     0  68.6M      0  0:00:20  0:00:20 --:--:-- 65.2M
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	∩╗┐2025-12-01T00:52:40.6297895Z ##[group]Run mkdir -p assets
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6298230Z [36;1mmkdir -p assets[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6298473Z [36;1mmkdir -p android/app[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6298762Z [36;1mcat > assets/agconnect-services.json <<'EOF'[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6299240Z [36;1m{ "client": { "package_name": "com.gavra013.gavra_android", "client_info": {}, "services": {} } }[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6299869Z [36;1mEOF[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6300146Z [36;1mcat > android/app/agconnect-services.json <<'EOF'[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6300648Z [36;1m{ "client": { "package_name": "com.gavra013.gavra_android", "client_info": {}, "services": {} } }[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6301075Z [36;1mEOF[0m
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6335275Z shell: /usr/bin/bash -e {0}
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6335526Z env:
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6335716Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6336028Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6336470Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6336934Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6337275Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6337522Z   AGC_BASE64: 
+Build signed release APK	Create placeholder agconnect-services.json (no secrets provided)	2025-12-01T00:52:40.6337705Z ##[endgroup]
+Build signed release APK	Verify keystore secrets	∩╗┐2025-12-01T00:52:40.6486900Z ##[group]Run if [ -z "***" ]; then
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6506012Z [36;1mif [ -z "***" ]; then[0m
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6506491Z [36;1m  echo "##[warning]KEYSTORE_BASE64 secret is not set ΓÇö this job will fail later unless you add it.";[0m
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6506931Z [36;1mfi[0m
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6540248Z shell: /usr/bin/bash -e {0}
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6540523Z env:
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6540713Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6541006Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6541405Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6541823Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6542162Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Verify keystore secrets	2025-12-01T00:52:40.6542404Z ##[endgroup]
+Build signed release APK	Restore keystore file from secret	∩╗┐2025-12-01T00:52:40.6660100Z ##[group]Run echo "Writing keystore to ***-production.keystore"
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6660726Z [36;1mecho "Writing keystore to ***-production.keystore"[0m
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6661226Z [36;1mecho "$KEYSTORE_BASE64" | base64 --decode > ***-production.keystore[0m
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6691934Z shell: /usr/bin/bash -e {0}
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6692178Z env:
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6692361Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6692667Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6693115Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6693523Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6693862Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6712818Z   KEYSTORE_BASE64: ***
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6713083Z ##[endgroup]
+Build signed release APK	Restore keystore file from secret	2025-12-01T00:52:40.6764938Z Writing keystore to ***-production.keystore
+Build signed release APK	Create android/key.properties using secrets	∩╗┐2025-12-01T00:52:40.6833257Z ##[group]Run mkdir -p android
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6833563Z [36;1mmkdir -p android[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6833815Z [36;1mcat > android/key.properties <<EOF[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6834108Z [36;1mstorePassword=$KEYSTORE_PASSWORD[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6834392Z [36;1mkeyPassword=$KEY_PASSWORD[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6834641Z [36;1mkeyAlias=$KEY_ALIAS[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6834987Z [36;1mstoreFile=../***-production.keystore[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6835259Z [36;1mEOF[0m
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6864553Z shell: /usr/bin/bash -e {0}
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6865045Z env:
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6865232Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6865543Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6865954Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6866357Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6866689Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6866989Z   KEY_ALIAS: ***
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6867254Z   KEYSTORE_PASSWORD: ***
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6867488Z   KEY_PASSWORD: ***
+Build signed release APK	Create android/key.properties using secrets	2025-12-01T00:52:40.6867680Z ##[endgroup]
+Build signed release APK	Get dependencies	∩╗┐2025-12-01T00:52:40.6965340Z ##[group]Run flutter pub get
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6965640Z [36;1mflutter pub get[0m
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6994573Z shell: /usr/bin/bash -e {0}
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6994920Z env:
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6995142Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6995440Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6995851Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6996302Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6996635Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Get dependencies	2025-12-01T00:52:40.6996891Z ##[endgroup]
+Build signed release APK	Get dependencies	2025-12-01T00:52:46.3087075Z Resolving dependencies...
+Build signed release APK	Get dependencies	2025-12-01T00:52:48.7376197Z Downloading packages...
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0412428Z   _fe_analyzer_shared 85.0.0 (92.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0413156Z   _flutterfire_internals 1.3.35 (1.3.64 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0413690Z   analyzer 7.7.1 (9.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0414184Z   android_intent_plus 5.3.1 (6.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0414741Z   app_links 6.4.1 (7.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0415231Z   audio_session 0.1.25 (0.2.2 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0415713Z   build 2.5.4 (4.0.3 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0416148Z   build_config 1.1.2 (1.2.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0416612Z   build_resolvers 2.5.4 (3.0.4 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0417089Z   build_runner 2.5.4 (2.10.4 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0417539Z   build_runner_core 9.1.2 (9.3.2 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0418026Z   characters 1.4.0 (1.4.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0418553Z   connectivity_plus 6.1.5 (7.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0419046Z   dart_style 3.1.1 (3.1.3 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0419927Z   device_info_plus 10.1.2 (12.3.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0420455Z   firebase_core 2.32.0 (4.2.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0421021Z   firebase_core_platform_interface 5.4.2 (6.0.2 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0421573Z   firebase_core_web 2.24.0 (3.3.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0422069Z   firebase_messaging 14.7.10 (16.0.4 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0422649Z   firebase_messaging_platform_interface 4.5.37 (4.7.4 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0423404Z   firebase_messaging_web 3.5.18 (4.1.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0423929Z   fl_chart 0.66.2 (1.1.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0424393Z   flutter_lints 2.0.3 (6.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0424939Z   flutter_local_notifications 17.2.4 (19.5.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0425556Z   flutter_local_notifications_linux 4.0.1 (6.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0426292Z   flutter_local_notifications_platform_interface 7.2.0 (9.1.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0426939Z   flutter_map 7.0.2 (8.2.2 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0427476Z   flutter_secure_storage 8.1.0 (9.2.4 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0428031Z   flutter_secure_storage_linux 1.2.3 (2.0.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0428599Z   flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0429477Z   flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0430190Z   flutter_secure_storage_web 1.2.1 (2.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0430851Z   flutter_secure_storage_windows 2.1.1 (4.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0431392Z   freezed 2.5.8 (3.2.3 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0431884Z   freezed_annotation 2.4.4 (3.1.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0432464Z   gql_dedupe_link 2.0.4-alpha+1715521079596 (4.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0433486Z   intl 0.17.0 (0.20.2 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0433911Z   js 0.6.7 (0.7.2 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0434361Z   json_serializable 6.9.5 (6.11.3 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0434820Z   just_audio 0.9.46 (0.10.5 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0435248Z   lints 2.1.1 (6.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0435667Z   matcher 0.12.17 (0.12.18 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0436178Z   material_color_utilities 0.11.1 (0.13.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0436669Z   meta 1.16.0 (1.17.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0437076Z   mgrs_dart 2.0.0 (3.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0437824Z   normalize 0.9.1 (0.10.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0438278Z   package_info_plus 8.3.1 (9.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0438784Z   permission_handler 11.4.0 (12.0.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0439543Z   permission_handler_android 12.1.0 (13.0.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0440061Z   proj4dart 2.1.0 (3.0.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0440497Z   rxdart 0.27.7 (0.28.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0440890Z   source_gen 2.0.0 (4.1.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0441310Z   source_helper 1.3.7 (1.3.9 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0441748Z   test_api 0.7.6 (0.7.8 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0442149Z   timezone 0.9.4 (0.10.1 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0442596Z   unicode 0.3.1 (1.1.8 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0443055Z   win32_registry 1.1.5 (2.1.0 available)
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0443505Z Got dependencies!
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0459913Z 57 packages have newer versions incompatible with dependency constraints.
+Build signed release APK	Get dependencies	2025-12-01T00:53:00.0460650Z Try `flutter pub outdated` for more information.
+Build signed release APK	Build signed release APK	∩╗┐2025-12-01T00:53:00.6426653Z ##[group]Run flutter build apk --release --target-platform android-arm,android-arm64
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6427263Z [36;1mflutter build apk --release --target-platform android-arm,android-arm64[0m
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6460510Z shell: /usr/bin/bash -e {0}
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6460760Z env:
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6460947Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6461269Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6461685Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6462084Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6462421Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Build signed release APK	2025-12-01T00:53:00.6462663Z ##[endgroup]
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.0073527Z Resolving dependencies...
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.7894486Z Downloading packages...
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9982415Z   _fe_analyzer_shared 85.0.0 (92.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9983111Z   _flutterfire_internals 1.3.35 (1.3.64 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9983731Z   analyzer 7.7.1 (9.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9984222Z   android_intent_plus 5.3.1 (6.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9984712Z   app_links 6.4.1 (7.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9985170Z   audio_session 0.1.25 (0.2.2 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9985600Z   build 2.5.4 (4.0.3 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9986026Z   build_config 1.1.2 (1.2.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9986469Z   build_resolvers 2.5.4 (3.0.4 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9986971Z   build_runner 2.5.4 (2.10.4 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9987471Z   build_runner_core 9.1.2 (9.3.2 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9988057Z   characters 1.4.0 (1.4.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9988594Z   connectivity_plus 6.1.5 (7.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9989086Z   dart_style 3.1.1 (3.1.3 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9989774Z   device_info_plus 10.1.2 (12.3.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9990262Z   firebase_core 2.32.0 (4.2.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9990799Z   firebase_core_platform_interface 5.4.2 (6.0.2 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9991379Z   firebase_core_web 2.24.0 (3.3.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9991871Z   firebase_messaging 14.7.10 (16.0.4 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9992470Z   firebase_messaging_platform_interface 4.5.37 (4.7.4 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9993082Z   firebase_messaging_web 3.5.18 (4.1.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9993844Z   fl_chart 0.66.2 (1.1.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9994261Z   flutter_lints 2.0.3 (6.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9994577Z   flutter_local_notifications 17.2.4 (19.5.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9995137Z   flutter_local_notifications_linux 4.0.1 (6.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9995827Z   flutter_local_notifications_platform_interface 7.2.0 (9.1.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9996496Z   flutter_map 7.0.2 (8.2.2 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9996994Z   flutter_secure_storage 8.1.0 (9.2.4 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9997567Z   flutter_secure_storage_linux 1.2.3 (2.0.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9998151Z   flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9998825Z   flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:01.9999717Z   flutter_secure_storage_web 1.2.1 (2.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0000417Z   flutter_secure_storage_windows 2.1.1 (4.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0001074Z   freezed 2.5.8 (3.2.3 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0001661Z   freezed_annotation 2.4.4 (3.1.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0002522Z   gql_dedupe_link 2.0.4-alpha+1715521079596 (4.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0003146Z   intl 0.17.0 (0.20.2 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0003743Z   js 0.6.7 (0.7.2 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0004300Z   json_serializable 6.9.5 (6.11.3 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0004938Z   just_audio 0.9.46 (0.10.5 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0005578Z   lints 2.1.1 (6.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0006315Z   matcher 0.12.17 (0.12.18 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0006996Z   material_color_utilities 0.11.1 (0.13.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0007823Z   meta 1.16.0 (1.17.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0009015Z   mgrs_dart 2.0.0 (3.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0010100Z   normalize 0.9.1 (0.10.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0010831Z   package_info_plus 8.3.1 (9.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0011552Z   permission_handler 11.4.0 (12.0.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0012208Z   permission_handler_android 12.1.0 (13.0.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0012822Z   proj4dart 2.1.0 (3.0.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0013281Z   rxdart 0.27.7 (0.28.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0013763Z   source_gen 2.0.0 (4.1.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0014205Z   source_helper 1.3.7 (1.3.9 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0014679Z   test_api 0.7.6 (0.7.8 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0015132Z   timezone 0.9.4 (0.10.1 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0015638Z   unicode 0.3.1 (1.1.8 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0016184Z   win32_registry 1.1.5 (2.1.0 available)
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0023990Z Got dependencies!
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0052440Z 57 packages have newer versions incompatible with dependency constraints.
+Build signed release APK	Build signed release APK	2025-12-01T00:53:02.0053303Z Try `flutter pub outdated` for more information.
+Build signed release APK	Build signed release APK	2025-12-01T00:55:28.7959171Z Running Gradle task 'assembleRelease'...                        
+Build signed release APK	Build signed release APK	2025-12-01T00:55:28.7960896Z Checking the license for package NDK (Side by side) 27.0.12077973 in /usr/local/lib/android/sdk/licenses
+Build signed release APK	Build signed release APK	2025-12-01T00:55:28.7965368Z License for package NDK (Side by side) 27.0.12077973 accepted.
+Build signed release APK	Build signed release APK	2025-12-01T00:55:28.7967285Z Preparing "Install NDK (Side by side) 27.0.12077973 v.27.0.12077973".
+Build signed release APK	Build signed release APK	2025-12-01T00:55:48.0875329Z "Install NDK (Side by side) 27.0.12077973 v.27.0.12077973" ready.
+Build signed release APK	Build signed release APK	2025-12-01T00:55:48.0879001Z Installing NDK (Side by side) 27.0.12077973 in /usr/local/lib/android/sdk/ndk/27.0.12077973
+Build signed release APK	Build signed release APK	2025-12-01T00:55:48.0880280Z "Install NDK (Side by side) 27.0.12077973 v.27.0.12077973" complete.
+Build signed release APK	Build signed release APK	2025-12-01T00:55:48.1920658Z "Install NDK (Side by side) 27.0.12077973 v.27.0.12077973" finished.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:01.9874837Z Checking the license for package Android SDK Platform 33 in /usr/local/lib/android/sdk/licenses
+Build signed release APK	Build signed release APK	2025-12-01T01:00:01.9876244Z License for package Android SDK Platform 33 accepted.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:01.9877267Z Preparing "Install Android SDK Platform 33 (revision 3)".
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.4880616Z "Install Android SDK Platform 33 (revision 3)" ready.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.4886003Z Installing Android SDK Platform 33 in /usr/local/lib/android/sdk/platforms/android-33
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.4886900Z "Install Android SDK Platform 33 (revision 3)" complete.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.4887531Z "Install Android SDK Platform 33 (revision 3)" finished.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.5870199Z Checking the license for package Android SDK Platform 31 in /usr/local/lib/android/sdk/licenses
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.5871727Z License for package Android SDK Platform 31 accepted.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:05.5872473Z Preparing "Install Android SDK Platform 31 (revision 1)".
+Build signed release APK	Build signed release APK	2025-12-01T01:00:08.8869163Z "Install Android SDK Platform 31 (revision 1)" ready.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:08.8871016Z Installing Android SDK Platform 31 in /usr/local/lib/android/sdk/platforms/android-31
+Build signed release APK	Build signed release APK	2025-12-01T01:00:08.8872251Z "Install Android SDK Platform 31 (revision 1)" complete.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:08.8879955Z "Install Android SDK Platform 31 (revision 1)" finished.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:39.3931423Z Note: /home/runner/.pub-cache/hosted/pub.dev/android_intent_plus-5.3.1/android/src/main/java/dev/fluttercommunity/plus/androidintent/MethodCallHandlerImpl.java uses unchecked or unsafe operations.
+Build signed release APK	Build signed release APK	2025-12-01T01:00:39.3937772Z Note: Recompile with -Xlint:unchecked for details.
+Build signed release APK	Build signed release APK	2025-12-01T01:01:10.8898867Z Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 19236 bytes (98.8% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Build signed release APK	Build signed release APK	2025-12-01T01:01:32.1868794Z Checking the license for package CMake 3.22.1 in /usr/local/lib/android/sdk/licenses
+Build signed release APK	Build signed release APK	2025-12-01T01:01:32.1870482Z License for package CMake 3.22.1 accepted.
+Build signed release APK	Build signed release APK	2025-12-01T01:01:32.1871240Z Preparing "Install CMake 3.22.1 v.3.22.1".
+Build signed release APK	Build signed release APK	2025-12-01T01:01:33.3874086Z "Install CMake 3.22.1 v.3.22.1" ready.
+Build signed release APK	Build signed release APK	2025-12-01T01:01:33.3875431Z Installing CMake 3.22.1 in /usr/local/lib/android/sdk/cmake/3.22.1
+Build signed release APK	Build signed release APK	2025-12-01T01:01:33.3882259Z "Install CMake 3.22.1 v.3.22.1" complete.
+Build signed release APK	Build signed release APK	2025-12-01T01:01:33.3882830Z "Install CMake 3.22.1 v.3.22.1" finished.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:39.5868278Z Note: Some input files use or override a deprecated API.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:39.5872043Z Note: Recompile with -Xlint:deprecation for details.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:39.5876821Z Note: /home/runner/.pub-cache/hosted/pub.dev/firebase_messaging-14.7.10/android/src/main/java/io/flutter/plugins/firebase/messaging/FlutterFirebaseMessagingPlugin.java uses unchecked or unsafe operations.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:39.5878676Z Note: Recompile with -Xlint:unchecked for details.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:40.8889918Z Note: Some input files use or override a deprecated API.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:40.8920571Z Note: Recompile with -Xlint:deprecation for details.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3875928Z warning: unknown enum constant Mode.LOCAL
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3886875Z   reason: class file for com.facebook.infer.annotation.Nullsafe$Mode not found
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3891566Z warning: unknown enum constant Mode.LOCAL
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3894091Z warning: unknown enum constant Mode.LOCAL
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3897209Z warning: unknown enum constant Mode.LOCAL
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3897773Z warning: unknown enum constant Mode.LOCAL
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.3898860Z warning: unknown enum constant Mode.LOCAL
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.6876367Z Note: Some input files use or override a deprecated API.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.6877877Z Note: Recompile with -Xlint:deprecation for details.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.6879786Z Note: /home/runner/.pub-cache/hosted/pub.dev/huawei_push-6.14.0+300/android/src/main/java/com/huawei/hms/flutter/push/utils/BundleUtils.java uses unchecked or unsafe operations.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.6881464Z Note: Recompile with -Xlint:unchecked for details.
+Build signed release APK	Build signed release APK	2025-12-01T01:03:58.6885006Z 6 warnings
+Build signed release APK	Build signed release APK	2025-12-01T01:04:16.0880826Z --E- no need to write metadata in manifest because of metadata is null
+Build signed release APK	Build signed release APK	2025-12-01T01:05:05.2881219Z Caught exception: Already watching path: /home/runner/work/gavra_android/gavra_android/android
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6866125Z 
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6872300Z FAILURE: Build failed with an exception.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6876614Z 
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6881509Z * What went wrong:
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6886281Z Execution failed for task ':app:validateSigningRelease'.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6892021Z > Keystore file '/home/runner/work/gavra_android/gavra_android/android/***-production.keystore' not found for signing config 'release'.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6898592Z 
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6900380Z * Try:
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6903566Z > Run with --stacktrace option to get the stack trace.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6910686Z > Run with --info or --debug option to get more log output.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6913166Z > Run with --scan to get full insights.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6914921Z > Get more help at https://help.gradle.org.
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6916579Z 
+Build signed release APK	Build signed release APK	2025-12-01T01:05:44.6916765Z BUILD FAILED in 12m 41s
+Build signed release APK	Build signed release APK	2025-12-01T01:05:45.1178821Z Running Gradle task 'assembleRelease'...                          762.5s
+Build signed release APK	Build signed release APK	2025-12-01T01:05:45.1280947Z Gradle task assembleRelease failed with exit code 1
+Build signed release APK	Build signed release APK	2025-12-01T01:05:45.1376500Z ##[error]Process completed with exit code 1.
+Build signed release APK	Upload release APK artifact	∩╗┐2025-12-01T01:05:45.1488709Z ##[group]Run actions/upload-artifact@v4
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1489214Z with:
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1489826Z   name: gavra-release-apk-main
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1491231Z   path: build/app/outputs/flutter-apk/app-release.apk
+Build signed release APK	Upload release APK artifact	build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+Build signed release APK	Upload release APK artifact	build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+Build signed release APK	Upload release APK artifact	
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1492490Z   retention-days: 90
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1492861Z   if-no-files-found: warn
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1493251Z   compression-level: 6
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1493594Z   overwrite: false
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1494006Z   include-hidden-files: false
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1494377Z env:
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1494679Z   FLUTTER_VERSION: 3.35.6
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1495217Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1495915Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.17-10/x64
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1496623Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.35.6-x64
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1497195Z   PUB_CACHE: /home/runner/.pub-cache
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.1497669Z ##[endgroup]
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.6837426Z Multiple search paths detected. Calculating the least common ancestor of all paths
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.6842244Z The least common ancestor is /home/runner/work/gavra_android/gavra_android/build/app/outputs/flutter-apk. This will be the root directory of the artifact
+Build signed release APK	Upload release APK artifact	2025-12-01T01:05:45.6862619Z ##[warning]No files were found with the provided path: build/app/outputs/flutter-apk/app-release.apk
+Build signed release APK	Upload release APK artifact	build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+Build signed release APK	Upload release APK artifact	build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk. No artifacts will be uploaded.
+Build signed release APK	Post Setup Flutter	∩╗┐2025-12-01T01:05:45.7216808Z Post job cleanup.
+Build signed release APK	Post Setup Java	∩╗┐2025-12-01T01:05:45.7294726Z Post job cleanup.
+Build signed release APK	Post Checkout	∩╗┐2025-12-01T01:05:46.0391720Z Post job cleanup.
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.1932883Z [command]/usr/bin/git version
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.1985189Z git version 2.51.2
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2052916Z Temporarily overriding HOME='/home/runner/work/_temp/5754bda7-3813-4117-8fd7-44e37385bf31' before making global git config changes
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2054776Z Adding repository directory to the temporary git global config as a safe directory
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2061134Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/gavra_android/gavra_android
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2121734Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2171765Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2657489Z fatal: No url found for submodule path 'github-mcp-server' in .gitmodules
+Build signed release APK	Post Checkout	2025-12-01T01:05:46.2729793Z ##[warning]The process '/usr/bin/git' failed with exit code 128
+Build signed release APK	Complete job	∩╗┐2025-12-01T01:05:46.2879783Z Cleaning up orphan processes
+Build signed release APK	Complete job	2025-12-01T01:05:46.3458278Z Terminate orphan process: pid (2698) (java)
+Build signed release APK	Complete job	2025-12-01T01:05:46.3494806Z Terminate orphan process: pid (2825) (java)
+Build signed release APK	Complete job	2025-12-01T01:05:46.3570840Z Terminate orphan process: pid (3475) (java)
