@@ -179,7 +179,7 @@ class PrintingService {
     }
   }
 
-  /// Kreira PDF dokument sa spiskom putnika
+  /// Kreira PDF dokument sa spiskom putnika - IDENTIČNO KAO PAPIRNI NALOG
   static Future<Uint8List> _createPutniksPDF(
     List<Putnik> putnici,
     String selectedDay,
@@ -188,75 +188,208 @@ class PrintingService {
   ) async {
     final pdf = pw.Document();
 
-    // Grupiši putnike po statusu
-    final pokupljeni = putnici.where((p) => p.jePokupljen).toList();
-    final otkazani = putnici.where((p) => p.jeOtkazan).toList();
-    final cekaju = putnici.where((p) => !p.jePokupljen && !p.jeOtkazan).toList();
+    // Sortiraj putnike po imenu
+    putnici.sort((a, b) => a.ime.compareTo(b.ime));
 
-    // Sortiraj po gradu/destinaciji
-    pokupljeni.sort((a, b) => a.grad.compareTo(b.grad));
-    otkazani.sort((a, b) => a.grad.compareTo(b.grad));
-    cekaju.sort((a, b) => a.grad.compareTo(b.grad));
+    // Odredi relaciju na osnovu grada i vremena
+    String relacija = _odredjiRelaciju(selectedGrad, selectedVreme);
+
+    // Danas datum
+    final danas = DateFormat('dd.MM.yyyy').format(DateTime.now());
 
     pdf.addPage(
-      pw.MultiPage(
+      pw.Page(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
+        margin: const pw.EdgeInsets.all(40),
         build: (pw.Context context) {
-          return [
-            // Zaglavlje
-            _buildHeader(
-              selectedDay,
-              selectedVreme,
-              selectedGrad,
-              putnici.length,
-            ),
-
-            pw.SizedBox(height: 20),
-
-            // Statistike
-            _buildStatisticsSection(
-              pokupljeni.length,
-              otkazani.length,
-              cekaju.length,
-            ),
-
-            pw.SizedBox(height: 20),
-
-            // Spisak putnika koji čekaju
-            if (cekaju.isNotEmpty) ...[
-              _buildSectionTitle(
-                '🕐 ČEKAJU UKRCAVANJE (${cekaju.length})',
-                Colors.orange,
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // ========== ZAGLAVLJE ==========
+              pw.Center(
+                child: pw.Text(
+                  'Limo servis "Gavra 013"',
+                  style: pw.TextStyle(
+                    fontSize: 22,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
               ),
-              pw.SizedBox(height: 10),
-              _buildPutnikTable(cekaju),
-              pw.SizedBox(height: 20),
-            ],
-
-            // Spisak pokupljenih putnika
-            if (pokupljeni.isNotEmpty) ...[
-              _buildSectionTitle(
-                '✅ POKUPLJENI (${pokupljeni.length})',
-                Colors.green,
+              pw.SizedBox(height: 4),
+              pw.Center(
+                child: pw.Text(
+                  'PIB: 102853497; MB: 55572178',
+                  style: const pw.TextStyle(fontSize: 12),
+                ),
               ),
-              pw.SizedBox(height: 10),
-              _buildPutnikTable(pokupljeni),
+
+              pw.SizedBox(height: 40),
+
+              // ========== PODACI O VOŽNJI ==========
+              _buildInfoRow('Datum:', danas),
+              pw.SizedBox(height: 8),
+              _buildInfoRow('Naručilac:', '______________________'),
+              pw.SizedBox(height: 8),
+              _buildInfoRow('Relacija:', relacija),
+              pw.SizedBox(height: 8),
+              _buildInfoRow('Vreme polaska:', selectedVreme),
+              pw.SizedBox(height: 8),
+              _buildInfoRow('Cena:', '______________________'),
+
+              pw.SizedBox(height: 40),
+
+              // ========== SPISAK PUTNIKA NASLOV ==========
+              pw.Center(
+                child: pw.Text(
+                  'SPISAK PUTNIKA',
+                  style: pw.TextStyle(
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+
               pw.SizedBox(height: 20),
+
+              // ========== LISTA PUTNIKA (1-8 + dodatni ako ima više) ==========
+              ...List.generate(
+                putnici.length > 8 ? putnici.length : 8,
+                (index) {
+                  final broj = index + 1;
+                  final imePutnika = index < putnici.length 
+                      ? putnici[index].ime 
+                      : '______________________________________';
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.symmetric(vertical: 6),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.SizedBox(
+                          width: 30,
+                          child: pw.Text(
+                            '$broj.',
+                            style: const pw.TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        pw.Expanded(
+                          child: pw.Container(
+                            decoration: const pw.BoxDecoration(
+                              border: pw.Border(
+                                bottom: pw.BorderSide(width: 0.5),
+                              ),
+                            ),
+                            child: pw.Text(
+                              imePutnika,
+                              style: const pw.TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              pw.Spacer(),
+
+              // ========== POTPISI NA DNU ==========
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  // Potpis naručioca
+                  pw.Column(
+                    children: [
+                      pw.Container(
+                        width: 120,
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(
+                            bottom: pw.BorderSide(width: 0.5),
+                          ),
+                        ),
+                        child: pw.SizedBox(height: 40),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Potpis naručioca',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+
+                  // Pečat (sredina)
+                  pw.Container(
+                    width: 80,
+                    height: 80,
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(
+                        color: PdfColors.blue,
+                        width: 2,
+                      ),
+                      borderRadius: pw.BorderRadius.circular(40),
+                    ),
+                    child: pw.Center(
+                      child: pw.Column(
+                        mainAxisAlignment: pw.MainAxisAlignment.center,
+                        children: [
+                          pw.Text(
+                            'Bojan Gavrilović',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.blue,
+                            ),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                          pw.Text(
+                            'LIMO',
+                            style: pw.TextStyle(
+                              fontSize: 5,
+                              color: PdfColors.blue,
+                            ),
+                          ),
+                          pw.Text(
+                            'GAVRA 013',
+                            style: pw.TextStyle(
+                              fontSize: 8,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.blue,
+                            ),
+                          ),
+                          pw.Text(
+                            'Bela Crkva',
+                            style: pw.TextStyle(
+                              fontSize: 6,
+                              color: PdfColors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Potpis prevoznika
+                  pw.Column(
+                    children: [
+                      pw.Container(
+                        width: 120,
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(
+                            bottom: pw.BorderSide(width: 0.5),
+                          ),
+                        ),
+                        child: pw.SizedBox(height: 40),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Potpis prevoznika',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
-
-            // Spisak otkazanih putnika
-            if (otkazani.isNotEmpty) ...[
-              _buildSectionTitle('❌ OTKAZANI (${otkazani.length})', Colors.red),
-              pw.SizedBox(height: 10),
-              _buildPutnikTable(otkazani),
-            ],
-
-            pw.SizedBox(height: 30),
-
-            // Footer
-            _buildFooter(),
-          ];
+          );
         },
       ),
     );
@@ -264,227 +397,35 @@ class PrintingService {
     return pdf.save();
   }
 
-  /// Kreira zaglavlje dokumenta
-  static pw.Widget _buildHeader(
-    String selectedDay,
-    String selectedVreme,
-    String selectedGrad,
-    int totalCount,
-  ) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Center(
-          child: pw.Text(
-            'GAVRA 013',
-            style: pw.TextStyle(
-              fontSize: 24,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-        ),
-        pw.Center(
-          child: pw.Text(
-            'SPISAK PUTNIKA',
-            style: pw.TextStyle(
-              fontSize: 18,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-        ),
-        pw.SizedBox(height: 10),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(
-              'Dan: $selectedDay',
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Text(
-              'Ukupno: $totalCount putnika',
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-            ),
-          ],
-        ),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(
-              'Polazak: $selectedVreme - $selectedGrad',
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.Text(
-              'Datum štampanja: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}',
-              style: const pw.TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(
-              '',
-              style: const pw.TextStyle(fontSize: 12),
-            ), // Prazan prostor
-            pw.Text('Strana 1', style: const pw.TextStyle(fontSize: 12)),
-          ],
-        ),
-        pw.Divider(thickness: 2),
-      ],
-    );
+  /// Određuje relaciju na osnovu grada
+  static String _odredjiRelaciju(String grad, String vreme) {
+    final normalizedGrad = grad.toLowerCase();
+    // Jutarnji polasci iz BC idu u VS, popodnevni iz VS u BC
+    if (normalizedGrad.contains('bela crkva') || normalizedGrad.contains('bc')) {
+      return 'Bela Crkva - Vršac';
+    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vs')) {
+      return 'Vršac - Bela Crkva';
+    }
+    return '$grad - ______';
   }
 
-  /// Kreira sekciju sa statistikama
-  static pw.Widget _buildStatisticsSection(
-    int pokupljeni,
-    int otkazani,
-    int cekaju,
-  ) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey),
-        borderRadius: pw.BorderRadius.circular(5),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatCard(
-            '✅ Pokupljeni',
-            pokupljeni.toString(),
-            PdfColors.green,
-          ),
-          _buildStatCard('🕐 Čekaju', cekaju.toString(), PdfColors.orange),
-          _buildStatCard('❌ Otkazani', otkazani.toString(), PdfColors.red),
-        ],
-      ),
-    );
-  }
-
-  /// Kreira karticu sa statistikom
-  static pw.Widget _buildStatCard(String label, String value, PdfColor color) {
-    return pw.Column(
+  /// Gradi red sa labelom i vrednošću
+  static pw.Widget _buildInfoRow(String label, String value) {
+    return pw.Row(
       children: [
-        pw.Text(
-          label,
-          style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+        pw.SizedBox(
+          width: 120,
+          child: pw.Text(
+            label,
+            style: const pw.TextStyle(fontSize: 12),
+          ),
         ),
         pw.Text(
           value,
           style: pw.TextStyle(
-            fontSize: 16,
+            fontSize: 12,
             fontWeight: pw.FontWeight.bold,
-            color: color,
           ),
-        ),
-      ],
-    );
-  }
-
-  /// Kreira naslov sekcije
-  static pw.Widget _buildSectionTitle(String title, Color color) {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      decoration: pw.BoxDecoration(
-        color: PdfColor.fromInt(color.toARGB32()),
-        border: pw.Border.all(color: PdfColor.fromInt(color.toARGB32())),
-        borderRadius: pw.BorderRadius.circular(5),
-      ),
-      child: pw.Text(
-        title,
-        style: pw.TextStyle(
-          fontSize: 14,
-          fontWeight: pw.FontWeight.bold,
-          color: PdfColors.white,
-        ),
-      ),
-    );
-  }
-
-  /// Kreira tabelu sa putnicima
-  static pw.Widget _buildPutnikTable(List<Putnik> putnici) {
-    return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(30), // #
-        1: pw.FlexColumnWidth(3), // Ime
-        2: pw.FlexColumnWidth(2), // Polazak
-        3: pw.FlexColumnWidth(2), // Destinacija
-        4: pw.FixedColumnWidth(60), // Status
-      },
-      children: [
-        // Header
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-          children: [
-            _buildTableCell('#', isHeader: true),
-            _buildTableCell('IME', isHeader: true),
-            _buildTableCell('POLAZAK', isHeader: true),
-            _buildTableCell('DOLAZAK', isHeader: true),
-            _buildTableCell('STATUS', isHeader: true),
-          ],
-        ),
-        // Putnici
-        ...putnici.asMap().entries.map((entry) {
-          int index = entry.key + 1;
-          Putnik putnik = entry.value;
-
-          String status = '';
-          if (putnik.jePokupljen) {
-            status = '✅ Pokupljen';
-          } else if (putnik.jeOtkazan) {
-            status = '❌ Otkazan';
-          } else {
-            status = '🕐 Čeka';
-          }
-
-          return pw.TableRow(
-            children: [
-              _buildTableCell(index.toString()),
-              _buildTableCell(putnik.ime),
-              _buildTableCell(putnik.polazak),
-              _buildTableCell(putnik.grad),
-              _buildTableCell(status),
-            ],
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  /// Kreira ćeliju tabele
-  static pw.Widget _buildTableCell(String text, {bool isHeader = false}) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 10 : 9,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-        ),
-        textAlign: pw.TextAlign.center,
-      ),
-    );
-  }
-
-  /// Kreira footer dokumenta
-  static pw.Widget _buildFooter() {
-    return pw.Column(
-      children: [
-        pw.Divider(),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(
-              'GAVRA 013 - Transport Services',
-              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey),
-            ),
-            pw.Text(
-              'www.gavra013.rs',
-              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey),
-            ),
-          ],
         ),
       ],
     );
