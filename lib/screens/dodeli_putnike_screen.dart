@@ -38,6 +38,10 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   // Svi putnici za count u BottomNavBar
   List<Putnik> _allPutnici = [];
 
+  // 🎯 MULTI-SELECT MODE
+  bool _isSelectionMode = false;
+  final Set<String> _selectedPutnici = {};
+
   // Dani
   final List<String> _dani = [
     'Ponedeljak',
@@ -311,10 +315,32 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dodeli Putnike'),
+        title: Text(_isSelectionMode ? '${_selectedPutnici.length} selektovano' : 'Dodeli Putnike'),
         centerTitle: true,
         elevation: 0,
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedPutnici.clear();
+                  });
+                },
+              )
+            : null,
         actions: [
+          // 🎯 Toggle selection mode
+          IconButton(
+            icon: Icon(_isSelectionMode ? Icons.check_circle : Icons.checklist),
+            tooltip: _isSelectionMode ? 'Završi selekciju' : 'Selektuj putnike',
+            onPressed: () {
+              setState(() {
+                _isSelectionMode = !_isSelectionMode;
+                if (!_isSelectionMode) _selectedPutnici.clear();
+              });
+            },
+          ),
           // Izbor dana
           PopupMenuButton<String>(
             icon: const Icon(Icons.calendar_today),
@@ -453,19 +479,37 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                         itemBuilder: (context, index) {
                           final putnik = _putnici[index];
                           final vozacColor = VozacBoja.getColorOrDefault(putnik.dodaoVozac, Colors.grey);
+                          final isSelected = putnik.id != null && _selectedPutnici.contains(putnik.id);
                           return Card(
                             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            color: isSelected ? vozacColor.withValues(alpha: 0.1) : null,
                             child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: vozacColor.withValues(alpha: 0.2),
-                                child: Text(
-                                  putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
-                                  style: TextStyle(
-                                    color: vozacColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              leading: _isSelectionMode
+                                  ? Checkbox(
+                                      value: isSelected,
+                                      activeColor: vozacColor,
+                                      onChanged: (value) {
+                                        if (putnik.id != null) {
+                                          setState(() {
+                                            if (value == true) {
+                                              _selectedPutnici.add(putnik.id!);
+                                            } else {
+                                              _selectedPutnici.remove(putnik.id);
+                                            }
+                                          });
+                                        }
+                                      },
+                                    )
+                                  : CircleAvatar(
+                                      backgroundColor: vozacColor.withValues(alpha: 0.2),
+                                      child: Text(
+                                        putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
+                                        style: TextStyle(
+                                          color: vozacColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
                               title: Text(
                                 putnik.ime,
                                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -474,8 +518,37 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
                                 '${putnik.adresa ?? putnik.grad} • ${putnik.dodaoVozac ?? "Nedodeljen"}',
                                 style: TextStyle(color: vozacColor),
                               ),
-                              trailing: const Icon(Icons.swap_horiz),
-                              onTap: () => _showVozacPicker(putnik),
+                              trailing: _isSelectionMode
+                                  ? CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: vozacColor.withValues(alpha: 0.2),
+                                      child: Text(
+                                        putnik.dodaoVozac?.isNotEmpty == true ? putnik.dodaoVozac![0] : '?',
+                                        style: TextStyle(color: vozacColor, fontSize: 12),
+                                      ),
+                                    )
+                                  : const Icon(Icons.swap_horiz),
+                              onTap: () {
+                                if (_isSelectionMode && putnik.id != null) {
+                                  setState(() {
+                                    if (_selectedPutnici.contains(putnik.id)) {
+                                      _selectedPutnici.remove(putnik.id);
+                                    } else {
+                                      _selectedPutnici.add(putnik.id!);
+                                    }
+                                  });
+                                } else {
+                                  _showVozacPicker(putnik);
+                                }
+                              },
+                              onLongPress: () {
+                                if (!_isSelectionMode && putnik.id != null) {
+                                  setState(() {
+                                    _isSelectionMode = true;
+                                    _selectedPutnici.add(putnik.id!);
+                                  });
+                                }
+                              },
                             ),
                           );
                         },
@@ -499,6 +572,308 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
               getPutnikCount: _getPutnikCount,
               onPolazakChanged: _onPolazakChanged,
             ),
+      // 🎯 FAB ZA DODAVANJE PUTNIKA (samo kad nije selection mode)
+      floatingActionButton: _isSelectionMode
+          ? null
+          : FloatingActionButton(
+              onPressed: _showDodajPutnikaDialog,
+              tooltip: 'Dodaj putnika',
+              child: const Icon(Icons.person_add),
+            ),
+      // 🎯 PERSISTENT BOTTOM SHEET za bulk akcije (kad je selection mode aktivan)
+      persistentFooterButtons: _isSelectionMode && _selectedPutnici.isNotEmpty
+          ? [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Vozači dugmići
+                      ...VozacBoja.validDrivers.map((vozac) {
+                        final color = VozacBoja.get(vozac);
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: color.withValues(alpha: 0.2),
+                              foregroundColor: color,
+                            ),
+                            icon: Text(vozac[0], style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                            label: Text(vozac),
+                            onPressed: () => _bulkPrebaci(vozac),
+                          ),
+                        );
+                      }),
+                      const SizedBox(width: 8),
+                      // Obriši dugme
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withValues(alpha: 0.2),
+                          foregroundColor: Colors.red,
+                        ),
+                        icon: const Icon(Icons.delete),
+                        label: const Text('Obriši'),
+                        onPressed: _bulkObrisi,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ]
+          : null,
     );
+  }
+
+  // 🎯 BULK PREBACIVANJE NA VOZAČA
+  Future<void> _bulkPrebaci(String noviVozac) async {
+    if (_selectedPutnici.isEmpty) return;
+
+    final count = _selectedPutnici.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Prebaci na $noviVozac?'),
+        content: Text('Da li želiš da prebaciš $count putnika na vozača $noviVozac?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: VozacBoja.get(noviVozac),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Prebaci', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    int uspesno = 0;
+    int greska = 0;
+
+    for (final id in _selectedPutnici.toList()) {
+      try {
+        await _putnikService.prebacijPutnikaVozacu(id, noviVozac);
+        uspesno++;
+      } catch (e) {
+        greska++;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isSelectionMode = false;
+        _selectedPutnici.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Prebačeno $uspesno putnika na $noviVozac${greska > 0 ? " (greške: $greska)" : ""}'),
+          backgroundColor: VozacBoja.get(noviVozac),
+        ),
+      );
+    }
+  }
+
+  // 🗑️ BULK BRISANJE PUTNIKA
+  Future<void> _bulkObrisi() async {
+    if (_selectedPutnici.isEmpty) return;
+
+    final count = _selectedPutnici.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Obriši putnike?'),
+        content: Text('Da li sigurno želiš da obrišeš $count putnika? Ova akcija se ne može poništiti.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Obriši', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    int uspesno = 0;
+    int greska = 0;
+
+    for (final id in _selectedPutnici.toList()) {
+      try {
+        await _putnikService.otkaziPutnika(id, 'Admin', selectedVreme: _selectedVreme, selectedGrad: _selectedGrad);
+        uspesno++;
+      } catch (e) {
+        greska++;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isSelectionMode = false;
+        _selectedPutnici.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🗑️ Obrisano $uspesno putnika${greska > 0 ? " (greške: $greska)" : ""}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ➕ DIJALOG ZA DODAVANJE PUTNIKA
+  Future<void> _showDodajPutnikaDialog() async {
+    final nameController = TextEditingController();
+    final adresaController = TextEditingController();
+    String selectedVozac = VozacBoja.validDrivers.first;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Dodaj putnika za $_selectedVreme'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Info
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '$_selectedDay • $_selectedVreme • $_selectedGrad',
+                          style: const TextStyle(fontSize: 12, color: Colors.blue),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Ime
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ime putnika *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 12),
+                // Adresa
+                TextField(
+                  controller: adresaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Adresa (opcionalno)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Vozač dropdown
+                DropdownButtonFormField<String>(
+                  initialValue: selectedVozac,
+                  decoration: const InputDecoration(
+                    labelText: 'Dodeli vozaču',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.directions_car),
+                  ),
+                  items: VozacBoja.validDrivers.map((v) {
+                    final color = VozacBoja.get(v);
+                    return DropdownMenuItem(
+                      value: v,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: color.withValues(alpha: 0.2),
+                            child: Text(v[0], style: TextStyle(color: color, fontSize: 12)),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(v),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (v) {
+                    if (v != null) setDialogState(() => selectedVozac = v);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Otkaži'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Dodaj'),
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unesite ime putnika')),
+                  );
+                  return;
+                }
+                Navigator.pop(context, {
+                  'ime': nameController.text.trim(),
+                  'adresa': adresaController.text.trim(),
+                  'vozac': selectedVozac,
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      try {
+        final putnik = Putnik(
+          ime: result['ime'],
+          adresa: result['adresa'].isNotEmpty ? result['adresa'] : null,
+          grad: _selectedGrad,
+          polazak: _selectedVreme,
+          dan: _getDayAbbreviation(_selectedDay).substring(0, 1).toUpperCase() +
+              _getDayAbbreviation(_selectedDay).substring(1),
+          dodaoVozac: result['vozac'],
+          mesecnaKarta: false,
+        );
+        await _putnikService.dodajPutnika(putnik);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Dodat putnik ${result['ime']}'),
+              backgroundColor: VozacBoja.get(result['vozac']),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
   }
 }
