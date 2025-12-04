@@ -1,3 +1,4 @@
+import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/action_log.dart';
@@ -21,11 +22,16 @@ class MesecniPutnikService {
 
   /// Dohvata aktivne mesečne putnike
   Future<List<MesecniPutnik>> getAktivniMesecniPutnici() async {
-    final response = await _supabase.from('mesecni_putnici').select('''
-          *
-        ''').eq('aktivan', true).eq('obrisan', false).order('putnik_ime');
+    try {
+      final response = await _supabase.from('mesecni_putnici').select('''
+            *
+          ''').eq('aktivan', true).eq('obrisan', false).order('putnik_ime');
 
-    return response.map((json) => MesecniPutnik.fromMap(json)).toList();
+      return response.map((json) => MesecniPutnik.fromMap(json)).toList();
+    } catch (e) {
+      // Ako REST API ne radi, vrati praznu listu - realtime stream će preuzeti
+      return <MesecniPutnik>[];
+    }
   }
 
   /// Dohvata mesečnog putnika po ID-u
@@ -51,52 +57,58 @@ class MesecniPutnikService {
   }
 
   /// Stream za aktivne mesečne putnike (legacy compatibility)
+  /// 🔧 FIX: Koristi Rx.merge da emituje inicijalne podatke odmah
   static Stream<List<MesecniPutnik>> streamAktivniMesecniPutnici() {
-    try {
-      final supabase = Supabase.instance.client;
-      return supabase
-          .from('mesecni_putnici')
-          .stream(primaryKey: ['id'])
-          .order('putnik_ime')
-          .map((data) {
-            try {
-              final listRaw = data as List<dynamic>;
-              return listRaw
-                  .where((row) {
-                    final map = row as Map<String, dynamic>;
-                    return (map['aktivan'] == true) && (map['obrisan'] != true);
-                  })
-                  .map(
-                    (json) => MesecniPutnik.fromMap(
-                      Map<String, dynamic>.from(json as Map),
-                    ),
-                  )
-                  .toList();
-            } catch (e) {
-              return <MesecniPutnik>[];
-            }
-          })
-          .handleError((err) {
+    final supabase = Supabase.instance.client;
+
+    // Inicijalni fetch preko REST API
+    final initialFetch = supabase
+        .from('mesecni_putnici')
+        .select()
+        .eq('aktivan', true)
+        .eq('obrisan', false)
+        .order('putnik_ime')
+        .then(
+          (response) => response.map((json) => MesecniPutnik.fromMap(Map<String, dynamic>.from(json))).toList(),
+        )
+        .asStream();
+
+    // Realtime stream
+    final realtimeStream = supabase
+        .from('mesecni_putnici')
+        .stream(primaryKey: ['id'])
+        .order('putnik_ime')
+        .map((data) {
+          try {
+            final listRaw = data as List<dynamic>;
+            return listRaw
+                .where((row) {
+                  final map = row as Map<String, dynamic>;
+                  return (map['aktivan'] == true) && (map['obrisan'] != true);
+                })
+                .map(
+                  (json) => MesecniPutnik.fromMap(
+                    Map<String, dynamic>.from(json as Map),
+                  ),
+                )
+                .toList();
+          } catch (e) {
             return <MesecniPutnik>[];
-          });
-    } catch (e) {
-      // fallback to a one-time fetch if stream creation fails
-      return Stream.fromFuture(
-        Supabase.instance.client
-            .from('mesecni_putnici')
-            .select()
-            .eq('aktivan', true)
-            .eq('obrisan', false)
-            .order('putnik_ime')
-            .then(
-              (response) => response
-                  .map(
-                    (json) => MesecniPutnik.fromMap(Map<String, dynamic>.from(json)),
-                  )
-                  .toList(),
-            ),
-      );
-    }
+          }
+        })
+        .handleError((err) {
+          return <MesecniPutnik>[];
+        });
+
+    // 🔧 FIX: Merge oba stream-a - inicijalni odmah, realtime kasnije
+    return Rx.merge([initialFetch, realtimeStream]).distinct((prev, next) {
+      if (prev.length != next.length) return false;
+      if (prev.isEmpty && next.isEmpty) return true;
+      if (prev.isNotEmpty && next.isNotEmpty) {
+        return prev.first.id == next.first.id && prev.last.id == next.last.id;
+      }
+      return false;
+    });
   }
 
   /// Kreira novog mesečnog putnika
@@ -606,45 +618,62 @@ class MesecniPutnikService {
   }
 
   /// Stream za realtime ažuriranja mesečnih putnika
+  /// 🔧 FIX: Koristi startWith da emituje inicijalne podatke odmah,
+  /// ne čekajući WebSocket konekciju koja može da kasni ili ne uspe
   Stream<List<MesecniPutnik>> get mesecniPutniciStream {
-    try {
-      return _supabase
-          .from('mesecni_putnici')
-          .stream(primaryKey: ['id'])
-          .order('putnik_ime')
-          .map((data) {
-            try {
-              final listRaw = data as List<dynamic>;
-              final filtered = listRaw.where((row) {
-                try {
-                  final map = row as Map<String, dynamic>;
-                  // ✅ ISPRAVLJENO: Filtriraj i po aktivan statusu i po obrisan statusu
-                  final aktivan = map['aktivan'] ?? true; // default true ako nema vrednost
-                  final obrisan = map['obrisan'] ?? false; // default false ako nema vrednost
-                  return (aktivan as bool) && !(obrisan as bool);
-                } catch (_) {
-                  return true;
-                }
-              }).toList();
+    // Kreiraj realtime stream
+    final realtimeStream = _supabase
+        .from('mesecni_putnici')
+        .stream(primaryKey: ['id'])
+        .order('putnik_ime')
+        .map((data) {
+          try {
+            final listRaw = data as List<dynamic>;
+            final filtered = listRaw.where((row) {
+              try {
+                final map = row as Map<String, dynamic>;
+                // ✅ ISPRAVLJENO: Filtriraj i po aktivan statusu i po obrisan statusu
+                final aktivan = map['aktivan'] ?? true; // default true ako nema vrednost
+                final obrisan = map['obrisan'] ?? false; // default false ako nema vrednost
+                return (aktivan as bool) && !(obrisan as bool);
+              } catch (_) {
+                return true;
+              }
+            }).toList();
 
-              return filtered
-                  .map(
-                    (json) => MesecniPutnik.fromMap(
-                      Map<String, dynamic>.from(json as Map),
-                    ),
-                  )
-                  .toList();
-            } catch (e) {
-              return <MesecniPutnik>[];
-            }
-          })
-          .handleError((err) {
+            return filtered
+                .map(
+                  (json) => MesecniPutnik.fromMap(
+                    Map<String, dynamic>.from(json as Map),
+                  ),
+                )
+                .toList();
+          } catch (e) {
             return <MesecniPutnik>[];
-          });
-    } catch (e) {
-      // fallback to a one-time fetch if stream creation fails
-      return getAktivniMesecniPutnici().asStream();
-    }
+          }
+        })
+        .handleError((err) {
+          return <MesecniPutnik>[];
+        });
+
+    // 🔧 FIX: Koristi Rx.merge sa inicijalnim fetch-om
+    // Ovo osigurava da se podaci prikažu odmah, a realtime ažuriranja dolaze kasnije
+    return Rx.merge([
+      // Inicijalni podaci - odmah se učitavaju preko REST API
+      // 🔧 FIX: Dodajemo handleError da ne blokira stream ako REST API ne radi
+      getAktivniMesecniPutnici().asStream().handleError((e) => <MesecniPutnik>[]),
+      // Realtime ažuriranja - kada WebSocket konekcija uspe
+      realtimeStream,
+    ]).distinct((prev, next) {
+      // Izbegni duplikate ako realtime vrati iste podatke kao inicijalni fetch
+      if (prev.length != next.length) return false;
+      if (prev.isEmpty && next.isEmpty) return true;
+      // Proveri da li su isti podaci (po ID-u prvog elementa kao brza provera)
+      if (prev.isNotEmpty && next.isNotEmpty) {
+        return prev.first.id == next.first.id && prev.last.id == next.last.id;
+      }
+      return false;
+    });
   }
 
   /// Izračunava broj putovanja iz istorije

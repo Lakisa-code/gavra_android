@@ -162,7 +162,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     // Debounced search stream sa seeded vrednostima
     _searchSubject = BehaviorSubject<String>.seeded('');
     _filterSubject = BehaviorSubject<String>.seeded('svi');
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
+    // 🔧 FIX: startWith('') osigurava da combineLatest3 odmah dobije vrednost
+    // jer debounceTime ne prosleđuje seed vrednost iz BehaviorSubject
+    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct().startWith('');
 
     // Listen za search promene
     _searchController.addListener(() {
