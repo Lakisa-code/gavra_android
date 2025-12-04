@@ -2,12 +2,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../utils/mesecni_filter_fix.dart';
+import 'mesecni_putnik_service.dart';
 
 /// 🚀 POBOLJŠANI SERVIS ZA MESEČNE PUTNIKE
 /// Koristi nove SQL funkcije i optimizovanu logiku filtriranja
-class ImprovedMesecniPutnikService {
+class ImprovedMesecniPutnikService extends MesecniPutnikService {
   ImprovedMesecniPutnikService({SupabaseClient? supabaseClient})
-      : _supabase = supabaseClient ?? Supabase.instance.client;
+      : _supabase = supabaseClient ?? Supabase.instance.client,
+        super(supabaseClient: supabaseClient);
 
   final SupabaseClient _supabase;
 
@@ -44,6 +46,8 @@ class ImprovedMesecniPutnikService {
   }
 
   /// 📊 POBOLJŠANO: Stream sa optimizovanim filtriranjem
+  /// Bez parametara vraća sve aktivne putnike, sortirane po imenu.
+  /// Filtriranje po search/filterType se radi lokalno u UI za bolju reaktivnost.
   Stream<List<MesecniPutnik>> streamFilteredMesecniPutnici({
     String? targetDay,
     String? searchTerm,
@@ -56,12 +60,18 @@ class ImprovedMesecniPutnikService {
           return listRaw
               .map((row) => row as Map<String, dynamic>)
               .where((putnikMap) {
-                return MesecniFilterFix.shouldIncludeMesecniPutnik(
-                  putnik: putnikMap,
-                  targetDay: targetDay,
-                  searchTerm: searchTerm,
-                  filterType: filterType != 'svi' ? filterType : null,
-                );
+                // Osnovno filtriranje: aktivnost i status
+                if (!MesecniFilterFix.isAktivan(putnikMap)) return false;
+                if (activeOnly && !MesecniFilterFix.isValidStatus(putnikMap['status'] as String?)) return false;
+
+                // Opcionalno filtriranje po danu (ako je prosleđeno)
+                if (targetDay != null) {
+                  final radniDani = (putnikMap['radni_dani'] ?? '') as String;
+                  if (!MesecniFilterFix.matchesDan(radniDani, targetDay)) return false;
+                }
+
+                // Search i filterType se NE primenjuju ovde - to radi UI lokalno za bolju reaktivnost
+                return true;
               })
               .map((json) => MesecniPutnik.fromMap(json))
               .toList();
@@ -69,6 +79,7 @@ class ImprovedMesecniPutnikService {
   }
 
   /// 🔍 POBOLJŠANO: Pretraga mesečnih putnika
+  @override
   Future<List<MesecniPutnik>> searchMesecniPutnici(String query) async {
     if (query.trim().isEmpty) {
       return await getFilteredMesecniPutnici();

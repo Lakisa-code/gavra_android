@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../models/putnik.dart';
 import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
@@ -191,36 +190,6 @@ class _AdminScreenState extends State<AdminScreen> {
       _kusurStreamHealthy.value = false;
       _putnikDataHealthy.value = false;
     }
-  }
-
-  // 🎯 KREIRA KOMBINOVANI PAZAR STREAM ZA SVE VOZAČE - ISTI PRISTUP KAO DANAS SCREEN
-  Stream<Map<String, double>> _createPazarStreamForAllDrivers(
-    DateTime from,
-    DateTime to,
-  ) {
-    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Vlajic'];
-
-    // Kreiraj stream za svakog vozača
-    final streamList = vozaciRedosled
-        .map(
-          (vozac) => StatistikaService.streamPazarZaVozaca(vozac, from: from, to: to),
-        )
-        .toList();
-
-    // Kombinuj sve stream-ove
-    return Rx.combineLatest(streamList, (List<double> values) {
-      final result = <String, double>{};
-      double ukupno = 0.0;
-
-      for (int i = 0; i < vozaciRedosled.length; i++) {
-        final vrednost = values[i];
-        result[vozaciRedosled[i]] = vrednost;
-        ukupno += vrednost;
-      }
-
-      result['_ukupno'] = ukupno;
-      return result;
-    });
   }
 
   // Mapiranje punih imena dana u skraćenice za filtriranje
@@ -1012,9 +981,9 @@ class _AdminScreenState extends State<AdminScreen> {
             streamFrom = dateRange['from']!;
             streamTo = dateRange['to']!;
 
-            // 🎯 KORISTI ISTI PRISTUP KAO DANAS SCREEN - streamPazarZaVozaca ZA SVAKOG VOZAČA
+            // 🎯 KORISTI StatistikaService.streamPazarZaSveVozace() - BEZ RxDart
             return StreamBuilder<Map<String, double>>(
-              stream: _createPazarStreamForAllDrivers(streamFrom, streamTo),
+              stream: StatistikaService.streamPazarZaSveVozace(from: streamFrom, to: streamTo),
               builder: (context, pazarSnapshot) {
                 if (!pazarSnapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());

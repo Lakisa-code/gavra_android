@@ -61,11 +61,13 @@ class MesecniPutnikService {
           .map((data) {
             try {
               final listRaw = data as List<dynamic>;
-              return listRaw
-                  .where((row) {
-                    final map = row as Map<String, dynamic>;
-                    return (map['aktivan'] == true) && (map['obrisan'] != true);
-                  })
+
+              final filtered = listRaw.where((row) {
+                final map = row as Map<String, dynamic>;
+                return (map['aktivan'] == true) && (map['obrisan'] != true);
+              }).toList();
+
+              return filtered
                   .map(
                     (json) => MesecniPutnik.fromMap(
                       Map<String, dynamic>.from(json as Map),

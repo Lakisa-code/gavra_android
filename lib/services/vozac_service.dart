@@ -13,7 +13,7 @@ class VozacService {
   Future<List<Vozac>> getAllVozaci() async {
     final response = await _supabase
         .from('vozaci')
-        .select('id, ime, kusur, aktivan, boja, created_at, updated_at')
+        .select('id, ime, kusur, aktivan, created_at, updated_at')
         .eq('aktivan', true)
         .order('ime');
 
@@ -22,11 +22,8 @@ class VozacService {
 
   /// Dohvata vozača po ID-u
   Future<Vozac?> getVozacById(String id) async {
-    final response = await _supabase
-        .from('vozaci')
-        .select('id, ime, kusur, aktivan, boja, created_at, updated_at')
-        .eq('id', id)
-        .single();
+    final response =
+        await _supabase.from('vozaci').select('id, ime, kusur, aktivan, created_at, updated_at').eq('id', id).single();
 
     return Vozac.fromMap(response);
   }

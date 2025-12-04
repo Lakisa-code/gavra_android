@@ -527,7 +527,7 @@ class DailyCheckInService {
       // 4. REALTIME PAZAR STREAM - IDENTIČNO SA _showPopisDana()
       double ukupanPazar;
       try {
-        ukupanPazar = await StatistikaService.streamPazarSvihVozaca(
+        ukupanPazar = await StatistikaService.streamPazarZaSveVozace(
           from: dayStart,
           to: dayEnd,
         ).map((pazarMap) => pazarMap[vozac] ?? 0.0).first.timeout(const Duration(seconds: 10));

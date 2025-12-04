@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/mesecni_putnik.dart';
 import '../services/adresa_supabase_service.dart';
+import '../services/improved_mesecni_putnik_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
-import '../services/real_time_statistika_service.dart';
+import '../services/realtime_service.dart'; // Za stream osvezavanje
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
@@ -43,13 +43,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // Supabase klijent
   final SupabaseClient supabase = Supabase.instance.client;
 
-  // Novi servis instance
-  final MesecniPutnikService _mesecniPutnikService = MesecniPutnikService();
-
-  // 🔄 OPTIMIZACIJA: Debounced search stream i filter stream
-  late final BehaviorSubject<String> _searchSubject;
-  late final BehaviorSubject<String> _filterSubject;
-  late final Stream<String> _debouncedSearchStream;
+  // Novi servis instance (Improved)
+  final ImprovedMesecniPutnikService _mesecniPutnikService = ImprovedMesecniPutnikService();
 
   // 🔄 OPTIMIZACIJA: Connection resilience
   StreamSubscription<dynamic>? _connectionSubscription;
@@ -159,14 +154,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 🔄 OPTIMIZACIJA: Inicijalizacija debounced search i error handling
   void _initializeOptimizations() {
-    // Debounced search stream sa seeded vrednostima
-    _searchSubject = BehaviorSubject<String>.seeded('');
-    _filterSubject = BehaviorSubject<String>.seeded('svi');
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
-
-    // Listen za search promene
+    // Listen za search promene - rebuild UI
     _searchController.addListener(() {
-      _searchSubject.add(_searchController.text);
+      if (mounted) setState(() {});
     });
 
     // Connection monitoring (placeholder - možete proširiti)
@@ -320,8 +310,6 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     // 🔄 OPTIMIZACIJA: Cleanup resources
     try {
-      _searchSubject.close();
-      _filterSubject.close();
       _connectionSubscription?.cancel();
     } catch (e) {
       // Warning disposing streams
@@ -362,46 +350,32 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     super.dispose();
   }
 
-  /// 🚀 DIREKTNO FILTRIRANJE - umesto compute() koji blokira scroll
+  /// 🚀 DIREKTNO FILTRIRANJE - dodaje search i filterType na već filtrirane podatke iz streama
+  /// Stream već vraća aktivne putnike sa validnim statusom, ovde samo dodajemo dinamičke filtere
   List<MesecniPutnik> _filterPutniciDirect(
     List<MesecniPutnik> putnici,
     String searchTerm,
     String filterType,
   ) {
-    var filtered = putnici.where((putnik) {
-      // Filter po aktivnosti (samo aktivni i ne obrisani)
-      if (!putnik.aktivan || putnik.obrisan) return false;
+    var filtered = putnici;
 
-      // ✅ POBOLJŠANO: Centralizovano filtriranje statusa
-      final status = putnik.status.toLowerCase().trim();
-      final invalidStatuses = ['bolovanje', 'godišnje', 'godisnji', 'obrisan', 'otkazan', 'otkazano'];
-      if (invalidStatuses.contains(status)) return false;
+    // Filter po tipu (radnik/ucenik)
+    if (filterType != 'svi') {
+      filtered = filtered.where((p) => p.tip == filterType).toList();
+    }
 
-      // Filter po tipu
-      if (filterType == 'radnik' && putnik.tip != 'radnik') return false;
-      if (filterType == 'ucenik' && putnik.tip != 'ucenik') return false;
-
-      // ✅ POBOLJŠANO: Search filter sa boljom logikom
-      if (searchTerm.isNotEmpty) {
-        final searchLower = searchTerm.toLowerCase();
-        final imeLower = putnik.putnikIme.toLowerCase();
-        final tipSkoleLower = (putnik.tipSkole ?? '').toLowerCase();
-        final tipLower = putnik.tip.toLowerCase();
-
-        if (!(imeLower.contains(searchLower) ||
-            tipSkoleLower.contains(searchLower) ||
-            tipLower.contains(searchLower))) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
-
-    // Sortiranje po imenu
-    filtered.sort((a, b) => a.putnikIme.compareTo(b.putnikIme));
+    // Filter po search term
+    if (searchTerm.isNotEmpty) {
+      final searchLower = searchTerm.toLowerCase();
+      filtered = filtered.where((p) {
+        return p.putnikIme.toLowerCase().contains(searchLower) ||
+            p.tip.toLowerCase().contains(searchLower) ||
+            (p.tipSkole?.toLowerCase().contains(searchLower) ?? false);
+      }).toList();
+    }
 
     return filtered;
+    // ✅ Sortiranje ukloneno - baza već vraća sortirano po putnik_ime
   }
 
   @override
@@ -467,10 +441,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ],
                           ),
                           onPressed: () {
-                            // 🔄 OPTIMIZOVANO: Stream update umesto setState
                             final newFilter = _selectedFilter == 'radnik' ? 'svi' : 'radnik';
-                            _selectedFilter = newFilter;
-                            _filterSubject.add(newFilter);
+                            setState(() {
+                              _selectedFilter = newFilter;
+                            });
                           },
                           tooltip: 'Filtriraj radnike',
                         ),
@@ -531,10 +505,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                             ],
                           ),
                           onPressed: () {
-                            // 🔄 OPTIMIZOVANO: Stream update umesto setState
                             final newFilter = _selectedFilter == 'ucenik' ? 'svi' : 'ucenik';
-                            _selectedFilter = newFilter;
-                            _filterSubject.add(newFilter);
+                            setState(() {
+                              _selectedFilter = newFilter;
+                            });
                           },
                           tooltip: 'Filtriraj učenike',
                         ),
@@ -705,29 +679,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
             const SizedBox(height: 16),
 
-            // 📋 LISTA PUTNIKA - 🔄 OPTIMIZOVANO: CombineLatest streams za reaktivno filtriranje
+            // 📋 LISTA PUTNIKA - Koristi ISTI stream kao danas_screen koji RADI
             Expanded(
               child: StreamBuilder<List<MesecniPutnik>>(
-                stream: Rx.combineLatest3(
-                  _mesecniPutnikService.mesecniPutniciStream,
-                  _debouncedSearchStream,
-                  _filterSubject.stream,
-                  (
-                    List<MesecniPutnik> putnici,
-                    String searchTerm,
-                    String filterType,
-                  ) {
-                    // 🚀 DIREKTNO FILTRIRANJE - bez compute() koji blokira scroll
-                    return _filterPutniciDirect(
-                      putnici,
-                      searchTerm,
-                      filterType,
-                    );
-                  },
-                ).distinct().debounceTime(const Duration(milliseconds: 100)),
+                stream: MesecniPutnikService.streamAktivniMesecniPutnici(),
                 builder: (context, snapshot) {
                   // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  // NE ČEKAJ ZAUVEK - prikaži praznu listu ako nema podataka
+                  if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
@@ -743,7 +702,14 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     );
                   }
 
-                  final filteredPutnici = snapshot.data ?? [];
+                  final sviPutnici = snapshot.data ?? [];
+
+                  // Filtriraj lokalno
+                  final filteredPutnici = _filterPutniciDirect(
+                    sviPutnici,
+                    _searchController.text,
+                    _selectedFilter,
+                  );
 
                   // � UPDATE CACHE VALUES za brojače (zamenjuje dodatne StreamBuilder-e)
                   if (snapshot.hasData && snapshot.data!.isNotEmpty) {
@@ -2534,8 +2500,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     String putnikId,
     String period,
   ) {
-    // 🔄 KORISTI NOVI CENTRALIZOVANI REAL-TIME SERVIS
-    return RealTimeStatistikaService.instance.getPutnikStatistikeStream(putnikId).asyncMap((baseStats) async {
+    // 🔄 KORISTI RealtimeService za osvezavanje (bez RxDart)
+    return RealtimeService.instance.tableStream('putovanja_istorija').asyncMap((_) async {
       try {
         // Posebni slučajevi
         if (period == 'Cela 2025') {
@@ -3487,6 +3453,4 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       ),
     );
   }
-
-  // Helper funkcije za tipove putnika - zamena za AppThemeHelpers
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
@@ -27,10 +26,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
   StreamSubscription<List<Putnik>>? _dugoviSubscription;
   final Map<String, DateTime> _streamHeartbeats = {};
 
-  // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
-  late Stream<String> _debouncedSearchStream;
+  // 🔍 SEARCH & FILTERING (bez RxDart)
   final TextEditingController _searchController = TextEditingController();
 
   // 📊 PERFORMANCE STATE
@@ -59,8 +55,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
     _realtimeHealthStatus.dispose();
 
     // 🧹 SEARCH CLEANUP
-    _searchSubject.close();
-    _filterSubject.close();
     _searchController.dispose();
     super.dispose();
   }
@@ -178,25 +172,11 @@ class _DugoviScreenState extends State<DugoviScreen> {
     );
   }
 
-  // 🔍 DEBOUNCED SEARCH SETUP
+  // 🔍 SEARCH SETUP (bez RxDart - jednostavan setState)
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
-
-    _debouncedSearchStream.listen((query) {
-      _performSearch(query);
-    });
-
     _searchController.addListener(() {
-      _searchSubject.add(_searchController.text);
+      if (mounted) setState(() {});
     });
-  }
-
-  void _performSearch(String query) {
-    if (mounted) {
-      setState(() {
-        // Trigger rebuild with filtered data
-      });
-    }
   }
 
   void _loadInitialData() {
@@ -385,7 +365,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
                       icon: const Icon(Icons.clear),
                       onPressed: () {
                         _searchController.clear();
-                        _searchSubject.add('');
+                        if (mounted) setState(() {});
                       },
                     )
                   : null,
@@ -430,7 +410,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
                             _selectedFilter = value!;
                           });
                         }
-                        _filterSubject.add(value!);
                       },
                       items: const [
                         DropdownMenuItem(

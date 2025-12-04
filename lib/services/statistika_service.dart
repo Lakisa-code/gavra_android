@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:async/async.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/mesecni_putnik.dart';
@@ -78,6 +77,66 @@ class StatistikaService {
     final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     return _streamStvarniPazarZaVozaca(vozac, fromDate, toDate);
+  }
+
+  /// 🔄 REAL-TIME PAZAR STREAM ZA SVE VOZAČE - JEDAN STREAM UMESTO VIŠE
+  /// Vraća Map<String, double> sa pazarom za svakog vozača + '_ukupno'
+  static Stream<Map<String, double>> streamPazarZaSveVozace({
+    DateTime? from,
+    DateTime? to,
+  }) {
+    final now = _normalizeDateTime(DateTime.now());
+    final fromDate = from ?? DateTime(now.year, now.month, now.day);
+    final targetDate = fromDate.toIso8601String().split('T')[0];
+    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Vlajic'];
+
+    return Supabase.instance.client
+        .from('putovanja_istorija')
+        .stream(primaryKey: ['id'])
+        .eq('datum_putovanja', targetDate)
+        .map((data) {
+          final result = <String, double>{};
+          double ukupno = 0.0;
+
+          // Inicijalizuj sve vozače na 0
+          for (final vozac in vozaciRedosled) {
+            result[vozac] = 0.0;
+          }
+
+          for (final item in data) {
+            final vozacUuid = item['vozac_id'] as String?;
+            if (vozacUuid == null) continue;
+
+            // Pronađi ime vozača
+            String? vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacUuid);
+
+            // Fallback na poznate UUID-jeve
+            if (vozacIme == null || vozacIme.isEmpty) {
+              if (vozacUuid == '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e') {
+                vozacIme = 'Bojan';
+              } else if (vozacUuid == '5b379394-084e-1c7d-76bf-fc193a5b6c7d') {
+                vozacIme = 'Svetlana';
+              } else if (vozacUuid == '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f') {
+                vozacIme = 'Bruda';
+              } else if (vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
+                vozacIme = 'Bilevski';
+              } else if (vozacUuid == '67ea0a22-689c-41b8-b576-5b27145e8e5e') {
+                vozacIme = 'Vlajic';
+              }
+            }
+
+            if (vozacIme != null && vozaciRedosled.contains(vozacIme)) {
+              final cena = (item['cena'] as num?)?.toDouble() ?? 0.0;
+              if (cena > 0) {
+                result[vozacIme] = (result[vozacIme] ?? 0.0) + cena;
+                ukupno += cena;
+              }
+            }
+          }
+
+          result['_ukupno'] = ukupno;
+          return result;
+        });
   }
 
   /// 💰 STREAM: Čita sva plaćanja iz putovanja_istorija (uključujući mesečne karte)
@@ -305,45 +364,12 @@ class StatistikaService {
     return ukupno;
   }
 
-  /// 📊 KOMBINOVANI REAL-TIME PAZAR STREAM (obični + mesečni putnici)
-
-  ///  REAL-TIME PAZAR STREAM ZA SVE VOZAČE - KORISTI INDIVIDUALNE STREAM-OVE
-  static Stream<Map<String, double>> streamPazarSvihVozaca({
-    DateTime? from,
-    DateTime? to,
-  }) {
-    final now = _normalizeDateTime(DateTime.now());
-    final fromDate = from ?? DateTime(now.year, now.month, now.day);
-    final toDate = to ?? DateTime(now.year, now.month, now.day, 23, 59, 59);
-
-    // Kreiraj stream-ove za sve vozače i kombinuj ih
-    final pazarStreams = sviVozaci.map((vozac) {
-      return streamPazarZaVozaca(vozac, from: fromDate, to: toDate);
-    }).toList();
-
-    // Kombinuj sve stream-ove u jedan
-    return CombineLatestStream.list(pazarStreams).map((pazarList) {
-      final rezultat = <String, double>{};
-      double ukupno = 0.0;
-
-      for (int i = 0; i < sviVozaci.length; i++) {
-        final vozac = sviVozaci[i];
-        final pazar = pazarList[i];
-        rezultat[vozac] = pazar;
-        ukupno += pazar;
-      }
-
-      rezultat['_ukupno'] = ukupno;
-      return rezultat;
-    });
-  }
-
   // Metoda za čišćenje cache-a (korisno za testiranje ili promenu datuma)
   static void clearStreamCache() {
     instance._streamCache.clear();
   }
 
-  /// �💰 PAZAR PO SVIM VOZAČIMA - KORISTI VREMENSKI OPSEG
+  /// 💰 PAZAR PO SVIM VOZAČIMA - KORISTI VREMENSKI OPSEG
   static Future<Map<String, double>> pazarSvihVozaca(
     List<Putnik> putnici, {
     DateTime? from,

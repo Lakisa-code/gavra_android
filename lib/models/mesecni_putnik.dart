@@ -135,11 +135,11 @@ class MesecniPutnik {
       firma: map['firma'] as String?,
       ukupnoVoznji: map['ukupno_voznji'] as int? ?? 0,
       activan: map['activan'] as bool? ?? true,
-      actionLog: map['action_log'] as List? ?? [],
+      actionLog: _parseActionLog(map['action_log']),
       kreiran: map['kreiran'] != null ? DateTime.parse(map['kreiran'] as String) : null,
       azuriran: map['azuriran'] != null ? DateTime.parse(map['azuriran'] as String) : null,
       // Tracking polja
-      dodaliVozaci: map['dodali_vozaci'] as List? ?? [],
+      dodaliVozaci: _parseDodaliVozaci(map['dodali_vozaci']),
       putovanjaId: map['putovanja_id'] as String?,
       userId: map['user_id'] as String?,
       tipPrevoza: map['tip_prevoza'] as String?,
@@ -693,5 +693,22 @@ class MesecniPutnik {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp * 1000 + (timestamp % 1000)).toRadixString(36);
     return 'fallback-uuid-$random';
+  }
+
+  /// ✅ HELPER: Parsira action_log - može biti List, Map ili null
+  static List<dynamic> _parseActionLog(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value;
+    if (value is Map) return [value]; // Wrap Map u List
+    return [];
+  }
+
+  /// ✅ HELPER: Parsira dodali_vozaci - može biti List, Map ili null
+  static List<dynamic> _parseDodaliVozaci(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value;
+    if (value is Map) return [value]; // Wrap Map u List
+    if (value is String) return [value]; // Wrap String u List
+    return [];
   }
 }

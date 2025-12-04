@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../models/putovanja_istorija.dart';
 import '../services/putovanja_istorija_service.dart';
@@ -34,10 +33,8 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   StreamSubscription<List<PutovanjaIstorija>>? _putovanjaSubscription;
   final Map<String, DateTime> _streamHeartbeats = {};
 
-  // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
-  late Stream<String> _debouncedSearchStream;
+  // 🔍 DEBOUNCED SEARCH & FILTERING (bez RxDart)
+  Timer? _searchDebounceTimer;
   final TextEditingController _searchController = TextEditingController();
 
   // 📊 PERFORMANCE STATE
@@ -64,8 +61,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     _realtimeHealthStatus.dispose();
 
     // 🧹 SEARCH CLEANUP
-    _searchSubject.close();
-    _filterSubject.close();
+    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -166,16 +162,16 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     );
   }
 
-  // 🔍 DEBOUNCED SEARCH SETUP
+  // 🔍 DEBOUNCED SEARCH SETUP (bez RxDart - koristi Timer)
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
-
-    _debouncedSearchStream.listen((query) {
-      _performSearch(query);
-    });
-
     _searchController.addListener(() {
-      _searchSubject.add(_searchController.text);
+      // Otkaži prethodni timer ako postoji
+      _searchDebounceTimer?.cancel();
+
+      // Pokreni novi timer za debouncing (300ms)
+      _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+        _performSearch(_searchController.text);
+      });
     });
   }
 
@@ -299,7 +295,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                             _selectedFilter = value;
                           });
                         }
-                        _filterSubject.add(value);
                       },
                       itemBuilder: (context) => [
                         PopupMenuItem(
@@ -384,7 +379,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                               icon: const Icon(Icons.clear),
                               onPressed: () {
                                 _searchController.clear();
-                                _searchSubject.add('');
                               },
                             )
                           : null,
@@ -469,7 +463,6 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                                   _selectedFilter = value!;
                                 });
                               }
-                              _filterSubject.add(value!);
                             },
                             items: [
                               DropdownMenuItem(

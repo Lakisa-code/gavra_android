@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../services/geocoding_stats_service.dart';
 import '../services/theme_manager.dart';
@@ -24,10 +23,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
   StreamSubscription<Map<String, dynamic>>? _statsSubscription;
   final Map<String, DateTime> _streamHeartbeats = {};
 
-  // 🔍 DEBOUNCED SEARCH & FILTERING
-  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>.seeded('');
-  final BehaviorSubject<String> _filterSubject = BehaviorSubject<String>.seeded('svi');
-  late Stream<String> _debouncedSearchStream;
+  // 🔍 SEARCH & FILTERING (bez RxDart)
   final TextEditingController _searchController = TextEditingController();
 
   // 📊 PERFORMANCE STATE
@@ -59,8 +55,6 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     _realtimeHealthStatus.dispose();
 
     // 🧹 SEARCH CLEANUP
-    _searchSubject.close();
-    _filterSubject.close();
     _searchController.dispose();
     super.dispose();
   }
@@ -136,25 +130,11 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
     _loadData();
   }
 
-  // 🔍 DEBOUNCED SEARCH SETUP
+  // 🔍 SEARCH SETUP (bez RxDart - jednostavan setState)
   void _setupDebouncedSearch() {
-    _debouncedSearchStream = _searchSubject.debounceTime(const Duration(milliseconds: 300)).distinct();
-
-    _debouncedSearchStream.listen((query) {
-      _performSearch(query);
-    });
-
     _searchController.addListener(() {
-      _searchSubject.add(_searchController.text);
+      if (mounted) setState(() {});
     });
-  }
-
-  void _performSearch(String query) {
-    if (mounted) {
-      setState(() {
-        // Trigger rebuild with filtered data
-      });
-    }
   }
 
   void _loadInitialData() {
@@ -475,7 +455,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                     ? IconButton(
                         onPressed: () {
                           _searchController.clear();
-                          _searchSubject.add('');
+                          if (mounted) setState(() {});
                         },
                         icon: Icon(
                           Icons.clear,

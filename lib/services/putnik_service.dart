@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
 
-import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/action_log.dart';
@@ -32,8 +32,10 @@ class UndoAction {
 class PutnikService {
   final supabase = Supabase.instance.client;
 
-  // Stream caching: map of active filter keys to BehaviorSubject streams
-  final Map<String, BehaviorSubject<List<Putnik>>> _streams = {};
+  // Stream caching: map of active filter keys to StreamController streams (bez RxDart)
+  final Map<String, StreamController<List<Putnik>>> _streams = {};
+  final Map<String, List<Putnik>> _lastValues = {}; // Cache poslednje vrednosti za replay
+  final Map<String, StreamSubscription> _subscriptions = {}; // Cuvaj subscriptions za cleanup
 
   // Helper to create a cache key for filters
   String _streamKey({String? isoDate, String? grad, String? vreme}) {
@@ -51,14 +53,19 @@ class PutnikService {
     // // print('🔍 STREAM POZVAN SA: isoDate=$isoDate, grad=$grad, vreme=$vreme');
 
     final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
-    if (_streams.containsKey(key)) {
+    if (_streams.containsKey(key) && !_streams[key]!.isClosed) {
       // // print('📦 VRAĆAM POSTOJEĆI STREAM ZA KEY: $key');
-      return _streams[key]!.stream;
+      // Ako imamo cached vrednost, emituj je odmah
+      final controller = _streams[key]!;
+      if (_lastValues.containsKey(key)) {
+        Future.microtask(() => controller.add(_lastValues[key]!));
+      }
+      return controller.stream;
     }
 
     // // print('🆕 KREIRAM NOVI STREAM ZA KEY: $key');
-    final subject = BehaviorSubject<List<Putnik>>();
-    _streams[key] = subject;
+    final controller = StreamController<List<Putnik>>.broadcast();
+    _streams[key] = controller;
 
     Future<void> doFetch() async {
       try {
@@ -242,10 +249,16 @@ class PutnikService {
 //           // print('📊 FINALNI PUTNIK: ${p.ime} - ${p.grad} - ${p.polazak}');
         // }
 
-        subject.add(combined);
+        _lastValues[key] = combined; // Cache za replay
+        if (!controller.isClosed) {
+          controller.add(combined);
+        }
       } catch (e) {
 //         // print('❌ GREŠKA U doFetch: $e');
-        subject.add([]);
+        _lastValues[key] = [];
+        if (!controller.isClosed) {
+          controller.add([]);
+        }
       }
     }
 
@@ -265,14 +278,17 @@ class PutnikService {
     final sub = refreshStream.listen((_) {
       doFetch();
     });
+    _subscriptions[key] = sub;
 
-    // When subject is closed, cancel subscription
-    subject.onCancel = () async {
-      await sub.cancel();
+    // Cleanup kada se controller zatvori
+    controller.onCancel = () async {
+      await _subscriptions[key]?.cancel();
+      _subscriptions.remove(key);
       _streams.remove(key);
+      _lastValues.remove(key);
     };
 
-    return subject.stream;
+    return controller.stream;
   }
 
   // Fields to explicitly request from mesecni_putnici
@@ -829,90 +845,112 @@ class PutnikService {
     }
   }
 
-  /// ✅ KOMBINOVANI STREAM - MESEČNI + DNEVNI PUTNICI (OPTIMIZOVANO)
+  /// ✅ KOMBINOVANI STREAM - MESEČNI + DNEVNI PUTNICI (OPTIMIZOVANO, bez RxDart)
   Stream<List<Putnik>> streamKombinovaniPutnici() {
     final danasKratica = _getFilterDayAbbreviation(DateTime.now().weekday);
     final danas = DateTime.now().toIso8601String().split('T')[0];
 
-    // 🚀 OPTIMIZACIJA: Koristi RealtimeService singleton umesto uklonjenog StreamCacheService
+    // 🚀 OPTIMIZACIJA: Koristi RealtimeService singleton
     final mesecniStream = RealtimeService.instance.tableStream('mesecni_putnici');
     final putovanjaStream = RealtimeService.instance.tableStream('putovanja_istorija');
 
-    return CombineLatestStream.combine2(
-      mesecniStream,
-      putovanjaStream,
-      (mesecniData, putovanjaData) => {
-        'mesecni': mesecniData,
-        'putovanja': putovanjaData,
-      },
-    ).asyncMap((maps) async {
-      final mesecniData = maps['mesecni'] as List;
-      final putovanjaData = maps['putovanja'] as List;
+    // Kombinuj stream-ove bez RxDart
+    final controller = StreamController<List<Putnik>>.broadcast();
+    List<dynamic>? lastMesecni;
+    List<dynamic>? lastPutovanja;
 
-      List<Putnik> sviPutnici = []; // 1. MESEČNI PUTNICI - UKLJUČI I OTKAZANE
-      for (final item in mesecniData) {
+    Future<void> emitCombined() async {
+      if (lastMesecni == null || lastPutovanja == null) return;
+
+      try {
+        List<Putnik> sviPutnici = [];
+
+        // 1. MESEČNI PUTNICI - UKLJUČI I OTKAZANE
+        for (final item in lastMesecni!) {
+          try {
+            final radniDani = item['radni_dani']?.toString() ?? '';
+            final daniList =
+                radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
+
+            if (daniList.contains(danasKratica.toLowerCase())) {
+              final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(
+                item as Map<String, dynamic>,
+                danasKratica,
+              );
+              sviPutnici.addAll(mesecniPutnici);
+            } else {}
+          } catch (e) {
+            // Silently ignore parsing errors
+          }
+        }
+
+        // 2. DNEVNI PUTNICI - koristi događaje iz putovanja_istorija stream-a filtrirane na danas
         try {
-          final radniDani = item['radni_dani']?.toString() ?? '';
-
-          // ✅ ISPRAVKA: Tačno matchovanje dana umesto contains()
-          final daniList = radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
-
-          if (daniList.contains(danasKratica.toLowerCase())) {
-            final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(
-              item as Map<String, dynamic>,
-              danasKratica,
-            );
-            sviPutnici.addAll(mesecniPutnici);
-          } else {}
+          final List<dynamic> dnevniFiltered = lastPutovanja!.where((row) {
+            try {
+              return (row['datum_putovanja'] == danas) && (row['tip_putnika'] == 'dnevni');
+            } catch (_) {
+              return false;
+            }
+          }).toList();
+          for (final item in dnevniFiltered) {
+            try {
+              final putnik = Putnik.fromPutovanjaIstorija(item as Map<String, dynamic>);
+              sviPutnici.add(putnik);
+            } catch (e) {
+              // Silently ignore
+            }
+          }
         } catch (e) {
-          // Silently ignore parsing errors
+          // Silently ignore
         }
-      }
 
-      // 2. DNEVNI PUTNICI - koristi događaje iz putovanja_istorija stream-a filtrirane na danas
-      try {
-        final List<dynamic> dnevniFiltered = putovanjaData.where((row) {
-          try {
-            return (row['datum_putovanja'] == danas) && (row['tip_putnika'] == 'dnevni');
-          } catch (_) {
-            return false;
+        // 3. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
+        try {
+          final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
+          for (final item in zakupljenoRows) {
+            try {
+              final putnik = Putnik.fromPutovanjaIstorija(item);
+              sviPutnici.add(putnik);
+            } catch (e) {
+              // Silently ignore
+            }
           }
-        }).toList();
-        for (final item in dnevniFiltered) {
-          try {
-            final putnik = Putnik.fromPutovanjaIstorija(item as Map<String, dynamic>);
-            sviPutnici.add(putnik);
-          } catch (e) {
-            // Silently ignore
-          }
+        } catch (e) {
+          // Silently ignore
         }
-      } catch (e) {
-        // Silently ignore
-      }
 
-      // 3. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
-      try {
-        final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
-        if (zakupljenoRows.isNotEmpty) {}
+        // ✅ SORTIRANJE: Otkazani na dno liste
+        sviPutnici.sort((a, b) {
+          if (a.jeOtkazan && !b.jeOtkazan) return 1;
+          if (!a.jeOtkazan && b.jeOtkazan) return -1;
+          return (b.vremeDodavanja ?? DateTime.now()).compareTo(a.vremeDodavanja ?? DateTime.now());
+        });
 
-        for (final item in zakupljenoRows) {
-          try {
-            final putnik = Putnik.fromPutovanjaIstorija(item);
-            sviPutnici.add(putnik);
-          } catch (e) {
-            // Silently ignore
-          }
+        if (!controller.isClosed) {
+          controller.add(sviPutnici);
         }
       } catch (e) {
         // Silently ignore
-      } // ✅ SORTIRANJE: Otkazani na dno liste
-      sviPutnici.sort((a, b) {
-        if (a.jeOtkazan && !b.jeOtkazan) return 1;
-        if (!a.jeOtkazan && b.jeOtkazan) return -1;
-        return (b.vremeDodavanja ?? DateTime.now()).compareTo(a.vremeDodavanja ?? DateTime.now());
-      });
-      return sviPutnici;
+      }
+    }
+
+    // Slušaj oba stream-a
+    final sub1 = mesecniStream.listen((data) {
+      lastMesecni = data is List ? data : <dynamic>[];
+      emitCombined();
     });
+    final sub2 = putovanjaStream.listen((data) {
+      lastPutovanja = data is List ? data : <dynamic>[];
+      emitCombined();
+    });
+
+    controller.onCancel = () {
+      sub1.cancel();
+      sub2.cancel();
+    };
+
+    return controller.stream;
   }
 
   /// ✅ STREAM SVIH PUTNIKA (iz mesecni_putnici tabele - workaround za RLS)
