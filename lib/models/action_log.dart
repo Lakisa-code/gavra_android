@@ -45,6 +45,28 @@ class ActionLog {
     }
   }
 
+  /// ✅ NOVO: Sigurno parsiranje action_log iz baze - rukuje [], {}, String ili Map
+  factory ActionLog.fromDynamic(dynamic value) {
+    if (value == null) return ActionLog.empty();
+    if (value is List && value.isEmpty) return ActionLog.empty();
+    if (value is String) {
+      if (value.isEmpty || value == '{}' || value == '[]') return ActionLog.empty();
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) {
+          return ActionLog.fromJson(Map<String, dynamic>.from(decoded));
+        }
+        return ActionLog.empty();
+      } catch (_) {
+        return ActionLog.empty();
+      }
+    }
+    if (value is Map) {
+      return ActionLog.fromJson(Map<String, dynamic>.from(value));
+    }
+    return ActionLog.empty();
+  }
+
   final String? createdBy;
   final String? paidBy;
   final String? pickedBy;

@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/action_log.dart';
 import '../models/adresa.dart';
 import '../models/dnevni_putnik.dart';
 import '../models/putnik.dart';
@@ -66,27 +69,54 @@ class DnevniPutnikService {
 
   /// Označava putnika kao pokupljenog
   Future<void> oznaciKaoPokupio(String id, String vozacId) async {
+    // ✅ FIXED: Koristi action_log umesto nepostojeće kolone pokupio_vozac_id
+    final current = await _supabase.from('dnevni_putnici').select('action_log').eq('id', id).single();
+    final existingActionLog = current['action_log'];
+    final actionLog = existingActionLog != null
+        ? ActionLog.fromJson(existingActionLog is String
+            ? jsonDecode(existingActionLog) as Map<String, dynamic>
+            : existingActionLog as Map<String, dynamic>)
+        : ActionLog.empty();
+    final updatedActionLog = actionLog.addAction(ActionType.picked, vozacId, 'Pokupljen');
+
     await updateDnevniPutnik(id, {
       'status': 'pokupljen',
-      'vreme_pokupljenja': DateTime.now().toIso8601String(),
-      'pokupio_vozac_id': vozacId,
+      'action_log': updatedActionLog.toJson(),
     });
   }
 
   /// Označava putnika kao plaćenog
   Future<void> oznaciKaoPlacen(String id, String vozacId) async {
+    // ✅ FIXED: Koristi action_log umesto nepostojeće kolone naplatio_vozac_id
+    final current = await _supabase.from('dnevni_putnici').select('action_log').eq('id', id).single();
+    final existingActionLog = current['action_log'];
+    final actionLog = existingActionLog != null
+        ? ActionLog.fromJson(existingActionLog is String
+            ? jsonDecode(existingActionLog) as Map<String, dynamic>
+            : existingActionLog as Map<String, dynamic>)
+        : ActionLog.empty();
+    final updatedActionLog = actionLog.addAction(ActionType.paid, vozacId, 'Plaćeno');
+
     await updateDnevniPutnik(id, {
-      'vreme_placanja': DateTime.now().toIso8601String(),
-      'naplatio_vozac_id': vozacId,
+      'action_log': updatedActionLog.toJson(),
     });
   }
 
   /// Otkaži putnika
   Future<void> otkaziPutnika(String id, String vozacId) async {
+    // ✅ FIXED: Koristi action_log umesto nepostojeće kolone otkazao_vozac_id
+    final current = await _supabase.from('dnevni_putnici').select('action_log').eq('id', id).single();
+    final existingActionLog = current['action_log'];
+    final actionLog = existingActionLog != null
+        ? ActionLog.fromJson(existingActionLog is String
+            ? jsonDecode(existingActionLog) as Map<String, dynamic>
+            : existingActionLog as Map<String, dynamic>)
+        : ActionLog.empty();
+    final updatedActionLog = actionLog.addAction(ActionType.cancelled, vozacId, 'Otkazano');
+
     await updateDnevniPutnik(id, {
       'status': 'otkazan',
-      'otkazao_vozac_id': vozacId,
-      'vreme_otkazivanja': DateTime.now().toIso8601String(),
+      'action_log': updatedActionLog.toJson(),
     });
   }
 

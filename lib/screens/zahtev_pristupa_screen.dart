@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme.dart';
+import 'putnik_cekanje_screen.dart';
 
 /// 📝 ZAHTEV PRISTUPA SCREEN
-/// Ovde novi vozači šalju zahtev za pristup aplikaciji
+/// Ovde DNEVNI putnici šalju zahtev za registraciju
 class ZahtevPristupaScreen extends StatefulWidget {
   const ZahtevPristupaScreen({Key? key}) : super(key: key);
 
@@ -21,8 +23,68 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
   final _telefonController = TextEditingController();
   final _porukaController = TextEditingController();
 
+  // Dropdown za grad
+  String? _selectedGrad;
+
   bool _isLoading = false;
-  bool _zahtevPoslat = false;
+  final bool _zahtevPoslat = false;
+
+  // Za proveru postojećeg zahteva
+  bool _hasExistingRequest = false;
+  Map<String, dynamic>? _existingRequest;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingRequest();
+  }
+
+  /// Proverava da li postoji sačuvan zahtev u SharedPreferences
+  Future<void> _checkExistingRequest() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPhone = prefs.getString('pending_request_phone');
+
+    if (savedPhone != null && savedPhone.isNotEmpty) {
+      // Proveri status u bazi
+      await _checkRequestStatus(savedPhone);
+    }
+  }
+
+  /// Proverava status zahteva u bazi po broju telefona
+  Future<void> _checkRequestStatus(String phone) async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await Supabase.instance.client
+          .from('zahtevi_pristupa')
+          .select()
+          .eq('telefon', phone)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (response != null) {
+        setState(() {
+          _existingRequest = response;
+          _hasExistingRequest = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Greška pri proveri zahteva: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  /// Briše sačuvani zahtev i omogućava novi
+  Future<void> _clearSavedRequest() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('pending_request_phone');
+    setState(() {
+      _hasExistingRequest = false;
+      _existingRequest = null;
+    });
+  }
 
   @override
   void dispose() {
@@ -38,23 +100,58 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
   Future<void> _posaljiZahtev() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validacija dropdown-a
+    if (_selectedGrad == null) {
+      _showError('Izaberite grad');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      await Supabase.instance.client.from('zahtevi_pristupa').insert({
-        'ime': _imeController.text.trim(),
-        'prezime': _prezimeController.text.trim(),
-        'adresa': _adresaController.text.trim(),
-        'email': _emailController.text.trim().toLowerCase(),
-        'telefon': _telefonController.text.trim(),
-        'poruka': _porukaController.text.trim(),
-        'status': 'pending',
-      });
+      final phone = _telefonController.text.trim();
+      final ime = _imeController.text.trim();
+      final prezime = _prezimeController.text.trim();
 
-      setState(() {
-        _isLoading = false;
-        _zahtevPoslat = true;
-      });
+      // Insert i dobij ID nazad
+      final response = await Supabase.instance.client
+          .from('zahtevi_pristupa')
+          .insert({
+            'ime': ime,
+            'prezime': prezime,
+            'adresa': _adresaController.text.trim(),
+            'email': _emailController.text.trim().isEmpty ? null : _emailController.text.trim().toLowerCase(),
+            'telefon': phone,
+            'poruka': _porukaController.text.trim(),
+            'grad': _selectedGrad,
+            'tip_putnika': 'dnevni', // Automatski dnevni putnik
+            'podtip': null,
+            'status': 'pending',
+          })
+          .select('id')
+          .single();
+
+      final zahtevId = response['id'].toString();
+
+      // Sačuvaj telefon za kasniju proveru statusa
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_request_phone', phone);
+      await prefs.setString('pending_request_id', zahtevId);
+
+      setState(() => _isLoading = false);
+
+      // Navigiraj na ekran za čekanje
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PutnikCekanjeScreen(
+              zahtevId: zahtevId,
+              ime: ime,
+              prezime: prezime,
+            ),
+          ),
+        );
+      }
     } catch (e) {
       setState(() => _isLoading = false);
 
@@ -69,6 +166,15 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -81,11 +187,135 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text(
-            '📝 Zatraži pristup',
+            '📝 Registracija putnika',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
-        body: _zahtevPoslat ? _buildSuccess() : _buildForm(),
+        body: _isLoading && !_zahtevPoslat && !_hasExistingRequest
+            ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+            : _zahtevPoslat
+                ? _buildSuccess()
+                : _hasExistingRequest
+                    ? _buildExistingRequestStatus()
+                    : _buildForm(),
+      ),
+    );
+  }
+
+  /// Prikazuje status postojećeg zahteva
+  Widget _buildExistingRequestStatus() {
+    final status = _existingRequest?['status'] ?? 'pending';
+    final ime = _existingRequest?['ime'] ?? '';
+    final prezime = _existingRequest?['prezime'] ?? '';
+
+    IconData statusIcon;
+    Color statusColor;
+    String statusText;
+    String statusDescription;
+
+    switch (status) {
+      case 'approved':
+        statusIcon = Icons.check_circle;
+        statusColor = Colors.green;
+        statusText = '✅ Odobren!';
+        statusDescription = 'Tvoj zahtev je odobren.\nSada možeš koristiti aplikaciju.';
+        break;
+      case 'rejected':
+        statusIcon = Icons.cancel;
+        statusColor = Colors.red;
+        statusText = '❌ Odbijen';
+        statusDescription = 'Nažalost, tvoj zahtev je odbijen.\nMožeš poslati novi zahtev.';
+        break;
+      default: // pending
+        statusIcon = Icons.hourglass_empty;
+        statusColor = Colors.amber;
+        statusText = '⏳ Čeka odobrenje';
+        statusDescription = 'Tvoj zahtev čeka pregled od strane admina.\nMolimo te za strpljenje.';
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(statusIcon, color: statusColor, size: 80),
+            const SizedBox(height: 24),
+            Text(
+              statusText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$ime $prezime',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              statusDescription,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+
+            // Dugme za osvežavanje statusa
+            if (status == 'pending') ...[
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  final phone = prefs.getString('pending_request_phone');
+                  if (phone != null) {
+                    await _checkRequestStatus(phone);
+                  }
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Osveži status'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Dugme za novi zahtev (ako je odbijen) ili nazad
+            if (status == 'rejected') ...[
+              ElevatedButton.icon(
+                onPressed: _clearSavedRequest,
+                icon: const Icon(Icons.add),
+                label: const Text('Pošalji novi zahtev'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Nazad dugme
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back, color: Colors.white70),
+              label: const Text('Nazad', style: TextStyle(color: Colors.white70)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white38),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -147,13 +377,13 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
           children: [
             // Header
             const Icon(
-              Icons.person_add,
+              Icons.directions_bus,
               color: Colors.amber,
-              size: 60,
+              size: 40,
             ),
             const SizedBox(height: 16),
             const Text(
-              'Pridruži se Gavra 013',
+              'Zakaži vožnju',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -163,14 +393,67 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Popuni formu i sačekaj odobrenje admina',
+              'Registruj se za dnevne vožnje',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 20),
+
+            // Info box - registracija samo jednom
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.black87, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Registracija se vrši samo jednom! Nakon odobrenja, tvoji podaci se pamte i možeš rezervisati vožnje bez ponovnog unosa.',
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Grad (BC / VS)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              ),
+              child: DropdownButtonFormField<String>(
+                initialValue: _selectedGrad,
+                decoration: InputDecoration(
+                  labelText: 'Grad',
+                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                  prefixIcon: const Icon(Icons.location_city, color: Colors.amber),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                dropdownColor: const Color(0xFF1a1a2e),
+                style: const TextStyle(color: Colors.white),
+                items: const [
+                  DropdownMenuItem(value: 'BC', child: Text('Bela Crkva')),
+                  DropdownMenuItem(value: 'VS', child: Text('Vršac')),
+                ],
+                onChanged: (v) => setState(() => _selectedGrad = v),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // Ime
             TextFormField(
@@ -210,18 +493,17 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Email
+            // Email (opciono)
             TextFormField(
               controller: _emailController,
               style: const TextStyle(color: Colors.white),
               keyboardType: TextInputType.emailAddress,
-              decoration: _inputDecoration('Email adresa', Icons.email),
+              decoration: _inputDecoration('Email adresa (opciono)', Icons.email),
               validator: (v) {
-                if (v?.isEmpty == true) {
-                  return 'Unesite email';
-                }
-                if (!v!.contains('@') || !v.contains('.')) {
-                  return 'Neispravan email';
+                if (v != null && v.isNotEmpty) {
+                  if (!v.contains('@') || !v.contains('.')) {
+                    return 'Neispravan email';
+                  }
                 }
                 return null;
               },

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
-import '../utils/text_utils.dart';
 import 'putnik_card.dart';
 
 /// Widget koji prikazuje listu putnika koristeći PutnikCard za svaki element.
@@ -34,34 +33,39 @@ class PutnikList extends StatelessWidget {
   final String? selectedVreme; // 📍 NOVO: za GPS navigaciju
 
   // Helper metoda za sortiranje putnika po grupama
+  // 🔄 SINHRONIZOVANO sa CardColorHelper.getCardState() prioritetom
   int _putnikSortKey(Putnik p) {
-    final status = TextUtils.normalizeText(p.status ?? '');
+    // PRIORITET (isti kao CardColorHelper):
+    // 1. Odsustvo (žuto) - na dno
+    // 2. Otkazano (crveno) - pre žutih
+    // 3. Plaćeno/Mesečno (zeleno)
+    // 4. Pokupljeno neplaćeno (plavo)
+    // 5. Nepokupljeno (belo) - na vrh
 
-    // ŽUTE - Odsustvo ima najveći sort key (na dno)
+    // 🟡 ŽUTE - Odsustvo ima najveći sort key (na dno)
     if (p.jeOdsustvo) {
       return 5; // žute na dno liste
     }
 
-    // CRVENE - Otkazane
-    if (status == 'otkazano' || status == 'otkazan') {
+    // 🔴 CRVENE - Otkazane (koristi jeOtkazan getter koji proverava i obrisan flag)
+    if (p.jeOtkazan) {
       return 4; // crvene pre žutih
     }
 
-    // MESEČNI PUTNICI
-    if (p.mesecnaKarta == true) {
-      // BELE vs ZELENE
-      return p.vremePokupljenja == null ? 1 : 3; // bela ili zelena
+    // Pokupljeni putnici
+    if (p.jePokupljen) {
+      // 🟢 ZELENE - Plaćeni ili mesečni
+      final bool isPlaceno = (p.iznosPlacanja ?? 0) > 0;
+      final bool isMesecna = p.mesecnaKarta == true;
+      if (isPlaceno || isMesecna) {
+        return 3; // zelene
+      }
+      // 🔵 PLAVE - Pokupljeni neplaćeni
+      return 2;
     }
 
-    // OBIČNI PUTNICI
-    if (p.vremePokupljenja == null) return 1; // BELE - nepokupljeni
-    if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
-      return 2; // PLAVE - pokupljeni neplaćeni
-    }
-    if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
-      return 3; // ZELENE - pokupljeni plaćeni
-    }
-    return 99;
+    // ⚪ BELE - Nepokupljeni (na vrh liste)
+    return 1;
   }
 
   @override

@@ -100,7 +100,9 @@ Future<String?> getUserIdFromToken(String token) async {
       final map = jsonDecode(response.body) as Map<String, dynamic>;
       return map['id'] as String?;
     }
-  } catch (e) {}
+  } catch (e) {
+    // Ignore errors - return null if passenger not found
+  }
   return null;
 }
 

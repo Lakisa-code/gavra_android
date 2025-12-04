@@ -27,6 +27,7 @@ import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'statistika_detail_screen.dart'; // DODANO za statistike
 import 'vozac_screen.dart'; // DODANO za vozac screen
+import 'zahtevi_pregled_screen.dart'; // DODANO za pregled zahteva putnika
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -809,6 +810,55 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
                                 ),
+                                // 📝 DUGME ZAHTEVI - pregled zahteva putnika
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 70,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const ZahteviPregledScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).glassContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.amber.withValues(alpha: 0.6),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'Zahtevi',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              color: Colors.amber,
+                                              shadows: [
+                                                Shadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 3,
+                                                  color: Colors.black54,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ],
                           ),
@@ -986,7 +1036,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   pazar,
                 );
 
-                const Map<String, Color> vozacBoje = VozacBoja.boje;
+                final Map<String, Color> vozacBoje = VozacBoja.boje;
                 final List<String> vozaciRedosled = [
                   'Bruda',
                   'Bilevski',

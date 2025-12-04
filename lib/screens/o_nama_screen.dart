@@ -1,11 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../theme.dart';
 
 /// 📖 O NAMA SCREEN
 /// Informacije o Gavra 013 timu i aplikaciji
-class ONamaScreen extends StatelessWidget {
+class ONamaScreen extends StatefulWidget {
   const ONamaScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ONamaScreen> createState() => _ONamaScreenState();
+}
+
+class _ONamaScreenState extends State<ONamaScreen> {
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      setState(() {
+        _appVersion = 'v${packageInfo.version} (${packageInfo.buildNumber})';
+      });
+    } catch (e) {
+      setState(() {
+        _appVersion = 'v1.0.0';
+      });
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(scheme: 'mailto', path: email);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
+  }
+
+  Future<void> _openMaps() async {
+    final Uri launchUri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=Partizanska+51,+Bela+Crkva,+Serbia',
+    );
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,18 +74,451 @@ class ONamaScreen extends StatelessWidget {
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
-        body: Center(
-          child: Text(
-            'Uskoro...',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 24,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.5,
-            ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // 🚐 LOGO I NAZIV
+              _buildHeader(),
+              const SizedBox(height: 24),
+
+              // 📜 ISTORIJA
+              _buildGlassCard(
+                icon: Icons.history,
+                title: 'Naša priča',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Limo servis "Gavra 013" osnovan je 25. aprila 2003. godine u Beloj Crkvi.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Firmu je osnovao Branislav Gavrilović, a danas je vodi njegov sin Bojan Gavrilović, nastavljajući porodičnu tradiciju kvalitetnog prevoza putnika.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Više od 20 godina pružamo pouzdanu uslugu linijskog prevoza na relaciji Bela Crkva – Vršac.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 📍 KONTAKT INFORMACIJE
+              _buildGlassCard(
+                icon: Icons.contact_phone,
+                title: 'Kontakt',
+                child: Column(
+                  children: [
+                    _buildContactRow(
+                      icon: Icons.location_on,
+                      label: 'Adresa',
+                      value: 'Partizanska 51, 26340 Bela Crkva',
+                      onTap: _openMaps,
+                    ),
+                    const Divider(color: Colors.white24, height: 20),
+                    _buildContactRow(
+                      icon: Icons.phone,
+                      label: 'Telefon',
+                      value: '013/853-415',
+                      onTap: () => _makePhoneCall('013853415'),
+                    ),
+                    const Divider(color: Colors.white24, height: 20),
+                    _buildContactRow(
+                      icon: Icons.phone_android,
+                      label: 'Mobilni',
+                      value: '063/846-6160',
+                      onTap: () => _makePhoneCall('0638466160'),
+                    ),
+                    const Divider(color: Colors.white24, height: 20),
+                    _buildContactRow(
+                      icon: Icons.email,
+                      label: 'Email',
+                      value: 'gavriconi@gmail.com',
+                      onTap: () => _sendEmail('gavriconi@gmail.com'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 🚌 RUTE
+              _buildGlassCard(
+                icon: Icons.route,
+                title: 'Naše linije',
+                child: Column(
+                  children: [
+                    _buildRouteRow('🏠', 'Bela Crkva', '🏙️', 'Vršac'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Svakodnevni linijski prevoz putnika',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 📋 REGISTRACIONI PODACI
+              _buildGlassCard(
+                icon: Icons.business,
+                title: 'Podaci o firmi',
+                child: Column(
+                  children: [
+                    _buildInfoRow('Pun naziv', 'BOJAN GAVRILOVIĆ PR LIMO SERVIS GAVRA 013 BELA CRKVA'),
+                    const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('Delatnost', '4932 - Taksi prevoz'),
+                    const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('PIB', '102853497'),
+                    const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('Matični broj', '55572178'),
+                    const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('Datum osnivanja', '25.04.2003.'),
+                    const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('Vlasnik', 'Bojan Gavrilović'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 📱 VERZIJA APLIKACIJE
+              _buildGlassCard(
+                icon: Icons.phone_android,
+                title: 'Aplikacija',
+                child: Column(
+                  children: [
+                    _buildInfoRow('Verzija', _appVersion),
+                    const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('Platforma', 'Android'),
+                    const SizedBox(height: 12),
+                    Text(
+                      '© 2024-2025 Gavra 013. Sva prava zadržana.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // 🙏 IN MEMORIAM
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '🕯️',
+                      style: const TextStyle(fontSize: 32),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'U sećanje na Branislava Gavrilovića',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      'Osnivač Gavra 013',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        // Logo
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.3),
+                Colors.white.withValues(alpha: 0.1),
+              ],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.4),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Text(
+              '🚐',
+              style: TextStyle(fontSize: 50),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Naziv
+        const Text(
+          'Gavra 013',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+            shadows: [
+              Shadow(
+                offset: Offset(0, 2),
+                blurRadius: 4,
+                color: Colors.black38,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Limo servis • Bela Crkva',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.green.withValues(alpha: 0.5),
+            ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.greenAccent, size: 16),
+              SizedBox(width: 6),
+              Text(
+                'Od 2003. godine',
+                style: TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGlassCard({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.15),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.white70, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white60, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white.withValues(alpha: 0.4),
+                size: 16,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 13,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRouteRow(String icon1, String city1, String icon2, String city2) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(icon1, style: const TextStyle(fontSize: 24)),
+        const SizedBox(width: 8),
+        Text(
+          city1,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Icon(Icons.swap_horiz, color: Colors.white70, size: 28),
+        const SizedBox(width: 16),
+        Text(icon2, style: const TextStyle(fontSize: 24)),
+        const SizedBox(width: 8),
+        Text(
+          city2,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

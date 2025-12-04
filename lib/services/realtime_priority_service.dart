@@ -133,10 +133,10 @@ class RealtimePriorityService {
       // Proverava promene u poslednih 30 sekundi
       final since = DateTime.fromMillisecondsSinceEpoch(lastCheck);
 
+      // ✅ FIXED: Koristi putovanja_istorija tabelu i action_log.created_by umesto nepostojeće tabele/kolone
       final response = await Supabase.instance.client
-          .from('putnici')
+          .from('putovanja_istorija')
           .select()
-          .eq('dodao_vozac', currentDriver)
           .gte('updated_at', since.toIso8601String())
           .order('updated_at', ascending: false);
 

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 /// Model za vozače
@@ -7,6 +8,7 @@ class Vozac {
     required this.ime,
     this.brojTelefona,
     this.email,
+    this.boja,
     this.aktivan = true,
     this.kusur = 0.0,
     this.obrisan = false,
@@ -26,6 +28,7 @@ class Vozac {
       ime: map['ime'] as String,
       brojTelefona: map['telefon'] as String?,
       email: map['email'] as String?,
+      boja: map['boja'] as String?,
       aktivan: map['aktivan'] as bool? ?? true,
       kusur: (map['kusur'] as num?)?.toDouble() ?? 0.0,
       obrisan: map['obrisan'] as bool? ?? false,
@@ -39,6 +42,7 @@ class Vozac {
   final String ime;
   final String? brojTelefona;
   final String? email;
+  final String? boja;
   final bool aktivan;
   final double kusur;
   final bool obrisan;
@@ -53,6 +57,7 @@ class Vozac {
       'ime': ime,
       'telefon': brojTelefona,
       'email': email,
+      'boja': boja,
       'aktivan': aktivan,
       'kusur': kusur,
       'obrisan': obrisan,
@@ -66,6 +71,18 @@ class Vozac {
   /// Vraća puno ime vozača
   String get punoIme {
     return ime;
+  }
+
+  /// Vraća boju vozača kao Color objekat
+  /// Parsira hex string (npr. '#FF0000') u Color
+  Color? get color {
+    if (boja == null || boja!.isEmpty) return null;
+    try {
+      final hex = boja!.replaceFirst('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Validira da li je ime vozača validno (ne sme biti prazno)
@@ -142,6 +159,7 @@ class Vozac {
     String? ime,
     String? brojTelefona,
     String? email,
+    String? boja,
     bool? aktivan,
     double? kusur,
     bool? obrisan,
@@ -153,6 +171,7 @@ class Vozac {
       ime: ime ?? this.ime,
       brojTelefona: brojTelefona ?? this.brojTelefona,
       email: email ?? this.email,
+      boja: boja ?? this.boja,
       aktivan: aktivan ?? this.aktivan,
       kusur: kusur ?? this.kusur,
       obrisan: obrisan ?? this.obrisan,

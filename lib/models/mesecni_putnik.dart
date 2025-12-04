@@ -65,6 +65,7 @@ class MesecniPutnik {
     this.placeno = false,
     this.datumPlacanja,
     this.posebneNapomene,
+    this.pin,
     // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
@@ -145,6 +146,7 @@ class MesecniPutnik {
       placeno: map['placeno'] as bool? ?? false,
       datumPlacanja: map['datum_placanja'] != null ? DateTime.parse(map['datum_placanja'] as String) : null,
       posebneNapomene: map['posebne_napomene'] as String?,
+      pin: map['pin'] as String?,
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
@@ -212,6 +214,7 @@ class MesecniPutnik {
   final bool placeno;
   final DateTime? datumPlacanja;
   final String? posebneNapomene;
+  final String? pin; // 🔐 PIN za login
   // Uklonjeno legacy polja: ime, prezime, datumPocetka, datumKraja
 
   Map<String, dynamic> toMap() {

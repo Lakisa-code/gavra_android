@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/mesecni_putnik.dart';
+import '../services/adresa_supabase_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
@@ -18,6 +19,7 @@ import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
 import '../widgets/mesecni_putnik_dialog.dart';
+import '../widgets/pin_dialog.dart';
 
 // 🔄 HELPER EXTENSION za Set poređenje
 extension SetExtensions<T> on Set<T> {
@@ -93,6 +95,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   Map<String, double> _stvarnaPlacanja = {};
   DateTime? _lastPaymentUpdate;
   Set<String> _lastPutnikIds = {};
+
+  // 📍 CACHE ZA NAZIVE ADRESA - batch loaded
+  final Map<String, String> _adreseNazivi = {};
 
   // 💰 CACHE ZA PLAĆENE MESECE - Set meseci (format: "mesec-godina") za svakog putnika
   final Map<String, Set<String>> _placeniMeseci = {};
@@ -240,6 +245,42 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       }
     } catch (e) {
       // Greška u učitavanju plaćenih meseci
+    }
+  }
+
+  /// 📍 BATCH UČITAVANJE ADRESA - učitaj sve adrese odjednom za performanse
+  Future<void> _ucitajAdreseZaPutnike(List<MesecniPutnik> putnici) async {
+    try {
+      // Sakupi sve UUID-ove adresa
+      final Set<String> adresaIds = {};
+      for (final p in putnici) {
+        if (p.adresaBelaCrkvaId != null && p.adresaBelaCrkvaId!.isNotEmpty) {
+          adresaIds.add(p.adresaBelaCrkvaId!);
+        }
+        if (p.adresaVrsacId != null && p.adresaVrsacId!.isNotEmpty) {
+          adresaIds.add(p.adresaVrsacId!);
+        }
+      }
+
+      if (adresaIds.isEmpty) return;
+
+      // Batch učitavanje svih adresa
+      final adrese = await AdresaSupabaseService.getAdreseByUuids(adresaIds.toList());
+
+      // Popuni mapu naziva
+      final Map<String, String> noviNazivi = {};
+      for (final a in adrese.values) {
+        noviNazivi[a.id] = a.naziv;
+      }
+
+      // Samo update ako ima promena
+      if (mounted && noviNazivi.isNotEmpty) {
+        setState(() {
+          _adreseNazivi.addAll(noviNazivi);
+        });
+      }
+    } catch (e) {
+      debugPrint('Greška pri učitavanju adresa: $e');
     }
   }
 
@@ -729,6 +770,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     if (shouldUpdate) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         _ucitajStvarnaPlacanja(filteredPutnici);
+                        _ucitajAdreseZaPutnike(filteredPutnici); // 📍 Batch load adresa
                       });
                     }
                   }
@@ -983,7 +1025,33 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              // 📍 ADRESE - BC i VS
+              if (putnik.adresaBelaCrkvaId != null || putnik.adresaVrsacId != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (putnik.adresaBelaCrkvaId != null && _adreseNazivi[putnik.adresaBelaCrkvaId] != null)
+                        _buildAdresaRow(
+                          label: 'BC',
+                          color: Colors.blue,
+                          naziv: _adreseNazivi[putnik.adresaBelaCrkvaId],
+                          adresaId: putnik.adresaBelaCrkvaId,
+                        ),
+                      if (putnik.adresaVrsacId != null && _adreseNazivi[putnik.adresaVrsacId] != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: _buildAdresaRow(
+                            label: 'VS',
+                            color: Colors.purple,
+                            naziv: _adreseNazivi[putnik.adresaVrsacId],
+                            adresaId: putnik.adresaVrsacId,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
 
               // 🕐 RADNO VREME - prikaži polazak vremena ako je definisan bar jedan dan
               if (_daniOrder
@@ -1213,6 +1281,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
                   const SizedBox(width: 6),
 
+                  // 🔐 PIN
+                  Expanded(
+                    child: _buildCompactActionButton(
+                      onPressed: () => _showPinDialog(putnik),
+                      icon: Icons.lock_outline,
+                      label: 'PIN',
+                      color: Colors.amber,
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
                   // Obriši
                   Expanded(
                     child: _buildCompactActionButton(
@@ -1229,6 +1309,93 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAdresaRow({
+    required String label,
+    required Color color,
+    required String? naziv,
+    required String? adresaId,
+  }) {
+    if (naziv == null) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            naziv,
+            style: const TextStyle(fontSize: 10, color: Colors.black87),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        // Navigation button
+        GestureDetector(
+          onTap: () => _navigirajDoAdrese(adresaId),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Icon(
+              Icons.navigation_outlined,
+              size: 14,
+              color: Colors.green,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _navigirajDoAdrese(String? adresaId) async {
+    if (adresaId == null) return;
+
+    final adrese = await AdresaSupabaseService.getAdreseByUuids([adresaId]);
+    if (adrese.isEmpty) return;
+
+    final adresa = adrese.values.first;
+    if (adresa.koordinate == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Adresa nema koordinate za navigaciju')),
+        );
+      }
+      return;
+    }
+
+    final lat = adresa.koordinate!['lat'];
+    final lng = adresa.koordinate!['lng'];
+    if (lat == null || lng == null) return;
+
+    final url = 'google.navigation:q=$lat,$lng';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      // Fallback to Google Maps web
+      final webUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+      if (await canLaunchUrl(webUrl)) {
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      }
+    }
   }
 
   Widget _buildCompactActionButton({
@@ -1321,6 +1488,19 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             setState(() {});
           }
         },
+      ),
+    );
+  }
+
+  /// 🔐 Prikaži PIN dijalog za putnika
+  void _showPinDialog(MesecniPutnik putnik) {
+    showDialog(
+      context: context,
+      builder: (context) => PinDialog(
+        putnikId: putnik.id,
+        putnikIme: putnik.putnikIme,
+        trenutniPin: putnik.pin,
+        brojTelefona: putnik.brojTelefona,
       ),
     );
   }

@@ -878,35 +878,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               TextField(
                                 controller: telefonController,
                                 keyboardType: TextInputType.phone,
-                                style: const TextStyle(color: Colors.white),
                                 decoration: InputDecoration(
                                   labelText: 'Telefon (opciono)',
                                   hintText: 'Npr: 0641234567',
-                                  labelStyle: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                  hintStyle: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.phone,
-                                    color: Colors.white.withValues(alpha: 0.7),
+                                  prefixIcon: const Icon(Icons.phone),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color: Colors.grey.withValues(alpha: 0.5),
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: const BorderSide(
-                                      color: Colors.white,
+                                      color: Colors.blue,
                                       width: 2,
                                     ),
                                   ),
                                   filled: true,
-                                  fillColor: Colors.white.withValues(alpha: 0.1),
+                                  fillColor: Colors.white,
                                 ),
                               ),
                             ],

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -157,21 +159,39 @@ class PutnikService {
         try {
           final mesecniIstorija = await supabase
               .from('putovanja_istorija')
-              .select()
+              .select('*, adrese:adresa_id(naziv, ulica, broj, grad)') // ✅ FIX: JOIN za adresu
               .eq('datum_putovanja', overrideDate)
               .eq('tip_putnika', 'mesecni')
               .eq('obrisan', false) // ✅ Ignoriši soft-deleted zapise
               .not('mesecni_putnik_id', 'is', null);
 
           for (final row in mesecniIstorija) {
-            final mpId = row['mesecni_putnik_id']?.toString();
-            final rowGrad = TextUtils.normalizeText(row['grad']?.toString() ?? ''); // ✅ Normalizuj grad
-            final rowVreme = GradAdresaValidator.normalizeTime(row['vreme_polaska']?.toString() ?? '');
+            final map = Map<String, dynamic>.from(row);
+
+            // ✅ FIX: Izvuci adresu iz JOIN-a ako nije direktno u koloni
+            if (map['adresa'] == null || (map['adresa'] as String?)?.isEmpty == true) {
+              final adreseData = map['adrese'] as Map<String, dynamic>?;
+              if (adreseData != null) {
+                final naziv = adreseData['naziv'] as String?;
+                final ulica = adreseData['ulica'] as String?;
+                final broj = adreseData['broj'] as String?;
+                if (naziv != null && naziv.isNotEmpty) {
+                  map['adresa'] = naziv;
+                } else if (ulica != null && ulica.isNotEmpty) {
+                  map['adresa'] = '$ulica ${broj ?? ''}'.trim();
+                }
+              }
+            }
+
+            final mpId = map['mesecni_putnik_id']?.toString();
+            final rowGrad = TextUtils.normalizeText(map['grad']?.toString() ?? ''); // ✅ Normalizuj grad
+            final rowVreme = GradAdresaValidator.normalizeTime(map['vreme_polaska']?.toString() ?? '');
             if (mpId != null) {
               // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
               final key = '${mpId}_${rowGrad}_$rowVreme';
-              mesecniOverrides[key] = Map<String, dynamic>.from(row as Map);
-              print('📥 UČITAN OVERRIDE: ime=${row['putnik_ime']} key=$key status=${row['status']}');
+              mesecniOverrides[key] = map;
+              print(
+                  '📥 UČITAN OVERRIDE: ime=${map['putnik_ime']} key=$key status=${map['status']} adresa=${map['adresa']}');
             }
           }
         } catch (_) {
@@ -1132,12 +1152,17 @@ class PutnikService {
     if (tabela == 'mesecni_putnici') {
       // Za mesečne putnike ažuriraj SVE potrebne kolone za pokupljanje
       final now = DateTime.now();
+      final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
+
+      // ✅ FIXED: Ažuriraj action_log umesto nepostojeće kolone pokupljanje_vozac
+      final actionLog = ActionLog.fromDynamic(response['action_log']);
+      final updatedActionLog = actionLog.addAction(ActionType.picked, vozacUuid ?? currentDriver, 'Pokupljen');
 
       await supabase.from(tabela).update({
         'vreme_pokupljenja': now.toIso8601String(), // ✅ FIXED: Koristi samo vreme_pokupljenja
         'pokupljen': true, // ✅ BOOLEAN flag
-        'vozac_id': (currentDriver.isEmpty) ? null : currentDriver, // UUID validacija
-        'pokupljanje_vozac': currentDriver, // ✅ NOVA KOLONA - vozač koji je pokupljanje izvršio
+        'vozac_id': vozacUuid, // ✅ FIXED: Samo UUID, null ako nema mapiranja
+        'action_log': updatedActionLog.toJson(), // ✅ FIXED: Ažuriraj action_log.picked_by
         'updated_at': now.toIso8601String(), // ✅ AŽURIRAJ timestamp
       }).eq('id', id as String);
 
@@ -1148,12 +1173,15 @@ class PutnikService {
         // Silently ignore sync errors
       }
     } else {
-      // Za putovanja_istorija koristi novu 'status' kolonu
+      // Za putovanja_istorija koristi action_log
+      final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver) ?? currentDriver;
+      final actionLog2 = ActionLog.fromDynamic(response['action_log']);
+      final updatedActionLog2 = actionLog2.addAction(ActionType.picked, vozacUuid, 'Pokupljen');
 
       await supabase.from(tabela).update({
         'status': 'pokupljen',
-        'pokupljanje_vozac': currentDriver, // ✅ NOVA KOLONA - vozač koji je pokupljanje izvršio
         'vreme_pokupljenja': DateTime.now().toIso8601String(), // ✅ DODATO - vreme pokupljanja
+        'action_log': updatedActionLog2.toJson(), // ✅ FIXED: Ažuriraj action_log.picked_by
       }).eq('id', id as String);
     }
 
@@ -1203,25 +1231,33 @@ class PutnikService {
     _addToUndoStack('payment', id, undoPayment);
     if (tabela == 'mesecni_putnici') {
       // Za mesečne putnike ažuriraj SVE potrebne kolone za plaćanje
-      final now = DateTime.now(); // Konvertuj ime vozača u UUID ako nije već UUID
-      String? validVozacId =
-          naplatioVozac.isEmpty ? null : (VozacMappingService.getVozacUuidSync(naplatioVozac) ?? naplatioVozac);
+      final now = DateTime.now();
+      String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
+
+      // ✅ FIXED: Ažuriraj action_log.paid_by
+      final actionLog = ActionLog.fromDynamic(undoPayment['action_log']);
+      final updatedActionLog = actionLog.addAction(ActionType.paid, validVozacId ?? naplatioVozac, 'Plaćeno $iznos');
 
       await supabase.from(tabela).update({
         'cena': iznos, // ✅ CENA mesečne karte
         'vreme_placanja': now.toIso8601String(), // ✅ TIMESTAMP plaćanja
-        'vozac_id': validVozacId, // ✅ STANDARDIZOVANO - samo vozac_id (UUID)
+        'vozac_id': validVozacId, // ✅ FIXED: Samo UUID, null ako nema mapiranja
+        'action_log': updatedActionLog.toJson(), // ✅ FIXED: Ažuriraj action_log.paid_by
         'updated_at': now.toIso8601String(), // ✅ AŽURIRAJ timestamp
       }).eq('id', id as String);
     } else {
-      // Za putovanja_istorija koristi cena kolonu// Konvertuj ime vozača u UUID ako nije već UUID
-      String? validVozacId =
-          naplatioVozac.isEmpty ? null : (VozacMappingService.getVozacUuidSync(naplatioVozac) ?? naplatioVozac);
+      // Za putovanja_istorija koristi action_log
+      String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
+
+      // ✅ FIXED: Ažuriraj action_log.paid_by
+      final actionLog2 = ActionLog.fromDynamic(undoPayment['action_log']);
+      final updatedActionLog2 = actionLog2.addAction(ActionType.paid, validVozacId ?? naplatioVozac, 'Plaćeno $iznos');
 
       await supabase.from(tabela).update({
         'cena': iznos,
-        'vozac_id': validVozacId, // ✅ STANDARDIZOVANO - samo vozac_id (UUID)
+        'vozac_id': validVozacId, // ✅ FIXED: Samo UUID, null ako nema mapiranja
         'vreme_placanja': DateTime.now().toIso8601String(), // ✅ DODATO - vreme plaćanja
+        'action_log': updatedActionLog2.toJson(), // ✅ FIXED: Ažuriraj action_log.paid_by
         'status': 'placeno', // ✅ DODAJ STATUS plaćanja (konzistentno)
       }).eq('id', id as String);
     } // (Uklonjeno slanje notifikacije za plaćanje)
@@ -1284,6 +1320,20 @@ class PutnikService {
         };
 
         // ✅ FIX: Direktan insert bez SupabaseSafe wrappera
+        // ✅ FIX: Izvuci adresu iz mesečnog putnika (koristi grad za određivanje koja adresa)
+        String? adresa;
+        String? adresaId;
+        if (grad.toLowerCase().contains('bela')) {
+          adresaId = respMap['adresa_bela_crkva_id'] as String?;
+          // Pokušaj dohvatiti naziv adrese iz JOIN-a ako postoji
+          final adresaBc = respMap['adresa_bc'] as Map<String, dynamic>?;
+          adresa = adresaBc?['naziv'] as String? ?? respMap['adresa_bela_crkva'] as String?;
+        } else {
+          adresaId = respMap['adresa_vrsac_id'] as String?;
+          final adresaVs = respMap['adresa_vs'] as Map<String, dynamic>?;
+          adresa = adresaVs?['naziv'] as String? ?? respMap['adresa_vrsac'] as String?;
+        }
+
         try {
           await supabase.from('putovanja_istorija').insert({
             'mesecni_putnik_id': id.toString(), // ✅ UUID kao string
@@ -1292,6 +1342,8 @@ class PutnikService {
             'datum_putovanja': danas,
             'vreme_polaska': polazak,
             'grad': grad,
+            'adresa': adresa, // ✅ FIX: Dodato adresa TEXT polje
+            'adresa_id': adresaId, // ✅ FIX: Dodato adresa_id UUID reference
             'status': 'otkazan',
             'cena': 0,
             'vozac_id': null,
@@ -1305,7 +1357,8 @@ class PutnikService {
         // Za putovanja_istorija koristi ActionLog
         final currentData = await supabase.from(tabela).select('action_log').eq('id', id.toString()).single();
 
-        final currentActionLog = ActionLog.fromString(currentData['action_log'] as String?);
+        // ✅ FIXED: Sigurno parsiranje action_log
+        final currentActionLog = ActionLog.fromDynamic(currentData['action_log']);
         final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
         final updatedActionLog = currentActionLog.addAction(
           ActionType.cancelled,
@@ -1961,6 +2014,7 @@ class PutnikService {
   }
 
   /// 🧹 DATA CLEANUP: Popravlja nevalidne vozače u bazi podataka
+  /// NAPOMENA: Ova metoda je zastarela jer koristimo action_log JSON umesto kolona
   Future<void> cleanupNevalidneVozace(String currentDriver) async {
     if (currentDriver.isEmpty) {
       throw Exception(
@@ -1968,18 +2022,8 @@ class PutnikService {
       );
     }
 
-    try {
-      // Popuni prazna polja dodao_vozac trenutnim vozačem
-      await supabase.from('putovanja_istorija').update({
-        'dodao_vozac': currentDriver,
-      }).or('dodao_vozac.is.null,dodao_vozac.eq.');
-
-      await supabase.from('mesecni_putnici').update({
-        'dodao_vozac': currentDriver,
-      }).or('dodao_vozac.is.null,dodao_vozac.eq.');
-    } catch (e) {
-      throw Exception('Greška pri cleanup-u: $e');
-    }
+    // ✅ FIXED: Ne radimo cleanup jer kolone dodao_vozac ne postoje
+    // Podaci se sada čuvaju u action_log.created_by JSON polju
   }
 
   /// 🔍 VALIDACIJA: Simplifikovana provera baze (bez validacije vozača)
@@ -2024,10 +2068,23 @@ class PutnikService {
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', putnikId);
       } else {
-        // 📅 DNEVNI PUTNIK - ažuriraj dodao_vozac u putovanja_istorija
+        // 📅 DNEVNI PUTNIK - ažuriraj vozac_id u putovanja_istorija (action_log.created_by)
+        // Dohvati postojeći action_log i ažuriraj ga
+        final current = await supabase.from('putovanja_istorija').select('action_log').eq('id', putnikId).single();
+        final existingActionLog = current['action_log'];
+        Map<String, dynamic> actionLogMap;
+        if (existingActionLog != null) {
+          actionLogMap = existingActionLog is String
+              ? jsonDecode(existingActionLog) as Map<String, dynamic>
+              : Map<String, dynamic>.from(existingActionLog as Map);
+        } else {
+          actionLogMap = {};
+        }
+        actionLogMap['created_by'] = vozacUuid;
+
         await supabase.from('putovanja_istorija').update({
-          'dodao_vozac': noviVozac,
           'vozac_id': vozacUuid,
+          'action_log': actionLogMap,
         }).eq('id', putnikId);
       }
 

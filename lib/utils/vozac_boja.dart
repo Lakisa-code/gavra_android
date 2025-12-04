@@ -1,13 +1,142 @@
 import 'package:flutter/material.dart';
 
+import '../models/vozac.dart';
+import '../services/vozac_service.dart';
+
+/// 🎨 VozacBoja - Centralizovana logika boja za vozače
+///
+/// Ova klasa sada podržava dinamičko učitavanje boja iz baze podataka
+/// sa fallback-om na hardkodovane vrednosti za backward kompatibilnost.
+///
+/// ## Inicijalizacija:
+/// Pozovite `VozacBoja.initialize()` na startupu aplikacije (npr. u main.dart)
+/// da bi se boje učitale iz baze pre korišćenja.
+///
+/// ## Cache:
+/// Boje se keširaju na 30 minuta. Možete pozvati `refreshCache()` za ručno osvežavanje.
 class VozacBoja {
-  static const Map<String, Color> boje = {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FALLBACK KONSTANTE (koriste se ako baza nije dostupna)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Hardkodovane boje - fallback ako baza nije dostupna
+  static const Map<String, Color> _fallbackBoje = {
     'Bruda': Color(0xFF7C4DFF), // ljubičasta
     'Bilevski': Color(0xFFFF9800), // narandžasta
     'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
     'Svetlana': Color(0xFFFF1493), // drecava pink (DeepPink)
     'Vlajic': Color(0xFF8B4513), // braon (SaddleBrown)
   };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CACHE ZA DINAMIČKO UČITAVANJE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static Map<String, Color>? _bojeCache;
+  static Map<String, Vozac>? _vozaciCache;
+  static DateTime? _lastCacheUpdate;
+  static bool _isInitialized = false;
+  static const Duration _cacheValidityPeriod = Duration(minutes: 30);
+
+  /// 🚀 INICIJALIZACIJA - Pozovite na startupu aplikacije
+  static Future<void> initialize() async {
+    if (_isInitialized && _isCacheValid()) return;
+
+    try {
+      await _loadFromDatabase();
+      _isInitialized = true;
+    } catch (e) {
+      // Ako baza nije dostupna, koristi fallback
+      debugPrint('⚠️ VozacBoja: Greška pri učitavanju iz baze, koristim fallback: $e');
+      _bojeCache = Map.from(_fallbackBoje);
+      _isInitialized = true;
+    }
+  }
+
+  /// Učitava boje iz baze podataka
+  static Future<void> _loadFromDatabase() async {
+    final vozacService = VozacService();
+    final vozaci = await vozacService.getAllVozaci();
+
+    _bojeCache = {};
+    _vozaciCache = {};
+
+    for (var vozac in vozaci) {
+      _vozaciCache![vozac.ime] = vozac;
+
+      // Koristi boju iz baze ako postoji, inače fallback
+      if (vozac.color != null) {
+        _bojeCache![vozac.ime] = vozac.color!;
+      } else if (_fallbackBoje.containsKey(vozac.ime)) {
+        _bojeCache![vozac.ime] = _fallbackBoje[vozac.ime]!;
+      }
+    }
+
+    // Dodaj fallback boje za vozače koji nisu u bazi
+    for (var entry in _fallbackBoje.entries) {
+      _bojeCache!.putIfAbsent(entry.key, () => entry.value);
+    }
+
+    _lastCacheUpdate = DateTime.now();
+    debugPrint('✅ VozacBoja: Učitano ${_bojeCache!.length} boja iz baze');
+  }
+
+  /// Proverava da li je cache validan
+  static bool _isCacheValid() {
+    if (_bojeCache == null || _lastCacheUpdate == null) return false;
+    return DateTime.now().difference(_lastCacheUpdate!) < _cacheValidityPeriod;
+  }
+
+  /// Osvežava cache (pozovite nakon izmena u bazi)
+  static Future<void> refreshCache() async {
+    _isInitialized = false;
+    await initialize();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JAVNI API (backward kompatibilan)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Vraća mapu svih boja (dinamičke + fallback)
+  static Map<String, Color> get boje {
+    if (_bojeCache != null && _isCacheValid()) {
+      return Map.unmodifiable(_bojeCache!);
+    }
+    return _fallbackBoje;
+  }
+
+  /// Vraća boju za vozača - baca grešku ako vozač nije validan
+  static Color get(String? ime) {
+    final currentBoje = boje;
+    if (ime != null && currentBoje.containsKey(ime)) {
+      return currentBoje[ime]!;
+    }
+    throw ArgumentError('Nepoznat vozač: $ime. Validni vozači: ${currentBoje.keys.join(", ")}');
+  }
+
+  /// Proverava da li je vozač prepoznat/valjan
+  static bool isValidDriver(String? ime) {
+    return ime != null && boje.containsKey(ime);
+  }
+
+  /// Lista svih validnih vozača
+  static List<String> get validDrivers => boje.keys.toList();
+
+  /// Vraća boju vozača ili default boju za nepoznate vozače
+  static Color getColorOrDefault(String? ime, Color defaultColor) {
+    final currentBoje = boje;
+    if (ime != null && currentBoje.containsKey(ime)) {
+      return currentBoje[ime]!;
+    }
+    return defaultColor;
+  }
+
+  /// Alias za get() metodu - za kompatibilnost
+  static Color getColor(String? ime) => get(ime);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EMAIL I TELEFON VALIDACIJA (ostaje hardkodovano za sada)
+  // ═══════════════════════════════════════════════════════════════════════════
 
   // 🔒 DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
   static const Map<String, String> dozvoljenEmails = {
@@ -35,34 +164,6 @@ class VozacBoja {
     'Svetlana': '0658464160',
     'Vlajic': '0605073073',
   };
-
-  static Color get(String? ime) {
-    if (ime != null && boje.containsKey(ime)) {
-      return boje[ime]!;
-    }
-
-    // Trebalo bi da se poziva samo za validne vozače
-    throw ArgumentError('Nepoznat vozač: $ime. Validni vozači: ${boje.keys.join(", ")}');
-  }
-
-  /// Proverava da li je vozač prepoznat/valjan
-  static bool isValidDriver(String? ime) {
-    return ime != null && boje.containsKey(ime);
-  }
-
-  /// Lista svih validnih vozača
-  static List<String> get validDrivers => boje.keys.toList();
-
-  /// Vraća boju vozača ili default boju za nepoznate vozače
-  static Color getColorOrDefault(String? ime, Color defaultColor) {
-    if (ime != null && boje.containsKey(ime)) {
-      return boje[ime]!;
-    }
-    return defaultColor;
-  }
-
-  /// Alias za get() metodu - za kompatibilnost
-  static Color getColor(String? ime) => get(ime);
 
   // 🔒 HELPER FUNKCIJE ZA EMAIL VALIDACIJU
   static String? getDozvoljenEmailForVozac(String? vozac) {

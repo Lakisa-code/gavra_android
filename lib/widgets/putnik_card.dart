@@ -15,6 +15,7 @@ import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 📍 GPS LEARN
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
+import '../utils/card_color_helper.dart'; // 🎨 NOVO: Centralizovana logika boja
 import '../utils/global_cache_manager.dart'; // 🔄 DODATO za globalni cache manager
 import '../utils/smart_colors.dart';
 import '../utils/text_utils.dart';
@@ -1657,33 +1658,14 @@ class _PutnikCardState extends State<PutnikCard> {
     // Proverava uslove za prikazivanje X ikone
     if (_putnik.ime == 'Ljilla') {}
 
-    // Uklonjen warning za nekorišćenu promenljivu driverColor
-    final bool isSelected = _putnik.jePokupljen; // Koristi getter umesto direktno vremePokupljenja
-    final bool isMesecna = _putnik.mesecnaKarta == true;
-    final bool isPlaceno = (_putnik.iznosPlacanja ?? 0) > 0;
-    // Redosled boja prema specifikaciji:
-    // 1. BELE - nepokupljeni (default)
-    // 2. PLAVE - pokupljeni neplaćeni
-    // 3. ZELENE - pokupljeni plaćeni/mesečni
-    // 4. CRVENE - otkazane
-    // 5. ŽUTE - godišnji/bolovanje (najveći prioritet)
-    final Color cardColor = _putnik.jeOdsustvo
-        ? const Color(
-            0xFFFFF59D,
-          ) // ŽUTO za odsustvo (godišnji/bolovanje) - NAJVEĆI PRIORITET
-        : _putnik.jeOtkazan
-            ? const Color(0xFFFFE5E5) // CRVENO za otkazane - DRUGI PRIORITET
-            : (isSelected
-                ? (isMesecna || isPlaceno
-                    ? const Color(
-                        0xFF388E3C,
-                      ) // ZELENO za mesečne/plaćene - TREĆI PRIORITET
-                    : const Color(
-                        0xFF7FB3D3,
-                      )) // PLAVO za pokupljene neplaćene - ČETVRTI PRIORITET
-                : Colors.white.withValues(
-                    alpha: 0.70,
-                  )); // ⚪ BELO za nepokupljene - PETI PRIORITET (default)
+    // 🎨 REFAKTORISANO: Koristi CardColorHelper za centralizovanu logiku boja
+    final cardDecoration = CardColorHelper.getCardDecoration(_putnik);
+    final textColor = CardColorHelper.getTextColorWithTheme(
+      _putnik,
+      context,
+      successPrimary: Theme.of(context).colorScheme.successPrimary,
+    );
+    final secondaryTextColor = CardColorHelper.getSecondaryTextColor(_putnik);
 
     // Prava po vozaču
     final String? driver = widget.currentDriver;
@@ -1707,69 +1689,7 @@ class _PutnikCardState extends State<PutnikCard> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
-        decoration: BoxDecoration(
-          gradient: _putnik.jeOdsustvo
-              ? LinearGradient(
-                  colors: [
-                    const Color(0xFFFFF59D).withValues(
-                      alpha: 0.85,
-                    ), // ŽUTO za odsustvo - NAJVEĆI PRIORITET
-                    const Color(0xFFFFF59D),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : _putnik.jeOtkazan
-                  ? null // CRVENO za otkazane - bez gradient-a
-                  : LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.98),
-                        isSelected
-                            ? (isMesecna || isPlaceno
-                                ? const Color(
-                                    0xFF388E3C,
-                                  ) // Zelena za mesečne/plaćene
-                                : const Color(
-                                    0xFF7FB3D3,
-                                  )) // Plava za pokupljene neplaćene
-                            : Colors.white.withValues(alpha: 0.98),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-          color: cardColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: _putnik.jeOdsustvo
-                ? const Color(0xFFFFC107).withValues(
-                    alpha: 0.6,
-                  ) // 🟡 ŽUTO border za odsustvo - NAJVEĆI PRIORITET
-                : _putnik.jeOtkazan
-                    ? Colors.red.withValues(alpha: 0.25) // 🔴 CRVENO border za otkazane
-                    : isSelected
-                        ? (isMesecna || isPlaceno
-                            ? const Color(0xFF388E3C).withValues(alpha: 0.4) // 🟢 ZELENO border za mesečne/plaćene
-                            : const Color(0xFF7FB3D3).withValues(alpha: 0.4)) // 🔵 PLAVO border za pokupljene neplaćene
-                        : Colors.grey.withValues(alpha: 0.10), // ⚪ BELO border za nepokupljene
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _putnik.jeOdsustvo
-                  ? const Color(0xFFFFC107).withValues(alpha: 0.2) // 🟡 ŽUTO shadow za odsustvo - NAJVEĆI PRIORITET
-                  : _putnik.jeOtkazan
-                      ? Colors.red.withValues(alpha: 0.08) // 🔴 CRVENO shadow za otkazane
-                      : isSelected
-                          ? (isMesecna || isPlaceno
-                              ? const Color(0xFF388E3C).withValues(alpha: 0.15) // 🟢 ZELENO shadow za mesečne/plaćene
-                              : const Color(0xFF7FB3D3)
-                                  .withValues(alpha: 0.15)) // 🔵 PLAVO shadow za pokupljene neplaćene
-                          : Colors.black.withValues(alpha: 0.07), // ⚪ BELO shadow za nepokupljene
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+        decoration: cardDecoration, // 🎨 Koristi CardColorHelper
         child: Padding(
           padding: const EdgeInsets.all(6.0),
           child: Column(
@@ -1786,17 +1706,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 14,
-                          color: _putnik.jeOdsustvo
-                              ? Colors.orange[600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
-                              : _putnik.jeOtkazan
-                                  ? Colors.red[400] // 🔴 CRVENO za otkazane
-                                  : isSelected
-                                      ? (isMesecna || isPlaceno)
-                                          ? Theme.of(context).colorScheme.successPrimary // 🟢 ZELENO za mesečne/plaćene
-                                          : const Color(
-                                              0xFF0D47A1,
-                                            ) // 🔵 PLAVO za pokupljene neplaćene
-                                      : Colors.black, // ⚪ BELO za nepokupljene
+                          color: textColor, // 🎨 Koristi CardColorHelper
                         ),
                       ),
                     ),
@@ -1810,93 +1720,45 @@ class _PutnikCardState extends State<PutnikCard> {
                             fontWeight: FontWeight.w700,
                             fontStyle: FontStyle.italic,
                             fontSize: 14, // 🔧 Smanjeno sa 15 za bolji fit na svim uređajima
-                            color: _putnik.jeOdsustvo
-                                ? Colors.orange[600] // 🟡 ŽUTO za odsustvo - NAJVEĆI PRIORITET
-                                : _putnik.jeOtkazan
-                                    ? Colors.red[400] // 🔴 CRVENO za otkazane
-                                    : isSelected
-                                        ? (isMesecna || isPlaceno)
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .successPrimary // 🟢 ZELENO za mesečne/plaćene
-                                            : const Color(
-                                                0xFF0D47A1,
-                                              ) // 🔵 PLAVO za pokupljene neplaćene
-                                        : Colors.black, // ⚪ BELO za nepokupljene
+                            color: textColor, // 🎨 Koristi CardColorHelper
                           ),
                           // 🔧 FIX: Forsiraj jedan red kao na Samsung-u
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
-                        // 🏠 ADRESE - prikaži adrese za mesečne putnike ili staru adresu za dnevne
-                        if (_putnik.mesecnaKarta == true)
-                          // Za mesečne putnike koristi novi UUID sistem
-                          FutureBuilder<String>(
-                            future: _getMesecniPutnikAdrese(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return const SizedBox.shrink(); // Ne prikazuj loading
-                              }
-
-                              if (snapshot.hasError ||
-                                  !snapshot.hasData ||
-                                  snapshot.data!.isEmpty ||
-                                  snapshot.data == 'Nema adresa') {
-                                return const SizedBox.shrink();
-                              }
-
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  snapshot.data!,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: (_putnik.jeOtkazan
-                                            ? Colors.red[300]
-                                            : _putnik.jeOdsustvo
-                                                ? Colors.orange[500] // 🟡 Oranž adresa za odsustvo
-                                                : isSelected
-                                                    ? (isMesecna || isPlaceno)
-                                                        ? Colors.green[500]
-                                                        : const Color(0xFF0D47A1)
-                                                    : Colors.grey[600])
-                                        ?.withValues(alpha: 0.8),
-                                    fontWeight: FontWeight.w500,
-                                    fontStyle: FontStyle.normal,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              );
-                            },
-                          )
-                        else
-                        // Za dnevne putnike koristi staro TEXT polje
-                        if (_putnik.adresa != null && _putnik.adresa!.isNotEmpty) ...[
+                        // 🏠 ADRESA - jednostavno prikaži adresu ako postoji
+                        if (_putnik.adresa != null &&
+                            _putnik.adresa!.isNotEmpty &&
+                            _putnik.adresa != 'Adresa nije definisana')
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
                               _putnik.adresa!,
                               style: TextStyle(
-                                fontSize: 14,
-                                color: (_putnik.jeOtkazan
-                                        ? Colors.red[300]
-                                        : _putnik.jeOdsustvo
-                                            ? Colors.orange[500] // 🟡 Oranž adresa za odsustvo
-                                            : isSelected
-                                                ? (isMesecna || isPlaceno)
-                                                    ? Colors.green[500]
-                                                    : const Color(0xFF0D47A1)
-                                                : Colors.grey[600])
-                                    ?.withValues(alpha: 0.8),
+                                fontSize: 13,
+                                color: secondaryTextColor,
                                 fontWeight: FontWeight.w500,
-                                fontStyle: FontStyle.normal,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ],
+                        // 📝 DODAO INFO - u istom redu sa ikonicama
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            'Dodao: ${_putnik.vremeDodavanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeDodavanja!) : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem')}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: VozacBoja.getColorOrDefault(
+                                _putnik.dodaoVozac,
+                                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2018,36 +1880,17 @@ class _PutnikCardState extends State<PutnikCard> {
                                                           color: Colors.blue.withValues(alpha: 0.3),
                                                         ),
                                                       ),
-                                                      child: _putnik.mesecnaKarta == true
-                                                          ? FutureBuilder<String>(
-                                                              future: _getMesecniPutnikAdrese(),
-                                                              builder: (context, snapshot) {
-                                                                if (snapshot.connectionState ==
-                                                                    ConnectionState.waiting) {
-                                                                  return const Text('Učitavam...');
-                                                                }
-                                                                return Text(
-                                                                  snapshot.data?.isNotEmpty == true
-                                                                      ? snapshot.data!
-                                                                      : 'Adresa nije definisana',
-                                                                  style: const TextStyle(
-                                                                    fontSize: 16,
-                                                                    fontWeight: FontWeight.w600,
-                                                                  ),
-                                                                  overflow: TextOverflow.fade,
-                                                                  maxLines: 3,
-                                                                );
-                                                              },
-                                                            )
-                                                          : Text(
-                                                              _putnik.adresa ?? 'Adresa nije definisana',
-                                                              style: const TextStyle(
-                                                                fontSize: 16,
-                                                                fontWeight: FontWeight.w600,
-                                                              ),
-                                                              overflow: TextOverflow.fade,
-                                                              maxLines: 3,
-                                                            ),
+                                                      child: Text(
+                                                        _putnik.adresa?.isNotEmpty == true
+                                                            ? _putnik.adresa!
+                                                            : 'Adresa nije definisana',
+                                                        style: const TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                        overflow: TextOverflow.fade,
+                                                        maxLines: 3,
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
@@ -2229,12 +2072,31 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize, // Adaptive veličina
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(4),
+                                              // 🌟 Glassmorphism pozadina
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  Colors.white.withValues(alpha: 0.25),
+                                                  Colors.white.withValues(alpha: 0.10),
+                                                ],
+                                              ),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.4),
+                                                width: 1.0,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.15),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Icon(
                                               Icons.location_on,
-                                              color: Theme.of(context).colorScheme.primary,
+                                              color: Theme.of(context).colorScheme.primary, // Plava
                                               size: iconInnerSize, // Adaptive inner size
                                             ),
                                           ),
@@ -2249,13 +2111,31 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color:
-                                                  Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(4),
+                                              // 🌟 Glassmorphism pozadina
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  Colors.white.withValues(alpha: 0.25),
+                                                  Colors.white.withValues(alpha: 0.10),
+                                                ],
+                                              ),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.4),
+                                                width: 1.0,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.15),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Icon(
                                               Icons.phone,
-                                              color: Theme.of(context).colorScheme.successPrimary,
+                                              color: Theme.of(context).colorScheme.successPrimary, // Zelena
                                               size: iconInnerSize,
                                             ),
                                           ),
@@ -2272,13 +2152,31 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color:
-                                                  Theme.of(context).colorScheme.successPrimary.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(4),
+                                              // 🌟 Glassmorphism pozadina
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  Colors.white.withValues(alpha: 0.25),
+                                                  Colors.white.withValues(alpha: 0.10),
+                                                ],
+                                              ),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.4),
+                                                width: 1.0,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.15),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Icon(
                                               Icons.attach_money,
-                                              color: Theme.of(context).colorScheme.successPrimary,
+                                              color: Theme.of(context).colorScheme.successPrimary, // Zelena
                                               size: iconInnerSize,
                                             ),
                                           ),
@@ -2303,12 +2201,31 @@ class _PutnikCardState extends State<PutnikCard> {
                                             width: iconSize,
                                             height: iconSize,
                                             decoration: BoxDecoration(
-                                              color: Colors.orange.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(4),
+                                              // 🌟 Glassmorphism pozadina
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  Colors.white.withValues(alpha: 0.25),
+                                                  Colors.white.withValues(alpha: 0.10),
+                                                ],
+                                              ),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.4),
+                                                width: 1.0,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.15),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             child: Icon(
                                               Icons.close,
-                                              color: Colors.orange,
+                                              color: Colors.orange, // Narandžasta
                                               size: iconInnerSize,
                                             ),
                                           ),
@@ -2324,87 +2241,82 @@ class _PutnikCardState extends State<PutnikCard> {
                     ),
                 ],
               ),
-              // Info row: Dodao, Pokupio, Plaćeno (jedan red - kompaktan prikaz)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Row(
-                  children: [
-                    // ✅ DODAO INFO - kompaktno
-                    Text(
-                      'Dodao: ${_putnik.vremeDodavanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeDodavanja!) : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem')}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: VozacBoja.getColorOrDefault(
-                          _putnik.dodaoVozac,
-                          Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    // Otkazano info
-                    if (_putnik.jeOtkazan) ...[
-                      const SizedBox(width: 12),
-                      Text(
-                        'Otkazao: ${_putnik.vremeOtkazivanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeOtkazivanja!) : 'ranije'}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: VozacBoja.getColorOrDefault(
-                            _putnik.otkazaoVozac,
-                            Colors.red,
+              // Red 2: Pokupljen / Plaćeno / Otkazano / Odsustvo info
+              if (_putnik.vremePokupljenja != null ||
+                  _putnik.jeOtkazan ||
+                  _putnik.jeOdsustvo ||
+                  (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Row(
+                    children: [
+                      // Pokupljen info
+                      if (_putnik.vremePokupljenja != null)
+                        Text(
+                          'Pokupljen: ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: VozacBoja.getColorOrDefault(
+                              _putnik.pokupioVozac ?? _putnik.vozac,
+                              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                            fontWeight: FontWeight.w500,
                           ),
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ],
-                    // Odsustvo info
-                    if (_putnik.jeOdsustvo) ...[
-                      const SizedBox(width: 12),
-                      Text(
-                        _putnik.jeBolovanje
-                            ? 'Bolovanje'
-                            : _putnik.jeGodisnji
-                                ? 'Godišnji'
-                                : 'Odsustvo',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.orange.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    // Pokupljen info
-                    if (_putnik.vremePokupljenja != null) ...[
-                      const SizedBox(width: 12),
-                      Text(
-                        'Pokupljen ${_putnik.vremePokupljenja!.hour.toString().padLeft(2, '0')}:${_putnik.vremePokupljenja!.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: VozacBoja.getColorOrDefault(
-                            _putnik.pokupioVozac,
-                            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      // Plaćeno info
+                      if (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0) ...[
+                        if (_putnik.vremePokupljenja != null) const SizedBox(width: 12),
+                        Text(
+                          'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: VozacBoja.getColorOrDefault(
+                              _putnik.naplatioVozac,
+                              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                            fontWeight: FontWeight.w500,
                           ),
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
-                    ],
-                    // Plaćeno info
-                    if (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0) ...[
-                      const SizedBox(width: 12),
-                      Text(
-                        'Plaćeno: ${_putnik.iznosPlacanja!.toStringAsFixed(0)}${_putnik.vremePlacanja != null ? ' ${_formatVreme(_putnik.vremePlacanja!)}' : ''}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: VozacBoja.getColorOrDefault(
-                            _putnik.naplatioVozac,
-                            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ],
+                      // Otkazano info
+                      if (_putnik.jeOtkazan) ...[
+                        if (_putnik.vremePokupljenja != null ||
+                            (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
+                          const SizedBox(width: 12),
+                        Text(
+                          'Otkazao: ${_putnik.vremeOtkazivanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeOtkazivanja!) : 'ranije'}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: VozacBoja.getColorOrDefault(
+                              _putnik.otkazaoVozac,
+                              Colors.red,
+                            ),
+                            fontWeight: FontWeight.w600,
                           ),
-                          fontWeight: FontWeight.w500,
                         ),
-                      ),
+                      ],
+                      // Odsustvo info
+                      if (_putnik.jeOdsustvo) ...[
+                        if (_putnik.vremePokupljenja != null ||
+                            _putnik.jeOtkazan ||
+                            (_putnik.iznosPlacanja != null && _putnik.iznosPlacanja! > 0))
+                          const SizedBox(width: 12),
+                        Text(
+                          _putnik.jeBolovanje
+                              ? 'Bolovanje'
+                              : _putnik.jeGodisnji
+                                  ? 'Godišnji'
+                                  : 'Odsustvo',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
               // Status se prikazuje kroz ikone i boje (bolovanje/godišnji), 'radi' status se ne prikazuje
             ], // kraj children liste za Column
           ), // kraj Column
@@ -2826,52 +2738,31 @@ class _PutnikCardState extends State<PutnikCard> {
     );
 
     if (confirm == true) {
-      await PutnikService().obrisiPutnika(_putnik.id!);
+      try {
+        await PutnikService().obrisiPutnika(_putnik.id!);
 
-      // 🔄 GLOBALNI CACHE CLEAR I REFRESH
-      await GlobalCacheManager.clearAllCachesAndRefresh();
+        // 🔄 GLOBALNI CACHE CLEAR I REFRESH
+        await GlobalCacheManager.clearAllCachesAndRefresh();
 
-      // 🔄 POZOVI onChanged callback da forsira parent refresh
-      if (widget.onChanged != null) {
-        widget.onChanged!();
-      }
+        // 🔄 POZOVI onChanged callback da forsira parent refresh
+        if (widget.onChanged != null) {
+          widget.onChanged!();
+        }
 
-      if (mounted) {
-        setState(() {});
+        if (mounted) {
+          setState(() {});
+          ScaffoldMessenger.of(context).showSnackBar(
+            SmartSnackBar.success('Putnik ${_putnik.ime} je obrisan', context),
+          );
+        }
+      } catch (e) {
+        debugPrint('❌ BRISANJE GREŠKA: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SmartSnackBar.error('Greška pri brisanju: $e', context),
+          );
+        }
       }
     }
   }
-
-  /// Učitava formatirane adrese za mesečne putnike koristeći UUID reference
-  Future<String> _getMesecniPutnikAdrese() async {
-    if (_putnik.id == null) return '';
-
-    try {
-      // Učitaj mesečni putnik objekat iz baze koristeći ime putnika
-      final mesecniService = MesecniPutnikService();
-      final sviMesecniPutnici = await mesecniService.getAllMesecniPutnici();
-
-      // Pronađi mesečni putnik objekat po imenu
-      final mesecniPutnik = sviMesecniPutnici.firstWhere(
-        (mp) => mp.putnikIme.trim().toLowerCase() == _putnik.ime.trim().toLowerCase(),
-        orElse: () => throw Exception('Mesečni putnik nije pronađen'),
-      );
-
-      // Koristi getAdresaZaSelektovaniGrad metodu za kontekstualnu adresu.
-      // Ako parent nije proslijedio `selectedGrad`, fallbackuj na grad iz samog
-      // putnika kako bi prikaz bio konzistentan između različitih ekrana
-      // (npr. DanasScreen često ne prosleđuje selectedGrad).
-      final ctxGrad =
-          (widget.selectedGrad != null && widget.selectedGrad!.isNotEmpty) ? widget.selectedGrad : _putnik.grad;
-
-      return await mesecniPutnik.getAdresaZaSelektovaniGrad(ctxGrad);
-    } catch (e) {
-      // Ako ne može da učita, vrati prazan string
-      return '';
-    }
-  }
-
-  /// Dobija koordinate za navigaciju za mesečne putnike - traži po nazivu mesta
-  /// DEPRECATED: Koristi _getKoordinateZaAdresu umesto ove funkcije
-  /// Zadržano za kompatibilnost
 } // kraj klase

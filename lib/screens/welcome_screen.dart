@@ -12,6 +12,7 @@ import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
+import 'mesecni_putnik_login_screen.dart';
 import 'o_nama_screen.dart';
 import 'vozac_login_screen.dart';
 import 'vozac_screen.dart';
@@ -40,7 +41,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   // Lista vozača za email sistem - koristi VozacBoja utility
   final List<Map<String, dynamic>> _drivers = [
@@ -245,10 +245,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.elasticOut),
-    );
-
     // Start animations
     _fadeController.forward();
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -439,149 +435,229 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const ONamaScreen()),
-                            );
-                          },
-                          child: Text(
-                            'O nama',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 2.0,
-                              shadows: [
-                                Shadow(
-                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                                  blurRadius: 20,
-                                ),
-                                Shadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
-                                  blurRadius: 15,
-                                ),
-                                Shadow(
-                                  color: Colors.cyan.withValues(alpha: 0.4),
-                                  blurRadius: 10,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12), // Further reduced from 16
-                Expanded(
-                  flex: 3, // Give more space to driver buttons
-                  child: Center(
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ...List.generate(_drivers.length, (index) {
-                              final driver = _drivers[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4.0, // Increased slightly for better visibility
-                                ),
-                                child: _buildDriverButton(
-                                  driver['name'] as String,
-                                  driver['color'] as Color,
-                                  driver['icon'] as IconData,
-                                  index,
-                                ),
-                              );
-                            }),
-                            // 📝 "Zatraži pristup" dugme
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: AnimatedBuilder(
-                                animation: _slideController,
-                                builder: (context, child) {
-                                  // Index 5 - nastavlja niz posle vozača
-                                  final delayFactor = (5 * 0.1).clamp(0.0, 1.0);
-                                  final adjustedValue = (_slideController.value - delayFactor).clamp(0.0, 1.0);
-                                  final scale = 0.8 + (0.2 * adjustedValue);
-
-                                  return Transform.scale(
-                                    scale: scale,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => const ZahtevPristupaScreen(),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        width: MediaQuery.of(context).size.width * 0.85,
-                                        constraints: const BoxConstraints(
-                                          minHeight: 55,
-                                          maxHeight: 65,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 6,
-                                          horizontal: 16,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              const Color(0xFF00FFCC).withValues(alpha: 0.85),
-                                              Colors.white.withValues(alpha: 0.08),
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius: BorderRadius.circular(24),
-                                          border: Border.all(
-                                            color: const Color(0xFF00FFCC).withValues(alpha: 0.7),
-                                            width: 2,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xFF00FFCC).withValues(alpha: 0.35),
-                                              blurRadius: 15,
-                                              offset: const Offset(0, 6),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.person_add,
-                                              color: Colors.white,
-                                              size: 24,
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Text(
-                                              'Zatraži pristup',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 1.0,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                const SizedBox(height: 10),
+                // 📖 "O nama" dugme - izdvojeno, malo uže od DOBRODOŠLI
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ONamaScreen()),
+                      );
+                    },
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 0.55,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        'O nama',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.5,
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
+                              blurRadius: 15,
+                            ),
+                            Shadow(
+                              color: Colors.cyan.withValues(alpha: 0.4),
+                              blurRadius: 8,
                             ),
                           ],
                         ),
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // 🚗 "Vozači" dugme - ispod O nama
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: GestureDetector(
+                    onTap: () => _showDriverSelectionDialog(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        'Vozači',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.5,
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
+                              blurRadius: 15,
+                            ),
+                            Shadow(
+                              color: Colors.cyan.withValues(alpha: 0.4),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12), // Further reduced from 16
+                // 📝 "Zatraži pristup" dugme - NA SREDINI EKRANA
+                Expanded(
+                  flex: 3,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Dugme "Zatraži pristup" (dnevni putnici)
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ZahtevPristupaScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 28,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFF00FFCC).withValues(alpha: 0.85),
+                                    Colors.white.withValues(alpha: 0.08),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: const Color(0xFF00FFCC).withValues(alpha: 0.7),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF00FFCC).withValues(alpha: 0.35),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.person_add,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Zatraži pristup',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // 🎫 Dugme "Mesečni putnici"
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const MesecniPutnikLoginScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 28,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.amber.withValues(alpha: 0.85),
+                                    Colors.white.withValues(alpha: 0.08),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: Colors.amber.withValues(alpha: 0.7),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.amber.withValues(alpha: 0.35),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.card_membership,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Mesečni putnici',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -734,124 +810,108 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildDriverButton(
-    String name,
-    Color color,
-    IconData icon,
-    int index,
-  ) {
-    return AnimatedBuilder(
-      animation: _slideController,
-      builder: (context, child) {
-        // Calculate delay-like effect based on index
-        final delayFactor = (index * 0.1).clamp(0.0, 1.0);
-        final adjustedValue = (_slideController.value - delayFactor).clamp(
-          0.0,
-          1.0,
-        );
-        final scale = 0.8 + (0.2 * adjustedValue);
-        final opacity = adjustedValue;
-
-        return Transform.scale(
-          scale: scale,
-          child: Opacity(
-            opacity: opacity,
-            child: GestureDetector(
-              onTap: () => _loginAsDriver(name),
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.85,
-                constraints: const BoxConstraints(
-                  minHeight: 55, // Minimum height
-                  maxHeight: 65, // Maximum height with some flexibility
+  // 🚗 Dijalog za izbor vozača
+  void _showDriverSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6, // Further reduced to prevent overflow
-                  horizontal: 16,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      color.withValues(alpha: 0.85),
-                      Colors.white.withValues(alpha: 0.08),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.35),
-                      blurRadius: 15,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.7),
-                    width: 2.0,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Izaberi vozača',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
                   ),
                 ),
-                child: ClipRect(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(
-                          3,
-                        ), // Further reduced to prevent overflow
+                const SizedBox(height: 20),
+                ..._drivers.map((driver) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context); // Zatvori dijalog
+                        _loginAsDriver(driver['name'] as String);
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.white.withValues(alpha: 0.18),
-                              color.withValues(alpha: 0.25),
+                              (driver['color'] as Color).withValues(alpha: 0.8),
+                              Colors.white.withValues(alpha: 0.1),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: color.withValues(alpha: 0.18),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: (driver['color'] as Color).withValues(alpha: 0.6),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              driver['icon'] as IconData,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              driver['name'] as String,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          icon,
-                          color: color,
-                          size: 18,
-                        ), // Further reduced to prevent overflow
                       ),
-                      const SizedBox(
-                        height: 1,
-                      ), // Further reduced to prevent overflow
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          name,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13, // Further reduced to prevent overflow
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                            letterSpacing: 1.0, // Further reduced to prevent overflow
-                            shadows: [
-                              Shadow(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Otkaži',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 16,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         );
