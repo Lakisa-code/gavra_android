@@ -360,43 +360,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.purple.withValues(alpha: 0.3),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                    ),
-                                    child: Text(
-                                      grad == 'BC' ? '📍 Bela Crkva' : '📍 Vršac',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
                                 ],
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Status
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color:
-                                      aktivan ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                ),
-                                child: Text(
-                                  aktivan ? '✅ Aktivan' : '❌ Neaktivan',
-                                  style: TextStyle(
-                                    color: aktivan ? Colors.green : Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                               ),
                               const SizedBox(height: 16),
                               // Adresa i telefon
@@ -465,12 +429,12 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 📅 Raspored polazaka
-                      _buildRasporedCard(),
-                      const SizedBox(height: 16),
-
                       // 📊 Stanje računa i izvod
                       _buildStatistikePoMesecimaCard(),
+                      const SizedBox(height: 16),
+
+                      // 📅 Raspored polazaka
+                      _buildRasporedCard(),
                       const SizedBox(height: 16),
                     ],
                   ),
