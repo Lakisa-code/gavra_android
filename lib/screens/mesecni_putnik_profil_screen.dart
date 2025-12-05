@@ -223,14 +223,21 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ime = _putnikData['ime'] ?? '';
-    final prezime = _putnikData['prezime'] ?? '';
-    final adresa = _putnikData['adresa'] ?? '-';
-    final telefon = _putnikData['telefon'] ?? '-';
-    final grad = _putnikData['grad'] ?? 'BC';
-    final tip = _putnikData['tip'] ?? 'radnik';
-    final daniVoznje = _putnikData['dani_voznje'] ?? 'pon-pet';
-    final aktivan = _putnikData['aktivan'] ?? true;
+    // Ime može biti u 'putnik_ime' ili odvojeno 'ime'/'prezime'
+    final putnikIme = _putnikData['putnik_ime'] as String? ?? '';
+    final ime = _putnikData['ime'] as String? ?? '';
+    final prezime = _putnikData['prezime'] as String? ?? '';
+    final fullName = putnikIme.isNotEmpty ? putnikIme : '$ime $prezime'.trim();
+
+    // Razdvoji ime i prezime za avatar
+    final nameParts = fullName.split(' ');
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName = nameParts.length > 1 ? nameParts.last : '';
+
+    final telefon = _putnikData['broj_telefona'] as String? ?? '-';
+    final grad = _putnikData['grad'] as String? ?? 'BC';
+    final tip = _putnikData['tip'] as String? ?? 'radnik';
+    final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
     return Container(
       decoration: const BoxDecoration(
@@ -308,7 +315,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    '${ime.isNotEmpty ? ime[0].toUpperCase() : ''}${prezime.isNotEmpty ? prezime[0].toUpperCase() : ''}',
+                                    '${firstName.isNotEmpty ? firstName[0].toUpperCase() : ''}${lastName.isNotEmpty ? lastName[0].toUpperCase() : ''}',
                                     style: const TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
@@ -329,7 +336,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
                               // Ime
                               Text(
-                                '$ime $prezime',
+                                fullName,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
@@ -363,26 +370,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              // Adresa i telefon
-                              if (adresa.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.home, color: Colors.white70, size: 16),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        adresa,
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.9),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              if (telefon.isNotEmpty)
+                              // Telefon
+                              if (telefon.isNotEmpty && telefon != '-')
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
