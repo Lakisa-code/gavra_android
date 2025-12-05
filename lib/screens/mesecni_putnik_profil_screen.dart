@@ -31,6 +31,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   Map<String, List<DateTime>> _voznjeDetaljno = {}; // mesec -> lista datuma vožnji
   Map<String, List<DateTime>> _otkazivanjaDetaljno = {}; // mesec -> lista datuma otkazivanja
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
+  String? _adresaBC; // BC adresa
+  String? _adresaVS; // VS adresa
 
   @override
   void initState() {
@@ -58,6 +60,34 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
       // Dugovanje
       final dug = _putnikData['dug'] ?? 0;
+
+      // 🏠 Učitaj obe adrese iz tabele adrese
+      String? adresaBcNaziv;
+      String? adresaVsNaziv;
+      final adresaBcId = _putnikData['adresa_bela_crkva_id'] as String?;
+      final adresaVsId = _putnikData['adresa_vrsac_id'] as String?;
+
+      debugPrint('🏠 adresaBcId: $adresaBcId, adresaVsId: $adresaVsId');
+      debugPrint('🏠 _putnikData keys: ${_putnikData.keys.toList()}');
+
+      try {
+        if (adresaBcId != null && adresaBcId.isNotEmpty) {
+          final bcResponse =
+              await Supabase.instance.client.from('adrese').select('naziv').eq('id', adresaBcId).maybeSingle();
+          if (bcResponse != null) {
+            adresaBcNaziv = bcResponse['naziv'] as String?;
+          }
+        }
+        if (adresaVsId != null && adresaVsId.isNotEmpty) {
+          final vsResponse =
+              await Supabase.instance.client.from('adrese').select('naziv').eq('id', adresaVsId).maybeSingle();
+          if (vsResponse != null) {
+            adresaVsNaziv = vsResponse['naziv'] as String?;
+          }
+        }
+      } catch (e) {
+        debugPrint('Greška pri učitavanju adresa: $e');
+      }
 
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
@@ -115,6 +145,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         _voznjeDetaljno = voznjeDetaljnoMap;
         _otkazivanjaDetaljno = otkazivanjaDetaljnoMap;
         _ukupnoZaduzenje = zaduzenje;
+        _adresaBC = adresaBcNaziv;
+        _adresaVS = adresaVsNaziv;
         _isLoading = false;
       });
     } catch (e) {
@@ -367,23 +399,63 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                       ),
                                     ),
                                   ),
+                                  if (telefon.isNotEmpty && telefon != '-') ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.phone, color: Colors.white70, size: 14),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            telefon,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              // Telefon
-                              if (telefon.isNotEmpty && telefon != '-')
+                              // Adrese - BC levo, VS desno
+                              if (_adresaBC != null || _adresaVS != null)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.phone, color: Colors.white70, size: 16),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      telefon,
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.9),
-                                        fontSize: 13,
+                                    if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
+                                      Icon(Icons.home, color: Colors.white70, size: 16),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        _adresaBC!,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontSize: 13,
+                                        ),
                                       ),
-                                    ),
+                                    ],
+                                    if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
+                                    if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
+                                      Icon(Icons.work, color: Colors.white70, size: 16),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        _adresaVS!,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                             ],
