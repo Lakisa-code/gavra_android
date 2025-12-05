@@ -317,8 +317,6 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
           const SizedBox(height: 20),
           _buildAddressSection(),
           const SizedBox(height: 20),
-          _buildWorkingDaysSection(),
-          const SizedBox(height: 20),
           _buildTimesSection(),
         ],
       ),
@@ -503,128 +501,6 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
               });
             },
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkingDaysSection() {
-    return _buildGlassSection(
-      title: '📅 Radni dani',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Odaberite radne dane kada putnik koristi prevoz:',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Glassmorphism switches za svaki dan
-          ..._radniDani.entries.map((entry) {
-            final danLabels = {
-              'pon': 'Ponedeljak',
-              'uto': 'Utorak',
-              'sre': 'Sreda',
-              'cet': 'Četvrtak',
-              'pet': 'Petak',
-            };
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withValues(alpha: 0.2),
-                    Colors.white.withValues(alpha: 0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    danLabels[entry.key] ?? entry.key.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _radniDani[entry.key] = !entry.value;
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 50,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: entry.value
-                              ? [
-                                  Colors.green.withValues(alpha: 0.8),
-                                  Colors.green,
-                                ]
-                              : [
-                                  Colors.white.withValues(alpha: 0.3),
-                                  Colors.white.withValues(alpha: 0.1),
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color:
-                              entry.value ? Colors.green.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: AnimatedAlign(
-                        duration: const Duration(milliseconds: 200),
-                        alignment: entry.value ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          width: 22,
-                          height: 22,
-                          margin: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(11),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
         ],
       ),
     );

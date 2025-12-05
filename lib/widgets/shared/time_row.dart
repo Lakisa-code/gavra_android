@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../utils/mesecni_helpers.dart';
+import '../../config/route_config.dart';
 
 /// Small shared widget to render a BC / VS time row for a single day.
 class TimeRow extends StatelessWidget {
@@ -39,127 +39,157 @@ class TimeRow extends StatelessWidget {
         ),
         Expanded(
           flex: 2,
-          child: TextFormField(
+          child: _buildTimePickerField(
+            context: context,
             controller: bcController,
-            keyboardType: TextInputType.datetime,
-            style: const TextStyle(color: Colors.black87, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: '07:30',
-              prefixIcon: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: bcController,
-                builder: (_, value, __) {
-                  final text = value.text.trim();
-                  return InkWell(
-                    onTap: () async {
-                      final initial = _parseTime(bcController.text) ?? const TimeOfDay(hour: 7, minute: 30);
-                      final picked = await showTimePicker(context: context, initialTime: initial);
-                      if (picked != null) {
-                        final formatted = '${picked.hour}:${picked.minute.toString().padLeft(2, '0')}';
-                        bcController.text = MesecniHelpers.normalizeTime(formatted) ?? formatted;
-                      }
-                    },
-                    child: text.isNotEmpty
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            margin: const EdgeInsets.only(left: 6, right: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(text,
-                                style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600)),
-                          )
-                        : const Icon(Icons.access_time, color: Colors.blue, size: 16),
-                  );
-                },
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.grey),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.blue, width: 2),
-              ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.9),
-            ),
+            isBC: true,
           ),
         ),
         const SizedBox(width: 6),
         Expanded(
           flex: 2,
-          child: TextFormField(
+          child: _buildTimePickerField(
+            context: context,
             controller: vsController,
-            keyboardType: TextInputType.datetime,
-            style: const TextStyle(color: Colors.black87, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: '16:30',
-              prefixIcon: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: vsController,
-                builder: (_, value, __) {
-                  final text = value.text.trim();
-                  return InkWell(
-                    onTap: () async {
-                      final initial = _parseTime(vsController.text) ?? const TimeOfDay(hour: 16, minute: 30);
-                      final picked = await showTimePicker(context: context, initialTime: initial);
-                      if (picked != null) {
-                        final formatted = '${picked.hour}:${picked.minute.toString().padLeft(2, '0')}';
-                        vsController.text = MesecniHelpers.normalizeTime(formatted) ?? formatted;
-                      }
-                    },
-                    child: text.isNotEmpty
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            margin: const EdgeInsets.only(left: 6, right: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(text,
-                                style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600)),
-                          )
-                        : const Icon(Icons.access_time, color: Colors.blue, size: 16),
-                  );
-                },
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.grey),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.blue, width: 2),
-              ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.9),
-            ),
+            isBC: false,
           ),
         ),
       ],
     );
   }
 
-  TimeOfDay? _parseTime(String? raw) {
-    final s = MesecniHelpers.normalizeTime(raw);
-    if (s == null || s.isEmpty) return null;
-    final parts = s.split(':');
-    if (parts.isEmpty) return null;
-    final h = int.tryParse(parts[0]);
-    final m = parts.length > 1 ? int.tryParse(parts[1]) : 0;
-    if (h == null || m == null) return null;
-    final hour = h.clamp(0, 23);
-    final minute = m.clamp(0, 59);
-    return TimeOfDay(hour: hour, minute: minute);
+  Widget _buildTimePickerField({
+    required BuildContext context,
+    required TextEditingController controller,
+    required bool isBC,
+  }) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final currentValue = value.text.trim().isEmpty ? null : value.text.trim();
+
+        return GestureDetector(
+          onTap: () => _showTimePickerDialog(
+            context: context,
+            controller: controller,
+            isBC: isBC,
+            currentValue: currentValue,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.grey.shade300,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    currentValue ?? '--:--',
+                    style: TextStyle(
+                      color: currentValue != null ? Colors.black87 : Colors.grey,
+                      fontSize: 13,
+                      fontWeight: currentValue != null ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.access_time,
+                  size: 16,
+                  color: Colors.grey.shade400,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTimePickerDialog({
+    required BuildContext context,
+    required TextEditingController controller,
+    required bool isBC,
+    String? currentValue,
+  }) {
+    final vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.indigo.shade900,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(
+              Icons.access_time,
+              color: isBC ? Colors.orange : Colors.blue,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isBC ? 'BC polazak' : 'VS polazak',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 280,
+          height: 350,
+          child: ListView(
+            children: [
+              // Option to clear
+              ListTile(
+                title: const Text(
+                  'Bez polaska',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                leading: Icon(
+                  currentValue == null ? Icons.check_circle : Icons.circle_outlined,
+                  color: currentValue == null ? Colors.green : Colors.grey,
+                ),
+                onTap: () {
+                  controller.text = '';
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              const Divider(color: Colors.white24),
+              // Time options
+              ...vremena.map((vreme) {
+                final isSelected = currentValue == vreme;
+                return ListTile(
+                  title: Text(
+                    vreme,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white70,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  leading: Icon(
+                    isSelected ? Icons.check_circle : Icons.circle_outlined,
+                    color: isSelected ? Colors.green : Colors.white54,
+                  ),
+                  onTap: () {
+                    controller.text = vreme;
+                    Navigator.of(dialogContext).pop();
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Otkaži', style: TextStyle(color: Colors.white70)),
+          ),
+        ],
+      ),
+    );
   }
 }

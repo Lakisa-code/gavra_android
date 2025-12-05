@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -282,16 +281,47 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             children: [
-                              // Avatar
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Colors.amber,
-                                child: Text(
-                                  '${ime.isNotEmpty ? ime[0] : ''}${prezime.isNotEmpty ? prezime[0] : ''}',
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                              // Avatar - glassmorphism stil
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: tip == 'ucenik'
+                                        ? [Colors.blue.shade400, Colors.indigo.shade600]
+                                        : [Colors.orange.shade400, Colors.deepOrange.shade600],
+                                  ),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
+                                      blurRadius: 20,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${ime.isNotEmpty ? ime[0].toUpperCase() : ''}${prezime.isNotEmpty ? prezime[0].toUpperCase() : ''}',
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 2,
+                                      shadows: [
+                                        Shadow(
+                                          offset: Offset(1, 1),
+                                          blurRadius: 3,
+                                          color: Colors.black38,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -368,6 +398,41 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 16),
+                              // Adresa i telefon
+                              if (adresa.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.home, color: Colors.white70, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        adresa,
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (telefon.isNotEmpty)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.phone, color: Colors.white70, size: 16),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      telefon,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
                         ),
@@ -396,16 +461,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                               'ovaj mesec',
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildStatCard(
-                              '💰',
-                              'Dugovanje',
-                              _dugovanje.toStringAsFixed(0),
-                              _dugovanje > 0 ? Colors.red : Colors.green,
-                              'RSD',
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -414,66 +469,9 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                       _buildRasporedCard(),
                       const SizedBox(height: 16),
 
-                      // 💰 Istorija plaćanja
-                      _buildIstorijaPlacanjaCard(),
-                      const SizedBox(height: 16),
-
-                      // 📊 Statistike po mesecima
+                      // 📊 Stanje računa i izvod
                       _buildStatistikePoMesecimaCard(),
                       const SizedBox(height: 16),
-
-                      // Detalji
-                      Card(
-                        color: Colors.transparent,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Theme.of(context).glassBorder, width: 1.5),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '📋 Moji podaci',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _buildDetailRow(Icons.calendar_today, 'Dani vožnje', daniVoznje),
-                              _buildDetailRow(Icons.home, 'Adresa', adresa),
-                              _buildDetailRow(Icons.phone, 'Telefon', telefon),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Info
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.info_outline, color: Colors.white70, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Za izmenu podataka ili otkazivanje vožnje kontaktirajte admina.',
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -735,135 +733,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                 color: Colors.grey.shade400,
                 size: 18,
               ),
-      ),
-    );
-  }
-
-  /// 💰 Widget za prikaz istorije plaćanja
-  Widget _buildIstorijaPlacanjaCard() {
-    final meseci = {
-      1: 'Januar',
-      2: 'Februar',
-      3: 'Mart',
-      4: 'April',
-      5: 'Maj',
-      6: 'Jun',
-      7: 'Jul',
-      8: 'Avgust',
-      9: 'Septembar',
-      10: 'Oktobar',
-      11: 'Novembar',
-      12: 'Decembar',
-    };
-
-    return Card(
-      color: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Theme.of(context).glassBorder, width: 1.5),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  '💰 Istorija plaćanja',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_istorijaPl.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.white70, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Nema podataka o plaćanjima',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ..._istorijaPl.map((placanje) {
-                final mesec = placanje['mesec'] as int;
-                final godina = placanje['godina'] as int;
-                final iznos = placanje['iznos'] as double;
-                final datum = placanje['datum'] as DateTime?;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      // Mesec i godina
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${meseci[mesec]} $godina',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            if (datum != null)
-                              Text(
-                                'Plaćeno: ${DateFormat('dd.MM.yyyy').format(datum)}',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 11,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      // Iznos
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${iznos.toStringAsFixed(0)} RSD',
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-          ],
-        ),
       ),
     );
   }
