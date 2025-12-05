@@ -593,6 +593,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   Widget _buildRasporedCard() {
     // Parsiranje polasci_po_danu iz putnikData
     final polasciRaw = _putnikData['polasci_po_danu'];
+    debugPrint('🕐 polasci_po_danu raw: $polasciRaw');
+    debugPrint('🕐 polasci_po_danu type: ${polasciRaw.runtimeType}');
     Map<String, Map<String, String?>> polasci = {};
 
     if (polasciRaw != null && polasciRaw is Map) {
@@ -605,6 +607,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         }
       });
     }
+    debugPrint('🕐 polasci parsed: $polasci');
 
     final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     final daniLabels = {
