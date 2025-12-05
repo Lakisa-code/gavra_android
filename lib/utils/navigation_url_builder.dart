@@ -9,7 +9,7 @@ import 'navigation_provider.dart';
 class NavigationUrlBuilder {
   /// 🗺️ Gradi URL za navigaciju sa koordinatama
   ///
-  /// [provider] - Navigaciona aplikacija
+  /// [provider] - Navigaciona aplikacija (uvek HERE WeGo)
   /// [waypoints] - Lista koordinata (lat, lng parovi)
   /// [destination] - Krajnja destinacija
   /// [startPosition] - Početna pozicija (opciono)
@@ -19,14 +19,8 @@ class NavigationUrlBuilder {
     required Position destination,
     Position? startPosition,
   }) {
-    switch (provider) {
-      case NavigationProvider.googleMaps:
-        return _buildGoogleMapsUrl(waypoints, destination);
-      case NavigationProvider.hereWeGo:
-        return _buildHereWeGoUrl(waypoints, destination);
-      case NavigationProvider.petalMaps:
-        return _buildPetalMapsUrl(waypoints, destination);
-    }
+    // Uvek koristi HERE WeGo
+    return _buildHereWeGoUrl(waypoints, destination);
   }
 
   /// 🗺️ Gradi URL za navigaciju sa putnicima
@@ -57,27 +51,7 @@ class NavigationUrlBuilder {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 🔗 GOOGLE MAPS URL BUILDER
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// 🔗 Google Maps Navigation URL
-  /// Format: google.navigation:q=LAT,LNG&waypoints=LAT1,LNG1|LAT2,LNG2&mode=d
-  static String _buildGoogleMapsUrl(List<Position> waypoints, Position destination) {
-    final StringBuffer url = StringBuffer();
-    url.write('google.navigation:q=${destination.latitude},${destination.longitude}');
-
-    if (waypoints.isNotEmpty) {
-      final waypointsStr = waypoints.map((p) => '${p.latitude},${p.longitude}').join('|');
-      url.write('&waypoints=$waypointsStr');
-    }
-
-    url.write('&mode=d'); // d = driving
-
-    return url.toString();
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // 🔗 HERE WEGO URL BUILDER
+  // 🔗 HERE WEGO URL BUILDER (JEDINA PODRŽANA NAVIGACIJA)
   // ═══════════════════════════════════════════════════════════════════════
 
   /// 🔗 HERE WeGo Navigation URL
@@ -98,31 +72,6 @@ class NavigationUrlBuilder {
 
     // Driving mode
     url.write('?m=d');
-
-    return url.toString();
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // 🔗 PETAL MAPS URL BUILDER
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// 🔗 Petal Maps Navigation URL
-  /// Format: petalmaps://route?saddr=LAT,LNG&daddr=LAT,LNG&waypoints=LAT,LNG|LAT,LNG&type=drive
-  static String _buildPetalMapsUrl(List<Position> waypoints, Position destination) {
-    final StringBuffer url = StringBuffer();
-    url.write('petalmaps://route?');
-
-    // Destinacija
-    url.write('daddr=${destination.latitude},${destination.longitude}');
-
-    // Waypointi (max 5!)
-    if (waypoints.isNotEmpty) {
-      final waypointsStr = waypoints.map((p) => '${p.latitude},${p.longitude}').join('|');
-      url.write('&waypoints=$waypointsStr');
-    }
-
-    // Driving mode
-    url.write('&type=drive');
 
     return url.toString();
   }
@@ -189,7 +138,7 @@ class NavigationUrlBuilder {
     }
   }
 
-  /// 🏪 Otvori store za instalaciju aplikacije
+  /// 🏪 Otvori store za instalaciju HERE WeGo
   static Future<bool> openStore(NavigationProvider provider) async {
     try {
       final uri = Uri.parse(provider.playStoreUrl);
@@ -200,11 +149,8 @@ class NavigationUrlBuilder {
           mode: LaunchMode.externalApplication,
         );
       } else {
-        // Fallback na web URL
-        final webUri = provider == NavigationProvider.petalMaps
-            ? Uri.parse('https://appgallery.huawei.com/app/${provider.packageName}')
-            : Uri.parse('https://play.google.com/store/apps/details?id=${provider.packageName}');
-
+        // Fallback na web URL (Play Store)
+        final webUri = Uri.parse('https://play.google.com/store/apps/details?id=${provider.packageName}');
         return await launchUrl(webUri);
       }
     } catch (e) {

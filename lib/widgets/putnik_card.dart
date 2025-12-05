@@ -1546,28 +1546,10 @@ class _PutnikCardState extends State<PutnikCard> {
         throw Exception('Koordinate nisu validni brojevi: $lat, $lng');
       }
 
-      // 🚗 LISTA NAVIGACIJSKIH APLIKACIJA (Huawei/GBox kompatibilno)
+      // 🚗 HERE WEGO - JEDINA NAVIGACIONA APLIKACIJA
       final navigacijeUrls = [
-        // Google Maps (Samsung i većina Android uređaja)
-        'google.navigation:q=$lat,$lng',
-
-        // Waze
-        'waze://?ll=$lat,$lng&navigate=yes',
-
-        // Petal Maps (Huawei)
-        'petalmaps://route?daddr=$lat,$lng',
-
-        // HERE WeGo (Huawei kompatibilan)
+        // HERE WeGo - podržava sve uređaje (GMS i HMS)
         'here-route://mylocation/$lat,$lng',
-
-        // Yandex Maps
-        'yandexmaps://build_route_on_map?lat_to=$lat&lon_to=$lng',
-
-        // Generic geo intent (Android fallback - otvara Google Maps ako je instaliran)
-        'geo:$lat,$lng?q=$lat,$lng',
-
-        // Browser fallback using OpenStreetMap (poslednja opcija)
-        'https://www.openstreetmap.org/directions?to=$lat,$lng',
       ];
 
       bool uspesno = false;
@@ -1628,9 +1610,10 @@ class _PutnikCardState extends State<PutnikCard> {
               children: [
                 const Text('Problem sa navigacijom'),
                 Text('Greška: ${e.toString()}'),
-                const Text('Pokušajte instalirati:'),
-                const Text('• OsmAnd ili Maps.me (OpenStreetMap klijenti - besplatno)'),
-                const Text('• Petal Maps (Huawei) ili HERE WeGo kao alternative'),
+                const Text('Potrebno je instalirati HERE WeGo:'),
+                const Text('• Besplatan'),
+                const Text('• Podržava offline mape'),
+                const Text('• Radi na svim uređajima'),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.error,

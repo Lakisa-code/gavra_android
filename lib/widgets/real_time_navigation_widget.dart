@@ -661,7 +661,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         });
       }
 
-      // Pokreni multi-provider navigaciju (Google Maps, HERE WeGo, Petal Maps)
+      // Pokreni HERE WeGo navigaciju
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _remainingPassengers,

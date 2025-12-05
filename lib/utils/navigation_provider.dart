@@ -1,38 +1,19 @@
 /// 🧭 NAVIGATION PROVIDER ENUM
-/// Definiše podržane navigacione aplikacije sa njihovim karakteristikama
+/// Definiše podržanu navigacionu aplikaciju
 ///
-/// Prioritet korišćenja:
-/// 1. Google Maps (ako je dostupan - GMS uređaji)
-/// 2. HERE WeGo (fallback za Huawei, radi bez GMS)
-/// 3. Petal Maps (fabrički instaliran na Huawei)
-///
-/// Waypoint limiti:
-/// - Google Maps: 10 waypointa
-/// - HERE WeGo: 10 waypointa
-/// - Petal Maps: 5 waypointa
+/// KORISTI SE ISKLJUČIVO HERE WEGO:
+/// - Besplatan
+/// - Offline mape
+/// - Radi na svim uređajima (GMS i HMS)
+/// - Poštuje redosled waypointa
+/// - Max 10 waypointa
 enum NavigationProvider {
-  googleMaps(
-    packageName: 'com.google.android.apps.maps',
-    displayName: 'Google Maps',
-    maxWaypoints: 10,
-    urlScheme: 'google.navigation',
-    playStoreUrl: 'market://details?id=com.google.android.apps.maps',
-    requiresGms: true,
-  ),
   hereWeGo(
     packageName: 'com.here.app.maps',
     displayName: 'HERE WeGo',
     maxWaypoints: 10,
     urlScheme: 'here-route',
     playStoreUrl: 'market://details?id=com.here.app.maps',
-    requiresGms: false,
-  ),
-  petalMaps(
-    packageName: 'com.huawei.maps.app',
-    displayName: 'Petal Maps',
-    maxWaypoints: 5,
-    urlScheme: 'petalmaps',
-    playStoreUrl: 'appmarket://details?id=com.huawei.maps.app', // AppGallery
     requiresGms: false,
   );
 
@@ -89,23 +70,12 @@ enum NavigationProvider {
 
 /// 🔧 Extension metode za NavigationProvider
 extension NavigationProviderExtension on NavigationProvider {
-  /// Da li je ovo Huawei-native app
-  bool get isHuaweiNative => this == NavigationProvider.petalMaps;
-
   /// Da li podržava offline mape
-  bool get supportsOfflineMaps => this == NavigationProvider.hereWeGo || this == NavigationProvider.petalMaps;
+  bool get supportsOfflineMaps => true; // HERE WeGo podržava
 
-  /// Preporučena poruka za Huawei korisnike
-  String get huaweiRecommendation {
-    switch (this) {
-      case NavigationProvider.hereWeGo:
-        return 'HERE WeGo radi odlično na Huawei uređajima bez Google servisa. '
-            'Podržava 10 waypointa i offline mape.';
-      case NavigationProvider.petalMaps:
-        return 'Petal Maps je fabrički instaliran na vašem Huawei uređaju. '
-            'Ograničen je na 5 waypointa po segmentu.';
-      case NavigationProvider.googleMaps:
-        return 'Google Maps nije dostupan na Huawei uređajima bez GMS.';
-    }
+  /// Preporučena poruka
+  String get recommendation {
+    return 'HERE WeGo je besplatan, podržava offline mape i radi na svim uređajima. '
+        'Podržava do 10 waypointa.';
   }
 }

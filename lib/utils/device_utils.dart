@@ -80,36 +80,14 @@ class DeviceUtils {
     }
   }
 
-  /// 🧭 Dobij dostupnu navigacionu aplikaciju po prioritetu
-  /// Prioritet: Google Maps > HERE WeGo > Petal Maps
+  /// 🧭 Dobij dostupnu navigacionu aplikaciju (uvek HERE WeGo)
   static Future<NavigationProvider?> getAvailableNavigationApp() async {
-    // 1. Prvo proveri sačuvanu preferenciju
-    final preferred = await getPreferredNavigationProvider();
-    if (preferred != null && await isAppInstalled(preferred)) {
-      return preferred;
-    }
-
-    // 2. Proveri po prioritetu
-    final isHuawei = await isHuaweiDevice();
-
-    if (!isHuawei) {
-      // 🔹 Non-Huawei: Google Maps > HERE WeGo > Petal Maps
-      if (await isAppInstalled(NavigationProvider.googleMaps)) {
-        return NavigationProvider.googleMaps;
-      }
-    } else {
-      // 🔸 Huawei: HERE WeGo > Petal Maps (Google Maps neće raditi)
-    }
-
-    // Zajedničko za oba slučaja - fallback opcije
+    // Proveri da li je HERE WeGo instaliran
     if (await isAppInstalled(NavigationProvider.hereWeGo)) {
       return NavigationProvider.hereWeGo;
     }
-    if (await isAppInstalled(NavigationProvider.petalMaps)) {
-      return NavigationProvider.petalMaps;
-    }
 
-    // Ništa nije instalirano
+    // HERE WeGo nije instaliran
     return null;
   }
 
@@ -117,10 +95,8 @@ class DeviceUtils {
   static Future<List<NavigationProvider>> getInstalledNavigationApps() async {
     final installed = <NavigationProvider>[];
 
-    for (final provider in NavigationProvider.values) {
-      if (await isAppInstalled(provider)) {
-        installed.add(provider);
-      }
+    if (await isAppInstalled(NavigationProvider.hereWeGo)) {
+      installed.add(NavigationProvider.hereWeGo);
     }
 
     return installed;

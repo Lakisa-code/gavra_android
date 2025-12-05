@@ -5,37 +5,32 @@ import '../utils/navigation_provider.dart';
 import '../utils/navigation_url_builder.dart';
 
 /// 🧭 NAVIGATION DIALOGS
-/// Dialozi za navigaciju - Huawei preporuka i segment nastavak
+/// Dialozi za navigaciju - koristi se isključivo HERE WeGo
 
 class NavigationDialogs {
   // ═══════════════════════════════════════════════════════════════════════
-  // 📱 HUAWEI HERE WEGO PREPORUKA DIALOG
+  // 📱 HERE WEGO INSTALACIJA DIALOG
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// Prikaži dialog za Huawei korisnike sa preporukom za HERE WeGo
-  /// Prikazuje se samo jednom (SharedPreferences)
+  /// Prikaži dialog za instalaciju HERE WeGo ako nije instaliran
   ///
-  /// Returns: NavigationProvider koji korisnik želi da koristi, ili null za odustajanje
-  static Future<NavigationProvider?> showHuaweiRecommendationDialog(
-    BuildContext context, {
-    required List<NavigationProvider> installedApps,
-  }) async {
-    // Proveri da li je dialog već prikazan
-    if (await DeviceUtils.wasHuaweiDialogShown()) {
-      // Vrati preferiranu aplikaciju ili prvu dostupnu
-      return await DeviceUtils.getPreferredNavigationProvider() ??
-          (installedApps.isNotEmpty ? installedApps.first : null);
-    }
+  /// Returns: NavigationProvider.hereWeGo ili null za odustajanje
+  static Future<NavigationProvider?> showInstallHereWeGoDialog(
+    BuildContext context,
+  ) async {
+    // Proveri da li je HERE WeGo instaliran
+    final isInstalled = await DeviceUtils.isAppInstalled(NavigationProvider.hereWeGo);
 
-    // Označi da je dialog prikazan
-    await DeviceUtils.markHuaweiDialogShown();
+    if (isInstalled) {
+      return NavigationProvider.hereWeGo;
+    }
 
     if (!context.mounted) return null;
 
     return showDialog<NavigationProvider>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _HuaweiRecommendationDialog(installedApps: installedApps),
+      builder: (context) => const _InstallHereWeGoDialog(),
     );
   }
 
@@ -69,43 +64,33 @@ class NavigationDialogs {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 📱 NEMA NAVIGACIJE DIALOG
+  // 📱 NEMA NAVIGACIJE DIALOG (preusmereno na HERE WeGo)
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// Prikaži dialog kada nema instalirane navigacione aplikacije
+  /// Prikaži dialog kada HERE WeGo nije instaliran
   static Future<NavigationProvider?> showNoNavigationAppDialog(
     BuildContext context, {
-    required bool isHuawei,
+    bool isHuawei = false, // ignorisano - uvek HERE WeGo
   }) async {
-    if (!context.mounted) return null;
-
-    return showDialog<NavigationProvider>(
-      context: context,
-      builder: (context) => _NoNavigationAppDialog(isHuawei: isHuawei),
-    );
+    return showInstallHereWeGoDialog(context);
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 📱 HUAWEI RECOMMENDATION DIALOG WIDGET
+// 📱 INSTALL HERE WEGO DIALOG WIDGET
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _HuaweiRecommendationDialog extends StatelessWidget {
-  const _HuaweiRecommendationDialog({required this.installedApps});
-
-  final List<NavigationProvider> installedApps;
+class _InstallHereWeGoDialog extends StatelessWidget {
+  const _InstallHereWeGoDialog();
 
   @override
   Widget build(BuildContext context) {
-    final hasHereWeGo = installedApps.contains(NavigationProvider.hereWeGo);
-    final hasPetalMaps = installedApps.contains(NavigationProvider.petalMaps);
-
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.phone_android, color: Colors.red),
+          Icon(Icons.navigation, color: Colors.green),
           SizedBox(width: 8),
-          Expanded(child: Text('Huawei uređaj detektovan')),
+          Expanded(child: Text('HERE WeGo potreban')),
         ],
       ),
       content: SingleChildScrollView(
@@ -114,12 +99,12 @@ class _HuaweiRecommendationDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Google Maps nije dostupan na Huawei uređajima bez Google servisa.',
+              'Za navigaciju je potreban HERE WeGo.',
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
 
-            // HERE WeGo preporuka
+            // HERE WeGo info
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -135,7 +120,7 @@ class _HuaweiRecommendationDialog extends StatelessWidget {
                       Icon(Icons.star, color: Colors.green.shade700, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Preporučeno: HERE WeGo',
+                        'HERE WeGo',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.green.shade700,
@@ -145,46 +130,11 @@ class _HuaweiRecommendationDialog extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '• Podržava 10 waypointa\n'
+                    '• Besplatan\n'
                     '• Offline mape dostupne\n'
-                    '• Odličan za Huawei uređaje',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Petal Maps info
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.map, color: Colors.orange.shade700, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Alternativa: Petal Maps',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '• Fabrički instaliran\n'
-                    '• Ograničen na 5 waypointa\n'
-                    '• Zahteva više segmenata',
+                    '• Radi na svim uređajima\n'
+                    '• Poštuje redosled putnika\n'
+                    '• Do 10 waypointa',
                     style: TextStyle(fontSize: 13),
                   ),
                 ],
@@ -194,40 +144,22 @@ class _HuaweiRecommendationDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        // HERE WeGo dugme
-        if (hasHereWeGo)
-          ElevatedButton.icon(
-            onPressed: () {
-              DeviceUtils.setPreferredNavigationProvider(NavigationProvider.hereWeGo);
-              Navigator.of(context).pop(NavigationProvider.hereWeGo);
-            },
-            icon: const Icon(Icons.navigation),
-            label: const Text('Koristi HERE WeGo'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-          )
-        else
-          OutlinedButton.icon(
-            onPressed: () async {
-              await NavigationUrlBuilder.openStore(NavigationProvider.hereWeGo);
-              // Ne zatvaraj dialog - korisnik treba da instalira app
-            },
-            icon: const Icon(Icons.download),
-            label: const Text('Instaliraj HERE WeGo'),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.green),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('Odustani'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () async {
+            await NavigationUrlBuilder.openStore(NavigationProvider.hereWeGo);
+            // Ne zatvaraj dialog - korisnik treba da instalira app
+          },
+          icon: const Icon(Icons.download),
+          label: const Text('Instaliraj'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
           ),
-
-        // Petal Maps dugme
-        if (hasPetalMaps)
-          TextButton(
-            onPressed: () {
-              DeviceUtils.setPreferredNavigationProvider(NavigationProvider.petalMaps);
-              Navigator.of(context).pop(NavigationProvider.petalMaps);
-            },
-            child: const Text('Koristi Petal Maps'),
-          ),
+        ),
       ],
     );
   }
@@ -323,72 +255,7 @@ class _SegmentContinueDialog extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 📱 NO NAVIGATION APP DIALOG WIDGET
+// 📱 NO NAVIGATION APP DIALOG WIDGET (DEPRECATED - koristi _InstallHereWeGoDialog)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _NoNavigationAppDialog extends StatelessWidget {
-  const _NoNavigationAppDialog({required this.isHuawei});
-
-  final bool isHuawei;
-
-  @override
-  Widget build(BuildContext context) {
-    final recommendedApp = isHuawei ? NavigationProvider.hereWeGo : NavigationProvider.googleMaps;
-
-    return AlertDialog(
-      title: const Row(
-        children: [
-          Icon(Icons.warning_amber, color: Colors.orange),
-          SizedBox(width: 8),
-          Expanded(child: Text('Navigacija nije dostupna')),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Nema instalirane navigacione aplikacije na vašem uređaju.',
-            style: TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Preporučujemo instalaciju ${recommendedApp.displayName}:',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isHuawei
-                ? '• HERE WeGo - najbolje za Huawei uređaje\n'
-                    '• Podržava offline mape\n'
-                    '• Do 10 waypointa'
-                : '• Google Maps - najpopularnija navigacija\n'
-                    '• Real-time traffic info\n'
-                    '• Do 10 waypointa',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('Odustani'),
-        ),
-        ElevatedButton.icon(
-          onPressed: () async {
-            await NavigationUrlBuilder.openStore(recommendedApp);
-            if (context.mounted) {
-              Navigator.of(context).pop(recommendedApp);
-            }
-          },
-          icon: const Icon(Icons.download),
-          label: Text('Instaliraj ${recommendedApp.displayName}'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-}
+// Uklonjen - sada se koristi samo _InstallHereWeGoDialog
