@@ -2094,10 +2094,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                 ),
                                               ],
                                             ),
-                                            child: Icon(
-                                              Icons.location_on,
-                                              color: Theme.of(context).colorScheme.primary, // Plava
-                                              size: iconInnerSize, // Adaptive inner size
+                                            child: Center(
+                                              child: Text(
+                                                '📍',
+                                                style: TextStyle(fontSize: iconInnerSize * 0.8),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -2133,10 +2134,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                 ),
                                               ],
                                             ),
-                                            child: Icon(
-                                              Icons.phone,
-                                              color: Theme.of(context).colorScheme.successPrimary, // Zelena
-                                              size: iconInnerSize,
+                                            child: Center(
+                                              child: Text(
+                                                '📞',
+                                                style: TextStyle(fontSize: iconInnerSize * 0.8),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -2174,10 +2176,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                 ),
                                               ],
                                             ),
-                                            child: Icon(
-                                              Icons.attach_money,
-                                              color: Theme.of(context).colorScheme.successPrimary, // Zelena
-                                              size: iconInnerSize,
+                                            child: Center(
+                                              child: Text(
+                                                '💵',
+                                                style: TextStyle(fontSize: iconInnerSize * 0.8),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -2223,10 +2226,11 @@ class _PutnikCardState extends State<PutnikCard> {
                                                 ),
                                               ],
                                             ),
-                                            child: Icon(
-                                              Icons.close,
-                                              color: Colors.orange, // Narandžasta
-                                              size: iconInnerSize,
+                                            child: Center(
+                                              child: Text(
+                                                '❌',
+                                                style: TextStyle(fontSize: iconInnerSize * 0.8),
+                                              ),
                                             ),
                                           ),
                                         ),

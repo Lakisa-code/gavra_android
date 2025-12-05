@@ -213,7 +213,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                     children: [
                       // Ime i status
                       Card(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: Colors.transparent,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: BorderSide(
@@ -416,7 +417,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
   Widget _buildStatCard(String emoji, String label, String value, Color color, String subtitle) {
     return Card(
-      color: Colors.white.withValues(alpha: 0.1),
+      color: Colors.transparent,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: color.withValues(alpha: 0.3)),
