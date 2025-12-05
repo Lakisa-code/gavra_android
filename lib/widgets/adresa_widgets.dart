@@ -204,8 +204,8 @@ class _AdresaDropdownWidgetState extends State<AdresaDropdownWidget> {
         ),
         ..._adrese.map((adresa) {
           return DropdownMenuItem<String>(
-            value: adresa['id'] as String,
-            child: Text(adresa['naziv'] as String),
+            value: adresa['id'] as String?,
+            child: Text((adresa['naziv'] as String?) ?? ''),
           );
         }),
       ],
@@ -263,20 +263,32 @@ class _AdresaAutocompleteWidgetState extends State<AdresaAutocompleteWidget> {
           return const Iterable<Map<String, dynamic>>.empty();
         }
 
-        final adrese = await AdresaSupabaseService.searchAdrese(
-          textEditingValue.text,
-          grad: widget.grad,
-        );
+        try {
+          final adrese = await AdresaSupabaseService.searchAdrese(
+            textEditingValue.text,
+            grad: widget.grad,
+          );
 
-        return adrese.map(
-          (adresa) => {
-            'id': adresa.id,
-            'naziv': adresa.naziv,
-            'displayText': adresa.displayAddress,
-          },
-        );
+          return adrese.map(
+            (adresa) {
+              String displayText;
+              try {
+                displayText = adresa.displayAddress;
+              } catch (_) {
+                displayText = adresa.naziv;
+              }
+              return {
+                'id': adresa.id,
+                'naziv': adresa.naziv,
+                'displayText': displayText,
+              };
+            },
+          );
+        } catch (e) {
+          return const Iterable<Map<String, dynamic>>.empty();
+        }
       },
-      displayStringForOption: (option) => option['naziv'] as String,
+      displayStringForOption: (option) => (option['naziv'] as String?) ?? '',
       fieldViewBuilder: (context, autocompleteController, focusNode, onFieldSubmitted) {
         // Postavi inicijalni tekst iz eksternog controllera (samo jednom)
         if (widget.controller != null && autocompleteController.text.isEmpty && widget.controller!.text.isNotEmpty) {
@@ -310,9 +322,9 @@ class _AdresaAutocompleteWidgetState extends State<AdresaAutocompleteWidget> {
         );
       },
       onSelected: (option) {
-        _selectedAdresaId = option['id'] as String;
-        _controller.text = option['naziv'] as String;
-        widget.onChanged(_selectedAdresaId, option['naziv'] as String);
+        _selectedAdresaId = option['id'] as String?;
+        _controller.text = (option['naziv'] as String?) ?? '';
+        widget.onChanged(_selectedAdresaId, option['naziv'] as String?);
       },
     );
   }

@@ -19,7 +19,6 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
   final _imeController = TextEditingController();
   final _prezimeController = TextEditingController();
   final _adresaController = TextEditingController();
-  final _emailController = TextEditingController();
   final _telefonController = TextEditingController();
   final _porukaController = TextEditingController();
 
@@ -91,7 +90,6 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
     _imeController.dispose();
     _prezimeController.dispose();
     _adresaController.dispose();
-    _emailController.dispose();
     _telefonController.dispose();
     _porukaController.dispose();
     super.dispose();
@@ -120,7 +118,6 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
             'ime': ime,
             'prezime': prezime,
             'adresa': _adresaController.text.trim(),
-            'email': _emailController.text.trim().isEmpty ? null : _emailController.text.trim().toLowerCase(),
             'telefon': phone,
             'poruka': _porukaController.text.trim(),
             'grad': _selectedGrad,
@@ -488,23 +485,6 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
               decoration: _inputDecoration('Adresa', Icons.home),
               validator: (v) {
                 if (v?.isEmpty == true) return 'Unesite adresu';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Email (opciono)
-            TextFormField(
-              controller: _emailController,
-              style: const TextStyle(color: Colors.white),
-              keyboardType: TextInputType.emailAddress,
-              decoration: _inputDecoration('Email adresa (opciono)', Icons.email),
-              validator: (v) {
-                if (v != null && v.isNotEmpty) {
-                  if (!v.contains('@') || !v.contains('.')) {
-                    return 'Neispravan email';
-                  }
-                }
                 return null;
               },
             ),

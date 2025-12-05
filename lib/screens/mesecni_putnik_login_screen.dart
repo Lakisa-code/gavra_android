@@ -69,7 +69,7 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
       final response = await Supabase.instance.client
           .from('mesecni_putnici')
           .select()
-          .eq('telefon', telefon)
+          .eq('broj_telefona', telefon)
           .eq('pin', pin)
           .maybeSingle();
 
@@ -92,8 +92,11 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
         }
       } else {
         // Proveri da li telefon postoji ali PIN nije tačan
-        final phoneCheck =
-            await Supabase.instance.client.from('mesecni_putnici').select('id').eq('telefon', telefon).maybeSingle();
+        final phoneCheck = await Supabase.instance.client
+            .from('mesecni_putnici')
+            .select('id')
+            .eq('broj_telefona', telefon)
+            .maybeSingle();
 
         if (phoneCheck != null) {
           setState(() {

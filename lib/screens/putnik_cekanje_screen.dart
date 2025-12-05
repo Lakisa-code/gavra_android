@@ -1,7 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'dnevni_putnik_screen.dart';
 
 /// 🕐 Ekran koji dnevni putnik vidi dok čeka odobrenje admina
@@ -187,7 +189,7 @@ class _PutnikCekanjeScreenState extends State<PutnikCekanjeScreen> with SingleTi
         ),
         child: SafeArea(
           child: Center(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

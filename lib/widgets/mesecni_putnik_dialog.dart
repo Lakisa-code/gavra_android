@@ -1050,6 +1050,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   }
 
   Future<void> _savePutnik() async {
+    print('🔵 _savePutnik() started');
     final validationError = _validateForm();
     if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1064,12 +1065,15 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     setState(() => _isLoading = true);
 
     try {
+      print('🔵 isEditing: ${widget.isEditing}');
       if (widget.isEditing) {
         await _updateExistingPutnik();
       } else {
         await _createNewPutnik();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      print('❌ _savePutnik error: $e');
+      print('❌ _savePutnik stack: $stack');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1086,16 +1090,22 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   }
 
   Future<void> _createNewPutnik() async {
+    print('🟢 _createNewPutnik() started');
     // Resolve addresses:
     // Prefer UUIDs selected via autocomplete (_adresa*Id). If no UUID but text exists, create or find address.
     String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
     String? adresaVrsacId = _adresaVrsacId;
 
+    print('🟢 _adresaBelaCrkvaId: $_adresaBelaCrkvaId');
+    print('🟢 _adresaBelaCrkvaController.text: "${_adresaBelaCrkvaController.text}"');
+
     if (adresaBelaCrkvaId == null && _adresaBelaCrkvaController.text.isNotEmpty) {
+      print('🟢 Creating/getting address for Bela Crkva...');
       final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
         naziv: _adresaBelaCrkvaController.text.trim(),
         grad: 'Bela Crkva',
       );
+      print('🟢 adresaBC: $adresaBC, id: ${adresaBC?.id}');
       adresaBelaCrkvaId = adresaBC?.id;
     }
 
@@ -1124,8 +1134,11 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       datumKrajaMeseca: DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      status: 'radi', // Dozvoljeni: radi, bolovanje, godisnji, odsustvo, otkazan
     );
 
+    print('🟢 noviPutnik.status: ${noviPutnik.status}');
+    print('🟢 noviPutnik.toMap(): ${noviPutnik.toMap()}');
     final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
     if (mounted) {

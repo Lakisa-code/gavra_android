@@ -155,118 +155,120 @@ class _PinDialogState extends State<PinDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Prikaz PIN-a
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  _pin ?? 'Nema PIN',
-                  style: TextStyle(
-                    color: _pin != null ? Colors.amber : Colors.white54,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 8,
-                  ),
-                ),
-                if (_pin != null) ...[
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _copyPin,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.copy, color: Colors.white54, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Kopiraj',
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Prikaz PIN-a
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    _pin ?? 'Nema PIN',
+                    style: TextStyle(
+                      color: _pin != null ? Colors.amber : Colors.white54,
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 8,
                     ),
                   ),
+                  if (_pin != null) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _copyPin,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.copy, color: Colors.white54, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Kopiraj',
+                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // Dugmad
-          Row(
-            children: [
-              // Generiši PIN
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading
-                      ? null
-                      : () async {
-                          final newPin = _generatePin();
-                          await _savePin(newPin);
-                        },
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh, size: 18),
-                  label: Text(_pin == null ? 'Generiši' : 'Novi PIN'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+            // Dugmad
+            Row(
+              children: [
+                // Generiši PIN
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            final newPin = _generatePin();
+                            await _savePin(newPin);
+                          },
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh, size: 18),
+                    label: Text(_pin == null ? 'Generiši' : 'Novi PIN'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Pošalji SMS
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: (_pin == null || widget.brojTelefona == null) ? null : _sendSms,
-                  icon: const Icon(Icons.sms, size: 18),
-                  label: const Text('Pošalji'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                const SizedBox(width: 8),
+                // Pošalji SMS
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: (_pin == null || widget.brojTelefona == null) ? null : _sendSms,
+                    icon: const Icon(Icons.sms, size: 18),
+                    label: const Text('Pošalji'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
+                ),
+              ],
+            ),
+
+            // Info o telefonu
+            if (widget.brojTelefona == null || widget.brojTelefona!.isEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning, color: Colors.orange, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Putnik nema broj telefona',
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-
-          // Info o telefonu
-          if (widget.brojTelefona == null || widget.brojTelefona!.isEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning, color: Colors.orange, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Putnik nema broj telefona',
-                      style: TextStyle(color: Colors.orange, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
-        ],
+        ),
       ),
       actions: [
         TextButton(

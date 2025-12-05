@@ -82,11 +82,8 @@ class _ZahteviPregledScreenState extends State<ZahteviPregledScreen> {
         await Supabase.instance.client.from('dnevni_putnici').insert({
           'ime': zahtev['ime'],
           'prezime': zahtev['prezime'],
-          'adresa': zahtev['adresa'],
           'telefon': zahtev['telefon'],
-          'email': zahtev['email'],
           'grad': zahtev['grad'],
-          'aktivan': true,
         });
 
         if (mounted) {
