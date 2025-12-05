@@ -2096,7 +2096,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                             ),
                                             child: Center(
                                               child: Text(
-                                                '📍',
+                                                '📡',
                                                 style: TextStyle(fontSize: iconInnerSize * 0.8),
                                               ),
                                             ),

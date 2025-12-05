@@ -39,32 +39,14 @@ class MesecniPutnik {
     this.vozacId,
     this.pokupljen = false,
     this.vremePokupljenja,
-    this.rutaId,
-    this.voziloId,
-    this.adresaPolaskaId,
-    this.adresaDolaskaId,
-    // Vikend polasci
-    this.polSubBc,
-    this.polSubVs,
-    this.polNedBc,
-    this.polNedVs,
-    // Dodatne informacije
+    // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
     this.adresa,
     this.grad,
-    this.firma,
-    this.ukupnoVoznji = 0,
-    this.activan = true,
     this.actionLog = const [],
-    this.kreiran,
-    this.azuriran,
     // Tracking polja
     this.dodaliVozaci = const [],
-    this.putovanjaId,
-    this.userId,
-    this.tipPrevoza,
     this.placeno = false,
     this.datumPlacanja,
-    this.posebneNapomene,
     this.pin,
     // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
@@ -120,32 +102,14 @@ class MesecniPutnik {
       vozacId: map['vozac_id'] as String?,
       pokupljen: map['pokupljen'] as bool? ?? false,
       vremePokupljenja: map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null,
-      rutaId: map['ruta_id'] as String?,
-      voziloId: map['vozilo_id'] as String?,
-      adresaPolaskaId: map['adresa_polaska_id'] as String?,
-      adresaDolaskaId: map['adresa_dolaska_id'] as String?,
-      // Vikend polasci
-      polSubBc: map['pol_sub_bc'] as String?,
-      polSubVs: map['pol_sub_vs'] as String?,
-      polNedBc: map['pol_ned_bc'] as String?,
-      polNedVs: map['pol_ned_vs'] as String?,
-      // Dodatne informacije
+      // Computed fields za UI display (dolaze iz JOIN-a)
       adresa: map['adresa'] as String?,
       grad: map['grad'] as String?,
-      firma: map['firma'] as String?,
-      ukupnoVoznji: map['ukupno_voznji'] as int? ?? 0,
-      activan: map['activan'] as bool? ?? true,
       actionLog: _parseActionLog(map['action_log']),
-      kreiran: map['kreiran'] != null ? DateTime.parse(map['kreiran'] as String) : null,
-      azuriran: map['azuriran'] != null ? DateTime.parse(map['azuriran'] as String) : null,
       // Tracking polja
       dodaliVozaci: _parseDodaliVozaci(map['dodali_vozaci']),
-      putovanjaId: map['putovanja_id'] as String?,
-      userId: map['user_id'] as String?,
-      tipPrevoza: map['tip_prevoza'] as String?,
       placeno: map['placeno'] as bool? ?? false,
       datumPlacanja: map['datum_placanja'] != null ? DateTime.parse(map['datum_placanja'] as String) : null,
-      posebneNapomene: map['posebne_napomene'] as String?,
       pin: map['pin'] as String?,
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
@@ -185,37 +149,17 @@ class MesecniPutnik {
   final String? vozacId;
   final bool pokupljen;
   final DateTime? vremePokupljenja;
-  final String? rutaId;
-  final String? voziloId;
-  final String? adresaPolaskaId;
-  final String? adresaDolaskaId;
 
-  // Vikend polasci
-  final String? polSubBc;
-  final String? polSubVs;
-  final String? polNedBc;
-  final String? polNedVs;
-
-  // Dodatne informacije
+  // Computed fields za UI display (dolaze iz JOIN-a, ne šalju se u bazu)
   final String? adresa;
   final String? grad;
-  final String? firma;
-  final int ukupnoVoznji;
-  final bool activan;
   final List<dynamic> actionLog;
-  final DateTime? kreiran;
-  final DateTime? azuriran;
 
   // Tracking polja
   final List<dynamic> dodaliVozaci;
-  final String? putovanjaId;
-  final String? userId;
-  final String? tipPrevoza;
   final bool placeno;
   final DateTime? datumPlacanja;
-  final String? posebneNapomene;
   final String? pin; // 🔐 PIN za login
-  // Uklonjeno legacy polja: ime, prezime, datumPocetka, datumKraja
 
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
@@ -242,6 +186,7 @@ class MesecniPutnik {
       'last_trip': vremePokupljenja?.toIso8601String(),
     });
 
+    // ⚔️ BINARYBITCH CLEAN toMap() - SAMO kolone koje postoje u bazi!
     Map<String, dynamic> result = {
       'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
@@ -264,43 +209,20 @@ class MesecniPutnik {
       'cena': cena,
       'broj_putovanja': brojPutovanja,
       'broj_otkazivanja': brojOtkazivanja,
-      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(), // Koristi vremePokupljenja umesto poslednjePutovanje
+      'vreme_pokupljenja': vremePokupljenja?.toIso8601String(),
       'obrisan': obrisan,
       'vreme_placanja': vremePlacanja?.toIso8601String(),
       'placeni_mesec': placeniMesec,
       'placena_godina': placenaGodina,
       'statistics': stats,
-      // Nova polja iz baze
       'tip_prikazivanja': tipPrikazivanja,
       'vozac_id': vozacId,
       'pokupljen': pokupljen,
-      'ruta_id': rutaId,
-      'vozilo_id': voziloId,
-      'adresa_polaska_id': adresaPolaskaId,
-      'adresa_dolaska_id': adresaDolaskaId,
-      // Vikend polasci
-      'pol_sub_bc': polSubBc,
-      'pol_sub_vs': polSubVs,
-      'pol_ned_bc': polNedBc,
-      'pol_ned_vs': polNedVs,
-      // Dodatne informacije
-      'adresa': adresa,
-      'grad': grad,
-      'firma': firma,
-      'ukupno_voznji': ukupnoVoznji,
-      'activan': activan,
       'action_log': actionLog,
-      'kreiran': kreiran?.toIso8601String(),
-      'azuriran': azuriran?.toIso8601String(),
-      // Tracking polja
       'dodali_vozaci': dodaliVozaci,
-      'putovanja_id': putovanjaId,
-      'user_id': userId,
-      'tip_prevoza': tipPrevoza,
       'placeno': placeno,
       'datum_placanja': datumPlacanja?.toIso8601String(),
-      'posebne_napomene': posebneNapomene,
-      // Uklonjeno: ime, prezime, datum_pocetka, datum_kraja - duplikati
+      // 'pin': pin, // PIN se ne šalje iz modela, čuva se posebno
     };
 
     // Dodaj id samo ako nije prazan (za UPDATE operacije)
@@ -379,26 +301,14 @@ class MesecniPutnik {
     int? brojOtkazivanja,
     bool? obrisan,
     Map<String, dynamic>? statistics,
-    // Nove kolone
-    String? polSubBc,
-    String? polSubVs,
-    String? polNedBc,
-    String? polNedVs,
+    // Computed fields za UI
     String? adresa,
     String? grad,
-    String? firma,
-    int? ukupnoVoznji,
-    bool? activan,
     List<dynamic>? actionLog,
-    DateTime? kreiran,
-    DateTime? azuriran,
+    // Tracking
     List<dynamic>? dodaliVozaci,
-    String? putovanjaId,
-    String? userId,
-    String? tipPrevoza,
     bool? placeno,
     DateTime? datumPlacanja,
-    String? posebneNapomene,
   }) {
     return MesecniPutnik(
       id: id ?? this.id,
@@ -428,26 +338,14 @@ class MesecniPutnik {
       placeniMesec: placeniMesec ?? this.placeniMesec,
       placenaGodina: placenaGodina ?? this.placenaGodina,
       statistics: statistics ?? this.statistics,
-      // Nove kolone
-      polSubBc: polSubBc ?? this.polSubBc,
-      polSubVs: polSubVs ?? this.polSubVs,
-      polNedBc: polNedBc ?? this.polNedBc,
-      polNedVs: polNedVs ?? this.polNedVs,
+      // Computed fields za UI
       adresa: adresa ?? this.adresa,
       grad: grad ?? this.grad,
-      firma: firma ?? this.firma,
-      ukupnoVoznji: ukupnoVoznji ?? this.ukupnoVoznji,
-      activan: activan ?? this.activan,
       actionLog: actionLog ?? this.actionLog,
-      kreiran: kreiran ?? this.kreiran,
-      azuriran: azuriran ?? this.azuriran,
+      // Tracking
       dodaliVozaci: dodaliVozaci ?? this.dodaliVozaci,
-      putovanjaId: putovanjaId ?? this.putovanjaId,
-      userId: userId ?? this.userId,
-      tipPrevoza: tipPrevoza ?? this.tipPrevoza,
       placeno: placeno ?? this.placeno,
       datumPlacanja: datumPlacanja ?? this.datumPlacanja,
-      posebneNapomene: posebneNapomene ?? this.posebneNapomene,
     );
   }
 

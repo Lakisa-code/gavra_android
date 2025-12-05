@@ -13,8 +13,6 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.SEND_SMS" />
-  <uses-permission android:name="android.permission.READ_SMS" />
-  <uses-permission android:name="android.permission.RECEIVE_SMS" />
 
   <!-- 📞 Phone/Call permissions -->
   <uses-permission android:name="android.permission.CALL_PHONE" />
@@ -28,7 +26,6 @@
 
   <!-- 🔊 VOICE NAVIGATION PERMISSIONS -->
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-  <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
   <application android:label="Gavra 013" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:largeHeap="true" android:enableOnBackInvokedCallback="true" android:requestLegacyExternalStorage="true">
     <!-- 🎮 MIUI Gaming optimizations -->

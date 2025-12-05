@@ -374,8 +374,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       }).toList();
     }
 
+    // ⚔️ BINARYBITCH SORTING BLADE: A → Ž (Serbian alphabet)
+    filtered.sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
+
     return filtered;
-    // ✅ Sortiranje ukloneno - baza već vraća sortirano po putnik_ime
   }
 
   @override

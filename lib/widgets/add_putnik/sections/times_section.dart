@@ -223,7 +223,7 @@ class TimesSection extends StatelessWidget {
                           hintText: '05:00',
                           isDense: true,
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.08),
+                          fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -233,7 +233,7 @@ class TimesSection extends StatelessWidget {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                              color: Colors.white,
+                              color: Colors.blue,
                               width: 2,
                             ),
                           ),
@@ -263,11 +263,11 @@ class TimesSection extends StatelessWidget {
                             },
                             child: const Padding(
                               padding: EdgeInsets.all(8.0),
-                              child: Icon(Icons.access_time, color: Colors.white70, size: 18),
+                              child: Icon(Icons.access_time, color: Colors.grey, size: 18),
                             ),
                           ),
                         ),
-                        style: const TextStyle(fontSize: 14, height: 1.1, color: Colors.white),
+                        style: const TextStyle(fontSize: 14, height: 1.1, color: Colors.black87),
                       ),
                     ],
                   ),
@@ -296,7 +296,7 @@ class TimesSection extends StatelessWidget {
                           hintText: '05:30',
                           isDense: true,
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.08),
+                          fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -306,7 +306,7 @@ class TimesSection extends StatelessWidget {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: const BorderSide(
-                              color: Colors.white,
+                              color: Colors.blue,
                               width: 2,
                             ),
                           ),
@@ -336,11 +336,11 @@ class TimesSection extends StatelessWidget {
                             },
                             child: const Padding(
                               padding: EdgeInsets.all(8.0),
-                              child: Icon(Icons.access_time, color: Colors.white70, size: 18),
+                              child: Icon(Icons.access_time, color: Colors.grey, size: 18),
                             ),
                           ),
                         ),
-                        style: const TextStyle(fontSize: 14, height: 1.1, color: Colors.white),
+                        style: const TextStyle(fontSize: 14, height: 1.1, color: Colors.black87),
                       ),
                     ],
                   ),
