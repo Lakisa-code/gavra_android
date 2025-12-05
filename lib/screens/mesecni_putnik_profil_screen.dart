@@ -23,7 +23,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   Map<String, dynamic> _putnikData = {};
   bool _isLoading = false;
   int _brojVoznji = 0;
-  final int _brojOtkazivanja = 0;
+  int _brojOtkazivanja = 0;
   double _dugovanje = 0.0;
   List<Map<String, dynamic>> _istorijaPl = [];
 
@@ -50,12 +50,22 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final pocetakGodine = DateTime(now.year, 1, 1);
 
-      // Broj vožnji ovog meseca
+      // Broj vožnji ovog meseca (samo završene, ne otkazane)
       final voznje = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('id')
           .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
+          .neq('status', 'otkazano')
+          .count();
+
+      // Broj otkazivanja ovog meseca
+      final otkazivanja = await Supabase.instance.client
+          .from('putovanja_istorija')
+          .select('id')
+          .eq('mesecni_putnik_id', putnikId)
+          .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
+          .eq('status', 'otkazano')
           .count();
 
       // Dugovanje
@@ -140,6 +150,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
       setState(() {
         _brojVoznji = voznje.count;
+        _brojOtkazivanja = otkazivanja.count;
         _dugovanje = (dug is int) ? dug.toDouble() : (dug as double);
         _istorijaPl = istorija;
         _voznjeDetaljno = voznjeDetaljnoMap;
