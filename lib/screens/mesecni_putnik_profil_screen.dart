@@ -315,8 +315,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: tip == 'ucenik' ? Colors.blue : Colors.orange,
+                                      color: tip == 'ucenik'
+                                          ? Colors.blue.withValues(alpha: 0.3)
+                                          : Colors.orange.withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
                                       tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik',
@@ -331,8 +334,9 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.purple,
+                                      color: Colors.purple.withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
                                       grad == 'BC' ? '📍 Bela Crkva' : '📍 Vršac',
@@ -354,6 +358,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                   color:
                                       aktivan ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                 ),
                                 child: Text(
                                   aktivan ? '✅ Aktivan' : '❌ Neaktivan',
@@ -483,7 +488,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: color.withValues(alpha: 0.3)),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -529,7 +534,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
           Text(
             '$label:',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 13,
             ),
           ),
@@ -589,15 +594,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
           // Header
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.schedule, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   '🕐 Vremena polaska',
@@ -609,21 +605,28 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                 ),
               ),
               // Dugme za zakazivanje
-              TextButton.icon(
-                onPressed: () {
-                  showZakazivanjeDialog(
-                    context,
-                    putnikId: _putnikData['id'] ?? '',
-                    putnikIme: _putnikData['putnik_ime'] ?? 'Putnik',
-                    onSaved: () => _loadStatistike(),
-                  );
-                },
-                icon: const Icon(Icons.edit_calendar, size: 16, color: Colors.amber),
-                label: const Text('Zakaži', style: TextStyle(color: Colors.amber, fontSize: 12)),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                ),
+                child: TextButton.icon(
+                  onPressed: () {
+                    showZakazivanjeDialog(
+                      context,
+                      putnikId: _putnikData['id'] ?? '',
+                      putnikIme: _putnikData['putnik_ime'] ?? 'Putnik',
+                      onSaved: () => _loadStatistike(),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_calendar, size: 16, color: Colors.white),
+                  label: const Text('Zakaži', style: TextStyle(color: Colors.white, fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
               ),
             ],
@@ -711,10 +714,10 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       width: 70,
       height: 40,
       decoration: BoxDecoration(
-        color: hasTime ? Colors.blue.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: hasTime ? Colors.blue.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.3),
+          color: Colors.grey.shade300,
         ),
       ),
       child: Center(
@@ -722,14 +725,14 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
             ? Text(
                 vreme,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Colors.black87,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               )
             : Icon(
                 Icons.access_time,
-                color: Colors.grey.withValues(alpha: 0.5),
+                color: Colors.grey.shade400,
                 size: 18,
               ),
       ),
@@ -767,8 +770,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.payments, color: Colors.green, size: 20),
-                const SizedBox(width: 8),
                 const Text(
                   '💰 Istorija plaćanja',
                   style: TextStyle(
@@ -784,17 +785,18 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.info_outline, color: Colors.grey.shade400, size: 16),
+                    Icon(Icons.info_outline, color: Colors.white70, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       'Nema podataka o plaćanjima',
-                      style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                     ),
                   ],
                 ),
@@ -911,8 +913,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
             // Header sa ukupnim stanjem
             Row(
               children: [
-                const Icon(Icons.account_balance_wallet, color: Colors.amber, size: 22),
-                const SizedBox(width: 8),
                 const Text(
                   '💰 Stanje računa',
                   style: TextStyle(
