@@ -137,7 +137,7 @@ class Putnik {
           _getVozacIme(map['updated_by'] as String?) ??
           _extractVozaciFromActionLog(map['action_log'])['created_by'],
       grad: grad,
-      adresa: _determineAdresaFromMesecni(map),
+      adresa: _determineAdresaFromMesecni(map, grad), // ✅ FIX: Prosleđujemo grad za konzistentnost
       adresaId: _determineAdresaIdFromMesecni(map, grad), // ✅ NOVO - UUID adrese
       obrisan: !MesecniHelpers.isActiveFromMap(map),
       brojTelefona: map['broj_telefona'] as String?,
@@ -501,14 +501,9 @@ class Putnik {
     return 'Bela Crkva';
   }
 
-  static String? _determineAdresaFromMesecni(Map<String, dynamic> map) {
-    // Koristi istu logiku kao _determineGradFromMesecni za konzistentnost
-    final weekday = DateTime.now().weekday;
-    const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final danKratica = daniKratice[weekday - 1];
-
-    final bcPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'bc');
-    final vsPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'vs');
+  static String? _determineAdresaFromMesecni(Map<String, dynamic> map, String grad) {
+    // ✅ FIX: Koristi grad parametar za određivanje adrese umesto ponovnog računanja
+    // Ovo osigurava konzistentnost između grad i adresa polja
 
     // ✅ NOVO: Čitaj adresu iz JOIN objekta (adresa_bc, adresa_vs)
     String? adresaBC;
@@ -532,18 +527,15 @@ class Putnik {
     // Fallback na staru kolonu ako nema JOIN
     adresaVS ??= map['adresa_vrsac'] as String?;
 
-    // Ako ima BC polazak danas, koristi BC adresu (gde ga pokupljaš)
-    if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
+    // ✅ FIX: Koristi grad parametar za određivanje ispravne adrese
+    // Ako je grad Bela Crkva, koristi BC adresu (gde pokupljaš putnika)
+    // Ako je grad Vršac, koristi VS adresu
+    if (grad.toLowerCase().contains('bela') || grad.toLowerCase().contains('bc')) {
       return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
     }
 
-    // Ako ima VS polazak danas, koristi VS adresu (gde ga pokupljaš)
-    if (vsPolazak != null && vsPolazak.toString().isNotEmpty) {
-      return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
-    }
-
-    // Fallback: vrati prvu dostupnu adresu
-    return adresaBC ?? adresaVS ?? 'Adresa nije definisana';
+    // Za Vršac ili bilo koji drugi grad, koristi VS adresu
+    return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
   }
 
   static String? _determineAdresaIdFromMesecni(Map<String, dynamic> map, String grad) {
