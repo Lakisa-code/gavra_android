@@ -24,6 +24,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   bool _isLoading = false;
   int _brojVoznji = 0;
   int _brojOtkazivanja = 0;
+  // ignore: unused_field
   double _dugovanje = 0.0;
   List<Map<String, dynamic>> _istorijaPl = [];
 
@@ -278,8 +279,10 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
     final lastName = nameParts.length > 1 ? nameParts.last : '';
 
     final telefon = _putnikData['broj_telefona'] as String? ?? '-';
+    // ignore: unused_local_variable
     final grad = _putnikData['grad'] as String? ?? 'BC';
     final tip = _putnikData['tip'] as String? ?? 'radnik';
+    // ignore: unused_local_variable
     final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
     return Container(
@@ -554,37 +557,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.amber, size: 20),
-          const SizedBox(width: 12),
-          Text(
-            '$label:',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
       ),
     );
   }

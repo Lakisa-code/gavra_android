@@ -213,8 +213,7 @@ class PutnikService {
           // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan kao u getAllPutniciFromBothTables
           final putniciZaDan = Putnik.fromMesecniPutniciMultipleForDay(m, danKratica);
           for (final p in putniciZaDan) {
-            print(
-                '📊 UČITAN MESEČNI PUTNIK: ${p.ime} grad=${p.grad} polazak=${p.polazak} adresa=${p.adresa}');
+            print('📊 UČITAN MESEČNI PUTNIK: ${p.ime} grad=${p.grad} polazak=${p.polazak} adresa=${p.adresa}');
             // apply grad/vreme filter if provided
             final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
             final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
