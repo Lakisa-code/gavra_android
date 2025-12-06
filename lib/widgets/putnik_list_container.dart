@@ -99,12 +99,8 @@ class PutnikListContainer extends StatelessWidget {
             useProvidedOrder: isListReordered,
             currentDriver: currentDriver,
             // 🎯 Automatska provera sezone
-            bcVremena: isZimski(DateTime.now())
-                ? RouteConfig.bcVremenaZimski
-                : RouteConfig.bcVremenaLetnji,
-            vsVremena: isZimski(DateTime.now())
-                ? RouteConfig.vsVremenaZimski
-                : RouteConfig.vsVremenaLetnji,
+            bcVremena: isZimski(DateTime.now()) ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji,
+            vsVremena: isZimski(DateTime.now()) ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji,
           ),
         ),
       ],
