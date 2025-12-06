@@ -6,7 +6,7 @@ import '../config/route_config.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
-import '../widgets/driver_tracking_widget.dart';
+import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
 
 /// 📊 MESEČNI PUTNIK PROFIL SCREEN
@@ -39,11 +39,15 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
 
-  // 🚐 GPS Tracking za praćenje kombija
+  // 🚐 GPS Tracking - više se ne koristi direktno, ETA se čita iz KombiEtaWidget
+  // ignore: unused_field
   double? _putnikLat;
+  // ignore: unused_field
   double? _putnikLng;
-  String? _sledeciPolazak; // vreme sledećeg polaska za koji se prikazuje tracking
-  String _smerTure = 'BC_VS'; // BC_VS ili VS_BC - za filtriranje GPS trackinga
+  // ignore: unused_field
+  String? _sledeciPolazak;
+  // ignore: unused_field
+  String _smerTure = 'BC_VS';
 
   @override
   void initState() {
@@ -409,20 +413,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 🚐 GPS Tracking - prikaži ako postoje koordinate i sledeći polazak
-                      if (_putnikLat != null && _putnikLng != null && _sledeciPolazak != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: DriverTrackingWidget(
-                            grad: grad,
-                            vremePolaska: _sledeciPolazak!,
-                            smer: _smerTure, // BC_VS ili VS_BC - samo za tu turu
-                            putnikLat: _putnikLat!,
-                            putnikLng: _putnikLng!,
-                            putnikAdresa:
-                                grad == 'BC' ? (_adresaBC ?? 'Nepoznata adresa') : (_adresaVS ?? 'Nepoznata adresa'),
-                          ),
-                        ),
+                      // 🚐 ETA Widget - prikazuje "Kombi stiže za X min" ako je vozač aktivan
+                      KombiEtaWidget(
+                        putnikIme: ime,
+                        grad: grad,
+                      ),
 
                       // Ime i status
                       Card(

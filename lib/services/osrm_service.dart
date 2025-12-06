@@ -122,6 +122,7 @@ class OsrmService {
         totalDistanceKm: parseResult.distanceKm,
         totalDurationMin: parseResult.durationMin,
         coordinates: coordinates,
+        putniciEta: parseResult.putniciEta, // 🆕 ETA za svakog putnika
       );
     } catch (e) {
       return OsrmResult.error('Greška pri optimizaciji: $e');
@@ -176,7 +177,7 @@ class OsrmService {
   }
 
   /// 🎯 ISPRAVNO PARSIRANJE OSRM ODGOVORA
-  /// FIXED: Koristi trips[0].legs redosled umesto pogrešnog waypoint_index
+  /// Koristi trips[0].legs za ETA svakog putnika
   /// [hasEndDestination] - ako je true, ignoriše poslednji waypoint jer je to fiksna destinacija
   static _OsrmParseResult? _parseOsrmResponse(
     Map<String, dynamic> data,
@@ -190,18 +191,12 @@ class OsrmService {
 
       final trip = trips[0] as Map<String, dynamic>;
       final waypoints = data['waypoints'] as List?;
+      final legs = trip['legs'] as List?; // 🆕 Izvuci legs za ETA
 
       if (waypoints == null || waypoints.isEmpty) return null;
 
-      // ✅ ISPRAVNO: Koristi waypoints_index za mapiranje optimizovanog redosleda
-      // waypoints[i].waypoint_index pokazuje gde je ta tačka u OPTIMIZOVANOJ ruti
-      // waypoints[i].trips_index pokazuje koji trip (uvek 0 za nas)
-      //
       // 🎯 Ako imamo krajnju destinaciju, poslednji waypoint je destinacija, ne putnik!
-      // Zato ga treba ignorisati pri mapiranju putnika
-      final waypointsToProcess = hasEndDestination
-          ? waypoints.length - 1 // Ignoriši poslednji (destinacija)
-          : waypoints.length;
+      final waypointsToProcess = hasEndDestination ? waypoints.length - 1 : waypoints.length;
 
       // Kreiraj listu (waypointIndex, originalIndex) parova
       final waypointMapping = <_WaypointMapping>[];
@@ -237,6 +232,33 @@ class OsrmService {
         }
       }
 
+      // 🆕 Izračunaj ETA za svakog putnika iz legs
+      final putniciEta = <String, int>{};
+
+      if (legs != null && legs.isNotEmpty) {
+        double cumulativeDurationSec = 0;
+
+        // legs[i] je segment od waypoint[i] do waypoint[i+1]
+        // legs[0] = vozač -> prvi putnik
+        // legs[1] = prvi putnik -> drugi putnik
+        // itd.
+
+        final legsToProcess = hasEndDestination
+            ? legs.length - 1 // Ignoriši poslednji leg (do destinacije)
+            : legs.length;
+
+        for (int i = 0; i < legsToProcess && i < orderedPutnici.length; i++) {
+          final leg = legs[i] as Map<String, dynamic>;
+          final legDuration = (leg['duration'] as num?)?.toDouble() ?? 0;
+          cumulativeDurationSec += legDuration;
+
+          // Dodaj ETA za ovog putnika (u minutama, zaokruženo)
+          final putnik = orderedPutnici[i];
+          final etaMinutes = (cumulativeDurationSec / 60).round();
+          putniciEta[putnik.ime] = etaMinutes;
+        }
+      }
+
       // Izračunaj distancu i vreme
       final distance = (trip['distance'] as num).toDouble() / 1000; // u km
       final duration = (trip['duration'] as num).toDouble() / 60; // u minutima
@@ -245,6 +267,7 @@ class OsrmService {
         orderedPutnici: orderedPutnici,
         distanceKm: distance,
         durationMin: duration,
+        putniciEta: putniciEta,
       );
     } catch (e) {
       return null;
@@ -356,11 +379,13 @@ class _OsrmParseResult {
     required this.orderedPutnici,
     required this.distanceKm,
     required this.durationMin,
+    required this.putniciEta, // 🆕 ETA za svakog putnika
   });
 
   final List<Putnik> orderedPutnici;
   final double distanceKm;
   final double durationMin;
+  final Map<String, int> putniciEta; // ime_putnika -> ETA u minutama
 }
 
 /// 📊 Rezultat OSRM optimizacije
@@ -372,6 +397,7 @@ class OsrmResult {
     this.totalDistanceKm,
     this.totalDurationMin,
     this.coordinates,
+    this.putniciEta, // 🆕 ETA za svakog putnika
     this.usedFallback = false,
   });
 
@@ -380,6 +406,7 @@ class OsrmResult {
     required double totalDistanceKm,
     required double totalDurationMin,
     Map<Putnik, Position>? coordinates,
+    Map<String, int>? putniciEta, // 🆕
     bool usedFallback = false,
   }) {
     return OsrmResult._(
@@ -389,6 +416,7 @@ class OsrmResult {
       totalDistanceKm: totalDistanceKm,
       totalDurationMin: totalDurationMin,
       coordinates: coordinates,
+      putniciEta: putniciEta,
       usedFallback: usedFallback,
     );
   }
@@ -406,5 +434,6 @@ class OsrmResult {
   final double? totalDistanceKm;
   final double? totalDurationMin;
   final Map<Putnik, Position>? coordinates;
+  final Map<String, int>? putniciEta; // 🆕 ime_putnika -> ETA u minutama
   final bool usedFallback;
 }

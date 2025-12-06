@@ -27,18 +27,21 @@ class DriverLocationService {
   String? _currentGrad;
   String? _currentVremePolaska;
   String? _currentSmer; // BC_VS ili VS_BC
+  Map<String, int>? _currentPutniciEta; // 🆕 ETA za svakog putnika
 
   // Getteri
   bool get isTracking => _isTracking;
   String? get currentVozacId => _currentVozacId;
 
   /// Pokreni praćenje lokacije za vozača
+  /// [putniciEta] - Mapa ime_putnika -> ETA u minutama
   Future<bool> startTracking({
     required String vozacId,
     required String vozacIme,
     required String grad,
     String? vremePolaska,
     String? smer, // BC_VS ili VS_BC
+    Map<String, int>? putniciEta, // 🆕 ETA za svakog putnika
   }) async {
     if (_isTracking) {
       debugPrint('📍 DriverLocationService: Već je aktivno praćenje');
@@ -57,9 +60,11 @@ class DriverLocationService {
     _currentGrad = grad;
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
+    _currentPutniciEta = putniciEta; // 🆕
     _isTracking = true;
 
-    debugPrint('📍 DriverLocationService: Pokrećem praćenje za $vozacIme ($grad, smer: $smer)');
+    debugPrint(
+        '📍 DriverLocationService: Pokrećem praćenje za $vozacIme ($grad, smer: $smer, putnika: ${putniciEta?.length ?? 0})');
 
     // Odmah pošalji trenutnu lokaciju
     await _sendCurrentLocation();
@@ -94,6 +99,7 @@ class DriverLocationService {
     _currentGrad = null;
     _currentVremePolaska = null;
     _currentSmer = null;
+    _currentPutniciEta = null; // 🆕
     _lastPosition = null;
   }
 
@@ -160,6 +166,7 @@ class DriverLocationService {
         'vreme_polaska': _currentVremePolaska,
         'smer': _currentSmer,
         'aktivan': true,
+        'putnici_eta': _currentPutniciEta, // 🆕 ETA za svakog putnika
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
 
@@ -213,6 +220,7 @@ class DriverLocationService {
         'vreme_polaska': _currentVremePolaska,
         'smer': _currentSmer,
         'aktivan': true,
+        'putnici_eta': _currentPutniciEta, // 🆕 ETA za svakog putnika
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
     } catch (e) {

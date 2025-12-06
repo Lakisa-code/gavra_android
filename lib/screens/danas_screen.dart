@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne p
 import '../models/mesecni_putnik.dart';
 import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
+import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ETA putnicima
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
@@ -1115,6 +1116,9 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🔄 RESET OPTIMIZACIJE RUTE
   void _resetOptimization() {
+    // 🚐 ZAUSTAVI REALTIME TRACKING ZA PUTNIKE
+    DriverLocationService.instance.stopTracking();
+
     if (mounted) {
       setState(() {
         _isRouteOptimized = false;
@@ -1793,6 +1797,22 @@ class _DanasScreenState extends State<DanasScreen> {
             // NE postavljaj _isGpsTracking - aktivira se tek kad korisnik pritisne NAV
             _isLoading = false; // ✅ ZAUSTAVI LOADING
           });
+        }
+
+        // 🚐 POKRENI REALTIME TRACKING ZA PUTNIKE
+        // Šalje GPS lokaciju + ETA za svakog putnika u Supabase
+        if (_currentDriver != null && result.putniciEta != null) {
+          final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
+
+          await DriverLocationService.instance.startTracking(
+            vozacId: _currentDriver!,
+            vozacIme: _currentDriver!,
+            grad: _selectedGrad,
+            vremePolaska: _selectedVreme,
+            smer: smer,
+            putniciEta: result.putniciEta,
+          );
+          debugPrint('🚐 Realtime tracking pokrenut: ${result.putniciEta?.length ?? 0} putnika sa ETA');
         }
 
         // Prikaži rezultat reorderovanja
@@ -2621,6 +2641,9 @@ class _DanasScreenState extends State<DanasScreen> {
                       getPutnikCount: getPutnikCount,
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: (grad, vreme) {
+                        // 🚐 ZAUSTAVI STARI TRACKING pre promene polaska
+                        DriverLocationService.instance.stopTracking();
+
                         if (mounted) {
                           setState(() {
                             _selectedGrad = grad;
@@ -2659,6 +2682,9 @@ class _DanasScreenState extends State<DanasScreen> {
                       getPutnikCount: getPutnikCount,
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: (grad, vreme) async {
+                        // 🚐 ZAUSTAVI STARI TRACKING pre promene polaska
+                        DriverLocationService.instance.stopTracking();
+
                         if (mounted) {
                           setState(() {
                             _selectedGrad = grad;

@@ -89,7 +89,6 @@ class SmartNavigationService {
       final skipped = putnici.where((p) => !coordinates.containsKey(p)).toList();
 
       // 3. VRATI OPTIMIZOVANU RUTU BEZ OTVARANJA MAPE
-      // 🎯 Vraćamo i koordinate za kasniju upotrebu (Google Maps export)
       return NavigationResult.success(
         message: osrmResult.usedFallback ? '✅ Ruta optimizovana (lokalno)' : '✅ Ruta optimizovana (OSRM)',
         optimizedPutnici: optimizedRoute,
@@ -97,7 +96,8 @@ class SmartNavigationService {
             ? osrmResult.totalDistanceKm! * 1000 // km -> m
             : await _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
         skippedPutnici: skipped.isNotEmpty ? skipped : null,
-        cachedCoordinates: coordinates, // 🎯 NOVO: keširanje koordinata
+        cachedCoordinates: coordinates,
+        putniciEta: osrmResult.putniciEta, // 🆕 ETA za svakog putnika iz OSRM legs
       );
     } catch (e) {
       return NavigationResult.error('❌ Greška pri optimizaciji: $e');
@@ -409,6 +409,7 @@ class NavigationResult {
     this.totalDistance,
     this.skippedPutnici,
     this.cachedCoordinates,
+    this.putniciEta, // 🆕 ETA za svakog putnika
   });
 
   factory NavigationResult.success({
@@ -416,7 +417,8 @@ class NavigationResult {
     required List<Putnik> optimizedPutnici,
     double? totalDistance,
     List<Putnik>? skippedPutnici,
-    Map<Putnik, Position>? cachedCoordinates, // 🎯 Keširane koordinate za Google Maps
+    Map<Putnik, Position>? cachedCoordinates,
+    Map<String, int>? putniciEta, // 🆕 ETA za svakog putnika
   }) {
     return NavigationResult._(
       success: true,
@@ -425,6 +427,7 @@ class NavigationResult {
       totalDistance: totalDistance,
       skippedPutnici: skippedPutnici,
       cachedCoordinates: cachedCoordinates,
+      putniciEta: putniciEta,
     );
   }
 
@@ -438,6 +441,7 @@ class NavigationResult {
   final String message;
   final List<Putnik>? optimizedPutnici;
   final double? totalDistance;
-  final List<Putnik>? skippedPutnici; // 🆕 Putnici bez koordinata
-  final Map<Putnik, Position>? cachedCoordinates; // 🎯 Keširane koordinate
+  final List<Putnik>? skippedPutnici;
+  final Map<Putnik, Position>? cachedCoordinates;
+  final Map<String, int>? putniciEta; // 🆕 ime_putnika -> ETA u minutama
 }
