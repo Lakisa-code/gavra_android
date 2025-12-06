@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/route_config.dart';
-import '../../theme.dart';
+import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
 /// 🕐 UNIVERZALNI TIME PICKER CELL WIDGET
@@ -79,7 +79,7 @@ class TimePickerCell extends StatelessWidget {
         child: Container(
           width: 320,
           decoration: BoxDecoration(
-            gradient: tripleBlueFashionGradient,
+            gradient: ThemeManager().currentGradient,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(

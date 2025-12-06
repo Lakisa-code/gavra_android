@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../services/theme_manager.dart';
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/driver_tracking_widget.dart';
@@ -367,8 +368,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
     final aktivan = _putnikData['aktivan'] as bool? ?? true;
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: tripleBlueFashionGradient,
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -384,6 +385,14 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.palette, color: Colors.white),
+              tooltip: 'Tema',
+              onPressed: () async {
+                await ThemeManager().nextTheme();
+                if (mounted) setState(() {});
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.red),
               onPressed: _logout,
@@ -893,13 +902,13 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                 gradient: LinearGradient(
                   colors: _ukupnoZaduzenje > 0
                       ? [Colors.red.withValues(alpha: 0.3), Colors.red.withValues(alpha: 0.1)]
-                      : [Colors.green.withValues(alpha: 0.3), Colors.green.withValues(alpha: 0.1)],
+                      : [Colors.green.withValues(alpha: 0.5), Colors.green.withValues(alpha: 0.25)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _ukupnoZaduzenje > 0 ? Colors.red.withValues(alpha: 0.5) : Colors.green.withValues(alpha: 0.5),
+                  color: _ukupnoZaduzenje > 0 ? Colors.red.withValues(alpha: 0.5) : Colors.green.withValues(alpha: 0.6),
                   width: 2,
                 ),
               ),
