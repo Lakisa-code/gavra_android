@@ -52,7 +52,7 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     // Koristi PostFrameCallback da izbegne debugBuildingDirtyElements greške
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeNavigation();
-      _startDriverTracking(); // 📍 Pokreni GPS praćenje za putnike
+      // 📍 GPS tracking se aktivira tek kada vozač klikne "Optimizuj rutu"
     });
   }
 
@@ -65,12 +65,23 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         return;
       }
 
-      // Odredi grad na osnovu prvog putnika u ruti
+      // Odredi grad i smer na osnovu prvog putnika u ruti
       String grad = 'Bela Crkva';
       String? vremePolaska;
+      String smer = 'BC_VS'; // default
+
       if (_remainingPassengers.isNotEmpty) {
         grad = _remainingPassengers.first.grad;
         vremePolaska = _remainingPassengers.first.polazak;
+
+        // Odredi smer na osnovu grada polazišta
+        // BC ili Bela Crkva = kreće iz Bele Crkve ka Vršcu
+        // VS ili Vršac = kreće iz Vršca ka Beloj Crkvi
+        if (grad == 'VS' || grad == 'Vršac' || grad.toLowerCase().contains('vrsac')) {
+          smer = 'VS_BC';
+        } else {
+          smer = 'BC_VS';
+        }
       }
 
       await DriverLocationService.instance.startTracking(
@@ -78,8 +89,9 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
         vozacIme: vozacIme,
         grad: grad,
         vremePolaska: vremePolaska,
+        smer: smer,
       );
-      debugPrint('✅ DriverTracking: Pokrenuto za $vozacIme ($grad, $vremePolaska)');
+      debugPrint('✅ DriverTracking: Pokrenuto za $vozacIme ($grad, $vremePolaska, smer: $smer)');
     } catch (e) {
       debugPrint('❌ DriverTracking greška: $e');
     }
@@ -710,6 +722,10 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
             _statusMessage = '✅ ${result.message}';
           });
         }
+
+        // 📍 POKRENI GPS TRACKING - putnici sada mogu pratiti kombi!
+        await _startDriverTracking();
+        debugPrint('🚐 GPS Tracking aktiviran nakon optimizacije rute');
 
         // Obavesti parent widget o novoj ruti
         if (widget.onRouteUpdate != null) {

@@ -14,6 +14,7 @@ class DriverTrackingWidget extends StatefulWidget {
     Key? key,
     required this.grad,
     required this.vremePolaska,
+    required this.smer, // BC_VS ili VS_BC
     required this.putnikLat,
     required this.putnikLng,
     required this.putnikAdresa,
@@ -22,6 +23,7 @@ class DriverTrackingWidget extends StatefulWidget {
 
   final String grad;
   final String vremePolaska;
+  final String smer; // BC_VS = Bela Crkva -> Vršac, VS_BC = Vršac -> Bela Crkva
   final double putnikLat;
   final double putnikLng;
   final String putnikAdresa;
@@ -55,6 +57,7 @@ class _DriverTrackingWidgetState extends State<DriverTrackingWidget> {
     _locationSubscription = DriverLocationService.streamDriverLocation(
       grad: widget.grad,
       vremePolaska: widget.vremePolaska,
+      smer: widget.smer,
     ).listen(
       (location) {
         if (mounted) {

@@ -41,6 +41,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   double? _putnikLat;
   double? _putnikLng;
   String? _sledeciPolazak; // vreme sledećeg polaska za koji se prikazuje tracking
+  String _smerTure = 'BC_VS'; // BC_VS ili VS_BC - za filtriranje GPS trackinga
 
   @override
   void initState() {
@@ -216,6 +217,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         _putnikLat = putnikLat;
         _putnikLng = putnikLng;
         _sledeciPolazak = sledeciPolazak;
+        // Odredi smer ture - ako je grad BC, putnik ide BC->VS, ako je VS ide VS->BC
+        _smerTure = (grad == 'BC' || grad == 'Bela Crkva') ? 'BC_VS' : 'VS_BC';
         _isLoading = false;
       });
     } catch (e) {
@@ -227,21 +230,21 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   /// 🕐 Nađi sledeći polazak na osnovu trenutnog vremena
   String? _getNextPolazak(List<String> vremena, int currentHour, int currentMinute) {
     final currentMinutes = currentHour * 60 + currentMinute;
-    
+
     for (final vreme in vremena) {
       final parts = vreme.split(':');
       if (parts.length != 2) continue;
-      
+
       final hour = int.tryParse(parts[0]) ?? 0;
       final minute = int.tryParse(parts[1]) ?? 0;
       final polazakMinutes = hour * 60 + minute;
-      
+
       // Ako je polazak za više od 30 minuta od sada, to je sledeći
       if (polazakMinutes > currentMinutes - 30) {
         return vreme;
       }
     }
-    
+
     return null; // Nema više polazaka danas
   }
 
@@ -404,6 +407,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                           child: DriverTrackingWidget(
                             grad: grad,
                             vremePolaska: _sledeciPolazak!,
+                            smer: _smerTure, // BC_VS ili VS_BC - samo za tu turu
                             putnikLat: _putnikLat!,
                             putnikLng: _putnikLng!,
                             putnikAdresa:

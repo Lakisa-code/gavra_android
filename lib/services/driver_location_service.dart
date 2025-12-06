@@ -26,6 +26,7 @@ class DriverLocationService {
   String? _currentVozacIme;
   String? _currentGrad;
   String? _currentVremePolaska;
+  String? _currentSmer; // BC_VS ili VS_BC
 
   // Getteri
   bool get isTracking => _isTracking;
@@ -37,6 +38,7 @@ class DriverLocationService {
     required String vozacIme,
     required String grad,
     String? vremePolaska,
+    String? smer, // BC_VS ili VS_BC
   }) async {
     if (_isTracking) {
       debugPrint('📍 DriverLocationService: Već je aktivno praćenje');
@@ -54,9 +56,10 @@ class DriverLocationService {
     _currentVozacIme = vozacIme;
     _currentGrad = grad;
     _currentVremePolaska = vremePolaska;
+    _currentSmer = smer;
     _isTracking = true;
 
-    debugPrint('📍 DriverLocationService: Pokrećem praćenje za $vozacIme ($grad)');
+    debugPrint('📍 DriverLocationService: Pokrećem praćenje za $vozacIme ($grad, smer: $smer)');
 
     // Odmah pošalji trenutnu lokaciju
     await _sendCurrentLocation();
@@ -90,6 +93,7 @@ class DriverLocationService {
     _currentVozacIme = null;
     _currentGrad = null;
     _currentVremePolaska = null;
+    _currentSmer = null;
     _lastPosition = null;
   }
 
@@ -154,6 +158,7 @@ class DriverLocationService {
         'lng': position.longitude,
         'grad': _currentGrad,
         'vreme_polaska': _currentVremePolaska,
+        'smer': _currentSmer,
         'aktivan': true,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
@@ -206,6 +211,7 @@ class DriverLocationService {
         'lng': position.longitude,
         'grad': _currentGrad,
         'vreme_polaska': _currentVremePolaska,
+        'smer': _currentSmer,
         'aktivan': true,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
@@ -218,12 +224,17 @@ class DriverLocationService {
   static Future<Map<String, dynamic>?> getActiveDriverLocation({
     required String grad,
     String? vremePolaska,
+    String? smer,
   }) async {
     try {
       var query = Supabase.instance.client.from('vozac_lokacije').select().eq('aktivan', true).eq('grad', grad);
 
       if (vremePolaska != null) {
         query = query.eq('vreme_polaska', vremePolaska);
+      }
+
+      if (smer != null) {
+        query = query.eq('smer', smer);
       }
 
       final response = await query.maybeSingle();
@@ -238,12 +249,20 @@ class DriverLocationService {
   static Stream<Map<String, dynamic>?> streamDriverLocation({
     required String grad,
     String? vremePolaska,
+    String? smer,
   }) {
     return Supabase.instance.client.from('vozac_lokacije').stream(primaryKey: ['id']).eq('grad', grad).map((list) {
           if (list.isEmpty) return null;
           // Filtriraj aktivne
-          final active = list.where((l) => l['aktivan'] == true).toList();
+          var active = list.where((l) => l['aktivan'] == true).toList();
           if (active.isEmpty) return null;
+
+          // Filtriraj po smeru ako je zadat
+          if (smer != null) {
+            active = active.where((l) => l['smer'] == smer).toList();
+            if (active.isEmpty) return null;
+          }
+
           // Ako ima vreme polaska filter
           if (vremePolaska != null) {
             final filtered = active.where((l) => l['vreme_polaska'] == vremePolaska).toList();
