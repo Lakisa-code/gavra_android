@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/route_config.dart';
+import '../../utils/schedule_utils.dart';
 
 /// Small shared widget to render a BC / VS time row for a single day.
 class TimeRow extends StatelessWidget {
@@ -66,7 +67,8 @@ class TimeRow extends StatelessWidget {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: controller,
       builder: (context, value, _) {
-        final currentValue = value.text.trim().isEmpty ? null : value.text.trim();
+        final currentValue =
+            value.text.trim().isEmpty ? null : value.text.trim();
 
         return GestureDetector(
           onTap: () => _showTimePickerDialog(
@@ -90,9 +92,12 @@ class TimeRow extends StatelessWidget {
                   child: Text(
                     currentValue ?? '--:--',
                     style: TextStyle(
-                      color: currentValue != null ? Colors.black87 : Colors.grey,
+                      color:
+                          currentValue != null ? Colors.black87 : Colors.grey,
                       fontSize: 13,
-                      fontWeight: currentValue != null ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: currentValue != null
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -117,7 +122,13 @@ class TimeRow extends StatelessWidget {
     required bool isBC,
     String? currentValue,
   }) {
-    final vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+    // Automatska provera sezone
+    final jeZimski = isZimski(DateTime.now());
+    final vremena = isBC
+        ? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji)
+        : (jeZimski
+            ? RouteConfig.vsVremenaZimski
+            : RouteConfig.vsVremenaLetnji);
 
     showDialog(
       context: context,
@@ -150,7 +161,9 @@ class TimeRow extends StatelessWidget {
                   style: TextStyle(color: Colors.grey),
                 ),
                 leading: Icon(
-                  currentValue == null ? Icons.check_circle : Icons.circle_outlined,
+                  currentValue == null
+                      ? Icons.check_circle
+                      : Icons.circle_outlined,
                   color: currentValue == null ? Colors.green : Colors.grey,
                 ),
                 onTap: () {
@@ -167,7 +180,8 @@ class TimeRow extends StatelessWidget {
                     vreme,
                     style: TextStyle(
                       color: isSelected ? Colors.white : Colors.white70,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   leading: Icon(
@@ -186,7 +200,8 @@ class TimeRow extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Otkaži', style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Otkaži', style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),

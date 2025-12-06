@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../utils/schedule_utils.dart';
 
 class NedeljaZakazivanjeWidget extends StatefulWidget {
   final String putnikId;
@@ -20,7 +21,8 @@ class NedeljaZakazivanjeWidget extends StatefulWidget {
   });
 
   @override
-  State<NedeljaZakazivanjeWidget> createState() => _NedeljaZakazivanjeWidgetState();
+  State<NedeljaZakazivanjeWidget> createState() =>
+      _NedeljaZakazivanjeWidgetState();
 }
 
 class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
@@ -60,8 +62,11 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
 
     try {
       // Dohvati putnika iz baze da učitamo postojeće polasci_po_danu
-      final response =
-          await _supabase.from('mesecni_putnici').select('polasci_po_danu').eq('id', widget.putnikId).maybeSingle();
+      final response = await _supabase
+          .from('mesecni_putnici')
+          .select('polasci_po_danu')
+          .eq('id', widget.putnikId)
+          .maybeSingle();
 
       if (response != null && response['polasci_po_danu'] != null) {
         final polasciRaw = response['polasci_po_danu'];
@@ -74,7 +79,8 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
               final vs = danPolasci['vs']?.toString();
 
               // Ako ima bar jedno vreme, dan je radni
-              if ((bc != null && bc.isNotEmpty) || (vs != null && vs.isNotEmpty)) {
+              if ((bc != null && bc.isNotEmpty) ||
+                  (vs != null && vs.isNotEmpty)) {
                 _radniDani[dan] = true;
                 _vremeBc[dan] = bc;
                 _vremeVs[dan] = vs;
@@ -110,7 +116,9 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
       }
 
       // Sačuvaj u mesecni_putnici tabelu
-      await _supabase.from('mesecni_putnici').update({'polasci_po_danu': polasciPoDanu}).eq('id', widget.putnikId);
+      await _supabase
+          .from('mesecni_putnici')
+          .update({'polasci_po_danu': polasciPoDanu}).eq('id', widget.putnikId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -292,7 +300,8 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.schedule, color: Colors.white, size: 20),
+                child:
+                    const Icon(Icons.schedule, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -357,10 +366,14 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: isActive ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.02),
+        color: isActive
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive ? Colors.green.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.1),
+          color: isActive
+              ? Colors.green.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -447,7 +460,13 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
     required bool isBC,
   }) {
     final currentValue = isBC ? _vremeBc[dan] : _vremeVs[dan];
-    final vremena = isBC ? RouteConfig.bcVremenaZimski : RouteConfig.vsVremenaZimski;
+    // Automatska provera sezone
+    final jeZimski = isZimski(DateTime.now());
+    final vremena = isBC
+        ? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji)
+        : (jeZimski
+            ? RouteConfig.vsVremenaZimski
+            : RouteConfig.vsVremenaLetnji);
 
     return GestureDetector(
       onTap: () => _showTimePickerDialog(
@@ -473,7 +492,8 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
               style: TextStyle(
                 color: currentValue != null ? Colors.black87 : Colors.grey,
                 fontSize: 14,
-                fontWeight: currentValue != null ? FontWeight.w600 : FontWeight.normal,
+                fontWeight:
+                    currentValue != null ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
             Icon(
@@ -524,7 +544,9 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
                   style: TextStyle(color: Colors.grey),
                 ),
                 leading: Icon(
-                  currentValue == null ? Icons.check_circle : Icons.circle_outlined,
+                  currentValue == null
+                      ? Icons.check_circle
+                      : Icons.circle_outlined,
                   color: currentValue == null ? Colors.green : Colors.grey,
                 ),
                 onTap: () {
@@ -546,8 +568,11 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     leading: Icon(
-                      currentValue == vreme ? Icons.check_circle : Icons.circle_outlined,
-                      color: currentValue == vreme ? Colors.green : Colors.white54,
+                      currentValue == vreme
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      color:
+                          currentValue == vreme ? Colors.green : Colors.white54,
                     ),
                     onTap: () {
                       setState(() {
@@ -566,7 +591,8 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Otkaži', style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Otkaži', style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),

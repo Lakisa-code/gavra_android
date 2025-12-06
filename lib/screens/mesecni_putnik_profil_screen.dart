@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../theme.dart';
+import '../utils/schedule_utils.dart';
 import '../widgets/driver_tracking_widget.dart';
 import '../widgets/nedelja_zakazivanje_widget.dart';
 
@@ -18,7 +19,8 @@ class MesecniPutnikProfilScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<MesecniPutnikProfilScreen> createState() => _MesecniPutnikProfilScreenState();
+  State<MesecniPutnikProfilScreen> createState() =>
+      _MesecniPutnikProfilScreenState();
 }
 
 class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
@@ -31,8 +33,10 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   List<Map<String, dynamic>> _istorijaPl = [];
 
   // 📊 Statistike - detaljno po datumima
-  Map<String, List<DateTime>> _voznjeDetaljno = {}; // mesec -> lista datuma vožnji
-  Map<String, List<DateTime>> _otkazivanjaDetaljno = {}; // mesec -> lista datuma otkazivanja
+  Map<String, List<DateTime>> _voznjeDetaljno =
+      {}; // mesec -> lista datuma vožnji
+  Map<String, List<DateTime>> _otkazivanjaDetaljno =
+      {}; // mesec -> lista datuma otkazivanja
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
@@ -40,7 +44,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   // 🚐 GPS Tracking za praćenje kombija
   double? _putnikLat;
   double? _putnikLng;
-  String? _sledeciPolazak; // vreme sledećeg polaska za koji se prikazuje tracking
+  String?
+      _sledeciPolazak; // vreme sledećeg polaska za koji se prikazuje tracking
   String _smerTure = 'BC_VS'; // BC_VS ili VS_BC - za filtriranje GPS trackinga
 
   @override
@@ -137,22 +142,27 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       String? sledeciPolazak;
 
       // 🧪 DEBUG MODE: Uvek prikazuj tracking widget za testiranje
-      const bool debugAlwaysShowTracking = true; // POSTAVI NA false ZA PRODUKCIJU!
+      const bool debugAlwaysShowTracking =
+          true; // POSTAVI NA false ZA PRODUKCIJU!
 
-      // Dobavi vremena polazaka iz RouteConfig (zimski red)
+      // Dobavi vremena polazaka iz RouteConfig (automatski letnji/zimski)
       final vremenaPolazaka = RouteConfig.getVremenaPolazaka(
         grad: grad,
-        letnji: false, // TODO: dodati proveru za letnji/zimski red
+        letnji: !isZimski(now), // Automatska provera sezone
       );
 
       // Za testiranje - uzmi prvi sledeći polazak ili prvi u listi
       sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute) ??
-          (debugAlwaysShowTracking && vremenaPolazaka.isNotEmpty ? vremenaPolazaka.first : null);
+          (debugAlwaysShowTracking && vremenaPolazaka.isNotEmpty
+              ? vremenaPolazaka.first
+              : null);
       if (debugAlwaysShowTracking && sledeciPolazak != null) {
-        debugPrint('🧪 DEBUG MODE: Forsiram prikaz tracking widgeta sa polaskom $sledeciPolazak');
+        debugPrint(
+            '🧪 DEBUG MODE: Forsiram prikaz tracking widgeta sa polaskom $sledeciPolazak');
       }
 
-      debugPrint('🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
+      debugPrint(
+          '🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
 
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
@@ -176,13 +186,20 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         final datum = DateTime.tryParse(datumStr);
         if (datum == null) continue;
 
-        final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
+        final mesecKey =
+            '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
         final status = v['status'] as String?;
 
         if (status == 'otkazano') {
-          otkazivanjaDetaljnoMap[mesecKey] = [...(otkazivanjaDetaljnoMap[mesecKey] ?? []), datum];
+          otkazivanjaDetaljnoMap[mesecKey] = [
+            ...(otkazivanjaDetaljnoMap[mesecKey] ?? []),
+            datum
+          ];
         } else {
-          voznjeDetaljnoMap[mesecKey] = [...(voznjeDetaljnoMap[mesecKey] ?? []), datum];
+          voznjeDetaljnoMap[mesecKey] = [
+            ...(voznjeDetaljnoMap[mesecKey] ?? []),
+            datum
+          ];
         }
       }
 
@@ -227,7 +244,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   }
 
   /// 🕐 Nađi sledeći polazak na osnovu trenutnog vremena
-  String? _getNextPolazak(List<String> vremena, int currentHour, int currentMinute) {
+  String? _getNextPolazak(
+      List<String> vremena, int currentHour, int currentMinute) {
     final currentMinutes = currentHour * 60 + currentMinute;
 
     for (final vreme in vremena) {
@@ -248,7 +266,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   }
 
   /// 💰 Učitaj istoriju plaćanja - od 1. januara tekuće godine
-  Future<List<Map<String, dynamic>>> _loadIstorijuPlacanja(String putnikId) async {
+  Future<List<Map<String, dynamic>>> _loadIstorijuPlacanja(
+      String putnikId) async {
     try {
       final now = DateTime.now();
       // Od 1. januara tekuće godine
@@ -274,13 +293,15 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         final datum = DateTime.tryParse(datumStr);
         if (datum == null) continue;
 
-        final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
+        final mesecKey =
+            '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
         final iznos = (p['cena'] as num?)?.toDouble() ?? 0.0;
 
         poMesecima[mesecKey] = (poMesecima[mesecKey] ?? 0.0) + iznos;
 
         // Zapamti poslednji datum uplate za taj mesec
-        if (!poslednjeDatum.containsKey(mesecKey) || datum.isAfter(poslednjeDatum[mesecKey]!)) {
+        if (!poslednjeDatum.containsKey(mesecKey) ||
+            datum.isAfter(poslednjeDatum[mesecKey]!)) {
           poslednjeDatum[mesecKey] = datum;
         }
       }
@@ -390,7 +411,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.amber))
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.amber))
             : RefreshIndicator(
                 onRefresh: _loadStatistike,
                 child: SingleChildScrollView(
@@ -400,17 +422,21 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // 🚐 GPS Tracking - prikaži ako postoje koordinate i sledeći polazak
-                      if (_putnikLat != null && _putnikLng != null && _sledeciPolazak != null)
+                      if (_putnikLat != null &&
+                          _putnikLng != null &&
+                          _sledeciPolazak != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: DriverTrackingWidget(
                             grad: grad,
                             vremePolaska: _sledeciPolazak!,
-                            smer: _smerTure, // BC_VS ili VS_BC - samo za tu turu
+                            smer:
+                                _smerTure, // BC_VS ili VS_BC - samo za tu turu
                             putnikLat: _putnikLat!,
                             putnikLng: _putnikLng!,
-                            putnikAdresa:
-                                grad == 'BC' ? (_adresaBC ?? 'Nepoznata adresa') : (_adresaVS ?? 'Nepoznata adresa'),
+                            putnikAdresa: grad == 'BC'
+                                ? (_adresaBC ?? 'Nepoznata adresa')
+                                : (_adresaVS ?? 'Nepoznata adresa'),
                           ),
                         ),
 
@@ -439,8 +465,14 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: tip == 'ucenik'
-                                        ? [Colors.blue.shade400, Colors.indigo.shade600]
-                                        : [Colors.orange.shade400, Colors.deepOrange.shade600],
+                                        ? [
+                                            Colors.blue.shade400,
+                                            Colors.indigo.shade600
+                                          ]
+                                        : [
+                                            Colors.orange.shade400,
+                                            Colors.deepOrange.shade600
+                                          ],
                                   ),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.4),
@@ -448,7 +480,10 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
+                                      color: (tip == 'ucenik'
+                                              ? Colors.blue
+                                              : Colors.orange)
+                                          .withValues(alpha: 0.4),
                                       blurRadius: 20,
                                       spreadRadius: 2,
                                     ),
@@ -491,16 +526,22 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: tip == 'ucenik'
                                           ? Colors.blue.withValues(alpha: 0.3)
-                                          : Colors.orange.withValues(alpha: 0.3),
+                                          : Colors.orange
+                                              .withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                      border: Border.all(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
-                                      tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik',
+                                      tip == 'ucenik'
+                                          ? '🎓 Učenik'
+                                          : '💼 Radnik',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
@@ -511,16 +552,21 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                   if (telefon.isNotEmpty && telefon != '-') ...[
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.15),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                        border: Border.all(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.3)),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.phone, color: Colors.white70, size: 14),
+                                          Icon(Icons.phone,
+                                              color: Colors.white70, size: 14),
                                           const SizedBox(width: 4),
                                           Text(
                                             telefon,
@@ -542,25 +588,32 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
-                                      Icon(Icons.home, color: Colors.white70, size: 16),
+                                    if (_adresaBC != null &&
+                                        _adresaBC!.isNotEmpty) ...[
+                                      Icon(Icons.home,
+                                          color: Colors.white70, size: 16),
                                       const SizedBox(width: 4),
                                       Text(
                                         _adresaBC!,
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.9),
+                                          color: Colors.white
+                                              .withValues(alpha: 0.9),
                                           fontSize: 13,
                                         ),
                                       ),
                                     ],
-                                    if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
-                                    if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
-                                      Icon(Icons.work, color: Colors.white70, size: 16),
+                                    if (_adresaBC != null && _adresaVS != null)
+                                      const SizedBox(width: 16),
+                                    if (_adresaVS != null &&
+                                        _adresaVS!.isNotEmpty) ...[
+                                      Icon(Icons.work,
+                                          color: Colors.white70, size: 16),
                                       const SizedBox(width: 4),
                                       Text(
                                         _adresaVS!,
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.9),
+                                          color: Colors.white
+                                              .withValues(alpha: 0.9),
                                           fontSize: 13,
                                         ),
                                       ),
@@ -614,7 +667,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
     );
   }
 
-  Widget _buildStatCard(String emoji, String label, String value, Color color, String subtitle) {
+  Widget _buildStatCard(
+      String emoji, String label, String value, Color color, String subtitle) {
     return Card(
       color: Colors.transparent,
       elevation: 0,
@@ -713,7 +767,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: TextButton.icon(
                   onPressed: () {
@@ -724,10 +779,13 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                       onSaved: () => _loadStatistike(),
                     );
                   },
-                  icon: const Icon(Icons.edit_calendar, size: 16, color: Colors.white),
-                  label: const Text('Zakaži', style: TextStyle(color: Colors.white, fontSize: 12)),
+                  icon: const Icon(Icons.edit_calendar,
+                      size: 16, color: Colors.white),
+                  label: const Text('Zakaži',
+                      style: TextStyle(color: Colors.white, fontSize: 12)),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -907,14 +965,22 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: _ukupnoZaduzenje > 0
-                      ? [Colors.red.withValues(alpha: 0.3), Colors.red.withValues(alpha: 0.1)]
-                      : [Colors.green.withValues(alpha: 0.3), Colors.green.withValues(alpha: 0.1)],
+                      ? [
+                          Colors.red.withValues(alpha: 0.3),
+                          Colors.red.withValues(alpha: 0.1)
+                        ]
+                      : [
+                          Colors.green.withValues(alpha: 0.3),
+                          Colors.green.withValues(alpha: 0.1)
+                        ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _ukupnoZaduzenje > 0 ? Colors.red.withValues(alpha: 0.5) : Colors.green.withValues(alpha: 0.5),
+                  color: _ukupnoZaduzenje > 0
+                      ? Colors.red.withValues(alpha: 0.5)
+                      : Colors.green.withValues(alpha: 0.5),
                   width: 2,
                 ),
               ),
@@ -930,9 +996,13 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
+                    _ukupnoZaduzenje > 0
+                        ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD'
+                        : 'IZMIRENO ✓',
                     style: TextStyle(
-                      color: _ukupnoZaduzenje > 0 ? Colors.red.shade100 : Colors.green.shade100,
+                      color: _ukupnoZaduzenje > 0
+                          ? Colors.red.shade100
+                          : Colors.green.shade100,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                     ),
@@ -976,7 +1046,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -985,7 +1056,9 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                     const SizedBox(width: 8),
                     Text(
                       'Nema podataka o vožnjama',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 13),
                     ),
                   ],
                 ),
@@ -1006,8 +1079,10 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
                 // Plaćeno za ovaj mesec
                 final placenoZaMesec = _istorijaPl
-                    .where((p) => p['mesec'] == mesecNum && p['godina'] == godina)
-                    .fold<double>(0, (sum, p) => sum + (p['iznos'] as double? ?? 0));
+                    .where(
+                        (p) => p['mesec'] == mesecNum && p['godina'] == godina)
+                    .fold<double>(
+                        0, (sum, p) => sum + (p['iznos'] as double? ?? 0));
 
                 final dugujeZaMesec = ukupnoZaMesec - placenoZaMesec;
 
@@ -1016,10 +1091,12 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    tilePadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     iconColor: Colors.white70,
                     collapsedIconColor: Colors.white70,
@@ -1035,7 +1112,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: dugujeZaMesec > 0
                                 ? Colors.red.withValues(alpha: 0.3)
@@ -1043,9 +1121,13 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            dugujeZaMesec > 0 ? '${dugujeZaMesec.toStringAsFixed(0)} RSD' : '✓',
+                            dugujeZaMesec > 0
+                                ? '${dugujeZaMesec.toStringAsFixed(0)} RSD'
+                                : '✓',
                             style: TextStyle(
-                              color: dugujeZaMesec > 0 ? Colors.red.shade100 : Colors.green,
+                              color: dugujeZaMesec > 0
+                                  ? Colors.red.shade100
+                                  : Colors.green,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -1075,7 +1157,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Text('🚌', style: TextStyle(fontSize: 14)),
+                                  const Text('🚌',
+                                      style: TextStyle(fontSize: 14)),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Vožnje ($brojVoznji)',
@@ -1094,9 +1177,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                 children: voznjeList.map((datum) {
                                   final dan = daniUNedelji[datum.weekday - 1];
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.green.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.green.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -1129,7 +1214,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Text('❌', style: TextStyle(fontSize: 14)),
+                                  const Text('❌',
+                                      style: TextStyle(fontSize: 14)),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Otkazivanja ($brojOtkazivanja)',
@@ -1148,9 +1234,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                                 children: otkazivanjaList.map((datum) {
                                   final dan = daniUNedelji[datum.weekday - 1];
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.orange.withValues(alpha: 0.2),
+                                      color:
+                                          Colors.orange.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -1175,21 +1263,28 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                         decoration: BoxDecoration(
                           color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: Colors.blue.withValues(alpha: 0.3)),
                         ),
                         child: Column(
                           children: [
-                            _buildZbirRow('Ukupno vožnji:', '$brojVoznji × ${cenaPoVoznji.toStringAsFixed(0)}',
+                            _buildZbirRow(
+                                'Ukupno vožnji:',
+                                '$brojVoznji × ${cenaPoVoznji.toStringAsFixed(0)}',
                                 '${ukupnoZaMesec.toStringAsFixed(0)} RSD'),
                             const SizedBox(height: 6),
-                            _buildZbirRow('Plaćeno:', '', '${placenoZaMesec.toStringAsFixed(0)} RSD',
+                            _buildZbirRow('Plaćeno:', '',
+                                '${placenoZaMesec.toStringAsFixed(0)} RSD',
                                 color: Colors.green),
                             const Divider(color: Colors.white24, height: 16),
                             _buildZbirRow(
                               dugujeZaMesec > 0 ? 'Za uplatu:' : 'Stanje:',
                               '',
-                              dugujeZaMesec > 0 ? '${dugujeZaMesec.toStringAsFixed(0)} RSD' : 'IZMIRENO ✓',
-                              color: dugujeZaMesec > 0 ? Colors.red : Colors.green,
+                              dugujeZaMesec > 0
+                                  ? '${dugujeZaMesec.toStringAsFixed(0)} RSD'
+                                  : 'IZMIRENO ✓',
+                              color:
+                                  dugujeZaMesec > 0 ? Colors.red : Colors.green,
                               bold: true,
                             ),
                           ],
@@ -1205,7 +1300,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
     );
   }
 
-  Widget _buildZbirRow(String label, String formula, String value, {Color? color, bool bold = false}) {
+  Widget _buildZbirRow(String label, String formula, String value,
+      {Color? color, bool bold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

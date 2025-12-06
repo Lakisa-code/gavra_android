@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
+import '../utils/schedule_utils.dart';
 import '../widgets/putnik_list.dart';
 import '../widgets/real_time_navigation_widget.dart';
 
@@ -97,9 +98,13 @@ class PutnikListContainer extends StatelessWidget {
             putnici: finalPutnici,
             useProvidedOrder: isListReordered,
             currentDriver: currentDriver,
-            // 🎯 Koristi centralizovana vremena iz RouteConfig (zimski kao default)
-            bcVremena: RouteConfig.bcVremenaZimski,
-            vsVremena: RouteConfig.vsVremenaZimski,
+            // 🎯 Automatska provera sezone
+            bcVremena: isZimski(DateTime.now())
+                ? RouteConfig.bcVremenaZimski
+                : RouteConfig.bcVremenaLetnji,
+            vsVremena: isZimski(DateTime.now())
+                ? RouteConfig.vsVremenaZimski
+                : RouteConfig.vsVremenaLetnji,
           ),
         ),
       ],

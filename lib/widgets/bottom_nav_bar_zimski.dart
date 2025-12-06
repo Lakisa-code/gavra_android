@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/route_config.dart';
 import '../services/theme_manager.dart';
 import '../theme.dart';
+import '../utils/schedule_utils.dart';
 
 class BottomNavBarZimski extends StatefulWidget {
   const BottomNavBarZimski({
@@ -44,7 +45,8 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   @override
   void didUpdateWidget(BottomNavBarZimski oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedVreme != widget.selectedVreme || oldWidget.selectedGrad != widget.selectedGrad) {
+    if (oldWidget.selectedVreme != widget.selectedVreme ||
+        oldWidget.selectedGrad != widget.selectedGrad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToSelected();
       });
@@ -54,14 +56,18 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // 🎯 Koristi prosleđena vremena ili fallback na RouteConfig
-    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
-    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
+    // 🎯 Automatska provera sezone
+    final jeZimski = isZimski(DateTime.now());
+    final bcVremena = widget.bcVremena ??
+        (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji);
+    final vsVremena = widget.vsVremena ??
+        (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
 
     if (widget.selectedGrad == 'Bela Crkva') {
       final index = bcVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _bcScrollController.hasClients) {
-        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset =
+            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _bcScrollController.animateTo(
           targetOffset.clamp(0.0, _bcScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -71,7 +77,8 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
     } else if (widget.selectedGrad == 'Vršac') {
       final index = vsVremena.indexOf(widget.selectedVreme);
       if (index != -1 && _vsScrollController.hasClients) {
-        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        final targetOffset =
+            (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
         _vsScrollController.animateTo(
           targetOffset.clamp(0.0, _vsScrollController.position.maxScrollExtent),
           duration: const Duration(milliseconds: 300),
@@ -90,9 +97,12 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎯 Koristi prosleđena vremena ili fallback na RouteConfig
-    final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaZimski;
-    final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaZimski;
+    // 🎯 Automatska provera sezone
+    final jeZimski = isZimski(DateTime.now());
+    final bcVremena = widget.bcVremena ??
+        (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji);
+    final vsVremena = widget.vsVremena ??
+        (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
     final currentThemeId = ThemeManager().currentThemeId;
 
     return Container(
@@ -202,7 +212,8 @@ class _PolazakRow extends StatelessWidget {
               controller: scrollController,
               child: Row(
                 children: vremena.map((vreme) {
-                  final bool selected = selectedGrad == grad && selectedVreme == vreme;
+                  final bool selected =
+                      selectedGrad == grad && selectedVreme == vreme;
                   return GestureDetector(
                     onTap: () => onPolazakChanged(grad, vreme),
                     child: Container(
@@ -214,10 +225,13 @@ class _PolazakRow extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: selected
                             ? (currentThemeId == 'dark_steel_grey'
-                                ? const Color(0xFF4A4A4A).withValues(alpha: 0.15) // Crna tema
+                                ? const Color(0xFF4A4A4A)
+                                    .withValues(alpha: 0.15) // Crna tema
                                 : currentThemeId == 'passionate_rose'
-                                    ? const Color(0xFFDC143C).withValues(alpha: 0.15) // Pink tema - Crimson
-                                    : Colors.blueAccent.withValues(alpha: 0.15)) // Plava tema
+                                    ? const Color(0xFFDC143C).withValues(
+                                        alpha: 0.15) // Pink tema - Crimson
+                                    : Colors.blueAccent
+                                        .withValues(alpha: 0.15)) // Plava tema
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -225,7 +239,8 @@ class _PolazakRow extends StatelessWidget {
                               ? (currentThemeId == 'dark_steel_grey'
                                   ? const Color(0xFF4A4A4A) // Crna tema
                                   : currentThemeId == 'passionate_rose'
-                                      ? const Color(0xFFDC143C) // Pink tema - Crimson
+                                      ? const Color(
+                                          0xFFDC143C) // Pink tema - Crimson
                                       : Colors.blue) // Plava tema
                               : Colors.grey[300]!,
                           width: selected ? 2 : 1,
@@ -251,12 +266,14 @@ class _PolazakRow extends StatelessWidget {
                           const SizedBox(height: 2),
                           Builder(
                             builder: (ctx) {
-                              final loading = isSlotLoading?.call(grad, vreme) ?? false;
+                              final loading =
+                                  isSlotLoading?.call(grad, vreme) ?? false;
                               if (loading) {
                                 return const SizedBox(
                                   height: 12,
                                   width: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 );
                               }
                               return Text(
