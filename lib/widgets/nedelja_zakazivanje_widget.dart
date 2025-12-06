@@ -3,9 +3,9 @@
 /// Koristi isti stil: toggle za dane + BC/VS time picker grid
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
-import '../services/zakazana_voznja_service.dart';
 
 class NedeljaZakazivanjeWidget extends StatefulWidget {
   final String putnikId;
@@ -24,11 +24,9 @@ class NedeljaZakazivanjeWidget extends StatefulWidget {
 }
 
 class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
-  final _service = ZakazanaVoznjaService();
+  final _supabase = Supabase.instance.client;
   bool _isLoading = false;
   bool _isSaving = false;
-
-  late DateTime _pocetakNedelje;
 
   // Toggle za radne dane
   final Map<String, bool> _radniDani = {
@@ -54,35 +52,41 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
   @override
   void initState() {
     super.initState();
-    _pocetakNedelje = ZakazanaVoznjaService.getSledecaNedelja();
-    _loadPostojeceZakazivanje();
+    _loadPostojeciPolasci();
   }
 
-  Future<void> _loadPostojeceZakazivanje() async {
+  Future<void> _loadPostojeciPolasci() async {
     setState(() => _isLoading = true);
 
     try {
-      final postojece = await _service.getZakazaneZaNedelju(
-        putnikId: widget.putnikId,
-        pocetakNedelje: _pocetakNedelje,
-      );
+      // Dohvati putnika iz baze da učitamo postojeće polasci_po_danu
+      final response =
+          await _supabase.from('mesecni_putnici').select('polasci_po_danu').eq('id', widget.putnikId).maybeSingle();
 
-      final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
-      for (final voznja in postojece) {
-        final dayIndex = voznja.datum.weekday - 1;
-        if (dayIndex < 5) {
-          final dan = dani[dayIndex];
-          if (voznja.smena == 'slobodan') {
-            _radniDani[dan] = false;
-          } else {
-            _radniDani[dan] = true;
-            _vremeBc[dan] = voznja.vremeBc;
-            _vremeVs[dan] = voznja.vremeVs;
+      if (response != null && response['polasci_po_danu'] != null) {
+        final polasciRaw = response['polasci_po_danu'];
+        if (polasciRaw is Map) {
+          final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
+          for (final dan in dani) {
+            final danPolasci = polasciRaw[dan];
+            if (danPolasci is Map) {
+              final bc = danPolasci['bc']?.toString();
+              final vs = danPolasci['vs']?.toString();
+
+              // Ako ima bar jedno vreme, dan je radni
+              if ((bc != null && bc.isNotEmpty) || (vs != null && vs.isNotEmpty)) {
+                _radniDani[dan] = true;
+                _vremeBc[dan] = bc;
+                _vremeVs[dan] = vs;
+              } else {
+                _radniDani[dan] = false;
+              }
+            }
           }
         }
       }
     } catch (e) {
-      debugPrint('❌ Greška pri učitavanju: $e');
+      debugPrint('❌ Greška pri učitavanju polazaka: $e');
     }
 
     setState(() => _isLoading = false);
@@ -94,24 +98,24 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
     try {
       final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
 
-      for (int i = 0; i < 5; i++) {
-        final dan = dani[i];
-        final datum = _pocetakNedelje.add(Duration(days: i));
-        final jeRadniDan = _radniDani[dan] ?? false;
+      // Kreiraj polasci_po_danu mapu
+      final Map<String, Map<String, String?>> polasciPoDanu = {};
 
-        await _service.zakaziVoznju(
-          putnikId: widget.putnikId,
-          datum: datum,
-          smena: jeRadniDan ? 'custom' : 'slobodan',
-          vremeBc: jeRadniDan ? _vremeBc[dan] : null,
-          vremeVs: jeRadniDan ? _vremeVs[dan] : null,
-        );
+      for (final dan in dani) {
+        final jeRadniDan = _radniDani[dan] ?? false;
+        polasciPoDanu[dan] = {
+          'bc': jeRadniDan ? _vremeBc[dan] : null,
+          'vs': jeRadniDan ? _vremeVs[dan] : null,
+        };
       }
+
+      // Sačuvaj u mesecni_putnici tabelu
+      await _supabase.from('mesecni_putnici').update({'polasci_po_danu': polasciPoDanu}).eq('id', widget.putnikId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Raspored sačuvan!'),
+            content: Text('✅ Vremena polazaka sačuvana!'),
             backgroundColor: Colors.green,
           ),
         );

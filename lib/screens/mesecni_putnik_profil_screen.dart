@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
-import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
 import '../widgets/driver_tracking_widget.dart';
 import '../widgets/nedelja_zakazivanje_widget.dart';
@@ -795,13 +794,13 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   // BC vreme
                   Expanded(
                     child: Center(
-                      child: _buildTimeBox(bcVreme, dan: dan, smer: 'bc'),
+                      child: _buildTimeBox(bcVreme),
                     ),
                   ),
                   // VS vreme
                   Expanded(
                     child: Center(
-                      child: _buildTimeBox(vsVreme, dan: dan, smer: 'vs'),
+                      child: _buildTimeBox(vsVreme),
                     ),
                   ),
                 ],
@@ -813,123 +812,36 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
     );
   }
 
-  /// Helper za prikaz vremena u box-u - sada sa mogućnošću editovanja
-  Widget _buildTimeBox(String? vreme, {required String dan, required String smer}) {
+  /// Helper za prikaz vremena u box-u
+  Widget _buildTimeBox(String? vreme) {
     final hasTime = vreme != null && vreme.isNotEmpty;
-    return GestureDetector(
-      onTap: () => _showTimePickerAndSave(dan, smer, vreme),
-      child: Container(
-        width: 70,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.grey.shade300,
-          ),
-        ),
-        child: Center(
-          child: hasTime
-              ? Text(
-                  vreme,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                )
-              : Icon(
-                  Icons.access_time,
-                  color: Colors.grey.shade400,
-                  size: 18,
-                ),
+    return Container(
+      width: 70,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.shade300,
         ),
       ),
+      child: Center(
+        child: hasTime
+            ? Text(
+                vreme,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              )
+            : Icon(
+                Icons.access_time,
+                color: Colors.grey.shade400,
+                size: 18,
+              ),
+      ),
     );
-  }
-
-  /// 🕐 Otvori TimePicker i sačuvaj vreme u bazu
-  Future<void> _showTimePickerAndSave(String dan, String smer, String? trenutnoVreme) async {
-    // Parse trenutno vreme za inicijalni prikaz
-    TimeOfDay initialTime = const TimeOfDay(hour: 7, minute: 0);
-    if (trenutnoVreme != null && trenutnoVreme.isNotEmpty) {
-      final parts = trenutnoVreme.split(':');
-      if (parts.length >= 2) {
-        initialTime = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 7,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
-      }
-    }
-
-    // Prikaži TimePicker
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedTime == null) return; // Korisnik odustao
-
-    // Formatiraj vreme kao "H:mm" (npr. "7:00" umesto "07:00")
-    final novoVreme = '${pickedTime.hour}:${pickedTime.minute.toString().padLeft(2, '0')}';
-
-    // Ažuriraj polasci_po_danu u bazi
-    try {
-      final putnikId = _putnikData['id'];
-      if (putnikId == null) {
-        throw Exception('Nema ID putnika');
-      }
-
-      // Dohvati trenutne polazke iz _putnikData
-      Map<String, dynamic> polasciPoDanu = {};
-      final polasciRaw = _putnikData['polasci_po_danu'];
-      if (polasciRaw != null && polasciRaw is Map) {
-        polasciPoDanu = Map<String, dynamic>.from(polasciRaw);
-      }
-
-      // Ažuriraj odgovarajući dan i smer
-      if (polasciPoDanu[dan] == null) {
-        polasciPoDanu[dan] = <String, dynamic>{};
-      }
-      (polasciPoDanu[dan] as Map<String, dynamic>)[smer] = novoVreme;
-
-      // Sačuvaj u bazu koristeći MesecniPutnikService
-      final service = MesecniPutnikService();
-      await service.updateMesecniPutnik(putnikId, {
-        'polasci_po_danu': polasciPoDanu,
-      });
-
-      // Ažuriraj lokalni state
-      setState(() {
-        _putnikData['polasci_po_danu'] = polasciPoDanu;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Vreme za $dan ${smer.toUpperCase()} postavljeno na $novoVreme'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('❌ Greška pri čuvanju vremena: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Greška: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   /// 📊 Widget za prikaz stanja računa
