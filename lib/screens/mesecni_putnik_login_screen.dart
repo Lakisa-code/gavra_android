@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/putnik_push_service.dart';
 import '../theme.dart';
 import 'mesecni_putnik_profil_screen.dart';
 
@@ -78,6 +79,12 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('mesecni_putnik_telefon', telefon);
         await prefs.setString('mesecni_putnik_pin', pin);
+
+        // 📱 Registruj push token za notifikacije
+        final putnikId = response['id'];
+        if (putnikId != null) {
+          await PutnikPushService.registerPutnikToken(putnikId);
+        }
 
         if (mounted) {
           // Idi na profil ekran

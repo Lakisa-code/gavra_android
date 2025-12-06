@@ -16,6 +16,7 @@ import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pickup tracking
+import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network status service
@@ -1813,6 +1814,12 @@ class _DanasScreenState extends State<DanasScreen> {
             putniciEta: result.putniciEta,
           );
           debugPrint('🚐 Realtime tracking pokrenut: ${result.putniciEta?.length ?? 0} putnika sa ETA');
+
+          // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
+          await _sendTransportStartedNotifications(
+            putniciEta: result.putniciEta!,
+            vozacIme: _currentDriver!,
+          );
         }
 
         // Prikaži rezultat reorderovanja
@@ -1974,6 +1981,49 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         );
       }
+    }
+  }
+
+  /// 📱 Pošalji push notifikacije putnicima da je prevoz krenuo
+  Future<void> _sendTransportStartedNotifications({
+    required Map<String, int> putniciEta,
+    required String vozacIme,
+  }) async {
+    try {
+      // Dohvati tokene za sve putnike
+      final putnikImena = putniciEta.keys.toList();
+      final tokens = await PutnikPushService.getTokensForPutnici(putnikImena);
+
+      if (tokens.isEmpty) {
+        debugPrint('📱 Nema registrovanih tokena za putnike');
+        return;
+      }
+
+      // Pošalji notifikaciju svakom putniku
+      for (final entry in tokens.entries) {
+        final putnikIme = entry.key;
+        final tokenInfo = entry.value;
+        final eta = putniciEta[putnikIme] ?? 0;
+
+        await RealtimeNotificationService.sendPushNotification(
+          title: '🚐 Kombi je krenuo!',
+          body: 'Vozač $vozacIme kreće ka vama. Stiže za ~$eta min.',
+          tokens: [
+            {'token': tokenInfo['token']!, 'provider': tokenInfo['provider']!}
+          ],
+          data: {
+            'type': 'transport_started',
+            'eta_minutes': eta,
+            'vozac': vozacIme,
+          },
+        );
+
+        debugPrint('📱 Notifikacija poslata: $putnikIme (ETA: $eta min)');
+      }
+
+      debugPrint('✅ Poslato ${tokens.length} notifikacija putnicima');
+    } catch (e) {
+      debugPrint('❌ Greška pri slanju notifikacija: $e');
     }
   }
 
