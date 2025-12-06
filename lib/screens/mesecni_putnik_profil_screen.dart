@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/route_config.dart';
 import '../theme.dart';
 import '../widgets/driver_tracking_widget.dart';
 import '../widgets/nedelja_zakazivanje_widget.dart';
@@ -133,41 +134,23 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
       // 🚐 Određivanje sledećeg polaska za GPS tracking
       String? sledeciPolazak;
-      
+
       // 🧪 DEBUG MODE: Uvek prikazuj tracking widget za testiranje
       const bool debugAlwaysShowTracking = true; // POSTAVI NA false ZA PRODUKCIJU!
-      
+
+      // Dobavi vremena polazaka iz RouteConfig (zimski red)
+      final vremenaPolazaka = RouteConfig.getVremenaPolazaka(
+        grad: grad,
+        letnji: false, // TODO: dodati proveru za letnji/zimski red
+      );
+
       if (debugAlwaysShowTracking) {
-        // Za testiranje - uvek prikazuj sa default polaskom
-        sledeciPolazak = grad == 'BC' ? '07:00' : '14:00';
+        // Za testiranje - uzmi prvi sledeći polazak ili prvi u listi
+        sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute) ?? vremenaPolazaka.first;
         debugPrint('🧪 DEBUG MODE: Forsiram prikaz tracking widgeta sa polaskom $sledeciPolazak');
       } else {
-        final currentHour = now.hour;
-        final currentMinute = now.minute;
-
-        // Polasci po gradu (BC -> VS ili VS -> BC)
-        if (grad == 'BC') {
-        // Polasci iz BC ka VS: 05:00, 07:00, 14:00
-        if (currentHour < 5 || (currentHour == 4 && currentMinute >= 30)) {
-          sledeciPolazak = '05:00';
-        } else if (currentHour < 7 || (currentHour == 6 && currentMinute >= 30)) {
-          sledeciPolazak = '07:00';
-        } else if (currentHour < 14 || (currentHour == 13 && currentMinute >= 30)) {
-          sledeciPolazak = '14:00';
-        }
-      } else {
-        // Polasci iz VS ka BC: 06:00, 14:00, 15:00, 21:00
-        if (currentHour < 6 || (currentHour == 5 && currentMinute >= 30)) {
-          sledeciPolazak = '06:00';
-        } else if (currentHour < 14 || (currentHour == 13 && currentMinute >= 30)) {
-          sledeciPolazak = '14:00';
-        } else if (currentHour < 15 || (currentHour == 14 && currentMinute >= 30)) {
-          sledeciPolazak = '15:00';
-        } else if (currentHour < 21 || (currentHour == 20 && currentMinute >= 30)) {
-          sledeciPolazak = '21:00';
-        }
+        sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute);
       }
-      } // Zatvaranje else bloka za debugAlwaysShowTracking
 
       debugPrint('🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
 
@@ -239,6 +222,27 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       debugPrint('Greška pri učitavanju statistika: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  /// 🕐 Nađi sledeći polazak na osnovu trenutnog vremena
+  String? _getNextPolazak(List<String> vremena, int currentHour, int currentMinute) {
+    final currentMinutes = currentHour * 60 + currentMinute;
+    
+    for (final vreme in vremena) {
+      final parts = vreme.split(':');
+      if (parts.length != 2) continue;
+      
+      final hour = int.tryParse(parts[0]) ?? 0;
+      final minute = int.tryParse(parts[1]) ?? 0;
+      final polazakMinutes = hour * 60 + minute;
+      
+      // Ako je polazak za više od 30 minuta od sada, to je sledeći
+      if (polazakMinutes > currentMinutes - 30) {
+        return vreme;
+      }
+    }
+    
+    return null; // Nema više polazaka danas
   }
 
   /// 💰 Učitaj istoriju plaćanja - od 1. januara tekuće godine
