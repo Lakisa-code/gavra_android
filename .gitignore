@@ -68,3 +68,9 @@ package-lock.json
 *.apk
 *.zip
 temp_apk*/
+
+# MCP servers (lokalni alati)
+github-mcp-server/
+supabase-mcp/
+supabase-mcp-official/
+huawei-appgallery-mcp/
