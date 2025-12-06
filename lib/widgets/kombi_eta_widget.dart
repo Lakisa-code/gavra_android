@@ -99,22 +99,17 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Ne prikazuj ništa ako nije aktivan vozač
-    if (!_isActive && !_isLoading) {
-      return const SizedBox.shrink();
-    }
+    // Odredi boje i poruku na osnovu stanja
+    final bool hasEta = _isActive && _etaMinutes != null;
 
-    // Loading state
-    if (_isLoading) {
-      return const SizedBox.shrink();
-    }
+    // Boje: plava ako ima ETA, siva ako čeka
+    final Color primaryColor = hasEta ? Colors.blue.shade600 : Colors.grey.shade500;
+    final Color secondaryColor = hasEta ? Colors.blue.shade800 : Colors.grey.shade700;
 
-    // Ako nema ETA za ovog putnika (nije u ruti)
-    if (_etaMinutes == null) {
-      return const SizedBox.shrink();
-    }
+    // Poruka i naslov - samo "Čekanje..." ako nema ETA
+    final String title = hasEta ? '🚐 KOMBI STIŽE ZA' : '🚐 KOMBI STATUS';
+    final String message = hasEta ? _formatEta(_etaMinutes!) : 'Čekanje...';
 
-    // Prikaži ETA widget
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -122,73 +117,47 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.blue.shade600,
-            Colors.blue.shade800,
-          ],
+          colors: [primaryColor, secondaryColor],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.4),
+            color: primaryColor.withValues(alpha: 0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Ikona kombija
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
             ),
-            child: const Icon(
-              Icons.directions_bus,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            style: TextStyle(
               color: Colors.white,
-              size: 32,
+              fontSize: hasEta ? 28 : 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(width: 16),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '🚐 KOMBI STIŽE ZA',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatEta(_etaMinutes!),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (_vozacIme != null)
-                  Text(
-                    'Vozač: $_vozacIme',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
-                    ),
-                  ),
-              ],
+          if (_vozacIme != null && hasEta)
+            Text(
+              'Vozač: $_vozacIme',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
             ),
-          ),
-          // Animirana ikona
-          _buildPulsingIcon(),
         ],
       ),
     );
@@ -199,34 +168,5 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     if (minutes == 1) return '~1 minut';
     if (minutes < 5) return '~$minutes minuta';
     return '~$minutes min';
-  }
-
-  Widget _buildPulsingIcon() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.8, end: 1.2),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeInOut,
-      builder: (context, scale, child) {
-        return Transform.scale(
-          scale: scale,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.schedule,
-              color: Colors.greenAccent,
-              size: 24,
-            ),
-          ),
-        );
-      },
-      onEnd: () {
-        // Restart animacije - ne radi dobro ovako, ali OK za sada
-      },
-    );
   }
 }
