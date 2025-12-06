@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme.dart';
+import '../widgets/driver_tracking_widget.dart';
 import '../widgets/nedelja_zakazivanje_widget.dart';
 
 /// 📊 MESEČNI PUTNIK PROFIL SCREEN
@@ -34,6 +35,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
+
+  // 🚐 GPS Tracking za praćenje kombija
+  double? _putnikLat;
+  double? _putnikLng;
+  String? _sledeciPolazak; // vreme sledećeg polaska za koji se prikazuje tracking
 
   @override
   void initState() {
@@ -72,33 +78,88 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       // Dugovanje
       final dug = _putnikData['dug'] ?? 0;
 
-      // 🏠 Učitaj obe adrese iz tabele adrese
+      // 🏠 Učitaj obe adrese iz tabele adrese (sa koordinatama za GPS tracking)
       String? adresaBcNaziv;
       String? adresaVsNaziv;
+      double? putnikLat;
+      double? putnikLng;
       final adresaBcId = _putnikData['adresa_bela_crkva_id'] as String?;
       final adresaVsId = _putnikData['adresa_vrsac_id'] as String?;
+      final grad = _putnikData['grad'] as String? ?? 'BC';
 
       debugPrint('🏠 adresaBcId: $adresaBcId, adresaVsId: $adresaVsId');
       debugPrint('🏠 _putnikData keys: ${_putnikData.keys.toList()}');
 
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
-          final bcResponse =
-              await Supabase.instance.client.from('adrese').select('naziv').eq('id', adresaBcId).maybeSingle();
+          final bcResponse = await Supabase.instance.client
+              .from('adrese')
+              .select('naziv, koordinate')
+              .eq('id', adresaBcId)
+              .maybeSingle();
           if (bcResponse != null) {
             adresaBcNaziv = bcResponse['naziv'] as String?;
+            // Koordinate za BC adresu
+            if (grad == 'BC' && bcResponse['koordinate'] != null) {
+              final koordinate = bcResponse['koordinate'];
+              if (koordinate is Map) {
+                putnikLat = (koordinate['lat'] as num?)?.toDouble();
+                putnikLng = (koordinate['lng'] as num?)?.toDouble();
+              }
+            }
           }
         }
         if (adresaVsId != null && adresaVsId.isNotEmpty) {
-          final vsResponse =
-              await Supabase.instance.client.from('adrese').select('naziv').eq('id', adresaVsId).maybeSingle();
+          final vsResponse = await Supabase.instance.client
+              .from('adrese')
+              .select('naziv, koordinate')
+              .eq('id', adresaVsId)
+              .maybeSingle();
           if (vsResponse != null) {
             adresaVsNaziv = vsResponse['naziv'] as String?;
+            // Koordinate za VS adresu
+            if (grad == 'VS' && vsResponse['koordinate'] != null) {
+              final koordinate = vsResponse['koordinate'];
+              if (koordinate is Map) {
+                putnikLat = (koordinate['lat'] as num?)?.toDouble();
+                putnikLng = (koordinate['lng'] as num?)?.toDouble();
+              }
+            }
           }
         }
       } catch (e) {
         debugPrint('Greška pri učitavanju adresa: $e');
       }
+
+      // 🚐 Određivanje sledećeg polaska za GPS tracking
+      String? sledeciPolazak;
+      final currentHour = now.hour;
+      final currentMinute = now.minute;
+
+      // Polasci po gradu (BC -> VS ili VS -> BC)
+      if (grad == 'BC') {
+        // Polasci iz BC ka VS: 05:00, 07:00, 14:00
+        if (currentHour < 5 || (currentHour == 4 && currentMinute >= 30)) {
+          sledeciPolazak = '05:00';
+        } else if (currentHour < 7 || (currentHour == 6 && currentMinute >= 30)) {
+          sledeciPolazak = '07:00';
+        } else if (currentHour < 14 || (currentHour == 13 && currentMinute >= 30)) {
+          sledeciPolazak = '14:00';
+        }
+      } else {
+        // Polasci iz VS ka BC: 06:00, 14:00, 15:00, 21:00
+        if (currentHour < 6 || (currentHour == 5 && currentMinute >= 30)) {
+          sledeciPolazak = '06:00';
+        } else if (currentHour < 14 || (currentHour == 13 && currentMinute >= 30)) {
+          sledeciPolazak = '14:00';
+        } else if (currentHour < 15 || (currentHour == 14 && currentMinute >= 30)) {
+          sledeciPolazak = '15:00';
+        } else if (currentHour < 21 || (currentHour == 20 && currentMinute >= 30)) {
+          sledeciPolazak = '21:00';
+        }
+      }
+
+      debugPrint('🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
 
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
@@ -159,6 +220,9 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         _ukupnoZaduzenje = zaduzenje;
         _adresaBC = adresaBcNaziv;
         _adresaVS = adresaVsNaziv;
+        _putnikLat = putnikLat;
+        _putnikLng = putnikLng;
+        _sledeciPolazak = sledeciPolazak;
         _isLoading = false;
       });
     } catch (e) {
@@ -319,6 +383,20 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // 🚐 GPS Tracking - prikaži ako postoje koordinate i sledeći polazak
+                      if (_putnikLat != null && _putnikLng != null && _sledeciPolazak != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: DriverTrackingWidget(
+                            grad: grad,
+                            vremePolaska: _sledeciPolazak!,
+                            putnikLat: _putnikLat!,
+                            putnikLng: _putnikLng!,
+                            putnikAdresa:
+                                grad == 'BC' ? (_adresaBC ?? 'Nepoznata adresa') : (_adresaVS ?? 'Nepoznata adresa'),
+                          ),
+                        ),
+
                       // Ime i status
                       Card(
                         color: Colors.transparent,

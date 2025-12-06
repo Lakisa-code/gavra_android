@@ -24,7 +24,7 @@ dependencies:
   package_info_plus: ^8.3.1
   url_launcher: ^6.2.6
   logger: ^2.6.0
-  flutter_map: ^7.0.2
+  flutter_map: ^8.2.2
   latlong2: ^0.9.1
   just_audio: ^0.9.40
   flutter_typeahead: ^5.2.0

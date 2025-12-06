@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../models/putnik.dart';
 import '../models/turn_by_turn_instruction.dart';
+import '../services/auth_manager.dart';
+import '../services/driver_location_service.dart';
 import '../services/smart_navigation_service.dart';
 
 /// 🧭 REAL-TIME GPS NAVIGATION WIDGET
@@ -50,13 +52,45 @@ class _RealTimeNavigationWidgetState extends State<RealTimeNavigationWidget> {
     // Koristi PostFrameCallback da izbegne debugBuildingDirtyElements greške
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeNavigation();
+      _startDriverTracking(); // 📍 Pokreni GPS praćenje za putnike
     });
+  }
+
+  /// 📍 Pokreni slanje GPS lokacije za putnike da prate kombi
+  Future<void> _startDriverTracking() async {
+    try {
+      final vozacIme = await AuthManager.getCurrentDriver();
+      if (vozacIme == null || vozacIme.isEmpty) {
+        debugPrint('❌ DriverTracking: Nema ulogovanog vozača');
+        return;
+      }
+
+      // Odredi grad na osnovu prvog putnika u ruti
+      String grad = 'Bela Crkva';
+      String? vremePolaska;
+      if (_remainingPassengers.isNotEmpty) {
+        grad = _remainingPassengers.first.grad;
+        vremePolaska = _remainingPassengers.first.polazak;
+      }
+
+      await DriverLocationService.instance.startTracking(
+        vozacId: vozacIme,
+        vozacIme: vozacIme,
+        grad: grad,
+        vremePolaska: vremePolaska,
+      );
+      debugPrint('✅ DriverTracking: Pokrenuto za $vozacIme ($grad, $vremePolaska)');
+    } catch (e) {
+      debugPrint('❌ DriverTracking greška: $e');
+    }
   }
 
   @override
   void dispose() {
     _stopNavigation();
     _positionSubscription?.cancel();
+    // 📍 Zaustavi GPS praćenje kada se widget zatvori
+    DriverLocationService.instance.stopTracking();
     super.dispose();
   }
 
