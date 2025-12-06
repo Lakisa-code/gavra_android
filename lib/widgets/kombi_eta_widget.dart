@@ -99,16 +99,41 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Loading state
+    if (_isLoading) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.grey.shade400, Colors.grey.shade600],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+      );
+    }
+
     // Odredi boje i poruku na osnovu stanja
     final bool hasEta = _isActive && _etaMinutes != null;
-
-    // Boje: plava ako ima ETA, siva ako čeka
-    final Color primaryColor = hasEta ? Colors.blue.shade600 : Colors.grey.shade500;
-    final Color secondaryColor = hasEta ? Colors.blue.shade800 : Colors.grey.shade700;
 
     // Poruka i naslov - samo "Čekanje..." ako nema ETA
     final String title = hasEta ? '🚐 KOMBI STIŽE ZA' : '🚐 KOMBI STATUS';
     final String message = hasEta ? _formatEta(_etaMinutes!) : 'Čekanje...';
+
+    // Boje sa providnošću kao IZMIRENO kocka
+    final Color baseColor = hasEta ? Colors.blue : Colors.grey;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -117,16 +142,16 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [primaryColor, secondaryColor],
+          colors: [
+            baseColor.withValues(alpha: 0.5),
+            baseColor.withValues(alpha: 0.25),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: baseColor.withValues(alpha: 0.6),
+          width: 2,
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

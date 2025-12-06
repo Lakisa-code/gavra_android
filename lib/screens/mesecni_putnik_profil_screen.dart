@@ -413,12 +413,6 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 🚐 ETA Widget - prikazuje "Kombi stiže za X min" ako je vozač aktivan
-                      KombiEtaWidget(
-                        putnikIme: ime,
-                        grad: grad,
-                      ),
-
                       // Ime i status
                       Card(
                         color: Colors.transparent,
@@ -577,6 +571,12 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // 🚐 ETA Widget - prikazuje "Kombi stiže za X min" ako je vozač aktivan
+                      KombiEtaWidget(
+                        putnikIme: ime,
+                        grad: grad,
+                      ),
 
                       // Statistike
                       Row(
@@ -917,23 +917,15 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                       letterSpacing: 1,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     _ukupnoZaduzenje > 0 ? '${_ukupnoZaduzenje.toStringAsFixed(0)} RSD' : 'IZMIRENO',
                     style: TextStyle(
                       color: _ukupnoZaduzenje > 0 ? Colors.red.shade100 : Colors.green.shade100,
-                      fontSize: 32,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (_ukupnoZaduzenje > 0)
-                    Text(
-                      'dugovanje',
-                      style: TextStyle(
-                        color: Colors.red.shade200,
-                        fontSize: 14,
-                      ),
-                    ),
                 ],
               ),
             ),
