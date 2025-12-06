@@ -243,10 +243,6 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
   }
 
   Widget _buildNedeljaInfo() {
-    final pocetakStr = '${_pocetakNedelje.day}.${_pocetakNedelje.month}.';
-    final krajNedelje = _pocetakNedelje.add(const Duration(days: 4));
-    final krajStr = '${krajNedelje.day}.${krajNedelje.month}.';
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -254,43 +250,20 @@ class _NedeljaZakazivanjeWidgetState extends State<NedeljaZakazivanjeWidget> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
       ),
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
-            onPressed: () {
-              setState(() {
-                _pocetakNedelje = _pocetakNedelje.subtract(const Duration(days: 7));
-                _vremeBc.clear();
-                _vremeVs.clear();
-                _radniDani.updateAll((key, value) => true);
-              });
-              _loadPostojeceZakazivanje();
-            },
-          ),
+          Icon(Icons.info_outline, color: Colors.amber, size: 20),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Nedelja: $pocetakStr - $krajStr',
+              'Postavite default vremena polazaka za svaki dan',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white),
-            onPressed: () {
-              setState(() {
-                _pocetakNedelje = _pocetakNedelje.add(const Duration(days: 7));
-                _vremeBc.clear();
-                _vremeVs.clear();
-                _radniDani.updateAll((key, value) => true);
-              });
-              _loadPostojeceZakazivanje();
-            },
           ),
         ],
       ),

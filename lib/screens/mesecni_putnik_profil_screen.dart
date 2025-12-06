@@ -145,12 +145,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         letnji: false, // TODO: dodati proveru za letnji/zimski red
       );
 
-      if (debugAlwaysShowTracking) {
-        // Za testiranje - uzmi prvi sledeći polazak ili prvi u listi
-        sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute) ?? vremenaPolazaka.first;
+      // Za testiranje - uzmi prvi sledeći polazak ili prvi u listi
+      sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute) ??
+          (debugAlwaysShowTracking && vremenaPolazaka.isNotEmpty ? vremenaPolazaka.first : null);
+      if (debugAlwaysShowTracking && sledeciPolazak != null) {
         debugPrint('🧪 DEBUG MODE: Forsiram prikaz tracking widgeta sa polaskom $sledeciPolazak');
-      } else {
-        sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute);
       }
 
       debugPrint('🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
