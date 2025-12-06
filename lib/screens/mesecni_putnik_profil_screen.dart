@@ -133,11 +133,20 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
       // 🚐 Određivanje sledećeg polaska za GPS tracking
       String? sledeciPolazak;
-      final currentHour = now.hour;
-      final currentMinute = now.minute;
+      
+      // 🧪 DEBUG MODE: Uvek prikazuj tracking widget za testiranje
+      const bool debugAlwaysShowTracking = true; // POSTAVI NA false ZA PRODUKCIJU!
+      
+      if (debugAlwaysShowTracking) {
+        // Za testiranje - uvek prikazuj sa default polaskom
+        sledeciPolazak = grad == 'BC' ? '07:00' : '14:00';
+        debugPrint('🧪 DEBUG MODE: Forsiram prikaz tracking widgeta sa polaskom $sledeciPolazak');
+      } else {
+        final currentHour = now.hour;
+        final currentMinute = now.minute;
 
-      // Polasci po gradu (BC -> VS ili VS -> BC)
-      if (grad == 'BC') {
+        // Polasci po gradu (BC -> VS ili VS -> BC)
+        if (grad == 'BC') {
         // Polasci iz BC ka VS: 05:00, 07:00, 14:00
         if (currentHour < 5 || (currentHour == 4 && currentMinute >= 30)) {
           sledeciPolazak = '05:00';
@@ -158,6 +167,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
           sledeciPolazak = '21:00';
         }
       }
+      } // Zatvaranje else bloka za debugAlwaysShowTracking
 
       debugPrint('🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
 

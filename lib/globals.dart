@@ -16,3 +16,22 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 /// Globalna instanca Supabase klijenta
 /// Koristi se u svim servisima umesto kreiranja novih instanci
 final SupabaseClient supabase = Supabase.instance.client;
+
+/// 🧪 DEBUG: Simulirani dan u nedelji za testiranje
+/// null = koristi pravi datum, 1-7 = ponedeljak-nedelja
+/// POSTAVI NA null PRE PRODUKCIJE!
+int? debugSimulatedWeekday; // 1=pon, 2=uto, 3=sre, 4=čet, 5=pet, 6=sub, 7=ned
+
+/// 🧪 DEBUG: Simulirano vreme (sat) za testiranje
+/// null = koristi pravo vreme
+int? debugSimulatedHour;
+
+/// Helper funkcija za dobijanje trenutnog dana (sa debug override)
+int getCurrentWeekday() {
+  return debugSimulatedWeekday ?? DateTime.now().weekday;
+}
+
+/// Helper funkcija za dobijanje trenutnog sata (sa debug override)
+int getCurrentHour() {
+  return debugSimulatedHour ?? DateTime.now().hour;
+}
