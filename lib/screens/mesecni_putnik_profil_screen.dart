@@ -598,6 +598,9 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                           const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
                           final dan = dani[danas.weekday - 1];
 
+                          // Sačuvaj messenger pre async poziva
+                          final messenger = ScaffoldMessenger.of(context);
+
                           final result = await SlobodnaMestaService.promeniVremePutnika(
                             putnikId: _putnikData['id']?.toString() ?? '',
                             novoVreme: novoVremeValue,
@@ -606,7 +609,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                           );
 
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(
                                 content: Text(result['message'] as String),
                                 backgroundColor: result['success'] == true ? Colors.green : Colors.red,

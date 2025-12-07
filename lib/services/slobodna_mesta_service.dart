@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -89,16 +88,22 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Stream slobodnih mesta za oba grada
+  /// Stream slobodnih mesta za oba grada - osvežava svakih 2 minuta
   /// Vraća: {'BC': [SlobodnaMesta, ...], 'VS': [SlobodnaMesta, ...]}
   static Stream<Map<String, List<SlobodnaMesta>>> streamSlobodnaMesta({String? datum}) {
     final isoDate = datum ?? DateTime.now().toIso8601String().split('T')[0];
 
-    // Kombinuj stream kapaciteta i stream putnika
-    return Rx.combineLatest2<Map<String, Map<String, int>>, List<Putnik>, Map<String, List<SlobodnaMesta>>>(
-      KapacitetService.streamKapacitet(),
-      _putnikService.streamKombinovaniPutniciFiltered(isoDate: isoDate),
-      (kapacitet, putnici) {
+    // Kreiraj StreamController koji emituje podatke
+    final controller = StreamController<Map<String, List<SlobodnaMesta>>>();
+    Timer? refreshTimer;
+    StreamSubscription? kapacitetSub;
+
+    // Funkcija za dohvatanje podataka
+    Future<void> fetchData(Map<String, Map<String, int>> kapacitet) async {
+      try {
+        final danAbbr = _isoDateToDayAbbr(isoDate);
+        final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danAbbr);
+
         final result = <String, List<SlobodnaMesta>>{
           'BC': [],
           'VS': [],
@@ -133,9 +138,38 @@ class SlobodnaMestaService {
         }
 
         debugPrint('📊 SlobodnaMesta: BC=${result['BC']!.length}, VS=${result['VS']!.length} za $isoDate');
-        return result;
-      },
-    );
+        if (!controller.isClosed) {
+          controller.add(result);
+        }
+      } catch (e) {
+        debugPrint('❌ SlobodnaMesta fetchData greška: $e');
+      }
+    }
+
+    // Cache za poslednji kapacitet (za timer refresh)
+    Map<String, Map<String, int>> lastKapacitet = {'BC': {}, 'VS': {}};
+
+    // Sluša kapacitet stream
+    kapacitetSub = KapacitetService.streamKapacitet().listen((kapacitet) {
+      lastKapacitet = kapacitet;
+      fetchData(kapacitet);
+    });
+
+    // Timer koji osvežava svakih 2 minuta
+    refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      debugPrint('🔄 SlobodnaMesta: Auto-refresh (2 min)');
+      fetchData(lastKapacitet);
+    });
+
+    // Cleanup kad se stream zatvori
+    controller.onCancel = () {
+      refreshTimer?.cancel();
+      kapacitetSub?.cancel();
+      controller.close();
+      debugPrint('🛑 SlobodnaMesta: Stream zatvoren');
+    };
+
+    return controller.stream;
   }
 
   /// Jednokratno dohvatanje slobodnih mesta
@@ -145,8 +179,9 @@ class SlobodnaMestaService {
     // Dohvati kapacitet
     final kapacitet = await KapacitetService.getKapacitet();
 
-    // Dohvati putnike
-    final putnici = await _putnikService.dohvatiKombinovaneFiltriraneAsync(isoDate: isoDate);
+    // Dohvati putnike - koristi getAllPutniciFromBothTables sa danom
+    final danAbbr = _isoDateToDayAbbr(isoDate);
+    final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danAbbr);
 
     final result = <String, List<SlobodnaMesta>>{
       'BC': [],
