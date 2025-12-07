@@ -689,7 +689,7 @@ class MesecniPutnikService {
           .from('putovanja_istorija')
           .select('datum')
           .eq('mesecni_putnik_id', mesecniPutnikId)
-          .or('status.eq.otkazano,status.eq.nije_se_pojavio');
+          .eq('status', 'otkazano'); // Samo otkazano, bez nije_se_pojavio
 
       // Broji JEDINSTVENE datume (jedan dan = jedno otkazivanje)
       final jedinstveniDatumi = <String>{};

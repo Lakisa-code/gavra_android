@@ -67,13 +67,15 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final pocetakGodine = DateTime(now.year, 1, 1);
 
-      // Broj vožnji ovog meseca (samo završene, ne otkazane)
+      // Broj vožnji ovog meseca (samo završene, ne otkazane/placeno/resetovan)
       final voznje = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('id')
           .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
           .neq('status', 'otkazano')
+          .neq('status', 'placeno') // Isključi mesečna plaćanja
+          .neq('status', 'resetovan') // Isključi resetovane zapise
           .count();
 
       // Broj otkazivanja ovog meseca
@@ -189,7 +191,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
         if (status == 'otkazano') {
           otkazivanjaDetaljnoMap[mesecKey] = [...(otkazivanjaDetaljnoMap[mesecKey] ?? []), datum];
-        } else {
+        } else if (status != 'placeno' && status != 'resetovan') {
+          // Broji samo stvarne vožnje (pokupljen, radi), ne plaćanja ili resetovane
           voznjeDetaljnoMap[mesecKey] = [...(voznjeDetaljnoMap[mesecKey] ?? []), datum];
         }
       }

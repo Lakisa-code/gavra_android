@@ -623,7 +623,7 @@ class PutnikService {
           } else {
             // putovanja_istorija - koristi novu 'status' kolonu
             await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'] ?? 'nije_se_pojavio',
+              'status': lastAction.oldData['status'] ?? 'radi',
               'pokupljen': false, // ✅ RESETUJ pokupljen flag
             }).eq('id', lastAction.putnikId as String);
           }
@@ -1808,7 +1808,7 @@ class PutnikService {
         await supabase
             .from('putovanja_istorija')
             .update({
-              'status': 'nije_se_pojavio', // ✅ POČETNO STANJE
+              'status': 'radi', // ✅ POČETNO STANJE
               'cena': 0, // ✅ VRATI cenu na 0
               'vozac_id': null, // ✅ UKLONI vozača
               'action_log': cleanActionLog, // ✅ RESET action_log
@@ -1903,7 +1903,7 @@ class PutnikService {
 
           // Jednostavno resetuj sve pokupljene putnike kada se menja vreme
           await supabase.from('putovanja_istorija').update({
-            'status': 'nije_se_pojavio',
+            'status': 'radi',
             'cena': 0,
             // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
           }).eq('id', putnik['id'] as String);

@@ -688,7 +688,7 @@ class Putnik {
       'adresa_id': null, // Ostaće null - adresa se dodaje asinhrono u toPutovanjaIstorijaMapWithAdresa
       'broj_telefona': brojTelefona, // ✅ DODATO: broj telefona putnika
       'cena': iznosPlacanja ?? 0.0,
-      'status': status ?? 'nije_se_pojavio',
+      'status': status ?? 'radi',
       'obrisan': obrisan,
       'created_by': vozacUuid, // ✅ ISPRAVKA: koristimo UUID umesto imena vozača
       'action_log': {

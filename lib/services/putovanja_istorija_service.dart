@@ -312,7 +312,7 @@ class PutovanjaIstorijaService {
     required DateTime datum,
     required String vremePolaska,
     required String adresaPolaska,
-    String status = 'nije_se_pojavio',
+    String status = 'radi',
     double cena = 0.0,
   }) async {
     try {
@@ -352,7 +352,7 @@ class PutovanjaIstorijaService {
     required String vremePolaska,
     required String adresaPolaska,
     String? brojTelefona,
-    String status = 'nije_se_pojavio',
+    String status = 'radi',
     double cena = 0.0,
   }) async {
     try {
@@ -766,7 +766,6 @@ class PutovanjaIstorijaService {
 
       final ukupno = putovanja.length;
       final pokupljeni = putovanja.where((p) => p.jePokupljen).length;
-      final nisuSePojavili = putovanja.where((p) => p.status == 'nije_se_pojavio').length;
       final ukupnaZarada = putovanja.fold<double>(0.0, (sum, p) => sum + p.cena);
 
       final statusDistribution = <String, int>{};
@@ -788,7 +787,6 @@ class PutovanjaIstorijaService {
       return {
         'ukupno_putovanja': ukupno,
         'pokupljeni': pokupljeni,
-        'nisu_se_pojavili': nisuSePojavili,
         'procenat_pokupljenih': ukupno > 0 ? (pokupljeni / ukupno * 100).round() : 0,
         'ukupna_zarada': ukupnaZarada,
         'prosecna_zarada_po_putovanju': ukupno > 0 ? ukupnaZarada / ukupno : 0.0,

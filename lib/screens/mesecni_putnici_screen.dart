@@ -2767,7 +2767,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           if (!uspesniDatumi.contains(datum)) {
             uspesniDatumi.add(datum);
           }
-        } else if (status == 'otkazan' || status == 'nije_se_pojavio') {
+        } else if (status == 'otkazan' || status == 'otkazano') {
           if (!otkazaniDatumi.contains(datum) && !uspesniDatumi.contains(datum)) {
             otkazaniDatumi.add(datum);
           }
@@ -2918,7 +2918,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
         if (pokupljen || status == 'pokupljen') {
           uspesniDatumi.add(datum);
-        } else if (status == 'otkazan' || status == 'nije_se_pojavio') {
+        } else if (status == 'otkazan' || status == 'otkazano') {
           otkazaniDatumi.add(datum);
         }
       }

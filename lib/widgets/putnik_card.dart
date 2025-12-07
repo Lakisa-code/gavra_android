@@ -338,7 +338,7 @@ class _PutnikCardState extends State<PutnikCard> {
               vremeDodavanja: _putnik.vremeDodavanja,
               mesecnaKarta: _putnik.mesecnaKarta,
               dan: _putnik.dan,
-              status: _putnik.mesecnaKarta == true ? 'radi' : 'nije_se_pojavio',
+              status: 'radi', // Uvek radi kao početno stanje
               placeno: false,
               cena: 0,
               dodaoVozac: _putnik.dodaoVozac,

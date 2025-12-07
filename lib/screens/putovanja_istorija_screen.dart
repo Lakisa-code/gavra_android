@@ -1004,10 +1004,13 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
         color = Colors.orange;
         text = 'OTKAZAO';
         break;
-      case 'nije_se_pojavio':
+      case 'radi':
+        color = Colors.blue;
+        text = 'ČEKA';
+        break;
       default:
-        color = Colors.red;
-        text = 'NIJE SE POJAVIO';
+        color = Colors.grey;
+        text = status.toUpperCase();
         break;
     }
 

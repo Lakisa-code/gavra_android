@@ -145,7 +145,7 @@ class PutovanjaIstorija {
   // Helper metodi za status - MODERNIZED status logic
   bool get jePokupljen => status == 'pokupljen';
   bool get jeOtkazao => status == 'otkazao_poziv' || status == 'otkazano';
-  bool get nijeSePojaveo => status == 'nije_se_pojavio';
+  bool get jeNaCekanju => status == 'radi'; // Zamena za nije_se_pojavio
   bool get jePlacen => status == 'placeno';
 
   // Legacy compatibility getters (deprecated but kept for backward compatibility)
@@ -157,10 +157,10 @@ class PutovanjaIstorija {
   bool get jeOtkazaoBelaCrkvaVrsac => jeOtkazao;
   @Deprecated('Use jeOtkazao instead')
   bool get jeOtkazaoVrsacBelaCrkva => jeOtkazao;
-  @Deprecated('Use nijeSePojaveo instead')
-  bool get nijeSePojavioBelaCrkvaVrsac => nijeSePojaveo;
-  @Deprecated('Use nijeSePojaveo instead')
-  bool get nijeSePojavioVrsacBelaCrkva => nijeSePojaveo;
+  @Deprecated('Use jeNaCekanju instead - nije_se_pojavio is removed')
+  bool get nijeSePojavioBelaCrkvaVrsac => jeNaCekanju;
+  @Deprecated('Use jeNaCekanju instead - nije_se_pojavio is removed')
+  bool get nijeSePojavioVrsacBelaCrkva => jeNaCekanju;
 
   bool get jeMesecni => tipPutnika == 'mesecni';
   bool get jeDnevni => tipPutnika == 'dnevni';
@@ -265,8 +265,8 @@ class PutovanjaIstorija {
       case 'otkazao_poziv':
       case 'otkazano':
         return Colors.red;
-      case 'nije_se_pojavio':
-        return Colors.orange;
+      case 'radi':
+        return Colors.blue; // Na čekanju
       case 'placeno':
         return Colors.blue;
       case 'u_toku':
