@@ -9,6 +9,17 @@ import '../services/realtime_service.dart';
 /// Centralizovano upravljanje cache-om kada se putnici brišu/ažuriraju
 class GlobalCacheManager {
   // ═══════════════════════════════════════════════════════════════════════════
+  // 🎯 GLOBALNI REFRESH SIGNAL - Kada se promeni, svi StreamBuilder-i se rebuildu-ju
+  // ═══════════════════════════════════════════════════════════════════════════
+  static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
+
+  /// 🔄 Inkrementiraj refresh signal - forsira sve listenere da se rebuildu-ju
+  static void triggerGlobalRefresh() {
+    refreshSignal.value++;
+    debugPrint('🔄 GLOBAL REFRESH TRIGGERED: ${refreshSignal.value}');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // DEBOUNCING - Sprečava previše česte pozive
   // ═══════════════════════════════════════════════════════════════════════════
 
