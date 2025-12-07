@@ -4,7 +4,7 @@ import '../services/slobodna_mesta_service.dart';
 import '../theme.dart';
 
 /// 🎫 Widget za prikaz slobodnih mesta i promenu vremena
-/// Prikazuje se na Moj profil ekranu ispod Kombi status
+/// Prikazuje oba grada uporedo (Bela Crkva | Vršac)
 class SlobodnaMestaWidget extends StatefulWidget {
   final String? putnikId;
   final String? putnikGrad;
@@ -23,20 +23,14 @@ class SlobodnaMestaWidget extends StatefulWidget {
   State<SlobodnaMestaWidget> createState() => _SlobodnaMestaWidgetState();
 }
 
-class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
   @override
   void initState() {
     super.initState();
-    // Podesi početni tab na grad putnika
-    final initialIndex = widget.putnikGrad?.toUpperCase() == 'VS' ? 1 : 0;
-    _tabController = TabController(length: 2, vsync: this, initialIndex: initialIndex);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -110,47 +104,47 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> with SingleTi
       onTap: () => _onTapVreme(sm),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 65,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        margin: const EdgeInsets.all(3),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         decoration: BoxDecoration(
-          color: isCurrentTime ? Colors.blue.withValues(alpha: 0.4) : statusColor.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(12),
+          color: isCurrentTime ? Colors.blue.withValues(alpha: 0.4) : statusColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isCurrentTime ? Colors.blue : statusColor,
+            color: isCurrentTime ? Colors.blue : statusColor.withValues(alpha: 0.6),
             width: isCurrentTime ? 2 : 1,
           ),
         ),
-        child: Column(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               sm.vreme,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: isCurrentTime ? 14 : 12,
+                fontSize: 12,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: statusColor,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                sm.jePuno ? 'PUNO' : '${sm.slobodna}',
+                sm.jePuno ? 'X' : '${sm.slobodna}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 11,
                 ),
               ),
             ),
             if (isCurrentTime) ...[
-              const SizedBox(height: 4),
-              const Icon(Icons.check_circle, color: Colors.blue, size: 16),
+              const SizedBox(width: 4),
+              const Icon(Icons.check_circle, color: Colors.blue, size: 14),
             ],
           ],
         ),
@@ -158,21 +152,49 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> with SingleTi
     );
   }
 
-  Widget _buildGradTab(List<SlobodnaMesta> slobodna) {
-    if (slobodna.isEmpty) {
-      return const Center(
-        child: Text(
-          'Nema podataka',
-          style: TextStyle(color: Colors.white54),
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        children: slobodna.map((sm) => _buildTimeSlot(sm)).toList(),
+  Widget _buildGradColumn(String gradNaziv, String gradKod, List<SlobodnaMesta> slobodna) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Naslov grada
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  gradKod == 'BC' ? Icons.home : Icons.location_city,
+                  color: gradKod == 'BC' ? Colors.green : Colors.blue,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  gradNaziv,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Grid vremena
+          if (slobodna.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Text(
+                'Nema podataka',
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            )
+          else
+            Wrap(
+              alignment: WrapAlignment.center,
+              children: slobodna.map((sm) => _buildTimeSlot(sm)).toList(),
+            ),
+        ],
       ),
     );
   }
@@ -219,7 +241,12 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> with SingleTi
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.2),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.blueGrey.shade800.withValues(alpha: 0.8),
+                      Colors.blueGrey.shade900.withValues(alpha: 0.8),
+                    ],
+                  ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
@@ -227,54 +254,43 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> with SingleTi
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.event_seat, color: Colors.green, size: 20),
-                    const SizedBox(width: 8),
+                    const Icon(Icons.event_seat, color: Colors.lightBlueAccent, size: 18),
+                    const SizedBox(width: 6),
                     const Expanded(
                       child: Text(
                         'SLOBODNA MESTA',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                     ),
                     // Legenda
                     _buildLegendItem(Colors.green, '>3'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     _buildLegendItem(Colors.orange, '1-3'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     _buildLegendItem(Colors.red, '0'),
                   ],
                 ),
               ),
-              // Tabs
-              Container(
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: Colors.green,
-                  indicatorWeight: 3,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white54,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                  tabs: const [
-                    Tab(text: 'Bela Crkva'),
-                    Tab(text: 'Vršac'),
-                  ],
-                ),
-              ),
-              // Content
-              SizedBox(
-                height: 100,
-                child: TabBarView(
-                  controller: _tabController,
+              // Uporedni prikaz oba grada
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildGradTab(data['BC'] ?? []),
-                    _buildGradTab(data['VS'] ?? []),
+                    // Bela Crkva kolona
+                    _buildGradColumn('Bela Crkva', 'BC', data['BC'] ?? []),
+                    // Vertikalni separator
+                    Container(
+                      width: 1,
+                      height: 80,
+                      color: Colors.white24,
+                    ),
+                    // Vršac kolona
+                    _buildGradColumn('Vršac', 'VS', data['VS'] ?? []),
                   ],
                 ),
               ),

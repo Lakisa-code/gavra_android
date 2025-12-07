@@ -34,9 +34,9 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   double _dugovanje = 0.0;
   List<Map<String, dynamic>> _istorijaPl = [];
 
-  // 📊 Statistike - detaljno po datumima
-  Map<String, List<DateTime>> _voznjeDetaljno = {}; // mesec -> lista datuma vožnji
-  Map<String, List<DateTime>> _otkazivanjaDetaljno = {}; // mesec -> lista datuma otkazivanja
+  // 📊 Statistike - detaljno po datumima (Set za jedinstvene datume)
+  Map<String, Set<String>> _voznjeDetaljno = {}; // mesec -> set jedinstvenih datuma vožnji
+  Map<String, Set<String>> _otkazivanjaDetaljno = {}; // mesec -> set jedinstvenih datuma otkazivanja
   double _ukupnoZaduzenje = 0.0; // ukupno zaduženje za celu godinu
   String? _adresaBC; // BC adresa
   String? _adresaVS; // VS adresa
@@ -67,25 +67,40 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final pocetakGodine = DateTime(now.year, 1, 1);
 
-      // Broj vožnji ovog meseca (samo završene, ne otkazane/placeno/resetovan)
-      final voznje = await Supabase.instance.client
+      // Broj vožnji ovog meseca - JEDINSTVENI DATUMI (1 dan = 1 vožnja)
+      // VOŽNJA = samo kada je status 'pokupljen'
+      // Kolona 'pokupljen' boolean NE POSTOJI u tabeli putovanja_istorija
+      final voznjeResponse = await Supabase.instance.client
           .from('putovanja_istorija')
-          .select('id')
+          .select('datum_putovanja')
           .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
-          .neq('status', 'otkazano')
-          .neq('status', 'placeno') // Isključi mesečna plaćanja
-          .neq('status', 'resetovan') // Isključi resetovane zapise
-          .count();
+          .eq('status', 'pokupljen');
 
-      // Broj otkazivanja ovog meseca
-      final otkazivanja = await Supabase.instance.client
+      // Broji jedinstvene datume
+      final jedinstveniDatumiVoznji = <String>{};
+      for (final v in voznjeResponse) {
+        final datum = v['datum_putovanja'] as String?;
+        if (datum != null) jedinstveniDatumiVoznji.add(datum);
+      }
+      final brojVoznji = jedinstveniDatumiVoznji.length;
+
+      // Broj otkazivanja ovog meseca - JEDINSTVENI DATUMI
+      // NAPOMENA: U bazi je status 'otkazan' (ne 'otkazano')
+      final otkazivanjaResponse = await Supabase.instance.client
           .from('putovanja_istorija')
-          .select('id')
+          .select('datum_putovanja')
           .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
-          .eq('status', 'otkazano')
-          .count();
+          .eq('status', 'otkazan');
+
+      // Broji jedinstvene datume otkazivanja
+      final jedinstveniDatumiOtkazivanja = <String>{};
+      for (final o in otkazivanjaResponse) {
+        final datum = o['datum_putovanja'] as String?;
+        if (datum != null) jedinstveniDatumiOtkazivanja.add(datum);
+      }
+      final brojOtkazivanja = jedinstveniDatumiOtkazivanja.length;
 
       // Dugovanje
       final dug = _putnikData['dug'] ?? 0;
@@ -175,9 +190,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
           .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
           .order('datum_putovanja', ascending: false);
 
-      // Grupiši podatke DETALJNO po datumima
-      final Map<String, List<DateTime>> voznjeDetaljnoMap = {};
-      final Map<String, List<DateTime>> otkazivanjaDetaljnoMap = {};
+      // Grupiši podatke po JEDINSTVENIM datumima (Set eliminiše duplikate)
+      // VOŽNJA = samo status 'pokupljen' (jedinstveni datum)
+      // OTKAZIVANJE = samo status 'otkazan' (u bazi je 'otkazan', ne 'otkazano')
+      final Map<String, Set<String>> voznjeDetaljnoMap = {};
+      final Map<String, Set<String>> otkazivanjaDetaljnoMap = {};
 
       for (final v in sveVoznje) {
         final datumStr = v['datum_putovanja'] as String?;
@@ -189,12 +206,14 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
         final status = v['status'] as String?;
 
-        if (status == 'otkazano') {
-          otkazivanjaDetaljnoMap[mesecKey] = [...(otkazivanjaDetaljnoMap[mesecKey] ?? []), datum];
-        } else if (status != 'placeno' && status != 'resetovan') {
-          // Broji samo stvarne vožnje (pokupljen, radi), ne plaćanja ili resetovane
-          voznjeDetaljnoMap[mesecKey] = [...(voznjeDetaljnoMap[mesecKey] ?? []), datum];
+        if (status == 'otkazan') {
+          // Otkazivanja - status je 'otkazan' u bazi
+          otkazivanjaDetaljnoMap[mesecKey] = {...(otkazivanjaDetaljnoMap[mesecKey] ?? {}), datumStr};
+        } else if (status == 'pokupljen') {
+          // Vožnje - SAMO status 'pokupljen' se broji kao vožnja
+          voznjeDetaljnoMap[mesecKey] = {...(voznjeDetaljnoMap[mesecKey] ?? {}), datumStr};
         }
+        // Ignoriši: placeno, resetovan, nije_se_pojavio, radi
       }
 
       // Izračunaj ukupno zaduženje
@@ -215,8 +234,8 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final zaduzenje = ukupnoZaplacanje - ukupnoPlaceno;
 
       setState(() {
-        _brojVoznji = voznje.count;
-        _brojOtkazivanja = otkazivanja.count;
+        _brojVoznji = brojVoznji;
+        _brojOtkazivanja = brojOtkazivanja;
         _dugovanje = (dug is int) ? dug.toDouble() : (dug as double);
         _istorijaPl = istorija;
         _voznjeDetaljno = voznjeDetaljnoMap;
@@ -1022,8 +1041,11 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                 final mesecNum = int.parse(parts[1]);
                 final mesecNaziv = meseci[mesecNum] ?? key;
 
-                final voznjeList = _voznjeDetaljno[key] ?? [];
-                final otkazivanjaList = _otkazivanjaDetaljno[key] ?? [];
+                // Konvertuj Set<String> u List<DateTime> za prikaz
+                final voznjeSet = _voznjeDetaljno[key] ?? <String>{};
+                final otkazivanjaSet = _otkazivanjaDetaljno[key] ?? <String>{};
+                final voznjeList = voznjeSet.map((s) => DateTime.parse(s)).toList()..sort();
+                final otkazivanjaList = otkazivanjaSet.map((s) => DateTime.parse(s)).toList()..sort();
                 final brojVoznji = voznjeList.length;
                 final brojOtkazivanja = otkazivanjaList.length;
 

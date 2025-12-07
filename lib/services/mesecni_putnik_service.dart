@@ -450,18 +450,8 @@ class MesecniPutnikService {
     return response.map((json) => MesecniPutnik.fromMap(json)).toList();
   }
 
-  /// Ažurira broj putovanja za putnika
-  Future<void> azurirajBrojPutovanja(String id, {bool povecaj = true}) async {
-    final putnik = await getMesecniPutnikById(id);
-    if (putnik == null) return;
-
-    final noviBroj = povecaj ? putnik.brojPutovanja + 1 : putnik.brojPutovanja - 1;
-
-    await updateMesecniPutnik(id, {
-      'broj_putovanja': noviBroj,
-      'poslednje_putovanje': DateTime.now().toIso8601String(),
-    });
-  }
+  // ❌ UKLONJENO: azurirajBrojPutovanja - broj putovanja se računa ISKLJUČIVO iz istorije
+  // Koristi sinhronizujBrojPutovanjaSaIstorijom() za ažuriranje
 
   /// Ažurira broj otkazivanja za putnika
   Future<void> azurirajBrojOtkazivanja(String id, {bool povecaj = true}) async {
@@ -650,23 +640,27 @@ class MesecniPutnikService {
   }
 
   /// Izračunava broj putovanja iz istorije
+  /// VOŽNJA = jedinstveni datum kada je status 'pokupljen'
+  /// NE broji: placeno, resetovan, otkazan, nije_se_pojavio
   static Future<int> izracunajBrojPutovanjaIzIstorije(
     String mesecniPutnikId,
   ) async {
     try {
       final supabase = Supabase.instance.client;
       // Dobij sve JEDINSTVENE DATUME kada je putnik pokupljen
+      // Koristi datum_putovanja (ne datum - ta kolona ne postoji)
+      // Koristi samo status='pokupljen' (kolona pokupljen boolean ne postoji u tabeli)
       final response = await supabase
           .from('putovanja_istorija')
-          .select('datum')
+          .select('datum_putovanja')
           .eq('mesecni_putnik_id', mesecniPutnikId)
-          .or('pokupljen.eq.true,status.eq.pokupljeno');
+          .eq('status', 'pokupljen');
 
       // Broji JEDINSTVENE datume (jedan dan = jedno putovanje)
       final jedinstveniDatumi = <String>{};
       for (final red in response) {
-        if (red['datum'] != null) {
-          jedinstveniDatumi.add(red['datum'] as String);
+        if (red['datum_putovanja'] != null) {
+          jedinstveniDatumi.add(red['datum_putovanja'] as String);
         }
       }
 
@@ -679,23 +673,27 @@ class MesecniPutnikService {
   }
 
   /// Izračunava broj otkazivanja iz istorije
+  /// OTKAZIVANJE = jedinstveni datum kada je status 'otkazan'
+  /// NAPOMENA: U bazi je status 'otkazan' (ne 'otkazano')
   static Future<int> izracunajBrojOtkazivanjaIzIstorije(
     String mesecniPutnikId,
   ) async {
     try {
       final supabase = Supabase.instance.client;
       // Dobij sve JEDINSTVENE DATUME kada je putnik otkazan
+      // Koristi datum_putovanja (ne datum - ta kolona ne postoji)
+      // Status u bazi je 'otkazan' (ne 'otkazano')
       final response = await supabase
           .from('putovanja_istorija')
-          .select('datum')
+          .select('datum_putovanja')
           .eq('mesecni_putnik_id', mesecniPutnikId)
-          .eq('status', 'otkazano'); // Samo otkazano, bez nije_se_pojavio
+          .eq('status', 'otkazan');
 
       // Broji JEDINSTVENE datume (jedan dan = jedno otkazivanje)
       final jedinstveniDatumi = <String>{};
       for (final red in response) {
-        if (red['datum'] != null) {
-          jedinstveniDatumi.add(red['datum'] as String);
+        if (red['datum_putovanja'] != null) {
+          jedinstveniDatumi.add(red['datum_putovanja'] as String);
         }
       }
 

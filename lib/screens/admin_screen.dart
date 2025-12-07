@@ -631,255 +631,271 @@ class _AdminScreenState extends State<AdminScreen> {
                             },
                           ),
                           const SizedBox(height: 4),
-                          // TREĆI RED - Auth i Vozač dugmad
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 70,
-                                child: InkWell(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) => const AuthScreen(),
-                                    ),
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    height: 28,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).glassContainer,
+                          // TREĆI RED - Auth i Vozač dugmad (dinamička širina kao gornji red)
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final screenWidth = constraints.maxWidth;
+                              const spacing = 1.0;
+                              const padding = 8.0;
+                              final availableWidth = screenWidth - padding;
+                              // Broj dugmadi zavisi od korisnika
+                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 5 : 2;
+                              final buttonWidth = (availableWidth - (spacing * (buttonCount - 1))) / buttonCount;
+
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // AUTH dugme
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const AuthScreen(),
+                                        ),
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Theme.of(context).glassBorder,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(
-                                          'Auth',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                offset: Offset(1, 1),
-                                                blurRadius: 3,
-                                                color: Colors.black54,
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'Auth',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 3,
+                                                    color: Colors.black54,
+                                                  ),
+                                                ],
                                               ),
-                                            ],
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 70,
-                                child: InkWell(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (context) => const VozacScreen(),
-                                    ),
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    height: 28,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).glassContainer,
+
+                                  // VOZAČ dugme
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const VozacScreen(),
+                                        ),
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Theme.of(context).glassBorder,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: Text(
-                                          'Vozač',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                offset: Offset(1, 1),
-                                                blurRadius: 3,
-                                                color: Colors.black54,
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'Vozač',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 3,
+                                                    color: Colors.black54,
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // 🎯 DUGME DODELI - samo za Bojan i Svetlana
-                              if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ...[
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 70,
-                                  child: InkWell(
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (context) => const DodeliPutnikeScreen(),
-                                      ),
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      height: 28,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).glassContainer,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Theme.of(context).glassBorder,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: const Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            'Dodeli',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14,
-                                              color: Colors.white,
-                                              shadows: [
-                                                Shadow(
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 3,
-                                                  color: Colors.black54,
-                                                ),
-                                              ],
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                // 📝 DUGME ZAHTEVI - pregled zahteva putnika
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 70,
-                                  child: InkWell(
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (context) => const ZahteviPregledScreen(),
-                                      ),
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      height: 28,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).glassContainer,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Colors.amber.withValues(alpha: 0.6),
-                                          width: 1.5,
+
+                                  // 🎯 DUGME DODELI - samo za Bojan i Svetlana
+                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
+                                    SizedBox(
+                                      width: buttonWidth,
+                                      child: InkWell(
+                                        onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => const DodeliPutnikeScreen(),
+                                          ),
                                         ),
-                                      ),
-                                      child: const Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            'Zahtevi',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14,
-                                              color: Colors.amber,
-                                              shadows: [
-                                                Shadow(
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 3,
-                                                  color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          height: 28,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).glassContainer,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Theme.of(context).glassBorder,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                'Dodeli',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                  shadows: [
+                                                    Shadow(
+                                                      offset: Offset(1, 1),
+                                                      blurRadius: 3,
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                                // 🎫 DUGME KAPACITET - podešavanje kapaciteta polazaka
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 70,
-                                  child: InkWell(
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (context) => const KapacitetScreen(),
-                                      ),
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      height: 28,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).glassContainer,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: Colors.green.withValues(alpha: 0.6),
-                                          width: 1.5,
+
+                                  // 📝 DUGME ZAHTEVI - pregled zahteva putnika
+                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
+                                    SizedBox(
+                                      width: buttonWidth,
+                                      child: InkWell(
+                                        onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => const ZahteviPregledScreen(),
+                                          ),
                                         ),
-                                      ),
-                                      child: const Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            'Kapacit',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14,
-                                              color: Colors.green,
-                                              shadows: [
-                                                Shadow(
-                                                  offset: Offset(1, 1),
-                                                  blurRadius: 3,
-                                                  color: Colors.black54,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          height: 28,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).glassContainer,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Theme.of(context).glassBorder,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                'Zahtevi',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                  shadows: [
+                                                    Shadow(
+                                                      offset: Offset(1, 1),
+                                                      blurRadius: 3,
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ],
-                            ],
+
+                                  // 🎫 DUGME KAPACITET - podešavanje kapaciteta polazaka
+                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
+                                    SizedBox(
+                                      width: buttonWidth,
+                                      child: InkWell(
+                                        onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => const KapacitetScreen(),
+                                          ),
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          height: 28,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).glassContainer,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: Theme.of(context).glassBorder,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                'Kapacit',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Colors.white,
+                                                  shadows: [
+                                                    Shadow(
+                                                      offset: Offset(1, 1),
+                                                      blurRadius: 3,
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
