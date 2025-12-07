@@ -151,6 +151,57 @@ const LinearGradient passionateRoseGradient = LinearGradient(
   stops: [0.0, 0.25, 0.5, 0.75, 1.0],
 );
 
+// 💖 DARK PINK GRADIENT - Tamna sa neon pink akcentima!
+const LinearGradient darkPinkGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    Color(0xFF1A0A14), // Skoro crna sa pink undertone
+    Color(0xFF2D1F2D), // Tamno ljubičasta
+    Color(0xFF4A1942), // Deep magenta
+    Color(0xFF8B2F6B), // Rich pink
+    Color(0xFFE91E8C), // Neon pink akcent
+  ],
+  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+);
+
+// 💖 DARK PINK COLOR SCHEME
+const ColorScheme darkPinkColorScheme = ColorScheme(
+  brightness: Brightness.dark,
+
+  // Neon Pink kao glavni
+  primary: Color(0xFFE91E8C), // Neon pink
+  onPrimary: Colors.white,
+  primaryContainer: Color(0xFF8B2F6B), // Deep pink
+  onPrimaryContainer: Colors.white,
+
+  // Magenta kao secondary
+  secondary: Color(0xFF4A1942), // Deep magenta
+  onSecondary: Colors.white,
+  secondaryContainer: Color(0xFFFF69B4), // Hot pink
+  onSecondaryContainer: Color(0xFF1A0A14),
+
+  // Light pink kao tertiary
+  tertiary: Color(0xFFFFC0CB), // Light pink
+  onTertiary: Color(0xFF1A0A14),
+  tertiaryContainer: Color(0xFFFFB6C1), // Baby pink
+  onTertiaryContainer: Color(0xFF1A0A14),
+
+  // Tamne površine
+  surface: Color(0xFF1A0A14), // Skoro crna
+  onSurface: Colors.white,
+  surfaceContainerHighest: Color(0xFF2D1F2D),
+  onSurfaceVariant: Color(0xFFE8B4D0), // Svetlo pink tekst
+
+  outline: Color(0xFF8B2F6B),
+  outlineVariant: Color(0xFF4A1942),
+
+  error: Color(0xFFFF4444),
+  onError: Colors.white,
+  errorContainer: Color(0xFF3D0A0A),
+  onErrorContainer: Color(0xFFFF8888),
+);
+
 // 🎨 TEMA EKSTENZIJA - dodaje gradijent pozadinu
 extension ThemeGradients on ThemeData {
   LinearGradient get backgroundGradient => ThemeManager().currentGradient;
@@ -314,5 +365,79 @@ class DarkSteelGreyStyles {
       width: 2,
     ),
     // BEZ SHADOW-A!
+  );
+}
+
+// 💖 Dark Pink Styles - Tamna sa neon pink akcentima!
+class DarkPinkStyles {
+  static BoxDecoration cardDecoration = BoxDecoration(
+    color: const Color(0xFF2D1F2D), // Tamno ljubičasta pozadina
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      width: 2,
+      color: const Color(0xFFE91E8C).withValues(alpha: 0.5), // Neon pink border
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFE91E8C).withValues(alpha: 0.3), // Pink glow
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+        spreadRadius: 2,
+      ),
+    ],
+  );
+
+  static BoxDecoration gradientBackground = const BoxDecoration(
+    gradient: darkPinkGradient,
+  );
+
+  static BoxDecoration gradientButton = BoxDecoration(
+    gradient: darkPinkGradient,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      width: 1.5,
+      color: const Color(0xFFE91E8C).withValues(alpha: 0.6), // Neon pink border
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFE91E8C).withValues(alpha: 0.4), // Pink glow
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+        spreadRadius: 2,
+      ),
+    ],
+  );
+
+  static BoxDecoration dropdownDecoration = BoxDecoration(
+    color: const Color(0xFF2D1F2D), // Tamno ljubičasta pozadina
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: const Color(0xFFE91E8C).withValues(alpha: 0.4), // Pink border
+      width: 1.5,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFE91E8C).withValues(alpha: 0.2), // Pink glow
+        blurRadius: 12,
+        offset: const Offset(0, 4),
+      ),
+    ],
+  );
+
+  static BoxDecoration popupDecoration = BoxDecoration(
+    color: const Color(0xFF1A0A14), // Skoro crna pozadina
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: const Color(0xFFE91E8C).withValues(alpha: 0.5), // Pink border
+      width: 2,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFFE91E8C).withValues(alpha: 0.3), // Pink glow
+        blurRadius: 32,
+        offset: const Offset(0, 12),
+        spreadRadius: 4,
+      ),
+    ],
   );
 }

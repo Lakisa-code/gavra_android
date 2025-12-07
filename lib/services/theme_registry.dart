@@ -34,7 +34,15 @@ class ThemeRegistry {
       styles: TripleBlueFashionStyles, // ISTI STILOVI!
       gradient: passionateRoseGradient, // SAMO GRADIJENT DRUGAČIJI!
     ),
-    // 🆕 Ovde ćemo dodavati nove teme...
+    'dark_pink': ThemeDefinition(
+      id: 'dark_pink',
+      name: '💖 Dark Pink',
+      description: 'Tamna tema sa neon pink akcentima',
+      colorScheme: darkPinkColorScheme, // PINK BOJE!
+      themeData: tripleBlueFashionTheme, // ISTA TEMA!
+      styles: DarkPinkStyles, // PINK STILOVI!
+      gradient: darkPinkGradient, // TAMNO PINK GRADIJENT!
+    ),
   };
 
   /// Vraća sve dostupne teme
