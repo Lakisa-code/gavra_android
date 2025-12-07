@@ -47,11 +47,19 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
 
   Future<void> _ucitajMojeZahteve() async {
     try {
+      // Dohvati podatke registrovanog putnika
+      final putnikData =
+          await _supabase.from('dnevni_putnici_registrovani').select('telefon').eq('id', widget.putnikId).single();
+
+      final telefon = putnikData['telefon'] as String;
+
+      // Dohvati vožnje tog putnika po telefonu
       final response = await _supabase
           .from('dnevni_putnici')
           .select()
-          .eq('putnik_id', widget.putnikId)
-          .order('datum', ascending: false)
+          .eq('telefon', telefon)
+          .eq('obrisan', false)
+          .order('datum_putovanja', ascending: false)
           .limit(10);
 
       if (mounted) {
@@ -68,20 +76,25 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Dohvati podatke registrovanog putnika
+      final putnikData = await _supabase
+          .from('dnevni_putnici_registrovani')
+          .select('ime, prezime, telefon, grad')
+          .eq('id', widget.putnikId)
+          .single();
+
       final datumStr = DateFormat('yyyy-MM-dd').format(_datum);
       final vremeStr = '${_vreme.hour.toString().padLeft(2, '0')}:${_vreme.minute.toString().padLeft(2, '0')}';
 
+      // Kreiraj zahtev za vožnju u dnevni_putnici tabeli
       await _supabase.from('dnevni_putnici').insert({
-        'putnik_id': widget.putnikId,
-        'ime': widget.ime,
-        'prezime': widget.prezime,
-        'datum': datumStr,
-        'vreme': vremeStr,
-        'smer': _smer,
-        'broj_putnika': _brojPutnika,
-        'napomena': _napomenaController.text.trim().isEmpty ? null : _napomenaController.text.trim(),
-        'status': 'pending', // čeka odobrenje
-        'created_at': DateTime.now().toIso8601String(),
+        'putnik_ime': '${putnikData['ime']} ${putnikData['prezime']}',
+        'telefon': putnikData['telefon'],
+        'grad': putnikData['grad'],
+        'datum_putovanja': datumStr,
+        'vreme_polaska': vremeStr,
+        'broj_mesta': _brojPutnika,
+        'status': 'kreiran',
       });
 
       if (mounted) {

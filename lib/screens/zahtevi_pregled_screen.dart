@@ -75,21 +75,34 @@ class _ZahteviPregledScreenState extends State<ZahteviPregledScreen> {
 
     if (confirm == true) {
       try {
-        // 1. Ažuriraj status u zahtevi_pristupa
-        await Supabase.instance.client.from('zahtevi_pristupa').update({'status': 'approved'}).eq('id', zahtev['id']);
+        // 1. Dodaj u dnevni_putnici_registrovani tabelu i dobij ID
+        final insertResponse = await Supabase.instance.client
+            .from('dnevni_putnici_registrovani')
+            .insert({
+              'ime': zahtev['ime'],
+              'prezime': zahtev['prezime'],
+              'telefon': zahtev['telefon'],
+              'adresa': zahtev['adresa'],
+              'grad': zahtev['grad'],
+              'zahtev_id': zahtev['id'],
+              'status': 'aktivan',
+            })
+            .select('id')
+            .single();
 
-        // 2. Dodaj u dnevni_putnici tabelu
-        await Supabase.instance.client.from('dnevni_putnici').insert({
-          'ime': zahtev['ime'],
-          'prezime': zahtev['prezime'],
-          'telefon': zahtev['telefon'],
-          'grad': zahtev['grad'],
-        });
+        final putnikId = insertResponse['id'];
+
+        // 2. Ažuriraj status u zahtevi_pristupa sa putnik_id
+        await Supabase.instance.client.from('zahtevi_pristupa').update({
+          'status': 'approved',
+          'processed_at': DateTime.now().toIso8601String(),
+        }).eq('id', zahtev['id']);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✅ ${zahtev['ime']} ${zahtev['prezime']} odobren!'),
+              content: Text(
+                  '✅ ${zahtev['ime']} ${zahtev['prezime']} odobren! (ID: ${putnikId.toString().substring(0, 8)}...)'),
               backgroundColor: Colors.green,
             ),
           );

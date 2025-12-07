@@ -93,35 +93,68 @@ class _PutnikCekanjeScreenState extends State<PutnikCekanjeScreen> with SingleTi
   }
 
   Future<void> _onApproved() async {
-    // Sačuvaj podatke u SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('dnevni_putnik_id', widget.zahtevId);
-    await prefs.setString('dnevni_putnik_ime', '${widget.ime} ${widget.prezime}');
-    await prefs.setBool('dnevni_putnik_approved', true);
-
     if (!mounted) return;
 
-    // Prikaži poruku i idi na glavni ekran
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✅ Tvoj zahtev je odobren! Dobrodošao/la!'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    try {
+      // Dohvati putnik_id iz nove tabele dnevni_putnici_registrovani
+      final response = await _supabase
+          .from('dnevni_putnici_registrovani')
+          .select('id')
+          .eq('zahtev_id', int.parse(widget.zahtevId))
+          .single();
 
-    await Future.delayed(const Duration(seconds: 1));
+      final putnikId = response['id'] as String;
 
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => DnevniPutnikScreen(
-            putnikId: widget.zahtevId,
-            ime: widget.ime,
-            prezime: widget.prezime,
+      // Sačuvaj podatke u SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('dnevni_putnik_id', putnikId);
+      await prefs.setString('dnevni_putnik_zahtev_id', widget.zahtevId);
+      await prefs.setString('dnevni_putnik_ime', '${widget.ime} ${widget.prezime}');
+      await prefs.setBool('dnevni_putnik_approved', true);
+
+      // Prikaži poruku i idi na glavni ekran
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Tvoj zahtev je odobren! Dobrodošao/la!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
           ),
-        ),
-      );
+        );
+      }
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => DnevniPutnikScreen(
+              putnikId: putnikId,
+              ime: widget.ime,
+              prezime: widget.prezime,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Greška pri dohvatanju putnik_id: $e');
+      // Fallback - koristi zahtevId ako nema u novoj tabeli
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('dnevni_putnik_id', widget.zahtevId);
+      await prefs.setString('dnevni_putnik_ime', '${widget.ime} ${widget.prezime}');
+      await prefs.setBool('dnevni_putnik_approved', true);
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => DnevniPutnikScreen(
+              putnikId: widget.zahtevId,
+              ime: widget.ime,
+              prezime: widget.prezime,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -340,7 +373,7 @@ class _PutnikCekanjeScreenState extends State<PutnikCekanjeScreen> with SingleTi
                     ),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(height: 32),
 
                   // Dugme za nazad
                   TextButton.icon(

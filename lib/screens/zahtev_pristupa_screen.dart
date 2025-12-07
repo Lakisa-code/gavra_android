@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme.dart';
+import 'dnevni_putnik_screen.dart';
 import 'putnik_cekanje_screen.dart';
 
 /// 📝 ZAHTEV PRISTUPA SCREEN
@@ -83,6 +84,47 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
       _hasExistingRequest = false;
       _existingRequest = null;
     });
+  }
+
+  /// Nastavlja na DnevniPutnikScreen kada je zahtev odobren
+  Future<void> _nastaviNaDnevniEkran(String ime, String prezime) async {
+    try {
+      final zahtevId = _existingRequest?['id'];
+      if (zahtevId == null) {
+        _showError('Greška: nema ID zahteva');
+        return;
+      }
+
+      // Dohvati putnik_id iz dnevni_putnici_registrovani
+      final response = await Supabase.instance.client
+          .from('dnevni_putnici_registrovani')
+          .select('id')
+          .eq('zahtev_id', zahtevId)
+          .single();
+
+      final putnikId = response['id'] as String;
+
+      // Sačuvaj u SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('dnevni_putnik_id', putnikId);
+      await prefs.setString('dnevni_putnik_ime', '$ime $prezime');
+      await prefs.setBool('dnevni_putnik_approved', true);
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => DnevniPutnikScreen(
+              putnikId: putnikId,
+              ime: ime,
+              prezime: prezime,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Greška pri navigaciji: $e');
+      _showError('Greška pri učitavanju podataka');
+    }
   }
 
   @override
@@ -280,6 +322,21 @@ class _ZahtevPristupaScreenState extends State<ZahtevPristupaScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber,
                   foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Dugme za nastavak ako je odobren
+            if (status == 'approved') ...[
+              ElevatedButton.icon(
+                onPressed: () => _nastaviNaDnevniEkran(ime, prezime),
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('Nastavi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
               ),
