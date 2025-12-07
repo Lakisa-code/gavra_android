@@ -258,7 +258,7 @@ class MesecniPutnikService {
                 validVozacId = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
               } else if (vozacId == 'Bilevski') {
                 validVozacId = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
-              } else if (vozacId == 'Vlajic') {
+              } else if (vozacId == 'Ivan') {
                 validVozacId = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
               } else {
                 validVozacId = null;
@@ -266,7 +266,7 @@ class MesecniPutnikService {
             }
           } catch (e) {
             // 🆘 HARDCODED FALLBACK I ZA EXCEPTION
-            if (vozacId == 'Vlajic') {
+            if (vozacId == 'Ivan') {
               validVozacId = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
             } else if (vozacId == 'Bojan') {
               validVozacId = '6c48a4a5-194f-2d8e-87d0-0d2a3b6c7d8e';

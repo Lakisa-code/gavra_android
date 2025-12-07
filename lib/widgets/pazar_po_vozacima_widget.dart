@@ -21,7 +21,7 @@ class PazarPoVozacimaWidget extends StatelessWidget {
       'Bilevski',
       'Bojan',
       'Svetlana',
-      'Vlajic',
+      'Ivan',
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

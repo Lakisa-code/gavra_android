@@ -26,7 +26,7 @@ import '../widgets/putnik_list.dart';
 import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
-/// 🚗 VOZAČ SCREEN - Za Vlajic-a
+/// 🚗 VOZAČ SCREEN - Za Ivan-a
 /// Prikazuje putnike koristeći isti PutnikService stream kao DanasScreen
 class VozacScreen extends StatefulWidget {
   const VozacScreen({Key? key}) : super(key: key);
@@ -36,7 +36,7 @@ class VozacScreen extends StatefulWidget {
 }
 
 class _VozacScreenState extends State<VozacScreen> {
-  final String _vozacIme = 'Vlajic';
+  final String _vozacIme = 'Ivan';
   final PutnikService _putnikService = PutnikService();
   final RouteOptimizationService _routeOptimizationService = RouteOptimizationService();
 
@@ -125,9 +125,9 @@ class _VozacScreenState extends State<VozacScreen> {
 
   Future<void> _initializeCurrentDriver() async {
     _currentDriver = await FirebaseService.getCurrentDriver();
-    // 🆘 FALLBACK: Ako FirebaseService ne vrati vozača, koristi _vozacIme (Vlajic)
+    // 🆘 FALLBACK: Ako FirebaseService ne vrati vozača, koristi _vozacIme (Ivan)
     if (_currentDriver == null || _currentDriver!.isEmpty) {
-      _currentDriver = _vozacIme; // 'Vlajic'
+      _currentDriver = _vozacIme; // 'Ivan'
       // Sačuvaj u SharedPreferences za sledeći put
       await FirebaseService.setCurrentDriver(_vozacIme);
     }

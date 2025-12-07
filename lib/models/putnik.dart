@@ -667,7 +667,7 @@ class Putnik {
           case 'Bilevski':
             vozacUuid = '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g';
             break;
-          case 'Vlajic':
+          case 'Ivan':
             vozacUuid = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
             break;
           default:
@@ -684,7 +684,7 @@ class Putnik {
       'vreme_polaska': polazak,
       'putnik_ime': ime,
       'grad': grad, // ✅ DODANO: grad kolona
-      'adresa': adresa, // ✅ FIX: Dodato adresa TEXT polje za prikazivanje na kartici
+      // 'adresa' kolona NE POSTOJI u putovanja_istorija - koristi se adresa_id
       'adresa_id': null, // Ostaće null - adresa se dodaje asinhrono u toPutovanjaIstorijaMapWithAdresa
       'broj_telefona': brojTelefona, // ✅ DODATO: broj telefona putnika
       'cena': iznosPlacanja ?? 0.0,
@@ -812,7 +812,7 @@ class Putnik {
       case '8e6ac6c7-3b5b-4f0g-a9f2-2f4c5d8e9f0g':
         return 'Bilevski';
       case '67ea0a22-689c-41b8-b576-5b27145e8e5e':
-        return 'Vlajic';
+        return 'Ivan';
       default:
         return null;
     }

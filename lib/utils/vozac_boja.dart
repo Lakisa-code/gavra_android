@@ -25,7 +25,7 @@ class VozacBoja {
     'Bilevski': Color(0xFFFF9800), // narandžasta
     'Bojan': Color(0xFF00E5FF), // svetla cyan plava - osvežavajuća i moderna
     'Svetlana': Color(0xFFFF1493), // drecava pink (DeepPink)
-    'Vlajic': Color(0xFF8B4513), // braon (SaddleBrown)
+    'Ivan': Color(0xFF8B4513), // braon (SaddleBrown)
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -144,7 +144,7 @@ class VozacBoja {
     'Bruda': 'igor.jovanovic.1984@icloud.com',
     'Bilevski': 'bilyboy1983@gmail.com',
     'Svetlana': 'risticsvetlana2911@yahoo.com',
-    'Vlajic': 'kadpitamkurac@gmail.com',
+    'Ivan': 'kadpitamkurac@gmail.com',
   };
 
   // 🔒 VALIDACIJA: email -> vozač mapiranje
@@ -153,7 +153,7 @@ class VozacBoja {
     'igor.jovanovic.1984@icloud.com': 'Bruda',
     'bilyboy1983@gmail.com': 'Bilevski',
     'risticsvetlana2911@yahoo.com': 'Svetlana',
-    'kadpitamkurac@gmail.com': 'Vlajic',
+    'kadpitamkurac@gmail.com': 'Ivan',
   };
 
   // 📞 BROJEVI TELEFONA VOZAČA
@@ -162,7 +162,7 @@ class VozacBoja {
     'Bruda': '0641202844',
     'Bilevski': '0638466418',
     'Svetlana': '0658464160',
-    'Vlajic': '0605073073',
+    'Ivan': '0605073073',
   };
 
   // 🔒 HELPER FUNKCIJE ZA EMAIL VALIDACIJU

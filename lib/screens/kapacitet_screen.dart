@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/kapacitet_service.dart';
+import '../services/theme_manager.dart';
 import '../theme.dart';
 
 /// 🎫 Admin ekran za podešavanje kapaciteta polazaka
@@ -226,33 +227,39 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('🎫 Kapacitet Polazaka'),
-        backgroundColor: Theme.of(context).glassContainer,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.green,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: 'Bela Crkva'),
-            Tab(text: 'Vršac'),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: ThemeManager().currentGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text(
+            '🎫 Kapacitet Polazaka',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          bottom: TabBar(
+            controller: _tabController,
+            indicatorColor: Colors.green,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white54,
+            tabs: const [
+              Tab(text: 'Bela Crkva'),
+              Tab(text: 'Vršac'),
+            ],
+          ),
+          actions: [
+            IconButton(
+              onPressed: _loadKapacitet,
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              tooltip: 'Osveži',
+            ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: _loadKapacitet,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Osveži',
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: Theme.of(context).backgroundGradient,
-        ),
-        child: _isLoading
+        body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
                 controller: _tabController,

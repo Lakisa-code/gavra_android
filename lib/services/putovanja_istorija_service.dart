@@ -433,10 +433,7 @@ class PutovanjaIstorijaService {
         final noviStatus = statusBelaCrkvaVrsac ?? statusVrsacBelaCrkva;
         updateData['status'] = noviStatus;
         updateData['pokupljen'] = noviStatus == 'pokupljen';
-
-        if (noviStatus == 'pokupljen') {
-          updateData['vreme_pokupljenja'] = DateTime.now().toIso8601String();
-        }
+        // vreme_pokupljenja kolona ne postoji u putovanja_istorija
       }
 
       await SupabaseSafe.run(

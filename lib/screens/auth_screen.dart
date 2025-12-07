@@ -102,7 +102,7 @@ class _AuthScreenState extends State<AuthScreen> {
           'boja': 0xFFFF1493,
         },
         {
-          'ime': 'Vlajic',
+          'ime': 'Ivan',
           'email': 'kadpitamkurac@gmail.com',
           'sifra': '333333',
           'telefon': '0605073073',

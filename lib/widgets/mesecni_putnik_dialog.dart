@@ -1103,6 +1103,9 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
         // Ignore errors in daily travel creation
       }
 
+      // ✅ Očisti cache (refresh se dešava kroz ValueKey u parent screen-u)
+      MesecniPutnikService.clearCache();
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(

@@ -88,7 +88,7 @@ class StatistikaService {
     final now = _normalizeDateTime(DateTime.now());
     final fromDate = from ?? DateTime(now.year, now.month, now.day);
     final targetDate = fromDate.toIso8601String().split('T')[0];
-    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Vlajic'];
+    final vozaciRedosled = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Ivan'];
 
     return Supabase.instance.client
         .from('putovanja_istorija')
@@ -121,7 +121,7 @@ class StatistikaService {
               } else if (vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
                 vozacIme = 'Bilevski';
               } else if (vozacUuid == '67ea0a22-689c-41b8-b576-5b27145e8e5e') {
-                vozacIme = 'Vlajic';
+                vozacIme = 'Ivan';
               }
             }
 
@@ -189,7 +189,7 @@ class StatistikaService {
               if (!direktnoPodudaranje && vozac == 'Bilevski' && vozacUuid == '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f') {
                 direktnoPodudaranje = true;
               }
-              if (!direktnoPodudaranje && vozac == 'Vlajic' && vozacUuid == '67ea0a22-689c-41b8-b576-5b27145e8e5e') {
+              if (!direktnoPodudaranje && vozac == 'Ivan' && vozacUuid == '67ea0a22-689c-41b8-b576-5b27145e8e5e') {
                 direktnoPodudaranje = true;
               }
             }
@@ -232,7 +232,7 @@ class StatistikaService {
         targetUuid = '7d59b5b6-2a4a-3e9f-98e1-1e3b4c7d8e9f';
       } else if (vozac == 'Bilevski') {
         targetUuid = '8e68c6c7-3b8b-4f8a-a9d2-2f4b5c8d9e0f';
-      } else if (vozac == 'Vlajic') {
+      } else if (vozac == 'Ivan') {
         targetUuid = '67ea0a22-689c-41b8-b576-5b27145e8e5e';
       }
     }

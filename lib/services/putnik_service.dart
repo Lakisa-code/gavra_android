@@ -624,7 +624,7 @@ class PutnikService {
             // putovanja_istorija - koristi novu 'status' kolonu
             await supabase.from(tabela).update({
               'status': lastAction.oldData['status'] ?? 'radi',
-              'pokupljen': false, // ✅ RESETUJ pokupljen flag
+              'obrisan': false, // ✅ FIXED: Koristi obrisan umesto pokupljen
             }).eq('id', lastAction.putnikId as String);
           }
           return 'Poništeno brisanje putnika';
@@ -652,11 +652,11 @@ class PutnikService {
               'vozac_id': null, // ✅ RESETUJ vozača kao UUID (uklanja i legacy)
             }).eq('id', lastAction.putnikId as String);
           } else {
+            // ✅ FIXED: putovanja_istorija nema placeno/iznos_placanja/vreme_placanja kolone
             await supabase.from(tabela).update({
-              'placeno': false,
-              'iznos_placanja': null,
-              'vreme_placanja': null,
-              'status': lastAction.oldData['status'], // ✅ RESETUJ status
+              'cena': 0, // ✅ Resetuj cenu
+              'status': lastAction.oldData['status'] ?? 'radi', // ✅ RESETUJ status
+              'updated_at': DateTime.now().toIso8601String(),
             }).eq('id', lastAction.putnikId as String);
           }
           return 'Poništeno plaćanje';
@@ -667,10 +667,10 @@ class PutnikService {
               'status': lastAction.oldData['status'],
             }).eq('id', lastAction.putnikId as String);
           } else {
+            // ✅ FIXED: putovanja_istorija nema 'vozac' kolonu - koristi samo status
             await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'],
-              // 'vreme_akcije': lastAction.oldData['vreme_akcije'], // UKLONITI - kolona ne postoji
-              'vozac': lastAction.oldData['vozac'], // ✅ Koristi vozac umesto otkazao_vozac
+              'status': lastAction.oldData['status'] ?? 'radi',
+              'updated_at': DateTime.now().toIso8601String(),
             }).eq('id', lastAction.putnikId as String);
           }
           return 'Poništeno otkazivanje';
@@ -1217,7 +1217,7 @@ class PutnikService {
 
       await supabase.from(tabela).update({
         'status': 'pokupljen',
-        'vreme_pokupljenja': DateTime.now().toIso8601String(), // ✅ DODATO - vreme pokupljanja
+        // vreme_pokupljenja ne postoji u putovanja_istorija - koristi se action_log
         'action_log': updatedActionLog2.toJson(), // ✅ FIXED: Ažuriraj action_log.picked_by
       }).eq('id', id as String);
     }
@@ -1293,7 +1293,8 @@ class PutnikService {
       await supabase.from(tabela).update({
         'cena': iznos,
         'vozac_id': validVozacId, // ✅ FIXED: Samo UUID, null ako nema mapiranja
-        'vreme_placanja': DateTime.now().toIso8601String(), // ✅ DODATO - vreme plaćanja
+        // ✅ FIXED: vreme_placanja NE POSTOJI u putovanja_istorija - koristi updated_at
+        'updated_at': DateTime.now().toIso8601String(), // ✅ Koristi updated_at umesto vreme_placanja
         'action_log': updatedActionLog2.toJson(), // ✅ FIXED: Ažuriraj action_log.paid_by
         'status': 'placeno', // ✅ DODAJ STATUS plaćanja (konzistentno)
       }).eq('id', id as String);
@@ -1379,8 +1380,9 @@ class PutnikService {
             'datum_putovanja': danas,
             'vreme_polaska': polazak,
             'grad': grad,
-            'adresa': adresa, // ✅ FIX: Dodato adresa TEXT polje
-            'adresa_id': adresaId, // ✅ FIX: Dodato adresa_id UUID reference
+            // ✅ FIXED: 'adresa' TEXT kolona NE POSTOJI - koristi adresa_id i napomene
+            'adresa_id': adresaId, // ✅ UUID reference u tabelu adrese
+            'napomene': adresa != null ? 'Adresa: $adresa' : null, // ✅ Sačuvaj adresu u napomene
             'status': 'otkazan',
             'cena': 0,
             'vozac_id': null,

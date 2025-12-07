@@ -529,7 +529,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute<void>(
-                          builder: (context) => driverName == 'Vlajic' ? const VozacScreen() : const HomeScreen(),
+                          builder: (context) => driverName == 'Ivan' ? const VozacScreen() : const HomeScreen(),
                         ),
                       );
                     }
@@ -544,7 +544,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> with TickerProvider
             Navigator.pushReplacement(
               context,
               MaterialPageRoute<void>(
-                builder: (context) => driverName == 'Vlajic' ? const VozacScreen() : const HomeScreen(),
+                builder: (context) => driverName == 'Ivan' ? const VozacScreen() : const HomeScreen(),
               ),
             );
           }

@@ -23,7 +23,7 @@ Widget _getHomeScreen() {
 }
 
 Widget _getScreenForDriver(String driverName) {
-  if (driverName == 'Vlajic') {
+  if (driverName == 'Ivan') {
     return const VozacScreen();
   }
   return const HomeScreen();
@@ -55,7 +55,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       'icon': Icons.directions_car,
     },
     {
-      'name': 'Vlajic',
+      'name': 'Ivan',
       'color': const Color(0xFF8B4513), // braon
       'icon': Icons.directions_car,
     },

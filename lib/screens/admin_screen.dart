@@ -1077,7 +1077,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   'Bilevski',
                   'Bojan',
                   'Svetlana',
-                  'Vlajic',
+                  'Ivan',
                 ];
 
                 // Filter vozače redosled na osnovu trenutnog vozača

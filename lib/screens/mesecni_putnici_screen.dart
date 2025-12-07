@@ -40,6 +40,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik'
 
+  // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon čuvanja
+  int _streamRefreshKey = 0;
+
   // Supabase klijent
   final SupabaseClient supabase = Supabase.instance.client;
 
@@ -684,6 +687,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
             // 📋 LISTA PUTNIKA - Koristi ISTI stream kao danas_screen koji RADI
             Expanded(
               child: StreamBuilder<List<MesecniPutnik>>(
+                key: ValueKey(_streamRefreshKey), // 🔄 Forsira novi stream nakon čuvanja
                 stream: MesecniPutnikService.streamAktivniMesecniPutnici(),
                 builder: (context, snapshot) {
                   // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
@@ -1451,9 +1455,11 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       builder: (context) => MesecniPutnikDialog(
         existingPutnik: putnik,
         onSaved: () {
-          // Trigger a rebuild to refresh the list
+          // 🔄 REFRESH: Inkrementiraj key da forsira novi stream sa svežim podacima
           if (mounted) {
-            setState(() {});
+            setState(() {
+              _streamRefreshKey++;
+            });
           }
         },
       ),

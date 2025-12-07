@@ -78,7 +78,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
         'boja': 0xFFFF1493,
       },
       {
-        'ime': 'Vlajic',
+        'ime': 'Ivan',
         'email': 'kadpitamkurac@gmail.com',
         'sifra': '333333',
         'telefon': '0605073073',
@@ -180,7 +180,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
   }
 
   Widget _getScreenForDriver(String driverName) {
-    if (driverName == 'Vlajic') {
+    if (driverName == 'Ivan') {
       return const VozacScreen();
     }
     return const HomeScreen();

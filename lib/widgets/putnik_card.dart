@@ -787,7 +787,7 @@ class _PutnikCardState extends State<PutnikCard> {
   // 💰 UNIVERZALNA METODA ZA PLAĆANJE - custom cena za sve tipove putnika
   Future<void> _handlePayment() async {
     // Validacija vozača pre pokušaja plaćanja
-    final validni = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Vlajic'];
+    final validni = ['Bruda', 'Bilevski', 'Bojan', 'Svetlana', 'Ivan'];
     if (!validni.contains(widget.currentDriver)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1656,8 +1656,8 @@ class _PutnikCardState extends State<PutnikCard> {
     final bool isSvetlana = driver == 'Svetlana';
     final bool isAdmin = isBojan || isSvetlana; // Full admin prava
     final bool isBrudaOrBilevski = driver == 'Bruda' || driver == 'Bilevski';
-    final bool isVlajic = driver == 'Vlajic';
-    final bool isVozac = isBrudaOrBilevski || isVlajic; // Svi vozači
+    final bool isIvan = driver == 'Ivan';
+    final bool isVozac = isBrudaOrBilevski || isIvan; // Svi vozači
 
     if (_putnik.ime.toLowerCase().contains('rado') ||
         _putnik.ime.toLowerCase().contains('radoš') ||

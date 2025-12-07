@@ -108,6 +108,34 @@ class RealtimeService {
     );
   }
 
+  /// 🔄 FORCE REFRESH: Forsira osvežavanje podataka za datu tabelu
+  /// Koristi se nakon UPDATE operacija da bi se UI odmah ažurirao
+  void forceRefresh(String table) {
+    try {
+      final client = Supabase.instance.client;
+
+      if (table == 'mesecni_putnici') {
+        // Fetch fresh data i emit na stream
+        client.from('mesecni_putnici').select().then((data) {
+          final rows = (data as List<dynamic>).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _lastMesecniRows = rows;
+          _emitCombinedPutnici();
+        });
+      } else if (table == 'putovanja_istorija') {
+        client.from('putovanja_istorija').select().then((data) {
+          final rows = (data as List<dynamic>).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _lastPutovanjaRows = rows;
+          if (!_putovanjaController.isClosed) {
+            _putovanjaController.add(rows);
+          }
+          _emitCombinedPutnici();
+        });
+      }
+    } catch (e) {
+      // Ignore errors - stream će se osvežiti prirodno
+    }
+  }
+
   Future<void> unsubscribeAll() async {
     // _dailySub je aktivna
     try {
@@ -292,8 +320,8 @@ class RealtimeService {
             obrisan: r['obrisan'] == true,
             mesecnaKarta: true, // putovanja iz istorije su mesečni
             cena: iznosPlacanja,
-            vremePokupljenja:
-                r['vreme_pokupljenja'] != null ? DateTime.tryParse(r['vreme_pokupljenja'].toString()) : null,
+            // ✅ FIXED: putovanja_istorija nema vreme_pokupljenja - koristi updated_at ili null
+            vremePokupljenja: r['updated_at'] != null ? DateTime.tryParse(r['updated_at'].toString()) : null,
             brojTelefona: r['broj_telefona']?.toString(),
           );
           combined.add(putnik);

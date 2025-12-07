@@ -22,7 +22,7 @@ class DetaljanPazarPoVozacimaWidget extends StatelessWidget {
       'Bilevski',
       'Bojan',
       'Svetlana',
-      'Vlajic',
+      'Ivan',
     ];
 
     return Column(
