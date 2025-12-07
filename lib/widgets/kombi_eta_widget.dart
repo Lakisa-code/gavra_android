@@ -128,8 +128,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     // Odredi boje i poruku na osnovu stanja
     final bool hasEta = _isActive && _etaMinutes != null;
 
-    // Poruka i naslov - samo "Čekanje..." ako nema ETA
-    final String title = hasEta ? '🚐 KOMBI STIŽE ZA' : '🚐 KOMBI STATUS';
+    // Poruka i naslov
+    final String title = hasEta ? '🚐 KOMBI STIŽE ZA' : '🚐 PRAĆENJE UŽIVO';
     final String message = hasEta ? _formatEta(_etaMinutes!) : 'Čekanje...';
 
     // Boje sa providnošću kao IZMIRENO kocka

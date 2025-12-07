@@ -437,169 +437,170 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Ime i status
-                      Card(
-                        color: Colors.transparent,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              // Avatar - glassmorphism stil
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: tip == 'ucenik'
-                                        ? [Colors.blue.shade400, Colors.indigo.shade600]
-                                        : [Colors.orange.shade400, Colors.deepOrange.shade600],
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                    width: 2,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
-                                      blurRadius: 20,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
+                      // Ime i status - Flow dizajn bez Card okvira
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            // Avatar - glassmorphism stil
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: tip == 'ucenik'
+                                      ? [Colors.blue.shade400, Colors.indigo.shade600]
+                                      : [Colors.orange.shade400, Colors.deepOrange.shade600],
                                 ),
-                                child: Center(
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (tip == 'ucenik' ? Colors.blue : Colors.orange).withValues(alpha: 0.4),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${firstName.isNotEmpty ? firstName[0].toUpperCase() : ''}${lastName.isNotEmpty ? lastName[0].toUpperCase() : ''}',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                    shadows: [
+                                      Shadow(
+                                        offset: Offset(1, 1),
+                                        blurRadius: 3,
+                                        color: Colors.black38,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Ime
+                            Text(
+                              fullName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+
+                            // Tip i grad
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: tip == 'ucenik'
+                                        ? Colors.blue.withValues(alpha: 0.3)
+                                        : Colors.orange.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                  ),
                                   child: Text(
-                                    '${firstName.isNotEmpty ? firstName[0].toUpperCase() : ''}${lastName.isNotEmpty ? lastName[0].toUpperCase() : ''}',
+                                    tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik',
                                     style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
                                       color: Colors.white,
-                                      letterSpacing: 2,
-                                      shadows: [
-                                        Shadow(
-                                          offset: Offset(1, 1),
-                                          blurRadius: 3,
-                                          color: Colors.black38,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                if (telefon.isNotEmpty && telefon != '-') ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.phone, color: Colors.white70, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          telefon,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Ime
-                              Text(
-                                fullName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-
-                              // Tip i grad
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // Adrese - BC levo, VS desno
+                            if (_adresaBC != null || _adresaVS != null)
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: tip == 'ucenik'
-                                          ? Colors.blue.withValues(alpha: 0.3)
-                                          : Colors.orange.withValues(alpha: 0.3),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                    ),
-                                    child: Text(
-                                      tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                  if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
+                                    Icon(Icons.home, color: Colors.white70, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _adresaBC!,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: 13,
                                       ),
                                     ),
-                                  ),
-                                  if (telefon.isNotEmpty && telefon != '-') ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.phone, color: Colors.white70, size: 14),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            telefon,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
+                                  ],
+                                  if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
+                                  if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
+                                    Icon(Icons.work, color: Colors.white70, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _adresaVS!,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ],
                                 ],
                               ),
-                              const SizedBox(height: 16),
-                              // Adrese - BC levo, VS desno
-                              if (_adresaBC != null || _adresaVS != null)
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_adresaBC != null && _adresaBC!.isNotEmpty) ...[
-                                      Icon(Icons.home, color: Colors.white70, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _adresaBC!,
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.9),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                    if (_adresaBC != null && _adresaVS != null) const SizedBox(width: 16),
-                                    if (_adresaVS != null && _adresaVS!.isNotEmpty) ...[
-                                      Icon(Icons.work, color: Colors.white70, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _adresaVS!,
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.9),
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // ─────────── Divider ───────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                      ),
 
                       // 🚐 ETA Widget - prikazuje "Kombi stiže za X min" ako je vozač aktivan
                       KombiEtaWidget(
                         putnikIme: ime,
                         grad: grad,
+                      ),
+
+                      // ─────────── Divider ───────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
                       ),
 
                       // 🎫 Slobodna mesta Widget - prikazuje slobodna mesta po terminima
@@ -640,6 +641,13 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                           }
                         },
                       ),
+
+                      // ─────────── Divider ───────────
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Divider(color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+                      ),
+                      const SizedBox(height: 8),
 
                       // Statistike
                       Row(
@@ -683,43 +691,36 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   }
 
   Widget _buildStatCard(String emoji, String label, String value, Color color, String subtitle) {
-    return Card(
-      color: Colors.transparent,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 24)),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+    // Flow dizajn - bez Card okvira
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 24)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 11,
-              ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 11,
             ),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 10,
-              ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 10,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -764,12 +765,14 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          const Text(
-            '🕐 Vremena polaska',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          const Center(
+            child: Text(
+              '🕐 Vremena polaska',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1004,12 +1007,14 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
             const SizedBox(height: 16),
 
             // IZVOD PO MESECIMA
-            const Text(
-              '📋 Izvod po mesecima',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+            const Center(
+              child: Text(
+                '📋 Izvod po mesecima',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(height: 12),

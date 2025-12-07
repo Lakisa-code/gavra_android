@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../config/route_config.dart';
 import '../services/slobodna_mesta_service.dart';
+import '../services/theme_manager.dart';
 import '../theme.dart';
+import '../utils/schedule_utils.dart';
 
-/// 🎫 Widget za prikaz slobodnih mesta i promenu vremena
-/// Prikazuje oba grada uporedo (Bela Crkva | Vršac)
+/// 🎫 Widget za prikaz slobodnih mesta - BOTTOM NAV BAR STIL
+/// Identičan dizajn kao BottomNavBarZimski, samo prikazuje slobodna mesta
 class SlobodnaMestaWidget extends StatefulWidget {
   final String? putnikId;
   final String? putnikGrad;
@@ -24,25 +27,68 @@ class SlobodnaMestaWidget extends StatefulWidget {
 }
 
 class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
+  final ScrollController _bcScrollController = ScrollController();
+  final ScrollController _vsScrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelected();
+    });
+  }
+
+  @override
+  void didUpdateWidget(SlobodnaMestaWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.putnikVreme != widget.putnikVreme || oldWidget.putnikGrad != widget.putnikGrad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToSelected();
+      });
+    }
+  }
+
+  void _scrollToSelected() {
+    const double itemWidth = 60.0;
+
+    final jeZimski = isZimski(DateTime.now());
+    final bcVremena = jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+    final vsVremena = jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+
+    final normalizedGrad = widget.putnikGrad?.toLowerCase() ?? '';
+
+    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
+      final index = bcVremena.indexOf(widget.putnikVreme ?? '');
+      if (index != -1 && _bcScrollController.hasClients) {
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        _bcScrollController.animateTo(
+          targetOffset.clamp(0.0, _bcScrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
+      final index = vsVremena.indexOf(widget.putnikVreme ?? '');
+      if (index != -1 && _vsScrollController.hasClients) {
+        final targetOffset = (index * itemWidth) - (MediaQuery.of(context).size.width / 4);
+        _vsScrollController.animateTo(
+          targetOffset.clamp(0.0, _vsScrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    _bcScrollController.dispose();
+    _vsScrollController.dispose();
     super.dispose();
   }
 
-  Color _getStatusColor(SlobodnaMesta sm) {
-    if (!sm.aktivan) return Colors.grey;
-    if (sm.slobodna > 3) return Colors.green;
-    if (sm.slobodna > 0) return Colors.orange;
-    return Colors.red;
-  }
-
-  Future<void> _onTapVreme(SlobodnaMesta sm) async {
-    // Ako je puno ili neaktivno, ne može se izabrati
+  Future<void> _onTapSlot(SlobodnaMesta sm) async {
+    // Ako je puno ili neaktivno
     if (sm.jePuno || !sm.aktivan) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -54,7 +100,11 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
     }
 
     // Ako je isto vreme kao trenutno
-    if (sm.vreme == widget.putnikVreme && sm.grad.toUpperCase() == widget.putnikGrad?.toUpperCase()) {
+    final normalizedGrad = widget.putnikGrad?.toLowerCase() ?? '';
+    final isBC = normalizedGrad.contains('bela') || normalizedGrad == 'bc';
+    final isVS = normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs';
+
+    if (sm.vreme == widget.putnikVreme && ((sm.grad == 'BC' && isBC) || (sm.grad == 'VS' && isVS))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Već ste na ovom terminu'),
@@ -74,7 +124,7 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Da li želite da promenite vreme polaska na ${sm.vreme} (${sm.grad})?',
+          'Da li želite da promenite vreme polaska na ${sm.vreme} (${sm.grad == 'BC' ? 'Bela Crkva' : 'Vršac'})?',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -96,111 +146,10 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
     }
   }
 
-  Widget _buildTimeSlot(SlobodnaMesta sm) {
-    final isCurrentTime = sm.vreme == widget.putnikVreme && sm.grad.toUpperCase() == widget.putnikGrad?.toUpperCase();
-    final statusColor = _getStatusColor(sm);
-
-    return GestureDetector(
-      onTap: () => _onTapVreme(sm),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.all(3),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isCurrentTime ? Colors.blue.withValues(alpha: 0.4) : statusColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isCurrentTime ? Colors.blue : statusColor.withValues(alpha: 0.6),
-            width: isCurrentTime ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              sm.vreme,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                sm.jePuno ? 'X' : '${sm.slobodna}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            if (isCurrentTime) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.check_circle, color: Colors.blue, size: 14),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGradColumn(String gradNaziv, String gradKod, List<SlobodnaMesta> slobodna) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Naslov grada
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  gradKod == 'BC' ? Icons.home : Icons.location_city,
-                  color: gradKod == 'BC' ? Colors.green : Colors.blue,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  gradNaziv,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Grid vremena
-          if (slobodna.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8),
-              child: Text(
-                'Nema podataka',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
-              ),
-            )
-          else
-            Wrap(
-              alignment: WrapAlignment.center,
-              children: slobodna.map((sm) => _buildTimeSlot(sm)).toList(),
-            ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final currentThemeId = ThemeManager().currentThemeId;
+
     return StreamBuilder<Map<String, List<SlobodnaMesta>>>(
       stream: SlobodnaMestaService.streamSlobodnaMesta(),
       builder: (context, snapshot) {
@@ -209,12 +158,12 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).glassContainer.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.transparent,
               border: Border.all(
                 color: Theme.of(context).glassBorder,
                 width: 1.5,
               ),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
@@ -226,91 +175,184 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).glassContainer.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).glassBorder,
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.blueGrey.shade800.withValues(alpha: 0.8),
-                      Colors.blueGrey.shade900.withValues(alpha: 0.8),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.event_seat, color: Colors.lightBlueAccent, size: 18),
-                    const SizedBox(width: 6),
-                    const Expanded(
-                      child: Text(
-                        'SLOBODNA MESTA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+          // Flow dizajn - bez okvira
+          child: Material(
+            color: Colors.transparent,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header - SLOBODNA MESTA
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.event_seat, color: Colors.white70, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'SLOBODNA MESTA UŽIVO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    // Legenda
-                    _buildLegendItem(Colors.green, '>3'),
-                    const SizedBox(width: 3),
-                    _buildLegendItem(Colors.orange, '1-3'),
-                    const SizedBox(width: 3),
-                    _buildLegendItem(Colors.red, '0'),
-                  ],
-                ),
+                  ),
+                  // BC Row
+                  _SlobodnaRow(
+                    label: 'BC',
+                    grad: 'BC',
+                    slobodnaList: data['BC'] ?? [],
+                    putnikGrad: widget.putnikGrad,
+                    putnikVreme: widget.putnikVreme,
+                    onTapSlot: _onTapSlot,
+                    scrollController: _bcScrollController,
+                    currentThemeId: currentThemeId,
+                  ),
+                  // VS Row
+                  _SlobodnaRow(
+                    label: 'VS',
+                    grad: 'VS',
+                    slobodnaList: data['VS'] ?? [],
+                    putnikGrad: widget.putnikGrad,
+                    putnikVreme: widget.putnikVreme,
+                    onTapSlot: _onTapSlot,
+                    scrollController: _vsScrollController,
+                    currentThemeId: currentThemeId,
+                  ),
+                ],
               ),
-              // Uporedni prikaz oba grada
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Bela Crkva kolona
-                    _buildGradColumn('Bela Crkva', 'BC', data['BC'] ?? []),
-                    // Vertikalni separator
-                    Container(
-                      width: 1,
-                      height: 80,
-                      color: Colors.white24,
-                    ),
-                    // Vršac kolona
-                    _buildGradColumn('Vršac', 'VS', data['VS'] ?? []),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
     );
   }
+}
 
-  Widget _buildLegendItem(Color color, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+/// Red sa vremenima - identičan kao _PolazakRow u BottomNavBarZimski
+class _SlobodnaRow extends StatelessWidget {
+  const _SlobodnaRow({
+    required this.label,
+    required this.grad,
+    required this.slobodnaList,
+    required this.putnikGrad,
+    required this.putnikVreme,
+    required this.onTapSlot,
+    required this.currentThemeId,
+    this.scrollController,
+    Key? key,
+  }) : super(key: key);
+
+  final String label;
+  final String grad;
+  final List<SlobodnaMesta> slobodnaList;
+  final String? putnikGrad;
+  final String? putnikVreme;
+  final Function(SlobodnaMesta) onTapSlot;
+  final ScrollController? scrollController;
+  final String currentThemeId;
+
+  bool _isSelected(SlobodnaMesta sm) {
+    final normalizedGrad = putnikGrad?.toLowerCase() ?? '';
+    final isBC = normalizedGrad.contains('bela') || normalizedGrad == 'bc';
+    final isVS = normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs';
+
+    return sm.vreme == putnikVreme && ((sm.grad == 'BC' && isBC) || (sm.grad == 'VS' && isVS));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              controller: scrollController,
+              child: Row(
+                children: slobodnaList.map((sm) {
+                  final bool selected = _isSelected(sm);
+
+                  return GestureDetector(
+                    onTap: () => onTapSlot(sm),
+                    child: Container(
+                      width: 60.0,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? (currentThemeId == 'dark_steel_grey'
+                                ? const Color(0xFF4A4A4A).withValues(alpha: 0.15)
+                                : currentThemeId == 'passionate_rose'
+                                    ? const Color(0xFFDC143C).withValues(alpha: 0.15)
+                                    : Colors.blueAccent.withValues(alpha: 0.15))
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: selected
+                              ? (currentThemeId == 'dark_steel_grey'
+                                  ? const Color(0xFF4A4A4A)
+                                  : currentThemeId == 'passionate_rose'
+                                      ? const Color(0xFFDC143C)
+                                      : Colors.blue)
+                              : Colors.grey[300]!,
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            sm.vreme,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: selected
+                                  ? (currentThemeId == 'dark_steel_grey'
+                                      ? const Color(0xFF4A4A4A)
+                                      : currentThemeId == 'passionate_rose'
+                                          ? const Color(0xFFDC143C)
+                                          : Colors.blue)
+                                  : Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            sm.jePuno ? 'X' : '${sm.slobodna}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: selected
+                                  ? (currentThemeId == 'dark_steel_grey'
+                                      ? const Color(0xFF4A4A4A)
+                                      : currentThemeId == 'passionate_rose'
+                                          ? const Color(0xFFDC143C)
+                                          : Colors.blue)
+                                  : Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
