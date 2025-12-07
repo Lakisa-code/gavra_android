@@ -1138,10 +1138,10 @@ class PutnikService {
     _addToUndoStack('delete', id, undoResponse);
 
     // ✅ KONZISTENTNO BRISANJE - obe tabele imaju obrisan kolonu
+    // ⚠️ NE menjaj status - constraint check_mesecni_status_valid dozvoljava samo:
+    // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godišnji'
     await supabase.from(tabela).update({
-      'obrisan': true, // ✅ Sada POSTOJI u obe tabele
-      'status': 'obrisan', // Dodatno označavanje u status
-      // 'vreme_akcije': DateTime.now().toIso8601String(), // UKLONITI - kolona ne postoji
+      'obrisan': true, // ✅ Soft delete flag
     }).eq('id', id as String);
 
     // 🔄 VIŠESTRUKI REFRESH NAKON BRISANJA za trenutno ažuriranje
