@@ -74,3 +74,6 @@ github-mcp-server/
 supabase-mcp/
 supabase-mcp-official/
 huawei-appgallery-mcp/
+
+# Supabase credentials
+.supabase_credentials
