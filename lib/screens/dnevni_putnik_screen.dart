@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../theme.dart';
+
 /// 📱 Ekran za odobrenog dnevnog putnika
 /// Može da pošalje zahtev za vožnju
 class DnevniPutnikScreen extends StatefulWidget {
@@ -158,15 +160,8 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.green.shade50,
-              Colors.white,
-            ],
-          ),
+        decoration: const BoxDecoration(
+          gradient: tripleBlueFashionGradient,
         ),
         child: SafeArea(
           child: CustomScrollView(
@@ -234,28 +229,26 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).glassContainer,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      border: Border.all(
+                        color: Theme.of(context).glassBorder,
+                        width: 1.5,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.directions_car, color: Colors.green.shade600),
+                            const Icon(Icons.directions_car, color: Colors.white),
                             const SizedBox(width: 8),
                             const Text(
                               'Zakaži vožnju',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
                             ),
                           ],
@@ -265,7 +258,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                         // Smer
                         const Text(
                           'Smer putovanja',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -299,7 +292,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                                 children: [
                                   const Text(
                                     'Datum',
-                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                                   ),
                                   const SizedBox(height: 8),
                                   InkWell(
@@ -307,16 +300,22 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey.shade300),
+                                        color: Colors.white.withValues(alpha: 0.1),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.calendar_today, size: 20),
+                                          const Icon(Icons.calendar_today, size: 20, color: Colors.white),
                                           const SizedBox(width: 8),
-                                          Text(
-                                            DateFormat('dd.MM.yyyy').format(_datum),
-                                            style: const TextStyle(fontSize: 16),
+                                          Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                DateFormat('dd.MM.yyyy').format(_datum),
+                                                style: const TextStyle(fontSize: 16, color: Colors.white),
+                                              ),
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -332,7 +331,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                                 children: [
                                   const Text(
                                     'Vreme',
-                                    style: TextStyle(fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                                   ),
                                   const SizedBox(height: 8),
                                   InkWell(
@@ -340,16 +339,17 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey.shade300),
+                                        color: Colors.white.withValues(alpha: 0.1),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.access_time, size: 20),
+                                          const Icon(Icons.access_time, size: 20, color: Colors.white),
                                           const SizedBox(width: 8),
                                           Text(
                                             '${_vreme.hour.toString().padLeft(2, '0')}:${_vreme.minute.toString().padLeft(2, '0')}',
-                                            style: const TextStyle(fontSize: 16),
+                                            style: const TextStyle(fontSize: 16, color: Colors.white),
                                           ),
                                         ],
                                       ),
@@ -366,7 +366,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                         // Broj putnika
                         const Text(
                           'Broj putnika',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -374,7 +374,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                             IconButton(
                               onPressed: _brojPutnika > 1 ? () => setState(() => _brojPutnika--) : null,
                               icon: const Icon(Icons.remove_circle_outline),
-                              color: Colors.green,
+                              color: Colors.white,
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -382,7 +382,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade50,
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -390,34 +390,16 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
                             IconButton(
                               onPressed: _brojPutnika < 8 ? () => setState(() => _brojPutnika++) : null,
                               icon: const Icon(Icons.add_circle_outline),
-                              color: Colors.green,
+                              color: Colors.white,
                             ),
                           ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Napomena
-                        const Text(
-                          'Napomena (opciono)',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _napomenaController,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            hintText: 'Npr. adresa, posebne napomene...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                         ),
 
                         const SizedBox(height: 24),
@@ -477,13 +459,14 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.history, color: Colors.grey.shade700),
+                          const Icon(Icons.history, color: Colors.white),
                           const SizedBox(width: 8),
                           const Text(
                             'Moji zahtevi',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -496,13 +479,13 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
 
               // Lista zahteva
               if (_mojiZahtevi.isEmpty)
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Center(
                       child: Text(
                         'Nemaš prethodnih zahteva',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                       ),
                     ),
                   ),
@@ -535,10 +518,10 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.green.shade100 : Colors.grey.shade100,
+          color: isSelected ? Colors.white.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.green.shade400 : Colors.grey.shade300,
+            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -546,7 +529,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.green.shade700 : Colors.grey.shade600,
+              color: Colors.white,
             ),
             const SizedBox(height: 8),
             Text(
@@ -555,7 +538,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.green.shade700 : Colors.grey.shade700,
+                color: Colors.white,
               ),
             ),
           ],
@@ -596,15 +579,9 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-          ),
-        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -612,7 +589,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
+              color: statusColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(statusIcon, color: statusColor),
@@ -629,13 +606,14 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$datum u $vreme • $brojPutnika putnik${brojPutnika > 1 ? 'a' : ''}',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 13,
                   ),
                 ),
@@ -647,7 +625,7 @@ class _DnevniPutnikScreenState extends State<DnevniPutnikScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
+              color: statusColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
