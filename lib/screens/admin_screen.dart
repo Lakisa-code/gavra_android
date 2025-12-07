@@ -21,6 +21,7 @@ import 'auth_screen.dart'; // DODANO za auth admin
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
+import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
@@ -814,6 +815,55 @@ class _AdminScreenState extends State<AdminScreen> {
                                               fontWeight: FontWeight.w600,
                                               fontSize: 14,
                                               color: Colors.amber,
+                                              shadows: [
+                                                Shadow(
+                                                  offset: Offset(1, 1),
+                                                  blurRadius: 3,
+                                                  color: Colors.black54,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // 🎫 DUGME KAPACITET - podešavanje kapaciteta polazaka
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 70,
+                                  child: InkWell(
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (context) => const KapacitetScreen(),
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      height: 28,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).glassContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.green.withValues(alpha: 0.6),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            'Kapacit',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                              color: Colors.green,
                                               shadows: [
                                                 Shadow(
                                                   offset: Offset(1, 1),

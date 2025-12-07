@@ -133,7 +133,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     final String message = hasEta ? _formatEta(_etaMinutes!) : 'Čekanje...';
 
     // Boje sa providnošću kao IZMIRENO kocka
-    final Color baseColor = hasEta ? Colors.blue : Colors.grey;
+    // Zelena kad ima ETA, siva kad čeka
+    final Color baseColor = hasEta ? Colors.green : Colors.grey;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),

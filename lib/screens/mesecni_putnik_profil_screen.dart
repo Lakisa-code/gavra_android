@@ -3,11 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
+import '../services/slobodna_mesta_service.dart'; // 🎫 Promena vremena
 import '../services/theme_manager.dart';
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
 import '../widgets/kombi_eta_widget.dart'; // 🆕 Jednostavan ETA widget
 import '../widgets/shared/time_picker_cell.dart';
+import '../widgets/slobodna_mesta_widget.dart'; // 🎫 Slobodna mesta widget
 
 /// 📊 MESEČNI PUTNIK PROFIL SCREEN
 /// Prikazuje podatke o mesečnom putniku: raspored, vožnje, dugovanja
@@ -576,6 +578,42 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
                       KombiEtaWidget(
                         putnikIme: ime,
                         grad: grad,
+                      ),
+
+                      // 🎫 Slobodna mesta Widget - prikazuje slobodna mesta po terminima
+                      SlobodnaMestaWidget(
+                        putnikId: _putnikData['id']?.toString(),
+                        putnikGrad: grad,
+                        putnikVreme: _putnikData['polazak']?.toString(),
+                        onPromenaVremena: (novoVreme) async {
+                          // Format: 'GRAD|VREME' npr. 'BC|7:00'
+                          final parts = novoVreme.split('|');
+                          if (parts.length != 2) return;
+
+                          final noviGrad = parts[0];
+                          final novoVremeValue = parts[1];
+
+                          // Odredi dan
+                          final danas = DateTime.now();
+                          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+                          final dan = dani[danas.weekday - 1];
+
+                          final result = await SlobodnaMestaService.promeniVremePutnika(
+                            putnikId: _putnikData['id']?.toString() ?? '',
+                            novoVreme: novoVremeValue,
+                            grad: noviGrad,
+                            dan: dan,
+                          );
+
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result['message'] as String),
+                                backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+                              ),
+                            );
+                          }
+                        },
                       ),
 
                       // Statistike
