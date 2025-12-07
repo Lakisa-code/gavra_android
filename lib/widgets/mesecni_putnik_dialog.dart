@@ -6,7 +6,6 @@ import '../services/mesecni_putnik_service.dart';
 import '../theme.dart';
 import '../utils/mesecni_helpers.dart';
 import '../widgets/shared/time_row.dart';
-import 'adresa_widgets.dart';
 
 /// 🆕🔧 UNIFIKOVANI WIDGET ZA DODAVANJE I EDITOVANJE MESEČNIH PUTNIKA
 ///
@@ -474,30 +473,41 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       title: '🏠 Adrese',
       child: Column(
         children: [
-          AdresaAutocompleteWidget(
-            grad: 'Bela Crkva',
+          TextFormField(
             controller: _adresaBelaCrkvaController,
-            initialValue: _adresaBelaCrkvaController.text.isNotEmpty ? _adresaBelaCrkvaController.text : null,
-            label: 'Adresa Bela Crkva',
-            prefixIcon: const Icon(Icons.location_on),
-            onChanged: (id, naziv) {
+            decoration: InputDecoration(
+              labelText: 'Adresa Bela Crkva',
+              prefixIcon: const Icon(Icons.location_on),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            style: const TextStyle(color: Colors.white),
+            onChanged: (value) {
+              // Clear UUID when user types manually
               setState(() {
-                _adresaBelaCrkvaId = id;
-                // if user selected a suggestion the controller already has naziv
-                // if user typed free text, id will be null until saved/created
+                _adresaBelaCrkvaId = null;
               });
             },
           ),
           const SizedBox(height: 12),
-          AdresaAutocompleteWidget(
-            grad: 'Vršac',
+          TextFormField(
             controller: _adresaVrsacController,
-            initialValue: _adresaVrsacController.text.isNotEmpty ? _adresaVrsacController.text : null,
-            label: 'Adresa Vršac',
-            prefixIcon: const Icon(Icons.location_city),
-            onChanged: (id, naziv) {
+            decoration: InputDecoration(
+              labelText: 'Adresa Vršac',
+              prefixIcon: const Icon(Icons.location_city),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.1),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            style: const TextStyle(color: Colors.white),
+            onChanged: (value) {
               setState(() {
-                _adresaVrsacId = id;
+                _adresaVrsacId = null;
               });
             },
           ),
