@@ -216,8 +216,10 @@ class _PolazakRow extends StatelessWidget {
                             ? (currentThemeId == 'dark_steel_grey'
                                 ? const Color(0xFF4A4A4A).withValues(alpha: 0.15) // Crna tema
                                 : currentThemeId == 'passionate_rose'
-                                    ? const Color(0xFFDC143C).withValues(alpha: 0.15) // Pink tema - Crimson
-                                    : Colors.blueAccent.withValues(alpha: 0.15)) // Plava tema
+                                    ? const Color(0xFFDC143C).withValues(alpha: 0.15) // Crvena tema
+                                    : currentThemeId == 'dark_pink'
+                                        ? const Color(0xFFE91E8C).withValues(alpha: 0.15) // Dark Pink tema
+                                        : Colors.blueAccent.withValues(alpha: 0.15)) // Plava tema
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -225,8 +227,10 @@ class _PolazakRow extends StatelessWidget {
                               ? (currentThemeId == 'dark_steel_grey'
                                   ? const Color(0xFF4A4A4A) // Crna tema
                                   : currentThemeId == 'passionate_rose'
-                                      ? const Color(0xFFDC143C) // Pink tema - Crimson
-                                      : Colors.blue) // Plava tema
+                                      ? const Color(0xFFDC143C) // Crvena tema
+                                      : currentThemeId == 'dark_pink'
+                                          ? const Color(0xFFE91E8C) // Dark Pink tema
+                                          : Colors.blue) // Plava tema
                               : Colors.grey[300]!,
                           width: selected ? 2 : 1,
                         ),
@@ -241,10 +245,10 @@ class _PolazakRow extends StatelessWidget {
                                   ? (currentThemeId == 'dark_steel_grey'
                                       ? const Color(0xFF4A4A4A) // Crna tema
                                       : currentThemeId == 'passionate_rose'
-                                          ? const Color(
-                                              0xFFDC143C,
-                                            ) // Pink tema - Crimson
-                                          : Colors.blue) // Plava tema
+                                          ? const Color(0xFFDC143C) // Crvena tema
+                                          : currentThemeId == 'dark_pink'
+                                              ? const Color(0xFFE91E8C) // Dark Pink tema
+                                              : Colors.blue) // Plava tema
                                   : Colors.white,
                             ),
                           ),
@@ -267,10 +271,10 @@ class _PolazakRow extends StatelessWidget {
                                       ? (currentThemeId == 'dark_steel_grey'
                                           ? const Color(0xFF4A4A4A) // Crna tema
                                           : currentThemeId == 'passionate_rose'
-                                              ? const Color(
-                                                  0xFFDC143C,
-                                                ) // Pink tema - Crimson
-                                              : Colors.blue) // Plava tema
+                                              ? const Color(0xFFDC143C) // Crvena tema
+                                              : currentThemeId == 'dark_pink'
+                                                  ? const Color(0xFFE91E8C) // Dark Pink tema
+                                                  : Colors.blue) // Plava tema
                                       : Colors.white70,
                                 ),
                               );

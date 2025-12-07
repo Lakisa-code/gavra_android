@@ -301,7 +301,9 @@ class _SlobodnaRow extends StatelessWidget {
                                 ? const Color(0xFF4A4A4A).withValues(alpha: 0.15)
                                 : currentThemeId == 'passionate_rose'
                                     ? const Color(0xFFDC143C).withValues(alpha: 0.15)
-                                    : Colors.blueAccent.withValues(alpha: 0.15))
+                                    : currentThemeId == 'dark_pink'
+                                        ? const Color(0xFFE91E8C).withValues(alpha: 0.15)
+                                        : Colors.blueAccent.withValues(alpha: 0.15))
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
@@ -310,7 +312,9 @@ class _SlobodnaRow extends StatelessWidget {
                                   ? const Color(0xFF4A4A4A)
                                   : currentThemeId == 'passionate_rose'
                                       ? const Color(0xFFDC143C)
-                                      : Colors.blue)
+                                      : currentThemeId == 'dark_pink'
+                                          ? const Color(0xFFE91E8C)
+                                          : Colors.blue)
                               : Colors.grey[300]!,
                           width: selected ? 2 : 1,
                         ),
@@ -326,7 +330,9 @@ class _SlobodnaRow extends StatelessWidget {
                                       ? const Color(0xFF4A4A4A)
                                       : currentThemeId == 'passionate_rose'
                                           ? const Color(0xFFDC143C)
-                                          : Colors.blue)
+                                          : currentThemeId == 'dark_pink'
+                                              ? const Color(0xFFE91E8C)
+                                              : Colors.blue)
                                   : Colors.white,
                             ),
                           ),
@@ -340,7 +346,9 @@ class _SlobodnaRow extends StatelessWidget {
                                       ? const Color(0xFF4A4A4A)
                                       : currentThemeId == 'passionate_rose'
                                           ? const Color(0xFFDC143C)
-                                          : Colors.blue)
+                                          : currentThemeId == 'dark_pink'
+                                              ? const Color(0xFFE91E8C)
+                                              : Colors.blue)
                                   : Colors.white70,
                             ),
                           ),
