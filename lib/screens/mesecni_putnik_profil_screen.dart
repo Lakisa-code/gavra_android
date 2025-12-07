@@ -860,8 +860,48 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
   }
 
   /// 🕐 Ažurira polazak za određeni dan i čuva u bazu
-  Future<void> _updatePolazak(String dan, String tip, String? novoVreme) async {
+  Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
     try {
+      // 🚫 OGRANIČENJA ZA UČENIKE posle 16:00
+      final tipPutnika = _putnikData['tip'] as String? ?? 'radnik';
+      if (tipPutnika == 'ucenik') {
+        final sada = DateTime.now();
+        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        final danasDan = dani[sada.weekday - 1];
+        final sutra = sada.add(const Duration(days: 1));
+        final sutraDan = dani[sutra.weekday - 1];
+
+        if (sada.hour >= 16) {
+          // 1. VS (povratak iz škole) za DANAS - ograničeno do 16:00
+          if (tipGrad == 'vs' && dan.toLowerCase() == danasDan.toLowerCase()) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('⏰ Povratak za danas moguće zakazati do 16:00'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            return;
+          }
+
+          // 2. Bilo šta za SUTRA - ograničeno do 16:00
+          if (dan.toLowerCase() == sutraDan.toLowerCase()) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('⏰ Zakazivanje za sutra moguće do 16:00'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            return;
+          }
+        }
+      }
+
       // Ažuriraj lokalno
       final polasciRaw = _putnikData['polasci_po_danu'] ?? {};
       Map<String, dynamic> polasci = {};
@@ -878,7 +918,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
       // Osiguraj da dan postoji
       polasci[dan] ??= {'bc': null, 'vs': null};
-      polasci[dan]![tip] = novoVreme;
+      polasci[dan]![tipGrad] = novoVreme;
 
       // Sačuvaj u bazu
       final putnikId = _putnikData['id'];
