@@ -38,7 +38,7 @@ class MesecniPutniciScreen extends StatefulWidget {
 
 class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik'
+  String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni'
 
   // 🔄 REFRESH KEY: Forsira kreiranje novog stream-a nakon čuvanja
   int _streamRefreshKey = 0;
@@ -103,6 +103,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 🔄 CACHE za broj radnika da se izbegnu višestruki StreamBuilder-i
   int _cachedBrojRadnika = 0;
   int _cachedBrojUcenika = 0;
+  int _cachedBrojDnevnih = 0;
 
   // 🔄 OPTIMIZACIJA: Update cache umesto StreamBuilder-a
   void _updateCacheValues(List<MesecniPutnik> putnici) {
@@ -116,12 +117,18 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
           (p) => p.tip == 'ucenik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje',
         )
         .length;
+    final noviDnevni = putnici
+        .where(
+          (p) => p.tip == 'dnevni' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje',
+        )
+        .length;
 
-    if (_cachedBrojRadnika != noviRadnici || _cachedBrojUcenika != noviUcenici) {
+    if (_cachedBrojRadnika != noviRadnici || _cachedBrojUcenika != noviUcenici || _cachedBrojDnevnih != noviDnevni) {
       if (mounted) {
         setState(() {
           _cachedBrojRadnika = noviRadnici;
           _cachedBrojUcenika = noviUcenici;
+          _cachedBrojDnevnih = noviDnevni;
         });
       }
     }
@@ -558,6 +565,70 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                         ),
                       ],
                     ),
+                    // Filter za dnevne putnike sa brojem
+                    Stack(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.today,
+                            color: _selectedFilter == 'dnevni' ? Colors.white : Colors.white70,
+                            shadows: const [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          onPressed: () {
+                            final newFilter = _selectedFilter == 'dnevni' ? 'svi' : 'dnevni';
+                            setState(() {
+                              _selectedFilter = newFilter;
+                            });
+                          },
+                          tooltip: 'Filtriraj dnevne putnike',
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF5C9CE6),
+                                  Color(0xFF3B7DD8),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withValues(alpha: 0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 24,
+                              minHeight: 24,
+                            ),
+                            child: Text(
+                              '$_cachedBrojDnevnih',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     PopupMenuButton<String>(
                       icon: const Icon(
                         Icons.more_vert,
@@ -914,15 +985,27 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          putnik.tip == 'radnik' ? Icons.engineering : Icons.school,
+                          putnik.tip == 'radnik'
+                              ? Icons.engineering
+                              : putnik.tip == 'dnevni'
+                                  ? Icons.today
+                                  : Icons.school,
                           size: 16,
-                          color: putnik.tip == 'radnik' ? Colors.blue.shade600 : Colors.green.shade600,
+                          color: putnik.tip == 'radnik'
+                              ? Colors.blue.shade600
+                              : putnik.tip == 'dnevni'
+                                  ? Colors.orange.shade600
+                                  : Colors.green.shade600,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           putnik.tip.toUpperCase(),
                           style: TextStyle(
-                            color: putnik.tip == 'radnik' ? Colors.blue.shade700 : Colors.green.shade700,
+                            color: putnik.tip == 'radnik'
+                                ? Colors.blue.shade700
+                                : putnik.tip == 'dnevni'
+                                    ? Colors.orange.shade700
+                                    : Colors.green.shade700,
                             fontWeight: FontWeight.w600,
                             fontSize: 13,
                           ),

@@ -26,8 +26,6 @@ import '../utils/page_transitions.dart';
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart'; // Dodato za centralizovane boje vozača
-import '../widgets/autocomplete_adresa_field.dart';
-import '../widgets/autocomplete_ime_field.dart';
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/putnik_list.dart';
@@ -511,20 +509,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _showAddPutnikDialog() async {
-    final imeController = TextEditingController();
     final adresaController = TextEditingController();
     final telefonController = TextEditingController(); // 📞 OPCIONO: Broj telefona
-    final searchMesecniController = TextEditingController(); // 🔍 Za pretragu mesečnih putnika
-    bool mesecnaKarta = false;
-    bool manuelnoOznaceno = false; // 🔧 NOVO: prati da li je manuelno označeno
+    final searchPutnikController = TextEditingController(); // 🔍 Za pretragu putnika
+    MesecniPutnik? selectedPutnik; // 🎯 Izabrani putnik iz liste
 
-    // Povuci dozvoljena imena iz mesecni_putnici tabele
+    // Povuci SVE registrovane putnike iz mesecni_putnici tabele (učenici, radnici, dnevni)
     final serviceInstance = MesecniPutnikService();
     final lista = await serviceInstance.getAllMesecniPutnici();
     // 📋 Filtrirana lista aktivnih putnika za brzu pretragu
-    final aktivniPutnici = lista.where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList();
-    final dozvoljenaImena = aktivniPutnici.map((MesecniPutnik putnik) => putnik.putnikIme).toList()
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final aktivniPutnici = lista.where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList()
+      ..sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
 
     if (!mounted) return;
 
@@ -709,369 +704,197 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                               const SizedBox(height: 16),
 
-                              // IZBOR IMENA - drugačiji UI za mesečne i obične putnike
-                              if (mesecnaKarta)
-                                // DROPDOWN ZA MESEČNE PUTNIKE SA PRETRAGOM
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Izaberite mesečnog putnika:',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.green.shade700,
-                                      ),
+                              // 🎯 DROPDOWN ZA IZBOR PUTNIKA IZ LISTE
+                              DropdownButtonFormField2<MesecniPutnik>(
+                                isExpanded: true,
+                                value: selectedPutnik,
+                                decoration: InputDecoration(
+                                  labelText: 'Izaberi putnika',
+                                  hintText: 'Pretraži i izaberi...',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.person_search,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  fillColor: Colors.white,
+                                  filled: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                dropdownStyleData: DropdownStyleData(
+                                  maxHeight: 300,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                dropdownSearchData: DropdownSearchData(
+                                  searchController: searchPutnikController,
+                                  searchInnerWidgetHeight: 50,
+                                  searchInnerWidget: Container(
+                                    height: 50,
+                                    padding: const EdgeInsets.only(
+                                      top: 8,
+                                      bottom: 4,
+                                      right: 8,
+                                      left: 8,
                                     ),
-                                    const SizedBox(height: 8),
-                                    DropdownButtonFormField2<String>(
-                                      isExpanded: true,
-                                      value: imeController.text.trim().isEmpty
-                                          ? null
-                                          : (dozvoljenaImena.contains(
-                                              imeController.text.trim(),
-                                            )
-                                              ? imeController.text.trim()
-                                              : null),
+                                    child: TextFormField(
+                                      controller: searchPutnikController,
+                                      expands: true,
+                                      maxLines: null,
                                       decoration: InputDecoration(
-                                        labelText: 'Mesečni putnik',
-                                        hintText: 'Izaberite putnika...',
+                                        isDense: true,
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                        hintText: 'Pretraži po imenu...',
+                                        hintStyle: const TextStyle(fontSize: 14),
+                                        prefixIcon: const Icon(Icons.search, size: 20),
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(8),
                                         ),
-                                        prefixIcon: Icon(
-                                          Icons.person,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                        fillColor: Theme.of(context).colorScheme.surface,
-                                        filled: true,
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
                                       ),
-                                      dropdownStyleData: DropdownStyleData(
-                                        maxHeight: 300,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8),
-                                          color: Theme.of(context).colorScheme.surface,
-                                        ),
-                                      ),
-                                      dropdownSearchData: DropdownSearchData(
-                                        searchController: searchMesecniController,
-                                        searchInnerWidgetHeight: 50,
-                                        searchInnerWidget: Container(
-                                          height: 50,
-                                          padding: const EdgeInsets.only(
-                                            top: 8,
-                                            bottom: 4,
-                                            right: 8,
-                                            left: 8,
-                                          ),
-                                          child: TextFormField(
-                                            controller: searchMesecniController,
-                                            expands: true,
-                                            maxLines: null,
-                                            decoration: InputDecoration(
-                                              isDense: true,
-                                              contentPadding: const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 8,
-                                              ),
-                                              hintText: 'Pretraži...',
-                                              hintStyle: const TextStyle(fontSize: 14),
-                                              prefixIcon: const Icon(Icons.search, size: 20),
-                                              border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
+                                    ),
+                                  ),
+                                  searchMatchFn: (item, searchValue) {
+                                    final putnik = item.value;
+                                    if (putnik == null) return false;
+                                    return putnik.putnikIme.toLowerCase().contains(searchValue.toLowerCase());
+                                  },
+                                ),
+                                items: aktivniPutnici
+                                    .map(
+                                      (MesecniPutnik putnik) => DropdownMenuItem<MesecniPutnik>(
+                                        value: putnik,
+                                        child: Row(
+                                          children: [
+                                            // Ikonica tipa putnika
+                                            Icon(
+                                              putnik.tip == 'radnik'
+                                                  ? Icons.engineering
+                                                  : putnik.tip == 'dnevni'
+                                                      ? Icons.today
+                                                      : Icons.school,
+                                              size: 18,
+                                              color: putnik.tip == 'radnik'
+                                                  ? Colors.blue.shade600
+                                                  : putnik.tip == 'dnevni'
+                                                      ? Colors.orange.shade600
+                                                      : Colors.green.shade600,
                                             ),
-                                          ),
-                                        ),
-                                        searchMatchFn: (item, searchValue) {
-                                          return item.value
-                                              .toString()
-                                              .toLowerCase()
-                                              .contains(searchValue.toLowerCase());
-                                        },
-                                      ),
-                                      items: dozvoljenaImena
-                                          .map(
-                                            (String ime) => DropdownMenuItem(
-                                              value: ime,
+                                            const SizedBox(width: 8),
+                                            Expanded(
                                               child: Text(
-                                                ime,
+                                                putnik.putnikIme,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
-                                          )
-                                          .toList(),
-                                      onChanged: (value) {
-                                        setStateDialog(() {
-                                          imeController.text = value ?? '';
-                                          // 🔄 AUTO-POPUNI adresu i telefon iz mesečnog putnika
-                                          if (value != null) {
-                                            try {
-                                              final putnik = aktivniPutnici.firstWhere(
-                                                (p) => p.putnikIme == value,
-                                              );
-                                              // Popuni adresu
-                                              adresaController.text = putnik.adresa ?? '';
-                                              // Popuni telefon
-                                              telefonController.text = putnik.brojTelefona ?? '';
-                                            } catch (_) {
-                                              // Putnik nije pronađen - ignoriši
-                                            }
-                                          }
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                )
-                              else
-                                // AUTOCOMPLETE ZA OBIČNE PUTNIKE
-                                AutocompleteImeField(
-                                  controller: imeController,
-                                  mesecnaKarta: mesecnaKarta,
-                                  dozvoljenaImena: dozvoljenaImena,
-                                  onChanged: (ime) {
-                                    // Automatski označi mesečnu kartu ako je pronađen mesečni putnik
-                                    final isMesecniPutnik = dozvoljenaImena.contains(ime.trim());
-                                    if (isMesecniPutnik != mesecnaKarta) {
-                                      setStateDialog(() {
-                                        // 🔧 SAMO ažuriraj checkbox ako NIJE manuelno označeno
-                                        if (!manuelnoOznaceno) {
-                                          mesecnaKarta = isMesecniPutnik;
-                                        }
-                                      });
-                                    }
-                                  },
-                                ),
-                              const SizedBox(height: 12),
-
-                              // ADRESA FIELD
-                              AutocompleteAdresaField(
-                                controller: adresaController,
-                                grad: _selectedGrad,
-                                labelText: 'Adresa',
-                                hintText: 'Npr: Glavna 15, Zmaj Jovina 22...',
-                              ),
-
-                              // Dodatno obaveštenje o adresi
-                              if (adresaController.text.trim().isNotEmpty)
-                                Container(
-                                  margin: const EdgeInsets.only(top: 8),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: Colors.green.withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.route,
-                                        color: Colors.green,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          '✅ Adresa će biti korišćena za optimizaciju rute!',
-                                          style: TextStyle(
-                                            color: Colors.green[700],
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                          ],
                                         ),
                                       ),
-                                    ],
+                                    )
+                                    .toList(),
+                                onChanged: (MesecniPutnik? putnik) async {
+                                  setStateDialog(() {
+                                    selectedPutnik = putnik;
+                                    telefonController.text = putnik?.brojTelefona ?? '';
+                                    adresaController.text = 'Učitavanje...';
+                                  });
+                                  if (putnik != null) {
+                                    // 🔄 AUTO-POPUNI adresu async (jer se čita iz druge tabele)
+                                    final adresa = await putnik.getFormatiranePrikkazAdresa();
+                                    setStateDialog(() {
+                                      adresaController.text = adresa == 'Nema adresa' ? '' : adresa;
+                                    });
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 12),
+
+                              // ADRESA FIELD (readonly - popunjava se automatski)
+                              TextField(
+                                controller: adresaController,
+                                readOnly: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Adresa',
+                                  hintText: 'Automatski se popunjava...',
+                                  prefixIcon: const Icon(Icons.location_on),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade100,
                                 ),
+                              ),
 
                               const SizedBox(height: 12),
 
-                              // 📞 TELEFON FIELD (OPCIONO)
+                              // 📞 TELEFON FIELD (readonly - popunjava se automatski)
                               TextField(
                                 controller: telefonController,
+                                readOnly: true,
                                 keyboardType: TextInputType.phone,
                                 decoration: InputDecoration(
-                                  labelText: 'Telefon (opciono)',
-                                  hintText: 'Npr: 0641234567',
+                                  labelText: 'Telefon',
+                                  hintText: 'Automatski se popunjava...',
                                   prefixIcon: const Icon(Icons.phone),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Colors.blue,
-                                      width: 2,
-                                    ),
-                                  ),
                                   filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // 🎫 GLASSMORPHISM TIP KARTE
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).glassContainer,
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: Theme.of(context).glassBorder,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 🌟 GLASSMORPHISM SWITCH ZA MESEČNU KARTU
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      Colors.white.withValues(alpha: 0.2),
-                                      Colors.white.withValues(alpha: 0.1),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'Mesečna karta',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setStateDialog(() {
-                                          mesecnaKarta = !mesecnaKarta;
-                                          manuelnoOznaceno = true;
-                                        });
-                                      },
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
-                                        width: 50,
-                                        height: 28,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: mesecnaKarta
-                                                ? [
-                                                    Colors.green.withValues(alpha: 0.8),
-                                                    Colors.green,
-                                                  ]
-                                                : [
-                                                    Colors.white.withValues(alpha: 0.3),
-                                                    Colors.white.withValues(alpha: 0.1),
-                                                  ],
-                                          ),
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(
-                                            color: mesecnaKarta
-                                                ? Colors.green.withValues(alpha: 0.6)
-                                                : Colors.white.withValues(alpha: 0.4),
-                                          ),
-                                        ),
-                                        child: AnimatedAlign(
-                                          duration: const Duration(milliseconds: 200),
-                                          alignment: mesecnaKarta ? Alignment.centerRight : Alignment.centerLeft,
-                                          child: Container(
-                                            width: 22,
-                                            height: 22,
-                                            margin: const EdgeInsets.all(3),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius: BorderRadius.circular(11),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withValues(alpha: 0.2),
-                                                  blurRadius: 4,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                  fillColor: Colors.grey.shade100,
                                 ),
                               ),
 
-                              // UPOZORENJE ZA MESEČNE PUTNIKE
-                              if (mesecnaKarta)
+                              // 🏷️ PRIKAZ TIPA PUTNIKA (ako je izabran)
+                              if (selectedPutnik != null)
                                 Container(
-                                  margin: const EdgeInsets.only(top: 8),
-                                  padding: const EdgeInsets.all(8),
+                                  margin: const EdgeInsets.only(top: 12),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                    color: selectedPutnik!.tip == 'radnik'
+                                        ? Colors.blue.withValues(alpha: 0.15)
+                                        : selectedPutnik!.tip == 'dnevni'
+                                            ? Colors.orange.withValues(alpha: 0.15)
+                                            : Colors.green.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: Colors.orange.withValues(alpha: 0.3),
+                                      color: selectedPutnik!.tip == 'radnik'
+                                          ? Colors.blue.withValues(alpha: 0.4)
+                                          : selectedPutnik!.tip == 'dnevni'
+                                              ? Colors.orange.withValues(alpha: 0.4)
+                                              : Colors.green.withValues(alpha: 0.4),
                                     ),
                                   ),
-                                  child: const Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  child: Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.info_outline,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                          SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              'SAMO POSTOJEĆI MESEČNI PUTNICI',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                      Icon(
+                                        selectedPutnik!.tip == 'radnik'
+                                            ? Icons.engineering
+                                            : selectedPutnik!.tip == 'dnevni'
+                                                ? Icons.today
+                                                : Icons.school,
+                                        size: 20,
+                                        color: selectedPutnik!.tip == 'radnik'
+                                            ? Colors.blue.shade700
+                                            : selectedPutnik!.tip == 'dnevni'
+                                                ? Colors.orange.shade700
+                                                : Colors.green.shade700,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Tip: ${selectedPutnik!.tip.toUpperCase()}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: selectedPutnik!.tip == 'radnik'
+                                              ? Colors.blue.shade700
+                                              : selectedPutnik!.tip == 'dnevni'
+                                                  ? Colors.orange.shade700
+                                                  : Colors.green.shade700,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1167,95 +990,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             onPressed: isDialogLoading
                                 ? null
                                 : () async {
-                                    if (imeController.text.trim().isEmpty) {
+                                    // Validacija - mora biti odabran putnik
+                                    if (selectedPutnik == null) {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text('❌ Ime putnika je obavezno'),
+                                          content: Text('❌ Morate odabrati putnika iz liste'),
                                           backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    // 🚫 VALIDACIJA GRADA
-                                    if (GradAdresaValidator.isCityBlocked(
-                                      _selectedGrad,
-                                    )) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '❌ Grad "$_selectedGrad" nije dozvoljen. Dozvoljeni su samo Bela Crkva i Vršac.',
-                                          ),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    // 🏘️ VALIDACIJA ADRESE
-                                    final adresa = adresaController.text.trim();
-                                    if (adresa.isNotEmpty &&
-                                        !GradAdresaValidator.validateAdresaForCity(
-                                          adresa,
-                                          _selectedGrad,
-                                        )) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '❌ Adresa "$adresa" nije validna za grad "$_selectedGrad". Dozvoljene su samo adrese iz Bele Crkve i Vršca.',
-                                          ),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    // 🚫 VALIDACIJA ZA MESEČNU KARTU - SAMO POSTOJEĆI MESEČNI PUTNICI
-                                    if (mesecnaKarta &&
-                                        !dozvoljenaImena.contains(
-                                          imeController.text.trim(),
-                                        )) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                '❌ NOVI MESEČNI PUTNICI SE NE MOGU DODATI OVDE!',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              const Text(
-                                                'Možete dodati samo POSTOJEĆE mesečne putnike.',
-                                              ),
-                                              const SizedBox(height: 4),
-                                              const Text(
-                                                'Za NOVE mesečne putnike idite na:',
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.arrow_forward,
-                                                    size: 16,
-                                                    color: Theme.of(context).colorScheme.onSurface,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  const Text(
-                                                    'Meni → Mesečni putnici',
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          duration: const Duration(seconds: 5),
                                         ),
                                       );
                                       return;
@@ -1298,20 +1038,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       });
 
                                       // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
+                                      // Mesečna karta = true za radnik/ucenik, false za dnevni
+                                      final isMesecnaKarta = selectedPutnik!.tip != 'dnevni';
 
                                       final putnik = Putnik(
-                                        ime: imeController.text.trim(),
+                                        ime: selectedPutnik!.putnikIme,
                                         polazak: _selectedVreme,
                                         grad: _selectedGrad,
                                         dan: _getDayAbbreviation(_selectedDay),
-                                        mesecnaKarta: mesecnaKarta,
+                                        mesecnaKarta: isMesecnaKarta,
                                         vremeDodavanja: DateTime.now(),
                                         dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
-                                        adresa:
-                                            adresaController.text.trim().isEmpty ? null : adresaController.text.trim(),
-                                        brojTelefona: telefonController.text.trim().isEmpty
-                                            ? null
-                                            : telefonController.text.trim(),
+                                        adresa: adresaController.text.isEmpty ? null : adresaController.text,
+                                        brojTelefona: selectedPutnik!.brojTelefona,
                                       );
 
                                       // Duplikat provera se vrši u PutnikService.dodajPutnika()
