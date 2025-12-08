@@ -802,12 +802,18 @@ class PutnikService {
         // ✅ Konvertuj ime vozača u UUID za updated_by
         final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
 
-        await supabase.from('mesecni_putnici').update({
+        // 🔧 Pripremi update mapu - updated_by samo ako postoji validan UUID
+        final updateData = <String, dynamic>{
           'polasci_po_danu': polasciPoDanu,
           'radni_dani': radniDani,
-          'updated_by': updatedByUuid, // ✅ NOVO: Ko je ažurirao raspored
           'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', putnikId);
+        };
+        // Dodaj updated_by samo ako je validan UUID
+        if (updatedByUuid != null && updatedByUuid.isNotEmpty) {
+          updateData['updated_by'] = updatedByUuid;
+        }
+
+        await supabase.from('mesecni_putnici').update(updateData).eq('id', putnikId);
       } else {
         // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
         final insertData = await putnik.toPutovanjaIstorijaMapWithAdresa(); // ✅ KORISTI PRAVO REŠENJE
