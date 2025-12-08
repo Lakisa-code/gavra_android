@@ -9,6 +9,7 @@ import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i 
 import '../utils/mesecni_helpers.dart';
 import '../utils/text_utils.dart'; // DODANO za konzistentno filtriranje statusa
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
+import 'driver_location_service.dart'; // DODANO za dinamički ETA update
 import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_notification_service.dart';
 import 'realtime_service.dart';
@@ -33,9 +34,27 @@ class PutnikService {
   final supabase = Supabase.instance.client;
 
   // Stream caching: map of active filter keys to StreamController streams (bez RxDart)
-  final Map<String, StreamController<List<Putnik>>> _streams = {};
-  final Map<String, List<Putnik>> _lastValues = {}; // Cache poslednje vrednosti za replay
-  final Map<String, StreamSubscription> _subscriptions = {}; // Cuvaj subscriptions za cleanup
+  // ✅ STATIC da bi se delila između svih instanci PutnikService
+  static final Map<String, StreamController<List<Putnik>>> _streams = {};
+  static final Map<String, List<Putnik>> _lastValues = {}; // Cache poslednje vrednosti za replay
+  static final Map<String, StreamSubscription> _subscriptions = {}; // Cuvaj subscriptions za cleanup
+
+  /// 🧹 Statička metoda za čišćenje cache-a - poziva se iz GlobalCacheManager
+  static void clearCache() {
+    // Zatvori sve aktivne stream controllere
+    for (final controller in _streams.values) {
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    }
+    _streams.clear();
+    _lastValues.clear();
+    // Ne čistimo _subscriptions jer će se ponovo kreirati pri sledećem pozivu
+    for (final sub in _subscriptions.values) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+  }
 
   // Helper to create a cache key for filters
   String _streamKey({String? isoDate, String? grad, String? vreme}) {
@@ -1237,6 +1256,14 @@ class PutnikService {
     if (putnik.mesecnaKarta == true) {
       // Statistike se računaju dinamički kroz StatistikaService
       // bez potrebe za dodatnim ažuriranjem
+    }
+
+    // 🚗 DINAMIČKI ETA UPDATE - ukloni putnika iz praćenja i preračunaj ETA
+    try {
+      final putnikIdentifier = putnik.ime.isNotEmpty ? putnik.ime : '${putnik.adresa} ${putnik.grad}';
+      DriverLocationService.instance.removePassenger(putnikIdentifier);
+    } catch (e) {
+      // Silently ignore - tracking might not be active
     }
   }
 

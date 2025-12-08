@@ -1,18 +1,19 @@
 {
     "name": "send-push-notification",
-    "version": "1.0.0",
-    "description": "Supabase function to send push notifications to FCM and Huawei (AGC)",
+    "version": "1.1.0",
+    "description": "Supabase function to send push notifications to FCM (v1 API) and Huawei (AGC)",
     "main": "index.js",
     "scripts": {
         "test:smoke": "node test_smoke.js"
     },
     "dependencies": {
-        "undici": "^5.23.0"
+        "undici": "^5.23.0",
+        "firebase-admin": "^12.0.0"
     },
     "optionalDependencies": {
         "@agconnect/common-server": "^1.0.0"
     },
     "engines": {
-        "node": ">=14"
+        "node": ">=18"
     }
 }

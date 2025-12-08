@@ -25,6 +25,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   bool _isLoading = true;
   bool _isActive = false;
   String? _vozacIme;
+  DateTime? _vremePokupljenja; // 🆕 Vreme kada je pokupljen
 
   @override
   void initState() {
@@ -83,6 +84,10 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
           setState(() {
             _isActive = true;
+            // 🆕 Zapamti vreme kada se status promeni na pokupljen
+            if (eta == -1 && _etaMinutes != -1) {
+              _vremePokupljenja = DateTime.now();
+            }
             _etaMinutes = eta;
             _vozacIme = vozacIme;
             _isLoading = false;
@@ -127,14 +132,33 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
     // Odredi boje i poruku na osnovu stanja
     final bool hasEta = _isActive && _etaMinutes != null;
+    final bool isPokupljen = _etaMinutes == -1; // 🆕 ETA = -1 znači pokupljen
 
     // Poruka i naslov
-    final String title = hasEta ? '🚐 KOMBI STIŽE ZA' : '🚐 PRAĆENJE UŽIVO';
-    final String message = hasEta ? _formatEta(_etaMinutes!) : 'Čekanje...';
+    final String title;
+    final String message;
+
+    if (isPokupljen) {
+      title = '✅ POKUPLJEN';
+      // Prikaži vreme pokupljenja
+      if (_vremePokupljenja != null) {
+        final h = _vremePokupljenja!.hour.toString().padLeft(2, '0');
+        final m = _vremePokupljenja!.minute.toString().padLeft(2, '0');
+        message = 'U $h:$m - Uživajte u vožnji!';
+      } else {
+        message = 'Uživajte u vožnji!';
+      }
+    } else if (hasEta) {
+      title = '🚐 KOMBI STIŽE ZA';
+      message = _formatEta(_etaMinutes!);
+    } else {
+      title = '🚐 PRAĆENJE UŽIVO';
+      message = 'Vozač će uskoro krenuti';
+    }
 
     // Boje sa providnošću kao IZMIRENO kocka
-    // Zelena kad ima ETA, siva kad čeka
-    final Color baseColor = hasEta ? Colors.green : Colors.grey;
+    // Zelena kad je pokupljen, plava kad ima ETA, siva kad čeka
+    final Color baseColor = isPokupljen ? Colors.green : (hasEta ? Colors.blue : Colors.grey);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -172,11 +196,11 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
             message,
             style: TextStyle(
               color: Colors.white,
-              fontSize: hasEta ? 28 : 18,
+              fontSize: isPokupljen ? 18 : (hasEta ? 28 : 18),
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (_vozacIme != null && hasEta)
+          if (_vozacIme != null && hasEta && !isPokupljen)
             Text(
               'Vozač: $_vozacIme',
               style: TextStyle(

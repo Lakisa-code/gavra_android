@@ -514,16 +514,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final imeController = TextEditingController();
     final adresaController = TextEditingController();
     final telefonController = TextEditingController(); // 📞 OPCIONO: Broj telefona
+    final searchMesecniController = TextEditingController(); // 🔍 Za pretragu mesečnih putnika
     bool mesecnaKarta = false;
     bool manuelnoOznaceno = false; // 🔧 NOVO: prati da li je manuelno označeno
 
     // Povuci dozvoljena imena iz mesecni_putnici tabele
     final serviceInstance = MesecniPutnikService();
     final lista = await serviceInstance.getAllMesecniPutnici();
-    final dozvoljenaImena = lista
-        .where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan)
-        .map((MesecniPutnik putnik) => putnik.putnikIme)
-        .toList()
+    // 📋 Filtrirana lista aktivnih putnika za brzu pretragu
+    final aktivniPutnici = lista.where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList();
+    final dozvoljenaImena = aktivniPutnici.map((MesecniPutnik putnik) => putnik.putnikIme).toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
     if (!mounted) return;
@@ -755,7 +755,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         ),
                                       ),
                                       dropdownSearchData: DropdownSearchData(
-                                        searchController: TextEditingController(),
+                                        searchController: searchMesecniController,
                                         searchInnerWidgetHeight: 50,
                                         searchInnerWidget: Container(
                                           height: 50,
@@ -766,6 +766,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             left: 8,
                                           ),
                                           child: TextFormField(
+                                            controller: searchMesecniController,
                                             expands: true,
                                             maxLines: null,
                                             decoration: InputDecoration(
@@ -804,6 +805,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       onChanged: (value) {
                                         setStateDialog(() {
                                           imeController.text = value ?? '';
+                                          // 🔄 AUTO-POPUNI adresu i telefon iz mesečnog putnika
+                                          if (value != null) {
+                                            try {
+                                              final putnik = aktivniPutnici.firstWhere(
+                                                (p) => p.putnikIme == value,
+                                              );
+                                              // Popuni adresu
+                                              adresaController.text = putnik.adresa ?? '';
+                                              // Popuni telefon
+                                              telefonController.text = putnik.brojTelefona ?? '';
+                                            } catch (_) {
+                                              // Putnik nije pronađen - ignoriši
+                                            }
+                                          }
                                         });
                                       },
                                     ),

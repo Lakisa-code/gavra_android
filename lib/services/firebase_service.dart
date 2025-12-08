@@ -6,7 +6,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'analytics_service.dart';
-import 'firebase_background_handler.dart';
 import 'local_notification_service.dart';
 import 'realtime_notification_service.dart';
 
@@ -16,14 +15,9 @@ class FirebaseService {
   /// Inicijalizuje Firebase
   static Future<void> initialize() async {
     try {
-      // Safe to call from UI code. Register background handler and request
-      // permissions where appropriate.
+      // Safe to call from UI code. Request permissions where appropriate.
+      // Note: Background handler is registered in main.dart to avoid duplication.
       if (Firebase.apps.isEmpty) return;
-
-      // Register background handler (should be set early) - safe to set again
-      try {
-        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-      } catch (_) {}
 
       final messaging = FirebaseMessaging.instance;
 

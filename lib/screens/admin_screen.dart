@@ -27,7 +27,6 @@ import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'statistika_detail_screen.dart'; // DODANO za statistike
 import 'vozac_screen.dart'; // DODANO za vozac screen
-import 'zahtevi_pregled_screen.dart'; // DODANO za pregled zahteva putnika
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({Key? key}) : super(key: key);
@@ -775,56 +774,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                               fit: BoxFit.scaleDown,
                                               child: Text(
                                                 'Dodeli',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      offset: Offset(1, 1),
-                                                      blurRadius: 3,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                  // 📝 DUGME ZAHTEVI - pregled zahteva putnika
-                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
-                                    SizedBox(
-                                      width: buttonWidth,
-                                      child: InkWell(
-                                        onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) => const ZahteviPregledScreen(),
-                                          ),
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          height: 28,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).glassContainer,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Theme.of(context).glassBorder,
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: const Center(
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                'Zahtevi',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 14,

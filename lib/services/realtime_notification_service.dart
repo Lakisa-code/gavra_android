@@ -256,20 +256,23 @@ class RealtimeNotificationService {
   /// Subscribe to Firebase topics for driver-specific notifications
   static Future<void> subscribeToDriverTopics(String? driverId) async {
     if (driverId == null || driverId.isEmpty) {
-      // Logger removed
       return;
     }
 
     try {
-      // No-op — topic subscription is provider-specific and removed for now.
-      // Logger removed
+      if (Firebase.apps.isEmpty) return;
 
-      // Subscribe to general topic
-      // Topic subscription removed — handled server-side or via provider SDK.
+      final messaging = FirebaseMessaging.instance;
 
-      // Logger removed
+      // Subscribe to driver-specific topic
+      await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
+
+      // Subscribe to general all-drivers topic
+      await messaging.subscribeToTopic('gavra_all_drivers');
+
+      debugPrint('✅ Subscribed to FCM topics for driver: $driverId');
     } catch (e) {
-      // Logger removed
+      debugPrint('⚠️ Topic subscription failed: $e');
     }
   }
 
@@ -322,28 +325,44 @@ class RealtimeNotificationService {
 
   /// Check notification permissions for Firebase
   static Future<bool> hasNotificationPermissions() async {
-    // Logger removed
     try {
-      // Messaging SDK removed; we don't expose per-provider permission status
-      // here. Return false so callers can run their own permission checks.
-      return false;
+      if (Firebase.apps.isEmpty) return false;
+
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.getNotificationSettings();
+
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
-      // Logger removed
       return false;
     }
   }
 
   /// Request notification permissions for Firebase
   static Future<bool> requestNotificationPermissions() async {
-    // Logger removed
     try {
-      // Requesting permissions is provider-specific (Huawei/FCM/Local). For
-      // the simplified branch return false to indicate the app should
-      // request permissions through platform-specific helpers when needed.
-      return false;
+      if (Firebase.apps.isEmpty) return false;
+
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      final granted = settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      if (granted) {
+        debugPrint('✅ Notification permissions granted');
+      } else {
+        debugPrint('⚠️ Notification permissions denied');
+      }
+
+      return granted;
     } catch (e) {
-      // Logger removed
-      // Return false but don't crash the app
+      debugPrint('❌ Request notification permissions failed: $e');
       return false;
     }
   }

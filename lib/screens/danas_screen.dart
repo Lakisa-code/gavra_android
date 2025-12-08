@@ -1805,6 +1805,15 @@ class _DanasScreenState extends State<DanasScreen> {
         if (_currentDriver != null && result.putniciEta != null) {
           final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
 
+          // 🆕 Konvertuj koordinate za dinamički ETA
+          Map<String, Position>? putniciCoordinates;
+          if (result.cachedCoordinates != null) {
+            putniciCoordinates = {};
+            for (final entry in result.cachedCoordinates!.entries) {
+              putniciCoordinates[entry.key.ime] = entry.value;
+            }
+          }
+
           await DriverLocationService.instance.startTracking(
             vozacId: _currentDriver!,
             vozacIme: _currentDriver!,
@@ -1812,6 +1821,23 @@ class _DanasScreenState extends State<DanasScreen> {
             vremePolaska: _selectedVreme,
             smer: smer,
             putniciEta: result.putniciEta,
+            putniciCoordinates: putniciCoordinates, // 🆕 Za dinamički ETA
+            onAllPassengersPickedUp: () {
+              // 🆕 Auto-stop callback
+              if (mounted) {
+                setState(() {
+                  _isGpsTracking = false;
+                  _navigationStatus = '';
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Svi putnici pokupljeni! Tracking automatski zaustavljen.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
           );
           debugPrint('🚐 Realtime tracking pokrenut: ${result.putniciEta?.length ?? 0} putnika sa ETA');
 

@@ -443,10 +443,8 @@ class RealtimeService {
       } catch (_) {}
     }
 
-    // Subscribe to putovanja_istorija; daily_checkins aktiviran u startForDriver metodi
-    // ✅ DODANO: daily_checkins tabela je kreirana
-
-    final putovanjaSub = tableStream('dnevni_putnici').listen((dynamic data) {
+    // Subscribe to putovanja_istorija za realtime update-e
+    final putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
       try {
         final rows = <Map<String, dynamic>>[];
         for (final r in (data as List<dynamic>)) {

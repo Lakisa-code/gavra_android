@@ -43,6 +43,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
   final TextEditingController _brojTelefonaMajkeController = TextEditingController();
   final TextEditingController _adresaBelaCrkvaController = TextEditingController();
   final TextEditingController _adresaVrsacController = TextEditingController();
+  final TextEditingController _cenaPoDanuController = TextEditingController(); // 🆕 Cena po danu
   // Selected address UUIDs (keeps track when user chooses a suggestion)
   String? _adresaBelaCrkvaId;
   String? _adresaVrsacId;
@@ -89,6 +90,11 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       _brojTelefonaController.text = putnik.brojTelefona ?? '';
       _brojTelefonaOcaController.text = putnik.brojTelefonaOca ?? '';
       _brojTelefonaMajkeController.text = putnik.brojTelefonaMajke ?? '';
+
+      // 🆕 Load cena po danu
+      if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
+        _cenaPoDanuController.text = putnik.cenaPoDanu!.toStringAsFixed(0);
+      }
 
       // Load times for each day
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -193,6 +199,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     _brojTelefonaMajkeController.dispose();
     _adresaBelaCrkvaController.dispose();
     _adresaVrsacController.dispose();
+    _cenaPoDanuController.dispose();
 
     for (final c in _polazakBcControllers.values) {
       c.dispose();
@@ -346,7 +353,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
             value: _tip,
             label: 'Tip putnika',
             icon: Icons.category,
-            items: const ['radnik', 'ucenik'],
+            items: const ['radnik', 'ucenik', 'dnevni'],
             onChanged: (value) => setState(() => _tip = value ?? 'radnik'),
           ),
           if (_tip == 'ucenik') ...[
@@ -458,6 +465,60 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
                     label: 'Broj telefona majke',
                     icon: Icons.woman,
                     keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 16),
+                  // 🆕 Fiksna cena sekcija
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.attach_money, color: Colors.amber, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Fiksna mesečna cena (opciono)',
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Ako ostavite prazno, cena se računa automatski:\n• Radnik: 700 RSD po danu\n• Učenik: 600 RSD po danu\n• Dnevni: po dogovoru',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _cenaPoDanuController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Cena po danu (RSD)',
+                            hintText: 'npr. 500',
+                            prefixIcon: const Icon(Icons.payments),
+                            suffixText: 'RSD',
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1021,6 +1082,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       status: 'radi', // Dozvoljeni: radi, bolovanje, godisnji, odsustvo, otkazan
+      cenaPoDanu: _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
     );
 
     print('🟢 noviPutnik.status: ${noviPutnik.status}');
@@ -1095,6 +1157,8 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       // ✅ KLJUČNO: Eksplicitno postavi adrese (uključujući null za brisanje)
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
       'adresa_vrsac_id': adresaVrsacId,
+      // 🆕 Cena po danu (custom ili null za default)
+      'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
     };
 
     try {

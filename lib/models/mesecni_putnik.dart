@@ -48,6 +48,7 @@ class MesecniPutnik {
     this.placeno = false,
     this.datumPlacanja,
     this.pin,
+    this.cenaPoDanu, // 🆕 Custom cena po danu (ako je NULL, koristi default: 700 radnik, 600 učenik)
     // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
@@ -111,6 +112,7 @@ class MesecniPutnik {
       placeno: map['placeno'] as bool? ?? false,
       datumPlacanja: map['datum_placanja'] != null ? DateTime.parse(map['datum_placanja'] as String) : null,
       pin: map['pin'] as String?,
+      cenaPoDanu: (map['cena_po_danu'] as num?)?.toDouble(), // 🆕 Custom cena po danu
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
@@ -160,6 +162,7 @@ class MesecniPutnik {
   final bool placeno;
   final DateTime? datumPlacanja;
   final String? pin; // 🔐 PIN za login
+  final double? cenaPoDanu; // 🆕 Custom cena po danu (NULL = default 700/600)
 
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
@@ -222,6 +225,7 @@ class MesecniPutnik {
       'dodali_vozaci': dodaliVozaci,
       'placeno': placeno,
       'datum_placanja': datumPlacanja?.toIso8601String(),
+      'cena_po_danu': cenaPoDanu, // 🆕 Custom cena po danu
       // 'pin': pin, // PIN se ne šalje iz modela, čuva se posebno
     };
 

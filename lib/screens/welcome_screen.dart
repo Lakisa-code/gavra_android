@@ -16,7 +16,6 @@ import 'mesecni_putnik_login_screen.dart';
 import 'o_nama_screen.dart';
 import 'vozac_login_screen.dart';
 import 'vozac_screen.dart';
-import 'zahtev_pristupa_screen.dart';
 
 Widget _getHomeScreen() {
   return const HomeScreen();
@@ -523,77 +522,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   ),
                 ),
                 const SizedBox(height: 12), // Further reduced from 16
-                // 📝 "Zatraži pristup" dugme - NA SREDINI EKRANA
+                // 🎫 Dugme "Mesečni putnici" - NA SREDINI EKRANA
                 Expanded(
                   flex: 3,
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Dugme "Zatraži pristup" (dnevni putnici)
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ZahtevPristupaScreen(),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 28,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color(0xFF00FFCC).withValues(alpha: 0.85),
-                                    Colors.white.withValues(alpha: 0.08),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: const Color(0xFF00FFCC).withValues(alpha: 0.7),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF00FFCC).withValues(alpha: 0.35),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.person_add,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'Zatraži pristup',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         // 🎫 Dugme "Mesečni putnici"
                         FadeTransition(
                           opacity: _fadeAnimation,

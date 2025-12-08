@@ -27,21 +27,28 @@ class DriverLocationService {
   String? _currentGrad;
   String? _currentVremePolaska;
   String? _currentSmer; // BC_VS ili VS_BC
-  Map<String, int>? _currentPutniciEta; // 🆕 ETA za svakog putnika
+  Map<String, int>? _currentPutniciEta; // ETA za svakog putnika
+  Map<String, Position>? _putniciCoordinates; // 🆕 Koordinate putnika za dinamički ETA
+  VoidCallback? _onAllPassengersPickedUp; // 🆕 Callback za auto-stop
 
   // Getteri
   bool get isTracking => _isTracking;
   String? get currentVozacId => _currentVozacId;
+  int get remainingPassengers => _currentPutniciEta?.length ?? 0;
 
   /// Pokreni praćenje lokacije za vozača
   /// [putniciEta] - Mapa ime_putnika -> ETA u minutama
+  /// [putniciCoordinates] - Mapa ime_putnika -> Position za dinamički ETA
+  /// [onAllPassengersPickedUp] - Callback kada su svi putnici pokupljeni (auto-stop)
   Future<bool> startTracking({
     required String vozacId,
     required String vozacIme,
     required String grad,
     String? vremePolaska,
     String? smer, // BC_VS ili VS_BC
-    Map<String, int>? putniciEta, // 🆕 ETA za svakog putnika
+    Map<String, int>? putniciEta,
+    Map<String, Position>? putniciCoordinates, // 🆕 Za dinamički ETA
+    VoidCallback? onAllPassengersPickedUp, // 🆕 Za auto-stop
   }) async {
     if (_isTracking) {
       debugPrint('📍 DriverLocationService: Već je aktivno praćenje');
@@ -60,7 +67,9 @@ class DriverLocationService {
     _currentGrad = grad;
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
-    _currentPutniciEta = putniciEta; // 🆕
+    _currentPutniciEta = putniciEta != null ? Map.from(putniciEta) : null;
+    _putniciCoordinates = putniciCoordinates;
+    _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
 
     debugPrint(
@@ -99,8 +108,63 @@ class DriverLocationService {
     _currentGrad = null;
     _currentVremePolaska = null;
     _currentSmer = null;
-    _currentPutniciEta = null; // 🆕
+    _currentPutniciEta = null;
+    _putniciCoordinates = null;
+    _onAllPassengersPickedUp = null;
     _lastPosition = null;
+  }
+
+  /// 🆕 Označi putnika kao pokupljenог (ETA = -1)
+  /// Automatski zaustavlja tracking ako su svi pokupljeni
+  void removePassenger(String putnikIme) {
+    if (_currentPutniciEta == null) return;
+
+    // Umesto brisanja, postavi ETA na -1 što znači "pokupljen"
+    // Tako widget može da prikaže "Pokupljen" umesto "Čekanje..."
+    _currentPutniciEta![putnikIme] = -1;
+    _putniciCoordinates?.remove(putnikIme);
+
+    debugPrint(
+        '📍 Putnik pokupljen: $putnikIme, preostalo aktivnih: ${_currentPutniciEta!.values.where((v) => v >= 0).length}');
+
+    // 🆕 AUTO-STOP: Ako su svi putnici pokupljeni (svi imaju ETA = -1)
+    final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
+    if (aktivniPutnici == 0) {
+      debugPrint('✅ Svi putnici pokupljeni - auto-stop tracking');
+      _onAllPassengersPickedUp?.call();
+      stopTracking();
+    }
+  }
+
+  /// 🆕 Ažuriraj ETA dinamički na osnovu trenutne pozicije
+  void _updateDynamicEta(Position currentPosition) {
+    if (_putniciCoordinates == null || _putniciCoordinates!.isEmpty) return;
+    if (_currentPutniciEta == null) return;
+
+    // Prosečna brzina u m/s (pretpostavljamo 40 km/h u gradu)
+    const averageSpeedMps = 11.1; // 40 km/h = 11.1 m/s
+
+    final updatedEta = <String, int>{};
+
+    for (final entry in _putniciCoordinates!.entries) {
+      final putnikIme = entry.key;
+      final putnikPosition = entry.value;
+
+      // Izračunaj udaljenost do putnika
+      final distanceMeters = Geolocator.distanceBetween(
+        currentPosition.latitude,
+        currentPosition.longitude,
+        putnikPosition.latitude,
+        putnikPosition.longitude,
+      );
+
+      // Izračunaj ETA u minutama
+      final etaMinutes = (distanceMeters / averageSpeedMps / 60).round();
+      updatedEta[putnikIme] = etaMinutes.clamp(1, 120); // Min 1 min, max 2h
+    }
+
+    _currentPutniciEta = updatedEta;
+    debugPrint('📍 Dinamički ETA ažuriran za ${updatedEta.length} putnika');
   }
 
   /// Proveri i zatraži dozvole za lokaciju
@@ -156,6 +220,9 @@ class DriverLocationService {
 
       _lastPosition = position;
 
+      // 🆕 Ažuriraj ETA dinamički na osnovu trenutne pozicije
+      _updateDynamicEta(position);
+
       // Upsert u Supabase (update ako postoji, insert ako ne)
       await Supabase.instance.client.from('vozac_lokacije').upsert({
         'vozac_id': _currentVozacId,
@@ -166,11 +233,12 @@ class DriverLocationService {
         'vreme_polaska': _currentVremePolaska,
         'smer': _currentSmer,
         'aktivan': true,
-        'putnici_eta': _currentPutniciEta, // 🆕 ETA za svakog putnika
+        'putnici_eta': _currentPutniciEta, // Dinamički ažuriran ETA
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
 
-      debugPrint('📍 Lokacija poslata: ${position.latitude}, ${position.longitude}');
+      debugPrint(
+          '📍 Lokacija poslata: ${position.latitude}, ${position.longitude}, ETA: ${_currentPutniciEta?.length ?? 0} putnika');
     } catch (e) {
       debugPrint('❌ Greška pri slanju lokacije: $e');
     }

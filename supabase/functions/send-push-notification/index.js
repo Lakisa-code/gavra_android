@@ -13,8 +13,63 @@ try {
 }
 if (!fetch) throw new Error('fetch API not available in runtime — install undici or use a runtime with global fetch');
 
-// Helper: send to FCM via server key
-async function sendFcm(serverKey, token, payload) {
+// Firebase Admin SDK for FCM v1 API
+let admin = null;
+let fcmInitialized = false;
+try {
+    admin = require('firebase-admin');
+} catch (e) {
+    // Firebase Admin not installed - will use legacy API as fallback
+}
+
+// Initialize Firebase Admin if credentials are available
+async function ensureFirebaseInitialized() {
+    if (fcmInitialized) return true;
+    if (!admin) return false;
+
+    try {
+        const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+        if (!serviceAccountJson) return false;
+
+        const serviceAccount = JSON.parse(serviceAccountJson);
+
+        if (admin.apps.length === 0) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        }
+        fcmInitialized = true;
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Helper: send to FCM via v1 API (recommended)
+async function sendFcmV1(token, payload) {
+    if (!await ensureFirebaseInitialized()) {
+        return { status: 'firebase-not-initialized' };
+    }
+
+    try {
+        const message = {
+            notification: {
+                title: payload.title,
+                body: payload.body
+            },
+            data: payload.data || {},
+            token: token
+        };
+
+        const response = await admin.messaging().send(message);
+        return { status: 200, messageId: response };
+    } catch (e) {
+        return { status: 'error', error: e.message };
+    }
+}
+
+// Legacy FCM helper (fallback if Firebase Admin not available)
+async function sendFcmLegacy(serverKey, token, payload) {
     const resp = await fetch('https://fcm.googleapis.com/fcm/send', {
         method: 'POST',
         headers: {
@@ -105,7 +160,7 @@ async function getHuaweiAccessTokenWithCache(clientId, clientSecret) {
 module.exports = async (req, res) => {
     try {
         const body = await req.json();
-        const { title, body: messageBody, tokens, serverKeys } = body || {};
+        const { title, body: messageBody, tokens, serverKeys, data } = body || {};
 
         if (!title || !messageBody) return res.status(400).json({ error: 'title and body required' });
 
@@ -117,11 +172,23 @@ module.exports = async (req, res) => {
         for (const t of tokens) {
             if (!t || !t.token || !t.provider) continue;
             if (t.provider === 'fcm') {
-                // Expect serverKeys.fcm to be set (Server key for Firebase)
-                const serverKey = serverKeys?.fcm || process.env.FCM_SERVER_KEY;
-                if (!serverKey) continue;
-                const resp = await sendFcm(serverKey, t.token, { title, body: messageBody });
-                results.push({ provider: 'fcm', status: resp.status });
+                // Try FCM v1 API first (recommended), fallback to legacy if not configured
+                const v1Result = await sendFcmV1(t.token, { title, body: messageBody, data: data || {} });
+
+                if (v1Result.status === 200 || v1Result.messageId) {
+                    results.push({ provider: 'fcm', status: 200, api: 'v1', messageId: v1Result.messageId });
+                } else if (v1Result.status === 'firebase-not-initialized') {
+                    // Fallback to legacy API
+                    const serverKey = serverKeys?.fcm || process.env.FCM_SERVER_KEY;
+                    if (!serverKey) {
+                        results.push({ provider: 'fcm', status: 'no-credentials' });
+                        continue;
+                    }
+                    const resp = await sendFcmLegacy(serverKey, t.token, { title, body: messageBody });
+                    results.push({ provider: 'fcm', status: resp.status, api: 'legacy' });
+                } else {
+                    results.push({ provider: 'fcm', status: v1Result.status, error: v1Result.error });
+                }
             } else if (t.provider === 'huawei') {
                 // Try to send via Huawei Cloud Push REST API using agc-apiclient credentials
                 const agcJsonRaw = process.env.AGC_APICLIENT_JSON || process.env.AGC_APICLIENT_JSON_PATH;

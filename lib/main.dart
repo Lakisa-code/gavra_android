@@ -74,6 +74,8 @@ void main() async {
         final token = await HuaweiPushService().initialize();
         debugPrint(
             'HMS init attempt returned token: ${token ?? 'null'} (no immediate token available — stream will register later if a token arrives)');
+        // Try to register any pending tokens from previous sessions
+        await HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
         debugPrint('HMS initialization attempt failed: $e');
       }
@@ -92,6 +94,8 @@ void main() async {
         final token = await HuaweiPushService().initialize();
         debugPrint(
             'HMS fallback init returned token (masked): ${token != null ? '[REDACTED]' : 'null'} (no immediate token — stream may register later)');
+        // Try to register any pending tokens from previous sessions
+        await HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
         debugPrint('HMS fallback initialization attempt failed: $e');
       }

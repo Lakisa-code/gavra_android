@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/mesecni_putnik.dart' as novi_model;
 import '../models/putnik.dart';
 import '../services/adresa_supabase_service.dart';
+import '../services/cena_obracun_service.dart'; // 🆕 Obračun cene po pokupljenjima
 import '../services/haptic_service.dart';
 import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
@@ -722,11 +723,35 @@ class _PutnikCardState extends State<PutnikCard> {
     final String mesec = _getMonthName(now.month);
     final String godina = now.year.toString();
 
+    // 🆕 Koristi novi obračun cene
+    final obracun = await CenaObracunService.getDetaljniObracun(
+      putnik: mesecniPutnik,
+      mesec: now.month,
+      godina: now.year,
+    );
+
+    final double konacnaCena = obracun['konacnaCena'] as double? ?? 0.0;
+    final double? customCenaPoDanu = obracun['customCenaPoDanu'] as double?;
+    final int brojDana = obracun['brojDanaSaPokupljenjima'] as int? ?? 0;
+
+    // Formatiraj tekst za iznos
+    final String iznosText;
+    if (konacnaCena > 0) {
+      iznosText = CenaObracunService.formatirajCenuZaSms(
+        cena: konacnaCena,
+        tip: mesecniPutnik.tip,
+        brojDana: brojDana,
+        customCenaPoDanu: customCenaPoDanu,
+      );
+    } else {
+      iznosText = 'Prema dogovoru';
+    }
+
     final String poruka = '🚌 GAVRA PREVOZ 🚌\n\n'
         'Podsetnik za plaćanje mesečne karte:\n\n'
         '👤 Putnik: ${_putnik.ime}\n'
         '📅 Mesec: $mesec $godina\n'
-        '💰 Iznos: Prema dogovoru\n\n'
+        '💰 Iznos: $iznosText\n\n'
         '📞 Kontakt: Bojan - Gavra 013\n\n'
         'Hvala na razumevanju! 🚌\n'
         '---\n'
