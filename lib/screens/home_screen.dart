@@ -17,6 +17,7 @@ import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog gr
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/registrovani_putnik_service.dart';
+import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
@@ -1031,6 +1032,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       }
 
                                       // ✅ Validacija vozača koristi VozacBoja.isValidDriver()
+
+                                      // 🎫 PROVERA KAPACITETA - da li ima slobodnih mesta
+                                      final gradKey = _selectedGrad.toLowerCase().contains('bela') ? 'BC' : 'VS';
+                                      final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
+                                        gradKey,
+                                        _selectedVreme,
+                                      );
+                                      if (!imaMesta) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                        return;
+                                      }
 
                                       // POKAZI LOADING STATE - lokalno za dijalog
                                       setStateDialog(() {
