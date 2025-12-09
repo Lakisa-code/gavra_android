@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/route_config.dart';
+import '../utils/schedule_utils.dart';
+
 /// 🎫 Servis za upravljanje kapacitetom polazaka
 /// Omogućava realtime prikaz slobodnih mesta i admin kontrolu
 class KapacitetService {
@@ -13,37 +16,28 @@ class KapacitetService {
   static DateTime? _cacheTime;
   static const _cacheDuration = Duration(minutes: 5);
 
-  /// Vremena polazaka za Belu Crkvu (zimski raspored)
-  static const List<String> bcVremena = [
-    '5:00',
-    '6:00',
-    '7:00',
-    '8:00',
-    '9:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:30',
-    '18:00',
-  ];
+  /// Vremena polazaka za Belu Crkvu (sezonski)
+  static List<String> get bcVremena {
+    final jeZimski = isZimski(DateTime.now());
+    return jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji;
+  }
 
-  /// Vremena polazaka za Vršac (zimski raspored)
-  static const List<String> vsVremena = [
-    '6:00',
-    '7:00',
-    '8:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:30',
-    '17:00',
-    '19:00',
-  ];
+  /// Vremena polazaka za Vršac (sezonski)
+  static List<String> get vsVremena {
+    final jeZimski = isZimski(DateTime.now());
+    return jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji;
+  }
 
-  /// Dohvati vremena za grad
+  /// Sva moguća vremena (zimska + letnja) - za kapacitet tabelu
+  static List<String> get svaVremenaBc {
+    return {...RouteConfig.bcVremenaZimski, ...RouteConfig.bcVremenaLetnji}.toList();
+  }
+
+  static List<String> get svaVremenaVs {
+    return {...RouteConfig.vsVremenaZimski, ...RouteConfig.vsVremenaLetnji}.toList();
+  }
+
+  /// Dohvati vremena za grad (sezonski)
   static List<String> getVremenaZaGrad(String grad) {
     final normalizedGrad = grad.toLowerCase();
     if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
@@ -52,6 +46,17 @@ class KapacitetService {
       return vsVremena;
     }
     return bcVremena; // default
+  }
+
+  /// Dohvati sva moguća vremena za grad (obe sezone) - za kapacitet tabelu
+  static List<String> getSvaVremenaZaGrad(String grad) {
+    final normalizedGrad = grad.toLowerCase();
+    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
+      return svaVremenaBc;
+    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
+      return svaVremenaVs;
+    }
+    return svaVremenaBc; // default
   }
 
   /// Dohvati kapacitet (max mesta) za sve polaske
@@ -70,11 +75,11 @@ class KapacitetService {
         'VS': {},
       };
 
-      // Inicijalizuj default vrednosti
-      for (final vreme in bcVremena) {
+      // Inicijalizuj default vrednosti (sva vremena obe sezone)
+      for (final vreme in svaVremenaBc) {
         result['BC']![vreme] = 8; // default
       }
-      for (final vreme in vsVremena) {
+      for (final vreme in svaVremenaVs) {
         result['VS']![vreme] = 8; // default
       }
 
@@ -97,10 +102,10 @@ class KapacitetService {
       return result;
     } catch (e) {
       debugPrint('❌ KapacitetService getKapacitet greška: $e');
-      // Vrati default vrednosti
+      // Vrati default vrednosti (sva vremena obe sezone)
       return {
-        'BC': {for (final v in bcVremena) v: 8},
-        'VS': {for (final v in vsVremena) v: 8},
+        'BC': {for (final v in svaVremenaBc) v: 8},
+        'VS': {for (final v in svaVremenaVs) v: 8},
       };
     }
   }
@@ -109,8 +114,8 @@ class KapacitetService {
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
     return _supabase.from('kapacitet_polazaka').stream(primaryKey: ['id']).map((data) {
       final result = <String, Map<String, int>>{
-        'BC': {for (final v in bcVremena) v: 8},
-        'VS': {for (final v in vsVremena) v: 8},
+        'BC': {for (final v in svaVremenaBc) v: 8},
+        'VS': {for (final v in svaVremenaVs) v: 8},
       };
 
       for (final row in data) {
