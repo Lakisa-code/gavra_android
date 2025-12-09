@@ -1402,7 +1402,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         ),
         // Navigation button
         GestureDetector(
-          onTap: () => _navigirajDoAdrese(adresaId),
+          onTap: () => _navigirajDoAdrese(adresaId, label),
           child: Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -1420,7 +1420,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  void _navigirajDoAdrese(String? adresaId) async {
+  void _navigirajDoAdrese(String? adresaId, String gradLabel) async {
     if (adresaId == null) return;
 
     final adrese = await AdresaSupabaseService.getAdreseByUuids([adresaId]);
@@ -1430,11 +1430,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     double? lat = adresa.koordinate?['lat'];
     double? lng = adresa.koordinate?['lng'];
 
+    // 🎯 Odredi grad iz labela (BC -> Bela Crkva, VS -> Vršac)
+    final grad = gradLabel == 'BC' ? 'Bela Crkva' : 'Vršac';
+
     // 🎯 Ako nema koordinate, pokušaj geocoding
     if (lat == null || lng == null) {
       try {
         final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
-          grad: adresa.grad ?? '',
+          grad: grad,
           adresa: adresa.naziv,
         );
         if (geocodeResult != null && geocodeResult.confidence > 50) {
