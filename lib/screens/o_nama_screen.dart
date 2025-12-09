@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/permission_service.dart';
 import '../theme.dart';
 
 /// 📖 O NAMA SCREEN
@@ -36,6 +37,20 @@ class _ONamaScreenState extends State<ONamaScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
+    // 📞 HUAWEI KOMPATIBILNO - koristi centralizovanu proveru dozvola
+    final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dozvola za pozive je potrebna'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);

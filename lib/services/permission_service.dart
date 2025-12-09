@@ -299,8 +299,7 @@ class PermissionService {
       await prefs.setBool(_firstLaunchKey, false);
 
       // Vraća true ako su sve kritične dozvole odobrene (GPS + Phone)
-      final allCriticalGranted = locationStatus &&
-          (phoneStatus.isGranted || phoneStatus.isLimited);
+      final allCriticalGranted = locationStatus && (phoneStatus.isGranted || phoneStatus.isLimited);
 
       return allCriticalGranted;
     } catch (e) {
