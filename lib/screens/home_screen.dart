@@ -804,8 +804,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     adresaController.text = 'Učitavanje...';
                                   });
                                   if (putnik != null) {
-                                    // 🔄 AUTO-POPUNI adresu async (jer se čita iz druge tabele)
-                                    final adresa = await putnik.getFormatiranePrikkazAdresa();
+                                    // 🔄 AUTO-POPUNI adresu async - SAMO za selektovani grad
+                                    final adresa = await putnik.getAdresaZaSelektovaniGrad(_selectedGrad);
                                     setStateDialog(() {
                                       adresaController.text = adresa == 'Nema adresa' ? '' : adresa;
                                     });
