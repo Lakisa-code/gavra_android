@@ -853,6 +853,25 @@ class _PutnikCardState extends State<PutnikCard> {
       return;
     }
 
+    // 🆕 UČITAJ SVA PLAĆANJA IZ BAZE za ovog putnika
+    Set<String> placeniMeseci = {};
+    try {
+      final svaPlacanja = await RegistrovaniPutnikService().dohvatiPlacanjaZaPutnika(_putnik.ime);
+      for (var placanje in svaPlacanja) {
+        final mesec = placanje['placeniMesec'];
+        final godina = placanje['placenaGodina'];
+        if (mesec != null && godina != null) {
+          // Format: "mesec-godina" za internu proveru
+          placeniMeseci.add('$mesec-$godina');
+        }
+      }
+    } catch (e) {
+      // Fallback na model ako ne možemo učitati iz baze
+      if (registrovaniPutnik.placeniMesec != null && registrovaniPutnik.placenaGodina != null) {
+        placeniMeseci.add('${registrovaniPutnik.placeniMesec}-${registrovaniPutnik.placenaGodina}');
+      }
+    }
+
     // Računa za ceo trenutni mesec (1. do 30.)
     final currentDate = DateTime.now();
     final firstDayOfMonth = DateTime(currentDate.year, currentDate.month);
@@ -1052,8 +1071,11 @@ class _PutnikCardState extends State<PutnikCard> {
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                         items: _getMonthOptionsStatic().map((monthYear) {
-                          // 💰 Proveri da li je mesec plaćen - ISTO kao u registrovani_putnici_screen.dart
-                          final bool isPlacen = _isMonthPaidStatic(monthYear, registrovaniPutnik);
+                          // 💰 Proveri da li je mesec plaćen - KORISTI PODATKE IZ BAZE
+                          final parts = monthYear.split(' ');
+                          final monthNumber = _getMonthNumberStatic(parts[0]);
+                          final year = int.tryParse(parts[1]) ?? 0;
+                          final bool isPlacen = placeniMeseci.contains('$monthNumber-$year');
 
                           return DropdownMenuItem<String>(
                             value: monthYear,
@@ -2326,37 +2348,6 @@ class _PutnikCardState extends State<PutnikCard> {
   // Helper metode za mesečno plaćanje
   String _formatDate(DateTime date) {
     return '${date.day}.${date.month}.${date.year}';
-  }
-
-  // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u registrovani_putnici_screen.dart
-  bool _isMonthPaidStatic(
-    String monthYear,
-    novi_model.RegistrovaniPutnik? registrovaniPutnik,
-  ) {
-    if (registrovaniPutnik == null) return false;
-
-    if (registrovaniPutnik.vremePlacanja == null || registrovaniPutnik.cena == null || registrovaniPutnik.cena! <= 0) {
-      return false;
-    }
-
-    // Ako imamo precizne podatke o plaćenom mesecu, koristi ih
-    if (registrovaniPutnik.placeniMesec != null && registrovaniPutnik.placenaGodina != null) {
-      // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
-      final parts = monthYear.split(' ');
-      if (parts.length != 2) return false;
-
-      final monthName = parts[0];
-      final year = int.tryParse(parts[1]);
-      if (year == null) return false;
-
-      final monthNumber = _getMonthNumberStatic(monthName);
-      if (monthNumber == 0) return false;
-
-      // Proveri da li se plaćeni mesec i godina poklapaju
-      return registrovaniPutnik.placeniMesec == monthNumber && registrovaniPutnik.placenaGodina == year;
-    }
-
-    return false; // Fallback
   }
 
   // HELPER FUNKCIJE - ISTO kao u registrovani_putnici_screen.dart
