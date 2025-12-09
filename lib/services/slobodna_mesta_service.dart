@@ -88,6 +88,17 @@ class SlobodnaMestaService {
     }
   }
 
+  /// Konvertuj ISO datum u pun naziv dana (za getAllPutniciFromBothTables)
+  static String _isoDateToDayName(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      const dani = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+      return dani[date.weekday - 1];
+    } catch (e) {
+      return 'Ponedeljak';
+    }
+  }
+
   /// Stream slobodnih mesta za oba grada - osvežava svakih 2 minuta
   /// Vraća: {'BC': [SlobodnaMesta, ...], 'VS': [SlobodnaMesta, ...]}
   static Stream<Map<String, List<SlobodnaMesta>>> streamSlobodnaMesta({String? datum}) {
@@ -101,8 +112,8 @@ class SlobodnaMestaService {
     // Funkcija za dohvatanje podataka
     Future<void> fetchData(Map<String, Map<String, int>> kapacitet) async {
       try {
-        final danAbbr = _isoDateToDayAbbr(isoDate);
-        final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danAbbr);
+        final danName = _isoDateToDayName(isoDate);
+        final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danName);
 
         final result = <String, List<SlobodnaMesta>>{
           'BC': [],
@@ -179,9 +190,9 @@ class SlobodnaMestaService {
     // Dohvati kapacitet
     final kapacitet = await KapacitetService.getKapacitet();
 
-    // Dohvati putnike - koristi getAllPutniciFromBothTables sa danom
-    final danAbbr = _isoDateToDayAbbr(isoDate);
-    final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danAbbr);
+    // Dohvati putnike - koristi getAllPutniciFromBothTables sa punim nazivom dana
+    final danName = _isoDateToDayName(isoDate);
+    final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danName);
 
     final result = <String, List<SlobodnaMesta>>{
       'BC': [],
