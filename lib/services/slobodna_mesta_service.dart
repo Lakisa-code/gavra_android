@@ -260,11 +260,11 @@ class SlobodnaMestaService {
 
   /// Promeni vreme polaska za putnika
   /// Vraća: {'success': bool, 'message': String}
-  /// 
+  ///
   /// Ograničenja za tip 'ucenik' (do 16h):
   /// - Za DANAŠNJI dan: samo 1 promena
   /// - Za BUDUĆE dane: max 3 promene po danu
-  /// 
+  ///
   /// Tipovi 'radnik' i 'dnevni' nemaju ograničenja.
   static Future<Map<String, dynamic>> promeniVremePutnika({
     required String putnikId,

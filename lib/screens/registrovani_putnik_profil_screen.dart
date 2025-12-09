@@ -942,12 +942,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       polasci[dan]![tipGrad] = novoVreme;
 
       // Sačuvaj u bazu
-      final putnikId = _putnikData['id'];
       if (putnikId != null) {
-        await Supabase.instance.client.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+        await Supabase.instance.client
+            .from('registrovani_putnici')
+            .update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
         // 🎓 Zapiši promenu za učenike (za ograničenje)
-        final tipPutnika = (_putnikData['tip'] as String?)?.toLowerCase() ?? 'radnik';
         if (tipPutnika == 'ucenik') {
           await SlobodnaMestaService.zapisiPromenuVremena(putnikId.toString(), dan);
         }
