@@ -47,15 +47,10 @@ class AdvancedGeocodingService {
     bool enableAutoCorrection = true,
     int maxRetries = 3,
   }) async {
-    print('🌍 GEOCODING START: grad="$grad", adresa="$adresa"');
-
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac opštine dozvoljene
     if (_isCityOutsideServiceArea(grad)) {
-      print('🌍 GEOCODING BLOCKED: grad "$grad" je van servisne oblasti');
       return null;
     }
-
-    print('🌍 GEOCODING: grad "$grad" je u servisnoj oblasti, nastavljam...');
 
     try {
       // 1. 🧹 PREPROCESSING - čišćenje i normalizacija
@@ -230,8 +225,6 @@ class AdvancedGeocodingService {
         'bounded=1&'
         'viewbox=20.8,44.7,21.8,45.2'; // Bounding box za BC/Vršac region
 
-    print('🌍 NOMINATIM URL: $url');
-
     try {
       final response = await http.get(
         Uri.parse(url),
@@ -241,13 +234,8 @@ class AdvancedGeocodingService {
         },
       ).timeout(timeout);
 
-      print('🌍 NOMINATIM STATUS: ${response.statusCode}');
-      print(
-          '🌍 NOMINATIM BODY: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
-
       if (response.statusCode == 200) {
         final List<dynamic> results = json.decode(response.body) as List<dynamic>;
-        print('🌍 NOMINATIM RESULTS COUNT: ${results.length}');
         if (results.isNotEmpty) {
           final best = results.first;
           final confidence = _calculateConfidence(
@@ -256,7 +244,6 @@ class AdvancedGeocodingService {
             best as Map<String, dynamic>,
             'nominatim',
           );
-          print('🌍 NOMINATIM CONFIDENCE: $confidence');
 
           return GeocodeResult(
             latitude: double.parse(best['lat'] as String),
@@ -269,7 +256,7 @@ class AdvancedGeocodingService {
         }
       }
     } catch (e) {
-      print('🌍 NOMINATIM ERROR: $e');
+      // Nominatim greška - pokušaj sledeći provider
     }
 
     return null;

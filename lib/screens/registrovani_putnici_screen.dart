@@ -1423,8 +1423,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   void _navigirajDoAdrese(String? adresaId, String gradLabel) async {
     if (adresaId == null) return;
 
-    debugPrint('🗺️ DEBUG: gradLabel="$gradLabel", adresaId="$adresaId"');
-
     final adrese = await AdresaSupabaseService.getAdreseByUuids([adresaId]);
     if (adrese.isEmpty) return;
 
@@ -1435,35 +1433,25 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     // 🎯 Odredi grad iz labela (BC -> Bela Crkva, VS -> Vršac)
     final grad = gradLabel.toUpperCase() == 'BC' ? 'Bela Crkva' : 'Vršac';
 
-    debugPrint('🗺️ NAVIGACIJA: adresa="${adresa.naziv}", grad="$grad", lat=$lat, lng=$lng');
-
     // 🎯 Ako nema koordinate, pokušaj geocoding
     if (lat == null || lng == null) {
-      debugPrint('🗺️ Pokušavam geocoding za: "${adresa.naziv}" u "$grad"');
       try {
         final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
           grad: grad,
           adresa: adresa.naziv,
         );
-        debugPrint('🗺️ Geocoding rezultat: $geocodeResult');
-        if (geocodeResult != null) {
-          debugPrint('🗺️ Confidence: ${geocodeResult.confidence}');
-        }
         if (geocodeResult != null && geocodeResult.confidence > 50) {
           lat = geocodeResult.latitude;
           lng = geocodeResult.longitude;
-          debugPrint('🗺️ Koordinate pronađene: lat=$lat, lng=$lng');
           // Sačuvaj koordinate za buduće korišćenje
           await AdresaSupabaseService.updateKoordinate(
             adresaId,
             lat: lat,
             lng: lng,
           );
-        } else {
-          debugPrint('🗺️ Geocoding nije uspeo ili confidence < 50');
         }
       } catch (e) {
-        debugPrint('🗺️ Geocoding GREŠKA: $e');
+        // Geocoding greška
       }
     }
 
