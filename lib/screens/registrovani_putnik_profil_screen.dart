@@ -862,42 +862,63 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   /// 🕐 Ažurira polazak za određeni dan i čuva u bazu
   Future<void> _updatePolazak(String dan, String tipGrad, String? novoVreme) async {
     try {
-      // 🚫 OGRANIČENJA ZA UČENIKE posle 16:00
-      final tipPutnika = _putnikData['tip'] as String? ?? 'radnik';
+      final tipPutnika = (_putnikData['tip'] as String?)?.toLowerCase() ?? 'radnik';
+      final putnikId = _putnikData['id']?.toString();
+      final sada = DateTime.now();
+      const daniLista = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      final danasDan = daniLista[sada.weekday - 1];
+      final jeZaDanas = dan.toLowerCase() == danasDan.toLowerCase();
+
+      // ═══════════════════════════════════════════════════════════════
+      // 🎓 OGRANIČENJA ZA UČENIKE
+      // ═══════════════════════════════════════════════════════════════
       if (tipPutnika == 'ucenik') {
-        final sada = DateTime.now();
-        const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-        final danasDan = dani[sada.weekday - 1];
-        final sutra = sada.add(const Duration(days: 1));
-        final sutraDan = dani[sutra.weekday - 1];
-
+        // 1. Proveri da li je pre 16h
         if (sada.hour >= 16) {
-          // 1. VS (povratak iz škole) za DANAS - ograničeno do 16:00
-          if (tipGrad == 'vs' && dan.toLowerCase() == danasDan.toLowerCase()) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('⏰ Povratak za danas moguće zakazati do 16:00'),
-                  backgroundColor: Colors.orange,
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            }
-            return;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⏰ Promene su dozvoljene samo do 16:00h'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
+          return;
+        }
 
-          // 2. Bilo šta za SUTRA - ograničeno do 16:00
-          if (dan.toLowerCase() == sutraDan.toLowerCase()) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('⏰ Zakazivanje za sutra moguće do 16:00'),
-                  backgroundColor: Colors.orange,
-                  duration: Duration(seconds: 3),
-                ),
-              );
+        // 2. Proveri broj promena za ciljni dan
+        if (putnikId != null) {
+          final brojPromena = await SlobodnaMestaService.brojPromenaZaDan(putnikId, dan);
+
+          if (jeZaDanas) {
+            // Za DANAŠNJI dan: max 1 promena
+            if (brojPromena >= 1) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('⚠️ Za današnji dan možete promeniti vreme samo jednom.'),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+              return;
             }
-            return;
+          } else {
+            // Za BUDUĆE dane: max 3 promene
+            if (brojPromena >= 3) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('⚠️ Za $dan ste već napravili 3 promene danas.'),
+                    backgroundColor: Colors.orange,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+              return;
+            }
           }
         }
       }
@@ -924,6 +945,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final putnikId = _putnikData['id'];
       if (putnikId != null) {
         await Supabase.instance.client.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+
+        // 🎓 Zapiši promenu za učenike (za ograničenje)
+        final tipPutnika = (_putnikData['tip'] as String?)?.toLowerCase() ?? 'radnik';
+        if (tipPutnika == 'ucenik') {
+          await SlobodnaMestaService.zapisiPromenuVremena(putnikId.toString(), dan);
+        }
 
         // Ažuriraj lokalni state
         setState(() {

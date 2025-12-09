@@ -260,9 +260,12 @@ class SlobodnaMestaService {
 
   /// Promeni vreme polaska za putnika
   /// Vraća: {'success': bool, 'message': String}
-  /// Ograničenja:
-  /// - Za danas: samo jednom dnevno (sprečava zloupotrebu)
-  /// - Za celu nedelju: može više puta
+  /// 
+  /// Ograničenja za tip 'ucenik' (do 16h):
+  /// - Za DANAŠNJI dan: samo 1 promena
+  /// - Za BUDUĆE dane: max 3 promene po danu
+  /// 
+  /// Tipovi 'radnik' i 'dnevni' nemaju ograničenja.
   static Future<Map<String, dynamic>> promeniVremePutnika({
     required String putnikId,
     required String novoVreme,
@@ -271,20 +274,56 @@ class SlobodnaMestaService {
     bool zaCeluNedelju = false,
   }) async {
     try {
-      final danas = DateTime.now().toIso8601String().split('T')[0];
+      final sada = DateTime.now();
+      final danas = sada.toIso8601String().split('T')[0];
       final danasDan = _isoDateToDayAbbr(danas);
-
-      // Proveri da li je promena za danas
       final jeZaDanas = dan.toLowerCase() == danasDan.toLowerCase();
 
-      // Ako je za danas, proveri da li je već menjao
-      if (jeZaDanas && !zaCeluNedelju) {
-        final vecMenjao = await _daLiJeVecMenjaoVreme(putnikId, danas);
-        if (vecMenjao) {
+      // Dohvati tip putnika
+      final putnikResponse = await _supabase
+          .from('registrovani_putnici')
+          .select('id, putnik_ime, tip, polasci_po_danu')
+          .eq('id', putnikId)
+          .maybeSingle();
+
+      if (putnikResponse == null) {
+        return {'success': false, 'message': 'Putnik nije pronađen'};
+      }
+
+      final tipPutnika = (putnikResponse['tip'] as String?)?.toLowerCase() ?? 'radnik';
+      final putnikIme = putnikResponse['putnik_ime'] as String? ?? 'Nepoznat';
+
+      // ═══════════════════════════════════════════════════════════════
+      // 🎓 OGRANIČENJA ZA UČENIKE
+      // ═══════════════════════════════════════════════════════════════
+      if (tipPutnika == 'ucenik' && !zaCeluNedelju) {
+        // Proveri da li je pre 16h
+        if (sada.hour >= 16) {
           return {
             'success': false,
-            'message': 'Već ste promenili vreme danas. Možete ponovo sutra.',
+            'message': 'Promene su dozvoljene samo do 16:00h',
           };
+        }
+
+        // Brojač promena za ciljni dan
+        final brojPromena = await _brojPromenaZaDan(putnikId, danas, dan);
+
+        if (jeZaDanas) {
+          // Za DANAŠNJI dan: max 1 promena
+          if (brojPromena >= 1) {
+            return {
+              'success': false,
+              'message': 'Za današnji dan možete promeniti vreme samo jednom.',
+            };
+          }
+        } else {
+          // Za BUDUĆE dane: max 3 promene
+          if (brojPromena >= 3) {
+            return {
+              'success': false,
+              'message': 'Za $dan ste već napravili 3 promene danas.',
+            };
+          }
         }
       }
 
@@ -297,19 +336,8 @@ class SlobodnaMestaService {
         };
       }
 
-      // Dohvati trenutne polaska putnika
-      final response = await _supabase
-          .from('registrovani_putnici')
-          .select('id, putnik_ime, polasci_po_danu')
-          .eq('id', putnikId)
-          .maybeSingle();
-
-      if (response == null) {
-        return {'success': false, 'message': 'Putnik nije pronađen'};
-      }
-
-      final putnikIme = response['putnik_ime'] as String? ?? 'Nepoznat';
-      final polasciRaw = response['polasci_po_danu'];
+      // Dohvati trenutne polaske
+      final polasciRaw = putnikResponse['polasci_po_danu'];
       Map<String, dynamic> polasci = {};
 
       if (polasciRaw is String) {
@@ -345,9 +373,9 @@ class SlobodnaMestaService {
       // Sačuvaj u bazu
       await _supabase.from('registrovani_putnici').update({'polasci_po_danu': jsonEncode(polasci)}).eq('id', putnikId);
 
-      // Zapiši promenu (za ograničenje jednom dnevno)
-      if (jeZaDanas && !zaCeluNedelju) {
-        await _zapisiPromenuVremena(putnikId, danas);
+      // Zapiši promenu za učenike (za ograničenje)
+      if (tipPutnika == 'ucenik' && !zaCeluNedelju) {
+        await _zapisiPromenuVremena(putnikId, danas, dan);
       }
 
       // Pošalji notifikaciju SVIM vozačima
@@ -370,30 +398,43 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Proveri da li je putnik već menjao vreme danas
-  static Future<bool> _daLiJeVecMenjaoVreme(String putnikId, String datum) async {
+  /// Broji koliko puta je putnik menjao vreme za određeni ciljni dan (danas)
+  /// Javna metoda za korišćenje iz drugih ekrana
+  static Future<int> brojPromenaZaDan(String putnikId, String ciljniDan) async {
+    final danas = DateTime.now().toIso8601String().split('T')[0];
+    return _brojPromenaZaDan(putnikId, danas, ciljniDan);
+  }
+
+  /// Privatna verzija koja prima datum
+  static Future<int> _brojPromenaZaDan(String putnikId, String datum, String ciljniDan) async {
     try {
       final response = await _supabase
           .from('promene_vremena_log')
           .select('id')
           .eq('putnik_id', putnikId)
           .eq('datum', datum)
-          .maybeSingle();
+          .eq('ciljni_dan', ciljniDan.toLowerCase());
 
-      return response != null;
+      return (response as List).length;
     } catch (e) {
-      // Ako tabela ne postoji, vrati false
-      debugPrint('⚠️ promene_vremena_log tabela možda ne postoji: $e');
-      return false;
+      debugPrint('⚠️ Greška pri brojanju promena: $e');
+      return 0;
     }
   }
 
-  /// Zapiši promenu vremena (za ograničenje)
-  static Future<void> _zapisiPromenuVremena(String putnikId, String datum) async {
+  /// Zapiši promenu vremena - javna verzija za korišćenje iz drugih ekrana
+  static Future<void> zapisiPromenuVremena(String putnikId, String ciljniDan) async {
+    final danas = DateTime.now().toIso8601String().split('T')[0];
+    await _zapisiPromenuVremena(putnikId, danas, ciljniDan);
+  }
+
+  /// Zapiši promenu vremena (za ograničenje učenika) - privatna verzija
+  static Future<void> _zapisiPromenuVremena(String putnikId, String datum, String ciljniDan) async {
     try {
       await _supabase.from('promene_vremena_log').insert({
         'putnik_id': putnikId,
         'datum': datum,
+        'ciljni_dan': ciljniDan.toLowerCase(),
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
