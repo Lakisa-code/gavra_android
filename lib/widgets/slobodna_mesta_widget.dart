@@ -118,19 +118,20 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).glassContainer,
+        backgroundColor: const Color(0xFF1E3A5F), // Tamno plava, čvrsta boja
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Promena vremena',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Text(
           'Da li želite da promenite vreme polaska na ${sm.vreme} (${sm.grad == 'BC' ? 'Bela Crkva' : 'Vršac'})?',
-          style: const TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ne', style: TextStyle(color: Colors.grey)),
+            child: const Text('Ne', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
