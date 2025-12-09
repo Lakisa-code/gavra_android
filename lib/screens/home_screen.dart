@@ -1019,7 +1019,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       if (_currentDriver == null ||
                                           _currentDriver!.isEmpty ||
                                           !VozacBoja.isValidDriver(_currentDriver)) {
-                                        if (!mounted) return;
+                                        if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(
@@ -1040,7 +1040,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         _selectedVreme,
                                       );
                                       if (!imaMesta) {
-                                        if (!mounted) return;
+                                        if (!context.mounted) return;
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: Text(
@@ -1085,16 +1085,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // Ignoriši greške u refresh-u
                                       }
 
-                                      if (!mounted) return;
+                                      if (!context.mounted) return;
 
                                       // Ukloni loading state
                                       setStateDialog(() {
                                         isDialogLoading = false;
                                       });
 
-                                      // ignore: use_build_context_synchronously
                                       Navigator.pop(context);
-                                      // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text(
@@ -1110,9 +1108,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         isDialogLoading = false;
                                       });
 
-                                      if (!mounted) return;
+                                      if (!context.mounted) return;
 
-                                      // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
