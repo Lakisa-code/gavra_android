@@ -270,16 +270,26 @@ class _DanasScreenState extends State<DanasScreen> {
           final tipNormalized = TextUtils.normalizeTip(mp.tip);
           final isUcenik = tipNormalized.contains('ucenik');
 
-          final gradNormalized = TextUtils.normalizeText(mp.grad ?? '');
-          final selectedGradNorm = TextUtils.normalizeText(selectedGrad);
-          // 🔧 FIX: Ako učenik nema grad (NULL), prikaži ga bez obzira na filter
-          final gradMatch = selectedGrad.isEmpty || gradNormalized.isEmpty || gradNormalized == selectedGradNorm;
+          // 🔧 FIX: Filtriraj po polascima za selektovani grad, NE po mp.grad polju
+          bool gradMatch = false;
+          if (selectedGrad.isEmpty) {
+            gradMatch = true; // Ako nema filtera, prikaži sve
+          } else if (selectedGrad.toLowerCase().contains('bela')) {
+            // Bela Crkva - proveri da li ima BC polazak za danas
+            final polazakBC = mp.getPolazakBelaCrkvaZaDan(danasnjiDan);
+            gradMatch = polazakBC != null && polazakBC.isNotEmpty;
+          } else {
+            // Vršac - proveri da li ima VS polazak za danas
+            final polazakVS = mp.getPolazakVrsacZaDan(danasnjiDan);
+            gradMatch = polazakVS != null && polazakVS.isNotEmpty;
+          }
 
           return dayMatch && isUcenik && gradMatch;
         }).toList();
 
-        // FINALNA LOGIKA: OSTALO/UKUPNO
-        int ukupnoUjutro = 0; // ukupno učenika koji idu ujutro (Bela Crkva)
+        // FINALNA LOGIKA: OSTALO/UKUPNO - DINAMIČKI PO SELEKTOVANOM GRADU
+        final jeBelaCrkva = selectedGrad.isEmpty || selectedGrad.toLowerCase().contains('bela');
+        int ukupnoUjutro = 0; // ukupno učenika koji idu iz selektovanog grada
         int reseniUcenici = 0; // učenici upisani za OBA pravca (automatski rešeni)
         int otkazaliUcenici = 0; // učenici koji su otkazali
 
@@ -290,17 +300,21 @@ class _DanasScreenState extends State<DanasScreen> {
           // 🔧 PROVERA: Da li je otkazao (standardizovano)
           final jeOtkazao = !jeAktivan;
 
-          // Da li ide ujutro (Bela Crkva)?
+          // Da li ide iz selektovanog grada?
           final polazakBC = ucenik.getPolazakBelaCrkvaZaDan(danasnjiDan);
-          final ideBelaCrkva = polazakBC != null && polazakBC.isNotEmpty;
-
-          // Da li se vraća (Vršac)?
           final polazakVS = ucenik.getPolazakVrsacZaDan(danasnjiDan);
-          final vraca = polazakVS != null && polazakVS.isNotEmpty;
+          final ideIzSelektovanogGrada = jeBelaCrkva 
+              ? (polazakBC != null && polazakBC.isNotEmpty)
+              : (polazakVS != null && polazakVS.isNotEmpty);
 
-          // 🔧 LOGIKA: Samo oni koji idu ujutro u Belu Crkvu se računaju
-          if (ideBelaCrkva) {
-            ukupnoUjutro++; // broji sve koji idu ujutro (nezavisno od statusa)
+          // Da li se vraća (suprotni grad)?
+          final vraca = jeBelaCrkva 
+              ? (polazakVS != null && polazakVS.isNotEmpty)
+              : (polazakBC != null && polazakBC.isNotEmpty);
+
+          // 🔧 LOGIKA: Broji samo one koji idu iz selektovanog grada
+          if (ideIzSelektovanogGrada) {
+            ukupnoUjutro++; // broji sve koji idu iz selektovanog grada (nezavisno od statusa)
 
             if (jeOtkazao) {
               otkazaliUcenici++; // otkazao nakon upisa
@@ -317,20 +331,24 @@ class _DanasScreenState extends State<DanasScreen> {
           for (final z in zakupljenoRows) {
             try {
               final putnikZ = Putnik.fromPutovanjaIstorija(z);
-              // Filtriraj po gradu/selectedGrad
+              // Filtriraj po gradu/selectedGrad - dinamički
               final gradNorm = TextUtils.normalizeText(putnikZ.grad);
-              if (TextUtils.normalizeText(selectedGrad) != gradNorm && selectedGrad.isNotEmpty) {
+              
+              // 🔧 FIX: Proveri da li polazak odgovara selektovanom gradu
+              final jeIzSelektovanogGrada = jeBelaCrkva 
+                  ? gradNorm.contains('bela')
+                  : gradNorm.contains('vrsac') || gradNorm.contains('vršac');
+              
+              if (selectedGrad.isNotEmpty && !jeIzSelektovanogGrada) {
                 continue;
               }
-              // Proveri da li polazak odgovara BC (jutarnji) - heuristika: if grad == 'Bela Crkva'
-              if (putnikZ.grad.toLowerCase().contains('bela')) {
-                // De-dupe using name match to avoid double counting the same registrovani putnik
-                final nameMatch = sviRegistrovaniPutnici.any(
-                  (mp) => mp.putnikIme.trim().toLowerCase() == putnikZ.ime.trim().toLowerCase(),
-                );
-                if (!nameMatch) {
-                  zakupljenoCount++;
-                }
+              
+              // De-dupe using name match to avoid double counting the same registrovani putnik
+              final nameMatch = sviRegistrovaniPutnici.any(
+                (mp) => mp.putnikIme.trim().toLowerCase() == putnikZ.ime.trim().toLowerCase(),
+              );
+              if (!nameMatch) {
+                zakupljenoCount++;
               }
             } catch (_) {}
           }

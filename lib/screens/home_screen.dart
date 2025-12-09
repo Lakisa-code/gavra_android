@@ -6,17 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/registrovani_putnik.dart';
 import '../models/putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../services/auth_manager.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/registrovani_putnik_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
+import '../services/registrovani_putnik_service.dart';
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
