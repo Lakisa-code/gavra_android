@@ -286,7 +286,9 @@ class _SlobodnaRow extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               controller: scrollController,
               child: Row(
-                children: slobodnaList.map((sm) {
+                children: slobodnaList
+                    .where((sm) => !sm.jePuno) // 🎫 Sakrij pune termine
+                    .map((sm) {
                   final bool selected = _isSelected(sm);
 
                   return GestureDetector(
