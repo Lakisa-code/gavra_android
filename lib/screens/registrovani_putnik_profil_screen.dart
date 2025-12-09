@@ -739,12 +739,20 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
     debugPrint('🕐 polasci_po_danu type: ${polasciRaw.runtimeType}');
     Map<String, Map<String, String?>> polasci = {};
 
+    // Helper funkcija za sigurno parsiranje vremena
+    String? parseVreme(dynamic value) {
+      if (value == null) return null;
+      final str = value.toString().trim();
+      if (str.isEmpty || str == 'null') return null;
+      return str;
+    }
+
     if (polasciRaw != null && polasciRaw is Map) {
       polasciRaw.forEach((key, value) {
         if (value is Map) {
           polasci[key.toString()] = {
-            'bc': value['bc']?.toString(),
-            'vs': value['vs']?.toString(),
+            'bc': parseVreme(value['bc']),
+            'vs': parseVreme(value['vs']),
           };
         }
       });
