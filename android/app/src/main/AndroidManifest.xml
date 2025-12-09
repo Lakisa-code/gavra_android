@@ -16,7 +16,7 @@
 
   <!-- 📞 Phone/Call permissions -->
   <uses-permission android:name="android.permission.CALL_PHONE" />
-  <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+  <!-- READ_PHONE_STATE nije potreban - koristimo samo tel: URI za pozivanje -->
 
   <!-- 🛰️ BACKGROUND GPS TRACKING PERMISSIONS -->
   <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
