@@ -213,12 +213,6 @@ class PermissionService {
         'subtitle': 'za kontaktiranje putnika',
       },
       {
-        'icon': Icons.message_rounded,
-        'color': const Color(0xFFFF9800),
-        'title': 'SMS poruke',
-        'subtitle': 'za obaveštenja',
-      },
-      {
         'icon': Icons.notifications_rounded,
         'color': const Color(0xFF9C27B0),
         'title': 'Notifikacije',
@@ -291,25 +285,22 @@ class PermissionService {
       final locationStatus =
           await _requestLocationPermission().timeout(const Duration(seconds: 30), onTimeout: () => false);
 
-      // 2. � BATCH REQUEST za ostale dozvole (brže od sequential)
+      // 2. 📦 BATCH REQUEST za ostale dozvole (SMS nije potreban - koristimo url_launcher)
       final permissions = [
         Permission.phone,
-        Permission.sms,
         Permission.notification,
       ];
       final Map<Permission, PermissionStatus> statuses = await permissions.request();
 
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
-      final smsStatus = statuses[Permission.sms] ?? PermissionStatus.denied;
 
       // Sačuvaj da su dozvole zatražene
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_firstLaunchKey, false);
 
-      // Vraća true ako su sve kritične dozvole odobrene
+      // Vraća true ako su sve kritične dozvole odobrene (GPS + Phone)
       final allCriticalGranted = locationStatus &&
-          (phoneStatus.isGranted || phoneStatus.isLimited) &&
-          (smsStatus.isGranted || smsStatus.isLimited);
+          (phoneStatus.isGranted || phoneStatus.isLimited);
 
       return allCriticalGranted;
     } catch (e) {
@@ -342,9 +333,9 @@ class PermissionService {
     try {
       final location = await _isLocationPermissionGranted();
       final phone = await Permission.phone.status;
-      final sms = await Permission.sms.status;
+      // SMS dozvola nije potrebna - koristimo url_launcher
 
-      return location && (phone.isGranted || phone.isLimited) && (sms.isGranted || sms.isLimited);
+      return location && (phone.isGranted || phone.isLimited);
     } catch (e) {
       return false;
     }
@@ -536,27 +527,15 @@ class PermissionService {
     }
   }
 
-  /// 📱 INSTANT SMS (bez dodatnih dialoga)
-  static Future<bool> ensureSmsPermission() async {
-    try {
-      final status = await Permission.sms.status;
-      if (status.isGranted || status.isLimited) {
-        return true;
-      }
-
-      final result = await Permission.sms.request();
-      return result.isGranted || result.isLimited;
-    } catch (e) {
-      return false;
-    }
-  }
+  // 📱 SMS DOZVOLA NIJE POTREBNA
+  // Aplikacija koristi url_launcher (sms: URI scheme) koji otvara SMS aplikaciju
+  // Korisnik sam klikne "Pošalji" - ne treba SEND_SMS permission
 
   /// 🔔 STATUS SVIH DOZVOLA
   static Future<Map<String, bool>> getPermissionStatus() async {
     return {
       'location': await _isLocationPermissionGranted(),
       'phone': (await Permission.phone.status).isGranted,
-      'sms': (await Permission.sms.status).isGranted,
       'notification': (await Permission.notification.status).isGranted,
     };
   }
@@ -568,29 +547,6 @@ class PermissionService {
       await Permission.phone.request(); // Ovo će otvoriti settings ako je potrebno
     } catch (e) {
       // Silently ignore
-    }
-  }
-
-  /// 🔧 HUAWEI SPECIFIČNA LOGIKA - Graceful handling na Huawei uređajima
-  static Future<bool> ensureSmsPermissionHuawei() async {
-    try {
-      // Prvo pokušaj standardni pristup
-      final status = await Permission.sms.status;
-      if (status.isGranted || status.isLimited) {
-        return true;
-      }
-
-      // Huawei specifično - pokušaj zahtev
-      final result = await Permission.sms.request();
-
-      // Ako Huawei blokira dozvolu, nastavi sa URL launcher pristupom
-      if (result.isDenied || result.isPermanentlyDenied) {
-        return true; // Vraća true jer će koristiti URL launcher
-      }
-
-      return result.isGranted || result.isLimited;
-    } catch (e) {
-      return true; // Fallback na URL launcher
     }
   }
 

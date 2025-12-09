@@ -12,8 +12,7 @@
   <!-- Required for Android 13+ runtime notification permission -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-  <uses-permission android:name="android.permission.SEND_SMS" />
-  <uses-permission android:name="android.permission.READ_SMS" />
+  <!-- SMS dozvole NISU potrebne - koristimo url_launcher (sms: URI) koji otvara SMS app -->
 
   <!-- 📞 Phone/Call permissions -->
   <uses-permission android:name="android.permission.CALL_PHONE" />
