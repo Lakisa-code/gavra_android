@@ -508,12 +508,18 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
                                   decoration: BoxDecoration(
                                     color: tip == 'ucenik'
                                         ? Colors.blue.withValues(alpha: 0.3)
-                                        : Colors.orange.withValues(alpha: 0.3),
+                                        : tip == 'dnevni'
+                                            ? Colors.green.withValues(alpha: 0.3)
+                                            : Colors.orange.withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                   ),
                                   child: Text(
-                                    tip == 'ucenik' ? '🎓 Učenik' : '💼 Radnik',
+                                    tip == 'ucenik'
+                                        ? '🎓 Učenik'
+                                        : tip == 'dnevni'
+                                            ? '📅 Dnevni'
+                                            : '💼 Radnik',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
