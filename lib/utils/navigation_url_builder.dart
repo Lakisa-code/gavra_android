@@ -37,11 +37,20 @@ class NavigationUrlBuilder {
       throw ArgumentError('Nema putnika sa validnim koordinatama');
     }
 
-    // Waypoints su svi osim poslednjeg
-    final waypoints = validPutnici.take(validPutnici.length - 1).map((p) => coordinates[p]!).toList();
+    // 🐛 FIX: Ako ima krajnja destinacija, SVI putnici su waypointi
+    // Ako nema, poslednji putnik je destinacija
+    final List<Position> waypoints;
+    final Position dest;
 
-    // Destinacija je poslednji putnik ili prosleđena destinacija
-    final dest = destination ?? coordinates[validPutnici.last]!;
+    if (destination != null) {
+      // Krajnja destinacija prosleđena - svi putnici su waypointi
+      waypoints = validPutnici.map((p) => coordinates[p]!).toList();
+      dest = destination;
+    } else {
+      // Nema krajnje destinacije - poslednji putnik je destinacija
+      waypoints = validPutnici.take(validPutnici.length - 1).map((p) => coordinates[p]!).toList();
+      dest = coordinates[validPutnici.last]!;
+    }
 
     return buildUrl(
       provider: provider,
