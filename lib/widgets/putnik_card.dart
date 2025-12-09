@@ -5,15 +5,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/mesecni_putnik.dart' as novi_model;
 import '../models/putnik.dart';
+import '../models/registrovani_putnik.dart' as novi_model;
 import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart'; // 🆕 Obračun cene po pokupljenjima
 import '../services/haptic_service.dart';
-import '../services/mesecni_putnik_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 📍 GPS LEARN
+import '../services/registrovani_putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart'; // 🎨 NOVO: Centralizovana logika boja
@@ -377,10 +377,10 @@ class _PutnikCardState extends State<PutnikCard> {
     final List<Widget> opcije = [];
 
     // Dohvati podatke o mesečnom putniku (ako je mesečni putnik)
-    novi_model.MesecniPutnik? mesecniPutnik;
+    novi_model.RegistrovaniPutnik? registrovaniPutnik;
     if (_putnik.mesecnaKarta == true) {
       try {
-        mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
+        registrovaniPutnik = await RegistrovaniPutnikService.getRegistrovaniPutnikByIme(_putnik.ime);
       } catch (e) {
         // Ignoriši grešku, nastavi bez podataka o roditeljima
       }
@@ -388,10 +388,10 @@ class _PutnikCardState extends State<PutnikCard> {
 
     // Automatsko SMS roditeljima za plaćanje (samo za mesečne putnike učenike)
     if (_putnik.mesecnaKarta == true &&
-        mesecniPutnik != null &&
-        mesecniPutnik.tip == 'ucenik' &&
-        ((mesecniPutnik.brojTelefonaOca != null && mesecniPutnik.brojTelefonaOca!.isNotEmpty) ||
-            (mesecniPutnik.brojTelefonaMajke != null && mesecniPutnik.brojTelefonaMajke!.isNotEmpty))) {
+        registrovaniPutnik != null &&
+        registrovaniPutnik.tip == 'ucenik' &&
+        ((registrovaniPutnik.brojTelefonaOca != null && registrovaniPutnik.brojTelefonaOca!.isNotEmpty) ||
+            (registrovaniPutnik.brojTelefonaMajke != null && registrovaniPutnik.brojTelefonaMajke!.isNotEmpty))) {
       opcije.add(
         Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -414,8 +414,8 @@ class _PutnikCardState extends State<PutnikCard> {
             subtitle: const Text('Automatska poruka za plaćanje mesečne karte'),
             onTap: () async {
               Navigator.pop(context);
-              if (mesecniPutnik != null) {
-                await _posaljiSMSRoditeljimePlacanje(mesecniPutnik);
+              if (registrovaniPutnik != null) {
+                await _posaljiSMSRoditeljimePlacanje(registrovaniPutnik);
               }
             },
           ),
@@ -458,16 +458,18 @@ class _PutnikCardState extends State<PutnikCard> {
     }
 
     // Otac (ako postoji u mesečnim putnicima)
-    if (mesecniPutnik != null && mesecniPutnik.brojTelefonaOca != null && mesecniPutnik.brojTelefonaOca!.isNotEmpty) {
+    if (registrovaniPutnik != null &&
+        registrovaniPutnik.brojTelefonaOca != null &&
+        registrovaniPutnik.brojTelefonaOca!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: Icon(Icons.man, color: Theme.of(context).colorScheme.primary),
           title: const Text('Pozovi oca'),
-          subtitle: Text(mesecniPutnik.brojTelefonaOca!),
+          subtitle: Text(registrovaniPutnik.brojTelefonaOca!),
           onTap: () async {
             Navigator.pop(context);
 
-            await _pozoviBrojRoditelja(mesecniPutnik!.brojTelefonaOca!);
+            await _pozoviBrojRoditelja(registrovaniPutnik!.brojTelefonaOca!);
           },
         ),
       );
@@ -475,29 +477,29 @@ class _PutnikCardState extends State<PutnikCard> {
         ListTile(
           leading: Icon(Icons.sms, color: Theme.of(context).colorScheme.primary),
           title: const Text('SMS otac'),
-          subtitle: Text(mesecniPutnik.brojTelefonaOca!),
+          subtitle: Text(registrovaniPutnik.brojTelefonaOca!),
           onTap: () async {
             Navigator.pop(context);
 
-            await _posaljiSMS(mesecniPutnik!.brojTelefonaOca!);
+            await _posaljiSMS(registrovaniPutnik!.brojTelefonaOca!);
           },
         ),
       );
     }
 
     // Majka (ako postoji u mesečnim putnicima)
-    if (mesecniPutnik != null &&
-        mesecniPutnik.brojTelefonaMajke != null &&
-        mesecniPutnik.brojTelefonaMajke!.isNotEmpty) {
+    if (registrovaniPutnik != null &&
+        registrovaniPutnik.brojTelefonaMajke != null &&
+        registrovaniPutnik.brojTelefonaMajke!.isNotEmpty) {
       opcije.add(
         ListTile(
           leading: const Icon(Icons.woman, color: Colors.pink),
           title: const Text('Pozovi majku'),
-          subtitle: Text(mesecniPutnik.brojTelefonaMajke!),
+          subtitle: Text(registrovaniPutnik.brojTelefonaMajke!),
           onTap: () async {
             Navigator.pop(context);
 
-            await _pozoviBrojRoditelja(mesecniPutnik!.brojTelefonaMajke!);
+            await _pozoviBrojRoditelja(registrovaniPutnik!.brojTelefonaMajke!);
           },
         ),
       );
@@ -505,11 +507,11 @@ class _PutnikCardState extends State<PutnikCard> {
         ListTile(
           leading: const Icon(Icons.sms, color: Colors.pink),
           title: const Text('SMS majka'),
-          subtitle: Text(mesecniPutnik.brojTelefonaMajke!),
+          subtitle: Text(registrovaniPutnik.brojTelefonaMajke!),
           onTap: () async {
             Navigator.pop(context);
 
-            await _posaljiSMS(mesecniPutnik!.brojTelefonaMajke!);
+            await _posaljiSMS(registrovaniPutnik!.brojTelefonaMajke!);
           },
         ),
       );
@@ -692,18 +694,18 @@ class _PutnikCardState extends State<PutnikCard> {
 
   /// Automatsko SMS roditeljima za plaćanje (samo za mesečne putnike učenike)
   Future<void> _posaljiSMSRoditeljimePlacanje(
-    novi_model.MesecniPutnik mesecniPutnik,
+    novi_model.RegistrovaniPutnik registrovaniPutnik,
   ) async {
     final List<String> roditelji = [];
 
     // Dodaj broj oca ako postoji
-    if (mesecniPutnik.brojTelefonaOca != null && mesecniPutnik.brojTelefonaOca!.isNotEmpty) {
-      roditelji.add(mesecniPutnik.brojTelefonaOca!);
+    if (registrovaniPutnik.brojTelefonaOca != null && registrovaniPutnik.brojTelefonaOca!.isNotEmpty) {
+      roditelji.add(registrovaniPutnik.brojTelefonaOca!);
     }
 
     // Dodaj broj majke ako postoji
-    if (mesecniPutnik.brojTelefonaMajke != null && mesecniPutnik.brojTelefonaMajke!.isNotEmpty) {
-      roditelji.add(mesecniPutnik.brojTelefonaMajke!);
+    if (registrovaniPutnik.brojTelefonaMajke != null && registrovaniPutnik.brojTelefonaMajke!.isNotEmpty) {
+      roditelji.add(registrovaniPutnik.brojTelefonaMajke!);
     }
 
     if (roditelji.isEmpty) {
@@ -725,7 +727,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
     // 🆕 Koristi novi obračun cene
     final obracun = await CenaObracunService.getDetaljniObracun(
-      putnik: mesecniPutnik,
+      putnik: registrovaniPutnik,
       mesec: now.month,
       godina: now.year,
     );
@@ -739,7 +741,7 @@ class _PutnikCardState extends State<PutnikCard> {
     if (konacnaCena > 0) {
       iznosText = CenaObracunService.formatirajCenuZaSms(
         cena: konacnaCena,
-        tip: mesecniPutnik.tip,
+        tip: registrovaniPutnik.tip,
         brojDana: brojDana,
         customCenaPoDanu: customCenaPoDanu,
       );
@@ -827,7 +829,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (_putnik.mesecnaKarta == true) {
       // MESEČNI PUTNIK - CUSTOM CENA umesto fiksne
-      await _handleMesecniPayment();
+      await _handleRegistrovaniPayment();
     } else {
       // OBIČNI PUTNIK - unos custom iznosa
       await _handleObicniPayment();
@@ -835,11 +837,11 @@ class _PutnikCardState extends State<PutnikCard> {
   }
 
   // 📅 PLAĆANJE MESEČNE KARTE - CUSTOM CENA (korisnik unosi iznos)
-  Future<void> _handleMesecniPayment() async {
+  Future<void> _handleRegistrovaniPayment() async {
     // Prvo dohvati mesečnog putnika iz baze po imenu (ne po ID!)
-    final mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
+    final registrovaniPutnik = await RegistrovaniPutnikService.getRegistrovaniPutnikByIme(_putnik.ime);
 
-    if (mesecniPutnik == null) {
+    if (registrovaniPutnik == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -864,17 +866,17 @@ class _PutnikCardState extends State<PutnikCard> {
     int brojPutovanja = 0;
     int brojOtkazivanja = 0;
     try {
-      brojPutovanja = await MesecniPutnikService.izracunajBrojPutovanjaIzIstorije(
+      brojPutovanja = await RegistrovaniPutnikService.izracunajBrojPutovanjaIzIstorije(
         _putnik.id! as String,
       );
       // Računaj otkazivanja iz stvarne istorije
-      brojOtkazivanja = await MesecniPutnikService.izracunajBrojOtkazivanjaIzIstorije(
+      brojOtkazivanja = await RegistrovaniPutnikService.izracunajBrojOtkazivanjaIzIstorije(
         _putnik.id! as String,
       );
     } catch (e) {
       // Fallback na podatke iz modela
-      brojPutovanja = mesecniPutnik.brojPutovanja;
-      brojOtkazivanja = mesecniPutnik.brojOtkazivanja;
+      brojPutovanja = registrovaniPutnik.brojPutovanja;
+      brojOtkazivanja = registrovaniPutnik.brojOtkazivanja;
     }
 
     if (!mounted) return;
@@ -1008,7 +1010,7 @@ class _PutnikCardState extends State<PutnikCard> {
                             ),
                           ],
                         ),
-                        if (mesecniPutnik.jePlacen) ...[
+                        if (registrovaniPutnik.jePlacen) ...[
                           // Koristi jePlacen umesto datumPlacanja
                           const SizedBox(height: 6),
                           Text(
@@ -1050,8 +1052,8 @@ class _PutnikCardState extends State<PutnikCard> {
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                         items: _getMonthOptionsStatic().map((monthYear) {
-                          // 💰 Proveri da li je mesec plaćen - ISTO kao u mesecni_putnici_screen.dart
-                          final bool isPlacen = _isMonthPaidStatic(monthYear, mesecniPutnik);
+                          // 💰 Proveri da li je mesec plaćen - ISTO kao u registrovani_putnici_screen.dart
+                          final bool isPlacen = _isMonthPaidStatic(monthYear, registrovaniPutnik);
 
                           return DropdownMenuItem<String>(
                             value: monthYear,
@@ -1163,7 +1165,7 @@ class _PutnikCardState extends State<PutnikCard> {
       await _executePayment(
         result['iznos'] as double,
         mesec: result['mesec'] as String?,
-        isMesecni: true,
+        isRegistrovani: true,
       );
     }
   }
@@ -1268,7 +1270,7 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       try {
-        await _executePayment(iznos, isMesecni: false);
+        await _executePayment(iznos, isRegistrovani: false);
 
         // Haptic feedback za uspešno plaćanje
         HapticService.lightImpact();
@@ -1288,7 +1290,7 @@ class _PutnikCardState extends State<PutnikCard> {
   // Izvršavanje plaćanja - zajedničko za oba tipa
   Future<void> _executePayment(
     double iznos, {
-    required bool isMesecni,
+    required bool isRegistrovani,
     String? mesec,
   }) async {
     try {
@@ -1296,18 +1298,18 @@ class _PutnikCardState extends State<PutnikCard> {
       String finalDriver = widget.currentDriver ?? 'Nepoznat vozač';
 
       // Pozovi odgovarajući service za plaćanje
-      if (isMesecni && mesec != null) {
+      if (isRegistrovani && mesec != null) {
         // Validacija da putnik ime nije prazno
         if (_putnik.ime.trim().isEmpty) {
           throw Exception('Ime putnika je prazno - ne može se pronaći u bazi');
         }
 
-        // Za mesečne putnike koristi funkciju iz mesecni_putnici_screen.dart
-        final mesecniPutnik = await MesecniPutnikService.getMesecniPutnikByIme(_putnik.ime);
-        if (mesecniPutnik != null) {
-          // Koristi static funkciju kao u mesecni_putnici_screen.dart
+        // Za mesečne putnike koristi funkciju iz registrovani_putnici_screen.dart
+        final registrovaniPutnik = await RegistrovaniPutnikService.getRegistrovaniPutnikByIme(_putnik.ime);
+        if (registrovaniPutnik != null) {
+          // Koristi static funkciju kao u registrovani_putnici_screen.dart
           await _sacuvajPlacanjeStatic(
-            putnikId: mesecniPutnik.id,
+            putnikId: registrovaniPutnik.id,
             iznos: iznos,
             mesec: mesec,
             vozacIme: finalDriver,
@@ -1340,7 +1342,7 @@ class _PutnikCardState extends State<PutnikCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isMesecni
+              isRegistrovani
                   ? 'Mesečna karta plaćena: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)'
                   : 'Putovanje plaćeno: ${_putnik.ime} (${iznos.toStringAsFixed(0)} RSD)',
             ),
@@ -2342,19 +2344,19 @@ class _PutnikCardState extends State<PutnikCard> {
     return '${date.day}.${date.month}.${date.year}';
   }
 
-  // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u mesecni_putnici_screen.dart
+  // 💰 PROVERA DA LI JE MESEC PLAĆEN - TAČNO ISTO kao u registrovani_putnici_screen.dart
   bool _isMonthPaidStatic(
     String monthYear,
-    novi_model.MesecniPutnik? mesecniPutnik,
+    novi_model.RegistrovaniPutnik? registrovaniPutnik,
   ) {
-    if (mesecniPutnik == null) return false;
+    if (registrovaniPutnik == null) return false;
 
-    if (mesecniPutnik.vremePlacanja == null || mesecniPutnik.cena == null || mesecniPutnik.cena! <= 0) {
+    if (registrovaniPutnik.vremePlacanja == null || registrovaniPutnik.cena == null || registrovaniPutnik.cena! <= 0) {
       return false;
     }
 
     // Ako imamo precizne podatke o plaćenom mesecu, koristi ih
-    if (mesecniPutnik.placeniMesec != null && mesecniPutnik.placenaGodina != null) {
+    if (registrovaniPutnik.placeniMesec != null && registrovaniPutnik.placenaGodina != null) {
       // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
       final parts = monthYear.split(' ');
       if (parts.length != 2) return false;
@@ -2367,13 +2369,13 @@ class _PutnikCardState extends State<PutnikCard> {
       if (monthNumber == 0) return false;
 
       // Proveri da li se plaćeni mesec i godina poklapaju
-      return mesecniPutnik.placeniMesec == monthNumber && mesecniPutnik.placenaGodina == year;
+      return registrovaniPutnik.placeniMesec == monthNumber && registrovaniPutnik.placenaGodina == year;
     }
 
     return false; // Fallback
   }
 
-  // HELPER FUNKCIJE - ISTO kao u mesecni_putnici_screen.dart
+  // HELPER FUNKCIJE - ISTO kao u registrovani_putnici_screen.dart
   static String _getMonthNameStatic(int month) {
     const months = [
       '',
@@ -2424,7 +2426,7 @@ class _PutnikCardState extends State<PutnikCard> {
     return options;
   }
 
-  // 💰 ČUVANJE PLAĆANJA - KOPIJA iz mesecni_putnici_screen.dart
+  // 💰 ČUVANJE PLAĆANJA - KOPIJA iz registrovani_putnici_screen.dart
   Future<void> _sacuvajPlacanjeStatic({
     required String putnikId,
     required double iznos,
@@ -2468,7 +2470,7 @@ class _PutnikCardState extends State<PutnikCard> {
       }
 
       // Koristi metodu koja postavlja vreme plaćanja na trenutni datum
-      final uspeh = await MesecniPutnikService().azurirajPlacanjeZaMesec(
+      final uspeh = await RegistrovaniPutnikService().azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
         vozacUuid, // 🎯 PROSLIJEDI UUID UMESTO IMENA

@@ -34,7 +34,7 @@ class PutnikPushService {
       }
 
       // Sačuvaj u bazu
-      await _supabase.from('mesecni_putnici').update({
+      await _supabase.from('registrovani_putnici').update({
         'push_token': token,
         'push_provider': provider,
       }).eq('id', putnikId);
@@ -50,7 +50,7 @@ class PutnikPushService {
   /// Obriši push token (pri logout-u)
   static Future<void> clearPutnikToken(dynamic putnikId) async {
     try {
-      await _supabase.from('mesecni_putnici').update({
+      await _supabase.from('registrovani_putnici').update({
         'push_token': null,
         'push_provider': null,
       }).eq('id', putnikId);
@@ -70,7 +70,7 @@ class PutnikPushService {
 
     try {
       final response = await _supabase
-          .from('mesecni_putnici')
+          .from('registrovani_putnici')
           .select('ime, push_token, push_provider')
           .inFilter('ime', putnikImena)
           .not('push_token', 'is', null);

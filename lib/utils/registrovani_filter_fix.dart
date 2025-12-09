@@ -1,7 +1,7 @@
-/// 🔧 POBOLJŠANA LOGIKA FILTRIRANJA MESEČNIH PUTNIKA
+﻿/// 🔧 POBOLJŠANA LOGIKA FILTRIRANJA MESEČNIH PUTNIKA
 /// Centralizovana logika za konzistentno filtriranje
 
-class MesecniFilterFix {
+class RegistrovaniFilterFix {
   /// ✅ ISPRAVKA 1: Tačno matchovanje dana umesto contains()
   static bool matchesDan(String radniDani, String dan) {
     final daniList = radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
@@ -52,7 +52,7 @@ class MesecniFilterFix {
       return aktivan == true && obrisan != true;
     }
 
-    // Za MesecniPutnik objekte (treba da ima getters)
+    // Za RegistrovaniPutnik objekte (treba da ima getters)
     try {
       return putnik.aktivan == true && putnik.obrisan != true;
     } catch (e) {
@@ -78,7 +78,7 @@ class MesecniFilterFix {
   }
 
   /// ✅ ISPRAVKA 6: Kompletan filter za mesečne putnike
-  static bool shouldIncludeMesecniPutnik({
+  static bool shouldIncludeRegistrovaniPutnik({
     required dynamic putnik,
     String? targetDay,
     String? searchTerm,
@@ -130,7 +130,7 @@ class MesecniFilterFix {
     String? orderBy = 'putnik_ime',
   }) {
     var query = '''
-      SELECT * FROM mesecni_putnici 
+      SELECT * FROM registrovani_putnici 
       WHERE 1=1
     ''';
 

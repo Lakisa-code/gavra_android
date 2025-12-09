@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart'; // 🗺️ Za GPS poziciju
@@ -1322,7 +1322,7 @@ class _VozacScreenState extends State<VozacScreen> {
                             // MESEČNE
                             Expanded(
                               child: StreamBuilder<int>(
-                                stream: StatistikaService.streamBrojMesecnihKarataZaVozaca(
+                                stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
                                   _currentDriver ?? '',
                                   from: dayStart,
                                   to: dayEnd,

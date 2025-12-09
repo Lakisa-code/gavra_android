@@ -8,10 +8,10 @@ import '../../utils/schedule_utils.dart';
 /// Koristi se za prikaz i izbor vremena polaska (BC ili VS)
 ///
 /// Koristi se na:
-/// - Dodaj putnika (MesecniPutnikDialog)
-/// - Uredi putnika (MesecniPutnikDialog)
-/// - Moj profil učenici (MesecniPutnikProfilScreen)
-/// - Moj profil radnici (MesecniPutnikProfilScreen)
+/// - Dodaj putnika (RegistrovaniPutnikDialog)
+/// - Uredi putnika (RegistrovaniPutnikDialog)
+/// - Moj profil učenici (RegistrovaniPutnikProfilScreen)
+/// - Moj profil radnici (RegistrovaniPutnikProfilScreen)
 class TimePickerCell extends StatelessWidget {
   final String? value;
   final bool isBC;

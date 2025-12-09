@@ -41,17 +41,17 @@ class RealtimeService {
   }
 
   StreamSubscription<dynamic>? _putovanjaSub;
-  StreamSubscription<dynamic>? _mesecniSub;
+  StreamSubscription<dynamic>? _registrovaniSub;
   StreamSubscription<dynamic>? _dailySub;
 
   // Keep last known rows so we can emit combined payloads
   List<Map<String, dynamic>> _lastPutovanjaRows = [];
-  List<Map<String, dynamic>> _lastMesecniRows = [];
+  List<Map<String, dynamic>> _lastRegistrovaniRows = [];
   List<Map<String, dynamic>> _lastDailyRows = [];
 
   // Expose read-only copies
   List<Map<String, dynamic>> get lastPutovanjaRows => List.unmodifiable(_lastPutovanjaRows);
-  List<Map<String, dynamic>> get lastMesecniRows => List.unmodifiable(_lastMesecniRows);
+  List<Map<String, dynamic>> get lastRegistrovaniRows => List.unmodifiable(_lastRegistrovaniRows);
   List<Map<String, dynamic>> get lastDailyRows => List.unmodifiable(_lastDailyRows);
 
   // Parametric subscriptions: per-filter controllers and state
@@ -114,11 +114,11 @@ class RealtimeService {
     try {
       final client = Supabase.instance.client;
 
-      if (table == 'mesecni_putnici') {
+      if (table == 'registrovani_putnici') {
         // Fetch fresh data i emit na stream
-        client.from('mesecni_putnici').select().then((data) {
+        client.from('registrovani_putnici').select().then((data) {
           final rows = (data as List<dynamic>).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-          _lastMesecniRows = rows;
+          _lastRegistrovaniRows = rows;
           _emitCombinedPutnici();
         });
       } else if (table == 'putovanja_istorija') {
@@ -145,7 +145,7 @@ class RealtimeService {
       await _putovanjaSub?.cancel();
     } catch (_) {}
     try {
-      await _mesecniSub?.cancel();
+      await _registrovaniSub?.cancel();
     } catch (_) {}
     // Clear controllers
     if (!_putovanjaController.isClosed) {
@@ -211,8 +211,8 @@ class RealtimeService {
       },
     );
 
-    // 🔄 STANDARDIZOVANO: mesecni_putnici sa boljim error handling
-    _mesecniSub = tableStream('mesecni_putnici').listen(
+    // 🔄 STANDARDIZOVANO: registrovani_putnici sa boljim error handling
+    _registrovaniSub = tableStream('registrovani_putnici').listen(
       (dynamic data) {
         try {
           final rows = <Map<String, dynamic>>[];
@@ -221,7 +221,7 @@ class RealtimeService {
               rows.add(Map<String, dynamic>.from(r));
             }
           }
-          _lastMesecniRows = rows;
+          _lastRegistrovaniRows = rows;
           try {
             // Debug logging removed for production
           } catch (_) {}
@@ -252,15 +252,15 @@ class RealtimeService {
       // Debug logging removed for production
     }
     try {
-      await _mesecniSub?.cancel();
-      _mesecniSub = null;
+      await _registrovaniSub?.cancel();
+      _registrovaniSub = null;
     } catch (e) {
       // Debug logging removed for production
     }
 
     // Clear internal state
     _lastPutovanjaRows.clear();
-    _lastMesecniRows.clear();
+    _lastRegistrovaniRows.clear();
 
     // Emit empty lists to clear UI
     if (!_putovanjaController.isClosed) {
@@ -288,19 +288,19 @@ class RealtimeService {
       // 🔄 Convert putovanja_istorija rows to Putnik objects
       for (final r in _lastPutovanjaRows) {
         try {
-          // 🔄 Za putovanja istorija, trebaju podaci iz mesecni_putnici tabele
+          // 🔄 Za putovanja istorija, trebaju podaci iz registrovani_putnici tabele
           // Pronađi odgovarajući mesečni putnik red
           String? putnikIme;
           String? grad;
           double? iznosPlacanja;
 
-          final mesecniPutnikId = r['mesecni_putnik_id'] as String?;
-          if (mesecniPutnikId != null) {
+          final registrovaniPutnikId = r['registrovani_putnik_id'] as String?;
+          if (registrovaniPutnikId != null) {
             // Pronađi odgovarajući mesečni putnik
-            for (final mesecniMap in _lastMesecniRows) {
-              if (mesecniMap['id'] == mesecniPutnikId) {
-                putnikIme = mesecniMap['putnik_ime'] as String?;
-                iznosPlacanja = (mesecniMap['ukupna_cena_meseca'] as num?)?.toDouble();
+            for (final registrovaniMap in _lastRegistrovaniRows) {
+              if (registrovaniMap['id'] == registrovaniPutnikId) {
+                putnikIme = registrovaniMap['putnik_ime'] as String?;
+                iznosPlacanja = (registrovaniMap['ukupna_cena_meseca'] as num?)?.toDouble();
                 // Za grad, koristimo logiku: ako je mesečno plaćanje, označavamo kao takvo
                 grad = 'mesecno_placanje';
                 break;
@@ -330,19 +330,19 @@ class RealtimeService {
         }
       }
 
-      // Convert mesecni rows - use current MesecniPutnik model structure
-      for (final Map<String, dynamic> map in _lastMesecniRows) {
+      // Convert registrovani rows - use current RegistrovaniPutnik model structure
+      for (final Map<String, dynamic> map in _lastRegistrovaniRows) {
         try {
-          // 🔄 Koristi MesecniPutnik.fromMap da parsira mesečne putnike
-          // PROBLEM: MesecniPutnik ima drukčiju strukturu od Putnik objekta
-          // Za sada, direktno kreiraj Putnik objekat iz mesecni_putnici tabele
+          // 🔄 Koristi RegistrovaniPutnik.fromMap da parsira mesečne putnike
+          // PROBLEM: RegistrovaniPutnik ima drukčiju strukturu od Putnik objekta
+          // Za sada, direktno kreiraj Putnik objekat iz registrovani_putnici tabele
 
-          // ✅ ISPRAVKA: Koristi Putnik.fromMesecniPutniciMultipleForDay za sve dane
+          // ✅ ISPRAVKA: Koristi Putnik.fromRegistrovaniPutniciMultipleForDay za sve dane
           final radniDani =
               (map['radni_dani'] as String? ?? '').split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
 
           for (final dan in radniDani) {
-            final putniciZaDan = Putnik.fromMesecniPutniciMultipleForDay(map, dan);
+            final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(map, dan);
             for (final putnik in putniciZaDan) {
               combined.add(putnik);
             }
@@ -501,15 +501,15 @@ class RealtimeService {
   Future<void> refreshNow() async {
     try {
       // Debug logging removed for production
-// 🔄 STANDARDIZOVANO: koristi putovanja_istorija i mesecni_putnici
+// 🔄 STANDARDIZOVANO: koristi putovanja_istorija i registrovani_putnici
       final putovanjaData = await SupabaseSafe.select('putovanja_istorija');
-      final mesecniData = await SupabaseSafe.select('mesecni_putnici');
+      final registrovaniData = await SupabaseSafe.select('registrovani_putnici');
 
       // 🔄 Ažuriraj interne varijable sa standardizovanim nazivima
       _lastPutovanjaRows =
           (putovanjaData is List) ? putovanjaData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
-      _lastMesecniRows =
-          (mesecniData is List) ? mesecniData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
+      _lastRegistrovaniRows =
+          (registrovaniData is List) ? registrovaniData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
 
       try {
         // Debug logging removed for production

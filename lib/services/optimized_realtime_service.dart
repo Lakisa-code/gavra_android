@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -133,9 +133,9 @@ class OptimizedRealtimeService {
         _processPutovanjaData(data);
       });
 
-      // Mesecni putnici subscription
-      subscribe('mesecni_putnici', (dynamic data) {
-        _processMesecniData(data);
+      // Registrovani putnici subscription
+      subscribe('registrovani_putnici', (dynamic data) {
+        _processRegistrovaniData(data);
       });
 
       // Initial data fetch
@@ -195,12 +195,12 @@ class OptimizedRealtimeService {
   }
 
   /// 📊 PROCESS MESECNI DATA
-  void _processMesecniData(dynamic data) {
+  void _processRegistrovaniData(dynamic data) {
     try {
       // Process monthly passengers data
       _emitCombinedData();
     } catch (e) {
-      _trackEvent('mesecni_processing_error');
+      _trackEvent('registrovani_processing_error');
     }
   }
 
@@ -231,10 +231,10 @@ class OptimizedRealtimeService {
         'realtime_initial_fetch',
         () async {
           final putovanjaData = await SupabaseSafe.select('putovanja_istorija');
-          final mesecniData = await SupabaseSafe.select('mesecni_putnici');
+          final registrovaniData = await SupabaseSafe.select('registrovani_putnici');
 
           _processPutovanjaData(putovanjaData);
-          _processMesecniData(mesecniData);
+          _processRegistrovaniData(registrovaniData);
         },
       );
     } catch (e) {

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,13 +6,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/action_log.dart';
 import '../models/putnik.dart';
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
-import '../utils/mesecni_helpers.dart';
+import '../utils/registrovani_helpers.dart';
 import '../utils/text_utils.dart'; // DODANO za konzistentno filtriranje statusa
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozača
 import 'driver_location_service.dart'; // DODANO za dinamički ETA update
-import 'mesecni_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'realtime_notification_service.dart';
 import 'realtime_service.dart';
+import 'registrovani_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'supabase_safe.dart';
 import 'vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
 
@@ -94,77 +94,10 @@ class PutnikService {
         // Fetch daily rows server-side if isoDate provided, otherwise fetch recent daily
         // print('📊 QUERY: putovanja_istorija WHERE datum_putovanja=$isoDate AND tip_putnika=dnevni');
 
-        // 🔧 TEMPORARNO: Bypassing SupabaseSafe za debugging
-        // ✅ ISPRAVKA: Dodaj JOIN sa adrese tabelom za dohvatanje naziva adrese
-        late List<dynamic> dnevniResponse;
-        try {
-          if (isoDate != null) {
-            dnevniResponse = await supabase
-                .from('putovanja_istorija')
-                .select('*, adrese:adresa_id(naziv, ulica, broj, grad)')
-                .eq('datum_putovanja', isoDate)
-                .eq('tip_putnika', 'dnevni')
-                .eq('obrisan', false);
-          } else {
-            dnevniResponse = await supabase
-                .from('putovanja_istorija')
-                .select('*, adrese:adresa_id(naziv, ulica, broj, grad)')
-                .eq('tip_putnika', 'dnevni')
-                .eq('obrisan', false)
-                .order('created_at', ascending: false);
-          }
-//           // print('📊 DIREKTNI QUERY SUCCESS: ${dnevniResponse.length} redova');
-        } catch (e) {
-//           // print('❌ DIREKTNI QUERY ERROR: $e');
-          dnevniResponse = <dynamic>[];
-        }
-
-//         // print('📊 DNEVNI RESPONSE: ${dnevniResponse.length} redova');
-        if (dnevniResponse.isNotEmpty) {
-//           // print('📊 PRVI RED: ${dnevniResponse.first}');
-        }
-
-        for (final d in dnevniResponse) {
-          // ✅ ISPRAVKA: Izvuci adresu iz nested adrese objekta
-          final map = Map<String, dynamic>.from(d as Map<String, dynamic>);
-          final adreseData = map['adrese'] as Map<String, dynamic>?;
-
-          // ✅ Izvuci adresu iz JOIN-a ako postoji
-          if (adreseData != null) {
-            final naziv = adreseData['naziv'] as String?;
-            final ulica = adreseData['ulica'] as String?;
-            final broj = adreseData['broj'] as String?;
-
-            if (naziv != null && naziv.isNotEmpty) {
-              map['adresa'] = naziv;
-            } else if (ulica != null && ulica.isNotEmpty) {
-              map['adresa'] = '$ulica ${broj ?? ''}'.trim();
-            }
-          }
-
-          final putnik = Putnik.fromPutovanjaIstorija(map);
-
-          // ✅ DODAJ CLIENT-SIDE FILTERING za dnevne putnike po gradu/vremenu
-          if (grad != null && putnik.grad != grad) {
-//             // print('❌ PRESKAČEM (grad filter): ${putnik.ime} - ${putnik.grad} != $grad');
-            continue; // Preskoči ako grad ne odgovara
-          }
-
-          if (vreme != null) {
-            final normVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
-            final normVremeFilter = GradAdresaValidator.normalizeTime(vreme);
-            if (normVreme != normVremeFilter) {
-//               // print('❌ PRESKAČEM (vreme filter): ${putnik.ime} - $normVreme != $normVremeFilter');
-              continue; // Preskoči ako vreme ne odgovara
-            }
-          }
-
-//           // print('✅ DODAJEM PUTNIKA: ${putnik.ime}');
-          combined.add(putnik);
-        }
-
-        // 🛑 UKLONJENO: Mesečni putnici se učitavaju preko MesecniPutnikService
-        // da se izbegne duplo računanje u admin screen-u
+        // 🚫 UKLONJENO: Ad-hoc dnevni putnici više ne postoje
+        // Svi putnici (radnik, ucenik, dnevni) su registrovani u registrovani_putnici tabeli
+        // i koriste istu logiku. Učitavanje iz putovanja_istorija sa tip_putnika='dnevni'
+        // više nije potrebno.
 
         // Fetch monthly rows for the relevant day (if isoDate provided, convert)
         String? danKratica;
@@ -179,19 +112,19 @@ class PutnikService {
 
         // 🔍 Dohvati sve mesečne zapise iz putovanja_istorija za ovaj dan
         // (otkazivanja, pokupljenja itd.) da bismo ih isključili/zamenili
-        final Map<String, Map<String, dynamic>> mesecniOverrides = {};
+        final Map<String, Map<String, dynamic>> registrovaniOverrides = {};
         // ✅ FIX: Uvek učitavaj overrides za današnji dan, ne samo ako isoDate != null
         final overrideDate = isoDate ?? DateTime.now().toIso8601String().split('T')[0];
         try {
-          final mesecniIstorija = await supabase
+          final registrovaniIstorija = await supabase
               .from('putovanja_istorija')
               .select('*, adrese:adresa_id(naziv, ulica, broj, grad)') // ✅ FIX: JOIN za adresu
               .eq('datum_putovanja', overrideDate)
               .eq('tip_putnika', 'mesecni')
               .eq('obrisan', false) // ✅ Ignoriši soft-deleted zapise
-              .not('mesecni_putnik_id', 'is', null);
+              .not('registrovani_putnik_id', 'is', null);
 
-          for (final row in mesecniIstorija) {
+          for (final row in registrovaniIstorija) {
             final map = Map<String, dynamic>.from(row);
 
             // ✅ FIX: Izvuci adresu iz JOIN-a ako nije direktno u koloni
@@ -209,13 +142,13 @@ class PutnikService {
               }
             }
 
-            final mpId = map['mesecni_putnik_id']?.toString();
+            final mpId = map['registrovani_putnik_id']?.toString();
             final rowGrad = TextUtils.normalizeText(map['grad']?.toString() ?? ''); // ✅ Normalizuj grad
             final rowVreme = GradAdresaValidator.normalizeTime(map['vreme_polaska']?.toString() ?? '');
             if (mpId != null) {
-              // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
+              // Ključ: registrovani_putnik_id + grad + vreme (za slučaj više polazaka)
               final key = '${mpId}_${rowGrad}_$rowVreme';
-              mesecniOverrides[key] = map;
+              registrovaniOverrides[key] = map;
               print(
                   '📥 UČITAN OVERRIDE: ime=${map['putnik_ime']} key=$key status=${map['status']} adresa=${map['adresa']}');
             }
@@ -224,13 +157,16 @@ class PutnikService {
           // Ignorisi greške
         }
 
-        // Query mesecni_putnici - uzmi aktivne mesečne putnike za ciljani dan
-        final mesecni =
-            await supabase.from('mesecni_putnici').select(mesecniFields).eq('aktivan', true).eq('obrisan', false);
+        // Query registrovani_putnici - uzmi aktivne mesečne putnike za ciljani dan
+        final registrovani = await supabase
+            .from('registrovani_putnici')
+            .select(registrovaniFields)
+            .eq('aktivan', true)
+            .eq('obrisan', false);
 
-        for (final m in mesecni) {
+        for (final m in registrovani) {
           // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan kao u getAllPutniciFromBothTables
-          final putniciZaDan = Putnik.fromMesecniPutniciMultipleForDay(m, danKratica);
+          final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
           for (final p in putniciZaDan) {
             print('📊 UČITAN MESEČNI PUTNIK: ${p.ime} grad=${p.grad} polazak=${p.polazak} adresa=${p.adresa}');
             // apply grad/vreme filter if provided
@@ -248,10 +184,10 @@ class PutnikService {
             final normGrad = TextUtils.normalizeText(p.grad); // ✅ Normalizuj grad za poređenje
             final overrideKey = '${p.id}_${normGrad}_$normVreme';
             print(
-                '🔍 PROVERA OVERRIDE: ${p.ime} key=$overrideKey postoji=${mesecniOverrides.containsKey(overrideKey)}');
-            if (mesecniOverrides.containsKey(overrideKey)) {
+                '🔍 PROVERA OVERRIDE: ${p.ime} key=$overrideKey postoji=${registrovaniOverrides.containsKey(overrideKey)}');
+            if (registrovaniOverrides.containsKey(overrideKey)) {
               // Zameni sa podacima iz putovanja_istorija (ima status otkazan, pokupljen itd.)
-              final overrideData = mesecniOverrides[overrideKey]!;
+              final overrideData = registrovaniOverrides[overrideKey]!;
               final overridePutnik = Putnik.fromPutovanjaIstorija(overrideData);
               print(
                   '✅ PRIMENJEN OVERRIDE: ${overridePutnik.ime} status=${overridePutnik.status} jeOtkazan=${overridePutnik.jeOtkazan}');
@@ -309,9 +245,9 @@ class PutnikService {
     return controller.stream;
   }
 
-  // Fields to explicitly request from mesecni_putnici
+  // Fields to explicitly request from registrovani_putnici
   // ✅ DODATO: JOIN sa adrese tabelom za obe adrese
-  static const String mesecniFields = '*,'
+  static const String registrovaniFields = '*,'
       'polasci_po_danu,'
       'adresa_bc:adresa_bela_crkva_id(id,naziv,ulica,broj,grad,koordinate),'
       'adresa_vs:adresa_vrsac_id(id,naziv,ulica,broj,grad,koordinate)';
@@ -369,24 +305,27 @@ class PutnikService {
       final resp = await supabase.from('putovanja_istorija').select('id').eq('id', idStr).maybeSingle();
       if (resp != null) return 'putovanja_istorija';
     } catch (_) {
-      // Greška pri upitu - nastavi sa proverom mesecni_putnici
+      // Greška pri upitu - nastavi sa proverom registrovani_putnici
     }
-    // Ako nije pronađeno u putovanja_istorija vrati mesecni_putnici
-    return 'mesecni_putnici';
+    // Ako nije pronađeno u putovanja_istorija vrati registrovani_putnici
+    return 'registrovani_putnici';
   }
 
   // 🆕 UČITAJ PUTNIKA IZ BILO KOJE TABELE (po imenu)
   Future<Putnik?> getPutnikByName(String imePutnika) async {
     try {
-      // Prvo pokušaj iz mesecni_putnici
-      final mesecniResponse =
-          await supabase.from('mesecni_putnici').select(mesecniFields).eq('putnik_ime', imePutnika).maybeSingle();
+      // Prvo pokušaj iz registrovani_putnici
+      final registrovaniResponse = await supabase
+          .from('registrovani_putnici')
+          .select(registrovaniFields)
+          .eq('putnik_ime', imePutnika)
+          .maybeSingle();
 
-      if (mesecniResponse != null) {
-        return Putnik.fromMesecniPutnici(mesecniResponse);
+      if (registrovaniResponse != null) {
+        return Putnik.fromRegistrovaniPutnici(registrovaniResponse);
       }
 
-      // Ako nije u mesecni_putnici, pokušaj iz putovanja_istorija za danas
+      // Ako nije u registrovani_putnici, pokušaj iz putovanja_istorija za danas
       final danas = DateTime.now().toIso8601String().split('T')[0];
       final putovanjaResponse = await supabase
           .from('putovanja_istorija')
@@ -415,11 +354,12 @@ class PutnikService {
         return Putnik.fromPutovanjaIstorija(response.first);
       }
 
-      // Ako nije u putovanja_istorija, pokušaj iz mesecni_putnici
-      final mesecniResponse = await supabase.from('mesecni_putnici').select(mesecniFields).eq('id', id).limit(1);
+      // Ako nije u putovanja_istorija, pokušaj iz registrovani_putnici
+      final registrovaniResponse =
+          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', id).limit(1);
 
-      if (mesecniResponse.isNotEmpty) {
-        return Putnik.fromMesecniPutnici(mesecniResponse.first);
+      if (registrovaniResponse.isNotEmpty) {
+        return Putnik.fromRegistrovaniPutnici(registrovaniResponse.first);
       }
 
       return null;
@@ -454,37 +394,37 @@ class PutnikService {
 
       allPutnici.addAll(dnevniPutnici);
 
-      // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz mesecni_putnici za selektovani dan
+      // 🗓️ CILJANI DAN: Učitaj mesečne putnike iz registrovani_putnici za selektovani dan
       final danKratica = _getDayAbbreviationFromName(targetDate);
 
       // Explicitly request polasci_po_danu and common per-day columns
-      const mesecniFields = '*,'
+      const registrovaniFields = '*,'
           'polasci_po_danu';
 
       // ✅ OPTIMIZOVANO: Prvo učitaj sve aktivne, zatim filtriraj po danu u Dart kodu (sigurniji pristup)
-      final allMesecniResponse = await supabase
-          .from('mesecni_putnici')
-          .select(mesecniFields)
+      final allregistrovaniResponse = await supabase
+          .from('registrovani_putnici')
+          .select(registrovaniFields)
           .eq('aktivan', true)
           .eq('obrisan', false)
           .order('created_at', ascending: false)
           .timeout(const Duration(seconds: 5));
 
       // Filtriraj rezultate sa tačnim matchovanjem dana
-      final mesecniResponse = <Map<String, dynamic>>[];
-      for (final row in allMesecniResponse) {
+      final registrovaniResponse = <Map<String, dynamic>>[];
+      for (final row in allregistrovaniResponse) {
         final radniDani = row['radni_dani'] as String?;
         if (radniDani != null && radniDani.split(',').map((d) => d.trim()).contains(danKratica)) {
-          mesecniResponse.add(Map<String, dynamic>.from(row));
+          registrovaniResponse.add(Map<String, dynamic>.from(row));
         }
       }
 
-      for (final data in mesecniResponse) {
-        // KORISTI fromMesecniPutniciMultipleForDay da kreira putnike samo za selektovani dan
-        final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(data, danKratica);
+      for (final data in registrovaniResponse) {
+        // KORISTI fromRegistrovaniPutniciMultipleForDay da kreira putnike samo za selektovani dan
+        final registrovaniPutnici = Putnik.fromRegistrovaniPutniciMultipleForDay(data, danKratica);
 
         // ✅ VALIDACIJA: Prikaži samo putnike sa validnim vremenima polazaka
-        final validPutnici = mesecniPutnici.where((putnik) {
+        final validPutnici = registrovaniPutnici.where((putnik) {
           final polazak = putnik.polazak.trim();
           // Poboljšana validacija vremena
           if (polazak.isEmpty) return false;
@@ -602,16 +542,16 @@ class PutnikService {
     return _getDayAbbreviation(weekday);
   }
 
-  // 🆕 NOVI: Sačuvaj putnika u odgovarajuću tabelu (workaround - sve u mesecni_putnici)
+  // 🆕 NOVI: Sačuvaj putnika u odgovarajuću tabelu (workaround - sve u registrovani_putnici)
   Future<bool> savePutnikToCorrectTable(Putnik putnik) async {
     try {
-      // SVI PUTNICI - koristi mesecni_putnici tabelu kao workaround za RLS
-      final data = putnik.toMesecniPutniciMap();
+      // SVI PUTNICI - koristi registrovani_putnici tabelu kao workaround za RLS
+      final data = putnik.toRegistrovaniPutniciMap();
 
       if (putnik.id != null) {
-        await supabase.from('mesecni_putnici').update(data).eq('id', putnik.id! as String);
+        await supabase.from('registrovani_putnici').update(data).eq('id', putnik.id! as String);
       } else {
-        await supabase.from('mesecni_putnici').insert(data);
+        await supabase.from('registrovani_putnici').insert(data);
       }
 
       return true;
@@ -634,7 +574,7 @@ class PutnikService {
 
       switch (lastAction.type) {
         case 'delete':
-          if (tabela == 'mesecni_putnici') {
+          if (tabela == 'registrovani_putnici') {
             await supabase.from(tabela).update({
               'status': lastAction.oldData['status'],
               'aktivan': true, // Vraća na aktivan umesto obrisan: false
@@ -649,7 +589,7 @@ class PutnikService {
           return 'Poništeno brisanje putnika';
 
         case 'pickup':
-          if (tabela == 'mesecni_putnici') {
+          if (tabela == 'registrovani_putnici') {
             await supabase.from(tabela).update({
               'broj_putovanja': lastAction.oldData['broj_putovanja'],
               'pokupljen': false, // ✅ RESETUJ pokupljen flag za mesecne putnike
@@ -664,7 +604,7 @@ class PutnikService {
           return 'Poništeno pokupljanje';
 
         case 'payment':
-          if (tabela == 'mesecni_putnici') {
+          if (tabela == 'registrovani_putnici') {
             await supabase.from(tabela).update({
               'cena': null, // ✅ RESETUJ cenu za mesecne putnike
               'vreme_placanja': null, // ✅ RESETUJ vreme placanja
@@ -681,7 +621,7 @@ class PutnikService {
           return 'Poništeno plaćanje';
 
         case 'cancel':
-          if (tabela == 'mesecni_putnici') {
+          if (tabela == 'registrovani_putnici') {
             await supabase.from(tabela).update({
               'status': lastAction.oldData['status'],
             }).eq('id', lastAction.putnikId as String);
@@ -716,13 +656,17 @@ class PutnikService {
   /// ✅ DODAJ PUTNIKA (dnevni ili mesečni) - 🏘️ SA VALIDACIJOM GRADOVA
   Future<void> dodajPutnika(Putnik putnik) async {
     try {
-      // 🚫 DUPLICATE CHECK - PREVENT RAPID DUPLICATE INSERTS
+      // 🚫 SVI PUTNICI MORAJU BITI REGISTROVANI
+      // Ad-hoc putnici više ne postoje - svi tipovi (radnik, ucenik, dnevni)
+      // moraju biti u registrovani_putnici tabeli
       if (putnik.mesecnaKarta != true) {
-        final already = await existsDuplicatePutnik(putnik);
-        if (already) {
-          throw Exception('Postoji već putnik za isti datum/vreme/grad');
-        }
+        throw Exception(
+          'NEREGISTROVAN PUTNIK!\n\n'
+          'Svi putnici moraju biti registrovani u sistemu.\n'
+          'Idite na: Meni → Mesečni putnici da kreirate novog putnika.',
+        );
       }
+
       // 🚫 STRIKTNA VALIDACIJA VOZAČA
       if (putnik.dodaoVozac == null || putnik.dodaoVozac!.isEmpty || !VozacBoja.isValidDriver(putnik.dodaoVozac)) {
         throw Exception(
@@ -748,81 +692,71 @@ class PutnikService {
           );
         }
       }
-      if (putnik.mesecnaKarta == true) {
-        // ✅ PROVERAVA DA LI MESEČNI PUTNIK VEĆ POSTOJI
-        final existingPutnici = await supabase
-            .from('mesecni_putnici')
-            .select('id, putnik_ime, aktivan, polasci_po_danu, radni_dani')
-            .eq('putnik_ime', putnik.ime)
-            .eq('aktivan', true);
 
-        if (existingPutnici.isEmpty) {
-          throw Exception('MESEČNI PUTNIK NE POSTOJI!\n\n'
-              'Putnik "${putnik.ime}" ne postoji u listi mesečnih putnika.\n'
-              'Idite na: Meni → Mesečni putnici da kreirate novog mesečnog putnika.');
-        }
+      // ✅ PROVERAVA DA LI REGISTROVANI PUTNIK VEĆ POSTOJI
+      final existingPutnici = await supabase
+          .from('registrovani_putnici')
+          .select('id, putnik_ime, aktivan, polasci_po_danu, radni_dani')
+          .eq('putnik_ime', putnik.ime)
+          .eq('aktivan', true);
 
-        // 🎯 AŽURIRAJ polasci_po_danu za mesečnog putnika sa novim polaskom
-        final mesecniPutnik = existingPutnici.first;
-        final putnikId = mesecniPutnik['id'] as String;
-
-        // Dohvati postojeće polaske ili kreiraj novi map
-        Map<String, dynamic> polasciPoDanu = {};
-        if (mesecniPutnik['polasci_po_danu'] != null) {
-          polasciPoDanu = Map<String, dynamic>.from(mesecniPutnik['polasci_po_danu'] as Map);
-        }
-
-        // Odredi dan kratica (pon, uto, sre, cet, pet)
-        final danKratica = putnik.dan.toLowerCase();
-
-        // Odredi grad (bc ili vs)
-        final gradKey = putnik.grad.toLowerCase().contains('bela') ? 'bc' : 'vs';
-
-        // Normalizuj vreme polaska
-        final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
-
-        // Dodaj ili ažuriraj polazak za taj dan
-        if (!polasciPoDanu.containsKey(danKratica)) {
-          polasciPoDanu[danKratica] = {'bc': null, 'vs': null};
-        }
-        final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
-        danPolasci[gradKey] = polazakVreme;
-        polasciPoDanu[danKratica] = danPolasci;
-
-        // Ažuriraj radni_dani ako dan nije već uključen
-        String radniDani = mesecniPutnik['radni_dani'] as String? ?? '';
-        final radniDaniList =
-            radniDani.split(',').map((d) => d.trim().toLowerCase()).where((d) => d.isNotEmpty).toList();
-        if (!radniDaniList.contains(danKratica) && danKratica.isNotEmpty) {
-          radniDaniList.add(danKratica);
-          radniDani = radniDaniList.join(',');
-        }
-
-        // Ažuriraj mesečnog putnika u bazi
-        // ✅ Konvertuj ime vozača u UUID za updated_by
-        final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
-
-        // 🔧 Pripremi update mapu - updated_by samo ako postoji validan UUID
-        final updateData = <String, dynamic>{
-          'polasci_po_danu': polasciPoDanu,
-          'radni_dani': radniDani,
-          'updated_at': DateTime.now().toIso8601String(),
-        };
-        // Dodaj updated_by samo ako je validan UUID
-        if (updatedByUuid != null && updatedByUuid.isNotEmpty) {
-          updateData['updated_by'] = updatedByUuid;
-        }
-
-        await supabase.from('mesecni_putnici').update(updateData).eq('id', putnikId);
-      } else {
-        // ✅ DIREKTNO DODAJ U PUTOVANJA_ISTORIJA TABELU (JEDNOSTAVNO I POUZDANO)
-        final insertData = await putnik.toPutovanjaIstorijaMapWithAdresa(); // ✅ KORISTI PRAVO REŠENJE
-//         // print('🔵 DODAVANJE DNEVNOG PUTNIKA U BAZU:');
-//         // print('📝 INSERT DATA: $insertData');
-
-        await supabase.from('putovanja_istorija').insert(insertData);
-//         // print('✅ REZULTAT DODAVANJA: $result');
+      if (existingPutnici.isEmpty) {
+        throw Exception('PUTNIK NE POSTOJI!\n\n'
+            'Putnik "${putnik.ime}" ne postoji u listi registrovanih putnika.\n'
+            'Idite na: Meni → Mesečni putnici da kreirate novog putnika.');
       }
+
+      // 🎯 AŽURIRAJ polasci_po_danu za putnika sa novim polaskom
+      final registrovaniPutnik = existingPutnici.first;
+      final putnikId = registrovaniPutnik['id'] as String;
+
+      // Dohvati postojeće polaske ili kreiraj novi map
+      Map<String, dynamic> polasciPoDanu = {};
+      if (registrovaniPutnik['polasci_po_danu'] != null) {
+        polasciPoDanu = Map<String, dynamic>.from(registrovaniPutnik['polasci_po_danu'] as Map);
+      }
+
+      // Odredi dan kratica (pon, uto, sre, cet, pet)
+      final danKratica = putnik.dan.toLowerCase();
+
+      // Odredi grad (bc ili vs)
+      final gradKey = putnik.grad.toLowerCase().contains('bela') ? 'bc' : 'vs';
+
+      // Normalizuj vreme polaska
+      final polazakVreme = GradAdresaValidator.normalizeTime(putnik.polazak);
+
+      // Dodaj ili ažuriraj polazak za taj dan
+      if (!polasciPoDanu.containsKey(danKratica)) {
+        polasciPoDanu[danKratica] = {'bc': null, 'vs': null};
+      }
+      final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
+      danPolasci[gradKey] = polazakVreme;
+      polasciPoDanu[danKratica] = danPolasci;
+
+      // Ažuriraj radni_dani ako dan nije već uključen
+      String radniDani = registrovaniPutnik['radni_dani'] as String? ?? '';
+      final radniDaniList = radniDani.split(',').map((d) => d.trim().toLowerCase()).where((d) => d.isNotEmpty).toList();
+      if (!radniDaniList.contains(danKratica) && danKratica.isNotEmpty) {
+        radniDaniList.add(danKratica);
+        radniDani = radniDaniList.join(',');
+      }
+
+      // Ažuriraj mesečnog putnika u bazi
+      // ✅ Konvertuj ime vozača u UUID za updated_by
+      final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
+
+      // 🔧 Pripremi update mapu - updated_by samo ako postoji validan UUID
+      final updateData = <String, dynamic>{
+        'polasci_po_danu': polasciPoDanu,
+        'radni_dani': radniDani,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      // Dodaj updated_by samo ako je validan UUID
+      if (updatedByUuid != null && updatedByUuid.isNotEmpty) {
+        updateData['updated_by'] = updatedByUuid;
+      }
+
+      await supabase.from('registrovani_putnici').update(updateData).eq('id', putnikId);
 
       // 🔔 REAL-TIME NOTIFIKACIJA - Novi putnik dodat (samo za današnji dan)
       final now = DateTime.now();
@@ -870,68 +804,50 @@ class PutnikService {
   }
 
   /// ✅ KOMBINOVANI STREAM - MESEČNI + DNEVNI PUTNICI (OPTIMIZOVANO, bez RxDart)
+  /// 🚫 NAPOMENA: Svi putnici (radnik, ucenik, dnevni) su registrovani u registrovani_putnici tabeli
   Stream<List<Putnik>> streamKombinovaniPutnici() {
     final danasKratica = _getFilterDayAbbreviation(DateTime.now().weekday);
-    final danas = DateTime.now().toIso8601String().split('T')[0];
 
     // 🚀 OPTIMIZACIJA: Koristi RealtimeService singleton
-    final mesecniStream = RealtimeService.instance.tableStream('mesecni_putnici');
+    final registrovaniStream = RealtimeService.instance.tableStream('registrovani_putnici');
     final putovanjaStream = RealtimeService.instance.tableStream('putovanja_istorija');
 
     // Kombinuj stream-ove bez RxDart
     final controller = StreamController<List<Putnik>>.broadcast();
-    List<dynamic>? lastMesecni;
+    List<dynamic>? lastRegistrovani;
     List<dynamic>? lastPutovanja;
 
     Future<void> emitCombined() async {
-      if (lastMesecni == null || lastPutovanja == null) return;
+      if (lastRegistrovani == null || lastPutovanja == null) return;
 
       try {
         List<Putnik> sviPutnici = [];
 
         // 1. MESEČNI PUTNICI - UKLJUČI I OTKAZANE
-        for (final item in lastMesecni!) {
+        for (final item in lastRegistrovani!) {
           try {
             final radniDani = item['radni_dani']?.toString() ?? '';
             final daniList =
                 radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
 
             if (daniList.contains(danasKratica.toLowerCase())) {
-              final mesecniPutnici = Putnik.fromMesecniPutniciMultipleForDay(
+              final registrovaniPutnici = Putnik.fromRegistrovaniPutniciMultipleForDay(
                 item as Map<String, dynamic>,
                 danasKratica,
               );
-              sviPutnici.addAll(mesecniPutnici);
+              sviPutnici.addAll(registrovaniPutnici);
             } else {}
           } catch (e) {
             // Silently ignore parsing errors
           }
         }
 
-        // 2. DNEVNI PUTNICI - koristi događaje iz putovanja_istorija stream-a filtrirane na danas
-        try {
-          final List<dynamic> dnevniFiltered = lastPutovanja!.where((row) {
-            try {
-              return (row['datum_putovanja'] == danas) && (row['tip_putnika'] == 'dnevni');
-            } catch (_) {
-              return false;
-            }
-          }).toList();
-          for (final item in dnevniFiltered) {
-            try {
-              final putnik = Putnik.fromPutovanjaIstorija(item as Map<String, dynamic>);
-              sviPutnici.add(putnik);
-            } catch (e) {
-              // Silently ignore
-            }
-          }
-        } catch (e) {
-          // Silently ignore
-        }
+        // 🚫 UKLONJENO: Ad-hoc dnevni putnici više ne postoje
+        // Svi putnici (radnik, ucenik, dnevni) su registrovani u registrovani_putnici tabeli
 
-        // 3. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
+        // 2. DODATNO: Uključi specijalne "zakupljeno" zapise (ostavljamo postojeću metodu)
         try {
-          final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
+          final zakupljenoRows = await RegistrovaniPutnikService.getZakupljenoDanas();
           for (final item in zakupljenoRows) {
             try {
               final putnik = Putnik.fromPutovanjaIstorija(item);
@@ -960,8 +876,8 @@ class PutnikService {
     }
 
     // Slušaj oba stream-a
-    final sub1 = mesecniStream.listen((data) {
-      lastMesecni = data is List ? data : <dynamic>[];
+    final sub1 = registrovaniStream.listen((data) {
+      lastRegistrovani = data is List ? data : <dynamic>[];
       emitCombined();
     });
     final sub2 = putovanjaStream.listen((data) {
@@ -977,9 +893,9 @@ class PutnikService {
     return controller.stream;
   }
 
-  /// ✅ STREAM SVIH PUTNIKA (iz mesecni_putnici tabele - workaround za RLS)
+  /// ✅ STREAM SVIH PUTNIKA (iz registrovani_putnici tabele - workaround za RLS)
   Stream<List<Putnik>> streamPutnici() {
-    return RealtimeService.instance.tableStream('mesecni_putnici').map((data) {
+    return RealtimeService.instance.tableStream('registrovani_putnici').map((data) {
       final allPutnici = <Putnik>[];
       final items = data is List ? data : <dynamic>[];
 
@@ -993,17 +909,17 @@ class PutnikService {
       } catch (_) {}
 
       for (final item in items) {
-        // NOVA LOGIKA: Koristi fromMesecniPutniciMultiple
-        final mesecniPutnici = Putnik.fromMesecniPutniciMultiple(item as Map<String, dynamic>);
-        allPutnici.addAll(mesecniPutnici);
+        // NOVA LOGIKA: Koristi fromRegistrovaniPutniciMultiple
+        final registrovaniPutnici = Putnik.fromRegistrovaniPutniciMultiple(item as Map<String, dynamic>);
+        allPutnici.addAll(registrovaniPutnici);
       }
       return allPutnici;
     });
   }
 
   /// 📊 NOVA METODA - Stream mesečnih putnika sa filterom po gradu
-  Stream<List<Putnik>> streamMesecniPutnici(String grad) {
-    return RealtimeService.instance.tableStream('mesecni_putnici').map((data) {
+  Stream<List<Putnik>> streamregistrovaniPutnici(String grad) {
+    return RealtimeService.instance.tableStream('registrovani_putnici').map((data) {
       final Map<String, Putnik> uniquePutnici = {}; // Mapa po imenima da izbegnemo duplikate
       final items = data is List ? data : <dynamic>[];
 
@@ -1062,18 +978,18 @@ class PutnikService {
         }
       }
 
-      final List<Putnik> mesecniPutnici = uniquePutnici.values.toList();
+      final List<Putnik> registrovaniPutnici = uniquePutnici.values.toList();
 
-      return mesecniPutnici;
+      return registrovaniPutnici;
     });
   }
 
   /// 📊 NOVA METODA - Stream mesečnih putnika sa filterom po gradu i danu
-  Stream<List<Putnik>> streamMesecniPutniciPoGraduDanu(
+  Stream<List<Putnik>> streamregistrovaniPutniciPoGraduDanu(
     String grad,
     String dan,
   ) {
-    return RealtimeService.instance.tableStream('mesecni_putnici').map((data) {
+    return RealtimeService.instance.tableStream('registrovani_putnici').map((data) {
       final Map<String, Putnik> uniquePutnici = {}; // Mapa po imenima da izbegnemo duplikate
       final items = data is List ? data : <dynamic>[];
 
@@ -1142,9 +1058,9 @@ class PutnikService {
         }
       }
 
-      final List<Putnik> mesecniPutnici = uniquePutnici.values.toList();
+      final List<Putnik> registrovaniPutnici = uniquePutnici.values.toList();
 
-      return mesecniPutnici;
+      return registrovaniPutnici;
     });
   }
 
@@ -1163,7 +1079,7 @@ class PutnikService {
     _addToUndoStack('delete', id, undoResponse);
 
     // ✅ KONZISTENTNO BRISANJE - obe tabele imaju obrisan kolonu
-    // ⚠️ NE menjaj status - constraint check_mesecni_status_valid dozvoljava samo:
+    // ⚠️ NE menjaj status - constraint check_registrovani_status_valid dozvoljava samo:
     // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godišnji'
     await supabase.from(tabela).update({
       'obrisan': true, // ✅ Soft delete flag
@@ -1211,7 +1127,7 @@ class PutnikService {
     final undoPickup = Map<String, dynamic>.from(response);
     _addToUndoStack('pickup', id, undoPickup);
 
-    if (tabela == 'mesecni_putnici') {
+    if (tabela == 'registrovani_putnici') {
       // Za mesečne putnike ažuriraj SVE potrebne kolone za pokupljanje
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
@@ -1230,7 +1146,7 @@ class PutnikService {
 
       // 🔄 AUTOMATSKA SINHRONIZACIJA - ažuriraj brojPutovanja iz istorije
       try {
-        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(id);
+        await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(id);
       } catch (e) {
         // Silently ignore sync errors
       }
@@ -1248,10 +1164,10 @@ class PutnikService {
     }
 
     // 📊 AUTOMATSKA SINHRONIZACIJA BROJA PUTOVANJA (NOVO za putovanja_istorija!)
-    if (tabela == 'putovanja_istorija' && response['mesecni_putnik_id'] != null) {
+    if (tabela == 'putovanja_istorija' && response['registrovani_putnik_id'] != null) {
       try {
-        await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
-          response['mesecni_putnik_id'] as String,
+        await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+          response['registrovani_putnik_id'] as String,
         );
       } catch (syncError) {
         // Nastavi dalje - sinhronizacija nije kritična
@@ -1299,7 +1215,7 @@ class PutnikService {
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
     final undoPayment = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
     _addToUndoStack('payment', id, undoPayment);
-    if (tabela == 'mesecni_putnici') {
+    if (tabela == 'registrovani_putnici') {
       // Za mesečne putnike ažuriraj SVE potrebne kolone za plaćanje
       final now = DateTime.now();
       String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
@@ -1362,7 +1278,7 @@ class PutnikService {
       // 📝 DODAJ U UNDO STACK
       _addToUndoStack('cancel', idStr, respMap);
 
-      if (tabela == 'mesecni_putnici') {
+      if (tabela == 'registrovani_putnici') {
         // 🆕 NOVI PRISTUP: Za mesečne putnike kreiraj zapis u putovanja_istorija za konkretan dan
         final danas = DateTime.now().toIso8601String().split('T')[0];
         final polazak = GradAdresaValidator.normalizeTime(selectedVreme ?? '5:00'); // Normalize vreme for overriding
@@ -1407,7 +1323,7 @@ class PutnikService {
 
         try {
           await supabase.from('putovanja_istorija').insert({
-            'mesecni_putnik_id': id.toString(), // ✅ UUID kao string
+            'registrovani_putnik_id': id.toString(), // ✅ UUID kao string
             'putnik_ime': respMap['putnik_ime'],
             'tip_putnika': 'mesecni',
             'datum_putovanja': danas,
@@ -1477,10 +1393,10 @@ class PutnikService {
       }
 
       // 📊 AUTOMATSKA SINHRONIZACIJA BROJA OTKAZIVANJA (NOVO!)
-      if (tabela == 'putovanja_istorija' && (respMap['mesecni_putnik_id'] != null)) {
+      if (tabela == 'putovanja_istorija' && (respMap['registrovani_putnik_id'] != null)) {
         try {
-          await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
-            respMap['mesecni_putnik_id'] as String,
+          await RegistrovaniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
+            respMap['registrovani_putnik_id'] as String,
           );
         } catch (syncError) {
           // Nastavi dalje - sinhronizacija nije kritična
@@ -1662,8 +1578,8 @@ class PutnikService {
         .eq('tip_putnika', 'dnevni')
         .gte('created_at', startOfYear.toIso8601String());
 
-    final mesecniData = await supabase
-        .from('mesecni_putnici')
+    final registrovaniData = await supabase
+        .from('registrovani_putnici')
         .select()
         .eq('putnik_ime', imePutnika)
         .eq('aktivan', true)
@@ -1671,7 +1587,7 @@ class PutnikService {
 
     final List<Putnik> voznje = [
       ...(dnevniData as List).map((e) => Putnik.fromMap(e as Map<String, dynamic>)),
-      ...(mesecniData as List).map(
+      ...(registrovaniData as List).map(
         (e) => Putnik.fromMap({
           ...(e as Map<String, dynamic>),
           'created_at': e['created_at'],
@@ -1740,7 +1656,7 @@ class PutnikService {
     }
 
     try {
-      if (tabela == 'mesecni_putnici') {
+      if (tabela == 'registrovani_putnici') {
         // ✅ DIREKTNO SETOVANJE STATUSA - zahteva ALTER constraint u bazi
         await supabase.from(tabela).update({
           'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
@@ -1783,13 +1699,13 @@ class PutnikService {
         // Ignore - možda nema zapisa
       }
 
-      // Pokušaj reset u mesecni_putnici tabeli
+      // Pokušaj reset u registrovani_putnici tabeli
       try {
-        final mesecniResponse =
-            await supabase.from('mesecni_putnici').select().eq('putnik_ime', imePutnika).maybeSingle();
+        final registrovaniResponse =
+            await supabase.from('registrovani_putnici').select().eq('putnik_ime', imePutnika).maybeSingle();
 
-        if (mesecniResponse != null) {
-          await supabase.from('mesecni_putnici').update({
+        if (registrovaniResponse != null) {
+          await supabase.from('registrovani_putnici').update({
             'aktivan': true, // ✅ KRITIČNO: VRATI na aktivan (jeOtkazan = false)
             'status': 'radi', // ✅ VRATI na radi
             'vreme_pokupljenja': null, // ✅ FIXED: Ukloni timestamp pokupljanja
@@ -1802,12 +1718,12 @@ class PutnikService {
 
           // 📊 SINHRONIZUJ broj otkazivanja nakon reset-a (VAŽNO!)
           try {
-            final putnikId = mesecniResponse['id'] as String;
-            await MesecniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
+            final putnikId = registrovaniResponse['id'] as String;
+            await RegistrovaniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
               putnikId,
             );
             // 📊 TAKOĐE sinhronizuj broj putovanja (NOVO!)
-            await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+            await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
               putnikId,
             );
           } catch (syncError) {
@@ -1816,7 +1732,7 @@ class PutnikService {
           return;
         }
       } catch (e) {
-        // Ako nema u mesecni_putnici, nastavi sa putovanja_istorija
+        // Ako nema u registrovani_putnici, nastavi sa putovanja_istorija
       }
 
       // Pokušaj reset u putovanja_istorija tabeli (za DNEVNE putnike)
@@ -1871,8 +1787,8 @@ class PutnikService {
 
       // Resetuj mesečne putnike koji su pokupljeni van trenutnog vremena polaska
       try {
-        final mesecniPutnici = await supabase
-            .from('mesecni_putnici')
+        final registrovaniPutnici = await supabase
+            .from('registrovani_putnici')
             .select(
               'id, putnik_ime, polasci_po_danu, vreme_pokupljenja',
             ) // ✅ FIXED: Koristi vreme_pokupljenja
@@ -1883,7 +1799,7 @@ class PutnikService {
               null,
             ); // ✅ FIXED: Koristi vreme_pokupljenja
 
-        for (final putnik in mesecniPutnici) {
+        for (final putnik in registrovaniPutnici) {
           final vremePokupljenja = DateTime.tryParse(
             putnik['vreme_pokupljenja'] as String,
           ); // ✅ FIXED: Koristi vreme_pokupljenja
@@ -1896,7 +1812,7 @@ class PutnikService {
 
           // Unified parsing: prefer JSON `polasci_po_danu` then per-day columns
           final place = grad == 'Bela Crkva' ? 'bc' : 'vs';
-          polazakVreme = MesecniHelpers.getPolazakForDay(putnik, danasnjiDan, place);
+          polazakVreme = RegistrovaniHelpers.getPolazakForDay(putnik, danasnjiDan, place);
 
           if (polazakVreme == null || polazakVreme.isEmpty || polazakVreme == '00:00:00') {
             continue;
@@ -1909,7 +1825,7 @@ class PutnikService {
 
           // Ako je pokupljen van tolerancije (±3 sata) od novog vremena polaska, resetuj ga
           if (razlika > 3) {
-            await supabase.from('mesecni_putnici').update({
+            await supabase.from('registrovani_putnici').update({
               'vreme_pokupljenja': null, // ✅ FIXED: Koristi vreme_pokupljenja
               'updated_at': DateTime.now().toIso8601String(),
             }).eq('id', putnik['id'] as String);
@@ -2022,9 +1938,9 @@ class PutnikService {
         svaPlacanja.add(redovnoMap);
       }
 
-      // 2. MESEČNA PLAĆANJA iz mesecni_putnici
+      // 2. MESEČNA PLAĆANJA iz registrovani_putnici
       final mesecnaPlacanja = await supabase
-          .from('mesecni_putnici')
+          .from('registrovani_putnici')
           .select(
             'cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina',
           )
@@ -2106,13 +2022,13 @@ class PutnikService {
       'nevalidni_pokupio': 0,
       'nevalidni_naplatio': 0,
       'nevalidni_otkazao': 0,
-      'nevalidni_mesecni_dodao': 0,
-      'nevalidni_mesecni_naplatio': 0,
+      'nevalidni_registrovani_dodao': 0,
+      'nevalidni_registrovani_naplatio': 0,
     };
   }
 
   /// 🔄 PREBACI PUTNIKA DRUGOM VOZAČU
-  /// Ažurira `vozac_id` kolonu u mesecni_putnici tabeli (za mesečne putnike)
+  /// Ažurira `vozac_id` kolonu u registrovani_putnici tabeli (za mesečne putnike)
   /// ili `dodao_vozac` u putovanja_istorija tabeli (za dnevne putnike)
   Future<void> prebacijPutnikaVozacu(String putnikId, String noviVozac) async {
     // Validacija vozača
@@ -2131,11 +2047,11 @@ class PutnikService {
       }
 
       // Proveri da li je mesečni putnik (UUID format) ili dnevni (int format)
-      final isMesecni = putnikId.contains('-'); // UUID ima crtice
+      final isRegistrovani = putnikId.contains('-'); // UUID ima crtice
 
-      if (isMesecni) {
-        // 🎯 MESEČNI PUTNIK - ažuriraj vozac_id u mesecni_putnici
-        await supabase.from('mesecni_putnici').update({
+      if (isRegistrovani) {
+        // 🎯 MESEČNI PUTNIK - ažuriraj vozac_id u registrovani_putnici
+        await supabase.from('registrovani_putnici').update({
           'vozac_id': vozacUuid,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', putnikId);

@@ -4,18 +4,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/putnik_push_service.dart';
 import '../theme.dart';
-import 'mesecni_putnik_profil_screen.dart';
+import 'registrovani_putnik_profil_screen.dart';
 
 /// 📱 MESEČNI PUTNIK LOGIN SCREEN
 /// Putnik unosi telefon + PIN da se identifikuje
-class MesecniPutnikLoginScreen extends StatefulWidget {
-  const MesecniPutnikLoginScreen({Key? key}) : super(key: key);
+class RegistrovaniPutnikLoginScreen extends StatefulWidget {
+  const RegistrovaniPutnikLoginScreen({Key? key}) : super(key: key);
 
   @override
-  State<MesecniPutnikLoginScreen> createState() => _MesecniPutnikLoginScreenState();
+  State<RegistrovaniPutnikLoginScreen> createState() => _RegistrovaniPutnikLoginScreenState();
 }
 
-class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
+class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginScreen> {
   final _telefonController = TextEditingController();
   final _pinController = TextEditingController();
   bool _isLoading = false;
@@ -30,8 +30,8 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
   /// Proveri da li je putnik već ulogovan
   Future<void> _checkSavedLogin() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedPhone = prefs.getString('mesecni_putnik_telefon');
-    final savedPin = prefs.getString('mesecni_putnik_pin');
+    final savedPhone = prefs.getString('registrovani_putnik_telefon');
+    final savedPin = prefs.getString('registrovani_putnik_pin');
 
     if (savedPhone != null && savedPhone.isNotEmpty && savedPin != null && savedPin.isNotEmpty) {
       // Automatski probaj login
@@ -68,7 +68,7 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
     try {
       // Traži putnika po telefonu i PIN-u
       final response = await Supabase.instance.client
-          .from('mesecni_putnici')
+          .from('registrovani_putnici')
           .select()
           .eq('broj_telefona', telefon)
           .eq('pin', pin)
@@ -77,8 +77,8 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
       if (response != null) {
         // Sačuvaj za auto-login
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('mesecni_putnik_telefon', telefon);
-        await prefs.setString('mesecni_putnik_pin', pin);
+        await prefs.setString('registrovani_putnik_telefon', telefon);
+        await prefs.setString('registrovani_putnik_pin', pin);
 
         // 📱 Registruj push token za notifikacije
         final putnikId = response['id'];
@@ -91,7 +91,7 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => MesecniPutnikProfilScreen(
+              builder: (context) => RegistrovaniPutnikProfilScreen(
                 putnikData: Map<String, dynamic>.from(response),
               ),
             ),
@@ -100,7 +100,7 @@ class _MesecniPutnikLoginScreenState extends State<MesecniPutnikLoginScreen> {
       } else {
         // Proveri da li telefon postoji ali PIN nije tačan
         final phoneCheck = await Supabase.instance.client
-            .from('mesecni_putnici')
+            .from('registrovani_putnici')
             .select('id')
             .eq('broj_telefona', telefon)
             .maybeSingle();

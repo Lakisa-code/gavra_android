@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/foundation.dart';
@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/mesecni_putnik_service.dart';
+import '../services/registrovani_putnik_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
@@ -512,13 +512,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final adresaController = TextEditingController();
     final telefonController = TextEditingController(); // 📞 OPCIONO: Broj telefona
     final searchPutnikController = TextEditingController(); // 🔍 Za pretragu putnika
-    MesecniPutnik? selectedPutnik; // 🎯 Izabrani putnik iz liste
+    RegistrovaniPutnik? selectedPutnik; // 🎯 Izabrani putnik iz liste
 
-    // Povuci SVE registrovane putnike iz mesecni_putnici tabele (učenici, radnici, dnevni)
-    final serviceInstance = MesecniPutnikService();
-    final lista = await serviceInstance.getAllMesecniPutnici();
+    // Povuci SVE registrovane putnike iz registrovani_putnici tabele (učenici, radnici, dnevni)
+    final serviceInstance = RegistrovaniPutnikService();
+    final lista = await serviceInstance.getAllRegistrovaniPutnici();
     // 📋 Filtrirana lista aktivnih putnika za brzu pretragu
-    final aktivniPutnici = lista.where((MesecniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList()
+    final aktivniPutnici = lista.where((RegistrovaniPutnik putnik) => !putnik.obrisan && putnik.aktivan).toList()
       ..sort((a, b) => a.putnikIme.toLowerCase().compareTo(b.putnikIme.toLowerCase()));
 
     if (!mounted) return;
@@ -705,7 +705,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               const SizedBox(height: 16),
 
                               // 🎯 DROPDOWN ZA IZBOR PUTNIKA IZ LISTE
-                              DropdownButtonFormField2<MesecniPutnik>(
+                              DropdownButtonFormField2<RegistrovaniPutnik>(
                                 isExpanded: true,
                                 value: selectedPutnik,
                                 decoration: InputDecoration(
@@ -767,7 +767,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                                 items: aktivniPutnici
                                     .map(
-                                      (MesecniPutnik putnik) => DropdownMenuItem<MesecniPutnik>(
+                                      (RegistrovaniPutnik putnik) => DropdownMenuItem<RegistrovaniPutnik>(
                                         value: putnik,
                                         child: Row(
                                           children: [
@@ -797,7 +797,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ),
                                     )
                                     .toList(),
-                                onChanged: (MesecniPutnik? putnik) async {
+                                onChanged: (RegistrovaniPutnik? putnik) async {
                                   setStateDialog(() {
                                     selectedPutnik = putnik;
                                     telefonController.text = putnik?.brojTelefona ?? '';
@@ -1038,8 +1038,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       });
 
                                       // 🕐 KORISTI SELEKTOVANO VREME SA HOME SCREEN-A
-                                      // Mesečna karta = true za radnik/ucenik, false za dnevni
-                                      final isMesecnaKarta = selectedPutnik!.tip != 'dnevni';
+                                      // ✅ SADA: Mesečna karta = true za SVE tipove (radnik, ucenik, dnevni)
+                                      // Svi tipovi koriste istu logiku i registrovani_putnici tabelu
+                                      const isMesecnaKarta = true;
 
                                       final putnik = Putnik(
                                         ime: selectedPutnik!.putnikIme,
@@ -1333,7 +1334,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // � PRAVI REALTIME STREAM: streamKombinovaniPutnici() koristi RealtimeService
     // Auto-refresh kada se promeni status putnika (pokupljen/naplaćen/otkazan)
     // Use a parametric stream filtered to the currently selected day
-    // so monthly passengers (mesecni_putnici) are created for that day
+    // so monthly passengers (registrovani_putnici) are created for that day
     // and will appear in the list/counts for arbitrary selected day.
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,

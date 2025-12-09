@@ -964,24 +964,24 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   Widget _buildTipChip(String tip) {
-    final isMesecni = tip == 'mesecni';
+    final isRegistrovani = tip == 'mesecni';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isMesecni
+        color: isRegistrovani
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
             : Theme.of(context).colorScheme.warningPrimary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isMesecni
+          color: isRegistrovani
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
               : Theme.of(context).colorScheme.warningPrimary.withValues(alpha: 0.3),
         ),
       ),
       child: Text(
-        isMesecni ? 'MESEČNI' : 'DNEVNI',
+        isRegistrovani ? 'MESEČNI' : 'DNEVNI',
         style: TextStyle(
-          color: isMesecni
+          color: isRegistrovani
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.8)
               : Theme.of(context).colorScheme.warningPrimary.withValues(alpha: 0.8),
           fontSize: 12,
@@ -1526,7 +1526,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     try {
       final azuriranoPutovanje = PutovanjaIstorija(
         id: originalPutovanje.id,
-        mesecniPutnikId: originalPutovanje.mesecniPutnikId,
+        registrovaniPutnikId: originalPutovanje.registrovaniPutnikId,
         putnikIme: _noviPutnikIme.trim(),
         vremePolaska: originalPutovanje.vremePolaska,
         tipPutnika: _noviTipPutnika,
@@ -1611,7 +1611,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   ) async {
     final azuriranoPutovanje = PutovanjaIstorija(
       id: putovanje.id,
-      mesecniPutnikId: putovanje.mesecniPutnikId,
+      registrovaniPutnikId: putovanje.registrovaniPutnikId,
       putnikIme: putovanje.putnikIme,
       vremePolaska: putovanje.vremePolaska,
       tipPutnika: putovanje.tipPutnika,

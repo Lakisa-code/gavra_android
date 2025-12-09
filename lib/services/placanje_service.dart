@@ -1,14 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 
 /// Servis za kombinovanje podataka o plaćanjima iz različitih tabela
 class PlacanjeService {
   static final _supabase = Supabase.instance.client;
 
-  /// Kombinuje podatke o plaćanju iz mesecni_putnici i putovanja_istorija
+  /// Kombinuje podatke o plaćanju iz registrovani_putnici i putovanja_istorija
   static Future<Map<String, double>> getStvarnaPlacanja(
-    List<MesecniPutnik> putnici,
+    List<RegistrovaniPutnik> putnici,
   ) async {
     final Map<String, double> rezultat = {};
 
@@ -16,7 +16,7 @@ class PlacanjeService {
       // Preuzmi sva plaćanja iz putovanja_istorija (uključujući sva plaćanja)
       final istorijaPlacanjaResponse = await _supabase
           .from('putovanja_istorija')
-          .select('putnik_ime, cena, mesecni_putnik_id, datum_putovanja')
+          .select('putnik_ime, cena, registrovani_putnik_id, datum_putovanja')
           .eq('status', 'placeno')
           .eq('tip_putnika', 'mesecni')
           .not('cena', 'is', null);
@@ -29,11 +29,11 @@ class PlacanjeService {
 
       for (final placanje in istorijaPlacanjaData) {
         final cena = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
-        final mesecniPutnikId = placanje['mesecni_putnik_id'] as String?;
+        final registrovaniPutnikId = placanje['registrovani_putnik_id'] as String?;
         final putnikIme = placanje['putnik_ime'] as String?;
 
-        if (mesecniPutnikId != null) {
-          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
+        if (registrovaniPutnikId != null) {
+          placanjaPoId[registrovaniPutnikId] = (placanjaPoId[registrovaniPutnikId] ?? 0.0) + cena;
         }
 
         if (putnikIme != null) {
@@ -53,7 +53,7 @@ class PlacanjeService {
         else if (placanjaPoImenu.containsKey(putnik.putnikIme)) {
           iznos = placanjaPoImenu[putnik.putnikIme]!;
         }
-        // 3. Fallback na cenu iz mesecni_putnici
+        // 3. Fallback na cenu iz registrovani_putnici
         else if (putnik.cena != null && putnik.cena! > 0) {
           iznos = putnik.cena!;
         }
@@ -65,7 +65,7 @@ class PlacanjeService {
         rezultat[putnik.id] = iznos;
       }
     } catch (e) {
-      // Fallback - koristi podatke iz mesecni_putnici
+      // Fallback - koristi podatke iz registrovani_putnici
       for (final putnik in putnici) {
         rezultat[putnik.id] = putnik.cena ?? putnik.ukupnaCenaMeseca;
       }
@@ -75,14 +75,14 @@ class PlacanjeService {
   }
 
   /// Dobija iznos plaćanja za jednog putnika
-  static Future<double> getIznosPlacanja(MesecniPutnik putnik) async {
+  static Future<double> getIznosPlacanja(RegistrovaniPutnik putnik) async {
     final placanja = await getStvarnaPlacanja([putnik]);
     return placanja[putnik.id] ?? 0.0;
   }
 
   /// Dobija plaćanja za određeni mesec i godinu
   static Future<Map<String, double>> getPlacanjaZaMesec(
-    List<MesecniPutnik> putnici,
+    List<RegistrovaniPutnik> putnici,
     int mesec,
     int godina,
   ) async {
@@ -96,7 +96,7 @@ class PlacanjeService {
       // Preuzmi plaćanja za specifičan mesec iz putovanja_istorija
       final placanjaResponse = await _supabase
           .from('putovanja_istorija')
-          .select('putnik_ime, cena, mesecni_putnik_id')
+          .select('putnik_ime, cena, registrovani_putnik_id')
           .eq('status', 'placeno')
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
@@ -111,11 +111,11 @@ class PlacanjeService {
 
       for (final placanje in placanjaData) {
         final cena = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
-        final mesecniPutnikId = placanje['mesecni_putnik_id'] as String?;
+        final registrovaniPutnikId = placanje['registrovani_putnik_id'] as String?;
         final putnikIme = placanje['putnik_ime'] as String?;
 
-        if (mesecniPutnikId != null) {
-          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
+        if (registrovaniPutnikId != null) {
+          placanjaPoId[registrovaniPutnikId] = (placanjaPoId[registrovaniPutnikId] ?? 0.0) + cena;
         }
 
         if (putnikIme != null) {
@@ -146,14 +146,14 @@ class PlacanjeService {
     return rezultat;
   }
 
-  /// Sinhronizuje cenu u mesecni_putnici sa podacima iz putovanja_istorija
+  /// Sinhronizuje cenu u registrovani_putnici sa podacima iz putovanja_istorija
   static Future<void> sinhronizujPlacanja() async {
     try {
       // Preuzmi sve mesečne putnike
-      final putnicResponse = await _supabase.from('mesecni_putnici').select();
+      final putnicResponse = await _supabase.from('registrovani_putnici').select();
 
-      final List<MesecniPutnik> putnici =
-          (putnicResponse as List).map((data) => MesecniPutnik.fromMap(data as Map<String, dynamic>)).toList();
+      final List<RegistrovaniPutnik> putnici =
+          (putnicResponse as List).map((data) => RegistrovaniPutnik.fromMap(data as Map<String, dynamic>)).toList();
 
       // Dobij stvarna plaćanja
       final stvarnaPlacanja = await getStvarnaPlacanja(putnici);
@@ -166,7 +166,7 @@ class PlacanjeService {
         // Ako se iznosi razlikuju, ažuriraj bazu
         if ((stvarniIznos - trenutnaCena).abs() > 0.01) {
           // tolerance za floating point
-          await _supabase.from('mesecni_putnici').update({
+          await _supabase.from('registrovani_putnici').update({
             'cena': stvarniIznos,
             'ukupna_cena_meseca': stvarniIznos,
             'updated_at': DateTime.now().toIso8601String(),
@@ -193,7 +193,7 @@ class PlacanjeService {
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
@@ -224,7 +224,7 @@ class PlacanjeService {
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena, datum_putovanja, vozac_id, created_at, napomene')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])

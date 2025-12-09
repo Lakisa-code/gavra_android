@@ -288,7 +288,7 @@ class SlobodnaMestaService {
 
       // Dohvati trenutne polaska putnika
       final response = await _supabase
-          .from('mesecni_putnici')
+          .from('registrovani_putnici')
           .select('id, putnik_ime, polasci_po_danu')
           .eq('id', putnikId)
           .maybeSingle();
@@ -332,7 +332,7 @@ class SlobodnaMestaService {
       }
 
       // Sačuvaj u bazu
-      await _supabase.from('mesecni_putnici').update({'polasci_po_danu': jsonEncode(polasci)}).eq('id', putnikId);
+      await _supabase.from('registrovani_putnici').update({'polasci_po_danu': jsonEncode(polasci)}).eq('id', putnikId);
 
       // Zapiši promenu (za ograničenje jednom dnevno)
       if (jeZaDanas && !zaCeluNedelju) {

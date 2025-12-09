@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 
 /// 💰 Servis za obračun mesečne cene za putnike
 ///
@@ -18,7 +18,7 @@ class CenaObracunService {
   static const double defaultCenaDnevniPoDanu = 0.0; // Dnevni mora imati custom cenu
 
   /// Dobija cenu po danu za putnika (custom ili default)
-  static double getCenaPoDanu(MesecniPutnik putnik) {
+  static double getCenaPoDanu(RegistrovaniPutnik putnik) {
     // Ako ima custom cenu, koristi je
     if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
       return putnik.cenaPoDanu!;
@@ -43,13 +43,13 @@ class CenaObracunService {
 
   /// Izračunaj mesečnu cenu za putnika na osnovu pokupljenja
   ///
-  /// [putnik] - MesecniPutnik objekat
+  /// [putnik] - RegistrovaniPutnik objekat
   /// [mesec] - Mesec za koji se računa (1-12)
   /// [godina] - Godina za koju se računa
   ///
   /// Vraća: broj_dana * cena_po_danu
   static Future<double> izracunajMesecnuCenu({
-    required MesecniPutnik putnik,
+    required RegistrovaniPutnik putnik,
     required int mesec,
     required int godina,
   }) async {
@@ -78,7 +78,7 @@ class CenaObracunService {
       final response = await _supabase
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .eq('status', 'pokupljen')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0]);
@@ -100,7 +100,7 @@ class CenaObracunService {
 
   /// Dobij detaljan obračun za putnika
   static Future<Map<String, dynamic>> getDetaljniObracun({
-    required MesecniPutnik putnik,
+    required RegistrovaniPutnik putnik,
     required int mesec,
     required int godina,
   }) async {
@@ -135,7 +135,7 @@ class CenaObracunService {
     required double? cenaPoDanu,
   }) async {
     try {
-      await _supabase.from('mesecni_putnici').update({
+      await _supabase.from('registrovani_putnici').update({
         'cena_po_danu': cenaPoDanu,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', putnikId);

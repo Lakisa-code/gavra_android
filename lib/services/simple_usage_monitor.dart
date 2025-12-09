@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
 
 /// Jednostavan servis za praćenje Supabase potrošnje
 /// Automatski broji pozive i upozorava kad je potrebno
@@ -61,8 +61,8 @@ class SimpleUsageMonitor {
     // Development faza: 1 dev = ~5-15 poziva dnevno
     // Production: 1 user = ~2-8 poziva dnevno
     final dnevniUsers = (_dnevniPozivi / 8).round(); // Realističnija procena
-    final mesecniUsers = dnevniUsers * 30;
-    final procenatUsers = (mesecniUsers / 50000 * 100).round();
+    final registrovaniUsers = dnevniUsers * 30;
+    final procenatUsers = (registrovaniUsers / 50000 * 100).round();
 
     String status;
     if (procenatUsers < 20) {
@@ -78,7 +78,7 @@ class SimpleUsageMonitor {
     final rezultat = {
       'dnevni_pozivi': '$_dnevniPozivi',
       'procenjeni_users': '$dnevniUsers korisnika danas',
-      'mesecna_procena': '$mesecniUsers od 50,000 korisnika',
+      'registrovana_procena': '$registrovaniUsers od 50,000 korisnika',
       'procenat': '$procenatUsers%',
       'status': status,
       'poruka': _dobijPoruku(procenatUsers),

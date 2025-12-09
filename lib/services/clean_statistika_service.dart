@@ -1,22 +1,22 @@
-import '../globals.dart';
+﻿import '../globals.dart';
 
 /// Čisti StatistikaService koji izbegava duplikate
-/// Koristi samo mesecni_putnici kao primarni izvor
+/// Koristi samo registrovani_putnici kao primarni izvor
 class CleanStatistikaService {
-  /// Dohvati ukupne statistike (samo iz mesecni_putnici)
+  /// Dohvati ukupne statistike (samo iz registrovani_putnici)
   static Future<Map<String, dynamic>> dohvatiUkupneStatistike() async {
-    final mesecniPutnici = await supabase.from('mesecni_putnici').select().eq('obrisan', false);
+    final registrovaniPutnici = await supabase.from('registrovani_putnici').select().eq('obrisan', false);
 
-    // Standalone putovanja (bez mesecni_putnik_id)
+    // Standalone putovanja (bez registrovani_putnik_id)
     final standalonePutovanja =
-        await supabase.from('putovanja_istorija').select().eq('obrisan', false).isFilter('mesecni_putnik_id', null);
+        await supabase.from('putovanja_istorija').select().eq('obrisan', false).isFilter('registrovani_putnik_id', null);
 
-    double ukupnoMesecni = 0;
+    double ukupnoRegistrovani = 0;
     double ukupnoStandalone = 0;
 
-    mesecniPutnici.forEach((Map<String, dynamic> mp) {
+    registrovaniPutnici.forEach((Map<String, dynamic> mp) {
       if (mp['cena'] != null) {
-        ukupnoMesecni += (mp['cena'] as num).toDouble();
+        ukupnoRegistrovani += (mp['cena'] as num).toDouble();
       }
     });
 
@@ -27,53 +27,53 @@ class CleanStatistikaService {
     });
 
     return {
-      'ukupno_mesecni': ukupnoMesecni,
+      'ukupno_registrovani': ukupnoRegistrovani,
       'ukupno_standalone': ukupnoStandalone,
-      'ukupno_sve': ukupnoMesecni + ukupnoStandalone,
-      'broj_mesecnih': mesecniPutnici.length,
+      'ukupno_sve': ukupnoRegistrovani + ukupnoStandalone,
+      'broj_registrovanih': registrovaniPutnici.length,
       'broj_standalone': standalonePutovanja.length,
-      'broj_ukupno': mesecniPutnici.length + standalonePutovanja.length,
+      'broj_ukupno': registrovaniPutnici.length + standalonePutovanja.length,
       'no_duplicates': true,
     };
   }
 
   /// Dohvati mesečne statistike
   static Future<Map<String, dynamic>> dohvatiMesecneStatistike(int mesec, int godina) async {
-    final mesecniPutnici =
-        await supabase.from('mesecni_putnici').select().eq('obrisan', false).eq('mesec', mesec).eq('godina', godina);
+    final registrovaniPutnici =
+        await supabase.from('registrovani_putnici').select().eq('obrisan', false).eq('mesec', mesec).eq('godina', godina);
 
-    double ukupnoMesecni = 0;
-    mesecniPutnici.forEach((mp) {
+    double ukupnoRegistrovani = 0;
+    registrovaniPutnici.forEach((mp) {
       if (mp['cena'] != null) {
-        ukupnoMesecni += (mp['cena'] as num).toDouble();
+        ukupnoRegistrovani += (mp['cena'] as num).toDouble();
       }
     });
 
     return {
       'mesec': mesec,
       'godina': godina,
-      'ukupno_mesecni': ukupnoMesecni,
-      'broj_mesecnih': mesecniPutnici.length,
+      'ukupno_registrovani': ukupnoRegistrovani,
+      'broj_registrovanih': registrovaniPutnici.length,
       'no_duplicates': true,
     };
   }
 
   /// Lista svih putnika bez duplikata
   static Future<List<Map<String, dynamic>>> dohvatiSvePutnikeClean() async {
-    final mesecniPutnici =
-        await supabase.from('mesecni_putnici').select().eq('obrisan', false).order('datum_placanja', ascending: false);
+    final registrovaniPutnici =
+        await supabase.from('registrovani_putnici').select().eq('obrisan', false).order('datum_placanja', ascending: false);
 
     final standalonePutovanja = await supabase
         .from('putovanja_istorija')
         .select()
         .eq('obrisan', false)
-        .isFilter('mesecni_putnik_id', null)
+        .isFilter('registrovani_putnik_id', null)
         .order('datum_placanja', ascending: false);
 
     List<Map<String, dynamic>> sviPutnici = [];
 
     // Dodaj mesečne
-    mesecniPutnici.forEach((mp) {
+    registrovaniPutnici.forEach((mp) {
       sviPutnici.add({
         'id': mp['id'],
         'putnik_ime': mp['putnik_ime'] ?? mp['ime'],
@@ -83,7 +83,7 @@ class CleanStatistikaService {
         'mesec': mp['mesec'],
         'godina': mp['godina'],
         'status': mp['status'],
-        'izvor': 'mesecni_putnici',
+        'izvor': 'registrovani_putnici',
       });
     });
 

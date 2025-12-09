@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
-import '../services/mesecni_putnik_service.dart';
+import '../services/registrovani_putnik_service.dart';
 import '../theme.dart';
-import '../utils/mesecni_helpers.dart';
+import '../utils/registrovani_helpers.dart';
 import '../widgets/shared/time_row.dart';
 
 /// 🆕🔧 UNIFIKOVANI WIDGET ZA DODAVANJE I EDITOVANJE MESEČNIH PUTNIKA
 ///
-/// Kombinuje funkcionalnost iz add_mesecni_putnik_dialog.dart i edit_mesecni_putnik_dialog.dart
+/// Kombinuje funkcionalnost iz add_registrovani_putnik_dialog.dart i edit_registrovani_putnik_dialog.dart
 /// u jedan optimizovan widget koji radi i za dodavanje i za editovanje.
 ///
 /// Parametri:
 /// - existingPutnik: null za dodavanje, postojeći objekat za editovanje
 /// - onSaved: callback koji se poziva posle uspešnog čuvanja
-class MesecniPutnikDialog extends StatefulWidget {
-  final MesecniPutnik? existingPutnik; // null = dodavanje, !null = editovanje
+class RegistrovaniPutnikDialog extends StatefulWidget {
+  final RegistrovaniPutnik? existingPutnik; // null = dodavanje, !null = editovanje
   final VoidCallback? onSaved;
 
-  const MesecniPutnikDialog({
+  const RegistrovaniPutnikDialog({
     super.key,
     this.existingPutnik,
     this.onSaved,
@@ -29,16 +30,17 @@ class MesecniPutnikDialog extends StatefulWidget {
   bool get isEditing => existingPutnik != null;
 
   @override
-  State<MesecniPutnikDialog> createState() => _MesecniPutnikDialogState();
+  State<RegistrovaniPutnikDialog> createState() => _RegistrovaniPutnikDialogState();
 }
 
-class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
-  final MesecniPutnikService _mesecniPutnikService = MesecniPutnikService();
+class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
+  final RegistrovaniPutnikService _registrovaniPutnikService = RegistrovaniPutnikService();
 
   // Form controllers
   final TextEditingController _imeController = TextEditingController();
   final TextEditingController _tipSkoleController = TextEditingController();
   final TextEditingController _brojTelefonaController = TextEditingController();
+  final TextEditingController _brojTelefona2Controller = TextEditingController();
   final TextEditingController _brojTelefonaOcaController = TextEditingController();
   final TextEditingController _brojTelefonaMajkeController = TextEditingController();
   final TextEditingController _adresaBelaCrkvaController = TextEditingController();
@@ -88,6 +90,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       _tip = putnik.tip;
       _tipSkoleController.text = putnik.tipSkole ?? '';
       _brojTelefonaController.text = putnik.brojTelefona ?? '';
+      _brojTelefona2Controller.text = putnik.brojTelefona2 ?? '';
       _brojTelefonaOcaController.text = putnik.brojTelefonaOca ?? '';
       _brojTelefonaMajkeController.text = putnik.brojTelefonaMajke ?? '';
 
@@ -195,6 +198,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     _imeController.dispose();
     _tipSkoleController.dispose();
     _brojTelefonaController.dispose();
+    _brojTelefona2Controller.dispose();
     _brojTelefonaOcaController.dispose();
     _brojTelefonaMajkeController.dispose();
     _adresaBelaCrkvaController.dispose();
@@ -380,6 +384,14 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
             icon: Icons.phone,
             keyboardType: TextInputType.phone,
           ),
+          const SizedBox(height: 12),
+          // 🆕 Drugi broj telefona za sve tipove
+          _buildTextField(
+            controller: _brojTelefona2Controller,
+            label: 'Drugi broj telefona (opciono)',
+            icon: Icons.phone_android,
+            keyboardType: TextInputType.phone,
+          ),
           if (_tip == 'ucenik') ...[
             const SizedBox(height: 16),
             // Glassmorphism container za roditeljske kontakte
@@ -482,12 +494,15 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
                           children: [
                             Icon(Icons.attach_money, color: Colors.amber, size: 20),
                             const SizedBox(width: 8),
-                            Text(
-                              'Fiksna mesečna cena (opciono)',
-                              style: TextStyle(
-                                color: Colors.amber,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                            Expanded(
+                              child: Text(
+                                'Cena po danu (opciono)',
+                                style: TextStyle(
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -510,12 +525,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
                             prefixIcon: const Icon(Icons.payments),
                             suffixText: 'RSD',
                             filled: true,
-                            fillColor: Colors.white.withValues(alpha: 0.1),
+                            fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(color: Colors.black),
                         ),
                       ],
                     ),
@@ -540,12 +555,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
               labelText: 'Adresa Bela Crkva',
               prefixIcon: const Icon(Icons.location_on),
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.1),
+              fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.black),
             onChanged: (value) {
               // Clear UUID when user types manually
               setState(() {
@@ -560,12 +575,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
               labelText: 'Adresa Vršac',
               prefixIcon: const Icon(Icons.location_city),
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.1),
+              fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Colors.black),
             onChanged: (value) {
               setState(() {
                 _adresaVrsacId = null;
@@ -933,11 +948,21 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     );
   }
 
+  /// 🔧 ISPRAVKA: Radni dani se sada računaju iz unetih vremena polaska
+  /// Ako je uneto bilo koje vreme (BC ili VS) za dan, taj dan je radni dan
   String _getRadniDaniString() {
     List<String> aktivniDani = [];
-    _radniDani.forEach((dan, aktivan) {
-      if (aktivan) aktivniDani.add(dan);
-    });
+
+    for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
+      final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
+      final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
+
+      // Ako je uneto bilo koje vreme za ovaj dan, dan je aktivan
+      if (bcRaw.isNotEmpty || vsRaw.isNotEmpty) {
+        aktivniDani.add(dan);
+      }
+    }
+
     return aktivniDani.join(',');
   }
 
@@ -951,12 +976,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       final List<String> danPolasci = [];
 
       if (bcRaw.isNotEmpty) {
-        final norm = MesecniHelpers.normalizeTime(bcRaw) ?? bcRaw;
+        final norm = RegistrovaniHelpers.normalizeTime(bcRaw) ?? bcRaw;
         danPolasci.add('$norm BC');
       }
 
       if (vsRaw.isNotEmpty) {
-        final norm = MesecniHelpers.normalizeTime(vsRaw) ?? vsRaw;
+        final norm = RegistrovaniHelpers.normalizeTime(vsRaw) ?? vsRaw;
         danPolasci.add('$norm VS');
       }
 
@@ -976,8 +1001,8 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       final bcRaw = _polazakBcControllers[dan]?.text.trim() ?? '';
       final vsRaw = _polazakVsControllers[dan]?.text.trim() ?? '';
 
-      final bc = bcRaw.isNotEmpty ? MesecniHelpers.normalizeTime(bcRaw) : null;
-      final vs = vsRaw.isNotEmpty ? MesecniHelpers.normalizeTime(vsRaw) : null;
+      final bc = bcRaw.isNotEmpty ? RegistrovaniHelpers.normalizeTime(bcRaw) : null;
+      final vs = vsRaw.isNotEmpty ? RegistrovaniHelpers.normalizeTime(vsRaw) : null;
 
       normalizedPolasci[dan] = {'bc': bc, 'vs': vs};
     }
@@ -1038,6 +1063,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
 
   Future<void> _createNewPutnik() async {
     print('🟢 _createNewPutnik() started');
+
+    // 🔧 FIX: Dobavi trenutnog vozača za dodali_vozaci
+    final prefs = await SharedPreferences.getInstance();
+    final currentDriver = prefs.getString('current_driver');
+    print('🟢 currentDriver: $currentDriver');
+
     // Resolve addresses:
     // Prefer UUIDs selected via autocomplete (_adresa*Id). If no UUID but text exists, create or find address.
     String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
@@ -1065,12 +1096,16 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     }
 
     // Create new passenger
-    final noviPutnik = MesecniPutnik(
+    // 🔧 FIX: Dodaj trenutnog vozača u dodaliVozaci
+    final dodaliVozaciList = currentDriver != null && currentDriver.isNotEmpty ? [currentDriver] : <String>[];
+
+    final noviPutnik = RegistrovaniPutnik(
       id: '', // Will be generated by database
       putnikIme: _imeController.text.trim(),
       tip: _tip,
       tipSkole: _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
       brojTelefona: _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
+      brojTelefona2: _brojTelefona2Controller.text.isEmpty ? null : _brojTelefona2Controller.text.trim(),
       brojTelefonaOca: _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
       brojTelefonaMajke: _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       polasciPoDanu: _getPolasciPoDanu(),
@@ -1083,11 +1118,12 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       updatedAt: DateTime.now(),
       status: 'radi', // Dozvoljeni: radi, bolovanje, godisnji, odsustvo, otkazan
       cenaPoDanu: _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
+      dodaliVozaci: dodaliVozaciList, // 🔧 FIX: Dodaj ko je kreirao putnika
     );
 
     print('🟢 noviPutnik.status: ${noviPutnik.status}');
     print('🟢 noviPutnik.toMap(): ${noviPutnik.toMap()}');
-    final dodatiPutnik = await _mesecniPutnikService.dodajMesecnogPutnika(noviPutnik);
+    final dodatiPutnik = await _registrovaniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
     if (mounted) {
       Navigator.pop(context);
@@ -1149,6 +1185,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       'tip': _tip,
       'tip_skole': _tipSkoleController.text.isEmpty ? null : _tipSkoleController.text.trim(),
       'broj_telefona': _brojTelefonaController.text.isEmpty ? null : _brojTelefonaController.text.trim(),
+      'broj_telefona_2': _brojTelefona2Controller.text.isEmpty ? null : _brojTelefona2Controller.text.trim(),
       'broj_telefona_oca': _brojTelefonaOcaController.text.isEmpty ? null : _brojTelefonaOcaController.text.trim(),
       'broj_telefona_majke':
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
@@ -1162,14 +1199,14 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
     };
 
     try {
-      final updated = await _mesecniPutnikService.updateMesecniPutnik(
+      final updated = await _registrovaniPutnikService.updateRegistrovaniPutnik(
         widget.existingPutnik!.id,
         updateMap,
       );
 
       // Create daily travels for updated passenger
       try {
-        await _mesecniPutnikService.kreirajDnevnaPutovanjaIzMesecnih(
+        await _registrovaniPutnikService.kreirajDnevnaPutovanjaIzRegistrovanih(
           updated,
           DateTime.now().add(const Duration(days: 1)),
         );
@@ -1178,7 +1215,7 @@ class _MesecniPutnikDialogState extends State<MesecniPutnikDialog> {
       }
 
       // ✅ Očisti cache (refresh se dešava kroz ValueKey u parent screen-u)
-      MesecniPutnikService.clearCache();
+      RegistrovaniPutnikService.clearCache();
 
       if (mounted) {
         Navigator.pop(context);

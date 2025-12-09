@@ -13,19 +13,19 @@ import '../widgets/slobodna_mesta_widget.dart'; // 🎫 Slobodna mesta widget
 
 /// 📊 MESEČNI PUTNIK PROFIL SCREEN
 /// Prikazuje podatke o mesečnom putniku: raspored, vožnje, dugovanja
-class MesecniPutnikProfilScreen extends StatefulWidget {
+class RegistrovaniPutnikProfilScreen extends StatefulWidget {
   final Map<String, dynamic> putnikData;
 
-  const MesecniPutnikProfilScreen({
+  const RegistrovaniPutnikProfilScreen({
     Key? key,
     required this.putnikData,
   }) : super(key: key);
 
   @override
-  State<MesecniPutnikProfilScreen> createState() => _MesecniPutnikProfilScreenState();
+  State<RegistrovaniPutnikProfilScreen> createState() => _RegistrovaniPutnikProfilScreenState();
 }
 
-class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
+class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfilScreen> {
   Map<String, dynamic> _putnikData = {};
   bool _isLoading = false;
   int _brojVoznji = 0;
@@ -73,7 +73,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final voznjeResponse = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
           .eq('status', 'pokupljen');
 
@@ -90,7 +90,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final otkazivanjaResponse = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
           .eq('status', 'otkazan');
 
@@ -186,7 +186,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final sveVoznje = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum_putovanja, status, created_at')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
           .order('datum_putovanja', ascending: false);
 
@@ -287,7 +287,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('cena, datum_putovanja, created_at')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .eq('status', 'placeno')
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
@@ -367,7 +367,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
 
     if (confirm == true) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('mesecni_putnik_telefon');
+      await prefs.remove('registrovani_putnik_telefon');
 
       if (mounted) {
         Navigator.pop(context);
@@ -923,7 +923,7 @@ class _MesecniPutnikProfilScreenState extends State<MesecniPutnikProfilScreen> {
       // Sačuvaj u bazu
       final putnikId = _putnikData['id'];
       if (putnikId != null) {
-        await Supabase.instance.client.from('mesecni_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
+        await Supabase.instance.client.from('registrovani_putnici').update({'polasci_po_danu': polasci}).eq('id', putnikId);
 
         // Ažuriraj lokalni state
         setState(() {

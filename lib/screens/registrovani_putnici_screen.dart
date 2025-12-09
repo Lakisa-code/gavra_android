@@ -6,10 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
-import '../services/improved_mesecni_putnik_service.dart';
-import '../services/mesecni_putnik_service.dart';
+import '../services/improved_registrovani_putnik_service.dart';
+import '../services/registrovani_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
 import '../services/realtime_service.dart'; // Za stream osvezavanje
@@ -18,7 +18,7 @@ import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
-import '../widgets/mesecni_putnik_dialog.dart';
+import '../widgets/registrovani_putnik_dialog.dart';
 import '../widgets/pin_dialog.dart';
 
 // 🔄 HELPER EXTENSION za Set poređenje
@@ -29,14 +29,14 @@ extension SetExtensions<T> on Set<T> {
   }
 }
 
-class MesecniPutniciScreen extends StatefulWidget {
-  const MesecniPutniciScreen({Key? key}) : super(key: key);
+class RegistrovaniPutniciScreen extends StatefulWidget {
+  const RegistrovaniPutniciScreen({Key? key}) : super(key: key);
 
   @override
-  State<MesecniPutniciScreen> createState() => _MesecniPutniciScreenState();
+  State<RegistrovaniPutniciScreen> createState() => _RegistrovaniPutniciScreenState();
 }
 
-class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
+class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'svi'; // 'svi', 'radnik', 'ucenik', 'dnevni'
 
@@ -47,7 +47,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   final SupabaseClient supabase = Supabase.instance.client;
 
   // Novi servis instance (Improved)
-  final ImprovedMesecniPutnikService _mesecniPutnikService = ImprovedMesecniPutnikService();
+  final ImprovedRegistrovaniPutnikService _registrovaniPutnikService = ImprovedRegistrovaniPutnikService();
 
   // 🔄 OPTIMIZACIJA: Connection resilience
   StreamSubscription<dynamic>? _connectionSubscription;
@@ -55,7 +55,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 🔄 REALTIME MONITORING STATE (V3.0 Clean Architecture) - STANDARDIZED TIMERS
   late ValueNotifier<bool> _isRealtimeHealthy;
-  late ValueNotifier<bool> _mesecniPutniciStreamHealthy;
+  late ValueNotifier<bool> _registrovaniPutniciStreamHealthy;
   // ❌ UKLONJENO: Timer? _monitoringTimer; - koristi TimerManager!
   late ValueNotifier<String> _realtimeHealthStatus;
   late ValueNotifier<bool> _isNetworkConnected;
@@ -106,7 +106,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   int _cachedBrojDnevnih = 0;
 
   // 🔄 OPTIMIZACIJA: Update cache umesto StreamBuilder-a
-  void _updateCacheValues(List<MesecniPutnik> putnici) {
+  void _updateCacheValues(List<RegistrovaniPutnik> putnici) {
     final noviRadnici = putnici
         .where(
           (p) => p.tip == 'radnik' && p.aktivan && !p.obrisan && p.status != 'bolovanje' && p.status != 'godišnje',
@@ -180,13 +180,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   // 🔄 V3.0 REALTIME MONITORING SETUP (Backend only - no visual heartbeat)
   void _setupRealtimeMonitoring() {
     _isRealtimeHealthy = ValueNotifier(true);
-    _mesecniPutniciStreamHealthy = ValueNotifier(true);
+    _registrovaniPutniciStreamHealthy = ValueNotifier(true);
     _realtimeHealthStatus = ValueNotifier('healthy');
     _isNetworkConnected = ValueNotifier(_isConnected);
 
     // 🔄 TIMER MEMORY LEAK FIX: Koristi TimerManager umesto direktnog Timer.periodic
     TimerManager.createTimer(
-      'mesecni_putnici_monitoring',
+      'registrovani_putnici_monitoring',
       const Duration(seconds: 5),
       () => _updateHealthStatus(),
       isPeriodic: true,
@@ -194,7 +194,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 💰 UČITAJ STVARNA PLAĆANJA iz kombinovanih tabela - OPTIMIZOVANO bez setState loops
-  Future<void> _ucitajStvarnaPlacanja(List<MesecniPutnik> putnici) async {
+  Future<void> _ucitajStvarnaPlacanja(List<RegistrovaniPutnik> putnici) async {
     try {
       final placanja = await PlacanjeService.getStvarnaPlacanja(putnici);
       if (mounted) {
@@ -225,9 +225,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 💰 UČITAJ PLAĆENE MESECE za putnika - sva plaćanja sa placeni_mesec i placena_godina
-  Future<void> _ucitajPlaceneMesece(MesecniPutnik putnik) async {
+  Future<void> _ucitajPlaceneMesece(RegistrovaniPutnik putnik) async {
     try {
-      final svaPlacanja = await _mesecniPutnikService.dohvatiPlacanjaZaPutnika(putnik.putnikIme);
+      final svaPlacanja = await _registrovaniPutnikService.dohvatiPlacanjaZaPutnika(putnik.putnikIme);
       final Set<String> placeni = {};
 
       for (var placanje in svaPlacanja) {
@@ -249,7 +249,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   /// 📍 BATCH UČITAVANJE ADRESA - učitaj sve adrese odjednom za performanse
-  Future<void> _ucitajAdreseZaPutnike(List<MesecniPutnik> putnici) async {
+  Future<void> _ucitajAdreseZaPutnike(List<RegistrovaniPutnik> putnici) async {
     try {
       // Sakupi sve UUID-ove adresa
       final Set<String> adresaIds = {};
@@ -285,7 +285,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   void _updateHealthStatus() {
-    final streamHealthy = _mesecniPutniciStreamHealthy.value;
+    final streamHealthy = _registrovaniPutniciStreamHealthy.value;
     _isRealtimeHealthy.value = streamHealthy;
 
     // Update network status
@@ -304,13 +304,13 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   @override
   void dispose() {
     // � CRITICAL TIMER MEMORY LEAK FIX - KORISTI TIMER MANAGER!
-    TimerManager.cancelTimer('mesecni_putnici_monitoring');
+    TimerManager.cancelTimer('registrovani_putnici_monitoring');
 
     // 🔄 SAFE DISPOSAL ValueNotifier-a
     try {
       if (mounted) {
         _isRealtimeHealthy.dispose();
-        _mesecniPutniciStreamHealthy.dispose();
+        _registrovaniPutniciStreamHealthy.dispose();
         _realtimeHealthStatus.dispose();
         _isNetworkConnected.dispose();
       }
@@ -362,8 +362,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 🚀 DIREKTNO FILTRIRANJE - dodaje search i filterType na već filtrirane podatke iz streama
   /// Stream već vraća aktivne putnike sa validnim statusom, ovde samo dodajemo dinamičke filtere
-  List<MesecniPutnik> _filterPutniciDirect(
-    List<MesecniPutnik> putnici,
+  List<RegistrovaniPutnik> _filterPutniciDirect(
+    List<RegistrovaniPutnik> putnici,
     String searchTerm,
     String filterType,
   ) {
@@ -421,7 +421,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                     const SizedBox.shrink(),
                     const Expanded(
                       child: Text(
-                        'Mesečni Putnici',
+                        'Putnici',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -757,9 +757,9 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
             // 📋 LISTA PUTNIKA - Koristi ISTI stream kao danas_screen koji RADI
             Expanded(
-              child: StreamBuilder<List<MesecniPutnik>>(
+              child: StreamBuilder<List<RegistrovaniPutnik>>(
                 key: ValueKey(_streamRefreshKey), // 🔄 Forsira novi stream nakon čuvanja
-                stream: MesecniPutnikService.streamAktivniMesecniPutnici(),
+                stream: RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
                 builder: (context, snapshot) {
                   // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
                   // NE ČEKAJ ZAUVEK - prikaži praznu listu ako nema podataka
@@ -886,7 +886,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  Widget _buildPutnikCard(MesecniPutnik putnik, int redniBroj) {
+  Widget _buildPutnikCard(RegistrovaniPutnik putnik, int redniBroj) {
     final bool bolovanje = putnik.status == 'bolovanje';
     // Sačuvaj sva vremena po danima (pon -> pet) i prikaži ih na kartici.
     // Prethodna logika je prikazivala samo PRVI dan koji je imao vreme.
@@ -1510,8 +1510,8 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     );
   }
 
-  void _toggleAktivnost(MesecniPutnik putnik) async {
-    final success = await _mesecniPutnikService.toggleAktivnost(putnik.id, !putnik.aktivan);
+  void _toggleAktivnost(RegistrovaniPutnik putnik) async {
+    final success = await _registrovaniPutnikService.toggleAktivnost(putnik.id, !putnik.aktivan);
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1532,10 +1532,10 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     }
   }
 
-  void _editPutnik(MesecniPutnik putnik) {
+  void _editPutnik(RegistrovaniPutnik putnik) {
     showDialog(
       context: context,
-      builder: (context) => MesecniPutnikDialog(
+      builder: (context) => RegistrovaniPutnikDialog(
         existingPutnik: putnik,
         onSaved: () {
           // 🔄 REFRESH: Inkrementiraj key da forsira novi stream sa svežim podacima
@@ -1550,7 +1550,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   /// 🔐 Prikaži PIN dijalog za putnika
-  void _showPinDialog(MesecniPutnik putnik) {
+  void _showPinDialog(RegistrovaniPutnik putnik) {
     showDialog(
       context: context,
       builder: (context) => PinDialog(
@@ -1566,7 +1566,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => MesecniPutnikDialog(
+      builder: (context) => RegistrovaniPutnikDialog(
         existingPutnik: null, // null indicates adding mode
         onSaved: () {
           if (mounted) setState(() {});
@@ -1577,7 +1577,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   /// 🕐 SAČUVAJ VREME POLASKA U ISTORIJU ZA AUTOCOMPLETEthere to reduce duplication)
 
-  void _obrisiPutnika(MesecniPutnik putnik) async {
+  void _obrisiPutnika(RegistrovaniPutnik putnik) async {
     // Pokaži potvrdu za brisanje
     final potvrda = await showDialog<bool>(
       context: context,
@@ -1643,7 +1643,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
     if (potvrda == true && mounted) {
       try {
-        final success = await _mesecniPutnikService.obrisiMesecniPutnik(putnik.id);
+        final success = await _registrovaniPutnikService.obrisiRegistrovaniPutnik(putnik.id);
 
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1679,7 +1679,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   void _sinhronizujStatistike(String putnikId) async {
     try {
-      final success = await MesecniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
+      final success = await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
         putnikId,
       );
 
@@ -1704,7 +1704,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // Helper funkcija za brojanje kontakata
-  int _prebrojKontakte(MesecniPutnik putnik) {
+  int _prebrojKontakte(RegistrovaniPutnik putnik) {
     int brojKontakata = 0;
     if (putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty) {
       brojKontakata++;
@@ -1719,7 +1719,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 👨‍👩‍👧‍👦 NOVA FUNKCIJA - Prikazuje sve dostupne kontakte
-  Future<void> _pokaziKontaktOpcije(MesecniPutnik putnik) async {
+  Future<void> _pokaziKontaktOpcije(RegistrovaniPutnik putnik) async {
     final List<Widget> opcije = [];
 
     // Glavni broj telefona
@@ -1912,7 +1912,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 💰 PRIKAZ DIJALOGA ZA PLAĆANJE
-  Future<void> _prikaziPlacanje(MesecniPutnik putnik) async {
+  Future<void> _prikaziPlacanje(RegistrovaniPutnik putnik) async {
     // Učitaj sva plaćanja za ovog putnika da bi se prikazali plaćeni meseci zeleno
     await _ucitajPlaceneMesece(putnik);
 
@@ -1990,7 +1990,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
                                       // 🔍 Vozač poslednjeg plaćanja - 🔥 REALTIME
                                       if (putnik.vremePlacanja != null)
                                         StreamBuilder<String?>(
-                                          stream: MesecniPutnikService.streamVozacPoslednjegPlacanja(
+                                          stream: RegistrovaniPutnikService.streamVozacPoslednjegPlacanja(
                                             putnik.id,
                                           ),
                                           builder: (context, snapshot) {
@@ -2192,7 +2192,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   } // 💾 ČUVANJE PLAĆANJA
 
   // 📊 PRIKAŽI DETALJNE STATISTIKE PUTNIKA
-  Future<void> _prikaziDetaljneStatistike(MesecniPutnik putnik) async {
+  Future<void> _prikaziDetaljneStatistike(RegistrovaniPutnik putnik) async {
     String selectedPeriod = _getCurrentMonthYear();
 
     showDialog<void>(
@@ -2402,7 +2402,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
 
   // 📊 KREIRANJE SADRŽAJA STATISTIKA NA OSNOVU PERIODA
   Widget _buildStatistikeContent(
-    MesecniPutnik putnik,
+    RegistrovaniPutnik putnik,
     Map<String, dynamic> stats,
     String period,
   ) {
@@ -2495,7 +2495,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
               // 🔍 Vozač koji je naplatio - async loading
               // 🔥 REALTIME: Vozač poslednjeg plaćanja
               StreamBuilder<String?>(
-                stream: MesecniPutnikService.streamVozacPoslednjegPlacanja(putnik.id),
+                stream: RegistrovaniPutnikService.streamVozacPoslednjegPlacanja(putnik.id),
                 builder: (context, snapshot) {
                   final vozacIme = snapshot.data ?? 'Učitava...';
                   return _buildStatRow('🚗 Vozač (naplata):', vozacIme);
@@ -2775,7 +2775,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       // �📅 Konvertuj string meseca u datume
       final Map<String, dynamic> datumi = _konvertujMesecUDatume(mesec);
 
-      final uspeh = await _mesecniPutnikService.azurirajPlacanjeZaMesec(
+      final uspeh = await _registrovaniPutnikService.azurirajPlacanjeZaMesec(
         putnikId,
         iznos,
         currentDriverUuid, // Koristi UUID trenutnog vozača
@@ -2904,7 +2904,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   }
 
   // 💰 PROVERI DA LI JE MESEC PLAĆEN
-  bool _isMonthPaid(String monthYear, MesecniPutnik putnik) {
+  bool _isMonthPaid(String monthYear, RegistrovaniPutnik putnik) {
     // Izvuci mesec i godinu iz string-a (format: "Septembar 2025")
     final parts = monthYear.split(' ');
     if (parts.length != 2) return false;
@@ -2988,7 +2988,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
       final response = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum, status, pokupljen, created_at')
-          .eq('mesecni_putnik_id', putnikId)
+          .eq('registrovani_putnik_id', putnikId)
           .gte('datum', startStr)
           .lte('datum', endStr)
           .order('datum', ascending: false);
@@ -3367,7 +3367,7 @@ class _MesecniPutniciScreenState extends State<MesecniPutniciScreen> {
   /// � EXPORT PUTNIKA U CSV
   Future<void> _exportPutnici() async {
     try {
-      final putnici = await _mesecniPutnikService.mesecniPutniciStream.first;
+      final putnici = await _registrovaniPutnikService.registrovaniPutniciStream.first;
 
       if (putnici.isEmpty) {
         // ignore: use_build_context_synchronously

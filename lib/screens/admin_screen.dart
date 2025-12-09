@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../models/putnik.dart';
 import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
@@ -22,7 +22,7 @@ import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
-import 'mesecni_putnici_screen.dart'; // DODANO za mesečne putnike
+import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'statistika_detail_screen.dart'; // DODANO za statistike
@@ -287,7 +287,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                       onTap: () => Navigator.push(
                                         context,
                                         MaterialPageRoute<void>(
-                                          builder: (context) => const MesecniPutniciScreen(),
+                                          builder: (context) => const RegistrovaniPutniciScreen(),
                                         ),
                                       ),
                                       borderRadius: BorderRadius.circular(12),
@@ -876,30 +876,13 @@ class _AdminScreenState extends State<AdminScreen> {
 
             if (snapshot.connectionState == ConnectionState.waiting) {
               // Loading state - logging removed for production
-              return Center(
+              return const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    const Text('Učitavanje admin panela...'),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Molimo sačekajte...',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        if (mounted) setState(() {}); // Force refresh
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Osveži sada'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Učitavanje admin panela...'),
                   ],
                 ),
               );
@@ -935,17 +918,20 @@ class _AdminScreenState extends State<AdminScreen> {
               final shortDayName = _getShortDayName(_selectedDan);
               return putnik.dan == shortDayName;
             }).toList();
+            // ✅ DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili
             final filteredDuznici = filteredPutnici.where((putnik) {
+              final jesteRegistrovani = putnik.mesecnaKarta == true;
+              if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
+
               final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
               final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
-              final jesteMesecni = putnik.mesecnaKarta == true;
               final pokupljen = putnik.jePokupljen;
 
               // ✅ NOVA LOGIKA: SVI (admin i vozači) vide SVE dužnike
               // Omogućava vozačima da naplate dugove drugih vozača
               // Uklonjeno AdminSecurityService.canViewDriverData filtriranje
 
-              return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
+              return nijePlatio && nijeOtkazan && pokupljen;
             }).toList();
 
             // Izračunaj pazar po vozačima - KORISTI DIREKTNO filteredPutnici UMESTO DATUMA 💰

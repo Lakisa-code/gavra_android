@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 🎨 DODANO za SystemUiOverlayStyle
@@ -7,14 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne p
 
 // url_launcher unused here - navigacija delegirana SmartNavigationService
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ETA putnicima
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/mesecni_putnik_service.dart'; // 🎓 DODANO za đačke statistike
+import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pickup tracking
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -253,15 +253,15 @@ class _DanasScreenState extends State<DanasScreen> {
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
   // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ
   Stream<Map<String, int>> _streamDjackieBrojevi() {
-    final mesecniStream = MesecniPutnikService.streamAktivniMesecniPutnici();
+    final registrovaniStream = RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici();
 
-    return mesecniStream.asyncMap((sviMesecniPutnici) async {
+    return registrovaniStream.asyncMap((sviRegistrovaniPutnici) async {
       try {
         final danasnjiDan = _getTodayForDatabase();
         final selectedGrad = widget.filterGrad ?? _selectedGrad;
 
         // 🔧 REORGANIZOVANA LOGIKA: Prvo filtriraj osnovne kriterijume, zatim računaj status unutar
-        final ucenici = sviMesecniPutnici.where((MesecniPutnik mp) {
+        final ucenici = sviRegistrovaniPutnici.where((RegistrovaniPutnik mp) {
           // 🔧 ISPRAVKA: Tokenize days and trim; robust tip matching
           final radniDaniList =
               mp.radniDani.toLowerCase().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
@@ -313,7 +313,7 @@ class _DanasScreenState extends State<DanasScreen> {
         // Uključi današnje "zakupljeno" iz putovanja_istorija da ne bismo propustili grupne rezervacije
         int zakupljenoCount = 0;
         try {
-          final zakupljenoRows = await MesecniPutnikService.getZakupljenoDanas();
+          final zakupljenoRows = await RegistrovaniPutnikService.getZakupljenoDanas();
           for (final z in zakupljenoRows) {
             try {
               final putnikZ = Putnik.fromPutovanjaIstorija(z);
@@ -324,8 +324,8 @@ class _DanasScreenState extends State<DanasScreen> {
               }
               // Proveri da li polazak odgovara BC (jutarnji) - heuristika: if grad == 'Bela Crkva'
               if (putnikZ.grad.toLowerCase().contains('bela')) {
-                // De-dupe using name match to avoid double counting the same mesecni putnik
-                final nameMatch = sviMesecniPutnici.any(
+                // De-dupe using name match to avoid double counting the same registrovani putnik
+                final nameMatch = sviRegistrovaniPutnici.any(
                   (mp) => mp.putnikIme.trim().toLowerCase() == putnikZ.ime.trim().toLowerCase(),
                 );
                 if (!nameMatch) {
@@ -1616,9 +1616,9 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   /// 🔍 GRAD POREĐENJE - razlikuj mesečne i obične putnike
-  bool _isGradMatch(String? putnikGrad, String? putnikAdresa, String selectedGrad, {bool isMesecniPutnik = false}) {
+  bool _isGradMatch(String? putnikGrad, String? putnikAdresa, String selectedGrad, {bool isRegistrovaniPutnik = false}) {
     // Za mesečne putnike - direktno poređenje grada
-    if (isMesecniPutnik) {
+    if (isRegistrovaniPutnik) {
       return putnikGrad == selectedGrad;
     }
     // Za obične putnike - koristi adresnu validaciju
@@ -2216,7 +2216,7 @@ class _DanasScreenState extends State<DanasScreen> {
                         putnik.grad,
                         putnik.adresa,
                         grad,
-                        isMesecniPutnik: putnik.mesecnaKarta == true,
+                        isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                       );
 
                       // MESEČNI PUTNICI - isto kao u home_screen
@@ -2242,7 +2242,7 @@ class _DanasScreenState extends State<DanasScreen> {
                               putnik.grad,
                               putnik.adresa,
                               grad,
-                              isMesecniPutnik: putnik.mesecnaKarta == true,
+                              isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                             );
 
                             // MESEČNI PUTNICI - isto kao u home_screen
@@ -2258,17 +2258,19 @@ class _DanasScreenState extends State<DanasScreen> {
                             return vremeMatch && gradMatch && statusOk;
                           }).toList()
                         : filtriraniPutnici;
-                    // 💳 SVIH DUŽNIKA SORTIRANIH PO DATUMU (najnoviji na vrhu)
+                    // 💳 DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili (najnoviji na vrhu)
                     final filteredDuznici = danasPutnici.where((putnik) {
+                      final jesteRegistrovani = putnik.mesecnaKarta == true;
+                      if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
+
                       final nijePlatio = (putnik.iznosPlacanja == null || putnik.iznosPlacanja == 0);
                       final nijeOtkazan = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
-                      final jesteMesecni = putnik.mesecnaKarta == true;
                       final pokupljen = putnik.jePokupljen;
 
                       // ✅ NOVA LOGIKA: Vozači vide SVE dužnike (mogu naplatiti bilo koji dug)
                       // Uklonjeno filtriranje po vozaču - jeOvajVozac filter
 
-                      return nijePlatio && nijeOtkazan && !jesteMesecni && pokupljen;
+                      return nijePlatio && nijeOtkazan && pokupljen;
                     }).toList();
 
                     // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)
@@ -2352,13 +2354,13 @@ class _DanasScreenState extends State<DanasScreen> {
                                         border: Border.all(color: Colors.purple[300]!),
                                       ),
                                       child: StreamBuilder<int>(
-                                        stream: StatistikaService.streamBrojMesecnihKarataZaVozaca(
+                                        stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
                                           _currentDriver ?? '',
                                           from: dayStart,
                                           to: dayEnd,
                                         ),
-                                        builder: (context, mesecneSnapshot) {
-                                          final brojMesecnih = mesecneSnapshot.data ?? 0;
+                                        builder: (context, registrovaniSnapshot) {
+                                          final brojRegistrovanih = registrovaniSnapshot.data ?? 0;
                                           return FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Column(
@@ -2375,7 +2377,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
-                                                  brojMesecnih.toString(),
+                                                  brojRegistrovanih.toString(),
                                                   style: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,

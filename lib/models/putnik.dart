@@ -1,8 +1,8 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import '../services/adresa_supabase_service.dart'; // DODATO za pravo rešenje adresa
 import '../services/vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
-import '../utils/mesecni_helpers.dart';
+import '../utils/registrovani_helpers.dart';
 
 // Enum za statuse putnika
 enum PutnikStatus { otkazano, pokupljen, bolovanje, godisnji }
@@ -80,37 +80,37 @@ class Putnik {
   factory Putnik.fromMap(Map<String, dynamic> map) {
     // AUTOMATSKA DETEKCIJA TIPA TABELE - SAMO NOVE TABELE
 
-    // Ako ima mesecni_putnik_id ili tip_putnika, iz putovanja_istorija tabele
-    if (map.containsKey('mesecni_putnik_id') || map.containsKey('tip_putnika')) {
+    // Ako ima registrovani_putnik_id ili tip_putnika, iz putovanja_istorija tabele
+    if (map.containsKey('registrovani_putnik_id') || map.containsKey('tip_putnika')) {
       return Putnik.fromPutovanjaIstorija(map);
     }
 
-    // Ako ima putnik_ime, iz mesecni_putnici tabele
+    // Ako ima putnik_ime, iz registrovani_putnici tabele
     if (map.containsKey('putnik_ime')) {
-      return Putnik.fromMesecniPutnici(map);
+      return Putnik.fromRegistrovaniPutnici(map);
     }
 
     // GREŠKA - Nepoznata struktura tabele
     throw Exception(
-      'Nepoznata struktura podataka - nisu iz mesecni_putnici ni putovanja_istorija',
+      'Nepoznata struktura podataka - nisu iz registrovani_putnici ni putovanja_istorija',
     );
   }
 
-  // NOVI: Factory za mesecni_putnici tabelu
-  factory Putnik.fromMesecniPutnici(Map<String, dynamic> map) {
+  // NOVI: Factory za registrovani_putnici tabelu
+  factory Putnik.fromRegistrovaniPutnici(Map<String, dynamic> map) {
     final weekday = DateTime.now().weekday;
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final danKratica = daniKratice[weekday - 1];
-    final grad = _determineGradFromMesecni(map);
+    final grad = _determineGradFromRegistrovani(map);
     // Choose place key: 'bc' for Bela Crkva, 'vs' for Vršac
     final place = grad.toLowerCase().contains('vr') ? 'vs' : 'bc';
     // Only use explicit per-day or JSON values; do not fallback to legacy single-time columns
-    final polazakRaw = MesecniHelpers.getPolazakForDay(map, danKratica, place);
+    final polazakRaw = RegistrovaniHelpers.getPolazakForDay(map, danKratica, place);
 
     return Putnik(
-      id: map['id'], // ✅ UUID iz mesecni_putnici
+      id: map['id'], // ✅ UUID iz registrovani_putnici
       ime: map['putnik_ime'] as String? ?? '',
-      polazak: MesecniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
+      polazak: RegistrovaniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
       pokupljen: map['status'] == null || (map['status'] != 'bolovanje' && map['status'] != 'godisnji'),
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       mesecnaKarta: true, // uvek true za mesečne putnike
@@ -123,10 +123,10 @@ class Putnik {
       vremePlacanja: map['vreme_placanja'] != null
           ? DateTime.parse(map['vreme_placanja'] as String).toLocal()
           : null, // ✅ ČITAJ iz vreme_placanja umesto datum_pocetka_meseca
-      placeno: MesecniHelpers.priceIsPaid(map),
+      placeno: RegistrovaniHelpers.priceIsPaid(map),
       cena: _parseDouble(map['cena']),
       // ✅ FIXED: Čitaj naplatioVozac iz action_log.paid_by sa fallback na dodali_vozaci[0]
-      naplatioVozac: MesecniHelpers.priceIsPaid(map)
+      naplatioVozac: RegistrovaniHelpers.priceIsPaid(map)
           ? (_extractVozaciFromActionLog(map['action_log'])['paid_by'] ??
               _getVozacIme(map['vozac_id'] as String?) ??
               _extractDodaoVozacFromArray(map['dodali_vozaci']))
@@ -137,9 +137,9 @@ class Putnik {
           _getVozacIme(map['updated_by'] as String?) ??
           _extractVozaciFromActionLog(map['action_log'])['created_by'],
       grad: grad,
-      adresa: _determineAdresaFromMesecni(map, grad), // ✅ FIX: Prosleđujemo grad za konzistentnost
-      adresaId: _determineAdresaIdFromMesecni(map, grad), // ✅ NOVO - UUID adrese
-      obrisan: !MesecniHelpers.isActiveFromMap(map),
+      adresa: _determineAdresaFromRegistrovani(map, grad), // ✅ FIX: Prosleđujemo grad za konzistentnost
+      adresaId: _determineAdresaIdFromRegistrovani(map, grad), // ✅ NOVO - UUID adrese
+      obrisan: !RegistrovaniHelpers.isActiveFromMap(map),
       brojTelefona: map['broj_telefona'] as String?,
     );
   }
@@ -180,7 +180,7 @@ class Putnik {
     return Putnik(
       id: map['id'], // ✅ UUID iz putovanja_istorija
       ime: map['putnik_ime'] as String? ?? '',
-      polazak: MesecniHelpers.normalizeTime(map['vreme_polaska']?.toString()) ?? '6:00',
+      polazak: RegistrovaniHelpers.normalizeTime(map['vreme_polaska']?.toString()) ?? '6:00',
       pokupljen: map['status'] == 'pokupljen', // ✅ KORISTI samo status kolonu
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       mesecnaKarta: map['tip_putnika'] == 'mesecni',
@@ -217,7 +217,7 @@ class Putnik {
   // Helper metoda za čitanje polaska za određeni dan iz novih kolona
   // ...existing code...
 
-  final dynamic id; // ✅ Može biti int (putovanja_istorija) ili String (mesecni_putnici)
+  final dynamic id; // ✅ Može biti int (putovanja_istorija) ili String (registrovani_putnici)
   final String ime;
   final String polazak;
   final bool? pokupljen;
@@ -275,14 +275,14 @@ class Putnik {
   PutnikStatus? get statusEnum => PutnikStatusExtension.fromString(status);
 
   // NOVA METODA: Kreira VIŠE putnik objekata za mesečne putnike sa više polazaka
-  static List<Putnik> fromMesecniPutniciMultiple(Map<String, dynamic> map) {
+  static List<Putnik> fromRegistrovaniPutniciMultiple(Map<String, dynamic> map) {
     final danas = DateTime.now();
     final trenutniDan = _getDanNedeljeKratica(danas.weekday);
     return _parseAndCreatePutniciForDay(map, trenutniDan);
   }
 
   // NOVA METODA: Kreira putnik objekte za SPECIFIČAN DAN (umesto trenutni dan)
-  static List<Putnik> fromMesecniPutniciMultipleForDay(
+  static List<Putnik> fromRegistrovaniPutniciMultipleForDay(
     Map<String, dynamic> map,
     String targetDan,
   ) {
@@ -346,8 +346,8 @@ class Putnik {
     }
 
     // Čitaj vremena za targetDan koristeći helpers koji kombinuju JSON i stare kolone
-    final polazakBC = MesecniHelpers.getPolazakForDay(map, targetDan, 'bc');
-    final polazakVS = MesecniHelpers.getPolazakForDay(map, targetDan, 'vs');
+    final polazakBC = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'bc');
+    final polazakVS = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'vs');
 
     // ✅ NOVO: Čitaj adrese iz JOIN-a sa adrese tabelom (ako postoji)
     // JOIN format: adresa_bc: {id, naziv, ulica, broj, grad, koordinate}
@@ -395,7 +395,9 @@ class Putnik {
           // ✅ FIX: Fallback na vozac_id ako action_log.picked_by je null
           pokupioVozac: _extractVozaciFromActionLog(map['action_log'])['picked_by'] ??
               (vremePokupljenja != null ? _getVozacIme(map['vozac_id'] as String?) : null),
+          // ✅ FIX: Dodaj updated_by fallback za konzistentnost sa fromRegistrovaniPutnici
           dodaoVozac: _extractDodaoVozacFromArray(map['dodali_vozaci']) ??
+              _getVozacIme(map['updated_by'] as String?) ??
               _extractVozaciFromActionLog(map['action_log'])['created_by'],
           vozac: vozac,
           grad: 'Bela Crkva',
@@ -444,7 +446,9 @@ class Putnik {
           // ✅ FIX: Fallback na vozac_id ako action_log.picked_by je null
           pokupioVozac: _extractVozaciFromActionLog(map['action_log'])['picked_by'] ??
               (vremePokupljenja != null ? _getVozacIme(map['vozac_id'] as String?) : null),
+          // ✅ FIX: Dodaj updated_by fallback za konzistentnost sa fromRegistrovaniPutnici
           dodaoVozac: _extractDodaoVozacFromArray(map['dodali_vozaci']) ??
+              _getVozacIme(map['updated_by'] as String?) ??
               _extractVozaciFromActionLog(map['action_log'])['created_by'],
           vozac: vozac,
           grad: 'Vršac',
@@ -472,15 +476,15 @@ class Putnik {
   }
 
   // HELPER METODE za mapiranje
-  static String _determineGradFromMesecni(Map<String, dynamic> map) {
+  static String _determineGradFromRegistrovani(Map<String, dynamic> map) {
     // Odredi grad na osnovu AKTIVNOG polaska za danas
     final weekday = DateTime.now().weekday;
     const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     final danKratica = daniKratice[weekday - 1];
 
     // Proveri koji polazak postoji za danas
-    final bcPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'bc');
-    final vsPolazak = MesecniHelpers.getPolazakForDay(map, danKratica, 'vs');
+    final bcPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'bc');
+    final vsPolazak = RegistrovaniHelpers.getPolazakForDay(map, danKratica, 'vs');
 
     // Ako ima BC polazak danas, putnik putuje IZ Bela Crkva (pokupljaš ga tamo)
     if (bcPolazak != null && bcPolazak.toString().isNotEmpty) {
@@ -501,7 +505,7 @@ class Putnik {
     return 'Bela Crkva';
   }
 
-  static String? _determineAdresaFromMesecni(Map<String, dynamic> map, String grad) {
+  static String? _determineAdresaFromRegistrovani(Map<String, dynamic> map, String grad) {
     // ✅ FIX: Koristi grad parametar za određivanje adrese umesto ponovnog računanja
     // Ovo osigurava konzistentnost između grad i adresa polja
 
@@ -538,7 +542,7 @@ class Putnik {
     return adresaVS ?? adresaBC ?? 'Adresa nije definisana';
   }
 
-  static String? _determineAdresaIdFromMesecni(Map<String, dynamic> map, String grad) {
+  static String? _determineAdresaIdFromRegistrovani(Map<String, dynamic> map, String grad) {
     // Koristi UUID reference na osnovu grada
     if (grad.toLowerCase().contains('bela')) {
       return map['adresa_bela_crkva_id'] as String?;
@@ -558,8 +562,8 @@ class Putnik {
     }
   }
 
-  // 🆕 MAPIRANJE ZA MESECNI_PUTNICI TABELU
-  Map<String, dynamic> toMesecniPutniciMap() {
+  // 🆕 MAPIRANJE ZA registrovani_putnici TABELU
+  Map<String, dynamic> toRegistrovaniPutniciMap() {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month);
     final endOfMonth = DateTime(now.year, now.month + 1, 0);
@@ -572,7 +576,7 @@ class Putnik {
       'broj_telefona': brojTelefona,
       // Store per-day polasci as canonical JSON
       'polasci_po_danu': jsonEncode({
-        // map display day (Pon/Uto/...) to kratica used by mesecni_putnici
+        // map display day (Pon/Uto/...) to kratica used by registrovani_putnici
         (() {
           final map = {
             'Pon': 'pon',
@@ -678,7 +682,7 @@ class Putnik {
 
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
-      'mesecni_putnik_id': mesecnaKarta == true ? id : null,
+      'registrovani_putnik_id': mesecnaKarta == true ? id : null,
       'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
       'datum_putovanja': datumZaUpis, // ✅ Za PutovanjaIstorijaService compatibility
       'vreme_polaska': polazak,
@@ -741,10 +745,13 @@ class Putnik {
   }
 
   // ✅ HELPER: Izvlači prvi element iz dodali_vozaci arraya
+  // 🔧 FIX: Konvertuje UUID u ime vozača ako je potrebno
   static String? _extractDodaoVozacFromArray(dynamic dodaliVozaci) {
     if (dodaliVozaci == null) return null;
     if (dodaliVozaci is List && dodaliVozaci.isNotEmpty) {
-      return dodaliVozaci[0]?.toString();
+      final value = dodaliVozaci[0]?.toString();
+      // Konvertuj UUID u ime ako je potrebno
+      return _getVozacImeOrDirect(value);
     }
     return null;
   }

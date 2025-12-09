@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/adresa_supabase_service.dart';
-import '../utils/mesecni_helpers.dart';
+import '../utils/registrovani_helpers.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
-class MesecniPutnik {
-  MesecniPutnik({
+class RegistrovaniPutnik {
+  RegistrovaniPutnik({
     required this.id,
     required this.putnikIme,
     this.brojTelefona,
+    this.brojTelefona2,
     this.brojTelefonaOca,
     this.brojTelefonaMajke,
     required this.tip,
@@ -53,10 +54,10 @@ class MesecniPutnik {
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
 
-  factory MesecniPutnik.fromMap(Map<String, dynamic> map) {
+  factory RegistrovaniPutnik.fromMap(Map<String, dynamic> map) {
     // Parse polasciPoDanu using helper
     Map<String, List<String>> polasciPoDanu = {};
-    final parsed = MesecniHelpers.parsePolasciPoDanu(map['polasci_po_danu']);
+    final parsed = RegistrovaniHelpers.parsePolasciPoDanu(map['polasci_po_danu']);
     parsed.forEach((day, inner) {
       final List<String> list = [];
       final bc = inner['bc'];
@@ -66,10 +67,11 @@ class MesecniPutnik {
       if (list.isNotEmpty) polasciPoDanu[day] = list;
     });
 
-    return MesecniPutnik(
+    return RegistrovaniPutnik(
       id: map['id'] as String? ?? _generateUuid(),
       putnikIme: map['putnik_ime'] as String? ?? map['ime'] as String? ?? '',
       brojTelefona: map['broj_telefona'] as String?,
+      brojTelefona2: map['broj_telefona_2'] as String?,
       brojTelefonaOca: map['broj_telefona_oca'] as String?,
       brojTelefonaMajke: map['broj_telefona_majke'] as String?,
       tip: map['tip'] as String? ?? 'radnik',
@@ -120,8 +122,9 @@ class MesecniPutnik {
   final String id;
   final String putnikIme; // kombinovano ime i prezime
   final String? brojTelefona;
-  final String? brojTelefonaOca; // dodatni telefon oca
-  final String? brojTelefonaMajke; // dodatni telefon majke
+  final String? brojTelefona2; // drugi/alternativni telefon za radnike i dnevne
+  final String? brojTelefonaOca; // dodatni telefon oca (za učenike)
+  final String? brojTelefonaMajke; // dodatni telefon majke (za učenike)
   final String tip; // direktno string umesto enum-a
   final String? tipSkole;
   final String? napomena;
@@ -171,7 +174,7 @@ class MesecniPutnik {
       String? bc;
       String? vs;
       for (final time in times) {
-        final normalized = MesecniHelpers.normalizeTime(time.split(' ')[0]);
+        final normalized = RegistrovaniHelpers.normalizeTime(time.split(' ')[0]);
         if (time.contains('BC')) {
           bc = normalized;
         } else if (time.contains('VS')) {
@@ -193,6 +196,7 @@ class MesecniPutnik {
     Map<String, dynamic> result = {
       'putnik_ime': putnikIme,
       'broj_telefona': brojTelefona,
+      'broj_telefona_2': brojTelefona2,
       'broj_telefona_oca': brojTelefonaOca,
       'broj_telefona_majke': brojTelefonaMajke,
       'tip': tip,
@@ -248,7 +252,7 @@ class MesecniPutnik {
   /// Stvarni iznos plaćanja koji treba da se kombinuje sa putovanja_istorija
   /// Ovo je placeholder - potrebno je da se implementira kombinovanje sa istorijom
   double? get stvarniIznosPlacanja {
-    // Ako postoji cena u mesecni_putnici, vrati je
+    // Ako postoji cena u registrovani_putnici, vrati je
     if (cena != null && cena! > 0) return cena;
 
     // Inače treba da se pretraži putovanja_istorija tabela
@@ -279,7 +283,7 @@ class MesecniPutnik {
   }
 
   /// copyWith metoda za kreiranje kopije sa izmenjenim poljima
-  MesecniPutnik copyWith({
+  RegistrovaniPutnik copyWith({
     String? id,
     String? putnikIme,
     String? brojTelefona,
@@ -314,7 +318,7 @@ class MesecniPutnik {
     bool? placeno,
     DateTime? datumPlacanja,
   }) {
-    return MesecniPutnik(
+    return RegistrovaniPutnik(
       id: id ?? this.id,
       putnikIme: putnikIme ?? this.putnikIme,
       brojTelefona: brojTelefona ?? this.brojTelefona,
@@ -378,7 +382,7 @@ class MesecniPutnik {
 
   @override
   String toString() {
-    return 'MesecniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan)';
+    return 'RegistrovaniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan)';
   }
 
   // ==================== VALIDATION METHODS ====================
@@ -421,8 +425,9 @@ class MesecniPutnik {
       errors['putnikIme'] = 'Ime putnika je obavezno';
     }
 
-    if (tip.isEmpty || !['radnik', 'ucenik'].contains(tip)) {
-      errors['tip'] = 'Tip mora biti "radnik" ili "ucenik"';
+    // ✅ ISPRAVKA: Uključen 'dnevni' kao validan tip
+    if (tip.isEmpty || !['radnik', 'ucenik', 'dnevni'].contains(tip)) {
+      errors['tip'] = 'Tip mora biti "radnik", "ucenik" ili "dnevni"';
     }
 
     if (tip == 'ucenik' && (tipSkole == null || tipSkole!.isEmpty)) {
@@ -503,7 +508,7 @@ class MesecniPutnik {
 
   // ==================== RELATIONSHIP HELPERS ===================="
 
-  /// Da li putnik ima mesečnu kartu (uvek true za MesecniPutnik)
+  /// Da li putnik ima mesečnu kartu (uvek true za RegistrovaniPutnik)
   bool get hasMesecnaKarta => true;
 
   /// Da li je putnik učenik
@@ -511,6 +516,9 @@ class MesecniPutnik {
 
   /// Da li je putnik radnik
   bool get isRadnik => tip == 'radnik';
+
+  /// Da li je putnik dnevni
+  bool get isDnevni => tip == 'dnevni';
 
   /// Da li putnik radi danas
   bool radiDanas() {
@@ -586,7 +594,7 @@ class MesecniPutnik {
 
   /// Detaljni opis za debug
   String get detailDescription {
-    return 'MesecniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan, status: $status, polasci: ${polasciPoDanu.length}, period: $formatiraniPeriod)';
+    return 'RegistrovaniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan, status: $status, polasci: ${polasciPoDanu.length}, period: $formatiraniPeriod)';
   }
 
   /// ✅ HELPER: Generiši UUID ako nedostaje iz baze

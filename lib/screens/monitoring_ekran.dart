@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../services/simple_usage_monitor.dart';
 import '../theme.dart'; // 🎨 Import ThemeManager
@@ -259,7 +259,7 @@ class _MonitoringEkranState extends State<MonitoringEkran> {
             _napraviRedDetalja(
               '👥 Aktivni korisnici',
               _statistika['procenjeni_users'] ?? '0',
-              _statistika['mesecna_procena'] ?? '',
+              _statistika['registrovana_procena'] ?? '',
             ),
             _napraviRedDetalja(
               '💾 Database limit',

@@ -1,15 +1,15 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 
 import 'package:async/async.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../models/putnik.dart';
 import '../utils/novac_validacija.dart';
 import '../utils/vozac_boja.dart';
 import 'clean_statistika_service.dart';
-import 'mesecni_putnik_service.dart';
+import 'registrovani_putnik_service.dart';
 import 'putnik_service.dart';
 import 'vozac_mapping_service.dart';
 
@@ -209,7 +209,7 @@ class StatistikaService {
   /// �💰 JEDNOSTAVNA KALKULACIJA PAZARA - SVE NAPLAĆENE PARE ZA DANAŠNJI DAN
 
   /// 🎫 STREAM BROJ MESEČNIH KARATA ZA ODREĐENOG VOZAČA - OPTIMIZOVANO
-  static Stream<int> streamBrojMesecnihKarataZaVozaca(
+  static Stream<int> streamBrojRegistrovanihZaVozaca(
     String vozac, {
     DateTime? from,
     DateTime? to,
@@ -250,11 +250,11 @@ class StatistikaService {
         .stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
       return data.where((item) {
         // Osnovni uslovi
-        final jeMesecni = item['tip_putnika'] == 'mesecni';
+        final jeRegistrovani = item['tip_putnika'] == 'mesecni';
         final jePlaceno = item['status'] == 'placeno';
         final imaCreatedAt = item['created_at'] != null;
 
-        if (!jeMesecni || !jePlaceno || !imaCreatedAt) return false;
+        if (!jeRegistrovani || !jePlaceno || !imaCreatedAt) return false;
 
         // 🔍 Proveri vremenski opseg
         final createdAt = DateTime.parse(item['created_at'] as String);
@@ -280,7 +280,7 @@ class StatistikaService {
   }
 
   /// 💳 STREAM BROJ DUŽNIKA ZA ODREĐENOG VOZAČA
-  /// Dužnik = putnik koji je pokupljen ali nije platio (iznosPlacanja == null || 0)
+  /// Dužnik = SAMO DNEVNI putnik koji je pokupljen ali nije platio (cena == null || 0)
   static Stream<int> streamBrojDuznikaZaVozaca(
     String vozac, {
     DateTime? from,
@@ -291,28 +291,36 @@ class StatistikaService {
     // toDate se koristi za konzistentnost API-ja, ali za dužnike koristimo samo targetDate
     final targetDate = fromDate.toIso8601String().split('T')[0];
 
-    return Supabase.instance.client.from('putnici').stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
+    // ✅ ISPRAVKA: Koristi putovanja_istorija tabelu sa filterom tip_putnika='dnevni'
+    return Supabase.instance.client
+        .from('putovanja_istorija')
+        .stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
       return data.where((item) {
+        // ✅ SAMO DNEVNI PUTNICI - isključi mesečne
+        final tipPutnika = item['tip_putnika'] as String?;
+        final jeDnevni = tipPutnika == 'dnevni';
+        if (!jeDnevni) return false;
+
         // Nije platio
-        final iznosPlacanja = item['iznos_placanja'] as num?;
-        final nijePlatio = iznosPlacanja == null || iznosPlacanja == 0;
+        final cena = item['cena'] as num?;
+        final nijePlatio = cena == null || cena == 0;
 
         // Nije otkazan
         final status = item['status'] as String?;
-        final nijeOtkazan = status != 'otkazan' && status != 'Otkazano';
+        final nijeOtkazan = status != 'otkazan' && status != 'Otkazano' && status != 'otkazao_poziv';
 
-        // Nije mesečni
-        final mesecnaKarta = item['mesecna_karta'] as bool? ?? false;
-        final nijeMesecni = !mesecnaKarta;
+        // Nije obrisan
+        final obrisan = item['obrisan'] as bool? ?? false;
+        final nijeObrisan = !obrisan;
 
         // Je pokupljen
-        final pokupljen = item['je_pokupljen'] as bool? ?? false;
+        final jePokupljen = status == 'pokupljen';
 
         // Datum putovanja
         final datumPutovanja = item['datum_putovanja'] as String?;
         final jeDanas = datumPutovanja == targetDate;
 
-        return nijePlatio && nijeOtkazan && nijeMesecni && pokupljen && jeDanas;
+        return jeDnevni && nijePlatio && nijeOtkazan && nijeObrisan && jePokupljen && jeDanas;
       }).length;
     });
   }
@@ -341,7 +349,7 @@ class StatistikaService {
     double ukupnoMesecne = 0.0;
     try {
       // Sinhrono računanje za stream - koristimo podatke iz putnici koji su mesečni
-      final mesecniPutnici = putnici.where((putnik) {
+      final registrovaniPutnici = putnici.where((putnik) {
         if (putnik.mesecnaKarta != true) return false;
         if (putnik.iznosPlacanja == null || putnik.iznosPlacanja! <= 0) {
           return false;
@@ -352,7 +360,7 @@ class StatistikaService {
         return _jeUVremenskomOpsegu(putnik.vremePlacanja, fromDate, toDate);
       }).toList();
 
-      ukupnoMesecne = mesecniPutnici.fold<double>(
+      ukupnoMesecne = registrovaniPutnici.fold<double>(
         0.0,
         (sum, putnik) => sum + (putnik.iznosPlacanja ?? 0.0),
       );
@@ -462,7 +470,7 @@ class StatistikaService {
     final Map<String, Map<String, dynamic>> vozaciStats = {};
 
     // UČITAJ STVARNE MESEČNE PUTNIKE
-    final mesecniPutnici = await MesecniPutnikService().getAllMesecniPutnici();
+    final registrovaniPutnici = await RegistrovaniPutnikService().getAllRegistrovaniPutnici();
 
     // 🎯 INICIJALIZUJ SVE VOZAČE SA NULAMA - DODANA POLJA ZA MESEČNE KARTE
     for (final vozac in sviVozaci) {
@@ -547,9 +555,9 @@ class StatistikaService {
     // 🆕 DODAJ MESEČNE PUTNICE - KORISTI STVARNE PODATKE (GRUPE PO ID)
     // 💡 GRUPIRAJ MESEČNE PUTNIKE PO ID - jedan mesečni putnik može imati više polazaka,
     // ali treba se računati samo jednom u statistike
-    final Map<String, MesecniPutnik> uniqueMesecniPutnici = {};
-    for (final putnik in mesecniPutnici) {
-      uniqueMesecniPutnici[putnik.id] = putnik;
+    final Map<String, RegistrovaniPutnik> uniqueregistrovaniPutnici = {};
+    for (final putnik in registrovaniPutnici) {
+      uniqueregistrovaniPutnici[putnik.id] = putnik;
     }
 
     // 🔧 NOVO: Čitaj plaćanja mesečnih iz putovanja_istorija
@@ -597,13 +605,13 @@ class StatistikaService {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
       PutnikService().streamKombinovaniPutniciFiltered(),
-      MesecniPutnikService.streamAktivniMesecniPutnici(),
+      RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
     ]).map((data) {
       final putnici = data[0] as List<Putnik>;
-      final mesecniPutnici = data[1] as List<MesecniPutnik>;
+      final registrovaniPutnici = data[1] as List<RegistrovaniPutnik>;
       return _calculateDetaljneStatistikeSinhronno(
         putnici,
-        mesecniPutnici,
+        registrovaniPutnici,
         from,
         to,
       );
@@ -613,13 +621,13 @@ class StatistikaService {
   /// 🔄 PUBLIC SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za external usage)
   Map<String, Map<String, dynamic>> calculateDetaljneStatistikeSinhronno(
     List<Putnik> putnici,
-    List<MesecniPutnik> mesecniPutnici,
+    List<RegistrovaniPutnik> registrovaniPutnici,
     DateTime from,
     DateTime to,
   ) {
     return _calculateDetaljneStatistikeSinhronno(
       putnici,
-      mesecniPutnici,
+      registrovaniPutnici,
       from,
       to,
     );
@@ -628,7 +636,7 @@ class StatistikaService {
   /// 🔄 SINHRONA KALKULACIJA DETALJNIH STATISTIKA (za stream)
   Map<String, Map<String, dynamic>> _calculateDetaljneStatistikeSinhronno(
     List<Putnik> putnici,
-    List<MesecniPutnik> mesecniPutnici,
+    List<RegistrovaniPutnik> registrovaniPutnici,
     DateTime from,
     DateTime to,
   ) {
@@ -765,27 +773,27 @@ class StatistikaService {
     // 🆕 DODAJ MESEČNE KARTE - KORISTI STVARNE PODATKE (SINHRONO) SA GRUPIRANJEM
 
     // 🎫 GRUPIRANJE MESEČNIH PUTNIKA PO IMENU (isto kao u streamPazarSvihVozaca)
-    final Map<String, MesecniPutnik> grupisaniMesecniPutnici = {};
+    final Map<String, RegistrovaniPutnik> grupisaniregistrovaniPutnici = {};
 
     // � FIX: KORISTI PROSLEĐENI OPSEG (from/to) umesto hardkodovanog mesečnog opsega
     // Ovo omogućava filtriranje mesečnih karata za godišnji period
-    final mesecniFrom = normalizedFrom;
-    final mesecniTo = normalizedTo;
+    final registrovaniFrom = normalizedFrom;
+    final registrovaniTo = normalizedTo;
 
-    for (final putnik in mesecniPutnici) {
+    for (final putnik in registrovaniPutnici) {
       if (putnik.jePlacen) {
         // ✅ MESEČNE KARTE: koristi MESEČNI opseg umesto sedmičnog/dnevnog
         // Proveri da li je mesečna karta plaćena u OVOM MESECU
         if (putnik.vremePlacanja != null &&
             _jeUVremenskomOpsegu(
               putnik.vremePlacanja,
-              mesecniFrom,
-              mesecniTo,
+              registrovaniFrom,
+              registrovaniTo,
             )) {
           // 🎫 GRUPIRANJE: Dodaj samo prvi polazak po imenu (putnikIme)
           final kljuc = putnik.putnikIme.trim();
-          if (!grupisaniMesecniPutnici.containsKey(kljuc)) {
-            grupisaniMesecniPutnici[kljuc] = putnik;
+          if (!grupisaniregistrovaniPutnici.containsKey(kljuc)) {
+            grupisaniregistrovaniPutnici[kljuc] = putnik;
           }
         }
       }
@@ -956,7 +964,7 @@ class StatistikaService {
       // 2. RESETUJ MESEČNE KARTE - postavi cena na 0 i obriši vreme_placanja
       try {
         await supabase
-            .from('mesecni_putnici')
+            .from('registrovani_putnici')
             .update({
               'cena': 0.0,
               'vreme_placanja': null,
@@ -1106,7 +1114,7 @@ class StatistikaService {
   }
 
   /// �🔍 DUBOKA ANALIZA MESEČNIH KARATA ZA DANAŠNJI DAN
-  Future<Map<String, dynamic>> dubokaAnalizaMesecnihKarata() async {
+  Future<Map<String, dynamic>> dubokaAnalizaRegistrovanihPutnika() async {
     final danas = DateTime.now();
     final rezultat = <String, dynamic>{};
 
@@ -1122,15 +1130,15 @@ class StatistikaService {
 // }
 
       // Učitaj sve mesečne putnike
-      final mesecniService = MesecniPutnikService();
-      final sviMesecni = await mesecniService.getAllMesecniPutnici();
+      final registrovaniService = RegistrovaniPutnikService();
+      final sviRegistrovani = await registrovaniService.getAllRegistrovaniPutnici();
 
-      rezultat['ukupno_mesecnih_putnika'] = sviMesecni.length;
+      rezultat['ukupno_registrovanih_putnika'] = sviRegistrovani.length;
       rezultat['datum_analize'] = '${danas.day}.${danas.month}.${danas.year}';
       rezultat['vreme_analize'] = '${danas.hour}:${danas.minute}';
 
       // Analiza po statusu
-      final aktivni = sviMesecni.where((p) => p.aktivan && !p.obrisan).toList();
+      final aktivni = sviRegistrovani.where((p) => p.aktivan && !p.obrisan).toList();
       final placeni = aktivni.where((p) => p.jePlacen).toList();
       final placeniOvajMesec = placeni
           .where(
@@ -1182,7 +1190,7 @@ class StatistikaService {
       for (final vozacData in poVozacima.values) {
         ukupanPazar += vozacData['ukupan_iznos'] as double;
       }
-      rezultat['ukupan_pazar_mesecnih'] = ukupanPazar;
+      rezultat['ukupan_pazar_registrovanih'] = ukupanPazar;
 
       // Problematični putnici
       final problematicni = <Map<String, dynamic>>[];

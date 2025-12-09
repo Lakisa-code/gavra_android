@@ -1,11 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
-import '../models/mesecni_putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
 import 'supabase_safe.dart';
 
@@ -368,22 +368,22 @@ class LocalNotificationService {
         };
       }
 
-      // Traži u mesecni_putnici tabeli
-      const mesecniFields = '*,'
+      // Traži u registrovani_putnici tabeli
+      const registrovaniFields = '*,'
           'polasci_po_danu';
 
-      final mesecniResult = await supabase
-          .from('mesecni_putnici')
-          .select(mesecniFields)
+      final registrovaniResult = await supabase
+          .from('registrovani_putnici')
+          .select(registrovaniFields)
           .eq('putnik_ime', putnikIme)
           .eq('aktivan', true)
           .eq('obrisan', false)
           .order('created_at', ascending: false)
           .limit(1);
 
-      if (mesecniResult.isNotEmpty) {
-        final data = mesecniResult.first;
-        final mesecniPutnik = MesecniPutnik.fromMap(data);
+      if (registrovaniResult.isNotEmpty) {
+        final data = registrovaniResult.first;
+        final registrovaniPutnik = RegistrovaniPutnik.fromMap(data);
 
         // Preuzmi trenutni dan i određi polazak
         final sada = DateTime.now();
@@ -393,8 +393,8 @@ class LocalNotificationService {
         String? grad;
 
         // Pokušaj da nađeš polazak za trenutni dan
-        final polazakBC = mesecniPutnik.getPolazakBelaCrkvaZaDan(danNedelje);
-        final polazakVS = mesecniPutnik.getPolazakVrsacZaDan(danNedelje);
+        final polazakBC = registrovaniPutnik.getPolazakBelaCrkvaZaDan(danNedelje);
+        final polazakVS = registrovaniPutnik.getPolazakVrsacZaDan(danNedelje);
 
         if (polazakBC != null && polazakBC.isNotEmpty) {
           polazak = polazakBC;

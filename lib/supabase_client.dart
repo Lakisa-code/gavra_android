@@ -32,8 +32,8 @@ const String supabaseServiceRoleKey = String.fromEnvironment('SUPABASE_SERVICE_R
 // curl -H "apikey: $anonKey" "$url/rest/v1/vozaci?select=ime&limit=5"
 //
 // GET месечни путници:
-// curl -H "apikey: $anonKey" "$url/rest/v1/mesecni_putnici?aktivan=eq.true"
+// curl -H "apikey: $anonKey" "$url/rest/v1/registrovani_putnici?aktivan=eq.true"
 //
 // POST нови путник:
 // curl -X POST -H "apikey: $serviceKey" -H "Content-Type: application/json" \
-//      -d '{"putnik_ime":"Тест","tip":"ucenik"}' "$url/rest/v1/mesecni_putnici"
+//      -d '{"putnik_ime":"Тест","tip":"ucenik"}' "$url/rest/v1/registrovani_putnici"

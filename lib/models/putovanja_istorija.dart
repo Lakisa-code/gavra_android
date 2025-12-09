@@ -5,7 +5,7 @@ import 'action_log.dart';
 class PutovanjaIstorija {
   PutovanjaIstorija({
     required this.id,
-    this.mesecniPutnikId,
+    this.registrovaniPutnikId,
     required this.tipPutnika,
     required this.datum,
     required this.vremePolaska,
@@ -30,7 +30,7 @@ class PutovanjaIstorija {
   factory PutovanjaIstorija.fromMap(Map<String, dynamic> map) {
     return PutovanjaIstorija(
       id: map['id'] as String,
-      mesecniPutnikId: map['mesecni_putnik_id'] as String?,
+      registrovaniPutnikId: map['registrovani_putnik_id'] as String?,
       tipPutnika: map['tip_putnika'] as String? ?? 'dnevni',
       datum: DateTime.parse(map['datum_putovanja'] as String),
       vremePolaska: map['vreme_polaska'] as String? ?? '',
@@ -52,7 +52,7 @@ class PutovanjaIstorija {
     );
   }
   final String id;
-  final String? mesecniPutnikId;
+  final String? registrovaniPutnikId;
   final String tipPutnika;
   final DateTime datum;
   final String vremePolaska;
@@ -77,7 +77,7 @@ class PutovanjaIstorija {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'mesecni_putnik_id': mesecniPutnikId,
+      'registrovani_putnik_id': registrovaniPutnikId,
       'tip_putnika': tipPutnika,
       'datum_putovanja': datum.toIso8601String().split('T')[0],
       'vreme_polaska': vremePolaska,
@@ -102,7 +102,7 @@ class PutovanjaIstorija {
   // CopyWith method za kreiranje kopije sa promenjenim vrednostima
   PutovanjaIstorija copyWith({
     String? id,
-    String? mesecniPutnikId,
+    String? registrovaniPutnikId,
     String? tipPutnika,
     DateTime? datum,
     String? vremePolaska,
@@ -122,7 +122,7 @@ class PutovanjaIstorija {
   }) {
     return PutovanjaIstorija(
       id: id ?? this.id,
-      mesecniPutnikId: mesecniPutnikId ?? this.mesecniPutnikId,
+      registrovaniPutnikId: registrovaniPutnikId ?? this.registrovaniPutnikId,
       tipPutnika: tipPutnika ?? this.tipPutnika,
       datum: datum ?? this.datum,
       vremePolaska: vremePolaska ?? this.vremePolaska,
@@ -162,7 +162,7 @@ class PutovanjaIstorija {
   @Deprecated('Use jeNaCekanju instead - nije_se_pojavio is removed')
   bool get nijeSePojavioVrsacBelaCrkva => jeNaCekanju;
 
-  bool get jeMesecni => tipPutnika == 'mesecni';
+  bool get jeRegistrovani => tipPutnika == 'mesecni';
   bool get jeDnevni => tipPutnika == 'dnevni';
 
   // ==================== VALIDATION METHODS ====================
@@ -211,11 +211,11 @@ class PutovanjaIstorija {
   }
 
   /// Validira vezu sa mesečnim putnikom
-  bool hasValidMesecniPutnikLink() {
-    if (jeMesecni) {
-      return mesecniPutnikId != null && mesecniPutnikId!.isNotEmpty;
+  bool hasValidRegistrovaniPutnikLink() {
+    if (jeRegistrovani) {
+      return registrovaniPutnikId != null && registrovaniPutnikId!.isNotEmpty;
     }
-    return true; // Dnevni putnici ne moraju imati mesecni_putnik_id
+    return true; // Dnevni putnici ne moraju imati registrovani_putnik_id
   }
 
   /// Kompletna validacija sa detaljnim rezultatom
@@ -240,8 +240,8 @@ class PutovanjaIstorija {
       errors['vremePolaska'] = 'Vreme polaska mora biti u formatu HH:MM';
     }
 
-    if (!hasValidMesecniPutnikLink()) {
-      errors['mesecniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
+    if (!hasValidRegistrovaniPutnikLink()) {
+      errors['registrovaniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
     }
 
     if (!isDatumValid()) {
@@ -283,7 +283,7 @@ class PutovanjaIstorija {
 
   /// Kratki opis putovanja za UI
   String get shortDescription {
-    final tipIcon = jeMesecni ? '📅' : '🎫';
+    final tipIcon = jeRegistrovani ? '📅' : '🎫';
     final statusIcon = jePokupljen
         ? '✅'
         : jeOtkazao

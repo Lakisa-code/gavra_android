@@ -12,7 +12,7 @@ import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
-import 'mesecni_putnik_login_screen.dart';
+import 'registrovani_putnik_login_screen.dart';
 import 'o_nama_screen.dart';
 import 'vozac_login_screen.dart';
 import 'vozac_screen.dart';
@@ -373,227 +373,225 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
             padding: const EdgeInsets.all(16), // Reduced padding
             child: Column(
               children: [
-                // Moderni welcome tekst
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.22),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                // 🎫 Mesečni putnici - NA SREDINI sa jednakim razmakom za O nama i Vozači
+                Expanded(
+                  child: Column(
+                    children: [
+                      Spacer(),
+                      // Moderni welcome tekst
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 18,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(32),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.22),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.13),
+                              width: 1.8,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'DOBRODOŠLI',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 3.5,
+                                    color: Colors.white,
+                                    shadows: [
+                                      // Glavni glow efekat - plavi
+                                      Shadow(
+                                        color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
+                                        blurRadius: 20,
+                                      ),
+                                      // Dodatni glow - svetliji plavi
+                                      Shadow(
+                                        color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                                        blurRadius: 15,
+                                      ),
+                                      // Treći glow - još svetliji
+                                      Shadow(
+                                        color: Colors.cyan.withValues(alpha: 0.4),
+                                        blurRadius: 10,
+                                      ),
+                                      // Osnovna senka za dubinu
+                                      const Shadow(
+                                        color: Colors.black26,
+                                        blurRadius: 8,
+                                        offset: Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.13),
-                        width: 1.8,
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'DOBRODOŠLI',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 3.5,
-                              color: Colors.white,
-                              shadows: [
-                                // Glavni glow efekat - plavi
-                                Shadow(
-                                  color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                                  blurRadius: 20,
-                                ),
-                                // Dodatni glow - svetliji plavi
-                                Shadow(
-                                  color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+                      Spacer(),
+                      // 📖 "O nama" dugme
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ONamaScreen()),
+                            );
+                          },
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * 0.55,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              'O nama',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 1.5,
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
+                                    blurRadius: 15,
+                                  ),
+                                  Shadow(
+                                    color: Colors.cyan.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Spacer(),
+                      // 🎫 Mesečni putnici
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RegistrovaniPutnikLoginScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 28,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.amber.withValues(alpha: 0.85),
+                                  Colors.white.withValues(alpha: 0.08),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.amber.withValues(alpha: 0.7),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.amber.withValues(alpha: 0.35),
                                   blurRadius: 15,
-                                ),
-                                // Treći glow - još svetliji
-                                Shadow(
-                                  color: Colors.cyan.withValues(alpha: 0.4),
-                                  blurRadius: 10,
-                                ),
-                                // Osnovna senka za dubinu
-                                const Shadow(
-                                  color: Colors.black26,
-                                  blurRadius: 8,
-                                  offset: Offset(0, 3),
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // 📖 "O nama" dugme - izdvojeno, malo uže od DOBRODOŠLI
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ONamaScreen()),
-                      );
-                    },
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.55,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Text(
-                        'O nama',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.5,
-                          shadows: [
-                            Shadow(
-                              color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                              blurRadius: 15,
-                            ),
-                            Shadow(
-                              color: Colors.cyan.withValues(alpha: 0.4),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // 🚗 "Vozači" dugme - ispod O nama
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: GestureDetector(
-                    onTap: () => _showDriverSelectionDialog(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Text(
-                        'Vozači',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.5,
-                          shadows: [
-                            Shadow(
-                              color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
-                              blurRadius: 15,
-                            ),
-                            Shadow(
-                              color: Colors.cyan.withValues(alpha: 0.4),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12), // Further reduced from 16
-                // 🎫 Dugme "Mesečni putnici" - NA SREDINI EKRANA
-                Expanded(
-                  flex: 3,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // 🎫 Dugme "Mesečni putnici"
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const MesecniPutnikLoginScreen(),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.card_membership,
+                                  color: Colors.white,
+                                  size: 24,
                                 ),
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 28,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.amber.withValues(alpha: 0.85),
-                                    Colors.white.withValues(alpha: 0.08),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: Colors.amber.withValues(alpha: 0.7),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.amber.withValues(alpha: 0.35),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.card_membership,
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Mesečni putnici',
+                                  style: TextStyle(
                                     color: Colors.white,
-                                    size: 24,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'Mesečni putnici',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.0,
-                                    ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Spacer(),
+                      // 🚗 "Vozači" dugme
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: GestureDetector(
+                          onTap: () => _showDriverSelectionDialog(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              'Vozači',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 1.5,
+                                shadows: [
+                                  Shadow(
+                                    color: const Color(0xFF12D8FA).withValues(alpha: 0.8),
+                                    blurRadius: 15,
+                                  ),
+                                  Shadow(
+                                    color: Colors.cyan.withValues(alpha: 0.4),
+                                    blurRadius: 8,
                                   ),
                                 ],
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Spacer(),
+                    ],
                   ),
                 ),
                 // Moderno dugme GAVRA 013 dole - compacted

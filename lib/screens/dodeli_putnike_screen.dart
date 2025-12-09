@@ -730,150 +730,18 @@ class _DodeliPutnikeScreenState extends State<DodeliPutnikeScreen> {
     }
   }
 
-  // ➕ DIJALOG ZA DODAVANJE PUTNIKA
+  // ➕ DIJALOG ZA DODAVANJE REGISTROVANOG PUTNIKA
+  // 🚫 Ad-hoc putnici više ne postoje - samo registrovani iz registrovani_putnici
   Future<void> _showDodajPutnikaDialog() async {
-    final nameController = TextEditingController();
-    final adresaController = TextEditingController();
-    String selectedVozac = VozacBoja.validDrivers.first;
+    // Prikaži poruku da se koristi Mesečni putnici ekran
+    if (!mounted) return;
 
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('Dodaj putnika za $_selectedVreme'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Info
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, size: 16, color: Colors.blue),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '$_selectedDay • $_selectedVreme • $_selectedGrad',
-                          style: const TextStyle(fontSize: 12, color: Colors.blue),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Ime
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Ime putnika *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                const SizedBox(height: 12),
-                // Adresa
-                TextField(
-                  controller: adresaController,
-                  decoration: const InputDecoration(
-                    labelText: 'Adresa (opcionalno)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Vozač dropdown
-                DropdownButtonFormField<String>(
-                  initialValue: selectedVozac,
-                  decoration: const InputDecoration(
-                    labelText: 'Dodeli vozaču',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.directions_car),
-                  ),
-                  items: VozacBoja.validDrivers.map((v) {
-                    final color = VozacBoja.get(v);
-                    return DropdownMenuItem(
-                      value: v,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 12,
-                            backgroundColor: color.withValues(alpha: 0.2),
-                            child: Text(v[0], style: TextStyle(color: color, fontSize: 12)),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(v),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (v) {
-                    if (v != null) setDialogState(() => selectedVozac = v);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Otkaži'),
-            ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.add),
-              label: const Text('Dodaj'),
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Unesite ime putnika')),
-                  );
-                  return;
-                }
-                Navigator.pop(context, {
-                  'ime': nameController.text.trim(),
-                  'adresa': adresaController.text.trim(),
-                  'vozac': selectedVozac,
-                });
-              },
-            ),
-          ],
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ℹ️ Svi putnici moraju biti registrovani. Idite na Mesečni putnici da dodate novog putnika.'),
+        duration: Duration(seconds: 4),
+        backgroundColor: Colors.blue,
       ),
     );
-
-    if (result != null) {
-      try {
-        final putnik = Putnik(
-          ime: result['ime'],
-          adresa: result['adresa'].isNotEmpty ? result['adresa'] : null,
-          grad: _selectedGrad,
-          polazak: _selectedVreme,
-          dan: _getDayAbbreviation(_selectedDay).substring(0, 1).toUpperCase() +
-              _getDayAbbreviation(_selectedDay).substring(1),
-          dodaoVozac: result['vozac'],
-          mesecnaKarta: false,
-        );
-        await _putnikService.dodajPutnika(putnik);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Dodat putnik ${result['ime']}'),
-              backgroundColor: VozacBoja.get(result['vozac']),
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Greška: $e'), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
   }
 }

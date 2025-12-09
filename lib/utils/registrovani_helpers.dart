@@ -1,10 +1,10 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'grad_adresa_validator.dart';
 
-enum MesecniStatus { active, canceled, vacation, unknown }
+enum RegistrovaniStatus { active, canceled, vacation, unknown }
 
-class MesecniHelpers {
+class RegistrovaniHelpers {
   // Normalize time using GradAdresaValidator for consistency across the app
   static String? normalizeTime(String? raw) {
     return GradAdresaValidator.normalizeTime(raw);
@@ -109,27 +109,27 @@ class MesecniHelpers {
   }
 
   // Status converter
-  static MesecniStatus statusFromString(String? raw) {
-    if (raw == null) return MesecniStatus.unknown;
+  static RegistrovaniStatus statusFromString(String? raw) {
+    if (raw == null) return RegistrovaniStatus.unknown;
     final s = raw.toLowerCase().trim();
-    if (s.isEmpty) return MesecniStatus.unknown;
+    if (s.isEmpty) return RegistrovaniStatus.unknown;
 
     final map = {
-      'otkazano': MesecniStatus.canceled,
-      'otkazan': MesecniStatus.canceled,
-      'otkazana': MesecniStatus.canceled,
-      'otkaz': MesecniStatus.canceled,
-      'godišnji': MesecniStatus.vacation,
-      'godisnji': MesecniStatus.vacation,
-      'godisnji_odmor': MesecniStatus.vacation,
-      'aktivan': MesecniStatus.active,
-      'active': MesecniStatus.active,
-      'placeno': MesecniStatus.active,
+      'otkazano': RegistrovaniStatus.canceled,
+      'otkazan': RegistrovaniStatus.canceled,
+      'otkazana': RegistrovaniStatus.canceled,
+      'otkaz': RegistrovaniStatus.canceled,
+      'godišnji': RegistrovaniStatus.vacation,
+      'godisnji': RegistrovaniStatus.vacation,
+      'godisnji_odmor': RegistrovaniStatus.vacation,
+      'aktivan': RegistrovaniStatus.active,
+      'active': RegistrovaniStatus.active,
+      'placeno': RegistrovaniStatus.active,
     };
     for (final k in map.keys) {
       if (s.contains(k)) return map[k]!;
     }
-    return MesecniStatus.unknown;
+    return RegistrovaniStatus.unknown;
   }
 
   // Price paid check - flexible and safe

@@ -46,7 +46,7 @@ class _PinDialogState extends State<PinDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await Supabase.instance.client.from('mesecni_putnici').update({'pin': newPin}).eq('id', widget.putnikId);
+      await Supabase.instance.client.from('registrovani_putnici').update({'pin': newPin}).eq('id', widget.putnikId);
 
       setState(() {
         _pin = newPin;

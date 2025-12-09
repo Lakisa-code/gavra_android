@@ -123,11 +123,24 @@ class VozacBoja {
   static List<String> get validDrivers => boje.keys.toList();
 
   /// Vraća boju vozača ili default boju za nepoznate vozače
+  /// 🔧 FIX: Case-insensitive poređenje za robusnost
   static Color getColorOrDefault(String? ime, Color defaultColor) {
+    if (ime == null || ime.isEmpty) return defaultColor;
+
     final currentBoje = boje;
-    if (ime != null && currentBoje.containsKey(ime)) {
+    // Prvo probaj exact match
+    if (currentBoje.containsKey(ime)) {
       return currentBoje[ime]!;
     }
+
+    // 🔧 FIX: Case-insensitive fallback
+    final imeLower = ime.toLowerCase();
+    for (final entry in currentBoje.entries) {
+      if (entry.key.toLowerCase() == imeLower) {
+        return entry.value;
+      }
+    }
+
     return defaultColor;
   }
 

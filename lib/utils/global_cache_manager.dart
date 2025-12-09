@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../services/mesecni_putnik_service.dart';
+import '../services/registrovani_putnik_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_service.dart';
 
@@ -24,7 +24,7 @@ class GlobalCacheManager {
   static Future<void> clearAllCachesAndRefresh() async {
     try {
       // 1. Očisti cache-ove u servisima
-      MesecniPutnikService.clearCache();
+      RegistrovaniPutnikService.clearCache();
       PutnikService.clearCache();
 
       // 2. Forsiraj RealtimeService refresh

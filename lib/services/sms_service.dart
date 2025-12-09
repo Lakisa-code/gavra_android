@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -76,15 +76,15 @@ class SMSService {
       DateTime tomorrow = DateTime.now().add(const Duration(days: 1));
       String tomorrowStr = DateFormat('yyyy-MM-dd').format(tomorrow);
 
-      const mesecniFields = '*,'
+      const registrovaniFields = '*,'
           'polasci_po_danu';
 
       final response =
-          await supabase.from('mesecni_putnici').select(mesecniFields).eq('datum_kraja_meseca', tomorrowStr);
+          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('datum_kraja_meseca', tomorrowStr);
 
       List<Putnik> unpaidPassengers = (response as List)
           .map(
-            (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>),
+            (data) => Putnik.fromRegistrovaniPutnici(data as Map<String, dynamic>),
           )
           .where(
             (putnik) => putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
@@ -139,15 +139,15 @@ class SMSService {
       DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
       String yesterdayStr = DateFormat('yyyy-MM-dd').format(yesterday);
 
-      const mesecniFields = '*,'
+      const registrovaniFields = '*,'
           'polasci_po_danu';
 
       final response =
-          await supabase.from('mesecni_putnici').select(mesecniFields).eq('datum_kraja_meseca', yesterdayStr);
+          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('datum_kraja_meseca', yesterdayStr);
 
       List<Putnik> overduePassengers = (response as List)
           .map(
-            (data) => Putnik.fromMesecniPutnici(data as Map<String, dynamic>),
+            (data) => Putnik.fromRegistrovaniPutnici(data as Map<String, dynamic>),
           )
           .where(
             (putnik) => putnik.brojTelefona != null && putnik.brojTelefona!.isNotEmpty,
@@ -361,7 +361,7 @@ class SMSService {
   /// 🔥 NOVA FUNKCIJA: Šalje SMS roditeljima učenika (majka i otac)
   static Future<void> _sendSMSToParents(Putnik putnik, String message) async {
     try {
-      // Trebamo pristupiti MesecniPutnik objektu za podatke o roditeljima
+      // Trebamo pristupiti RegistrovaniPutnik objektu za podatke o roditeljima
       // Pošto Putnik model ne sadrži podatke o roditeljima, trebamo ih učitati iz baze
 
       if (putnik.id == null) {
@@ -370,10 +370,10 @@ class SMSService {
       }
 
       // Učitaj mesečni putnik iz baze da dobijem podatke o roditeljima
-      const mesecniFields = 'tip, broj_telefona_oca, broj_telefona_majke, putnik_ime';
+      const registrovaniFields = 'tip, broj_telefona_oca, broj_telefona_majke, putnik_ime';
 
       final response =
-          await supabase.from('mesecni_putnici').select(mesecniFields).eq('id', putnik.id.toString()).single();
+          await supabase.from('registrovani_putnici').select(registrovaniFields).eq('id', putnik.id.toString()).single();
 
       // Provjeri da li je učenik (samo učenicima šaljemo roditeljima)
       final tip = response['tip'] as String?;
