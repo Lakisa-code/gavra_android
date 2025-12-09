@@ -939,12 +939,22 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       // Ažuriraj lokalno
       final polasciRaw = _putnikData['polasci_po_danu'] ?? {};
-      Map<String, dynamic> polasci = {};
+      Map<String, Map<String, String?>> polasci = {};
 
       if (polasciRaw is Map) {
         polasciRaw.forEach((key, value) {
           if (value is Map) {
-            polasci[key.toString()] = Map<String, dynamic>.from(value);
+            polasci[key.toString()] = {
+              'bc': value['bc']?.toString(),
+              'vs': value['vs']?.toString(),
+            };
+            // Očisti "null" stringove
+            if (polasci[key.toString()]!['bc'] == 'null') {
+              polasci[key.toString()]!['bc'] = null;
+            }
+            if (polasci[key.toString()]!['vs'] == 'null') {
+              polasci[key.toString()]!['vs'] = null;
+            }
           } else {
             polasci[key.toString()] = {'bc': null, 'vs': null};
           }
