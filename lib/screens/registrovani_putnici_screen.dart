@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
+import '../services/advanced_geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/improved_registrovani_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
@@ -1426,18 +1427,43 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     if (adrese.isEmpty) return;
 
     final adresa = adrese.values.first;
-    if (adresa.koordinate == null) {
+    double? lat = adresa.koordinate?['lat'];
+    double? lng = adresa.koordinate?['lng'];
+
+    // 🎯 Ako nema koordinate, pokušaj geocoding
+    if (lat == null || lng == null) {
+      try {
+        final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
+          grad: adresa.grad ?? '',
+          adresa: adresa.naziv,
+        );
+        if (geocodeResult != null && geocodeResult.confidence > 50) {
+          lat = geocodeResult.latitude;
+          lng = geocodeResult.longitude;
+          // Sačuvaj koordinate za buduće korišćenje
+          await AdresaSupabaseService.updateKoordinate(
+            adresaId,
+            lat: lat,
+            lng: lng,
+          );
+        }
+      } catch (e) {
+        // Geocoding greška
+      }
+    }
+
+    // Ako i dalje nema koordinata, prikaži poruku
+    if (lat == null || lng == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Adresa nema koordinate za navigaciju')),
+          SnackBar(
+            content: Text('Adresa "${adresa.naziv}" nema koordinate. Pokušajte ručno pretražiti.'),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
       return;
     }
-
-    final lat = adresa.koordinate!['lat'];
-    final lng = adresa.koordinate!['lng'];
-    if (lat == null || lng == null) return;
 
     // HERE WeGo navigacija - besplatno, radi na svim uređajima
     final hereWeGoUrl = 'https://share.here.com/r/$lat,$lng';
