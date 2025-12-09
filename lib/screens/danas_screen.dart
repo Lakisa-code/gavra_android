@@ -5,16 +5,15 @@ import 'package:flutter/services.dart'; // 🎨 DODANO za SystemUiOverlayStyle
 import 'package:geolocator/geolocator.dart'; // 🗺️ DODANO za OpenStreetMap
 import 'package:supabase_flutter/supabase_flutter.dart'; // DODANO za direktne pozive
 
+import '../models/putnik.dart';
 // url_launcher unused here - navigacija delegirana SmartNavigationService
 
 import '../models/registrovani_putnik.dart';
-import '../models/putnik.dart';
 import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ETA putnicima
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pickup tracking
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -23,6 +22,7 @@ import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network 
 import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
+import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
 import '../services/smart_navigation_service.dart';
@@ -775,7 +775,7 @@ class _DanasScreenState extends State<DanasScreen> {
               leading: const Icon(Icons.group, color: Colors.blue),
               title: Text('Svi putnici ($putnikCount)'),
               subtitle: Text(
-                putnikCount > 10 ? 'Prvih 10 kao waypoints, ostali posle' : 'Svi kao waypoints u Google Maps',
+                putnikCount > 10 ? 'Prvih 10 kao waypoints, ostali posle' : 'Svi kao waypoints u HERE WeGo',
                 style: const TextStyle(fontSize: 12),
               ),
               onTap: () {
@@ -800,7 +800,7 @@ class _DanasScreenState extends State<DanasScreen> {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
     try {
-      // Koristi SmartNavigationService sa multi-provider podrškom (Google Maps, HERE WeGo, Petal Maps)
+      // Koristi SmartNavigationService sa HERE WeGo navigacijom
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,
@@ -1102,7 +1102,7 @@ class _DanasScreenState extends State<DanasScreen> {
   // Optimizacija rute - zadržavam zbog postojeće logike
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
-  Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate za Google Maps
+  Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate za HERE WeGo
 
   // Status varijable - pojednostavljeno
   String _navigationStatus = '';
@@ -1616,7 +1616,8 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   /// 🔍 GRAD POREĐENJE - razlikuj mesečne i obične putnike
-  bool _isGradMatch(String? putnikGrad, String? putnikAdresa, String selectedGrad, {bool isRegistrovaniPutnik = false}) {
+  bool _isGradMatch(String? putnikGrad, String? putnikAdresa, String selectedGrad,
+      {bool isRegistrovaniPutnik = false}) {
     // Za mesečne putnike - direktno poređenje grada
     if (isRegistrovaniPutnik) {
       return putnikGrad == selectedGrad;
@@ -2526,7 +2527,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                                     children: [
                                                       Text(
                                                         _isListReordered
-                                                            ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${_optimizedRoute.length})'
+                                                            ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.length})'
                                                             : (_isGpsTracking
                                                                 ? '🛰️ GPS Tracking AKTIVAN'
                                                                 : 'Ruta optimizovana'),
@@ -2539,10 +2540,9 @@ class _DanasScreenState extends State<DanasScreen> {
                                                         ),
                                                       ),
                                                       // 🎯 PRIKAZ TRENUTNOG PUTNIKA
-                                                      if (_isListReordered &&
-                                                          _currentPassengerIndex < _optimizedRoute.length)
+                                                      if (_isListReordered && finalPutnici.isNotEmpty)
                                                         Text(
-                                                          '👤 SLEDEĆI: ${_optimizedRoute[_currentPassengerIndex].ime}',
+                                                          '👤 SLEDEĆI: ${finalPutnici.first.ime}',
                                                           style: TextStyle(
                                                             fontSize: 11,
                                                             color: Colors.orange[600],
@@ -2812,7 +2812,7 @@ class _DanasScreenState extends State<DanasScreen> {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
     try {
-      // Koristi multi-provider navigaciju (Google Maps, HERE WeGo, Petal Maps)
+      // Koristi HERE WeGo navigaciju
       final result = await SmartNavigationService.startMultiProviderNavigation(
         context: context,
         putnici: _optimizedRoute,

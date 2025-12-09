@@ -71,13 +71,13 @@ class PutnikPushService {
     try {
       final response = await _supabase
           .from('registrovani_putnici')
-          .select('ime, push_token, push_provider')
-          .inFilter('ime', putnikImena)
+          .select('putnik_ime, push_token, push_provider')
+          .inFilter('putnik_ime', putnikImena)
           .not('push_token', 'is', null);
 
       final result = <String, Map<String, String>>{};
       for (final row in response as List) {
-        final ime = row['ime'] as String?;
+        final ime = row['putnik_ime'] as String?;
         final token = row['push_token'] as String?;
         final provider = row['push_provider'] as String?;
 

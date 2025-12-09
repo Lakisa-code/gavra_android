@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
@@ -10,13 +9,12 @@ import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geoc
 
 /// 🎯 SMART NAVIGATION SERVICE
 /// Implementira pravu GPS navigaciju sa optimizovanim redosledom putnika
-/// Koristi OpenStreetMap / self-hosted OSRM/Valhalla ili platform-specific aplikacije za otvaranje rute.
+/// Koristi OSRM za optimizaciju rute i HERE WeGo za navigaciju
 ///
-/// 🧭 MULTI-PROVIDER SUPPORT (v2.0):
-/// - Google Maps (10 waypoints) - prioritet za GMS uređaje
-/// - HERE WeGo (10 waypoints) - preporučeno za Huawei
-/// - Petal Maps (5 waypoints) - fallback za Huawei
+/// 🧭 HERE WEGO ONLY:
+/// - HERE WeGo (10 waypoints) - besplatno, radi na svim uređajima
 /// - Automatska segmentacija rute kada prelazi limit waypoinata
+/// - Offline mape, poštuje redosled putnika
 class SmartNavigationService {
   /// 🏁 Vrati krajnju destinaciju na osnovu startCity
   /// Ako krećeš iz Bele Crkve, krajnja destinacija je Vršac i obrnuto
@@ -105,12 +103,11 @@ class SmartNavigationService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 🧭 MULTI-PROVIDER NAVIGATION (v2.0)
+  // 🧭 HERE WEGO NAVIGATION
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// 🧭 NOVA GLAVNA FUNKCIJA - Multi-provider navigacija
-  /// Automatski bira Google Maps, HERE WeGo ili Petal Maps
-  /// Podržava Huawei uređaje i automatsku segmentaciju rute
+  /// 🧭 GLAVNA FUNKCIJA - HERE WeGo navigacija
+  /// Koristi isključivo HERE WeGo - besplatno, radi na svim uređajima
   ///
   /// [context] - BuildContext za dijaloge
   /// [putnici] - Lista optimizovanih putnika
@@ -170,109 +167,8 @@ class SmartNavigationService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 🗺️ LEGACY: GOOGLE MAPS ONLY (za backward compatibility)
+  // 📐 HELPER FUNKCIJE
   // ═══════════════════════════════════════════════════════════════════════
-
-  /// 🚗 GLAVNA FUNKCIJA - Otvori mapu sa optimizovanom rutom (preferirano OSM/OSRM)
-  /// 🎯 skipOptimization=true: koristi prosleđenu listu bez re-optimizacije (za NAV dugme)
-  /// 🎯 cachedCoordinates: prosleđene koordinate iz optimizeRouteOnly (izbegava duplo geocodiranje)
-  ///
-  /// ⚠️ DEPRECATED: Koristi startMultiProviderNavigation za podršku Huawei uređaja
-  @Deprecated('Koristi startMultiProviderNavigation za podršku Huawei uređaja')
-  static Future<NavigationResult> startOptimizedNavigation({
-    required List<Putnik> putnici,
-    required String startCity, // 'Bela Crkva' ili 'Vršac'
-    bool optimizeForTime = true, // true = vreme, false = distanca
-    bool useTrafficData = false, // 🚦 NOVO: traffic-aware routing
-    bool skipOptimization = true, // 🎯 NOVO: preskoči re-optimizaciju ako je ruta već optimizovana
-    Map<Putnik, Position>? cachedCoordinates, // 🎯 NOVO: keširane koordinate
-  }) async {
-    try {
-      // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
-      final currentPosition = await _getCurrentPosition();
-
-      // 2. 🎯 KORISTI KEŠIRANE KOORDINATE ILI GEOCODIRAJ
-      Map<Putnik, Position> coordinates;
-
-      if (cachedCoordinates != null && cachedCoordinates.isNotEmpty) {
-        // ✅ Koristi keširane koordinate (brže, bez API poziva)
-        coordinates = cachedCoordinates;
-      } else {
-        // Geocodiraj putnike (fallback)
-        coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
-          putnici,
-          onProgress: (completed, total, address) {},
-        );
-      }
-
-      if (coordinates.isEmpty) {
-        return NavigationResult.error(
-          '❌ Nijedan putnik nema validnu adresu za navigaciju',
-        );
-      }
-
-      // 3. OPTIMIZUJ REDOSLED PUTNIKA (ili koristi već optimizovanu listu)
-      List<Putnik> optimizedRoute;
-
-      if (skipOptimization) {
-        // 🎯 KORISTI VEĆ OPTIMIZOVANU LISTU (od "Ruta" dugmeta)
-        optimizedRoute = putnici;
-      } else {
-        // 🏁 Odredi krajnju destinaciju (suprotni grad)
-        final endDestination = _getEndDestination(startCity);
-
-        // 🎯 KORISTI OSRM ZA OPTIMIZACIJU
-        final osrmResult = await OsrmService.optimizeRoute(
-          startPosition: currentPosition,
-          putnici: putnici,
-          endDestination: endDestination,
-        );
-        if (osrmResult.success && osrmResult.optimizedPutnici != null) {
-          optimizedRoute = osrmResult.optimizedPutnici!;
-          coordinates = osrmResult.coordinates ?? coordinates;
-        } else {
-          // Fallback - koristi input listu
-          optimizedRoute = putnici;
-        }
-      }
-
-      // 4. OTVORI RUTU U GOOGLE MAPS SA WAYPOINT-IMA (max 10)
-      // 🎯 Prosleđujemo keširane koordinate da izbegnemo duplo geocodiranje
-      final success = await _openGoogleMapsNavigationWithCoords(
-        currentPosition,
-        optimizedRoute,
-        coordinates,
-        startCity,
-        useTrafficData: useTrafficData,
-      );
-
-      // Informacija o broju putnika
-      final maxWaypoints = 10;
-      final shownCount = optimizedRoute.length > maxWaypoints ? maxWaypoints : optimizedRoute.length;
-      final remainingCount = optimizedRoute.length > maxWaypoints ? optimizedRoute.length - maxWaypoints : 0;
-
-      if (success) {
-        String message = '🎯 Google Maps: $shownCount putnika';
-        if (remainingCount > 0) {
-          message += ' (još $remainingCount posle)';
-        }
-        return NavigationResult.success(
-          message: message,
-          optimizedPutnici: optimizedRoute,
-          totalDistance: await _calculateTotalDistance(
-            currentPosition,
-            optimizedRoute,
-            coordinates,
-          ),
-          cachedCoordinates: coordinates,
-        );
-      } else {
-        return NavigationResult.error('❌ Greška pri otvaranju navigacije');
-      }
-    } catch (e) {
-      return NavigationResult.error('❌ Greška pri navigaciji: $e');
-    }
-  }
 
   /// 📍 Dobij trenutnu GPS poziciju vozača
   static Future<Position> _getCurrentPosition() async {
@@ -314,69 +210,6 @@ class SmartNavigationService {
       pos2.latitude,
       pos2.longitude,
     );
-  }
-
-  /// 🗺️ Otvori Google Maps sa keširanim koordinatama
-  /// 🎯 REFACTORED: Prima koordinate direktno, ne geocoduje ponovo
-  static Future<bool> _openGoogleMapsNavigationWithCoords(
-    Position startPosition,
-    List<Putnik> optimizedRoute,
-    Map<Putnik, Position> coordinates,
-    String startCity, {
-    bool useTrafficData = false,
-  }) async {
-    try {
-      if (optimizedRoute.isEmpty) {
-        return false;
-      }
-
-      // 🎯 Google Maps podržava max 10 waypoint-a
-      final maxWaypoints = 10;
-      final putnici = optimizedRoute.take(maxWaypoints).toList();
-
-      // 🎯 Filtriraj samo putnike koji imaju koordinate
-      final putniciWithCoords = putnici.where((p) => coordinates.containsKey(p)).toList();
-
-      if (putniciWithCoords.isEmpty) {
-        return false;
-      }
-
-      // 🎯 Kreiraj Google Maps URL sa svim putnicima
-      // Format: google.navigation sa waypoints - čuva NAŠ redosled!
-      final destination = coordinates[putniciWithCoords.last]!;
-
-      // Waypoints su svi osim poslednjeg (koji je destinacija)
-      final waypointsList = <String>[];
-      for (int i = 0; i < putniciWithCoords.length - 1; i++) {
-        final putnik = putniciWithCoords[i];
-        final pos = coordinates[putnik]!;
-        waypointsList.add('${pos.latitude},${pos.longitude}');
-      }
-
-      // Google Maps intent format - ČUVA REDOSLED waypointa!
-      String googleMapsUrl = 'google.navigation:q=${destination.latitude},${destination.longitude}';
-      if (waypointsList.isNotEmpty) {
-        googleMapsUrl += '&waypoints=${waypointsList.join('|')}';
-      }
-      googleMapsUrl += '&mode=d'; // d = driving
-
-      final Uri uri = Uri.parse(googleMapsUrl);
-
-      if (await canLaunchUrl(uri)) {
-        final launched = await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-
-        if (launched && optimizedRoute.length > maxWaypoints) {}
-
-        return launched;
-      } else {
-        throw Exception('Ne mogu da otvorim Google Maps');
-      }
-    } catch (e) {
-      return false;
-    }
   }
 
   /// 📊 Izračunaj ukupnu distancu optimizovane rute

@@ -223,8 +223,12 @@ class DriverLocationService {
       // 🆕 Ažuriraj ETA dinamički na osnovu trenutne pozicije
       _updateDynamicEta(position);
 
-      // Upsert u Supabase (update ako postoji, insert ako ne)
-      await Supabase.instance.client.from('vozac_lokacije').upsert({
+      // 🔄 Delete + Insert umesto upsert (nema unique constraint na vozac_id)
+      // Prvo obriši stare zapise za ovog vozača
+      await Supabase.instance.client.from('vozac_lokacije').delete().eq('vozac_id', _currentVozacId!);
+
+      // Zatim umetni novi zapis
+      await Supabase.instance.client.from('vozac_lokacije').insert({
         'vozac_id': _currentVozacId,
         'vozac_ime': _currentVozacIme,
         'lat': position.latitude,
@@ -235,7 +239,7 @@ class DriverLocationService {
         'aktivan': true,
         'putnici_eta': _currentPutniciEta, // Dinamički ažuriran ETA
         'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'vozac_id');
+      });
 
       debugPrint(
           '📍 Lokacija poslata: ${position.latitude}, ${position.longitude}, ETA: ${_currentPutniciEta?.length ?? 0} putnika');

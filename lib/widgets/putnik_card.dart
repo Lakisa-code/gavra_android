@@ -1753,22 +1753,6 @@ class _PutnikCardState extends State<PutnikCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        // 📝 DODAO INFO - u istom redu sa ikonicama
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Dodao: ${_putnik.vremeDodavanja != null ? _formatVremeDodavanjaKratko(_putnik.vremeDodavanja!) : (_putnik.dodaoVozac?.isNotEmpty == true ? 'ranije' : 'sistem')}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: VozacBoja.getColorOrDefault(
-                                _putnik.dodaoVozac,
-                                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                              ),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
                       ],
                     ),
                   ),

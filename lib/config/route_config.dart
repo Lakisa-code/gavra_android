@@ -188,8 +188,8 @@ class RouteConfig {
   // 🔧 OPTIMIZACIJA PARAMETRI
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// Maksimalan broj waypointa za Google Maps navigaciju
-  static const int googleMapsMaxWaypoints = 10;
+  /// Maksimalan broj waypointa za HERE WeGo navigaciju
+  static const int hereWeGoMaxWaypoints = 10;
 
   /// Prag za brute force vs nearest neighbor (broj putnika)
   static const int bruteForceThreshold = 8;

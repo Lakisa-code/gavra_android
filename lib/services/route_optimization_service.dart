@@ -223,13 +223,30 @@ class RouteOptimizationService {
 
     // Filtriraj putnike samo za određeni grad, vreme i dan
     final filteredPutnici = allPutnici.where((putnik) {
-      // Provjeri osnovne kriterijume
-      final matchesBasic = putnik.dan == dan && putnik.polazak == vreme && putnik.grad == grad;
+      // 🎯 DAN I VREME FILTER
+      if (putnik.dan != dan) return false;
+      if (putnik.polazak != vreme) return false;
 
-      // Isključi otkazane
-      final notCanceled = putnik.status != 'otkazan' && putnik.status != 'Otkazano';
+      // 🎯 GRAD FILTER - koristi GradAdresaValidator za konzistentnost
+      final isRegistrovaniPutnik = putnik.mesecnaKarta == true;
+      bool gradMatch;
+      if (isRegistrovaniPutnik) {
+        gradMatch = putnik.grad == grad;
+      } else {
+        gradMatch = GradAdresaValidator.isGradMatch(putnik.grad, putnik.adresa, grad);
+      }
+      if (!gradMatch) return false;
 
-      return matchesBasic && notCanceled;
+      // 🎯 STATUS FILTER - isključi obrisane i otkazane
+      if (isRegistrovaniPutnik) {
+        // Mesečni putnici - samo isključi obrisane
+        if (putnik.status == 'obrisan') return false;
+      } else {
+        // Dnevni putnici - standardno filtriranje statusa
+        if (!TextUtils.isStatusActive(putnik.status)) return false;
+      }
+
+      return true;
     }).toList();
 
     if (filteredPutnici.isEmpty) return [];
@@ -469,10 +486,31 @@ class RouteOptimizationService {
     final normFilterTime = GradAdresaValidator.normalizeTime(vreme);
 
     final filtered = allPutnici.where((p) {
-      final pGrad = p.grad.trim();
-      if (pGrad.toLowerCase() != grad.trim().toLowerCase()) return false;
+      // 🎯 VREME FILTER
       final pTime = GradAdresaValidator.normalizeTime(p.polazak);
       if (pTime != normFilterTime) return false;
+
+      // 🎯 GRAD FILTER - koristi GradAdresaValidator za konzistentnost sa danes_screen
+      // Za mesečne putnike: direktno poređenje grada
+      // Za dnevne putnike: koristi adresnu validaciju
+      final isRegistrovaniPutnik = p.mesecnaKarta == true;
+      bool gradMatch;
+      if (isRegistrovaniPutnik) {
+        gradMatch = p.grad == grad;
+      } else {
+        gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
+      }
+      if (!gradMatch) return false;
+
+      // 🎯 STATUS FILTER - isključi obrisane i otkazane
+      if (isRegistrovaniPutnik) {
+        // Mesečni putnici - samo isključi obrisane
+        if (p.status == 'obrisan') return false;
+      } else {
+        // Dnevni putnici - standardno filtriranje statusa
+        if (!TextUtils.isStatusActive(p.status)) return false;
+      }
+
       return true;
     }).toList();
 

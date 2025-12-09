@@ -50,8 +50,10 @@ class _ONamaScreenState extends State<ONamaScreen> {
   }
 
   Future<void> _openMaps() async {
+    // HERE WeGo - besplatno, radi na svim uređajima
+    // Koordinate za Partizanska 51, Bela Crkva
     final Uri launchUri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=Partizanska+51,+Bela+Crkva,+Serbia',
+      'https://share.here.com/r/44.8989,21.4178,Partizanska+51+Bela+Crkva',
     );
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri, mode: LaunchMode.externalApplication);

@@ -9,17 +9,17 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/improved_registrovani_putnik_service.dart';
-import '../services/registrovani_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
 import '../services/realtime_service.dart'; // Za stream osvezavanje
+import '../services/registrovani_putnik_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/time_validator.dart';
 import '../utils/vozac_boja.dart';
-import '../widgets/registrovani_putnik_dialog.dart';
 import '../widgets/pin_dialog.dart';
+import '../widgets/registrovani_putnik_dialog.dart';
 
 // 🔄 HELPER EXTENSION za Set poređenje
 extension SetExtensions<T> on Set<T> {
@@ -1439,16 +1439,18 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     final lng = adresa.koordinate!['lng'];
     if (lat == null || lng == null) return;
 
-    final url = 'google.navigation:q=$lat,$lng';
-    final uri = Uri.parse(url);
+    // HERE WeGo navigacija - besplatno, radi na svim uređajima
+    final hereWeGoUrl = 'https://share.here.com/r/$lat,$lng';
+    final uri = Uri.parse(hereWeGoUrl);
 
     if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      // Fallback to Google Maps web
-      final webUrl = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-      if (await canLaunchUrl(webUrl)) {
-        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+      // Fallback - otvori HERE WeGo store
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Instalirajte HERE WeGo za navigaciju')),
+        );
       }
     }
   }

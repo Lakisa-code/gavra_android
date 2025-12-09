@@ -701,7 +701,7 @@ class _VozacScreenState extends State<VozacScreen> {
               leading: const Icon(Icons.group, color: Colors.blue),
               title: Text('Svi putnici ($putnikCount)'),
               subtitle: Text(
-                putnikCount > 10 ? 'Prvih 10 kao waypoints, ostali posle' : 'Svi kao waypoints u Google Maps',
+                putnikCount > 10 ? 'Prvih 10 kao waypoints, ostali posle' : 'Svi kao waypoints u HERE WeGo',
                 style: const TextStyle(fontSize: 12),
               ),
               onTap: () {

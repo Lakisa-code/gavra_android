@@ -433,8 +433,7 @@ class PutovanjaIstorijaService {
         // Ako je bilo koji status dat, koristi ga kao glavnog statusa
         final noviStatus = statusBelaCrkvaVrsac ?? statusVrsacBelaCrkva;
         updateData['status'] = noviStatus;
-        updateData['pokupljen'] = noviStatus == 'pokupljen';
-        // vreme_pokupljenja kolona ne postoji u putovanja_istorija
+        // ✅ FIXED: putovanja_istorija nema 'pokupljen' kolonu - koristi samo 'status'
       }
 
       await SupabaseSafe.run(
@@ -611,7 +610,8 @@ class PutovanjaIstorijaService {
             q = q.eq('registrovani_putnik_id', registrovaniPutnikId);
           }
           if (pokupljen != null) {
-            q = q.eq('pokupljen', pokupljen);
+            // ✅ FIXED: putovanja_istorija nema 'pokupljen' kolonu - filtrira po 'status'
+            q = q.eq('status', pokupljen ? 'pokupljen' : 'radi');
           }
 
           return q.order('datum_putovanja', ascending: false).order('vreme_polaska', ascending: false).limit(limit);
