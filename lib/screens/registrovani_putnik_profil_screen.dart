@@ -54,8 +54,31 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   @override
   void initState() {
     super.initState();
-    _putnikData = widget.putnikData;
+    _putnikData = Map<String, dynamic>.from(widget.putnikData);
+    _refreshPutnikData(); // 🔄 Učitaj sveže podatke iz baze
     _loadStatistike();
+  }
+
+  /// 🔄 Osvežava podatke putnika iz baze
+  Future<void> _refreshPutnikData() async {
+    try {
+      final putnikId = _putnikData['id'];
+      if (putnikId == null) return;
+
+      final response = await Supabase.instance.client
+          .from('registrovani_putnici')
+          .select()
+          .eq('id', putnikId)
+          .single();
+
+      if (mounted && response != null) {
+        setState(() {
+          _putnikData = Map<String, dynamic>.from(response);
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Greška pri osvežavanju podataka: $e');
+    }
   }
 
   Future<void> _loadStatistike() async {
