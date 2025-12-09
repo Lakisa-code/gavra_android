@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../models/putnik.dart';
@@ -15,9 +16,6 @@ class _CacheEntry {
 }
 
 class RouteOptimizationService {
-  // 🗺️ GOOGLE MAPS API UKLONJEN - koristi se OpenStreetMap
-  // static const String _googleMapsApiKey = 'REMOVED_FOR_SECURITY';
-
   // 🎯 DOZVOLJENI GRADOVI za navigaciju - samo Bela Crkva i Vršac
   static const List<String> _dozvoljeninGradovi = ['Bela Crkva', 'Vršac'];
 
@@ -222,10 +220,15 @@ class RouteOptimizationService {
     }
 
     // Filtriraj putnike samo za određeni grad, vreme i dan
+    final normFilterTime = GradAdresaValidator.normalizeTime(vreme);
+
     final filteredPutnici = allPutnici.where((putnik) {
-      // 🎯 DAN I VREME FILTER
+      // 🎯 DAN FILTER
       if (putnik.dan != dan) return false;
-      if (putnik.polazak != vreme) return false;
+
+      // 🎯 VREME FILTER - koristi normalizaciju za konzistentnost
+      final pTime = GradAdresaValidator.normalizeTime(putnik.polazak);
+      if (pTime != normFilterTime) return false;
 
       // 🎯 GRAD FILTER - koristi GradAdresaValidator za konzistentnost
       final isRegistrovaniPutnik = putnik.mesecnaKarta == true;
@@ -474,6 +477,7 @@ class RouteOptimizationService {
     final now = DateTime.now();
     final cached = _cache[key];
     if (cached != null && cached.expiry.isAfter(now)) {
+      debugPrint('🔍 fetchPassengersForRoute: CACHE HIT za $grad $vreme - ${cached.data.length} putnika');
       return cached.data;
     }
 
@@ -482,10 +486,21 @@ class RouteOptimizationService {
         ? await _fetchFn!(targetDay: dayNormalized)
         : await (_putnikService ??= PutnikService()).getAllPutniciFromBothTables(targetDay: dayNormalized);
 
+    debugPrint('🔍 fetchPassengersForRoute: učitano ${allPutnici.length} ukupno putnika za dan=$dayNormalized');
+    // DEBUG: Prikaži dan za svako putnika
+    for (final p in allPutnici.take(5)) {
+      debugPrint('   📋 ${p.ime} | p.dan="${p.dan}" | tražimo="$dayNormalized"');
+    }
+
     // Normalize times for comparison
     final normFilterTime = GradAdresaValidator.normalizeTime(vreme);
 
     final filtered = allPutnici.where((p) {
+      // 🎯 DAN FILTER - proveri da li putnik ima vožnju za ovaj dan
+      // Mesečni putnici imaju raspored po danima (npr. "Pon, Uto, Sre")
+      final dayMatch = p.dan.toLowerCase().contains(dayNormalized.toLowerCase());
+      if (!dayMatch) return false;
+
       // 🎯 VREME FILTER
       final pTime = GradAdresaValidator.normalizeTime(p.polazak);
       if (pTime != normFilterTime) return false;
@@ -513,6 +528,12 @@ class RouteOptimizationService {
 
       return true;
     }).toList();
+
+    debugPrint(
+        '🔍 fetchPassengersForRoute: posle filtriranja ${filtered.length} putnika za $grad $vreme (dan=$dayNormalized)');
+    for (final p in filtered) {
+      debugPrint('   ✅ ${p.ime} | dan=${p.dan} | grad=${p.grad} | polazak=${p.polazak}');
+    }
 
     // If requested, try to optimize route ordering using TSP based algorithm
     List<Putnik> result;

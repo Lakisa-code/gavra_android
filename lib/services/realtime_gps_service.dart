@@ -1,5 +1,8 @@
 import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
+
+import 'permission_service.dart';
 
 /// 🛰️ REAL-TIME GPS POSITION SERVICE
 class RealtimeGpsService {
@@ -16,9 +19,9 @@ class RealtimeGpsService {
   /// 🛰️ START GPS TRACKING
   static Future<void> startTracking() async {
     try {
-      // Proveri dozvole (traže se samo jednom pri instalaciji u PermissionService)
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      // 🔐 CENTRALIZOVANA PROVERA GPS DOZVOLA
+      final hasPermission = await PermissionService.ensureGpsForNavigation();
+      if (!hasPermission) {
         throw 'GPS dozvole nisu odobrene';
       }
 

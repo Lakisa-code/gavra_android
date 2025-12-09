@@ -5,6 +5,7 @@ import '../config/route_config.dart';
 import '../models/putnik.dart';
 import 'multi_provider_navigation_service.dart';
 import 'osrm_service.dart'; // 🎯 OSRM za pravu TSP optimizaciju
+import 'permission_service.dart';
 import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geocoding
 
 /// 🎯 SMART NAVIGATION SERVICE
@@ -172,26 +173,10 @@ class SmartNavigationService {
 
   /// 📍 Dobij trenutnu GPS poziciju vozača
   static Future<Position> _getCurrentPosition() async {
-    // Proveri da li je GPS uključen
-    bool isLocationEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!isLocationEnabled) {
-      // Otvori sistemski dialog za uključivanje GPS-a (jedan klik!)
-      isLocationEnabled = await Geolocator.openLocationSettings();
-
-      // Sačekaj malo da se GPS uključi
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Proveri ponovo
-      isLocationEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!isLocationEnabled) {
-        throw Exception('GPS nije uključen');
-      }
-    }
-
-    // Dozvole su već odobrene pri instalaciji, ali proveri za svaki slučaj
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      throw Exception('GPS dozvole nisu odobrene');
+    // 🔐 CENTRALIZOVANA PROVERA GPS DOZVOLA (uključuje i GPS service check)
+    final hasPermission = await PermissionService.ensureGpsForNavigation();
+    if (!hasPermission) {
+      throw Exception('GPS dozvole nisu odobrene ili GPS nije uključen');
     }
 
     // Dobij poziciju sa visokom tačnošću

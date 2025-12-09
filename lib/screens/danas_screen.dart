@@ -1688,6 +1688,12 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
+    // 🔍 DEBUG: Prikaži koliko putnika dolazi
+    debugPrint('🔍 _optimizeCurrentRoute: primljeno ${putnici.length} putnika za $_selectedGrad $_selectedVreme');
+    for (final p in putnici) {
+      debugPrint('   - ${p.ime} | grad=${p.grad} | polazak=${p.polazak} | mesecna=${p.mesecnaKarta}');
+    }
+
     // Proveri da li je ulogovan i valjan vozač
     if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
       if (mounted) {

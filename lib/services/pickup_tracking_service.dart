@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/putnik.dart';
+import 'permission_service.dart';
 
 /// 🎯 PICKUP TRACKING SERVICE
 /// Prati lokaciju vozača i detektuje blizinu putnika.
@@ -78,13 +79,10 @@ class PickupTrackingService {
       return false;
     }
 
-    // Provera GPS dozvole
-    final permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      final requested = await Geolocator.requestPermission();
-      if (requested == LocationPermission.denied || requested == LocationPermission.deniedForever) {
-        return false;
-      }
+    // 🔐 CENTRALIZOVANA PROVERA GPS DOZVOLA
+    final hasPermission = await PermissionService.ensureGpsForNavigation();
+    if (!hasPermission) {
+      return false;
     }
 
     _activePutnici = List.from(putnici);
