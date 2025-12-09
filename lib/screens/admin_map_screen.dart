@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/gps_lokacija.dart';
 import '../models/putnik.dart';
+import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
@@ -151,9 +152,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
   Future<void> _getCurrentLocation() async {
     try {
-      // Proveri dozvole (traže se samo jednom pri instalaciji u PermissionService)
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      // 🔐 CENTRALIZOVANA PROVERA GPS DOZVOLA
+      final hasPermission = await PermissionService.ensureGpsForNavigation();
+      if (!hasPermission) {
         return;
       }
 

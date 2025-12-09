@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'permission_service.dart';
+
 /// Servis za slanje GPS lokacije vozača u realtime
 /// Putnici mogu pratiti lokaciju kombija dok čekaju
 class DriverLocationService {
@@ -167,29 +169,9 @@ class DriverLocationService {
     debugPrint('📍 Dinamički ETA ažuriran za ${updatedEta.length} putnika');
   }
 
-  /// Proveri i zatraži dozvole za lokaciju
+  /// Proveri i zatraži dozvole za lokaciju - CENTRALIZOVANO
   Future<bool> _checkLocationPermission() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      debugPrint('❌ Location services are disabled');
-      return false;
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        debugPrint('❌ Location permission denied');
-        return false;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      debugPrint('❌ Location permission permanently denied');
-      return false;
-    }
-
-    return true;
+    return await PermissionService.ensureGpsForNavigation();
   }
 
   /// Pošalji trenutnu lokaciju u Supabase

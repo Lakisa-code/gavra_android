@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
 
+import 'permission_service.dart';
+
 /// 🛰️ GPS MANAGER - CENTRALIZOVANI GPS SINGLETON
 ///
 /// Zamenjuje fragmentirane GPS servise:
@@ -69,49 +71,13 @@ class GpsManager {
   Position? get lastPosition => _lastPosition;
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 🔐 PERMISSION HANDLING
+  // 🔐 PERMISSION HANDLING - CENTRALIZOVANO KROZ PermissionService
   // ═══════════════════════════════════════════════════════════════════════
-
-  /// Proveri GPS dozvole
-  Future<LocationPermission> checkPermission() async {
-    return await Geolocator.checkPermission();
-  }
-
-  /// Zatraži GPS dozvole
-  Future<LocationPermission> requestPermission() async {
-    return await Geolocator.requestPermission();
-  }
-
-  /// Proveri da li je GPS servis uključen
-  Future<bool> isLocationServiceEnabled() async {
-    return await Geolocator.isLocationServiceEnabled();
-  }
 
   /// Proveri i zatraži sve potrebne dozvole
   /// Vraća true ako su sve dozvole odobrene
   Future<bool> ensurePermissions() async {
-    try {
-      // 1. Proveri da li je GPS uključen
-      final serviceEnabled = await isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return false;
-      }
-
-      // 2. Proveri dozvole
-      LocationPermission permission = await checkPermission();
-
-      if (permission == LocationPermission.denied) {
-        permission = await requestPermission();
-      }
-
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      return false;
-    }
+    return await PermissionService.ensureGpsForNavigation();
   }
 
   // ═══════════════════════════════════════════════════════════════════════
