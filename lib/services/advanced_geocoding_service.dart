@@ -47,10 +47,15 @@ class AdvancedGeocodingService {
     bool enableAutoCorrection = true,
     int maxRetries = 3,
   }) async {
+    print('🌍 GEOCODING START: grad="$grad", adresa="$adresa"');
+
     // 🚫 BLOKIRANJE: Samo Bela Crkva i Vršac opštine dozvoljene
     if (_isCityOutsideServiceArea(grad)) {
+      print('🌍 GEOCODING BLOCKED: grad "$grad" je van servisne oblasti');
       return null;
     }
+
+    print('🌍 GEOCODING: grad "$grad" je u servisnoj oblasti, nastavljam...');
 
     try {
       // 1. 🧹 PREPROCESSING - čišćenje i normalizacija
@@ -212,8 +217,8 @@ class AdvancedGeocodingService {
     bool fuzzy,
   ) async {
     const timeout = Duration(seconds: 8);
-    // 🎯 OGRANIČI QUERY na Bela Crkva/Vršac oblast
-    final query = '$adresa, $grad, Južno-banatski okrug, Serbia';
+    // 🎯 JEDNOSTAVAN QUERY - bez okruga koji Nominatim ne prepoznaje
+    final query = '$adresa, $grad, Serbia';
 
     final url = '${_providers['nominatim']}?'
         'q=${Uri.encodeComponent(query)}&'
@@ -225,34 +230,46 @@ class AdvancedGeocodingService {
         'bounded=1&'
         'viewbox=20.8,44.7,21.8,45.2'; // Bounding box za BC/Vršac region
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'User-Agent': 'GavraAdvancedTransport/2.0 (geocoding@gavra.rs)',
-        'Accept': 'application/json',
-      },
-    ).timeout(timeout);
+    print('🌍 NOMINATIM URL: $url');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> results = json.decode(response.body) as List<dynamic>;
-      if (results.isNotEmpty) {
-        final best = results.first;
-        final confidence = _calculateConfidence(
-          adresa,
-          grad,
-          best as Map<String, dynamic>,
-          'nominatim',
-        );
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent': 'GavraAdvancedTransport/2.0 (geocoding@gavra.rs)',
+          'Accept': 'application/json',
+        },
+      ).timeout(timeout);
 
-        return GeocodeResult(
-          latitude: double.parse(best['lat'] as String),
-          longitude: double.parse(best['lon'] as String),
-          formattedAddress: best['display_name'] as String,
-          confidence: confidence,
-          provider: 'nominatim',
-          components: _parseNominatimComponents(best),
-        );
+      print('🌍 NOMINATIM STATUS: ${response.statusCode}');
+      print(
+          '🌍 NOMINATIM BODY: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> results = json.decode(response.body) as List<dynamic>;
+        print('🌍 NOMINATIM RESULTS COUNT: ${results.length}');
+        if (results.isNotEmpty) {
+          final best = results.first;
+          final confidence = _calculateConfidence(
+            adresa,
+            grad,
+            best as Map<String, dynamic>,
+            'nominatim',
+          );
+          print('🌍 NOMINATIM CONFIDENCE: $confidence');
+
+          return GeocodeResult(
+            latitude: double.parse(best['lat'] as String),
+            longitude: double.parse(best['lon'] as String),
+            formattedAddress: best['display_name'] as String,
+            confidence: confidence,
+            provider: 'nominatim',
+            components: _parseNominatimComponents(best),
+          );
+        }
       }
+    } catch (e) {
+      print('🌍 NOMINATIM ERROR: $e');
     }
 
     return null;
