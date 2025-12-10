@@ -69,7 +69,6 @@ class _DanasScreenState extends State<DanasScreen> {
     return true;
   }
 
-  Position? _lastDriverPosition;
   StreamSubscription<Position>? _driverPositionSubscription;
   // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnih Timer-a
 
@@ -1096,12 +1095,25 @@ class _DanasScreenState extends State<DanasScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
+    // 🔄 DOHVATI SVEŽE PODATKE IZ BAZE - lokalni objekti mogu biti zastareli
+    final putnikService = PutnikService();
+    final sveziPutnici = <Putnik>[];
+
+    for (final p in _optimizedRoute) {
+      if (p.id != null) {
+        final svez = await putnikService.getPutnikFromAnyTable(p.id!);
+        if (svez != null) {
+          sveziPutnici.add(svez);
+        }
+      }
+    }
+
     // Filtriraj samo nepokupljene i neotkazane putnike
-    final preostaliPutnici = _optimizedRoute.where((p) {
-      final status = p.status?.toLowerCase() ?? '';
-      final isPokupljen = p.vremePokupljenja != null;
-      final isOtkazan = status == 'otkazano' || status == 'otkazan';
-      return !isPokupljen && !isOtkazan;
+    final preostaliPutnici = sveziPutnici.where((p) {
+      final isPokupljen = p.jePokupljen;
+      final isOtkazan = p.jeOtkazan;
+      final isOdsustvo = p.jeOdsustvo;
+      return !isPokupljen && !isOtkazan && !isOdsustvo;
     }).toList();
 
     if (preostaliPutnici.isEmpty) {
@@ -1518,9 +1530,9 @@ class _DanasScreenState extends State<DanasScreen> {
     // _wasRealtimeHealthy = _isRealtimeHealthy.value;
     // _isRealtimeHealthy.addListener(_onRealtimeHealthyChanged);
 
-    // Subscribe to driver GPS position updates to pass to route optimization
-    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
-      _lastDriverPosition = pos;
+    // Subscribe to driver GPS position updates (for future use)
+    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((_) {
+      // GPS updates available via RealtimeGpsService streams
     });
 
     // 🔔 SHOW NOTIFICATION MESSAGE IF PASSENGER NAME PROVIDED
@@ -2180,16 +2192,10 @@ class _DanasScreenState extends State<DanasScreen> {
                         isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                       );
 
-                      // MESEČNI PUTNICI - isto kao u home_screen
-                      if (putnik.mesecnaKarta == true) {
-                        // Za mesečne putnike, samo isključi obrisane
-                        final statusOk = putnik.status != 'obrisan';
-                        return vremeMatch && gradMatch && statusOk;
-                      } else {
-                        // DNEVNI PUTNICI - standardno filtriranje
-                        final statusOk = TextUtils.isStatusActive(putnik.status);
-                        return vremeMatch && gradMatch && statusOk;
-                      }
+                      // 🔄 UJEDNAČENA LOGIKA: Isti filter za mesečne i dnevne putnike
+                      // Isključuje: otkazane, bolovanje, godišnji, obrisane
+                      final statusOk = TextUtils.isStatusActive(putnik.status);
+                      return vremeMatch && gradMatch && statusOk;
                     }).toList();
 
                     // 🎯 Ažuriraj _currentPutnici za Ruta dugme (bez setState u build)
@@ -2218,15 +2224,9 @@ class _DanasScreenState extends State<DanasScreen> {
                               isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                             );
 
-                            // MESEČNI PUTNICI - isto kao u home_screen
-                            bool statusOk;
-                            if (putnik.mesecnaKarta == true) {
-                              // Za mesečne putnike, samo isključi obrisane
-                              statusOk = putnik.status != 'obrisan';
-                            } else {
-                              // DNEVNI PUTNICI - standardno filtriranje
-                              statusOk = TextUtils.isStatusActive(putnik.status);
-                            }
+                            // 🔄 UJEDNAČENA LOGIKA: Isti filter za sve putnike
+                            // Isključuje: otkazane, bolovanje, godišnji, obrisane
+                            final statusOk = TextUtils.isStatusActive(putnik.status);
 
                             return vremeMatch && gradMatch && statusOk;
                           }).toList()

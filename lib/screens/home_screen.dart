@@ -1598,16 +1598,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
           }
 
-          // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), žute/narandžaste (bolovanje/godišnji), crvene (otkazani)
+          // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), crvene (otkazani), žute/narandžaste (bolovanje/godišnji)
           List<Putnik> sortiraniPutnici(List<Putnik> lista) {
             int sortKey(Putnik p) {
               final status = TextUtils.normalizeText(p.status ?? '');
-              // Leave/inactive (bolovanje, godišnji, obrisan) always at the bottom
-              if (status == 'bolovanje' || status == 'godisnji') {
-                return 100;
-              }
+              // 🔄 SINHRONIZOVANO sa putnik_list.dart redosledom:
+              // 1=BELE, 2=PLAVE, 3=ZELENE, 4=CRVENE, 5=ŽUTE
               if (status == 'otkazano' || status == 'otkazan') {
-                return 101;
+                return 100; // 🔴 CRVENE - pre žutih
+              }
+              if (status == 'bolovanje' || status == 'godisnji') {
+                return 101; // 🟡 ŽUTE - na dnu
               }
               if (status == 'obrisan' || p.obrisan) {
                 return 102;

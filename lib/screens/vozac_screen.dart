@@ -181,12 +181,25 @@ class _VozacScreenState extends State<VozacScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
+    // 🔄 DOHVATI SVEŽE PODATKE IZ BAZE - lokalni objekti mogu biti zastareli
+    final putnikService = PutnikService();
+    final sveziPutnici = <Putnik>[];
+
+    for (final p in _optimizedRoute) {
+      if (p.id != null) {
+        final svez = await putnikService.getPutnikFromAnyTable(p.id!);
+        if (svez != null) {
+          sveziPutnici.add(svez);
+        }
+      }
+    }
+
     // Filtriraj samo nepokupljene i neotkazane putnike
-    final preostaliPutnici = _optimizedRoute.where((p) {
-      final status = p.status?.toLowerCase() ?? '';
-      final isPokupljen = p.vremePokupljenja != null;
-      final isOtkazan = status == 'otkazano' || status == 'otkazan';
-      return !isPokupljen && !isOtkazan;
+    final preostaliPutnici = sveziPutnici.where((p) {
+      final isPokupljen = p.jePokupljen;
+      final isOtkazan = p.jeOtkazan;
+      final isOdsustvo = p.jeOdsustvo;
+      return !isPokupljen && !isOtkazan && !isOdsustvo;
     }).toList();
 
     if (preostaliPutnici.isEmpty) {

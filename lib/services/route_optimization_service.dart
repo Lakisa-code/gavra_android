@@ -240,14 +240,9 @@ class RouteOptimizationService {
       }
       if (!gradMatch) return false;
 
-      // 🎯 STATUS FILTER - isključi obrisane i otkazane
-      if (isRegistrovaniPutnik) {
-        // Mesečni putnici - samo isključi obrisane
-        if (putnik.status == 'obrisan') return false;
-      } else {
-        // Dnevni putnici - standardno filtriranje statusa
-        if (!TextUtils.isStatusActive(putnik.status)) return false;
-      }
+      // 🔄 UJEDNAČENA LOGIKA: Isti filter za mesečne i dnevne putnike
+      // Isključuje: otkazane, bolovanje, godišnji, obrisane
+      if (!TextUtils.isStatusActive(putnik.status)) return false;
 
       return true;
     }).toList();
@@ -517,14 +512,9 @@ class RouteOptimizationService {
       }
       if (!gradMatch) return false;
 
-      // 🎯 STATUS FILTER - isključi obrisane i otkazane
-      if (isRegistrovaniPutnik) {
-        // Mesečni putnici - samo isključi obrisane
-        if (p.status == 'obrisan') return false;
-      } else {
-        // Dnevni putnici - standardno filtriranje statusa
-        if (!TextUtils.isStatusActive(p.status)) return false;
-      }
+      // 🔄 UJEDNAČENA LOGIKA: Isti filter za mesečne i dnevne putnike
+      // Isključuje: otkazane, bolovanje, godišnji, obrisane
+      if (!TextUtils.isStatusActive(p.status)) return false;
 
       return true;
     }).toList();

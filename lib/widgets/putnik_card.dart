@@ -1769,7 +1769,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: textColor.withOpacity(0.15),
+                                    color: textColor.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(

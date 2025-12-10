@@ -12,8 +12,8 @@ import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
-import 'registrovani_putnik_login_screen.dart';
 import 'o_nama_screen.dart';
+import 'registrovani_putnik_login_screen.dart';
 import 'vozac_login_screen.dart';
 import 'vozac_screen.dart';
 
