@@ -318,7 +318,7 @@ class RealtimeService {
             datum: r['datum_putovanja']?.toString(),
             status: r['status'] as String?,
             obrisan: r['obrisan'] == true,
-            mesecnaKarta: true, // putovanja iz istorije su mesečni
+            mesecnaKarta: mesecniPutnikId != null, // ✅ FIX: registrovani ako ima mesecni_putnik_id
             cena: iznosPlacanja,
             // ✅ FIXED: putovanja_istorija nema vreme_pokupljenja - koristi updated_at ili null
             vremePokupljenja: r['updated_at'] != null ? DateTime.tryParse(r['updated_at'].toString()) : null,

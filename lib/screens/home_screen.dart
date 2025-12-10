@@ -868,14 +868,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   children: [
                                     const Icon(Icons.event_seat, color: Colors.grey),
                                     const SizedBox(width: 12),
-                                    const Text(
-                                      'Broj mesta:',
-                                      style: TextStyle(fontSize: 16),
+                                    Flexible(
+                                      child: Text(
+                                        'Broj mesta:',
+                                        style: const TextStyle(fontSize: 16),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    const Spacer(),
+                                    const SizedBox(width: 8),
                                     DropdownButton<int>(
                                       value: brojMesta,
                                       underline: const SizedBox(),
+                                      isDense: true,
                                       items: [1, 2, 3, 4, 5].map((int value) {
                                         return DropdownMenuItem<int>(
                                           value: value,

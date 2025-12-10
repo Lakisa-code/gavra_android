@@ -79,12 +79,12 @@ class CleanStatistikaService {
 
     List<Map<String, dynamic>> sviPutnici = [];
 
-    // Dodaj mesečne
+    // Dodaj registrovane putnike (radnik/ucenik)
     registrovaniPutnici.forEach((mp) {
       sviPutnici.add({
         'id': mp['id'],
         'putnik_ime': mp['putnik_ime'] ?? mp['ime'],
-        'tip_putnika': 'mesecni',
+        'tip_putnika': mp['tip'] ?? 'radnik', // ✅ FIX: Koristi stvarni tip iz baze
         'iznos': mp['cena'],
         'datum_placanja': mp['datum_placanja'],
         'mesec': mp['mesec'],

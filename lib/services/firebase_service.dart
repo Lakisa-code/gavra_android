@@ -73,8 +73,15 @@ class FirebaseService {
     }
   }
 
+  /// 🔒 Flag da sprečimo višestruko registrovanje FCM listenera
+  static bool _fcmListenerRegistered = false;
+
   /// Postavlja FCM listener
   static void setupFCMListeners() {
+    // ✅ Sprečava višestruko registrovanje (duplirane notifikacije)
+    if (_fcmListenerRegistered) return;
+    _fcmListenerRegistered = true;
+
     if (Firebase.apps.isEmpty) return;
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {

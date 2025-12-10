@@ -1,7 +1,7 @@
 // Supabase Edge Function (Node) - send-push-notification
 // Expected input examples:
 // { title, body, tokens: [{token, provider}] }
-// or { title, body, segment: 'All' }
+// or { title, body, topic: 'gavra_all_drivers' }  // FCM topic broadcast
 
 // Use undici fetch (small, actively maintained fetch implementation)
 let fetch = null;
@@ -28,7 +28,15 @@ async function ensureFirebaseInitialized() {
     if (!admin) return false;
 
     try {
-        const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+        // Try FIREBASE_SERVICE_ACCOUNT_JSON first (plain JSON), 
+        // then FCM_SERVICE_ACCOUNT_B64 (Base64 encoded)
+        let serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+
+        if (!serviceAccountJson && process.env.FCM_SERVICE_ACCOUNT_B64) {
+            // Decode from Base64
+            serviceAccountJson = Buffer.from(process.env.FCM_SERVICE_ACCOUNT_B64, 'base64').toString('utf-8');
+        }
+
         if (!serviceAccountJson) return false;
 
         const serviceAccount = JSON.parse(serviceAccountJson);
@@ -59,6 +67,29 @@ async function sendFcmV1(token, payload) {
             },
             data: payload.data || {},
             token: token
+        };
+
+        const response = await admin.messaging().send(message);
+        return { status: 200, messageId: response };
+    } catch (e) {
+        return { status: 'error', error: e.message };
+    }
+}
+
+// Helper: send to FCM topic via v1 API
+async function sendFcmToTopic(topic, payload) {
+    if (!await ensureFirebaseInitialized()) {
+        return { status: 'firebase-not-initialized' };
+    }
+
+    try {
+        const message = {
+            notification: {
+                title: payload.title,
+                body: payload.body
+            },
+            data: payload.data || {},
+            topic: topic
         };
 
         const response = await admin.messaging().send(message);
@@ -160,14 +191,31 @@ async function getHuaweiAccessTokenWithCache(clientId, clientSecret) {
 module.exports = async (req, res) => {
     try {
         const body = await req.json();
-        const { title, body: messageBody, tokens, serverKeys, data } = body || {};
+        const { title, body: messageBody, tokens, topic, serverKeys, data } = body || {};
 
         if (!title || !messageBody) return res.status(400).json({ error: 'title and body required' });
 
-        // tokens: [{ token, provider }]
-        if (!tokens || !Array.isArray(tokens)) return res.status(400).json({ error: 'tokens array required' });
-
         const results = [];
+
+        // 1. FCM Topic slanje (ako je topic prosleđen)
+        if (topic) {
+            const topicResult = await sendFcmToTopic(topic, { title, body: messageBody, data: data || {} });
+            if (topicResult.status === 200 || topicResult.messageId) {
+                results.push({ provider: 'fcm-topic', topic: topic, status: 200, messageId: topicResult.messageId });
+            } else {
+                results.push({ provider: 'fcm-topic', topic: topic, status: topicResult.status, error: topicResult.error });
+            }
+        }
+
+        // 2. Slanje na pojedinačne tokene (ako su prosleđeni)
+        // tokens: [{ token, provider }]
+        if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
+            // Ako nema tokena ali ima topic, to je OK - već smo poslali na topic
+            if (topic) {
+                return res.status(200).json({ success: true, results });
+            }
+            return res.status(400).json({ error: 'tokens array or topic required' });
+        }
 
         for (const t of tokens) {
             if (!t || !t.token || !t.provider) continue;

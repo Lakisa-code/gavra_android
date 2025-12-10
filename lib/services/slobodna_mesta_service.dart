@@ -378,15 +378,6 @@ class SlobodnaMestaService {
         await _zapisiPromenuVremena(putnikId, danas, dan);
       }
 
-      // Pošalji notifikaciju SVIM vozačima
-      await _notifikujVozaceOPromeni(
-        putnikIme: putnikIme,
-        grad: grad,
-        staroVreme: staroVreme ?? '?',
-        novoVreme: novoVreme,
-        dan: dan,
-      );
-
       debugPrint('✅ SlobodnaMesta: Putnik $putnikIme promenio vreme $staroVreme → $novoVreme ($grad, $dan)');
       return {
         'success': true,
@@ -439,55 +430,6 @@ class SlobodnaMestaService {
       });
     } catch (e) {
       debugPrint('⚠️ Greška pri zapisivanju promene: $e');
-    }
-  }
-
-  /// Pošalji push notifikaciju SVIM vozačima
-  static Future<void> _notifikujVozaceOPromeni({
-    required String putnikIme,
-    required String grad,
-    required String staroVreme,
-    required String novoVreme,
-    required String dan,
-  }) async {
-    try {
-      // Dohvati sve push tokene vozača
-      final vozaciResponse = await _supabase.from('vozaci').select('id, push_token').not('push_token', 'is', null);
-
-      final tokens = <String>[];
-      for (final v in vozaciResponse as List) {
-        final token = v['push_token'] as String?;
-        if (token != null && token.isNotEmpty) {
-          tokens.add(token);
-        }
-      }
-
-      if (tokens.isEmpty) {
-        debugPrint('⚠️ Nema vozača sa push tokenima');
-        return;
-      }
-
-      // Pozovi Edge Function za slanje notifikacija
-      await _supabase.functions.invoke(
-        'send-push-notification',
-        body: {
-          'tokens': tokens,
-          'title': '🔄 Promena vremena',
-          'body': '$putnikIme ($grad): $staroVreme → $novoVreme ($dan)',
-          'data': {
-            'type': 'promena_vremena',
-            'putnik_ime': putnikIme,
-            'grad': grad,
-            'staro_vreme': staroVreme,
-            'novo_vreme': novoVreme,
-            'dan': dan,
-          },
-        },
-      );
-
-      debugPrint('📤 Notifikacija poslata ${tokens.length} vozačima');
-    } catch (e) {
-      debugPrint('❌ Greška pri slanju notifikacije vozačima: $e');
     }
   }
 }

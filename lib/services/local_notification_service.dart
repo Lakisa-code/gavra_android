@@ -409,7 +409,7 @@ class LocalNotificationService {
             'grad': grad,
             'polazak': polazak,
             'dan': danNedelje,
-            'tip': 'mesecni',
+            'tip': 'registrovani', // ✅ FIX: koristi 'registrovani' umesto 'mesecni'
           };
         }
       }

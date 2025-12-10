@@ -24,7 +24,7 @@ class RealtimeNotificationService {
     List<String>? externalUserIds,
     List<String>? driverIds,
     List<Map<String, dynamic>>? tokens, // [{token, provider}]
-    String? segment, // Ili segment (npr. "All")
+    String? topic, // FCM topic za broadcast (npr. 'gavra_all_drivers')
     Map<String, dynamic>? data,
   }) async {
     try {
@@ -33,7 +33,7 @@ class RealtimeNotificationService {
         if (externalUserIds != null) 'external_user_ids': externalUserIds,
         if (driverIds != null) 'driver_ids': driverIds,
         if (tokens != null) 'tokens': tokens,
-        if (segment != null) 'segment': segment,
+        if (topic != null) 'topic': topic,
         'title': title,
         'body': body,
         'data': data ?? {},
@@ -63,45 +63,6 @@ class RealtimeNotificationService {
     }
   }
 
-  /// 🔥 SIGURNO: Pošalji FCM notifikaciju putem Supabase Edge Function
-  static Future<bool> sendFCMNotification({
-    required String title,
-    required String body,
-    required String targetType, // 'token', 'topic', 'condition'
-    required String targetValue, // device token, topic name, ili condition
-    Map<String, dynamic>? data,
-  }) async {
-    try {
-      final supabase = Supabase.instance.client;
-
-      final payload = {
-        'title': title,
-        'body': body,
-        'data': data ?? {},
-        'target': {
-          'type': targetType,
-          'value': targetValue,
-        },
-      };
-
-      final response = await supabase.functions.invoke(
-        'send-fcm-notification',
-        body: payload,
-      );
-
-      if (response.data != null && response.data['success'] == true) {
-        // Logger removed - FCM sent successfully
-        return true;
-      } else {
-        // Logger removed - FCM send failed
-        return false;
-      }
-    } catch (e) {
-      // Logger removed - FCM function call failed
-      return false;
-    }
-  }
-
   /// 🎯 Pošalji notifikaciju svim vozačima
   static Future<void> sendNotificationToAllDrivers({
     required String title,
@@ -111,29 +72,17 @@ class RealtimeNotificationService {
     // Multi-channel strategija
     final List<Future<void>> notifications = [];
 
-    // 1. FCM - pošalji svim pretplatnicima topic-a
+    // 1. FCM Topic - pošalji svim pretplatnicima topic-a putem send-push-notification
     notifications.add(
-      sendFCMNotification(
+      sendPushNotification(
         title: title,
         body: body,
-        targetType: 'topic',
-        targetValue: 'gavra_all_drivers',
-        data: data,
-      ).then((_) {}), // Convert Future<bool> to Future<void>
-    );
-
-    // 2. Server-side push (send-push-notification) to all active push players (FCM + Huawei)
-    notifications.add(
-      RealtimeNotificationService.sendPushNotification(
-        title: title,
-        body: body,
-        segment: 'All',
+        topic: 'gavra_all_drivers',
         data: data,
       ).then((_) {}),
     );
-    //    If 'send-push-notification' supports 'segment: All' future enhancement can move here.
 
-    // 3. Local notification kao fallback
+    // 2. Local notification kao fallback
     notifications.add(
       LocalNotificationService.showRealtimeNotification(
         title: title,
@@ -156,27 +105,17 @@ class RealtimeNotificationService {
     // Multi-channel strategija za specifičnog vozača
     final List<Future<void>> notifications = [];
 
-    // 1. FCM - topic za specifičnog vozača
-    notifications.add(
-      sendFCMNotification(
-        title: title,
-        body: body,
-        targetType: 'topic',
-        targetValue: 'gavra_driver_${driverId.toLowerCase()}',
-        data: data,
-      ).then((_) {}),
-    );
-
-    // 2. Server-side push for targeted driver tokens
+    // 1. FCM Topic - topic za specifičnog vozača
     notifications.add(
       sendPushNotification(
         title: title,
         body: body,
-        driverIds: [driverId],
+        topic: 'gavra_driver_${driverId.toLowerCase()}',
         data: data,
-      ),
+      ).then((_) {}),
     );
-    // 3. Local notification
+
+    // 2. Local notification
     notifications.add(
       LocalNotificationService.showRealtimeNotification(
         title: title,
@@ -211,8 +150,15 @@ class RealtimeNotificationService {
     }
   }
 
+  /// 🔒 Flag da sprečimo višestruko registrovanje listenera
+  static bool _foregroundListenerRegistered = false;
+
   /// Setup foreground Firebase message listeners for real-time notifications
   static void listenForForegroundNotifications(BuildContext context) {
+    // ✅ Sprečava višestruko registrovanje listenera (duplirane notifikacije)
+    if (_foregroundListenerRegistered) return;
+    _foregroundListenerRegistered = true;
+
     // Initialize Firebase listeners if available.
     if (Firebase.apps.isEmpty) return;
 
@@ -255,19 +201,27 @@ class RealtimeNotificationService {
 
   /// Subscribe to Firebase topics for driver-specific notifications
   static Future<void> subscribeToDriverTopics(String? driverId) async {
+    debugPrint('🔔 subscribeToDriverTopics called with driverId: $driverId');
+
     if (driverId == null || driverId.isEmpty) {
+      debugPrint('⚠️ subscribeToDriverTopics: driverId is null or empty, skipping');
       return;
     }
 
     try {
-      if (Firebase.apps.isEmpty) return;
+      if (Firebase.apps.isEmpty) {
+        debugPrint('⚠️ subscribeToDriverTopics: Firebase.apps is empty, skipping');
+        return;
+      }
 
       final messaging = FirebaseMessaging.instance;
 
       // Subscribe to driver-specific topic
+      debugPrint('📌 Subscribing to gavra_driver_${driverId.toLowerCase()}...');
       await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
       // Subscribe to general all-drivers topic
+      debugPrint('📌 Subscribing to gavra_all_drivers...');
       await messaging.subscribeToTopic('gavra_all_drivers');
 
       debugPrint('✅ Subscribed to FCM topics for driver: $driverId');
@@ -296,16 +250,11 @@ class RealtimeNotificationService {
       );
       // Logger removed
 
-      // 2. Firebase Cloud Messaging (server-side implementation needed)
-      // Note: FCM sending is typically done from server, not client
-      // Logger removed
-
-      // 3. Server-side: FCM topic/broadcast
-      await RealtimeNotificationService.sendFCMNotification(
+      // 2. FCM topic/broadcast putem send-push-notification
+      await RealtimeNotificationService.sendPushNotification(
         title: title,
         body: body,
-        targetType: 'topic',
-        targetValue: 'gavra_all_drivers',
+        topic: 'gavra_all_drivers',
         data: data,
       );
     } catch (e) {

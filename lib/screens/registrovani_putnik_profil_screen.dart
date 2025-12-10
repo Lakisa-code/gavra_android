@@ -303,12 +303,12 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // Od 1. januara tekuće godine
       final pocetakGodine = DateTime(now.year, 1, 1);
 
+      // ✅ FIX: Uklonjen filter tip_putnika='mesecni' - mesecni_putnik_id je dovoljan
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('cena, datum_putovanja, created_at')
           .eq('mesecni_putnik_id', putnikId)
           .eq('status', 'placeno')
-          .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
           .order('datum_putovanja', ascending: false);
 

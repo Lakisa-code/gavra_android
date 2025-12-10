@@ -110,19 +110,20 @@ class PutnikService {
         }
         danKratica ??= _getDayAbbreviationFromName(_getTodayName());
 
-        // 🔍 Dohvati sve mesečne zapise iz putovanja_istorija za ovaj dan
+        // 🔍 Dohvati sve zapise registrovanih putnika (radnik/ucenik) iz putovanja_istorija za ovaj dan
         // (otkazivanja, pokupljenja itd.) da bismo ih isključili/zamenili
         final Map<String, Map<String, dynamic>> registrovaniOverrides = {};
         // ✅ FIX: Uvek učitavaj overrides za današnji dan, ne samo ako isoDate != null
         final overrideDate = isoDate ?? DateTime.now().toIso8601String().split('T')[0];
         try {
+          // ✅ FIX: Traži sve koji imaju mesecni_putnik_id (registrovani putnici: radnik, ucenik)
+          // umesto filtriranja po tip_putnika='mesecni' koji ne postoji kao tip
           final registrovaniIstorija = await supabase
               .from('putovanja_istorija')
               .select('*, adrese:adresa_id(naziv, ulica, broj, grad)') // ✅ FIX: JOIN za adresu
               .eq('datum_putovanja', overrideDate)
-              .eq('tip_putnika', 'mesecni')
               .eq('obrisan', false) // ✅ Ignoriši soft-deleted zapise
-              .not('mesecni_putnik_id', 'is', null);
+              .not('mesecni_putnik_id', 'is', null); // ✅ Svi sa mesecni_putnik_id su registrovani (radnik/ucenik)
 
           for (final row in registrovaniIstorija) {
             final map = Map<String, dynamic>.from(row);
@@ -731,6 +732,12 @@ class PutnikService {
       }
       final danPolasci = Map<String, dynamic>.from(polasciPoDanu[danKratica] as Map);
       danPolasci[gradKey] = polazakVreme;
+      // 🆕 Dodaj broj mesta ako je > 1
+      if (putnik.brojMesta > 1) {
+        danPolasci['${gradKey}_mesta'] = putnik.brojMesta;
+      } else {
+        danPolasci.remove('${gradKey}_mesta'); // Ukloni ako je 1 (default)
+      }
       polasciPoDanu[danKratica] = danPolasci;
 
       // Ažuriraj radni_dani ako dan nije već uključen
@@ -1322,10 +1329,12 @@ class PutnikService {
         }
 
         try {
+          // ✅ FIX: Koristi stvarni tip putnika iz registrovani_putnici tabele
+          final tipPutnika = respMap['tip'] as String? ?? 'radnik';
           await supabase.from('putovanja_istorija').insert({
             'mesecni_putnik_id': id.toString(), // ✅ UUID kao string
             'putnik_ime': respMap['putnik_ime'],
-            'tip_putnika': 'mesecni',
+            'tip_putnika': tipPutnika, // ✅ FIX: Koristi stvarni tip (radnik/ucenik/dnevni)
             'datum_putovanja': danas,
             'vreme_polaska': polazak,
             'grad': grad,
@@ -1686,6 +1695,7 @@ class PutnikService {
       // 🔴 PRVO: Resetuj override zapise iz putovanja_istorija za danas (otkazivanja mesečnih)
       // Umesto DELETE koristimo UPDATE da postavimo status na 'resetovan' ili obrišemo soft-delete
       try {
+        // ✅ FIX: Koristi mesecni_putnik_id umesto tip_putnika='mesecni'
         await supabase
             .from('putovanja_istorija')
             .update({
@@ -1694,7 +1704,7 @@ class PutnikService {
             })
             .eq('putnik_ime', imePutnika)
             .eq('datum_putovanja', danas)
-            .eq('tip_putnika', 'mesecni');
+            .not('mesecni_putnik_id', 'is', null);
       } catch (_) {
         // Ignore - možda nema zapisa
       }

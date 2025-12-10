@@ -16,13 +16,13 @@ class PutovanjaIstorijaScreen extends StatefulWidget {
 
 class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   DateTime _selectedDate = DateTime.now();
-  String _selectedFilter = 'svi'; // 'svi', 'mesecni', 'dnevni'
+  String _selectedFilter = 'svi'; // 'svi', 'registrovani', 'dnevni' ✅ FIX
 
   // Varijable za dodavanje novog putovanja
   String _noviPutnikIme = '';
   String _noviPutnikTelefon = '';
   double _novaCena = 0.0;
-  String _noviTipPutnika = 'regularni';
+  String _noviTipPutnika = 'radnik'; // ✅ FIX: default radnik umesto regularni
 
   // 🔄 V3.0 REALTIME MONITORING STATE (Clean Architecture)
   late ValueNotifier<bool> _isRealtimeHealthy;
@@ -307,9 +307,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                           ),
                         ),
                         PopupMenuItem(
-                          value: 'mesecni',
+                          value: 'registrovani', // ✅ FIX
                           child: Text(
-                            'Mesečni putnici',
+                            'Registrovani putnici', // ✅ FIX
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
@@ -475,9 +475,9 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                                 ),
                               ),
                               DropdownMenuItem(
-                                value: 'mesecni',
+                                value: 'registrovani', // ✅ FIX
                                 child: Text(
-                                  'Mesečni',
+                                  'Registrovani', // ✅ FIX
                                   style: TextStyle(
                                     color: Theme.of(context).colorScheme.onSurface,
                                   ),
@@ -713,6 +713,10 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     // Apply type filter
     if (_selectedFilter != 'svi') {
       putovanja = putovanja.where((putovanje) {
+        if (_selectedFilter == 'registrovani') {
+          // ✅ FIX: 'registrovani' znači radnik ili ucenik (ne dnevni)
+          return putovanje.tipPutnika != 'dnevni';
+        }
         return putovanje.tipPutnika == _selectedFilter;
       }).toList();
     }
@@ -964,7 +968,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   }
 
   Widget _buildTipChip(String tip) {
-    final isRegistrovani = tip == 'mesecni';
+    final isRegistrovani = tip != 'dnevni'; // ✅ FIX: radnik/ucenik su registrovani
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -1360,10 +1364,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 // ignore: deprecated_member_use - value is valid for DropdownButtonFormField
                 value: _noviTipPutnika,
-                items: ['regularni', 'mesecni'].map((tip) {
+                items: ['radnik', 'ucenik', 'dnevni'].map((tip) {
+                  // ✅ FIX
                   return DropdownMenuItem(value: tip, child: Text(tip));
                 }).toList(),
-                onChanged: (value) => _noviTipPutnika = value ?? 'regularni',
+                onChanged: (value) => _noviTipPutnika = value ?? 'radnik', // ✅ FIX
               ),
             ],
           ),
@@ -1490,10 +1495,11 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
                 ),
                 // ignore: deprecated_member_use - value is valid for DropdownButtonFormField
                 value: _noviTipPutnika,
-                items: ['regularni', 'mesecni'].map((tip) {
+                items: ['radnik', 'ucenik', 'dnevni'].map((tip) {
+                  // ✅ FIX
                   return DropdownMenuItem(value: tip, child: Text(tip));
                 }).toList(),
-                onChanged: (value) => _noviTipPutnika = value ?? 'regularni',
+                onChanged: (value) => _noviTipPutnika = value ?? 'radnik', // ✅ FIX
               ),
             ],
           ),

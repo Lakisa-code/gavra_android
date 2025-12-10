@@ -14,11 +14,12 @@ class PlacanjeService {
 
     try {
       // Preuzmi sva plaćanja iz putovanja_istorija (uključujući sva plaćanja)
+      // ✅ FIX: Koristi mesecni_putnik_id umesto tip_putnika='mesecni'
       final istorijaPlacanjaResponse = await _supabase
           .from('putovanja_istorija')
           .select('putnik_ime, cena, mesecni_putnik_id, datum_putovanja')
           .eq('status', 'placeno')
-          .eq('tip_putnika', 'mesecni')
+          .not('mesecni_putnik_id', 'is', null)
           .not('cena', 'is', null);
 
       final List<dynamic> istorijaPlacanjaData = istorijaPlacanjaResponse as List;
@@ -94,11 +95,12 @@ class PlacanjeService {
       final krajMeseca = DateTime(godina, mesec + 1, 0, 23, 59, 59);
 
       // Preuzmi plaćanja za specifičan mesec iz putovanja_istorija
+      // ✅ FIX: Koristi mesecni_putnik_id umesto tip_putnika='mesecni'
       final placanjaResponse = await _supabase
           .from('putovanja_istorija')
           .select('putnik_ime, cena, mesecni_putnik_id')
           .eq('status', 'placeno')
-          .eq('tip_putnika', 'mesecni')
+          .not('mesecni_putnik_id', 'is', null)
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
           .not('cena', 'is', null);
@@ -190,11 +192,11 @@ class PlacanjeService {
       final pocetakMeseca = DateTime(godina, mesec);
       final krajMeseca = DateTime(godina, mesec + 1, 0);
 
+      // ✅ FIX: Uklonjen filter tip_putnika='mesecni' - mesecni_putnik_id je dovoljan
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena')
           .eq('mesecni_putnik_id', putnikId)
-          .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
           .eq('status', 'placeno');
@@ -221,11 +223,11 @@ class PlacanjeService {
       final pocetakMeseca = DateTime(godina, mesec);
       final krajMeseca = DateTime(godina, mesec + 1, 0);
 
+      // ✅ FIX: Uklonjen filter tip_putnika='mesecni' - mesecni_putnik_id je dovoljan
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena, datum_putovanja, vozac_id, created_at, napomene')
           .eq('mesecni_putnik_id', putnikId)
-          .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
           .eq('status', 'placeno')

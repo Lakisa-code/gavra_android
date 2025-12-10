@@ -43,6 +43,27 @@ class RegistrovaniHelpers {
     return out;
   }
 
+  // 🆕 Get broj mesta for a day and place (place 'bc' or 'vs').
+  static int getBrojMestaForDay(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final parsed = parsePolasciPoDanu(rawMap['polasci_po_danu']);
+    final pday = parsed[dayKratica];
+    if (pday != null) {
+      final mestaKey = '${place}_mesta';
+      final raw = rawMap['polasci_po_danu'];
+      if (raw is Map) {
+        final dayData = raw[dayKratica];
+        if (dayData is Map && dayData[mestaKey] != null) {
+          return (dayData[mestaKey] as num?)?.toInt() ?? 1;
+        }
+      }
+    }
+    return 1; // Default 1 mesto
+  }
+
   // Get polazak for a day and place (place 'bc' or 'vs').
   // rawMap is the DB row map with either polasci_po_danu or per-day columns polazak_bc_pon etc.
   static String? getPolazakForDay(

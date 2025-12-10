@@ -185,7 +185,7 @@ class Putnik {
       polazak: RegistrovaniHelpers.normalizeTime(map['vreme_polaska']?.toString()) ?? '6:00',
       pokupljen: map['status'] == 'pokupljen', // ✅ KORISTI samo status kolonu
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
-      mesecnaKarta: map['tip_putnika'] == 'mesecni',
+      mesecnaKarta: map['tip_putnika'] != 'dnevni', // ✅ FIX: radnik/ucenik su registrovani (true), dnevni je false
       dan: _determineDanFromDatum(
         map['datum_putovanja'] as String? ?? map['datum'] as String?,
       ), // ✅ Izvlači dan iz datum_putovanja kolone
@@ -409,7 +409,8 @@ class Putnik {
           adresaId: map['adresa_bela_crkva_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
-          brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
+          brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
+              map, normalizedTarget, 'bc'), // 🆕 Broj rezervisanih mesta iz JSON-a
         ),
       );
     }
@@ -461,7 +462,8 @@ class Putnik {
           adresaId: map['adresa_vrsac_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
-          brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
+          brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
+              map, normalizedTarget, 'vs'), // 🆕 Broj rezervisanih mesta iz JSON-a
         ),
       );
     }
@@ -689,7 +691,7 @@ class Putnik {
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
       'mesecni_putnik_id': mesecnaKarta == true ? id : null,
-      'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
+      'tip_putnika': mesecnaKarta == true ? 'radnik' : 'dnevni', // ✅ FIX: default 'radnik' za registrovane
       'datum_putovanja': datumZaUpis, // ✅ Za PutovanjaIstorijaService compatibility
       'vreme_polaska': polazak,
       'putnik_ime': ime,

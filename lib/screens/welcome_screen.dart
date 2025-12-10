@@ -378,32 +378,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                   child: Column(
                     children: [
                       Spacer(),
-                      // 🎨 LOGO GAVRA 013
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/logo_gavra.jpg',
-                              width: 180,
-                              height: 180,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
                       // Moderni welcome tekst
                       FadeTransition(
                         opacity: _fadeAnimation,

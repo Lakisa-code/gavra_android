@@ -166,13 +166,13 @@ class PutovanjaIstorija {
   @Deprecated('Use jeNaCekanju instead - nije_se_pojavio is removed')
   bool get nijeSePojavioVrsacBelaCrkva => jeNaCekanju;
 
-  bool get jeRegistrovani => tipPutnika == 'mesecni';
+  bool get jeRegistrovani => tipPutnika != 'dnevni'; // ✅ FIX: radnik/ucenik su registrovani
   bool get jeDnevni => tipPutnika == 'dnevni';
 
   // ==================== VALIDATION METHODS ====================
 
   /// Validni tipovi putnika
-  static const List<String> validTipovi = ['mesecni', 'dnevni'];
+  static const List<String> validTipovi = ['radnik', 'ucenik', 'dnevni']; // ✅ FIX: stvarni tipovi
 
   /// Validni statusi putovanja
   static const List<String> validStatusi = [

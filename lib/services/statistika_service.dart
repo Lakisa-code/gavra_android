@@ -4,13 +4,13 @@ import 'dart:math';
 import 'package:async/async.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/registrovani_putnik.dart';
 import '../models/putnik.dart';
+import '../models/registrovani_putnik.dart';
 import '../utils/novac_validacija.dart';
 import '../utils/vozac_boja.dart';
 import 'clean_statistika_service.dart';
-import 'registrovani_putnik_service.dart';
 import 'putnik_service.dart';
+import 'registrovani_putnik_service.dart';
 import 'vozac_mapping_service.dart';
 
 class StatistikaService {
@@ -250,7 +250,7 @@ class StatistikaService {
         .stream(primaryKey: ['id']).map((List<Map<String, dynamic>> data) {
       return data.where((item) {
         // Osnovni uslovi
-        final jeRegistrovani = item['tip_putnika'] == 'mesecni';
+        final jeRegistrovani = item['tip_putnika'] != 'dnevni'; // ✅ FIX: radnik/ucenik su registrovani
         final jePlaceno = item['status'] == 'placeno';
         final imaCreatedAt = item['created_at'] != null;
 
@@ -413,10 +413,11 @@ class StatistikaService {
     // 2. SABERI MESEČNE KARTE - STVARNI PODACI
     try {
       // 🔧 NOVO: Čitaj plaćanja iz putovanja_istorija umesto iz mesečnih putnika
+      // ✅ FIX: Koristi mesecni_putnik_id umesto tip_putnika='mesecni'
       final mesecnaPlacanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('vozac_id, cena')
-          .eq('tip_putnika', 'mesecni')
+          .not('mesecni_putnik_id', 'is', null)
           .eq('status', 'placeno')
           .gte('created_at', fromDate.toIso8601String())
           .lte('created_at', toDate.toIso8601String()) as List<dynamic>;
@@ -562,10 +563,11 @@ class StatistikaService {
 
     // 🔧 NOVO: Čitaj plaćanja mesečnih iz putovanja_istorija
     try {
+      // ✅ FIX: Koristi mesecni_putnik_id umesto tip_putnika='mesecni'
       final mesecnaPlacanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('vozac_id, cena, created_at')
-          .eq('tip_putnika', 'mesecni')
+          .not('mesecni_putnik_id', 'is', null)
           .eq('status', 'placeno')
           .gte('created_at', normalizedFrom.toIso8601String())
           .lte('created_at', normalizedTo.toIso8601String()) as List<dynamic>;

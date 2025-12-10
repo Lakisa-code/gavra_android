@@ -307,7 +307,7 @@ class PutovanjaIstorijaService {
     }
   }
 
-  // ➕ DODAJ novo putovanje za mesečnog putnika
+  // ➕ DODAJ novo putovanje za registrovanog putnika (radnik/ucenik)
   static Future<PutovanjaIstorija?> dodajPutovanjeMesecnogPutnika({
     required RegistrovaniPutnik registrovaniPutnik,
     required DateTime datum,
@@ -320,7 +320,7 @@ class PutovanjaIstorijaService {
       final putovanje = PutovanjaIstorija(
         id: '', // Biće generisan od strane baze
         mesecniPutnikId: registrovaniPutnik.id,
-        tipPutnika: 'mesecni',
+        tipPutnika: registrovaniPutnik.tip, // ✅ FIX: koristi stvarni tip (radnik/ucenik/dnevni)
         datum: datum,
         vremePolaska: vremePolaska,
         status: status,
@@ -330,7 +330,7 @@ class PutovanjaIstorijaService {
         updatedAt: DateTime.now(),
         // obrisan: false, // Redundant - removed default value
         // Nova polja iz baze
-        napomene: 'Kreiran automatski iz mesečnog putnika',
+        napomene: 'Kreiran automatski iz registrovanog putnika',
         // adresaId: null, // Redundant - removed default value
       );
 

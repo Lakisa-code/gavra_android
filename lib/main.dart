@@ -185,6 +185,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     try {
       RealtimeNotificationService.listenForForegroundNotifications(context);
     } catch (_) {}
+
+    // 🔔 FORCE SUBSCRIBE to FCM topics on app start (for testing)
+    _forceSubscribeToTopics();
+  }
+
+  Future<void> _forceSubscribeToTopics() async {
+    try {
+      await Future.delayed(const Duration(seconds: 2)); // Wait for Firebase init
+      debugPrint('🔔 FORCE: Attempting to subscribe to FCM topics...');
+      await RealtimeNotificationService.subscribeToDriverTopics('test_driver');
+    } catch (e) {
+      debugPrint('❌ FORCE subscribe failed: $e');
+    }
   }
 
   @override

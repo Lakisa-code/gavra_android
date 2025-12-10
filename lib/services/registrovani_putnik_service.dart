@@ -314,7 +314,7 @@ class RegistrovaniPutnikService {
           await _supabase.from('putovanja_istorija').insert({
             'mesecni_putnik_id': putnikId,
             'putnik_ime': putnik.putnikIme,
-            'tip_putnika': 'mesecni',
+            'tip_putnika': putnik.tip, // ✅ FIX: Koristi stvarni tip (radnik/ucenik/dnevni)
             'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
             'vreme_polaska': 'mesecno_placanje',
             'status': 'placeno',
@@ -331,7 +331,7 @@ class RegistrovaniPutnikService {
           await _supabase.from('putovanja_istorija').insert({
             'mesecni_putnik_id': putnikId,
             'putnik_ime': putnik.putnikIme,
-            'tip_putnika': 'mesecni',
+            'tip_putnika': putnik.tip, // ✅ FIX: Koristi stvarni tip (radnik/ucenik/dnevni)
             'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
             'vreme_polaska': 'mesecno_placanje',
             'status': 'placeno',
@@ -387,11 +387,11 @@ class RegistrovaniPutnikService {
     DateTime krajMeseca,
   ) async {
     try {
+      // ✅ FIX: Uklonjen filter tip_putnika='mesecni' - mesecni_putnik_id je dovoljan
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena')
           .eq('mesecni_putnik_id', putnikId)
-          .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
           .eq('status', 'placeno');
@@ -913,11 +913,10 @@ class RegistrovaniPutnikService {
       try {
         if (data.isEmpty) return null;
 
-        // Filtriraj po mesecni_putnik_id, tip_putnika i status
+        // Filtriraj po mesecni_putnik_id i status (tip nije bitan jer mesecni_putnik_id identifikuje registrovanog)
         final filtered = data.where((item) {
           return item['mesecni_putnik_id'] == putnikId &&
-              item['tip_putnika'] == 'mesecni' &&
-              item['status'] == 'placeno';
+              item['status'] == 'placeno'; // ✅ FIX: uklonjen filter po tip_putnika
         }).toList();
 
         if (filtered.isEmpty) return null;
@@ -965,11 +964,11 @@ class RegistrovaniPutnikService {
 
   static Future<String?> getVozacPoslednjegPlacanja(String putnikId) async {
     try {
+      // ✅ FIX: Uklonjen filter tip_putnika='mesecni' - mesecni_putnik_id je dovoljan
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('vozac_id, napomene')
           .eq('mesecni_putnik_id', putnikId)
-          .eq('tip_putnika', 'mesecni')
           .eq('status', 'placeno')
           .order('created_at', ascending: false)
           .limit(1) as List<dynamic>;
@@ -1013,11 +1012,12 @@ class RegistrovaniPutnikService {
     String putnikIme,
   ) async {
     try {
+      // ✅ FIX: Traži registrovane putnike po mesecni_putnik_id umesto tip_putnika
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('vozac_id, napomene')
           .eq('putnik_ime', putnikIme)
-          .eq('tip_putnika', 'mesecni')
+          .not('mesecni_putnik_id', 'is', null)
           .eq('status', 'placeno')
           .order('created_at', ascending: false)
           .limit(1) as List<dynamic>;
