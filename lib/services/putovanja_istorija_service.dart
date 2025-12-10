@@ -18,8 +18,8 @@ class PutovanjaIstorijaService {
   // Cache keys
   static String _getAllCacheKey() => '${_cacheKeyPrefix}_all';
   static String _getByDateCacheKey(DateTime date) => '${_cacheKeyPrefix}_date_${date.toIso8601String().split('T')[0]}';
-  static String _getByRegistrovaniCacheKey(String registrovaniPutnikId) =>
-      '${_cacheKeyPrefix}_registrovani_$registrovaniPutnikId';
+  static String _getByRegistrovaniCacheKey(String mesecniPutnikId) =>
+      '${_cacheKeyPrefix}_registrovani_$mesecniPutnikId';
   static String _getSearchCacheKey(String query) => '${_cacheKeyPrefix}_search_$query';
 
   // Clear cache methods
@@ -33,8 +33,8 @@ class PutovanjaIstorijaService {
     await CacheService.clearFromDisk(_getAllCacheKey());
   }
 
-  static Future<void> _clearCacheForRegistrovani(String registrovaniPutnikId) async {
-    final cacheKey = _getByRegistrovaniCacheKey(registrovaniPutnikId);
+  static Future<void> _clearCacheForRegistrovani(String mesecniPutnikId) async {
+    final cacheKey = _getByRegistrovaniCacheKey(mesecniPutnikId);
     await CacheService.clearFromDisk(cacheKey);
     await CacheService.clearFromDisk(_getAllCacheKey());
   }
@@ -91,14 +91,14 @@ class PutovanjaIstorijaService {
 
   // 📱 REALTIME STREAM putovanja za mesečnog putnika
   static Stream<List<PutovanjaIstorija>> streamPutovanjaMesecnogPutnika(
-    String registrovaniPutnikId,
+    String mesecniPutnikId,
   ) {
     try {
       return RealtimeService.instance.putovanjaStream.map((data) {
         try {
           final list = data
               .map((json) => PutovanjaIstorija.fromMap(json))
-              .where((p) => p.registrovaniPutnikId == registrovaniPutnikId)
+              .where((p) => p.mesecniPutnikId == mesecniPutnikId)
               .toList();
           list.sort((a, b) => b.datum.compareTo(a.datum));
           return list;
@@ -248,14 +248,14 @@ class PutovanjaIstorijaService {
 
   // 🔍 DOBIJ putovanja mesečnog putnika
   static Future<List<PutovanjaIstorija>> getPutovanjaMesecnogPutnika(
-    String registrovaniPutnikId,
+    String mesecniPutnikId,
   ) async {
     try {
       final response = await SupabaseSafe.run(
         () => _supabase
             .from('putovanja_istorija')
             .select()
-            .eq('registrovani_putnik_id', registrovaniPutnikId)
+            .eq('mesecni_putnik_id', mesecniPutnikId)
             .order('datum', ascending: false),
         fallback: <dynamic>[],
       );
@@ -296,8 +296,8 @@ class PutovanjaIstorijaService {
 
       // Clear cache
       await _clearCacheForDate(result.datum);
-      if (result.registrovaniPutnikId != null) {
-        await _clearCacheForRegistrovani(result.registrovaniPutnikId!);
+      if (result.mesecniPutnikId != null) {
+        await _clearCacheForRegistrovani(result.mesecniPutnikId!);
       }
       // Debug logging removed for production
       return result;
@@ -319,7 +319,7 @@ class PutovanjaIstorijaService {
     try {
       final putovanje = PutovanjaIstorija(
         id: '', // Biće generisan od strane baze
-        registrovaniPutnikId: registrovaniPutnik.id,
+        mesecniPutnikId: registrovaniPutnik.id,
         tipPutnika: 'mesecni',
         datum: datum,
         vremePolaska: vremePolaska,
@@ -406,8 +406,8 @@ class PutovanjaIstorijaService {
 
       // Clear cache
       await _clearCacheForDate(result.datum);
-      if (result.registrovaniPutnikId != null) {
-        await _clearCacheForRegistrovani(result.registrovaniPutnikId!);
+      if (result.mesecniPutnikId != null) {
+        await _clearCacheForRegistrovani(result.mesecniPutnikId!);
       }
       // Debug logging removed for production
       return result;
@@ -462,8 +462,8 @@ class PutovanjaIstorijaService {
       // Clear cache
       if (putovanje != null) {
         await _clearCacheForDate(putovanje.datum);
-        if (putovanje.registrovaniPutnikId != null) {
-          await _clearCacheForRegistrovani(putovanje.registrovaniPutnikId!);
+        if (putovanje.mesecniPutnikId != null) {
+          await _clearCacheForRegistrovani(putovanje.mesecniPutnikId!);
         }
       }
       // Debug logging removed for production
@@ -479,7 +479,7 @@ class PutovanjaIstorijaService {
     DateTime? odDatuma,
     DateTime? doDatuma,
     String? tipPutnika,
-    String? registrovaniPutnikId,
+    String? mesecniPutnikId,
   }) async {
     try {
       final response = await SupabaseSafe.run(
@@ -494,8 +494,8 @@ class PutovanjaIstorijaService {
           if (tipPutnika != null) {
             q = q.eq('tip_putnika', tipPutnika);
           }
-          if (registrovaniPutnikId != null) {
-            q = q.eq('registrovani_putnik_id', registrovaniPutnikId);
+          if (mesecniPutnikId != null) {
+            q = q.eq('mesecni_putnik_id', mesecniPutnikId);
           }
           return q;
         },
@@ -515,7 +515,7 @@ class PutovanjaIstorijaService {
     DateTime? odDatuma,
     DateTime? doDatuma,
     String? tipPutnika,
-    String? registrovaniPutnikId,
+    String? mesecniPutnikId,
   }) async {
     try {
       final response = await SupabaseSafe.run(
@@ -530,8 +530,8 @@ class PutovanjaIstorijaService {
           if (tipPutnika != null) {
             q = q.eq('tip_putnika', tipPutnika);
           }
-          if (registrovaniPutnikId != null) {
-            q = q.eq('registrovani_putnik_id', registrovaniPutnikId);
+          if (mesecniPutnikId != null) {
+            q = q.eq('mesecni_putnik_id', mesecniPutnikId);
           }
           return q;
         },
@@ -558,7 +558,7 @@ class PutovanjaIstorijaService {
     DateTime? doDatuma,
     String? tipPutnika,
     String? status,
-    String? registrovaniPutnikId,
+    String? mesecniPutnikId,
     bool? pokupljen,
     int limit = 100,
   }) async {
@@ -606,8 +606,8 @@ class PutovanjaIstorijaService {
           if (status != null) {
             q = q.eq('status', status);
           }
-          if (registrovaniPutnikId != null) {
-            q = q.eq('registrovani_putnik_id', registrovaniPutnikId);
+          if (mesecniPutnikId != null) {
+            q = q.eq('mesecni_putnik_id', mesecniPutnikId);
           }
           if (pokupljen != null) {
             // ✅ FIXED: putovanja_istorija nema 'pokupljen' kolonu - filtrira po 'status'
@@ -676,7 +676,7 @@ class PutovanjaIstorijaService {
 
         // Clear cache for all affected registrovani putnici
         final affectedRegistrovani =
-            putovanja.map((p) => p.registrovaniPutnikId).where((id) => id != null).cast<String>().toSet();
+            putovanja.map((p) => p.mesecniPutnikId).where((id) => id != null).cast<String>().toSet();
         for (final registrovaniId in affectedRegistrovani) {
           await _clearCacheForRegistrovani(registrovaniId);
         }
@@ -735,7 +735,7 @@ class PutovanjaIstorijaService {
       }
 
       final affectedRegistrovani =
-          putovanja.map((p) => p.registrovaniPutnikId).where((id) => id != null).cast<String>().toSet();
+          putovanja.map((p) => p.mesecniPutnikId).where((id) => id != null).cast<String>().toSet();
       for (final registrovaniId in affectedRegistrovani) {
         await _clearCacheForRegistrovani(registrovaniId);
       }
@@ -752,14 +752,14 @@ class PutovanjaIstorijaService {
     DateTime? odDatuma,
     DateTime? doDatuma,
     String? tipPutnika,
-    String? registrovaniPutnikId,
+    String? mesecniPutnikId,
   }) async {
     try {
       final putovanja = await searchPutovanja(
         odDatuma: odDatuma,
         doDatuma: doDatuma,
         tipPutnika: tipPutnika,
-        registrovaniPutnikId: registrovaniPutnikId,
+        mesecniPutnikId: mesecniPutnikId,
         limit: 10000,
       );
 
@@ -806,14 +806,14 @@ class PutovanjaIstorijaService {
     DateTime? odDatuma,
     DateTime? doDatuma,
     String? tipPutnika,
-    String? registrovaniPutnikId,
+    String? mesecniPutnikId,
   }) async {
     try {
       final putovanja = await searchPutovanja(
         odDatuma: odDatuma,
         doDatuma: doDatuma,
         tipPutnika: tipPutnika,
-        registrovaniPutnikId: registrovaniPutnikId,
+        mesecniPutnikId: mesecniPutnikId,
         limit: 10000,
       );
 

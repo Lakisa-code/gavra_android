@@ -11,6 +11,7 @@ import '../models/registrovani_putnik.dart';
 import '../services/auth_manager.dart';
 import '../services/firebase_service.dart';
 import '../services/haptic_service.dart';
+import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
@@ -252,6 +253,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeAsync() async {
     try {
       await _initializeCurrentDriver();
+      // 🎫 Učitaj kapacitet cache na startu
+      await KapacitetService.ensureCacheLoaded();
       // 🔒 If the current driver is missing or invalid, redirect to welcome/login
       if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
         if (mounted) {
@@ -514,6 +517,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final telefonController = TextEditingController(); // 📞 OPCIONO: Broj telefona
     final searchPutnikController = TextEditingController(); // 🔍 Za pretragu putnika
     RegistrovaniPutnik? selectedPutnik; // 🎯 Izabrani putnik iz liste
+    int brojMesta = 1; // 🆕 Broj rezervisanih mesta (default 1)
 
     // Povuci SVE registrovane putnike iz registrovani_putnici tabele (učenici, radnici, dnevni)
     final serviceInstance = RegistrovaniPutnikService();
@@ -850,6 +854,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 ),
                               ),
 
+                              const SizedBox(height: 12),
+
+                              // 🆕 BROJ MESTA - dropdown za izbor broja rezervisanih mesta
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade400),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.event_seat, color: Colors.grey),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Broj mesta:',
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                    const Spacer(),
+                                    DropdownButton<int>(
+                                      value: brojMesta,
+                                      underline: const SizedBox(),
+                                      items: [1, 2, 3, 4, 5].map((int value) {
+                                        return DropdownMenuItem<int>(
+                                          value: value,
+                                          child: Text(
+                                            value == 1 ? '1 mesto' : '$value mesta',
+                                            style: const TextStyle(fontSize: 16),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      onChanged: (int? newValue) {
+                                        if (newValue != null) {
+                                          setStateDialog(() {
+                                            brojMesta = newValue;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+
                               // 🏷️ PRIKAZ TIPA PUTNIKA (ako je izabran)
                               if (selectedPutnik != null)
                                 Container(
@@ -1034,23 +1081,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       // ✅ Validacija vozača koristi VozacBoja.isValidDriver()
 
                                       // 🎫 PROVERA KAPACITETA - da li ima slobodnih mesta
-                                      final gradKey = _selectedGrad.toLowerCase().contains('bela') ? 'BC' : 'VS';
-                                      final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
-                                        gradKey,
-                                        _selectedVreme,
-                                      );
-                                      if (!imaMesta) {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.',
-                                            ),
-                                            backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 3),
-                                          ),
+                                      // ⚠️ SAMO ZA PUTNIKE - vozači mogu dodavati bez ograničenja
+                                      final isVozac = VozacBoja.isValidDriver(_currentDriver);
+                                      if (!isVozac) {
+                                        final gradKey = _selectedGrad.toLowerCase().contains('bela') ? 'BC' : 'VS';
+                                        final imaMesta = await SlobodnaMestaService.imaSlobodnihMesta(
+                                          gradKey,
+                                          _selectedVreme,
                                         );
-                                        return;
+                                        if (!imaMesta) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                '❌ Termin $_selectedVreme ($_selectedGrad) je PUN! Izaberite drugo vreme.',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              duration: const Duration(seconds: 3),
+                                            ),
+                                          );
+                                          return;
+                                        }
                                       }
 
                                       // POKAZI LOADING STATE - lokalno za dijalog
@@ -1073,6 +1124,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                         adresa: adresaController.text.isEmpty ? null : adresaController.text,
                                         brojTelefona: selectedPutnik!.brojTelefona,
+                                        brojMesta: brojMesta, // 🆕 Prosleđujemo broj rezervisanih mesta
                                       );
 
                                       // Duplikat provera se vrši u PutnikService.dodajPutnika()
@@ -1320,6 +1372,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
                   getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
+                  getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                   onPolazakChanged: (grad, vreme) {
                     if (mounted) {
                       setState(() {
@@ -1335,6 +1388,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   selectedGrad: _selectedGrad,
                   selectedVreme: _selectedVreme,
                   getPutnikCount: (grad, vreme) => 0, // Loading state - nema putnika
+                  getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                   onPolazakChanged: (grad, vreme) {
                     if (mounted) {
                       setState(() {
@@ -2134,6 +2188,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       selectedGrad: _selectedGrad,
                       selectedVreme: _selectedVreme,
                       getPutnikCount: getPutnikCount,
+                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       onPolazakChanged: (grad, vreme) {
                         // Najpre ažuriraj UI selekciju — odmah prikažemo prave brojeve
                         if (mounted) {
@@ -2150,6 +2205,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       selectedGrad: _selectedGrad,
                       selectedVreme: _selectedVreme,
                       getPutnikCount: getPutnikCount,
+                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       onPolazakChanged: (grad, vreme) async {
                         if (mounted) {
                           setState(() {

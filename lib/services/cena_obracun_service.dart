@@ -78,7 +78,7 @@ class CenaObracunService {
       final response = await _supabase
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .eq('status', 'pokupljen')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0]);

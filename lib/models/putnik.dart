@@ -75,13 +75,14 @@ class Putnik {
     // ✅ DODANO: Nova polja za kompatibilnost sa DnevniPutnik modelom
     this.rutaNaziv,
     this.adresaKoordinate,
+    this.brojMesta = 1, // 🆕 Broj rezervisanih mesta (default 1)
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
     // AUTOMATSKA DETEKCIJA TIPA TABELE - SAMO NOVE TABELE
 
-    // Ako ima registrovani_putnik_id ili tip_putnika, iz putovanja_istorija tabele
-    if (map.containsKey('registrovani_putnik_id') || map.containsKey('tip_putnika')) {
+    // Ako ima mesecni_putnik_id ili tip_putnika, iz putovanja_istorija tabele
+    if (map.containsKey('mesecni_putnik_id') || map.containsKey('tip_putnika')) {
       return Putnik.fromPutovanjaIstorija(map);
     }
 
@@ -141,6 +142,7 @@ class Putnik {
       adresaId: _determineAdresaIdFromRegistrovani(map, grad), // ✅ NOVO - UUID adrese
       obrisan: !RegistrovaniHelpers.isActiveFromMap(map),
       brojTelefona: map['broj_telefona'] as String?,
+      brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
     );
   }
 
@@ -211,6 +213,7 @@ class Putnik {
       adresaId: map['adresa_id'] as String?, // ✅ UUID reference u tabelu adrese
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
+      brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
     );
   }
 
@@ -246,6 +249,7 @@ class Putnik {
   // ✅ DODANO: Nova polja za kompatibilnost sa DnevniPutnik modelom
   final String? rutaNaziv;
   final String? adresaKoordinate;
+  final int brojMesta; // 🆕 Broj rezervisanih mesta (1, 2, 3...)
 
   // Getter-i za kompatibilnost
   String get destinacija => grad;
@@ -405,6 +409,7 @@ class Putnik {
           adresaId: map['adresa_bela_crkva_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
+          brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
         ),
       );
     }
@@ -456,6 +461,7 @@ class Putnik {
           adresaId: map['adresa_vrsac_id'] as String?,
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
+          brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
         ),
       );
     }
@@ -682,7 +688,7 @@ class Putnik {
 
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
-      'registrovani_putnik_id': mesecnaKarta == true ? id : null,
+      'mesecni_putnik_id': mesecnaKarta == true ? id : null,
       'tip_putnika': mesecnaKarta == true ? 'mesecni' : 'dnevni',
       'datum_putovanja': datumZaUpis, // ✅ Za PutovanjaIstorijaService compatibility
       'vreme_polaska': polazak,

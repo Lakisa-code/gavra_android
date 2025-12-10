@@ -294,11 +294,11 @@ class RealtimeService {
           String? grad;
           double? iznosPlacanja;
 
-          final registrovaniPutnikId = r['registrovani_putnik_id'] as String?;
-          if (registrovaniPutnikId != null) {
+          final mesecniPutnikId = r['mesecni_putnik_id'] as String?;
+          if (mesecniPutnikId != null) {
             // Pronađi odgovarajući mesečni putnik
             for (final registrovaniMap in _lastRegistrovaniRows) {
-              if (registrovaniMap['id'] == registrovaniPutnikId) {
+              if (registrovaniMap['id'] == mesecniPutnikId) {
                 putnikIme = registrovaniMap['putnik_ime'] as String?;
                 iznosPlacanja = (registrovaniMap['ukupna_cena_meseca'] as num?)?.toDouble();
                 // Za grad, koristimo logiku: ako je mesečno plaćanje, označavamo kao takvo
@@ -515,6 +515,18 @@ class RealtimeService {
         // Debug logging removed for production
       } catch (_) {}
       _emitCombinedPutnici();
+
+      // 🔄 NOVO: Emituj i za sve parametarske streamove
+      // Ovo osigurava da se home_screen lista osvežava nakon dodavanja putnika
+      for (final key in _paramControllers.keys.toList()) {
+        try {
+          final controller = _paramControllers[key];
+          if (controller != null && !controller.isClosed) {
+            // Emituj praznu listu da triggeruje re-fetch u PutnikService
+            controller.add([]);
+          }
+        } catch (_) {}
+      }
     } catch (e) {
       // Debug logging removed for production
     }

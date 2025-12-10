@@ -3019,7 +3019,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       final response = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum, status, pokupljen, created_at')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .gte('datum', startStr)
           .lte('datum', endStr)
           .order('datum', ascending: false);

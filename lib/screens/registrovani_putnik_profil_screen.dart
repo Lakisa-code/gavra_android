@@ -65,13 +65,9 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final putnikId = _putnikData['id'];
       if (putnikId == null) return;
 
-      final response = await Supabase.instance.client
-          .from('registrovani_putnici')
-          .select()
-          .eq('id', putnikId)
-          .single();
+      final response = await Supabase.instance.client.from('registrovani_putnici').select().eq('id', putnikId).single();
 
-      if (mounted && response != null) {
+      if (mounted) {
         setState(() {
           _putnikData = Map<String, dynamic>.from(response);
         });
@@ -96,7 +92,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final voznjeResponse = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
           .eq('status', 'pokupljen');
 
@@ -113,7 +109,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final otkazivanjaResponse = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
           .eq('status', 'otkazan');
 
@@ -209,7 +205,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final sveVoznje = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('datum_putovanja, status, created_at')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
           .order('datum_putovanja', ascending: false);
 
@@ -310,7 +306,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('cena, datum_putovanja, created_at')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .eq('status', 'placeno')
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])

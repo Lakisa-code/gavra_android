@@ -216,7 +216,7 @@ class _SlobodnaMestaWidgetState extends State<SlobodnaMestaWidget> {
                         Icon(Icons.event_seat, color: Colors.white70, size: 16),
                         const SizedBox(width: 6),
                         Text(
-                          'SLOBODNA MESTA UŽIVO',
+                          'SLOBODNA MESTA UŽIVO ZA DANAS',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

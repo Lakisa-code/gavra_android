@@ -1746,17 +1746,43 @@ class _PutnikCardState extends State<PutnikCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _putnik.ime,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 14, // 🔧 Smanjeno sa 15 za bolji fit na svim uređajima
-                            color: textColor, // 🎨 Koristi CardColorHelper
-                          ),
-                          // 🔧 FIX: Forsiraj jedan red kao na Samsung-u
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _putnik.ime,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 14, // 🔧 Smanjeno sa 15 za bolji fit na svim uređajima
+                                  color: textColor, // 🎨 Koristi CardColorHelper
+                                ),
+                                // 🔧 FIX: Forsiraj jedan red kao na Samsung-u
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            // 🆕 Prikaži oznaku broja mesta ako je više od 1
+                            if (_putnik.brojMesta > 1)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: textColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'x${_putnik.brojMesta}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         // 🏠 ADRESA - jednostavno prikaži adresu ako postoji
                         if (_putnik.adresa != null &&

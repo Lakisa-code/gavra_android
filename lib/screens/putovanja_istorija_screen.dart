@@ -1526,7 +1526,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
     try {
       final azuriranoPutovanje = PutovanjaIstorija(
         id: originalPutovanje.id,
-        registrovaniPutnikId: originalPutovanje.registrovaniPutnikId,
+        mesecniPutnikId: originalPutovanje.mesecniPutnikId,
         putnikIme: _noviPutnikIme.trim(),
         vremePolaska: originalPutovanje.vremePolaska,
         tipPutnika: _noviTipPutnika,
@@ -1611,7 +1611,7 @@ class _PutovanjaIstorijaScreenState extends State<PutovanjaIstorijaScreen> {
   ) async {
     final azuriranoPutovanje = PutovanjaIstorija(
       id: putovanje.id,
-      registrovaniPutnikId: putovanje.registrovaniPutnikId,
+      mesecniPutnikId: putovanje.mesecniPutnikId,
       putnikIme: putovanje.putnikIme,
       vremePolaska: putovanje.vremePolaska,
       tipPutnika: putovanje.tipPutnika,

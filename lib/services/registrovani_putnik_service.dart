@@ -312,7 +312,7 @@ class RegistrovaniPutnikService {
 
         try {
           await _supabase.from('putovanja_istorija').insert({
-            'registrovani_putnik_id': putnikId,
+            'mesecni_putnik_id': putnikId,
             'putnik_ime': putnik.putnikIme,
             'tip_putnika': 'mesecni',
             'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
@@ -329,7 +329,7 @@ class RegistrovaniPutnikService {
         } catch (insertError) {
           // Ako insert ne uspe zbog foreign key, pokušaj bez vozac_id
           await _supabase.from('putovanja_istorija').insert({
-            'registrovani_putnik_id': putnikId,
+            'mesecni_putnik_id': putnikId,
             'putnik_ime': putnik.putnikIme,
             'tip_putnika': 'mesecni',
             'datum_putovanja': DateTime.now().toIso8601String().split('T')[0],
@@ -390,7 +390,7 @@ class RegistrovaniPutnikService {
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
@@ -643,7 +643,7 @@ class RegistrovaniPutnikService {
   /// VOŽNJA = jedinstveni datum kada je status 'pokupljen'
   /// NE broji: placeno, resetovan, otkazan, nije_se_pojavio
   static Future<int> izracunajBrojPutovanjaIzIstorije(
-    String registrovaniPutnikId,
+    String mesecniPutnikId,
   ) async {
     try {
       final supabase = Supabase.instance.client;
@@ -653,7 +653,7 @@ class RegistrovaniPutnikService {
       final response = await supabase
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('registrovani_putnik_id', registrovaniPutnikId)
+          .eq('mesecni_putnik_id', mesecniPutnikId)
           .eq('status', 'pokupljen');
 
       // Broji JEDINSTVENE datume (jedan dan = jedno putovanje)
@@ -676,7 +676,7 @@ class RegistrovaniPutnikService {
   /// OTKAZIVANJE = jedinstveni datum kada je status 'otkazan'
   /// NAPOMENA: U bazi je status 'otkazan' (ne 'otkazano')
   static Future<int> izracunajBrojOtkazivanjaIzIstorije(
-    String registrovaniPutnikId,
+    String mesecniPutnikId,
   ) async {
     try {
       final supabase = Supabase.instance.client;
@@ -686,7 +686,7 @@ class RegistrovaniPutnikService {
       final response = await supabase
           .from('putovanja_istorija')
           .select('datum_putovanja')
-          .eq('registrovani_putnik_id', registrovaniPutnikId)
+          .eq('mesecni_putnik_id', mesecniPutnikId)
           .eq('status', 'otkazan');
 
       // Broji JEDINSTVENE datume (jedan dan = jedno otkazivanje)
@@ -861,8 +861,11 @@ class RegistrovaniPutnikService {
       }
     } else {
       // Check for duplicate name for new records
-      final existing =
-          await _supabase.from('registrovani_putnici').select('id').eq('putnik_ime', putnik.putnikIme).eq('obrisan', false);
+      final existing = await _supabase
+          .from('registrovani_putnici')
+          .select('id')
+          .eq('putnik_ime', putnik.putnikIme)
+          .eq('obrisan', false);
 
       if (existing.isNotEmpty) {
         errors['putnikIme'] = 'Putnik sa ovim imenom već postoji';
@@ -910,9 +913,9 @@ class RegistrovaniPutnikService {
       try {
         if (data.isEmpty) return null;
 
-        // Filtriraj po registrovani_putnik_id, tip_putnika i status
+        // Filtriraj po mesecni_putnik_id, tip_putnika i status
         final filtered = data.where((item) {
-          return item['registrovani_putnik_id'] == putnikId &&
+          return item['mesecni_putnik_id'] == putnikId &&
               item['tip_putnika'] == 'mesecni' &&
               item['status'] == 'placeno';
         }).toList();
@@ -965,7 +968,7 @@ class RegistrovaniPutnikService {
       final placanja = await Supabase.instance.client
           .from('putovanja_istorija')
           .select('vozac_id, napomene')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .eq('status', 'placeno')
           .order('created_at', ascending: false)

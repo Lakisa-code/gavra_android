@@ -13,6 +13,7 @@ class BottomNavBarZimski extends StatefulWidget {
     required this.selectedVreme,
     required this.onPolazakChanged,
     required this.getPutnikCount,
+    this.getKapacitet, // ✅ Opcionalno - vraća kapacitet za grad/vreme
     this.isSlotLoading,
     this.bcVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
     this.vsVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
@@ -22,6 +23,7 @@ class BottomNavBarZimski extends StatefulWidget {
   final String selectedVreme;
   final void Function(String grad, String vreme) onPolazakChanged;
   final int Function(String grad, String vreme) getPutnikCount;
+  final int Function(String grad, String vreme)? getKapacitet; // ✅ Kapacitet
   final bool Function(String grad, String vreme)? isSlotLoading;
   final List<String>? bcVremena; // ✅ Custom BC vremena
   final List<String>? vsVremena; // ✅ Custom VS vremena
@@ -133,6 +135,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
                   grad: 'Bela Crkva',
                   onPolazakChanged: widget.onPolazakChanged,
                   getPutnikCount: widget.getPutnikCount,
+                  getKapacitet: widget.getKapacitet,
                   isSlotLoading: widget.isSlotLoading,
                   scrollController: _bcScrollController,
                   currentThemeId: currentThemeId,
@@ -145,6 +148,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
                   grad: 'Vršac',
                   onPolazakChanged: widget.onPolazakChanged,
                   getPutnikCount: widget.getPutnikCount,
+                  getKapacitet: widget.getKapacitet,
                   isSlotLoading: widget.isSlotLoading,
                   scrollController: _vsScrollController,
                   currentThemeId: currentThemeId,
@@ -168,6 +172,7 @@ class _PolazakRow extends StatelessWidget {
     required this.onPolazakChanged,
     required this.getPutnikCount,
     required this.currentThemeId,
+    this.getKapacitet,
     this.isSlotLoading,
     this.scrollController,
     Key? key,
@@ -179,6 +184,7 @@ class _PolazakRow extends StatelessWidget {
   final String grad;
   final void Function(String grad, String vreme) onPolazakChanged;
   final int Function(String grad, String vreme) getPutnikCount;
+  final int Function(String grad, String vreme)? getKapacitet;
   final bool Function(String grad, String vreme)? isSlotLoading;
   final ScrollController? scrollController;
   final String currentThemeId;
@@ -266,8 +272,11 @@ class _PolazakRow extends StatelessWidget {
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 );
                               }
+                              final count = getPutnikCount(grad, vreme);
+                              final kapacitet = getKapacitet?.call(grad, vreme);
+                              final displayText = kapacitet != null ? '$count ($kapacitet)' : '$count';
                               return Text(
-                                getPutnikCount(grad, vreme).toString(),
+                                displayText,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: selected

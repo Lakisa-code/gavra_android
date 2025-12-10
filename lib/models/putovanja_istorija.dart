@@ -5,7 +5,7 @@ import 'action_log.dart';
 class PutovanjaIstorija {
   PutovanjaIstorija({
     required this.id,
-    this.registrovaniPutnikId,
+    this.mesecniPutnikId,
     required this.tipPutnika,
     required this.datum,
     required this.vremePolaska,
@@ -24,13 +24,14 @@ class PutovanjaIstorija {
     this.voziloId,
     this.adresaId,
     this.grad,
+    this.brojMesta = 1, // 🆕 Broj rezervisanih mesta
   }) : actionLog = actionLog ?? ActionLog.empty();
 
   // Factory constructor za kreiranje iz Map-a (Supabase response)
   factory PutovanjaIstorija.fromMap(Map<String, dynamic> map) {
     return PutovanjaIstorija(
       id: map['id'] as String,
-      registrovaniPutnikId: map['registrovani_putnik_id'] as String?,
+      mesecniPutnikId: map['mesecni_putnik_id'] as String?,
       tipPutnika: map['tip_putnika'] as String? ?? 'dnevni',
       datum: DateTime.parse(map['datum_putovanja'] as String),
       vremePolaska: map['vreme_polaska'] as String? ?? '',
@@ -49,10 +50,11 @@ class PutovanjaIstorija {
       voziloId: map['vozilo_id'] as String?,
       adresaId: map['adresa_id'] as String?,
       grad: map['grad'] as String?,
+      brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
     );
   }
   final String id;
-  final String? registrovaniPutnikId;
+  final String? mesecniPutnikId;
   final String tipPutnika;
   final DateTime datum;
   final String vremePolaska;
@@ -72,12 +74,13 @@ class PutovanjaIstorija {
   final String? voziloId;
   final String? adresaId;
   final String? grad;
+  final int brojMesta; // 🆕 Broj rezervisanih mesta (1, 2, 3...)
 
   // Konvertuje u Map za slanje u Supabase
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'registrovani_putnik_id': registrovaniPutnikId,
+      'mesecni_putnik_id': mesecniPutnikId,
       'tip_putnika': tipPutnika,
       'datum_putovanja': datum.toIso8601String().split('T')[0],
       'vreme_polaska': vremePolaska,
@@ -96,13 +99,14 @@ class PutovanjaIstorija {
       'vozilo_id': voziloId,
       'adresa_id': adresaId,
       'grad': grad,
+      'broj_mesta': brojMesta, // 🆕 Broj rezervisanih mesta
     };
   }
 
   // CopyWith method za kreiranje kopije sa promenjenim vrednostima
   PutovanjaIstorija copyWith({
     String? id,
-    String? registrovaniPutnikId,
+    String? mesecniPutnikId,
     String? tipPutnika,
     DateTime? datum,
     String? vremePolaska,
@@ -122,7 +126,7 @@ class PutovanjaIstorija {
   }) {
     return PutovanjaIstorija(
       id: id ?? this.id,
-      registrovaniPutnikId: registrovaniPutnikId ?? this.registrovaniPutnikId,
+      mesecniPutnikId: mesecniPutnikId ?? this.mesecniPutnikId,
       tipPutnika: tipPutnika ?? this.tipPutnika,
       datum: datum ?? this.datum,
       vremePolaska: vremePolaska ?? this.vremePolaska,
@@ -211,11 +215,11 @@ class PutovanjaIstorija {
   }
 
   /// Validira vezu sa mesečnim putnikom
-  bool hasValidRegistrovaniPutnikLink() {
+  bool hasValidMesecniPutnikLink() {
     if (jeRegistrovani) {
-      return registrovaniPutnikId != null && registrovaniPutnikId!.isNotEmpty;
+      return mesecniPutnikId != null && mesecniPutnikId!.isNotEmpty;
     }
-    return true; // Dnevni putnici ne moraju imati registrovani_putnik_id
+    return true; // Dnevni putnici ne moraju imati mesecni_putnik_id
   }
 
   /// Kompletna validacija sa detaljnim rezultatom
@@ -240,8 +244,8 @@ class PutovanjaIstorija {
       errors['vremePolaska'] = 'Vreme polaska mora biti u formatu HH:MM';
     }
 
-    if (!hasValidRegistrovaniPutnikLink()) {
-      errors['registrovaniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
+    if (!hasValidMesecniPutnikLink()) {
+      errors['mesecniPutnikId'] = 'Mesečni putnici moraju imati ID mesečnog putnika';
     }
 
     if (!isDatumValid()) {

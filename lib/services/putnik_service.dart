@@ -122,7 +122,7 @@ class PutnikService {
               .eq('datum_putovanja', overrideDate)
               .eq('tip_putnika', 'mesecni')
               .eq('obrisan', false) // ✅ Ignoriši soft-deleted zapise
-              .not('registrovani_putnik_id', 'is', null);
+              .not('mesecni_putnik_id', 'is', null);
 
           for (final row in registrovaniIstorija) {
             final map = Map<String, dynamic>.from(row);
@@ -142,11 +142,11 @@ class PutnikService {
               }
             }
 
-            final mpId = map['registrovani_putnik_id']?.toString();
+            final mpId = map['mesecni_putnik_id']?.toString();
             final rowGrad = TextUtils.normalizeText(map['grad']?.toString() ?? ''); // ✅ Normalizuj grad
             final rowVreme = GradAdresaValidator.normalizeTime(map['vreme_polaska']?.toString() ?? '');
             if (mpId != null) {
-              // Ključ: registrovani_putnik_id + grad + vreme (za slučaj više polazaka)
+              // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
               final key = '${mpId}_${rowGrad}_$rowVreme';
               registrovaniOverrides[key] = map;
               print(
@@ -742,19 +742,19 @@ class PutnikService {
       }
 
       // Ažuriraj mesečnog putnika u bazi
-      // ✅ Konvertuj ime vozača u UUID za updated_by
-      final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
+      // ❌ UKLONJENO: updated_by izaziva foreign key grešku jer UUID nije u tabeli users
+      // final updatedByUuid = VozacMappingService.getVozacUuidSync(putnik.dodaoVozac ?? '');
 
-      // 🔧 Pripremi update mapu - updated_by samo ako postoji validan UUID
+      // 🔧 Pripremi update mapu - BEZ updated_by (foreign key constraint)
       final updateData = <String, dynamic>{
         'polasci_po_danu': polasciPoDanu,
         'radni_dani': radniDani,
         'updated_at': DateTime.now().toIso8601String(),
       };
-      // Dodaj updated_by samo ako je validan UUID
-      if (updatedByUuid != null && updatedByUuid.isNotEmpty) {
-        updateData['updated_by'] = updatedByUuid;
-      }
+      // ❌ UKLONJENO: updated_by foreign key constraint ka users tabeli
+      // if (updatedByUuid != null && updatedByUuid.isNotEmpty) {
+      //   updateData['updated_by'] = updatedByUuid;
+      // }
 
       await supabase.from('registrovani_putnici').update(updateData).eq('id', putnikId);
 
@@ -1164,10 +1164,10 @@ class PutnikService {
     }
 
     // 📊 AUTOMATSKA SINHRONIZACIJA BROJA PUTOVANJA (NOVO za putovanja_istorija!)
-    if (tabela == 'putovanja_istorija' && response['registrovani_putnik_id'] != null) {
+    if (tabela == 'putovanja_istorija' && response['mesecni_putnik_id'] != null) {
       try {
         await RegistrovaniPutnikService.sinhronizujBrojPutovanjaSaIstorijom(
-          response['registrovani_putnik_id'] as String,
+          response['mesecni_putnik_id'] as String,
         );
       } catch (syncError) {
         // Nastavi dalje - sinhronizacija nije kritična
@@ -1323,7 +1323,7 @@ class PutnikService {
 
         try {
           await supabase.from('putovanja_istorija').insert({
-            'registrovani_putnik_id': id.toString(), // ✅ UUID kao string
+            'mesecni_putnik_id': id.toString(), // ✅ UUID kao string
             'putnik_ime': respMap['putnik_ime'],
             'tip_putnika': 'mesecni',
             'datum_putovanja': danas,
@@ -1393,10 +1393,10 @@ class PutnikService {
       }
 
       // 📊 AUTOMATSKA SINHRONIZACIJA BROJA OTKAZIVANJA (NOVO!)
-      if (tabela == 'putovanja_istorija' && (respMap['registrovani_putnik_id'] != null)) {
+      if (tabela == 'putovanja_istorija' && (respMap['mesecni_putnik_id'] != null)) {
         try {
           await RegistrovaniPutnikService.sinhronizujBrojOtkazivanjaSaIstorijom(
-            respMap['registrovani_putnik_id'] as String,
+            respMap['mesecni_putnik_id'] as String,
           );
         } catch (syncError) {
           // Nastavi dalje - sinhronizacija nije kritična

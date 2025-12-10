@@ -7,9 +7,9 @@ class CleanStatistikaService {
   static Future<Map<String, dynamic>> dohvatiUkupneStatistike() async {
     final registrovaniPutnici = await supabase.from('registrovani_putnici').select().eq('obrisan', false);
 
-    // Standalone putovanja (bez registrovani_putnik_id)
+    // Standalone putovanja (bez mesecni_putnik_id)
     final standalonePutovanja =
-        await supabase.from('putovanja_istorija').select().eq('obrisan', false).isFilter('registrovani_putnik_id', null);
+        await supabase.from('putovanja_istorija').select().eq('obrisan', false).isFilter('mesecni_putnik_id', null);
 
     double ukupnoRegistrovani = 0;
     double ukupnoStandalone = 0;
@@ -39,8 +39,12 @@ class CleanStatistikaService {
 
   /// Dohvati mesečne statistike
   static Future<Map<String, dynamic>> dohvatiMesecneStatistike(int mesec, int godina) async {
-    final registrovaniPutnici =
-        await supabase.from('registrovani_putnici').select().eq('obrisan', false).eq('mesec', mesec).eq('godina', godina);
+    final registrovaniPutnici = await supabase
+        .from('registrovani_putnici')
+        .select()
+        .eq('obrisan', false)
+        .eq('mesec', mesec)
+        .eq('godina', godina);
 
     double ukupnoRegistrovani = 0;
     registrovaniPutnici.forEach((mp) {
@@ -60,14 +64,17 @@ class CleanStatistikaService {
 
   /// Lista svih putnika bez duplikata
   static Future<List<Map<String, dynamic>>> dohvatiSvePutnikeClean() async {
-    final registrovaniPutnici =
-        await supabase.from('registrovani_putnici').select().eq('obrisan', false).order('datum_placanja', ascending: false);
+    final registrovaniPutnici = await supabase
+        .from('registrovani_putnici')
+        .select()
+        .eq('obrisan', false)
+        .order('datum_placanja', ascending: false);
 
     final standalonePutovanja = await supabase
         .from('putovanja_istorija')
         .select()
         .eq('obrisan', false)
-        .isFilter('registrovani_putnik_id', null)
+        .isFilter('mesecni_putnik_id', null)
         .order('datum_placanja', ascending: false);
 
     List<Map<String, dynamic>> sviPutnici = [];

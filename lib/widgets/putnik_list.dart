@@ -68,6 +68,23 @@ class PutnikList extends StatelessWidget {
     return 1;
   }
 
+  // 🆕 Helper za proveru da li putnik treba da ima redni broj
+  bool _imaRedniBroj(Putnik p) {
+    return !p.jeOdsustvo && !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan');
+  }
+
+  // 🆕 Vraća početni redni broj za putnika (prvi broj od njegovih mesta)
+  int _pocetniRedniBroj(List<Putnik> putnici, int currentIndex) {
+    int redniBroj = 1;
+    for (int i = 0; i < currentIndex; i++) {
+      final p = putnici[i];
+      if (_imaRedniBroj(p)) {
+        redniBroj += p.brojMesta;
+      }
+    }
+    return redniBroj;
+  }
+
   @override
   Widget build(BuildContext context) {
     bool prikaziPutnika(Putnik p) {
@@ -122,30 +139,10 @@ class PutnikList extends StatelessWidget {
             itemCount: prikaz.length,
             itemBuilder: (context, index) {
               final putnik = prikaz[index];
-              // Redni broj: broji samo one koji nisu otkazani i nisu na odsustvu
+              // 🆕 Redni broj: računa sa brojem mesta svakog putnika
               int? redniBroj;
-              if (!useProvidedOrder) {
-                if (!putnik.jeOdsustvo &&
-                    !(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
-                  // Redni broj je pozicija među svim neotkazanim putnicima koji nisu na odsustvu
-                  redniBroj = prikaz
-                      .take(index + 1)
-                      .where((p) =>
-                          !p.jeOdsustvo &&
-                          !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'))
-                      .length;
-                }
-              } else {
-                // Ako caller traži da se zadrži provajdirani redosled (optiimizovana lista)
-                if (!putnik.jeOdsustvo &&
-                    !(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
-                  redniBroj = prikaz
-                      .take(index + 1)
-                      .where((p) =>
-                          !p.jeOdsustvo &&
-                          !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'))
-                      .length;
-                }
+              if (_imaRedniBroj(putnik)) {
+                redniBroj = _pocetniRedniBroj(prikaz, index);
               }
 
               return PutnikCard(
@@ -187,17 +184,10 @@ class PutnikList extends StatelessWidget {
           itemCount: prikaz.length,
           itemBuilder: (context, index) {
             final putnik = prikaz[index];
+            // 🆕 Redni broj: računa sa brojem mesta svakog putnika
             int? redniBroj;
-            if (!putnik.jeOdsustvo &&
-                !(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
-              redniBroj = prikaz
-                  .take(index + 1)
-                  .where(
-                    (p) =>
-                        !p.jeOdsustvo &&
-                        !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'),
-                  )
-                  .length;
+            if (_imaRedniBroj(putnik)) {
+              redniBroj = _pocetniRedniBroj(prikaz, index);
             }
             return PutnikCard(
               putnik: putnik,
@@ -231,19 +221,10 @@ class PutnikList extends StatelessWidget {
         itemCount: filteredPutnici.length,
         itemBuilder: (context, index) {
           final putnik = filteredPutnici[index];
-          // Redni broj: broji samo one koji nisu otkazani i nisu na odsustvu
+          // 🆕 Redni broj: računa sa brojem mesta svakog putnika
           int? redniBroj;
-          if (!putnik.jeOdsustvo &&
-              !(putnik.status?.toLowerCase() == 'otkazano' || putnik.status?.toLowerCase() == 'otkazan')) {
-            // nije CRVENA (otkazana) ili ŽUTA (odsustvo)
-            // Broji koliko je neotkazanih i ne-odsutnih putnika pre ovog
-            redniBroj = filteredPutnici
-                .take(index + 1)
-                .where(
-                  (p) =>
-                      !p.jeOdsustvo && !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan'),
-                )
-                .length;
+          if (_imaRedniBroj(putnik)) {
+            redniBroj = _pocetniRedniBroj(filteredPutnici, index);
           }
           return PutnikCard(
             putnik: putnik,

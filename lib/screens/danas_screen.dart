@@ -13,6 +13,7 @@ import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream 
 import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ETA putnicima
 import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
+import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/local_notification_service.dart';
 import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pickup tracking
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
@@ -568,90 +569,40 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU
-  // ✅ ISPRAVKA: Koristi widget.filterGrad/filterVreme i key za reaktivnost
+  // ✅ ISPRAVKA: Koristi _currentPutnici state varijablu
   Widget _buildOptimizeButton() {
-    // ✅ ISPRAVKA #3: Koristi widget.filterGrad ?? _selectedGrad za konzistentnost
-    final selectedGrad = widget.filterGrad ?? _selectedGrad;
-    final selectedVreme = widget.filterVreme ?? _selectedVreme;
+    final hasPassengers = _currentPutnici.isNotEmpty;
+    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
 
-    return FutureBuilder<List<Putnik>>(
-      // ✅ ISPRAVKA #1: Dodaj key koji se menja kada se filteri promene
-      key: ValueKey('route_$selectedGrad$selectedVreme${_lastDriverPosition?.latitude}'),
-      future: _routeOptimizationService.fetchPassengersForRoute(
-        grad: selectedGrad,
-        vreme: selectedVreme,
-        driverPosition: _lastDriverPosition,
-      ),
-      builder: (context, snapshot) {
-        // ✅ ISPRAVKA #2: Pravilno rukovanje sa loading/error stanjima
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return SizedBox(
-            height: 26,
-            child: ElevatedButton(
-              onPressed: null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade400,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              ),
-              child: const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              ),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return SizedBox(
-            height: 26,
-            child: ElevatedButton(
-              onPressed: null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              ),
-              child: const Text('!', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-          );
-        }
-
-        final filtriraniPutnici = snapshot.data ?? [];
-        final hasPassengers = filtriraniPutnici.isNotEmpty;
-        final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
-        return SizedBox(
-          height: 26,
-          child: ElevatedButton(
-            onPressed: _isLoading || !hasPassengers || !isDriverValid
-                ? null
-                : () {
-                    if (_isRouteOptimized) {
-                      _resetOptimization();
-                    } else {
-                      _optimizeCurrentRoute(filtriraniPutnici, isAlreadyOptimized: false);
-                    }
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isRouteOptimized
-                  ? Colors.green.shade600
-                  : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400),
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              elevation: hasPassengers ? 2 : 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _isRouteOptimized ? 'Reset' : 'Ruta',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-            ),
+    return SizedBox(
+      height: 26,
+      child: ElevatedButton(
+        onPressed: _isLoading || !hasPassengers || !isDriverValid
+            ? null
+            : () {
+                if (_isRouteOptimized) {
+                  _resetOptimization();
+                } else {
+                  _optimizeCurrentRoute(_currentPutnici, isAlreadyOptimized: false);
+                }
+              },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isRouteOptimized
+              ? Colors.green.shade600
+              : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400),
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          elevation: hasPassengers ? 2 : 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            _isRouteOptimized ? 'Reset' : 'Ruta',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -1101,6 +1052,7 @@ class _DanasScreenState extends State<DanasScreen> {
   // Optimizacija rute - zadržavam zbog postojeće logike
   bool _isRouteOptimized = false;
   List<Putnik> _optimizedRoute = [];
+  List<Putnik> _currentPutnici = []; // 🎯 Trenutni putnici za Ruta dugme
   Map<Putnik, Position>? _cachedCoordinates; // 🎯 Keširane koordinate za HERE WeGo
 
   // Status varijable - pojednostavljeno
@@ -1484,6 +1436,9 @@ class _DanasScreenState extends State<DanasScreen> {
   @override
   void initState() {
     super.initState();
+
+    // 🎫 Učitaj kapacitet cache na startu
+    KapacitetService.ensureCacheLoaded();
 
     // 🚥 INICIJALIZUJ NETWORK STATUS SERVICE
     RealtimeNetworkStatusService.instance.initialize();
@@ -2237,6 +2192,18 @@ class _DanasScreenState extends State<DanasScreen> {
                       }
                     }).toList();
 
+                    // 🎯 Ažuriraj _currentPutnici za Ruta dugme (bez setState u build)
+                    if (_currentPutnici.length != filtriraniPutnici.length ||
+                        !_currentPutnici.every((p) => filtriraniPutnici.any((fp) => fp.id == p.id))) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          setState(() {
+                            _currentPutnici = filtriraniPutnici;
+                          });
+                        }
+                      });
+                    }
+
                     // Koristiti optimizovanu rutu ako postoji, ali filtriraj je po trenutnom polazaku
                     final finalPutnici = _isRouteOptimized
                         ? _optimizedRoute.where((putnik) {
@@ -2722,6 +2689,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       selectedGrad: _selectedGrad,
                       selectedVreme: _selectedVreme,
                       getPutnikCount: getPutnikCount,
+                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: (grad, vreme) {
                         // 🚐 ZAUSTAVI STARI TRACKING pre promene polaska
@@ -2763,6 +2731,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       selectedGrad: _selectedGrad,
                       selectedVreme: _selectedVreme,
                       getPutnikCount: getPutnikCount,
+                      getKapacitet: (grad, vreme) => KapacitetService.getKapacitetSync(grad, vreme),
                       isSlotLoading: (grad, vreme) => _resettingSlots.contains('$grad|$vreme'),
                       onPolazakChanged: (grad, vreme) async {
                         // 🚐 ZAUSTAVI STARI TRACKING pre promene polaska

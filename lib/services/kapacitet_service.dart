@@ -213,4 +213,29 @@ class KapacitetService {
     _cacheTime = null;
     debugPrint('🗑️ KapacitetService: Cache očišćen');
   }
+
+  /// Dohvati kapacitet za grad/vreme iz cache-a (sinhrono)
+  /// Vraća default 8 ako nije u cache-u
+  static int getKapacitetSync(String grad, String vreme) {
+    if (_kapacitetCache == null) return 8;
+
+    final normalizedGrad = grad.toLowerCase();
+    String gradKey;
+    if (normalizedGrad.contains('bela') || normalizedGrad == 'bc') {
+      gradKey = 'BC';
+    } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vršac') || normalizedGrad == 'vs') {
+      gradKey = 'VS';
+    } else {
+      return 8;
+    }
+
+    return _kapacitetCache![gradKey]?[vreme] ?? 8;
+  }
+
+  /// Osiguraj da je cache popunjen (pozovi na inicijalizaciji)
+  static Future<void> ensureCacheLoaded() async {
+    if (_kapacitetCache == null) {
+      await getKapacitet();
+    }
+  }
 }

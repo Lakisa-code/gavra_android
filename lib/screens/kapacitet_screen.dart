@@ -141,19 +141,6 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
           color: Theme.of(context).glassContainer,
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
-            leading: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.access_time,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
             title: Text(
               vreme,
               style: const TextStyle(

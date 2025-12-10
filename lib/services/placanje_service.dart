@@ -16,7 +16,7 @@ class PlacanjeService {
       // Preuzmi sva plaćanja iz putovanja_istorija (uključujući sva plaćanja)
       final istorijaPlacanjaResponse = await _supabase
           .from('putovanja_istorija')
-          .select('putnik_ime, cena, registrovani_putnik_id, datum_putovanja')
+          .select('putnik_ime, cena, mesecni_putnik_id, datum_putovanja')
           .eq('status', 'placeno')
           .eq('tip_putnika', 'mesecni')
           .not('cena', 'is', null);
@@ -29,11 +29,11 @@ class PlacanjeService {
 
       for (final placanje in istorijaPlacanjaData) {
         final cena = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
-        final registrovaniPutnikId = placanje['registrovani_putnik_id'] as String?;
+        final mesecniPutnikId = placanje['mesecni_putnik_id'] as String?;
         final putnikIme = placanje['putnik_ime'] as String?;
 
-        if (registrovaniPutnikId != null) {
-          placanjaPoId[registrovaniPutnikId] = (placanjaPoId[registrovaniPutnikId] ?? 0.0) + cena;
+        if (mesecniPutnikId != null) {
+          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
         }
 
         if (putnikIme != null) {
@@ -96,7 +96,7 @@ class PlacanjeService {
       // Preuzmi plaćanja za specifičan mesec iz putovanja_istorija
       final placanjaResponse = await _supabase
           .from('putovanja_istorija')
-          .select('putnik_ime, cena, registrovani_putnik_id')
+          .select('putnik_ime, cena, mesecni_putnik_id')
           .eq('status', 'placeno')
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
@@ -111,11 +111,11 @@ class PlacanjeService {
 
       for (final placanje in placanjaData) {
         final cena = (placanje['cena'] as num?)?.toDouble() ?? 0.0;
-        final registrovaniPutnikId = placanje['registrovani_putnik_id'] as String?;
+        final mesecniPutnikId = placanje['mesecni_putnik_id'] as String?;
         final putnikIme = placanje['putnik_ime'] as String?;
 
-        if (registrovaniPutnikId != null) {
-          placanjaPoId[registrovaniPutnikId] = (placanjaPoId[registrovaniPutnikId] ?? 0.0) + cena;
+        if (mesecniPutnikId != null) {
+          placanjaPoId[mesecniPutnikId] = (placanjaPoId[mesecniPutnikId] ?? 0.0) + cena;
         }
 
         if (putnikIme != null) {
@@ -193,7 +193,7 @@ class PlacanjeService {
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
@@ -224,7 +224,7 @@ class PlacanjeService {
       final placanja = await _supabase
           .from('putovanja_istorija')
           .select('cena, datum_putovanja, vozac_id, created_at, napomene')
-          .eq('registrovani_putnik_id', putnikId)
+          .eq('mesecni_putnik_id', putnikId)
           .eq('tip_putnika', 'mesecni')
           .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
           .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0])
