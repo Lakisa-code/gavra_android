@@ -539,7 +539,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  'Mesečni putnici',
+                                  'Uloguj se',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,

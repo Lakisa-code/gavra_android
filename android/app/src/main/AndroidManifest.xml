@@ -27,7 +27,7 @@
   <!-- 🔊 VOICE NAVIGATION PERMISSIONS -->
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-  <application android:label="Gavra 013" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:largeHeap="true" android:enableOnBackInvokedCallback="true" android:requestLegacyExternalStorage="true">
+  <application android:label="Gavra 013" android:name="${applicationName}" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:largeHeap="true" android:enableOnBackInvokedCallback="true" android:requestLegacyExternalStorage="true">
     <!-- 🎮 MIUI Gaming optimizations -->
     <meta-data android:name="miui.game.mode" android:value="true" />
     <meta-data android:name="miui.performance.mode" android:value="high" />

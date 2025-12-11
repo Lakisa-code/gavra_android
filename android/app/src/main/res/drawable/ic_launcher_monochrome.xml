@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome version of the launcher icon for Android 13+ Themed Icons -->
+<!-- This should be a simple silhouette of your app icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Simple "G" letter representing Gavra -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24C37.4,24 24,37.4 24,54C24,70.6 37.4,84 54,84C62.8,84 70.7,80.4 76.4,74.6L76.4,54L54,54L54,62L66.4,62L66.4,70C63,73 58.7,75 54,75C42.4,75 33,65.6 33,54C33,42.4 42.4,33 54,33C61.2,33 67.5,36.8 71.2,42.4L78.8,36.8C73.4,29.2 64.4,24 54,24Z"/>
+</vector>
