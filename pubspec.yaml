@@ -1,7 +1,7 @@
 name: gavra_android
 description: Gavra 013 - Aplikacija za organizaciju polazaka
 
-version: 6.0.1+2025120601
+version: 6.0.2+2025121101
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -75,6 +75,15 @@ dev_dependencies:
   build_runner: ^2.4.6
   freezed: ^2.4.5
   json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.14.3
+
+# 🎨 LAUNCHER ICONS KONFIGURACIJA
+flutter_launcher_icons:
+  android: true
+  ios: false  # iOS ćemo dodati kasnije
+  image_path: "assets/logo_transparent.png"
+  adaptive_icon_background: "#000000"  # Crna pozadina za adaptive icon
+  adaptive_icon_foreground: "assets/logo_transparent.png"
 
 flutter:
   uses-material-design: true
@@ -86,3 +95,4 @@ flutter:
     - assets/bilevski.mp3 # 🎵 Bilevskijeva specijalna pesma
     - assets/agconnect-services.json # 🗺️ Huawei Map Kit API config
     - assets/logo_gavra.jpg # 🎨 Logo firme Gavra 013
+    - assets/logo_transparent.png # 🎨 Logo sa transparentnom pozadinom

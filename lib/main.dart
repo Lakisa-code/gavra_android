@@ -20,7 +20,6 @@ import 'services/offline_map_service.dart';
 import 'services/realtime_notification_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
-import 'services/update_service.dart'; // 🔄 Auto-update provera
 import 'services/voice_navigation_service.dart';
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'supabase_client.dart';
@@ -225,9 +224,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
       // 🎨 Inicijalizuj ThemeManager
       await ThemeManager().initialize();
-
-      // 🔄 Auto-update provera svakih sat vremena
-      UpdateService.startBackgroundUpdateCheck();
 
       // 🧹 PERIODIČKI CLEANUP - svaki put kada se app pokrene
       CacheService.performAutomaticCleanup();
