@@ -1579,14 +1579,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     // Use a parametric stream filtered to the currently selected day
     // so monthly passengers (registrovani_putnici) are created for that day
     // and will appear in the list/counts for arbitrary selected day.
-    // ✅ FIX: Prosleđujemo grad i vreme kao u danas_screen da bi stream koristio isti keš
+    // ✅ FIX: Ne prosleđujemo vreme da bismo dobili SVE putnike za dan (za bottom nav bar brojače)
+    // Filtriranje po gradu/vremenu se radi client-side za prikaz liste
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: StreamBuilder<List<Putnik>>(
         stream: _putnikService.streamKombinovaniPutniciFiltered(
           isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
-          grad: _selectedGrad,
-          vreme: _selectedVreme,
+          // grad i vreme NAMERNO IZOSTAVLJENI - treba nam SVA vremena za bottom nav bar
         ),
         builder: (context, snapshot) {
           // 🚨 DEBUG: Log state information
@@ -1782,7 +1782,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           // je prikaz svuda 0.
           int getPutnikCount(String grad, String vreme) {
             try {
-              final count = grad == 'Bela Crkva' ? brojPutnikaBC[vreme] ?? 0 : brojPutnikaVS[vreme] ?? 0;
+              final normVreme = GradAdresaValidator.normalizeTime(vreme);
+              final count = grad == 'Bela Crkva' 
+                  ? (brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0) 
+                  : (brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0);
               return count;
             } catch (e) {
               // Log error and continue to fallback
