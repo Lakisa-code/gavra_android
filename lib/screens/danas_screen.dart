@@ -39,6 +39,7 @@ import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
+import '../widgets/weather_widget.dart'; // 🌤️ DODANO za vremensku prognozu
 import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
@@ -379,6 +380,7 @@ class _DanasScreenState extends State<DanasScreen> {
                 children: [
                   // LEVO - DATUM
                   Expanded(
+                    flex: 2,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
@@ -394,8 +396,11 @@ class _DanasScreenState extends State<DanasScreen> {
                       ),
                     ),
                   ),
+                  // 🌤️ LEVI Weather Widget - BELA CRKVA (između datuma i dana)
+                  const WeatherWidget(size: 24, location: WeatherLocation.belaCrkva),
                   // SREDINA - DAN (menja boju na osnovu stream health-a)
                   Expanded(
+                    flex: 2,
                     child: ValueListenableBuilder<bool>(
                       valueListenable: _isRealtimeHealthy,
                       builder: (context, isHealthy, child) {
@@ -418,8 +423,11 @@ class _DanasScreenState extends State<DanasScreen> {
                       },
                     ),
                   ),
+                  // 🌤️ DESNI Weather Widget - VRŠAC (između dana i vremena)
+                  const WeatherWidget(size: 24, location: WeatherLocation.vrsac),
                   // DESNO - VREME
                   Expanded(
+                    flex: 2,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerRight,
@@ -783,7 +791,7 @@ class _DanasScreenState extends State<DanasScreen> {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                'Đaci - Danas ($reseni/$ostalo)',
+                'Đaci ($ostalo/$ukupnoUjutro)',
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -861,7 +869,7 @@ class _DanasScreenState extends State<DanasScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Učenici koji su otkazali, na bolovanju ili godišnjem',
+                    'Učenici koji su otkazali',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],

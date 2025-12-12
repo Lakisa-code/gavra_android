@@ -66,6 +66,9 @@ dependencies:
   # 🗺️ OFFLINE MAPS DATABASE
   sqflite: ^2.3.3
 
+  # 🎬 LOTTIE ANIMACIJE (Weather widget)
+  lottie: ^3.1.0
+
   app_links: any
 
 dev_dependencies:
@@ -94,5 +97,6 @@ flutter:
     - assets/bruda.mp3 # 🎵 Brudina specijalna pesma
     - assets/bilevski.mp3 # 🎵 Bilevskijeva specijalna pesma
     - assets/agconnect-services.json # 🗺️ Huawei Map Kit API config
+    - assets/weather/  # 🌤️ Lottie animacije za vremensku prognozu
     - assets/logo_gavra.jpg # 🎨 Logo firme Gavra 013
     - assets/logo_transparent.png # 🎨 Logo sa transparentnom pozadinom
