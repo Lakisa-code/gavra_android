@@ -112,8 +112,9 @@ class CardColorHelper {
     }
     if (putnik.jePokupljen) {
       final bool isPlaceno = (putnik.iznosPlacanja ?? 0) > 0;
-      final bool isMesecna = putnik.mesecnaKarta == true;
-      if (isPlaceno || isMesecna) {
+      // 🆕 FIX: radnik/ucenik → zelena, dnevni → plava
+      final bool isMesecniTip = putnik.isMesecniTip;
+      if (isPlaceno || isMesecniTip) {
         return CardState.placeno;
       }
       return CardState.pokupljeno;

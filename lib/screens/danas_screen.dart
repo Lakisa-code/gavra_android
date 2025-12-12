@@ -1099,7 +1099,7 @@ class _DanasScreenState extends State<DanasScreen> {
     final pokupljeniIOtkazani = sveziPutnici.where((p) {
       return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo;
     }).toList();
-    
+
     final preostaliPutnici = sveziPutnici.where((p) {
       return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
     }).toList();

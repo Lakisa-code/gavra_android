@@ -99,13 +99,16 @@ class _PutnikCardState extends State<PutnikCard> {
 
   Future<void> _handlePokupljen() async {
     if (_putnik.vremePokupljenja == null && widget.showActions && !_putnik.jeOtkazan) {
+      // 🆕 FIX: Sačuvaj originalno ime pre bilo kakvih operacija
+      final String originalnoIme = _putnik.ime;
+
       try {
         // PROVERI DA LI JE ID NULL
         if (_putnik.id == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SmartSnackBar.error(
-                'Greška: ${_putnik.ime} nema validno ID za pokupljanje',
+                'Greška: $originalnoIme nema validno ID za pokupljanje',
                 context,
               ),
             );
@@ -154,10 +157,10 @@ class _PutnikCardState extends State<PutnikCard> {
               });
             }
 
-            // 🎉 PRIKAZ USPEŠNE PORUKE
+            // 🎉 PRIKAZ USPEŠNE PORUKE - koristi originalno ime
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SmartSnackBar.success('${_putnik.ime} je pokupljen', context),
+                SmartSnackBar.success('$originalnoIme je pokupljen', context),
               );
             }
 
@@ -180,7 +183,7 @@ class _PutnikCardState extends State<PutnikCard> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Greška pri pokupljanju ${_putnik.ime}: $e'),
+                content: Text('Greška pri pokupljanju $originalnoIme: $e'),
                 backgroundColor: Theme.of(context).colorScheme.error,
                 duration: const Duration(seconds: 3),
               ),
@@ -1851,8 +1854,8 @@ class _PutnikCardState extends State<PutnikCard> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // 📅 MESEČNA KARTA BADGE — make it a proper badge above icons
-                              if (_putnik.mesecnaKarta == true)
+                              // 📅 MESEČNA BADGE — prikazuj samo za radnik i ucenik tipove
+                              if (_putnik.isMesecniTip)
                                 Align(
                                   alignment: Alignment.topRight,
                                   child: Container(

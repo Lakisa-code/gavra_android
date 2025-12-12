@@ -76,6 +76,7 @@ class Putnik {
     this.rutaNaziv,
     this.adresaKoordinate,
     this.brojMesta = 1, // 🆕 Broj rezervisanih mesta (default 1)
+    this.tipPutnika, // 🆕 Tip putnika: radnik, ucenik, dnevni
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
@@ -107,6 +108,8 @@ class Putnik {
     final place = grad.toLowerCase().contains('vr') ? 'vs' : 'bc';
     // Only use explicit per-day or JSON values; do not fallback to legacy single-time columns
     final polazakRaw = RegistrovaniHelpers.getPolazakForDay(map, danKratica, place);
+    // 🆕 Tip putnika iz baze
+    final tipPutnika = map['tip'] as String?;
 
     return Putnik(
       id: map['id'], // ✅ UUID iz registrovani_putnici
@@ -114,7 +117,7 @@ class Putnik {
       polazak: RegistrovaniHelpers.normalizeTime(polazakRaw?.toString()) ?? '6:00',
       pokupljen: map['status'] == null || (map['status'] != 'bolovanje' && map['status'] != 'godisnji'),
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
-      mesecnaKarta: true, // uvek true za mesečne putnike
+      mesecnaKarta: tipPutnika != 'dnevni', // 🆕 FIX: false za dnevni tip
       dan: map['radni_dani'] as String? ?? 'Pon',
       status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
       statusVreme: map['updated_at'] as String?,
@@ -143,6 +146,7 @@ class Putnik {
       obrisan: !RegistrovaniHelpers.isActiveFromMap(map),
       brojTelefona: map['broj_telefona'] as String?,
       brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
+      tipPutnika: tipPutnika, // 🆕 Tip putnika: radnik, ucenik, dnevni
     );
   }
 
@@ -214,6 +218,7 @@ class Putnik {
       obrisan: map['obrisan'] == true, // ✅ Sada čita iz obrisan kolone
       brojTelefona: map['broj_telefona'] as String?,
       brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
+      tipPutnika: map['tip_putnika'] as String?, // 🆕 Tip putnika: radnik, ucenik, dnevni
     );
   }
 
@@ -250,6 +255,15 @@ class Putnik {
   final String? rutaNaziv;
   final String? adresaKoordinate;
   final int brojMesta; // 🆕 Broj rezervisanih mesta (1, 2, 3...)
+  final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
+
+  // 🆕 Helper getter za proveru da li je dnevni tip
+  bool get isDnevniTip => tipPutnika == 'dnevni' || mesecnaKarta == false;
+
+  // 🆕 Helper getter za proveru da li je radnik ili ucenik (prikazuje MESEČNA badge)
+  // Fallback: ako tipPutnika nije poznat, koristi mesecnaKarta kao indikator
+  bool get isMesecniTip =>
+      tipPutnika == 'radnik' || tipPutnika == 'ucenik' || (tipPutnika == null && mesecnaKarta == true);
 
   // Getter-i za kompatibilnost
   String get destinacija => grad;
@@ -306,6 +320,8 @@ class Putnik {
     final bool placeno = iznosPlacanja > 0;
     final vozac = (map['vozac'] as String?) ?? _getVozacIme(map['vozac_id'] as String?);
     final obrisan = map['aktivan'] == false;
+    // 🆕 FIX: Čitaj tip putnika iz baze
+    final tipPutnika = map['tip'] as String?;
 
     return _createPutniciForDay(
       map,
@@ -320,6 +336,7 @@ class Putnik {
       vozac,
       obrisan,
       targetDan,
+      tipPutnika,
     );
   }
 
@@ -337,8 +354,11 @@ class Putnik {
     String? vozac,
     bool obrisan,
     String targetDan,
+    String? tipPutnika, // 🆕 FIX: Dodaj tipPutnika parametar
   ) {
     final List<Putnik> putnici = [];
+    // 🆕 FIX: mesecnaKarta = true samo za radnik i ucenik, false za dnevni
+    final bool mesecnaKarta = tipPutnika != 'dnevni';
 
     // ✅ NOVA LOGIKA: Čitaj vremena iz novih kolona po danima
     // Određi da li putnik radi za targetDan
@@ -382,7 +402,7 @@ class Putnik {
           polazak: polazakBC,
           pokupljen: pokupljenZaOvajPolazak,
           vremeDodavanja: vremeDodavanja,
-          mesecnaKarta: true,
+          mesecnaKarta: mesecnaKarta, // 🆕 FIX: koristi izračunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
           status: status,
           statusVreme: map['updated_at'] as String?,
@@ -411,6 +431,7 @@ class Putnik {
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
           brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
               map, normalizedTarget, 'bc'), // 🆕 Broj rezervisanih mesta iz JSON-a
+          tipPutnika: tipPutnika, // 🆕 FIX: dodaj tip putnika
         ),
       );
     }
@@ -435,7 +456,7 @@ class Putnik {
           polazak: polazakVS,
           pokupljen: pokupljenZaOvajPolazak,
           vremeDodavanja: vremeDodavanja,
-          mesecnaKarta: true,
+          mesecnaKarta: mesecnaKarta, // 🆕 FIX: koristi izračunatu vrednost
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
           status: status,
           statusVreme: map['updated_at'] as String?,
@@ -464,6 +485,7 @@ class Putnik {
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
           brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
               map, normalizedTarget, 'vs'), // 🆕 Broj rezervisanih mesta iz JSON-a
+          tipPutnika: tipPutnika, // 🆕 FIX: dodaj tip putnika
         ),
       );
     }
@@ -691,7 +713,8 @@ class Putnik {
     return {
       // 'id': id, // Uklonjen - Supabase će automatski generirati UUID
       'mesecni_putnik_id': mesecnaKarta == true ? id : null,
-      'tip_putnika': mesecnaKarta == true ? 'radnik' : 'dnevni', // ✅ FIX: default 'radnik' za registrovane
+      'tip_putnika':
+          tipPutnika ?? (mesecnaKarta == true ? 'radnik' : 'dnevni'), // 🆕 FIX: koristi tipPutnika ako postoji
       'datum_putovanja': datumZaUpis, // ✅ Za PutovanjaIstorijaService compatibility
       'vreme_polaska': polazak,
       'putnik_ime': ime,

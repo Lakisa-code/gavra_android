@@ -1167,14 +1167,16 @@ class PutnikService {
       }
     } else {
       // Za putovanja_istorija koristi action_log
+      final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver) ?? currentDriver;
       final actionLog2 = ActionLog.fromDynamic(response['action_log']);
       final updatedActionLog2 = actionLog2.addAction(ActionType.picked, vozacUuid, 'Pokupljen');
 
       await supabase.from(tabela).update({
         'status': 'pokupljen',
-        // vreme_pokupljenja ne postoji u putovanja_istorija - koristi se action_log
+        'vreme_pokupljenja': now.toIso8601String(), // 🆕 FIX: Dodaj vreme_pokupljenja
         'action_log': updatedActionLog2.toJson(), // ✅ FIXED: Ažuriraj action_log.picked_by
+        'updated_at': now.toIso8601String(), // 🆕 FIX: Ažuriraj timestamp
       }).eq('id', id as String);
     }
 
