@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 /// - Koristi ECMWF model (zlatni standard za Evropu)
 /// - Bez registracije, bez API key-a, bez limita
 /// - Isti podaci kao premium servisi (Weather & Radar itd.)
+/// - Podrška za vremenska upozorenja (alerts) 🚨
 class WeatherService {
   // Open-Meteo API - BESPLATAN, bez registracije!
   static const String _baseUrl = 'https://api.open-meteo.com/v1/forecast';
@@ -24,6 +25,13 @@ class WeatherService {
   static DateTime? _cacheTimeBC;
   static DateTime? _cacheTimeVS;
   static const Duration _cacheDuration = Duration(minutes: 30);
+
+  // Alert cache - odvojeno za BC i VS
+  static WeatherAlert? _cachedAlertBC;
+  static WeatherAlert? _cachedAlertVS;
+  static DateTime? _alertCacheTimeBC;
+  static DateTime? _alertCacheTimeVS;
+  static const Duration _alertCacheDuration = Duration(minutes: 15);
 
   /// WMO Weather interpretation codes -> naši uslovi
   /// https://open-meteo.com/en/docs
@@ -296,6 +304,349 @@ class WeatherService {
     _cachedWeatherVS = null;
     _cacheTimeBC = null;
     _cacheTimeVS = null;
+    _cachedAlertBC = null;
+    _cachedAlertVS = null;
+    _alertCacheTimeBC = null;
+    _alertCacheTimeVS = null;
     debugPrint('🌤️ Weather cache cleared');
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🚨 WEATHER ALERTS - Upozorenja za ekstremne vremenske uslove
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Provera da li postoji opasan vremenski uslov na osnovu WMO koda i drugih faktora
+  /// Koristi: temperature, vetar, padavine, visibility
+  static Future<WeatherAlert?> getAlertBC() async {
+    return _getAlertForLocation(bcLat, bcLon, 'BC');
+  }
+
+  static Future<WeatherAlert?> getAlertVS() async {
+    return _getAlertForLocation(vsLat, vsLon, 'VS');
+  }
+
+  /// Dohvata sve aktivne alerte za obe lokacije
+  static Future<List<WeatherAlert>> getAllAlerts() async {
+    final results = await Future.wait([
+      getAlertBC(),
+      getAlertVS(),
+    ]);
+    return results.whereType<WeatherAlert>().toList();
+  }
+
+  /// Proverava da li ima bilo kakvih aktivnih alertova
+  static Future<bool> hasAnyAlert() async {
+    final alerts = await getAllAlerts();
+    return alerts.isNotEmpty;
+  }
+
+  static Future<WeatherAlert?> _getAlertForLocation(
+    double lat,
+    double lon,
+    String locationKey,
+  ) async {
+    try {
+      // Proveri alert cache
+      final cachedAlert = locationKey == 'BC' ? _cachedAlertBC : _cachedAlertVS;
+      final cacheTime = locationKey == 'BC' ? _alertCacheTimeBC : _alertCacheTimeVS;
+
+      if (cachedAlert != null && cacheTime != null) {
+        final elapsed = DateTime.now().difference(cacheTime);
+        if (elapsed < _alertCacheDuration) {
+          debugPrint('🚨 Alert $locationKey: using cached (${elapsed.inMinutes}min old)');
+          return cachedAlert.severity != AlertSeverity.none ? cachedAlert : null;
+        }
+      }
+
+      // Dohvati detaljnije podatke za alert analizu
+      final url = Uri.parse('$_baseUrl?latitude=$lat&longitude=$lon'
+          '&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m'
+          '&hourly=temperature_2m,precipitation_probability,precipitation,visibility,weather_code'
+          '&forecast_days=1'
+          '&timezone=Europe/Belgrade'
+          '&models=ecmwf_ifs025');
+
+      debugPrint('🚨 Alert $locationKey: checking conditions...');
+
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final alert = _analyzeWeatherForAlert(data, locationKey);
+
+        // Cache rezultat
+        if (locationKey == 'BC') {
+          _cachedAlertBC = alert;
+          _alertCacheTimeBC = DateTime.now();
+        } else {
+          _cachedAlertVS = alert;
+          _alertCacheTimeVS = DateTime.now();
+        }
+
+        if (alert.severity != AlertSeverity.none) {
+          debugPrint('🚨 Alert $locationKey: ${alert.severity.name} - ${alert.title}');
+          return alert;
+        }
+        return null;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Alert $locationKey check error: $e');
+    }
+    return null;
+  }
+
+  /// Analizira vremenske podatke i generiše alert ako je potrebno
+  static WeatherAlert _analyzeWeatherForAlert(Map<String, dynamic> data, String locationKey) {
+    try {
+      final current = data['current'] ?? {};
+      final hourly = data['hourly'] ?? {};
+
+      final weatherCode = (current['weather_code'] ?? 0) as int;
+      final temp = (current['temperature_2m'] ?? 15).toDouble();
+      final windSpeed = (current['wind_speed_10m'] ?? 0).toDouble();
+      final windGusts = (current['wind_gusts_10m'] ?? 0).toDouble();
+
+      // Hourly data za narednih 12h
+      final hourlyPrecipProb = (hourly['precipitation_probability'] as List?)?.take(12).toList() ?? [];
+      final hourlyPrecip = (hourly['precipitation'] as List?)?.take(12).toList() ?? [];
+      final hourlyVisibility = (hourly['visibility'] as List?)?.take(12).toList() ?? [];
+      final hourlyWeatherCode = (hourly['weather_code'] as List?)?.take(12).toList() ?? [];
+
+      final cityName = locationKey == 'BC' ? 'Bela Crkva' : 'Vršac';
+      final alerts = <_AlertCandidate>[];
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 🌡️ EKSTREMNE TEMPERATURE
+      // ═══════════════════════════════════════════════════════════════════════
+      if (temp <= -10) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'EKSTREMNA HLADNOĆA',
+          description:
+              'Temperatura u $cityName je ${temp.round()}°C!\nOpasnost od smrzavanja. Obucite se toplo, proverite antifriz u vozilu.',
+          icon: '🥶',
+        ));
+      } else if (temp <= -5) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.warning,
+          title: 'Jak mraz',
+          description: 'Temperatura u $cityName je ${temp.round()}°C.\nMogući problemi sa vozilom pri paljenju.',
+          icon: '❄️',
+        ));
+      } else if (temp >= 38) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'EKSTREMNA VRUĆINA',
+          description:
+              'Temperatura u $cityName je ${temp.round()}°C!\nOpasnost od toplotnog udara. Pijte dosta tečnosti.',
+          icon: '🔥',
+        ));
+      } else if (temp >= 35) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.warning,
+          title: 'Velika vrućina',
+          description: 'Temperatura u $cityName je ${temp.round()}°C.\nPreporučuje se izbegavanje direktnog sunca.',
+          icon: '☀️',
+        ));
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 💨 JAK VETAR
+      // ═══════════════════════════════════════════════════════════════════════
+      if (windGusts >= 90) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'ORKANSKI VETAR',
+          description:
+              'Udari vetra u $cityName do ${windGusts.round()} km/h!\nIzbegavajte vožnju, posebno mostove i otvorene puteve.',
+          icon: '🌪️',
+        ));
+      } else if (windGusts >= 70 || windSpeed >= 50) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.warning,
+          title: 'Olujni vetar',
+          description: 'Vetar u $cityName do ${windGusts.round()} km/h.\nOprez pri vožnji, moguće grane na putu.',
+          icon: '💨',
+        ));
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // ⛈️ NEVREME (thunderstorm codes: 95, 96, 99)
+      // ═══════════════════════════════════════════════════════════════════════
+      if (weatherCode >= 95) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'GRMLJAVINSKO NEVREME',
+          description: 'Aktivno nevreme u $cityName!\nMogući grad i olujni vetar. Sklonite se na sigurno.',
+          icon: '⛈️',
+        ));
+      }
+
+      // Proveri da li dolazi nevreme u narednih 12h
+      for (int i = 0; i < hourlyWeatherCode.length; i++) {
+        final code = hourlyWeatherCode[i] as int? ?? 0;
+        if (code >= 95 && weatherCode < 95) {
+          // Nevreme dolazi, ali još nije tu
+          alerts.add(_AlertCandidate(
+            severity: AlertSeverity.warning,
+            title: 'Nevreme na putu',
+            description: 'Grmljavinsko nevreme očekuje se u $cityName za ~${i + 1}h.\nPlanirati vožnju na vreme.',
+            icon: '⚡',
+          ));
+          break;
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 🌧️ OBILNE PADAVINE
+      // ═══════════════════════════════════════════════════════════════════════
+      double maxPrecip = 0;
+      for (final p in hourlyPrecip) {
+        final val = (p as num?)?.toDouble() ?? 0;
+        if (val > maxPrecip) maxPrecip = val;
+      }
+
+      if (maxPrecip >= 20) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'OBILNE PADAVINE',
+          description: 'Očekuje se do ${maxPrecip.round()}mm padavina u $cityName!\nMogućnost poplava i bujica.',
+          icon: '🌊',
+        ));
+      } else if (maxPrecip >= 10) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.warning,
+          title: 'Jače padavine',
+          description: 'Očekuje se do ${maxPrecip.round()}mm padavina u $cityName.\nSmanjena vidljivost, klizav put.',
+          icon: '🌧️',
+        ));
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 🌫️ LOŠA VIDLJIVOST (magla)
+      // ═══════════════════════════════════════════════════════════════════════
+      double minVisibility = double.infinity;
+      for (final v in hourlyVisibility) {
+        final val = (v as num?)?.toDouble() ?? 10000;
+        if (val < minVisibility) minVisibility = val;
+      }
+
+      if (minVisibility < 100) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'GUSTA MAGLA',
+          description: 'Vidljivost u $cityName ispod 100m!\nVožnja izuzetno opasna, odložite putovanje.',
+          icon: '🌫️',
+        ));
+      } else if (minVisibility < 500) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.warning,
+          title: 'Magla',
+          description:
+              'Smanjena vidljivost u $cityName (~${minVisibility.round()}m).\nVozite polako, uključite svetla.',
+          icon: '🌁',
+        ));
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 🧊 POLEDICA (rain when temp near freezing)
+      // ═══════════════════════════════════════════════════════════════════════
+      if (temp >= -2 && temp <= 3 && (weatherCode >= 51 && weatherCode <= 67)) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'POLEDICA',
+          description: 'Kiša pri temperaturi ${temp.round()}°C u $cityName!\nOpasnost od poledice, put klizav.',
+          icon: '🧊',
+        ));
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // ❄️ SNEŽNA MEĆAVA
+      // ═══════════════════════════════════════════════════════════════════════
+      bool hasHeavySnow = weatherCode == 75 || weatherCode == 86;
+      if (hasHeavySnow && windSpeed >= 30) {
+        alerts.add(_AlertCandidate(
+          severity: AlertSeverity.severe,
+          title: 'SNEŽNA MEĆAVA',
+          description: 'Jak sneg i vetar u $cityName!\nVidljivost smanjena, putevi neprohodni.',
+          icon: '🌨️',
+        ));
+      }
+
+      // Izaberi najozbiljniji alert
+      if (alerts.isEmpty) {
+        return WeatherAlert(
+          severity: AlertSeverity.none,
+          title: '',
+          description: '',
+          icon: '',
+          location: cityName,
+        );
+      }
+
+      // Sortiraj po ozbiljnosti i vrati najozbiljniji
+      alerts.sort((a, b) => b.severity.index.compareTo(a.severity.index));
+      final worst = alerts.first;
+
+      return WeatherAlert(
+        severity: worst.severity,
+        title: worst.title,
+        description: worst.description,
+        icon: worst.icon,
+        location: cityName,
+      );
+    } catch (e) {
+      debugPrint('⚠️ Alert analysis error: $e');
+      return WeatherAlert(
+        severity: AlertSeverity.none,
+        title: '',
+        description: '',
+        icon: '',
+        location: locationKey == 'BC' ? 'Bela Crkva' : 'Vršac',
+      );
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🚨 WEATHER ALERT MODEL
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Nivo ozbiljnosti alerta
+enum AlertSeverity {
+  none, // Nema alerta
+  warning, // Upozorenje (žuta)
+  severe, // Ozbiljno upozorenje (crvena)
+}
+
+/// Model za vremensko upozorenje
+class WeatherAlert {
+  final AlertSeverity severity;
+  final String title;
+  final String description;
+  final String icon;
+  final String location;
+
+  const WeatherAlert({
+    required this.severity,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.location,
+  });
+}
+
+/// Interni helper za kandidate alertova
+class _AlertCandidate {
+  final AlertSeverity severity;
+  final String title;
+  final String description;
+  final String icon;
+
+  const _AlertCandidate({
+    required this.severity,
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
 }

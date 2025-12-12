@@ -4,6 +4,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart'; // 🚨 Za weather alert animaciju
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -21,6 +22,7 @@ import '../services/registrovani_putnik_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
+import '../services/weather_service.dart'; // 🚨 Za vremenska upozorenja
 import '../theme.dart'; // 🎨 Import za prelepe gradijente
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju
@@ -302,6 +304,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         setState(() {
           _isLoading = false;
         });
+
+        // 🚨 PROVERI VREMENSKA UPOZORENJA NAKON LOGOVANJA
+        _checkWeatherAlerts();
       }
     } catch (e) {
       // Ako se dogodi greška, i dalje ukloni loading
@@ -322,6 +327,168 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _currentDriver = driver; // Ne postavljaj fallback 'Nepoznat'
       });
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 🚨 WEATHER ALERTS - Prikaži upozorenje na startu ako ima ekstremnih uslova
+  // ═══════════════════════════════════════════════════════════════════════════
+  Future<void> _checkWeatherAlerts() async {
+    try {
+      final alerts = await WeatherService.getAllAlerts();
+
+      if (alerts.isEmpty || !mounted) return;
+
+      // Prikaži popup sa svim alertima
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showWeatherAlertDialog(alerts);
+      });
+    } catch (e) {
+      debugPrint('⚠️ Weather alert check error: $e');
+    }
+  }
+
+  void _showWeatherAlertDialog(List<WeatherAlert> alerts) {
+    final isSevere = alerts.any((a) => a.severity == AlertSeverity.severe);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Mora da klikne dugme
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isSevere ? Colors.red.shade900 : Colors.orange.shade900,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSevere ? Colors.red : Colors.orange,
+            width: 3,
+          ),
+        ),
+        title: Row(
+          children: [
+            // Animirana warning ikona
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: Lottie.asset(
+                'assets/weather/warning.json',
+                repeat: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isSevere ? '⚠️ UPOZORENJE!' : '⚠️ Pažnja',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isSevere ? 22 : 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Vremenska prognoza',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: alerts.map((alert) => _buildAlertCard(alert)).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.2),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'RAZUMEM',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertCard(WeatherAlert alert) {
+    final isSevere = alert.severity == AlertSeverity.severe;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSevere ? Colors.red.shade300 : Colors.orange.shade300,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                alert.icon,
+                style: const TextStyle(fontSize: 24),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  alert.title,
+                  style: TextStyle(
+                    color: isSevere ? Colors.red.shade100 : Colors.orange.shade100,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSevere ? Colors.red : Colors.orange,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  alert.location,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            alert.description,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initializeRealtimeService() async {
