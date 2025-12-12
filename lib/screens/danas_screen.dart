@@ -2072,8 +2072,8 @@ class _DanasScreenState extends State<DanasScreen> {
               : StreamBuilder<List<Putnik>>(
                   stream: _putnikService.streamKombinovaniPutniciFiltered(
                     isoDate: DateTime.now().toIso8601String().split('T')[0],
-                    grad: widget.filterGrad ?? _selectedGrad,
-                    vreme: widget.filterVreme ?? _selectedVreme,
+                    // ✅ FIX: Ne prosleđujemo grad/vreme u stream - filtriramo client-side
+                    // Ovo omogućava prikaz putnika na bolovanju koji imaju drugačiji grad (npr. selo)
                   ), // 🔄 KOMBINOVANI STREAM (mesečni + dnevni)
                   builder: (context, snapshot) {
                     // 💓 REGISTRUJ HEARTBEAT ZA GLAVNI PUTNICI STREAM
@@ -2176,9 +2176,9 @@ class _DanasScreenState extends State<DanasScreen> {
                         isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                       );
 
-                      // 🔄 UJEDNAČENA LOGIKA: Isti filter za mesečne i dnevne putnike
-                      // Isključuje: otkazane, bolovanje, godišnji, obrisane
-                      final statusOk = TextUtils.isStatusActive(putnik.status);
+                      // 🔄 UJEDNAČENA LOGIKA: Prikaži sve putnike osim otkazanih/obrisanih
+                      // Bolovanje/godišnji SE PRIKAZUJU (žutom bojom) ali se ne broje kao zauzeta mesta
+                      final statusOk = TextUtils.isStatusVisible(putnik.status);
                       return vremeMatch && gradMatch && statusOk;
                     }).toList();
 
@@ -2208,9 +2208,9 @@ class _DanasScreenState extends State<DanasScreen> {
                               isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                             );
 
-                            // 🔄 UJEDNAČENA LOGIKA: Isti filter za sve putnike
-                            // Isključuje: otkazane, bolovanje, godišnji, obrisane
-                            final statusOk = TextUtils.isStatusActive(putnik.status);
+                            // 🔄 UJEDNAČENA LOGIKA: Prikaži sve putnike osim otkazanih/obrisanih
+                            // Bolovanje/godišnji SE PRIKAZUJU (žutom bojom)
+                            final statusOk = TextUtils.isStatusVisible(putnik.status);
 
                             return vremeMatch && gradMatch && statusOk;
                           }).toList()

@@ -49,12 +49,25 @@ class TextUtils {
   static const List<String> neaktivni = ['obrisan', 'neaktivan'];
 
   /// Proverava da li je putnik u aktivnom statusu (nije otkazan, na bolovanju itd.)
+  /// Koristi se za BROJANJE zauzetih mesta
   static bool isStatusActive(String? status) {
     if (status == null) return true;
     final normalized = normalizeText(status);
 
     return !otkazani.any((s) => normalizeText(s) == normalized) &&
         !bolovanjeGodisnji.any((s) => normalizeText(s) == normalized) &&
+        !neaktivni.any((s) => normalizeText(s) == normalized);
+  }
+
+  /// Proverava da li putnik treba da bude VIDLJIV u listi
+  /// Uključuje bolovanje/godišnji (prikazuju se žutom bojom)
+  /// Koristi se za FILTRIRANJE liste za prikaz
+  static bool isStatusVisible(String? status) {
+    if (status == null) return true;
+    final normalized = normalizeText(status);
+
+    // Isključi samo otkazane i obrisane, ALI PRIKAŽI bolovanje/godišnji
+    return !otkazani.any((s) => normalizeText(s) == normalized) &&
         !neaktivni.any((s) => normalizeText(s) == normalized);
   }
 }

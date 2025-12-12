@@ -1783,8 +1783,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           int getPutnikCount(String grad, String vreme) {
             try {
               final normVreme = GradAdresaValidator.normalizeTime(vreme);
-              final count = grad == 'Bela Crkva' 
-                  ? (brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0) 
+              final count = grad == 'Bela Crkva'
+                  ? (brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0)
                   : (brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0);
               return count;
             } catch (e) {
