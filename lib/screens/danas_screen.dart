@@ -1095,21 +1095,20 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     }
 
-    // Filtriraj samo nepokupljene i neotkazane putnike
+    // Razdvoji pokupljene/otkazane od preostalih
+    final pokupljeniIOtkazani = sveziPutnici.where((p) {
+      return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo;
+    }).toList();
+    
     final preostaliPutnici = sveziPutnici.where((p) {
-      final isPokupljen = p.jePokupljen;
-      final isOtkazan = p.jeOtkazan;
-      final isOdsustvo = p.jeOdsustvo;
-      return !isPokupljen && !isOtkazan && !isOdsustvo;
+      return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
     }).toList();
 
     if (preostaliPutnici.isEmpty) {
-      // Svi putnici su pokupljeni ili otkazani
+      // Svi putnici su pokupljeni ili otkazani - zadrži ih u listi
       if (mounted) {
         setState(() {
-          _optimizedRoute.clear();
-          _isRouteOptimized = false;
-          _isListReordered = false;
+          _optimizedRoute = pokupljeniIOtkazani; // ✅ ZADRŽI pokupljene u listi
           _currentPassengerIndex = 0;
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1132,14 +1131,15 @@ class _DanasScreenState extends State<DanasScreen> {
       if (result.success && result.optimizedPutnici != null) {
         if (mounted) {
           setState(() {
-            _optimizedRoute = result.optimizedPutnici!;
+            // ✅ KOMBINUJ: optimizovani preostali + pokupljeni/otkazani na kraju
+            _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
             _currentPassengerIndex = 0;
           });
 
-          final sledeci = _optimizedRoute.isNotEmpty ? _optimizedRoute.first.ime : 'N/A';
+          final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${_optimizedRoute.length} preostalo)'),
+              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${preostaliPutnici.length} preostalo)'),
               backgroundColor: Colors.blue,
               duration: const Duration(seconds: 2),
             ),
@@ -2152,8 +2152,8 @@ class _DanasScreenState extends State<DanasScreen> {
                     final danasPutnici = sviPutnici.where((p) {
                       // Dan u nedelji filter - ISTA LOGIKA KAO HOME_SCREEN
                       // Ako ima datum (iz putovanja_istorija), koristi ga; inače koristi dan
-                      final dayMatch = p.datum != null 
-                          ? p.datum == todayIso 
+                      final dayMatch = p.datum != null
+                          ? p.datum == todayIso
                           : p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
 
                       // Vremski filter - samo poslednja nedelja za dnevne putnike
