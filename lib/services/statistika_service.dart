@@ -606,7 +606,9 @@ class StatistikaService {
   ) {
     // Koristi kombinovani stream (putnici + mesečni putnici)
     return StreamZip([
-      PutnikService().streamKombinovaniPutniciFiltered(),
+      PutnikService().streamKombinovaniPutniciFiltered(
+        isoDate: DateTime.now().toIso8601String().split('T')[0],
+      ),
       RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
     ]).map((data) {
       final putnici = data[0] as List<Putnik>;

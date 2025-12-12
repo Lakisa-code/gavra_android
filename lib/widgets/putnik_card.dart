@@ -13,6 +13,7 @@ import '../services/haptic_service.dart';
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 📍 GPS LEARN
+import '../services/realtime_service.dart'; // 🔄 Za refresh nakon reset-a
 import '../services/registrovani_putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
@@ -127,6 +128,11 @@ class _PutnikCardState extends State<PutnikCard> {
           if (mounted && widget.onChanged != null) {
             widget.onChanged!();
           }
+
+          // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM AKCIJAMA
+          try {
+            await RealtimeService.instance.refreshNow();
+          } catch (_) {}
 
           // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
           // Ensures UI reflects persisted pokupljen state on navigation refresh
@@ -314,43 +320,64 @@ class _PutnikCardState extends State<PutnikCard> {
   // Resetuje karticu u početno (belo) stanje
   Future<void> _handleResetCard() async {
     try {
-      await PutnikService().resetPutnikCard(_putnik.ime, widget.currentDriver ?? '');
+      // ✅ KONZISTENTNO: Prosleđuj selectedVreme i selectedGrad za tačan reset
+      await PutnikService().resetPutnikCard(
+        _putnik.ime,
+        widget.currentDriver ?? '',
+        selectedVreme: widget.selectedVreme,
+        selectedGrad: widget.selectedGrad,
+      );
 
-      // Malo sačekaj da se baza updateuje
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+      // 🔄 PRVO OČISTI KEŠ pre refresh-a da se ne koriste stari podaci
+      PutnikService.invalidateCachedValues();
+
+      // 🔄 Malo sačekaj da se baza sigurno commituje
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM EKRANIMA
+      await RealtimeService.instance.refreshNow();
+
+      // Malo sačekaj da se podaci propagiraju
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // Refresh putnika iz baze
       final updatedPutnik = await PutnikService().getPutnikByName(_putnik.ime);
       if (updatedPutnik != null && mounted) {
-        if (mounted) {
-          setState(() {
-            _putnik = updatedPutnik;
-          });
-        }
+        setState(() {
+          _putnik = updatedPutnik;
+        });
       } else if (mounted) {
         // Fallback: kreiraj novo stanje putnika sa resetovanim vrednostima
-        if (mounted) {
-          setState(() {
-            _putnik = Putnik(
-              id: _putnik.id,
-              ime: _putnik.ime,
-              polazak: _putnik.polazak,
-              pokupljen: false,
-              vremeDodavanja: _putnik.vremeDodavanja,
-              mesecnaKarta: _putnik.mesecnaKarta,
-              dan: _putnik.dan,
-              status: 'radi', // Uvek radi kao početno stanje
-              placeno: false,
-              cena: 0,
-              dodaoVozac: _putnik.dodaoVozac,
-              grad: _putnik.grad,
-              adresa: _putnik.adresa,
-              priority: _putnik.priority,
-              brojTelefona: _putnik.brojTelefona,
-            );
-          });
-        }
+        setState(() {
+          _putnik = Putnik(
+            id: _putnik.id,
+            ime: _putnik.ime,
+            polazak: _putnik.polazak,
+            pokupljen: false,
+            vremeDodavanja: _putnik.vremeDodavanja,
+            mesecnaKarta: _putnik.mesecnaKarta,
+            dan: _putnik.dan,
+            status: 'radi', // Uvek radi kao početno stanje
+            placeno: false,
+            cena: 0,
+            dodaoVozac: _putnik.dodaoVozac,
+            grad: _putnik.grad,
+            adresa: _putnik.adresa,
+            priority: _putnik.priority,
+            brojTelefona: _putnik.brojTelefona,
+          );
+        });
       }
+
+      // 🔄 OBAVESTI PARENT EKRAN DA OSVEŽI UI - KONZISTENTNO SA SVIM EKRANIMA
+      if (mounted && widget.onChanged != null) {
+        widget.onChanged!();
+      }
+
+      // 🔄 GLOBALNI CACHE CLEAR - PONOVO ZA SIGURNOST na svim ekranima
+      try {
+        await GlobalCacheManager.clearAllCachesAndRefresh();
+      } catch (_) {}
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1359,6 +1386,12 @@ class _PutnikCardState extends State<PutnikCard> {
         if (widget.onChanged != null) {
           widget.onChanged!();
         }
+
+        // 🔄 OSVJEŽI REALTIME STREAM I CACHE - KONZISTENTNO SA SVIM AKCIJAMA
+        try {
+          await RealtimeService.instance.refreshNow();
+          await GlobalCacheManager.clearAllCachesAndRefresh();
+        } catch (_) {}
 
         // Prikaži success poruku
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2713,6 +2746,11 @@ class _PutnikCardState extends State<PutnikCard> {
           widget.onChanged!();
         }
 
+        // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM AKCIJAMA
+        try {
+          await RealtimeService.instance.refreshNow();
+        } catch (_) {}
+
         // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
         // Ovo osigurava da override entries (putovanja_istorija) postanu
         // vidljivi prilikom povratka na ekran (kartica ostaje crvena)
@@ -2755,6 +2793,11 @@ class _PutnikCardState extends State<PutnikCard> {
     if (confirm == true) {
       try {
         await PutnikService().obrisiPutnika(_putnik.id!);
+
+        // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM AKCIJAMA
+        try {
+          await RealtimeService.instance.refreshNow();
+        } catch (_) {}
 
         // 🔄 GLOBALNI CACHE CLEAR I REFRESH
         await GlobalCacheManager.clearAllCachesAndRefresh();

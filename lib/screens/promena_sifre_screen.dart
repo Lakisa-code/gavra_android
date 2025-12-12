@@ -51,7 +51,7 @@ class _PromenaSifreScreenState extends State<PromenaSifreScreen> {
       final vozaci = decoded.map((v) => Map<String, dynamic>.from(v)).toList();
       final vozac = vozaci.firstWhere(
         (v) => v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
-        orElse: () => {},
+        orElse: () => <String, dynamic>{},
       );
       if (vozac.isNotEmpty) {
         setState(() {

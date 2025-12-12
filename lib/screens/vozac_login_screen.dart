@@ -48,36 +48,36 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
     }
 
     // Inicijalni podaci ako SharedPreferences je prazan
-    final initialVozaci = [
-      {
+    final List<Map<String, dynamic>> initialVozaci = <Map<String, dynamic>>[
+      <String, dynamic>{
         'ime': 'Bojan',
         'email': 'gavriconi19@gmail.com',
         'sifra': '191919',
         'telefon': '0641162560',
         'boja': 0xFF00E5FF,
       },
-      {
+      <String, dynamic>{
         'ime': 'Bruda',
         'email': 'igor.jovanovic.1984@icloud.com',
         'sifra': '111111',
         'telefon': '0641202844',
         'boja': 0xFF7C4DFF,
       },
-      {
+      <String, dynamic>{
         'ime': 'Bilevski',
         'email': 'bilyboy1983@gmail.com',
         'sifra': '222222',
         'telefon': '0638466418',
         'boja': 0xFFFF9800,
       },
-      {
+      <String, dynamic>{
         'ime': 'Svetlana',
         'email': 'risticsvetlana2911@yahoo.com',
         'sifra': '444444',
         'telefon': '0658464160',
         'boja': 0xFFFF1493,
       },
-      {
+      <String, dynamic>{
         'ime': 'Ivan',
         'email': 'kadpitamkurac@gmail.com',
         'sifra': '333333',
@@ -103,7 +103,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
       // Pronađi vozača po imenu
       final vozac = vozaci.firstWhere(
         (v) => v['ime'].toString().toLowerCase() == widget.vozacIme.toLowerCase(),
-        orElse: () => {},
+        orElse: () => <String, dynamic>{},
       );
 
       if (vozac.isEmpty) {

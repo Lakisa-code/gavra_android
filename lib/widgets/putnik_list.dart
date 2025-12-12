@@ -174,9 +174,41 @@ class PutnikList extends StatelessWidget {
       // 4) CRVENE - Otkazani
       // 5) ŽUTE - Odsustvo (godišnji/bolovanje) (na dnu)
 
-      // If caller requested to preserve provided order (optimized route), skip grouping
+      // 🎯 HIBRIDNO SORTIRANJE ZA OPTIMIZOVANU RUTU:
+      // Bele kartice (nepokupljeni) → zadržavaju geografski redosled
+      // Plave/Zelene/Crvene/Žute → sortiraju se po grupama ispod belih
       if (useProvidedOrder) {
-        final prikaz = List<Putnik>.from(filteredPutnici);
+        // Razdvoji putnike po grupama
+        final beli = <Putnik>[]; // nepokupljeni - zadržavaju geografski redosled
+        final plavi = <Putnik>[]; // pokupljeni neplaćeni
+        final zeleni = <Putnik>[]; // pokupljeni plaćeni/mesečni
+        final crveni = <Putnik>[]; // otkazani
+        final zuti = <Putnik>[]; // odsustvo
+
+        for (final p in filteredPutnici) {
+          final sortKey = _putnikSortKey(p);
+          switch (sortKey) {
+            case 1:
+              beli.add(p); // beli zadržavaju originalni geografski redosled
+              break;
+            case 2:
+              plavi.add(p);
+              break;
+            case 3:
+              zeleni.add(p);
+              break;
+            case 4:
+              crveni.add(p);
+              break;
+            case 5:
+              zuti.add(p);
+              break;
+          }
+        }
+
+        // Spoji sve grupe: BELI (geografski) → PLAVI → ZELENI → CRVENI → ŽUTI
+        final prikaz = [...beli, ...plavi, ...zeleni, ...crveni, ...zuti];
+
         if (prikaz.isEmpty) {
           return const Center(child: Text('Nema putnika za prikaz.'));
         }

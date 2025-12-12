@@ -56,6 +56,13 @@ class PutnikService {
     _subscriptions.clear();
   }
 
+  /// 🔄 INVALIDATE CACHED VALUES - forsira sve aktivne streamove da ponovo učitaju podatke
+  /// Ovo NE zatvara streamove, već samo briše keširane vrednosti tako da sledeći
+  /// poziv na stream ili RealtimeService refresh triggeruje novi fetch
+  static void invalidateCachedValues() {
+    _lastValues.clear();
+  }
+
   // Helper to create a cache key for filters
   String _streamKey({String? isoDate, String? grad, String? vreme}) {
     return '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
@@ -69,11 +76,11 @@ class PutnikService {
     String? grad,
     String? vreme,
   }) {
-    // // print('🔍 STREAM POZVAN SA: isoDate=$isoDate, grad=$grad, vreme=$vreme');
-
     final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
+    print('🔍 PutnikService.streamKombinovaniPutniciFiltered POZVAN sa key=$key');
+
     if (_streams.containsKey(key) && !_streams[key]!.isClosed) {
-      // // print('📦 VRAĆAM POSTOJEĆI STREAM ZA KEY: $key');
+      print('📦 VRAĆAM POSTOJEĆI STREAM ZA KEY: $key (ima listener)');
       // Ako imamo cached vrednost, emituj je odmah
       final controller = _streams[key]!;
       if (_lastValues.containsKey(key)) {
@@ -82,13 +89,13 @@ class PutnikService {
       return controller.stream;
     }
 
-    // // print('🆕 KREIRAM NOVI STREAM ZA KEY: $key');
+    print('🆕 KREIRAM NOVI STREAM ZA KEY: $key');
     final controller = StreamController<List<Putnik>>.broadcast();
     _streams[key] = controller;
 
     Future<void> doFetch() async {
       try {
-        // print('🔄 FETCH POKRET STARTED za datum: $isoDate');
+        print('🔄 PutnikService.doFetch() STARTED za key=$key (isoDate=$isoDate, grad=$grad, vreme=$vreme)');
         final combined = <Putnik>[];
 
         // Fetch daily rows server-side if isoDate provided, otherwise fetch recent daily
@@ -231,6 +238,7 @@ class PutnikService {
         : RealtimeService.instance.combinedPutniciStream;
 
     final sub = refreshStream.listen((_) {
+      print('🔔 PutnikService: Primljen signal iz RealtimeService za key=$key, pozivam doFetch()');
       doFetch();
     });
     _subscriptions[key] = sub;
@@ -1684,7 +1692,13 @@ class PutnikService {
   }
 
   /// 🔄 RESETUJ KARTICU U POČETNO STANJE (samo za validne vozače)
-  Future<void> resetPutnikCard(String imePutnika, String currentDriver) async {
+  /// ✅ KONZISTENTNO: Prima selectedVreme i selectedGrad za tačan reset po polasku
+  Future<void> resetPutnikCard(
+    String imePutnika,
+    String currentDriver, {
+    String? selectedVreme,
+    String? selectedGrad,
+  }) async {
     try {
       if (currentDriver.isEmpty) {
         throw Exception('Funkcija zahteva specificiranje vozača');
@@ -1696,7 +1710,7 @@ class PutnikService {
       // Umesto DELETE koristimo UPDATE da postavimo status na 'resetovan' ili obrišemo soft-delete
       try {
         // ✅ FIX: Koristi mesecni_putnik_id umesto tip_putnika='mesecni'
-        await supabase
+        var query = supabase
             .from('putovanja_istorija')
             .update({
               'status': 'resetovan',
@@ -1705,16 +1719,30 @@ class PutnikService {
             .eq('putnik_ime', imePutnika)
             .eq('datum_putovanja', danas)
             .not('mesecni_putnik_id', 'is', null);
+
+        // ✅ KONZISTENTNO: Filtriraj po gradu i vremenu ako su prosleđeni
+        if (selectedGrad != null && selectedGrad.isNotEmpty) {
+          query = query.eq('grad', selectedGrad);
+        }
+        if (selectedVreme != null && selectedVreme.isNotEmpty) {
+          query = query.eq('vreme_polaska', selectedVreme);
+        }
+
+        await query;
       } catch (_) {
         // Ignore - možda nema zapisa
       }
 
       // Pokušaj reset u registrovani_putnici tabeli
       try {
-        final registrovaniResponse =
-            await supabase.from('registrovani_putnici').select().eq('putnik_ime', imePutnika).maybeSingle();
+        // ✅ FIX: Koristi limit(1) umesto maybeSingle() jer može postojati više putnika sa istim imenom
+        final registrovaniList =
+            await supabase.from('registrovani_putnici').select().eq('putnik_ime', imePutnika).limit(1);
 
-        if (registrovaniResponse != null) {
+        if (registrovaniList.isNotEmpty) {
+          final registrovaniResponse = registrovaniList.first;
+          print('🔄 RESET: Ažuriram registrovani_putnici za "$imePutnika" - postavljam vreme_pokupljenja=null');
+          // ✅ FIX: Update SVE putnike sa istim imenom (ako ih ima više)
           await supabase.from('registrovani_putnici').update({
             'aktivan': true, // ✅ KRITIČNO: VRATI na aktivan (jeOtkazan = false)
             'status': 'radi', // ✅ VRATI na radi
@@ -1725,6 +1753,7 @@ class PutnikService {
             'vozac_id': null, // ✅ UKLONI vozača (UUID kolona)
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
+          print('✅ RESET: Uspešno ažurirano registrovani_putnici za "$imePutnika"');
 
           // 📊 SINHRONIZUJ broj otkazivanja nakon reset-a (VAŽNO!)
           try {
@@ -1742,42 +1771,13 @@ class PutnikService {
           return;
         }
       } catch (e) {
-        // Ako nema u registrovani_putnici, nastavi sa putovanja_istorija
+        print('❌ RESET GREŠKA za "$imePutnika": $e');
+        // Ako nema u registrovani_putnici, ignoriši - svi putnici su sada registrovani
       }
 
-      // Pokušaj reset u putovanja_istorija tabeli (za DNEVNE putnike)
-      final putovanjaResponse = await supabase
-          .from('putovanja_istorija')
-          .select()
-          .eq('putnik_ime', imePutnika)
-          .eq('datum_putovanja', danas)
-          .eq('tip_putnika', 'dnevni')
-          .maybeSingle();
-
-      if (putovanjaResponse != null) {
-        // Reset action_log da ukloni cancelled_by
-        final cleanActionLog = {
-          'created_by': putovanjaResponse['created_by'],
-          'paid_by': null,
-          'picked_by': null,
-          'cancelled_by': null, // ✅ UKLONI cancelled_by
-          'primary_driver': null,
-          'created_at': putovanjaResponse['created_at'],
-          'actions': [], // ✅ OČISTI sve akcije
-        };
-
-        await supabase
-            .from('putovanja_istorija')
-            .update({
-              'status': 'radi', // ✅ POČETNO STANJE
-              'cena': 0, // ✅ VRATI cenu na 0
-              'vozac_id': null, // ✅ UKLONI vozača
-              'action_log': cleanActionLog, // ✅ RESET action_log
-            })
-            .eq('putnik_ime', imePutnika)
-            .eq('datum_putovanja', danas)
-            .eq('tip_putnika', 'dnevni');
-      }
+      // 🚫 UKLONJENO: Ad-hoc dnevni putnici više ne postoje u putovanja_istorija
+      // Svi putnici (radnik, ucenik, dnevni) su registrovani u registrovani_putnici tabeli
+      // Reset se vrši samo kroz registrovani_putnici tabelu i override zapise
     } catch (e) {
       // Greška pri resetovanju kartice
       rethrow;

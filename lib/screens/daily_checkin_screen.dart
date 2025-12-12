@@ -40,8 +40,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
     // Auto-focus na input field
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _kusurFocusNode.requestFocus();
-      // 📊 NOVI: Proveri da li treba prikazati popis iz prethodnog dana
-      _checkForPreviousDayReport();
+      // 📊 POMERENO: Popis se prikazuje tek nakon unosa kusura u _submitKusur()
     });
   }
 
@@ -122,6 +121,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
             duration: const Duration(milliseconds: 800),
           ),
         );
+
+        // 📊 SADA: Proveri popis iz prethodnog dana NAKON unosa kusura
+        await _checkForPreviousDayReport();
 
         // Pozovi callback posle kratkog delay-a
         Future.delayed(const Duration(milliseconds: 200), () {

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/pin_zahtev_service.dart';
 import '../services/putnik_push_service.dart';
 import '../theme.dart';
 import 'registrovani_putnik_profil_screen.dart';
 
-/// 📱 MESEČNI PUTNIK LOGIN SCREEN
-/// Putnik unosi telefon + PIN da se identifikuje
+/// 📱 REGISTROVANI PUTNIK LOGIN SCREEN
+/// Flow: telefon → (ako nema email) email → (ako nema PIN) zahtev ili (ako ima) unos PIN-a
 class RegistrovaniPutnikLoginScreen extends StatefulWidget {
   const RegistrovaniPutnikLoginScreen({Key? key}) : super(key: key);
 
@@ -15,11 +16,20 @@ class RegistrovaniPutnikLoginScreen extends StatefulWidget {
   State<RegistrovaniPutnikLoginScreen> createState() => _RegistrovaniPutnikLoginScreenState();
 }
 
+enum _LoginStep { telefon, email, pin, zahtevPoslat }
+
 class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginScreen> {
   final _telefonController = TextEditingController();
+  final _emailController = TextEditingController();
   final _pinController = TextEditingController();
+
+  _LoginStep _currentStep = _LoginStep.telefon;
   bool _isLoading = false;
   String? _errorMessage;
+  String? _infoMessage;
+
+  // Podaci o pronađenom putniku
+  Map<String, dynamic>? _putnikData;
 
   @override
   void initState() {
@@ -37,18 +47,239 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
       // Automatski probaj login
       _telefonController.text = savedPhone;
       _pinController.text = savedPin;
-      await _login();
+      await _loginWithPin();
     }
   }
 
-  Future<void> _login() async {
+  /// Korak 1: Proveri telefon
+  Future<void> _checkTelefon() async {
     final telefon = _telefonController.text.trim();
-    final pin = _pinController.text.trim();
 
     if (telefon.isEmpty) {
       setState(() => _errorMessage = 'Unesite broj telefona');
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _infoMessage = null;
+    });
+
+    try {
+      // Traži putnika po telefonu (limit 1 za slučaj duplikata)
+      final results =
+          await Supabase.instance.client.from('registrovani_putnici').select().eq('broj_telefona', telefon).limit(1);
+
+      final response = (results as List).isNotEmpty ? results.first : null;
+
+      if (response != null) {
+        _putnikData = Map<String, dynamic>.from(response);
+
+        final email = response['email'] as String?;
+        final pin = response['pin'] as String?;
+
+        if (email == null || email.isEmpty) {
+          // Nema email - traži ga
+          setState(() {
+            _currentStep = _LoginStep.email;
+            _infoMessage = 'Pronađeni ste! Unesite email za kontakt.';
+          });
+        } else if (pin == null || pin.isEmpty) {
+          // Ima email ali nema PIN
+          // Proveri da li je već poslao zahtev
+          final imaZahtev = await PinZahtevService.imaZahtevKojiCeka(response['id']);
+          if (imaZahtev) {
+            setState(() {
+              _currentStep = _LoginStep.zahtevPoslat;
+              _infoMessage = 'Vaš zahtev za PIN je već poslat. Molimo sačekajte da admin odobri.';
+            });
+          } else {
+            // Ponudi da pošalje zahtev
+            _showPinRequestDialog();
+          }
+        } else {
+          // Ima i email i PIN - traži PIN za login
+          setState(() {
+            _currentStep = _LoginStep.pin;
+            _infoMessage = 'Unesite svoj 4-cifreni PIN';
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = 'Niste pronađeni u sistemu.\nKontaktirajte admina za registraciju.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Greška pri povezivanju: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Korak 2: Sačuvaj email i proveri dalje
+  Future<void> _saveEmail() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      setState(() => _errorMessage = 'Unesite email adresu');
+      return;
+    }
+
+    // Validacija email formata (strožija)
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      setState(() => _errorMessage = 'Unesite validnu email adresu');
+      return;
+    }
+
+    // Dodatne provere za očigledne gluposti
+    final emailLower = email.toLowerCase();
+    final localPart = emailLower.split('@')[0]; // deo pre @
+    final domainPart = emailLower.split('@')[1]; // deo posle @
+
+    // Blokiraj prekratke delove (aaa@aaa.aa)
+    if (localPart.length < 3 || domainPart.split('.')[0].length < 3) {
+      setState(() => _errorMessage = 'Email adresa je previše kratka');
+      return;
+    }
+
+    // Blokiraj ponavljajuće karaktere (aaa@, bbb@, 111@)
+    if (RegExp(r'^(.)\1{2,}').hasMatch(localPart)) {
+      setState(() => _errorMessage = 'Unesite stvarnu email adresu');
+      return;
+    }
+
+    // Blokiraj test/fake domene
+    final fakeDomains = ['test.com', 'fake.com', 'example.com', 'asdf.com', 'qwer.com', 'aaa.com', 'bbb.com'];
+    if (fakeDomains.any((d) => domainPart == d)) {
+      setState(() => _errorMessage = 'Unesite stvarnu email adresu');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final putnikId = _putnikData!['id'] as String;
+
+      // Sačuvaj email u bazi
+      final success = await PinZahtevService.azurirajEmail(
+        putnikId: putnikId,
+        email: email,
+      );
+
+      if (success) {
+        _putnikData!['email'] = email;
+
+        final pin = _putnikData!['pin'] as String?;
+        if (pin == null || pin.isEmpty) {
+          // Nema PIN - ponudi da pošalje zahtev
+          _showPinRequestDialog();
+        } else {
+          // Ima PIN - idi na unos PIN-a
+          setState(() {
+            _currentStep = _LoginStep.pin;
+            _infoMessage = 'Email sačuvan! Unesite svoj 4-cifreni PIN';
+          });
+        }
+      } else {
+        setState(() => _errorMessage = 'Greška pri čuvanju email-a');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Greška: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Prikaži dialog za slanje zahteva za PIN
+  void _showPinRequestDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.vpn_key, color: Colors.amber),
+            SizedBox(width: 8),
+            Text('PIN nije dodeljen', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          'Nemate dodeljeni PIN za pristup.\n\nŽelite li da pošaljete zahtev adminu za dodelu PIN-a?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(this.context); // Vrati na početni ekran
+            },
+            child: const Text('Odustani', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _sendPinRequest();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child: const Text('Pošalji zahtev', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Pošalji zahtev za PIN
+  Future<void> _sendPinRequest() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final putnikId = _putnikData!['id'] as String;
+      final email = _putnikData!['email'] as String? ?? _emailController.text.trim();
+      final telefon = _putnikData!['broj_telefona'] as String? ?? _telefonController.text.trim();
+
+      final success = await PinZahtevService.posaljiZahtev(
+        putnikId: putnikId,
+        email: email,
+        telefon: telefon,
+      );
+
+      if (success) {
+        setState(() {
+          _currentStep = _LoginStep.zahtevPoslat;
+          _infoMessage = 'Zahtev je uspešno poslat! Admin će vam dodeliti PIN.';
+        });
+      } else {
+        setState(() => _errorMessage = 'Greška pri slanju zahteva');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Greška: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Korak 3: Login sa PIN-om
+  Future<void> _loginWithPin() async {
+    final telefon = _telefonController.text.trim();
+    final pin = _pinController.text.trim();
 
     if (pin.isEmpty) {
       setState(() => _errorMessage = 'Unesite PIN');
@@ -98,22 +329,12 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
           );
         }
       } else {
-        // Proveri da li telefon postoji ali PIN nije tačan
-        final phoneCheck = await Supabase.instance.client
-            .from('registrovani_putnici')
-            .select('id')
-            .eq('broj_telefona', telefon)
-            .maybeSingle();
-
-        if (phoneCheck != null) {
-          setState(() {
-            _errorMessage = 'Pogrešan PIN. Pokušajte ponovo.';
-          });
-        } else {
-          setState(() {
-            _errorMessage = 'Niste pronađeni u sistemu.\nKontaktirajte admina za registraciju.';
-          });
-        }
+        setState(() {
+          _errorMessage = 'Pogrešan PIN. Pokušajte ponovo.';
+          // Očisti saved PIN jer nije tačan
+        });
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('registrovani_putnik_pin');
       }
     } catch (e) {
       setState(() {
@@ -126,9 +347,22 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
     }
   }
 
+  /// Resetuj na početak
+  void _resetFlow() {
+    setState(() {
+      _currentStep = _LoginStep.telefon;
+      _errorMessage = null;
+      _infoMessage = null;
+      _putnikData = null;
+      _emailController.clear();
+      _pinController.clear();
+    });
+  }
+
   @override
   void dispose() {
     _telefonController.dispose();
+    _emailController.dispose();
     _pinController.dispose();
     super.dispose();
   }
@@ -148,6 +382,14 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            if (_currentStep != _LoginStep.telefon)
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                onPressed: _resetFlow,
+                tooltip: 'Počni od početka',
+              ),
+          ],
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -157,17 +399,17 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
               children: [
                 const SizedBox(height: 40),
                 // Ikona
-                const Icon(
-                  Icons.card_membership,
+                Icon(
+                  _getStepIcon(),
                   color: Colors.amber,
                   size: 60,
                 ),
                 const SizedBox(height: 16),
 
                 // Naslov
-                const Text(
-                  'Mesečni putnici',
-                  style: TextStyle(
+                Text(
+                  _getStepTitle(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -175,62 +417,47 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Unesite broj telefona i PIN',
+                  _getStepSubtitle(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 14,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
 
-                // Telefon input
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                  ),
-                  child: TextField(
-                    controller: _telefonController,
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    keyboardType: TextInputType.phone,
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      hintText: '06x xxx xxxx',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                      prefixIcon: const Icon(Icons.phone, color: Colors.amber),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // Step indicator
+                _buildStepIndicator(),
+                const SizedBox(height: 24),
 
-                // PIN input
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                  ),
-                  child: TextField(
-                    controller: _pinController,
-                    style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 4,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      hintText: '• • • •',
-                      hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), letterSpacing: 8),
-                      prefixIcon: const Icon(Icons.lock, color: Colors.amber),
-                      border: InputBorder.none,
-                      counterText: '',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                // Info message
+                if (_infoMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
                     ),
-                    onSubmitted: (_) => _login(),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _infoMessage!,
+                            style: const TextStyle(color: Colors.green, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Sadržaj zavisno od koraka
+                _buildStepContent(),
+
                 const SizedBox(height: 16),
 
                 // Error message
@@ -258,31 +485,56 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                   const SizedBox(height: 16),
                 ],
 
-                // Login dugme
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                // Action button
+                if (_currentStep != _LoginStep.zahtevPoslat)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _getStepAction(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                            )
+                          : Text(
+                              _getStepButtonText(),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+
+                // Dugme za povratak ako je zahtev poslat
+                if (_currentStep == _LoginStep.zahtevPoslat) ...[
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.amber),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '← Nazad na početnu',
+                        style: TextStyle(fontSize: 16),
                       ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-                          )
-                        : const Text(
-                            '🔓 Pristupi',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
                   ),
-                ),
+                ],
+
                 const SizedBox(height: 24),
 
                 // Info
@@ -298,7 +550,7 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'PIN ste dobili od admina prilikom registracije. Ako nemate PIN, kontaktirajte nas.',
+                          _getInfoText(),
                           style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
                         ),
                       ),
@@ -311,5 +563,238 @@ class _RegistrovaniPutnikLoginScreenState extends State<RegistrovaniPutnikLoginS
         ),
       ),
     );
+  }
+
+  Widget _buildStepIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildStepDot(0, _currentStep.index >= 0),
+        _buildStepLine(_currentStep.index >= 1),
+        _buildStepDot(1, _currentStep.index >= 1),
+        _buildStepLine(_currentStep.index >= 2),
+        _buildStepDot(2, _currentStep.index >= 2),
+      ],
+    );
+  }
+
+  Widget _buildStepDot(int step, bool active) {
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: active ? Colors.amber : Colors.white.withValues(alpha: 0.3),
+      ),
+    );
+  }
+
+  Widget _buildStepLine(bool active) {
+    return Container(
+      width: 40,
+      height: 2,
+      color: active ? Colors.amber : Colors.white.withValues(alpha: 0.3),
+    );
+  }
+
+  Widget _buildStepContent() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return _buildTelefonInput();
+      case _LoginStep.email:
+        return _buildEmailInput();
+      case _LoginStep.pin:
+        return _buildPinInput();
+      case _LoginStep.zahtevPoslat:
+        return _buildZahtevPoslatContent();
+    }
+  }
+
+  Widget _buildTelefonInput() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: TextField(
+        controller: _telefonController,
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+        keyboardType: TextInputType.phone,
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(
+          hintText: '06x xxx xxxx',
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+          prefixIcon: const Icon(Icons.phone, color: Colors.amber),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        onSubmitted: (_) => _checkTelefon(),
+      ),
+    );
+  }
+
+  Widget _buildEmailInput() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: TextField(
+        controller: _emailController,
+        style: const TextStyle(color: Colors.white, fontSize: 18),
+        keyboardType: TextInputType.emailAddress,
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(
+          hintText: 'vašemail@example.com',
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+          prefixIcon: const Icon(Icons.email, color: Colors.amber),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        onSubmitted: (_) => _saveEmail(),
+      ),
+    );
+  }
+
+  Widget _buildPinInput() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: TextField(
+        controller: _pinController,
+        style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        maxLength: 4,
+        obscureText: true,
+        decoration: InputDecoration(
+          hintText: '• • • •',
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), letterSpacing: 8),
+          prefixIcon: const Icon(Icons.lock, color: Colors.amber),
+          border: InputBorder.none,
+          counterText: '',
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        onSubmitted: (_) => _loginWithPin(),
+      ),
+    );
+  }
+
+  Widget _buildZahtevPoslatContent() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'Zahtev je poslat!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Admin će pregledati vaš zahtev i dodeliti vam PIN.\nBićete obavešteni kada PIN bude spreman.',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _getStepIcon() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return Icons.phone_android;
+      case _LoginStep.email:
+        return Icons.email;
+      case _LoginStep.pin:
+        return Icons.lock;
+      case _LoginStep.zahtevPoslat:
+        return Icons.mark_email_read;
+    }
+  }
+
+  String _getStepTitle() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return 'Prijava putnika';
+      case _LoginStep.email:
+        return 'Vaš email';
+      case _LoginStep.pin:
+        return 'Unesite PIN';
+      case _LoginStep.zahtevPoslat:
+        return 'Zahtev poslat';
+    }
+  }
+
+  String _getStepSubtitle() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return 'Unesite broj telefona sa kojim ste registrovani';
+      case _LoginStep.email:
+        return 'Potreban nam je vaš email za kontakt';
+      case _LoginStep.pin:
+        return 'Unesite svoj 4-cifreni PIN';
+      case _LoginStep.zahtevPoslat:
+        return 'Sačekajte odobrenje od admina';
+    }
+  }
+
+  String _getStepButtonText() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return '→ Nastavi';
+      case _LoginStep.email:
+        return '→ Sačuvaj email';
+      case _LoginStep.pin:
+        return '🔓 Pristupi';
+      case _LoginStep.zahtevPoslat:
+        return '';
+    }
+  }
+
+  VoidCallback? _getStepAction() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return _checkTelefon;
+      case _LoginStep.email:
+        return _saveEmail;
+      case _LoginStep.pin:
+        return _loginWithPin;
+      case _LoginStep.zahtevPoslat:
+        return null;
+    }
+  }
+
+  String _getInfoText() {
+    switch (_currentStep) {
+      case _LoginStep.telefon:
+        return 'Unesite broj telefona koji ste dali prilikom registracije.';
+      case _LoginStep.email:
+        return 'Email koristimo za obaveštenja i Google Play interno testiranje.';
+      case _LoginStep.pin:
+        return 'PIN ste dobili od admina. Ako ste ga zaboravili, kontaktirajte nas.';
+      case _LoginStep.zahtevPoslat:
+        return 'Možete zatvoriti aplikaciju. Obavestićemo vas kada PIN bude dodeljen.';
+    }
   }
 }

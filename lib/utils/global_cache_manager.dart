@@ -23,11 +23,12 @@ class GlobalCacheManager {
   /// 🧹 OČISTI SVE CACHE-OVE I FORSIRAJ REFRESH - BEZ DEBOUNCING-a
   static Future<void> clearAllCachesAndRefresh() async {
     try {
-      // 1. Očisti cache-ove u servisima
+      // 1. Očisti SAMO keširane vrednosti (NE zatvaraj streamove!)
+      // Ovo omogućava da aktivni StreamBuilder-i dobiju nove podatke
       RegistrovaniPutnikService.clearCache();
-      PutnikService.clearCache();
+      PutnikService.invalidateCachedValues(); // 🔄 NOVO: Ne zatvara streamove
 
-      // 2. Forsiraj RealtimeService refresh
+      // 2. Forsiraj RealtimeService refresh - ovo će triggerovati sve aktivne streamove
       await RealtimeService.instance.refreshNow();
 
       // 3. Triggeruj globalni refresh signal

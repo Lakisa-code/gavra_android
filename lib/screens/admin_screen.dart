@@ -5,6 +5,7 @@ import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/optimized_kusur_service.dart'; // 🔥 ZAMENЈENO: kusur stream umesto MasterRealtimeStream
+import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
@@ -22,9 +23,10 @@ import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
-import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'monitoring_ekran.dart'; // 📊 MONITORING
+import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
+import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'statistika_detail_screen.dart'; // DODANO za statistike
 import 'vozac_screen.dart'; // DODANO za vozac screen
 
@@ -43,6 +45,8 @@ class _AdminScreenState extends State<AdminScreen> {
   late ValueNotifier<bool> _isRealtimeHealthy;
   late ValueNotifier<bool> _kusurStreamHealthy;
   late ValueNotifier<bool> _putnikDataHealthy;
+  // 📨 PIN ZAHTEVI - broj zahteva koji čekaju
+  int _brojPinZahteva = 0;
   // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnog Timer-a
 
   //
@@ -68,6 +72,7 @@ class _AdminScreenState extends State<AdminScreen> {
 
     _loadCurrentDriver();
     _setupRealtimeMonitoring();
+    _loadBrojPinZahteva(); // 📨 Učitaj broj PIN zahteva
 
     // Inicijalizuj heads-up i zvuk notifikacije
     try {
@@ -144,6 +149,18 @@ class _AdminScreenState extends State<AdminScreen> {
           _currentDriver = null;
         });
       }
+    }
+  }
+
+  // 📨 Učitaj broj PIN zahteva koji čekaju
+  Future<void> _loadBrojPinZahteva() async {
+    try {
+      final broj = await PinZahtevService.brojZahtevaKojiCekaju();
+      if (mounted) {
+        setState(() => _brojPinZahteva = broj);
+      }
+    } catch (e) {
+      // Ignorišemo grešku, badge jednostavno neće prikazati broj
     }
   }
 
@@ -638,7 +655,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               const padding = 8.0;
                               final availableWidth = screenWidth - padding;
                               // Broj dugmadi zavisi od korisnika
-                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 5 : 2;
+                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 6 : 2;
                               final buttonWidth = (availableWidth - (spacing * (buttonCount - 1))) / buttonCount;
 
                               return Row(
@@ -839,6 +856,93 @@ class _AdminScreenState extends State<AdminScreen> {
                                               ),
                                             ),
                                           ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  // 📨 DUGME PIN ZAHTEVI - sa badge-om
+                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
+                                    SizedBox(
+                                      width: buttonWidth,
+                                      child: InkWell(
+                                        onTap: () async {
+                                          await Navigator.push(
+                                            context,
+                                            MaterialPageRoute<void>(
+                                              builder: (context) => const PinZahteviScreen(),
+                                            ),
+                                          );
+                                          // Refresh badge nakon povratka
+                                          _loadBrojPinZahteva();
+                                        },
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Container(
+                                              height: 28,
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 4,
+                                                vertical: 2,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).glassContainer,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: _brojPinZahteva > 0
+                                                      ? Colors.orange
+                                                      : Theme.of(context).glassBorder,
+                                                  width: 1.5,
+                                                ),
+                                              ),
+                                              child: const Center(
+                                                child: FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    'PIN',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 14,
+                                                      color: Colors.white,
+                                                      shadows: [
+                                                        Shadow(
+                                                          offset: Offset(1, 1),
+                                                          blurRadius: 3,
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            // Badge sa brojem zahteva
+                                            if (_brojPinZahteva > 0)
+                                              Positioned(
+                                                right: -4,
+                                                top: -4,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(4),
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.orange,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  constraints: const BoxConstraints(
+                                                    minWidth: 16,
+                                                    minHeight: 16,
+                                                  ),
+                                                  child: Text(
+                                                    '$_brojPinZahteva',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                     ),

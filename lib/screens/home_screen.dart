@@ -1407,16 +1407,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // � PRAVI REALTIME STREAM: streamKombinovaniPutnici() koristi RealtimeService
+    // 🔄 PRAVI REALTIME STREAM: streamKombinovaniPutnici() koristi RealtimeService
     // Auto-refresh kada se promeni status putnika (pokupljen/naplaćen/otkazan)
     // Use a parametric stream filtered to the currently selected day
     // so monthly passengers (registrovani_putnici) are created for that day
     // and will appear in the list/counts for arbitrary selected day.
+    // ✅ FIX: Prosleđujemo grad i vreme kao u danas_screen da bi stream koristio isti keš
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: StreamBuilder<List<Putnik>>(
         stream: _putnikService.streamKombinovaniPutniciFiltered(
           isoDate: _getTargetDateIsoFromSelectedDay(_selectedDay),
+          grad: _selectedGrad,
+          vreme: _selectedVreme,
         ),
         builder: (context, snapshot) {
           // 🚨 DEBUG: Log state information
@@ -1602,55 +1605,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }
           }
 
-          // Sortiraj po statusu: bele (nepokupljeni), plave (pokupljeni neplaćeni), zelene (pokupljeni sa mesečnom/plaćeni), crvene (otkazani), žute/narandžaste (bolovanje/godišnji)
-          List<Putnik> sortiraniPutnici(List<Putnik> lista) {
-            int sortKey(Putnik p) {
-              final status = TextUtils.normalizeText(p.status ?? '');
-              // 🔄 SINHRONIZOVANO sa putnik_list.dart redosledom:
-              // 1=BELE, 2=PLAVE, 3=ZELENE, 4=CRVENE, 5=ŽUTE
-              if (status == 'otkazano' || status == 'otkazan') {
-                return 100; // 🔴 CRVENE - pre žutih
-              }
-              if (status == 'bolovanje' || status == 'godisnji') {
-                return 101; // 🟡 ŽUTE - na dnu
-              }
-              if (status == 'obrisan' || p.obrisan) {
-                return 102;
-              }
-              // Mesečni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
-              if (p.mesecnaKarta == true) {
-                if (p.vremePokupljenja == null) {
-                  return 0; // bela
-                }
-                if (p.iznosPlacanja != null && p.iznosPlacanja! > 0) {
-                  return 2; // zelena
-                }
-                return 1; // plava
-              }
-              // Dnevni putnici: pokupljeni i plaćeni (zelene), pokupljeni neplaćeni (plave), nepokupljeni (bele)
-              if (p.vremePokupljenja == null) return 0; // bela
-              if (p.vremePokupljenja != null && (p.iznosPlacanja == null || p.iznosPlacanja == 0)) {
-                return 1; // plava
-              }
-              if (p.vremePokupljenja != null && (p.iznosPlacanja != null && p.iznosPlacanja! > 0)) {
-                return 2; // zelena
-              }
-              return 99;
-            }
-
-            final kopija = [...lista];
-            kopija.sort((a, b) {
-              final cmp = sortKey(a).compareTo(sortKey(b));
-              if (cmp != 0) return cmp;
-              // Optionally, secondary sort by ime
-              return a.ime.compareTo(b.ime);
-            });
-            return kopija;
-          }
-
-          final putniciZaPrikaz = sortiraniPutnici(sviPutniciBezDuplikata);
-
-          // Sortiranje putnika
+          // 🔄 UKLONJEN DUPLI SORT - PutnikList sada sortira konzistentno sa DanasScreen i VozacScreen
+          // Sortiranje se vrši u PutnikList widgetu sa istom logikom za sva tri ekrana
+          final putniciZaPrikaz = sviPutniciBezDuplikata;
 
           // Funkcija za brojanje putnika po gradu, vremenu i danu (samo aktivni)
           // Koristimo prekompjutovane mape `brojPutnikaBC` i `brojPutnikaVS`

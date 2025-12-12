@@ -62,8 +62,12 @@ class _StatistikaDetailScreenState extends State<StatistikaDetailScreen> {
       });
     }
 
-    _putnikSubscription =
-        PutnikService().streamKombinovaniPutniciFiltered().timeout(const Duration(seconds: 30)).listen(
+    _putnikSubscription = PutnikService()
+        .streamKombinovaniPutniciFiltered(
+          isoDate: DateTime.now().toIso8601String().split('T')[0],
+        )
+        .timeout(const Duration(seconds: 30))
+        .listen(
       (putnici) {
         if (mounted) {
           if (mounted) {

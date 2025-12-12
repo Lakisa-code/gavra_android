@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/putnik.dart';
 
 class ImenaService {
@@ -20,7 +21,7 @@ class ImenaService {
         'Jovana',
         'Miloš',
         'Tamara',
-        'Nikola',
+
         'Maja',
         'Aleksandar',
         'Jelena',

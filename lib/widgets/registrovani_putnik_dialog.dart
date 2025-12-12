@@ -46,6 +46,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   final TextEditingController _adresaBelaCrkvaController = TextEditingController();
   final TextEditingController _adresaVrsacController = TextEditingController();
   final TextEditingController _cenaPoDanuController = TextEditingController(); // 🆕 Cena po danu
+  final TextEditingController _emailController = TextEditingController(); // 📧 Email
   // Selected address UUIDs (keeps track when user chooses a suggestion)
   String? _adresaBelaCrkvaId;
   String? _adresaVrsacId;
@@ -98,6 +99,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
         _cenaPoDanuController.text = putnik.cenaPoDanu!.toStringAsFixed(0);
       }
+
+      // 📧 Load email
+      _emailController.text = putnik.email ?? '';
 
       // Load times for each day
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -204,6 +208,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     _adresaBelaCrkvaController.dispose();
     _adresaVrsacController.dispose();
     _cenaPoDanuController.dispose();
+    _emailController.dispose();
 
     for (final c in _polazakBcControllers.values) {
       c.dispose();
@@ -524,6 +529,23 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                             hintText: 'npr. 500',
                             prefixIcon: const Icon(Icons.payments),
                             suffixText: 'RSD',
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                        const SizedBox(height: 16),
+                        // 📧 EMAIL POLJE
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email (opciono)',
+                            hintText: 'npr. putnik@email.com',
+                            prefixIcon: const Icon(Icons.email),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
@@ -1118,6 +1140,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       updatedAt: DateTime.now(),
       status: 'radi', // Dozvoljeni: radi, bolovanje, godisnji, odsustvo, otkazan
       cenaPoDanu: _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
+      email: _emailController.text.isEmpty ? null : _emailController.text.trim(), // 📧 Email
       dodaliVozaci: dodaliVozaciList, // 🔧 FIX: Dodaj ko je kreirao putnika
     );
 
@@ -1196,6 +1219,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'adresa_vrsac_id': adresaVrsacId,
       // 🆕 Cena po danu (custom ili null za default)
       'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
+      // 📧 Email
+      'email': _emailController.text.isEmpty ? null : _emailController.text.trim(),
     };
 
     try {

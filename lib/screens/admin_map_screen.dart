@@ -7,9 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/gps_lokacija.dart';
-import '../models/putnik.dart';
 import '../services/permission_service.dart';
-import '../services/putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 
@@ -23,19 +21,15 @@ class AdminMapScreen extends StatefulWidget {
 class _AdminMapScreenState extends State<AdminMapScreen> {
   final MapController _mapController = MapController();
   List<GPSLokacija> _gpsLokacije = [];
-  List<Putnik> _putnici = [];
   Position? _currentPosition;
   bool _isLoading = true;
   bool _showDrivers = true;
-  // _showPassengers uklonjen - funkcionalnost nije implementirana
   List<Marker> _markers = [];
   DateTime? _lastGpsLoad;
-  DateTime? _lastPutniciLoad;
   static const cacheDuration = Duration(seconds: 30);
 
-  // V3.0 Clean Monitoring - realtime streams za admin bez heartbeat
+  // V3.0 Clean Monitoring - realtime stream za vozač lokacije
   StreamSubscription<List<Map<String, dynamic>>>? _gpsSubscription;
-  StreamSubscription<List<Map<String, dynamic>>>? _putnikSubscription;
   int _retryCount = 0; // ✅ ISPRAVKA: Retry limit
   static const int _maxRetries = 3;
 
@@ -48,75 +42,53 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     _initializeRealtimeMonitoring(); // V3.0 Clean monitoring
     _getCurrentLocation();
     _loadGpsLokacije(); // Fallback
-    _loadPutnici(); // Fallback
   }
 
   // V3.0 Clean - Setup realtime monitoring with resilience
   void _initializeRealtimeMonitoring() {
     // ✅ ISPRAVKA: Otkaži stare subscriptions pre kreiranja novih
     _gpsSubscription?.cancel();
-    _putnikSubscription?.cancel();
 
-    // GPS Realtime Stream with error recovery
-    _gpsSubscription =
-        Supabase.instance.client.from('gps_lokacije').stream(primaryKey: ['id']).order('timestamp').listen(
-              (data) {
-                _retryCount = 0; // Reset retry count on success
-                if (mounted) {
-                  try {
-                    final gpsLokacije = data.map((json) => GPSLokacija.fromMap(json)).toList();
-                    if (mounted) {
-                      setState(() {
-                        _gpsLokacije = gpsLokacije;
-                        _isLoading = false;
-                        _updateMarkers();
-                      });
-                    }
-                  } catch (e) {
-                    // Fallback to cached data
-                    if (_gpsLokacije.isEmpty) {
-                      _loadGpsLokacije();
-                    }
-                  }
-                }
-              },
-              onError: (Object error) {
-                // ✅ ISPRAVKA: Retry sa limitom
-                if (_retryCount < _maxRetries && mounted) {
-                  _retryCount++;
-                  Timer(const Duration(seconds: 5), () {
-                    if (mounted) {
-                      _initializeRealtimeMonitoring();
-                    }
-                  });
-                }
-              },
-            );
-
-    // Putnik Realtime Stream with error recovery
-    _putnikSubscription = Supabase.instance.client.from('putnik').stream(primaryKey: ['id']).listen(
+    // GPS Realtime Stream sa vozac_lokacije tabele (prava tabela sa podacima)
+    _gpsSubscription = Supabase.instance.client.from('vozac_lokacije').stream(primaryKey: ['id']).listen(
       (data) {
+        _retryCount = 0; // Reset retry count on success
         if (mounted) {
           try {
-            final putnici = data.map((json) => Putnik.fromMap(json)).toList();
+            // Mapiranje iz vozac_lokacije strukture u GPSLokacija
+            final gpsLokacije = data
+                .map((json) => GPSLokacija(
+                      id: json['id'] as String,
+                      vozacId: json['vozac_id'] as String?,
+                      latitude: (json['lat'] as num).toDouble(),
+                      longitude: (json['lng'] as num).toDouble(),
+                      vreme: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : DateTime.now(),
+                    ))
+                .toList();
             if (mounted) {
               setState(() {
-                _putnici = putnici;
+                _gpsLokacije = gpsLokacije;
+                _isLoading = false;
                 _updateMarkers();
               });
             }
           } catch (e) {
             // Fallback to cached data
-            if (_putnici.isEmpty) {
-              _loadPutnici();
+            if (_gpsLokacije.isEmpty) {
+              _loadGpsLokacije();
             }
           }
         }
       },
       onError: (Object error) {
-        // Putnik stream error - koristi fallback
-        if (_putnici.isEmpty) {
-          _loadPutnici();
+        // ✅ ISPRAVKA: Retry sa limitom
+        if (_retryCount < _maxRetries && mounted) {
+          _retryCount++;
+          Timer(const Duration(seconds: 5), () {
+            if (mounted) {
+              _initializeRealtimeMonitoring();
+            }
+          });
         }
       },
     );
@@ -125,29 +97,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   @override
   void dispose() {
     _gpsSubscription?.cancel();
-    _putnikSubscription?.cancel();
     super.dispose();
-  }
-
-  Future<void> _loadPutnici() async {
-    // Proverava cache - ne učitava ponovo ako je prošlo manje od 30 sekundi
-    if (_lastPutniciLoad != null && DateTime.now().difference(_lastPutniciLoad!) < cacheDuration) {
-      return;
-    }
-
-    try {
-      final putnikService = PutnikService();
-      final putnici = await putnikService.getAllPutniciFromBothTables();
-      if (mounted) {
-        setState(() {
-          _putnici = putnici;
-          _lastPutniciLoad = DateTime.now();
-        });
-      }
-      _updateMarkers();
-    } catch (e) {
-      // Silently ignore
-    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -189,13 +139,19 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         });
       }
 
-      // Prvo pokušaj da dobiješ strukturu tabele
-      final response =
-          await Supabase.instance.client.from('gps_lokacije').select().limit(10); // Uzmi samo 10 da vidimo strukturu
+      // Učitaj iz vozac_lokacije tabele (prava tabela sa GPS podacima)
+      final response = await Supabase.instance.client.from('vozac_lokacije').select().limit(10);
       final gpsLokacije = <GPSLokacija>[];
       for (final json in response as List<dynamic>) {
         try {
-          gpsLokacije.add(GPSLokacija.fromMap(json as Map<String, dynamic>));
+          final data = json as Map<String, dynamic>;
+          gpsLokacije.add(GPSLokacija(
+            id: data['id'] as String,
+            vozacId: data['vozac_id'] as String?,
+            latitude: (data['lat'] as num).toDouble(),
+            longitude: (data['lng'] as num).toDouble(),
+            vreme: data['updated_at'] != null ? DateTime.parse(data['updated_at'] as String) : DateTime.now(),
+          ));
         } catch (e) {
           // Silently ignore malformed GPS data
         }
@@ -320,10 +276,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         return const Color(0xFF7C4DFF); // ljubičasta
       case 'bilevski':
         return const Color(0xFFFF9800); // narandžasta
-      case 'sasa':
-        return const Color(0xFF9C27B0); // Ljubičasta
-      case 'nikola':
-        return const Color(0xFF4CAF50); // Zelena
+      case 'ivan':
+        return const Color(0xFF795548); // braon
       default:
         return const Color(0xFF607D8B); // Siva
     }
@@ -425,7 +379,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       onPressed: () {
                         _retryCount = 0; // Reset retry count
                         _loadGpsLokacije();
-                        _loadPutnici();
                       },
                       child: const Text(
                         'Osveži',
@@ -601,6 +554,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       _buildLegendItem(const Color(0xFFFF1493), '🚗 Svetlana'),
                       _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                       _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
+                      _buildLegendItem(const Color(0xFF795548), '🚗 Ivan'),
                     ],
                     const SizedBox(height: 8),
                     Container(
