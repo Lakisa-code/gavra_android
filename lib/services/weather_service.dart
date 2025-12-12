@@ -407,7 +407,6 @@ class WeatherService {
       final windGusts = (current['wind_gusts_10m'] ?? 0).toDouble();
 
       // Hourly data za narednih 12h
-      final hourlyPrecipProb = (hourly['precipitation_probability'] as List?)?.take(12).toList() ?? [];
       final hourlyPrecip = (hourly['precipitation'] as List?)?.take(12).toList() ?? [];
       final hourlyVisibility = (hourly['visibility'] as List?)?.take(12).toList() ?? [];
       final hourlyWeatherCode = (hourly['weather_code'] as List?)?.take(12).toList() ?? [];
