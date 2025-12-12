@@ -394,20 +394,28 @@ class _DanasScreenState extends State<DanasScreen> {
                       ),
                     ),
                   ),
-                  // SREDINA - DAN
+                  // SREDINA - DAN (menja boju na osnovu stream health-a)
                   Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        dayName,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          letterSpacing: 1.8,
-                          shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
-                        ),
-                      ),
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _isRealtimeHealthy,
+                      builder: (context, isHealthy, child) {
+                        return GestureDetector(
+                          onTap: () => _showHealthDialog(),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              dayName,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: isHealthy ? Colors.green.shade300 : Colors.red.shade300,
+                                letterSpacing: 1.8,
+                                shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   // DESNO - VREME
@@ -437,65 +445,46 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 💓 REALTIME HEARTBEAT INDICATOR
-  Widget _buildHeartbeatIndicator() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _isRealtimeHealthy,
-      builder: (context, isHealthy, child) {
-        return GestureDetector(
-          onTap: () {
-            // Pokaži heartbeat debug info
-            showDialog<void>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Realtime Health Status'),
-                content: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Status: ${isHealthy ? 'ZDRAVO' : 'PROBLEM'}'),
-                      const SizedBox(height: 8),
-                      const Text('Stream Heartbeats:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ..._streamHeartbeats.entries.map((entry) {
-                        final timeSince = DateTime.now().difference(entry.value);
-                        return Text(
-                          '${entry.key}: ${timeSince.inSeconds}s ago',
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                            color: timeSince.inSeconds > 30 ? Colors.red : Colors.green,
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 16),
-                      // 🚨 FAIL-FAST STREAM STATUS
-                      const Text('Fail-Fast Status:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      ..._buildFailFastStatus(),
-                    ],
+  // Prikazuje dijalog sa statusom stream health-a (poziva se klikom na dan u AppBar-u)
+  void _showHealthDialog() {
+    final isHealthy = _isRealtimeHealthy.value;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Realtime Health Status'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Status: ${isHealthy ? 'ZDRAVO ✅' : 'PROBLEM ❌'}'),
+              const SizedBox(height: 8),
+              const Text('Stream Heartbeats:', style: TextStyle(fontWeight: FontWeight.bold)),
+              ..._streamHeartbeats.entries.map((entry) {
+                final timeSince = DateTime.now().difference(entry.value);
+                return Text(
+                  '${entry.key}: ${timeSince.inSeconds}s ago',
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: timeSince.inSeconds > 30 ? Colors.red : Colors.green,
                   ),
-                ),
-                actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
-              ),
-            );
-          },
-          child: SizedBox(
-            height: 26,
-            child: Container(
-              decoration: BoxDecoration(
-                color: isHealthy ? Colors.green.shade700 : Colors.red.shade700,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              child: Icon(isHealthy ? Icons.favorite : Icons.heart_broken, color: Colors.white, size: 14),
-            ),
+                );
+              }),
+              const SizedBox(height: 16),
+              // 🚨 FAIL-FAST STREAM STATUS
+              const Text('Fail-Fast Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ..._buildFailFastStatus(),
+            ],
           ),
-        );
-      },
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Zatvori'))],
+      ),
     );
   }
 
-  // �🎓 FINALNO DUGME - OSTALO/UKUPNO FORMAT
+  // 🎓 FINALNO DUGME - OSTALO/UKUPNO FORMAT
   Widget _buildDjackiBrojacButton() {
     return StreamBuilder<Map<String, int>>(
       stream: _streamDjackieBrojevi(),
@@ -542,23 +531,13 @@ class _DanasScreenState extends State<DanasScreen> {
             ),
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$ukupnoUjutro',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    '$ostalo',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.orange),
-                  ),
-                ],
+              child: Text(
+                '$ostalo/$ukupnoUjutro',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: ostalo > 0 ? Colors.orange : Theme.of(context).colorScheme.onPrimary,
+                ),
               ),
             ),
           ),
@@ -2058,10 +2037,7 @@ class _DanasScreenState extends State<DanasScreen> {
                       // DUGMAD U APP BAR-U - dinamički broj dugmića
                       Row(
                         children: [
-                          // � CLEAN STATS INDIKATOR
-                          Expanded(child: _buildHeartbeatIndicator()),
-                          const SizedBox(width: 1),
-                          // �🎓 ĐAČKI BROJAČ
+                          // 🎓 ĐAČKI BROJAČ
                           Expanded(child: _buildDjackiBrojacButton()),
                           const SizedBox(width: 1),
                           // 🚀 DUGME ZA OPTIMIZACIJU RUTE
