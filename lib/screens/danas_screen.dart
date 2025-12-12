@@ -2144,13 +2144,17 @@ class _DanasScreenState extends State<DanasScreen> {
 
                     final sviPutnici = snapshot.data ?? [];
                     final danasnjiDan = _getTodayForDatabase();
+                    final todayIso = DateTime.now().toIso8601String().split('T')[0];
 
                     // Real-time filtriranje
                     final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
 
                     final danasPutnici = sviPutnici.where((p) {
-                      // Dan u nedelji filter
-                      final dayMatch = p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
+                      // Dan u nedelji filter - ISTA LOGIKA KAO HOME_SCREEN
+                      // Ako ima datum (iz putovanja_istorija), koristi ga; inače koristi dan
+                      final dayMatch = p.datum != null 
+                          ? p.datum == todayIso 
+                          : p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());
 
                       // Vremski filter - samo poslednja nedelja za dnevne putnike
                       bool timeMatch = true;
