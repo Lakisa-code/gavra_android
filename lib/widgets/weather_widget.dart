@@ -272,7 +272,7 @@ class _WeatherWidgetState extends State<WeatherWidget> with SingleTickerProvider
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: bgColor.withOpacity(0.5),
+        color: bgColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor, width: 2),
       ),

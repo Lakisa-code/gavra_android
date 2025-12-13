@@ -642,15 +642,36 @@ class _AuthScreenState extends State<AuthScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        vozac['ime'] ?? 'Nepoznat',
-                                        style: TextStyle(
-                                          color: boja,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
+                                      // Ime vozača + ikone u istom redu
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              vozac['ime'] ?? 'Nepoznat',
+                                              style: TextStyle(
+                                                color: boja,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          // Actions - olovka i kanta
+                                          IconButton(
+                                            icon: Icon(Icons.edit, color: boja, size: 20),
+                                            onPressed: () => _editVozac(index),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
+                                            onPressed: () => _deleteVozac(index),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 4),
                                       Row(
                                         children: [
                                           Icon(Icons.email, size: 14, color: Colors.white54),
@@ -658,7 +679,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                           Flexible(
                                             child: Text(
                                               vozac['email'] ?? '-',
-                                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                                              style: const TextStyle(color: Colors.white, fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
                                             ),
                                           ),
                                         ],
@@ -681,19 +704,6 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                     ],
                                   ),
-                                ),
-                                // Actions
-                                IconButton(
-                                  icon: Icon(Icons.edit, color: boja, size: 20),
-                                  onPressed: () => _editVozac(index),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.redAccent, size: 20),
-                                  onPressed: () => _deleteVozac(index),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                 ),
                               ],
                             ),

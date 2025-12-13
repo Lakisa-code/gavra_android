@@ -72,8 +72,8 @@ class AdresaSupabaseService {
     }
   }
 
-  /// Kreira novu adresu ili vraća postojeću
-  /// 🎯 AUTOMATSKI GEOCODING: Ako adresa nema koordinate, poziva geocoding API
+  /// Pronalazi postojeću adresu - NE KREIRA NOVE
+  /// 🚫 ZAKLJUČANO: Nove adrese može dodati samo admin direktno u bazi
   static Future<Adresa?> createOrGetAdresa({
     required String naziv,
     required String grad,
@@ -82,65 +82,26 @@ class AdresaSupabaseService {
     double? lat,
     double? lng,
   }) async {
-    // Prvo pokušaj da pronađeš postojeću
+    // 🔒 Samo pronađi postojeću adresu - NE KREIRAJ NOVU
     try {
       final postojeca = await findAdresaByNazivAndGrad(naziv, grad);
       if (postojeca != null) {
-        // 🎯 KLJUČNO: Ako postojeća adresa NEMA koordinate, pokreni geocoding
-        if (!postojeca.hasValidCoordinates) {
+        // Ako postojeća adresa NEMA koordinate ali imamo ih, ažuriraj
+        if (!postojeca.hasValidCoordinates && lat != null && lng != null) {
           final updatedAdresa = await _geocodeAndUpdateAdresa(postojeca, grad);
           if (updatedAdresa != null) {
             return updatedAdresa;
           }
         }
-
         return postojeca;
       }
     } catch (_) {
       // Greška pri pretrazi adrese
     }
 
-    // 🎯 Pokušaj geocoding pre kreiranja nove adrese
-    double? geoLat = lat;
-    double? geoLng = lng;
-
-    if (geoLat == null || geoLng == null) {
-      try {
-        final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
-          grad: grad,
-          adresa: naziv,
-        );
-        if (geocodeResult != null && geocodeResult.confidence > 50) {
-          geoLat = geocodeResult.latitude;
-          geoLng = geocodeResult.longitude;
-        } else {
-          // Low confidence
-        }
-      } catch (_) {
-        // Geocoding greška
-      }
-    }
-
-    // Kreiraj novu sa koordinatama (ako ih imamo)
-    try {
-      final response = await supabase
-          .from('adrese')
-          .insert({
-            'naziv': naziv,
-            'grad': grad,
-            'ulica': ulica ?? naziv,
-            'broj': broj,
-            // Dodaj koordinate kao JSONB objekat ako su dostupne
-            if (geoLat != null && geoLng != null) 'koordinate': {'lat': geoLat, 'lng': geoLng},
-          })
-          .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
-          .single();
-      final adresa = Adresa.fromMap(response);
-      _cache[adresa.id] = adresa;
-      return adresa;
-    } catch (e) {
-      return null;
-    }
+    // 🚫 NE KREIRAJ NOVU ADRESU - vrati null
+    // Nove adrese može dodati samo admin direktno u Supabase
+    return null;
   }
 
   /// 🌍 Geocodira adresu i ažurira u bazi

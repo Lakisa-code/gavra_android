@@ -18,6 +18,7 @@ import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart';
 import '../utils/schedule_utils.dart';
+import '../utils/text_utils.dart'; // 🎯 Za TextUtils.isStatusActive
 import '../utils/vozac_boja.dart'; // 🎯 Za validaciju vozača
 import '../widgets/bottom_nav_bar_letnji.dart';
 import '../widgets/bottom_nav_bar_zimski.dart';
@@ -307,7 +308,8 @@ class _VozacScreenState extends State<VozacScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text('📍 Sledeći putnici: $routeString${_optimizedRoute.length > 3 ? "..." : ""}'),
-                Text('🎯 Broj putnika: ${_optimizedRoute.length}'),
+                Text(
+                    '🎯 Broj putnika: ${_optimizedRoute.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length}'),
               ],
             ),
             duration: const Duration(seconds: 4),
@@ -376,7 +378,8 @@ class _VozacScreenState extends State<VozacScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text('📍 Sledeći putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
-                  Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
+                  Text(
+                      '🎯 Broj putnika: ${optimizedPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length}'),
                   if (result.totalDistance != null)
                     Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
                 ],
@@ -679,7 +682,8 @@ class _VozacScreenState extends State<VozacScreen> {
 
   // 🗺️ DIJALOG SA OPCIJAMA NAVIGACIJE
   void _showNavigationOptionsDialog() {
-    final putnikCount = _optimizedRoute.length;
+    // 🎯 Koristi isti filter kao kod prikaza "Lista Reorderovana" - samo aktivni nepokupljeni putnici
+    final putnikCount = _optimizedRoute.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length;
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(

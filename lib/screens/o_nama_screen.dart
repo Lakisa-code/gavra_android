@@ -66,9 +66,9 @@ class _ONamaScreenState extends State<ONamaScreen> {
 
   Future<void> _openMaps() async {
     // HERE WeGo - besplatno, radi na svim uređajima
-    // Koordinate za Partizanska 51, Bela Crkva
+    // Koordinate za Mihajla Pupina 74, Bela Crkva
     final Uri launchUri = Uri.parse(
-      'https://share.here.com/r/44.8989,21.4178,Partizanska+51+Bela+Crkva',
+      'https://share.here.com/r/44.8983,21.4152,Mihajla+Pupina+74+Bela+Crkva',
     );
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri, mode: LaunchMode.externalApplication);
@@ -125,7 +125,7 @@ class _ONamaScreenState extends State<ONamaScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Više od 20 godina pružamo pouzdanu uslugu linijskog prevoza na relaciji Bela Crkva – Vršac.',
+                      'Više od 20 godina pružamo pouzdanu uslugu prevoza putnika.',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 15,
@@ -146,50 +146,22 @@ class _ONamaScreenState extends State<ONamaScreen> {
                     _buildContactRow(
                       icon: Icons.location_on,
                       label: 'Adresa',
-                      value: 'Partizanska 51, 26340 Bela Crkva',
+                      value: 'Mihajla Pupina 74, 26340 Bela Crkva',
                       onTap: _openMaps,
-                    ),
-                    const Divider(color: Colors.white24, height: 20),
-                    _buildContactRow(
-                      icon: Icons.phone,
-                      label: 'Telefon',
-                      value: '013/853-415',
-                      onTap: () => _makePhoneCall('013853415'),
                     ),
                     const Divider(color: Colors.white24, height: 20),
                     _buildContactRow(
                       icon: Icons.phone_android,
                       label: 'Mobilni',
-                      value: '063/846-6160',
-                      onTap: () => _makePhoneCall('0638466160'),
+                      value: '064/116-2560',
+                      onTap: () => _makePhoneCall('0641162560'),
                     ),
                     const Divider(color: Colors.white24, height: 20),
                     _buildContactRow(
                       icon: Icons.email,
                       label: 'Email',
-                      value: 'gavriconi@gmail.com',
-                      onTap: () => _sendEmail('gavriconi@gmail.com'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 🚌 RUTE
-              _buildGlassCard(
-                icon: Icons.route,
-                title: 'Naše linije',
-                child: Column(
-                  children: [
-                    _buildRouteRow('🏠', 'Bela Crkva', '🏙️', 'Vršac'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Svakodnevni linijski prevoz putnika',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
-                      ),
+                      value: 'gavriconi19@gmail.com',
+                      onTap: () => _sendEmail('gavriconi19@gmail.com'),
                     ),
                   ],
                 ),
@@ -202,9 +174,9 @@ class _ONamaScreenState extends State<ONamaScreen> {
                 title: 'Podaci o firmi',
                 child: Column(
                   children: [
-                    _buildInfoRow('Pun naziv', 'BOJAN GAVRILOVIĆ PR LIMO SERVIS GAVRA 013 BELA CRKVA'),
+                    _buildInfoRow('Pun naziv', 'PR LIMO SERVIS GAVRA 013'),
                     const Divider(color: Colors.white24, height: 16),
-                    _buildInfoRow('Delatnost', '4932 - Taksi prevoz'),
+                    _buildInfoRow('Delatnost', '4932 - Limo servis + Taksi prevoz'),
                     const Divider(color: Colors.white24, height: 16),
                     _buildInfoRow('PIB', '102853497'),
                     const Divider(color: Colors.white24, height: 16),
@@ -340,7 +312,17 @@ class _ONamaScreenState extends State<ONamaScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Limo servis • Bela Crkva',
+          'Limo servis',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Iznajmljivanje putničkih vozila sa vozačem',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.8),
             fontSize: 16,
@@ -502,37 +484,6 @@ class _ONamaScreenState extends State<ONamaScreen> {
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRouteRow(String icon1, String city1, String icon2, String city2) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(icon1, style: const TextStyle(fontSize: 24)),
-        const SizedBox(width: 8),
-        Text(
-          city1,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Icon(Icons.swap_horiz, color: Colors.white70, size: 28),
-        const SizedBox(width: 16),
-        Text(icon2, style: const TextStyle(fontSize: 24)),
-        const SizedBox(width: 8),
-        Text(
-          city2,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
           ),
         ),
       ],

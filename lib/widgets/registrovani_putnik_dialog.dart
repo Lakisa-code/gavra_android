@@ -51,6 +51,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   String? _adresaBelaCrkvaId;
   String? _adresaVrsacId;
 
+  // 🏠 Liste odobrenih adresa za dropdown
+  List<Map<String, String>> _adreseBelaCrkva = [];
+  List<Map<String, String>> _adreseVrsac = [];
+
   // Time controllers — map based for days (pon, uto, sre, cet, pet)
   final Map<String, TextEditingController> _polazakBcControllers = {};
   final Map<String, TextEditingController> _polazakVsControllers = {};
@@ -71,7 +75,25 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   void initState() {
     super.initState();
     _initializeControllers();
+    _loadAdreseFromDatabase(); // 🏠 Učitaj adrese
     _loadDataFromExistingPutnik();
+  }
+
+  /// 🏠 Učitaj odobrene adrese iz baze
+  Future<void> _loadAdreseFromDatabase() async {
+    try {
+      final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('Bela Crkva');
+      final adreseVS = await AdresaSupabaseService.getAdreseZaGrad('Vršac');
+
+      if (mounted) {
+        setState(() {
+          _adreseBelaCrkva = adreseBC.map((a) => {'id': a.id, 'naziv': a.naziv}).toList();
+          _adreseVrsac = adreseVS.map((a) => {'id': a.id, 'naziv': a.naziv}).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Greška pri učitavanju adresa: $e');
+    }
   }
 
   void _initializeControllers() {
@@ -571,8 +593,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       title: '🏠 Adrese',
       child: Column(
         children: [
-          TextFormField(
-            controller: _adresaBelaCrkvaController,
+          // 🏠 DROPDOWN ZA BELA CRKVA
+          DropdownButtonFormField<String>(
+            key: ValueKey('bc_$_adresaBelaCrkvaId'),
+            initialValue: _adresaBelaCrkvaId,
             decoration: InputDecoration(
               labelText: 'Adresa Bela Crkva',
               prefixIcon: const Icon(Icons.location_on),
@@ -583,16 +607,31 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               ),
             ),
             style: const TextStyle(color: Colors.black),
+            isExpanded: true,
+            hint: const Text('Izaberi adresu...', style: TextStyle(color: Colors.grey)),
+            items: [
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('Bez adrese', style: TextStyle(color: Colors.grey)),
+              ),
+              ..._adreseBelaCrkva.map((adresa) => DropdownMenuItem<String>(
+                    value: adresa['id'],
+                    child: Text(adresa['naziv'] ?? ''),
+                  )),
+            ],
             onChanged: (value) {
-              // Clear UUID when user types manually
               setState(() {
-                _adresaBelaCrkvaId = null;
+                _adresaBelaCrkvaId = value;
+                _adresaBelaCrkvaController.text =
+                    _adreseBelaCrkva.firstWhere((a) => a['id'] == value, orElse: () => {'naziv': ''})['naziv'] ?? '';
               });
             },
           ),
           const SizedBox(height: 12),
-          TextFormField(
-            controller: _adresaVrsacController,
+          // 🏠 DROPDOWN ZA VRŠAC
+          DropdownButtonFormField<String>(
+            key: ValueKey('vs_$_adresaVrsacId'),
+            initialValue: _adresaVrsacId,
             decoration: InputDecoration(
               labelText: 'Adresa Vršac',
               prefixIcon: const Icon(Icons.location_city),
@@ -603,9 +642,23 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               ),
             ),
             style: const TextStyle(color: Colors.black),
+            isExpanded: true,
+            hint: const Text('Izaberi adresu...', style: TextStyle(color: Colors.grey)),
+            items: [
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('Bez adrese', style: TextStyle(color: Colors.grey)),
+              ),
+              ..._adreseVrsac.map((adresa) => DropdownMenuItem<String>(
+                    value: adresa['id'],
+                    child: Text(adresa['naziv'] ?? ''),
+                  )),
+            ],
             onChanged: (value) {
               setState(() {
-                _adresaVrsacId = null;
+                _adresaVrsacId = value;
+                _adresaVrsacController.text =
+                    _adreseVrsac.firstWhere((a) => a['id'] == value, orElse: () => {'naziv': ''})['naziv'] ?? '';
               });
             },
           ),
@@ -1091,31 +1144,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     final currentDriver = prefs.getString('current_driver');
     print('🟢 currentDriver: $currentDriver');
 
-    // Resolve addresses:
-    // Prefer UUIDs selected via autocomplete (_adresa*Id). If no UUID but text exists, create or find address.
+    // 🏠 Adrese - samo koristi ID iz dropdown-a (nema kreiranja novih)
     String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
     String? adresaVrsacId = _adresaVrsacId;
 
     print('🟢 _adresaBelaCrkvaId: $_adresaBelaCrkvaId');
-    print('🟢 _adresaBelaCrkvaController.text: "${_adresaBelaCrkvaController.text}"');
-
-    if (adresaBelaCrkvaId == null && _adresaBelaCrkvaController.text.isNotEmpty) {
-      print('🟢 Creating/getting address for Bela Crkva...');
-      final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
-        naziv: _adresaBelaCrkvaController.text.trim(),
-        grad: 'Bela Crkva',
-      );
-      print('🟢 adresaBC: $adresaBC, id: ${adresaBC?.id}');
-      adresaBelaCrkvaId = adresaBC?.id;
-    }
-
-    if (adresaVrsacId == null && _adresaVrsacController.text.isNotEmpty) {
-      final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
-        naziv: _adresaVrsacController.text.trim(),
-        grad: 'Vršac',
-      );
-      adresaVrsacId = adresaVS?.id;
-    }
+    print('🟢 _adresaVrsacId: $_adresaVrsacId');
 
     // Create new passenger
     // 🔧 FIX: Dodaj trenutnog vozača u dodaliVozaci
@@ -1165,42 +1199,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   Future<void> _updateExistingPutnik() async {
-    // Resolve address UUIDs:
-    // - Ako je _adresaBelaCrkvaId postavljen (korisnik je izabrao iz autocomplete) -> koristi taj ID
-    // - Ako je null ali ima teksta u polju -> korisnik je ručno uneo/promenio adresu, kreiraj novu
-    // - Ako je polje prazno -> postavi null
-    String? adresaBelaCrkvaId;
-    String? adresaVrsacId;
-
-    // Adresa Bela Crkva
-    if (_adresaBelaCrkvaController.text.isEmpty) {
-      adresaBelaCrkvaId = null;
-    } else if (_adresaBelaCrkvaId != null) {
-      // Korisnik je izabrao adresu iz autocomplete-a
-      adresaBelaCrkvaId = _adresaBelaCrkvaId;
-    } else {
-      // Korisnik je ručno uneo tekst, kreiraj ili pronađi adresu
-      final adresaBC = await AdresaSupabaseService.createOrGetAdresa(
-        naziv: _adresaBelaCrkvaController.text.trim(),
-        grad: 'Bela Crkva',
-      );
-      adresaBelaCrkvaId = adresaBC?.id;
-    }
-
-    // Adresa Vršac
-    if (_adresaVrsacController.text.isEmpty) {
-      adresaVrsacId = null;
-    } else if (_adresaVrsacId != null) {
-      // Korisnik je izabrao adresu iz autocomplete-a
-      adresaVrsacId = _adresaVrsacId;
-    } else {
-      // Korisnik je ručno uneo tekst, kreiraj ili pronađi adresu
-      final adresaVS = await AdresaSupabaseService.createOrGetAdresa(
-        naziv: _adresaVrsacController.text.trim(),
-        grad: 'Vršac',
-      );
-      adresaVrsacId = adresaVS?.id;
-    }
+    // 🏠 Adrese - samo koristi ID iz dropdown-a (nema kreiranja novih)
+    String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
+    String? adresaVrsacId = _adresaVrsacId;
 
     // 🔧 DIREKTNO KREIRAJ MAPU ZA UPDATE - zaobilazi copyWith problem sa null vrednostima
     final updateMap = <String, dynamic>{

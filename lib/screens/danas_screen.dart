@@ -676,7 +676,8 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🗺️ DIJALOG SA OPCIJAMA NAVIGACIJE
   void _showNavigationOptionsDialog() {
-    final putnikCount = _optimizedRoute.length;
+    // 🎯 Koristi isti filter kao kod prikaza "Lista Reorderovana" - samo aktivni nepokupljeni putnici
+    final putnikCount = _optimizedRoute.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length;
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1704,7 +1705,8 @@ class _DanasScreenState extends State<DanasScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text('📍 Sledeći putnici: $routeString${_optimizedRoute.length > 3 ? "..." : ""}'),
-                Text('🎯 Broj putnika: ${_optimizedRoute.length}'),
+                Text(
+                    '🎯 Broj putnika: ${_optimizedRoute.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length}'),
               ],
             ),
             duration: const Duration(seconds: 4),
@@ -1831,7 +1833,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text('📍 Sledeći putnici: $routeString${optimizedPutnici.length > 3 ? "..." : ""}'),
-                  Text('🎯 Broj putnika: ${optimizedPutnici.length}'),
+                  Text(
+                      '🎯 Broj putnika: ${optimizedPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length}'),
                   if (result.totalDistance != null)
                     Text('📏 Ukupno: ${(result.totalDistance! / 1000).toStringAsFixed(1)} km'),
                 ],
@@ -2487,7 +2490,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                                     children: [
                                                       Text(
                                                         _isListReordered
-                                                            ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.length})'
+                                                            ? '🎯 Lista Reorderovana (${_currentPassengerIndex + 1}/${finalPutnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length})'
                                                             : (_isGpsTracking
                                                                 ? '🛰️ GPS Tracking AKTIVAN'
                                                                 : 'Ruta optimizovana'),
@@ -2524,7 +2527,8 @@ class _DanasScreenState extends State<DanasScreen> {
                                                       // 🔄 REAL-TIME ROUTE STRING
                                                       StreamBuilder<String>(
                                                         stream: Stream.fromIterable([finalPutnici]).map(
-                                                          (putnici) => 'Optimizovana ruta: ${putnici.length} putnika',
+                                                          (putnici) =>
+                                                              'Optimizovana ruta: ${putnici.where((p) => TextUtils.isStatusActive(p.status) && !p.jePokupljen).length} putnika',
                                                         ),
                                                         initialData: 'Pripremi rutu...',
                                                         builder: (context, snapshot) {
