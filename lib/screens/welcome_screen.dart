@@ -1,6 +1,6 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../services/auth_manager.dart';
@@ -37,6 +37,7 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isAudioPlaying = false;
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -288,8 +289,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
   // Helper metoda za zaustavljanje pesme
   Future<void> _stopAudio() async {
     try {
-      if (_audioPlayer.playing) {
+      if (_isAudioPlaying) {
         await _audioPlayer.stop();
+        _isAudioPlaying = false;
       }
     } catch (e) {
       // Swallow audio errors silently
@@ -603,9 +605,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
                       child: GestureDetector(
                         onTap: () async {
                           try {
-                            await _audioPlayer.setAsset('assets/kasno_je.mp3');
                             await _audioPlayer.setVolume(0.5);
-                            await _audioPlayer.play();
+                            await _audioPlayer.play(AssetSource('kasno_je.mp3'));
+                            _isAudioPlaying = true;
                           } catch (_) {}
                         },
                         child: Container(
