@@ -4,13 +4,13 @@
     <!-- Gradient background matching app theme -->
     <item android:drawable="@drawable/splash_gradient" />
 
-    <!-- App logo in center - larger -->
+    <!-- App logo in center -->
     <item
-        android:width="192dp"
-        android:height="192dp"
+        android:width="180dp"
+        android:height="180dp"
         android:gravity="center">
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/ic_launcher" />
+            android:src="@mipmap/ic_launcher_round" />
     </item>
 </layer-list>
