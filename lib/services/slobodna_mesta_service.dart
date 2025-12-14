@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
@@ -148,12 +147,11 @@ class SlobodnaMestaService {
           ));
         }
 
-        debugPrint('📊 SlobodnaMesta: BC=${result['BC']!.length}, VS=${result['VS']!.length} za $isoDate');
         if (!controller.isClosed) {
           controller.add(result);
         }
       } catch (e) {
-        debugPrint('❌ SlobodnaMesta fetchData greška: $e');
+        // Error fetching data
       }
     }
 
@@ -168,7 +166,6 @@ class SlobodnaMestaService {
 
     // Timer koji osvežava svakih 2 minuta
     refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
-      debugPrint('🔄 SlobodnaMesta: Auto-refresh (2 min)');
       fetchData(lastKapacitet);
     });
 
@@ -177,7 +174,6 @@ class SlobodnaMestaService {
       refreshTimer?.cancel();
       kapacitetSub?.cancel();
       controller.close();
-      debugPrint('🛑 SlobodnaMesta: Stream zatvoren');
     };
 
     return controller.stream;
@@ -291,7 +287,6 @@ class SlobodnaMestaService {
       }
 
       final tipPutnika = (putnikResponse['tip'] as String?)?.toLowerCase() ?? 'radnik';
-      final putnikIme = putnikResponse['putnik_ime'] as String? ?? 'Nepoznat';
 
       // ═══════════════════════════════════════════════════════════════
       // 🎓 OGRANIČENJA ZA UČENIKE
@@ -348,10 +343,6 @@ class SlobodnaMestaService {
 
       // Sačuvaj staro vreme za notifikaciju
       final gradKey = grad.toLowerCase() == 'bc' ? 'bc' : 'vs';
-      String? staroVreme;
-      if (polasci[dan] is Map) {
-        staroVreme = polasci[dan][gradKey]?.toString();
-      }
 
       // Ažuriraj vreme
       if (zaCeluNedelju) {
@@ -378,13 +369,11 @@ class SlobodnaMestaService {
         await _zapisiPromenuVremena(putnikId, danas, dan);
       }
 
-      debugPrint('✅ SlobodnaMesta: Putnik $putnikIme promenio vreme $staroVreme → $novoVreme ($grad, $dan)');
       return {
         'success': true,
         'message': zaCeluNedelju ? 'Vreme promenjeno za celu nedelju na $novoVreme' : 'Vreme promenjeno na $novoVreme',
       };
     } catch (e) {
-      debugPrint('❌ SlobodnaMesta promeniVremePutnika greška: $e');
       return {'success': false, 'message': 'Greška: $e'};
     }
   }
@@ -408,7 +397,6 @@ class SlobodnaMestaService {
 
       return (response as List).length;
     } catch (e) {
-      debugPrint('⚠️ Greška pri brojanju promena: $e');
       return 0;
     }
   }
@@ -429,7 +417,7 @@ class SlobodnaMestaService {
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('⚠️ Greška pri zapisivanju promene: $e');
+      // Error writing change log
     }
   }
 }

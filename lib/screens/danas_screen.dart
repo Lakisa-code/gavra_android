@@ -24,7 +24,6 @@ import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO 
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
-import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
@@ -59,7 +58,6 @@ class _DanasScreenState extends State<DanasScreen> {
   final supabase = Supabase.instance.client; // DODANO za direktne pozive
   final _putnikService = PutnikService(); // ⏪ VRAĆEN na stari servis zbog grešaka u novom
   final Set<String> _resettingSlots = {};
-  final RouteOptimizationService _routeOptimizationService = RouteOptimizationService();
   Set<String> _lastMatchingIds = {};
 
   bool _setEquals(Set<String> a, Set<String> b) {
@@ -127,15 +125,11 @@ class _DanasScreenState extends State<DanasScreen> {
   void _onNetworkStatusChanged() {
     final status = RealtimeNetworkStatusService.instance.networkStatus.value;
     if (_prevNetworkStatus != status) {
-      // If we've recovered to good/excellent, force cache invalidation for current filters
+      // If we've recovered to good/excellent, trigger UI refresh
       if ((status == NetworkStatus.excellent || status == NetworkStatus.good) &&
           (_prevNetworkStatus == NetworkStatus.offline || _prevNetworkStatus == NetworkStatus.poor)) {
-        final selectedGrad = widget.filterGrad ?? _selectedGrad;
-        final selectedVreme = widget.filterVreme ?? _selectedVreme;
-        try {
-          _routeOptimizationService.invalidateCacheFor(grad: selectedGrad, vreme: selectedVreme);
-          if (mounted) setState(() {});
-        } catch (_) {}
+        // Stream automatski ažurira podatke - samo osvežimo UI
+        if (mounted) setState(() {});
       }
       _prevNetworkStatus = status;
     }
@@ -1501,8 +1495,6 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     });
     // Dodato: NIŠTA - koristimo direktne supabase pozive bez cache
-    // 🛰️ REALTIME ROUTE TRACKING LISTENER
-    _initializeRealtimeTracking();
 
     // Start network status listener to auto-refetch when we recover connectivity
     _prevNetworkStatus = RealtimeNetworkStatusService.instance.networkStatus.value;
@@ -1529,10 +1521,6 @@ class _DanasScreenState extends State<DanasScreen> {
         _showNotificationMessage();
       });
     }
-  }
-
-  void _initializeRealtimeTracking() {
-    // DISABLED: Google APIs removed to keep app 100% FREE - method does nothing now
   }
 
   // 🔔 SHOW NOTIFICATION MESSAGE WHEN OPENED FROM NOTIFICATION
@@ -1642,12 +1630,6 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // Optimizacija rute za trenutni polazak (napredna verzija)
   void _optimizeCurrentRoute(List<Putnik> putnici, {bool isAlreadyOptimized = false}) async {
-    // 🔍 DEBUG: Prikaži koliko putnika dolazi
-    debugPrint('🔍 _optimizeCurrentRoute: primljeno ${putnici.length} putnika za $_selectedGrad $_selectedVreme');
-    for (final p in putnici) {
-      debugPrint('   - ${p.ime} | grad=${p.grad} | polazak=${p.polazak} | mesecna=${p.mesecnaKarta}');
-    }
-
     // Proveri da li je ulogovan i valjan vozač
     if (_currentDriver == null || !VozacBoja.isValidDriver(_currentDriver)) {
       if (mounted) {
@@ -1801,7 +1783,6 @@ class _DanasScreenState extends State<DanasScreen> {
               }
             },
           );
-          debugPrint('🚐 Realtime tracking pokrenut: ${result.putniciEta?.length ?? 0} putnika sa ETA');
 
           // 📱 POŠALJI PUSH NOTIFIKACIJE PUTNICIMA
           await _sendTransportStartedNotifications(
@@ -1856,12 +1837,14 @@ class _DanasScreenState extends State<DanasScreen> {
                     children: [
                       const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 32),
                       const SizedBox(width: 8),
-                      Text(
-                        '${skipped.length} PUTNIKA BEZ LOKACIJE',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87,
+                      Flexible(
+                        child: Text(
+                          '${skipped.length} PUTNIKA BEZ LOKACIJE',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
                     ],
@@ -1984,7 +1967,6 @@ class _DanasScreenState extends State<DanasScreen> {
       final tokens = await PutnikPushService.getTokensForPutnici(putnikImena);
 
       if (tokens.isEmpty) {
-        debugPrint('📱 Nema registrovanih tokena za putnike');
         return;
       }
 
@@ -2006,13 +1988,9 @@ class _DanasScreenState extends State<DanasScreen> {
             'vozac': vozacIme,
           },
         );
-
-        debugPrint('📱 Notifikacija poslata: $putnikIme (ETA: $eta min)');
       }
-
-      debugPrint('✅ Poslato ${tokens.length} notifikacija putnicima');
     } catch (e) {
-      debugPrint('❌ Greška pri slanju notifikacija: $e');
+      // Error sending notifications
     }
   }
 
@@ -2107,13 +2085,14 @@ class _DanasScreenState extends State<DanasScreen> {
                         }
                       }
 
-                      // If the set changed compared to last matching ids, invalidate only the relevant cache key
+                      // If the set changed compared to last matching ids, refresh UI
                       if (!_setEquals(_lastMatchingIds, matchingIds)) {
                         _lastMatchingIds = matchingIds;
-                        try {
-                          _routeOptimizationService.invalidateCacheFor(grad: selectedGrad, vreme: selectedVreme);
+                        // Stream automatski ažurira podatke - samo osvežimo UI
+                        // ✅ FIX: Defer setState to after build phase to avoid "setState called during build"
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (mounted) setState(() {});
-                        } catch (_) {}
+                        });
                       }
                     }
 

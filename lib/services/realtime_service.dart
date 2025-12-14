@@ -500,7 +500,6 @@ class RealtimeService {
   /// and emit the latest combined set.
   Future<void> refreshNow() async {
     try {
-      print('🔄 RealtimeService.refreshNow() POZVAN');
 // 🔄 STANDARDIZOVANO: koristi putovanja_istorija i registrovani_putnici
       final putovanjaData = await SupabaseSafe.select('putovanja_istorija');
       final registrovaniData = await SupabaseSafe.select('registrovani_putnici');
@@ -511,25 +510,21 @@ class RealtimeService {
       _lastRegistrovaniRows =
           (registrovaniData is List) ? registrovaniData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
 
-      print(
-          '🔄 refreshNow: Učitao ${_lastPutovanjaRows.length} putovanja, ${_lastRegistrovaniRows.length} registrovanih');
       _emitCombinedPutnici();
 
       // 🔄 NOVO: Emituj i za sve parametarske streamove
       // Ovo osigurava da se home_screen lista osvežava nakon dodavanja putnika
-      print('🔄 refreshNow: Emiujem za ${_paramControllers.length} parametarskih streamova');
       for (final key in _paramControllers.keys.toList()) {
         try {
           final controller = _paramControllers[key];
           if (controller != null && !controller.isClosed) {
-            print('🔄 refreshNow: Emitujem za key=$key');
             // Emituj praznu listu da triggeruje re-fetch u PutnikService
             controller.add([]);
           }
         } catch (_) {}
       }
-    } catch (e) {
-      print('❌ refreshNow GREŠKA: $e');
+    } catch (_) {
+      // Ignoriši greške pri osvežavanju - stream će se osvežiti prirodno
     }
   }
 }

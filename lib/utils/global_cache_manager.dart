@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../services/registrovani_putnik_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_service.dart';
+import '../services/registrovani_putnik_service.dart';
 
 /// 🔄 GLOBALNI CACHE MANAGER
 /// Centralizovano upravljanje cache-om kada se putnici brišu/ažuriraju
@@ -17,7 +17,6 @@ class GlobalCacheManager {
   /// 🔄 Inkrementiraj refresh signal - forsira sve listenere da se rebuildu-ju
   static void triggerGlobalRefresh() {
     refreshSignal.value++;
-    debugPrint('🔄 GLOBAL REFRESH TRIGGERED: ${refreshSignal.value}');
   }
 
   /// 🧹 OČISTI SVE CACHE-OVE I FORSIRAJ REFRESH - BEZ DEBOUNCING-a
@@ -34,7 +33,7 @@ class GlobalCacheManager {
       // 3. Triggeruj globalni refresh signal
       triggerGlobalRefresh();
     } catch (e) {
-      debugPrint('❌ Greška pri čišćenju cache-a: $e');
+      // Error clearing cache
     }
   }
 
@@ -44,7 +43,7 @@ class GlobalCacheManager {
       await RealtimeService.instance.refreshNow();
       triggerGlobalRefresh();
     } catch (e) {
-      debugPrint('❌ Greška pri soft refresh-u: $e');
+      // Error during soft refresh
     }
   }
 

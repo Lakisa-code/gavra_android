@@ -63,13 +63,10 @@ class SupabaseSafe {
   static Future<T?> run<T>(Future<T> Function() fn, {T? fallback}) async {
     try {
       final result = await fn();
-      // print('✅ SUPABASE_SAFE SUCCESS: ${result.runtimeType} with ${result is List ? result.length : 'N/A'} items');
       return result;
     } on PostgrestException {
-      // print('❌ SUPABASE_SAFE PostgrestException: ${e.message} (code: ${e.code})');
       return fallback;
     } catch (_) {
-      // print('❌ SUPABASE_SAFE GENERIC ERROR: $e');
       return fallback;
     }
   }

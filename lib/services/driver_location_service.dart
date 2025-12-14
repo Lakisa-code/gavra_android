@@ -53,14 +53,12 @@ class DriverLocationService {
     VoidCallback? onAllPassengersPickedUp, // 🆕 Za auto-stop
   }) async {
     if (_isTracking) {
-      debugPrint('📍 DriverLocationService: Već je aktivno praćenje');
       return true;
     }
 
     // Proveri dozvole za lokaciju
     final hasPermission = await _checkLocationPermission();
     if (!hasPermission) {
-      debugPrint('❌ DriverLocationService: Nema dozvole za lokaciju');
       return false;
     }
 
@@ -73,9 +71,6 @@ class DriverLocationService {
     _putniciCoordinates = putniciCoordinates;
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
-
-    debugPrint(
-        '📍 DriverLocationService: Pokrećem praćenje za $vozacIme ($grad, smer: $smer, putnika: ${putniciEta?.length ?? 0})');
 
     // Odmah pošalji trenutnu lokaciju
     await _sendCurrentLocation();
@@ -92,8 +87,6 @@ class DriverLocationService {
   /// Zaustavi praćenje lokacije
   Future<void> stopTracking() async {
     if (!_isTracking) return;
-
-    debugPrint('📍 DriverLocationService: Zaustavljam praćenje');
 
     _locationTimer?.cancel();
     _locationTimer = null;
@@ -126,13 +119,9 @@ class DriverLocationService {
     _currentPutniciEta![putnikIme] = -1;
     _putniciCoordinates?.remove(putnikIme);
 
-    debugPrint(
-        '📍 Putnik pokupljen: $putnikIme, preostalo aktivnih: ${_currentPutniciEta!.values.where((v) => v >= 0).length}');
-
     // 🆕 AUTO-STOP: Ako su svi putnici pokupljeni (svi imaju ETA = -1)
     final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
     if (aktivniPutnici == 0) {
-      debugPrint('✅ Svi putnici pokupljeni - auto-stop tracking');
       _onAllPassengersPickedUp?.call();
       stopTracking();
     }
@@ -166,7 +155,6 @@ class DriverLocationService {
     }
 
     _currentPutniciEta = updatedEta;
-    debugPrint('📍 Dinamički ETA ažuriran za ${updatedEta.length} putnika');
   }
 
   /// Proveri i zatraži dozvole za lokaciju - CENTRALIZOVANO
@@ -195,7 +183,6 @@ class DriverLocationService {
           position.longitude,
         );
         if (distance < _minDistanceMeters) {
-          debugPrint('📍 Premalo pomeranja ($distance m), preskačem update');
           return;
         }
       }
@@ -222,11 +209,8 @@ class DriverLocationService {
         'putnici_eta': _currentPutniciEta, // Dinamički ažuriran ETA
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
-
-      debugPrint(
-          '📍 Lokacija poslata: ${position.latitude}, ${position.longitude}, ETA: ${_currentPutniciEta?.length ?? 0} putnika');
     } catch (e) {
-      debugPrint('❌ Greška pri slanju lokacije: $e');
+      // Error sending location
     }
   }
 
@@ -236,9 +220,8 @@ class DriverLocationService {
 
     try {
       await Supabase.instance.client.from('vozac_lokacije').update({'aktivan': false}).eq('vozac_id', _currentVozacId!);
-      debugPrint('📍 Vozač $_currentVozacId označen kao neaktivan');
     } catch (e) {
-      debugPrint('❌ Greška pri označavanju neaktivnog: $e');
+      // Error setting inactive
     }
   }
 
@@ -256,7 +239,7 @@ class DriverLocationService {
         _sendPositionToSupabase(position);
       },
       onError: (e) {
-        debugPrint('❌ GPS Stream error: $e');
+        // GPS Stream error
       },
     );
   }
@@ -278,7 +261,7 @@ class DriverLocationService {
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
     } catch (e) {
-      debugPrint('❌ Greška pri upsert lokacije: $e');
+      // Error upserting location
     }
   }
 
@@ -302,7 +285,6 @@ class DriverLocationService {
       final response = await query.maybeSingle();
       return response;
     } catch (e) {
-      debugPrint('❌ Greška pri dohvatanju lokacije vozača: $e');
       return null;
     }
   }

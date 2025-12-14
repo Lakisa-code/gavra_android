@@ -77,10 +77,8 @@ class PutnikService {
     String? vreme,
   }) {
     final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
-    print('🔍 PutnikService.streamKombinovaniPutniciFiltered POZVAN sa key=$key');
 
     if (_streams.containsKey(key) && !_streams[key]!.isClosed) {
-      print('📦 VRAĆAM POSTOJEĆI STREAM ZA KEY: $key (ima listener)');
       // Ako imamo cached vrednost, emituj je odmah
       final controller = _streams[key]!;
       if (_lastValues.containsKey(key)) {
@@ -89,17 +87,14 @@ class PutnikService {
       return controller.stream;
     }
 
-    print('🆕 KREIRAM NOVI STREAM ZA KEY: $key');
     final controller = StreamController<List<Putnik>>.broadcast();
     _streams[key] = controller;
 
     Future<void> doFetch() async {
       try {
-        print('🔄 PutnikService.doFetch() STARTED za key=$key (isoDate=$isoDate, grad=$grad, vreme=$vreme)');
         final combined = <Putnik>[];
 
         // Fetch daily rows server-side if isoDate provided, otherwise fetch recent daily
-        // print('📊 QUERY: putovanja_istorija WHERE datum_putovanja=$isoDate AND tip_putnika=dnevni');
 
         // 🚫 UKLONJENO: Ad-hoc dnevni putnici više ne postoje
         // Svi putnici (radnik, ucenik, dnevni) su registrovani u registrovani_putnici tabeli
@@ -157,8 +152,6 @@ class PutnikService {
               // Ključ: mesecni_putnik_id + grad + vreme (za slučaj više polazaka)
               final key = '${mpId}_${rowGrad}_$rowVreme';
               registrovaniOverrides[key] = map;
-              print(
-                  '📥 UČITAN OVERRIDE: ime=${map['putnik_ime']} key=$key status=${map['status']} adresa=${map['adresa']}');
             }
           }
         } catch (_) {
@@ -176,7 +169,6 @@ class PutnikService {
           // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan kao u getAllPutniciFromBothTables
           final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
           for (final p in putniciZaDan) {
-            print('📊 UČITAN MESEČNI PUTNIK: ${p.ime} grad=${p.grad} polazak=${p.polazak} adresa=${p.adresa}');
             // apply grad/vreme filter if provided
             final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
             final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
@@ -191,14 +183,10 @@ class PutnikService {
             // 🔍 Proveri da li postoji override (otkazivanje/pokupljenje) za ovog mesečnog putnika
             final normGrad = TextUtils.normalizeText(p.grad); // ✅ Normalizuj grad za poređenje
             final overrideKey = '${p.id}_${normGrad}_$normVreme';
-            print(
-                '🔍 PROVERA OVERRIDE: ${p.ime} key=$overrideKey postoji=${registrovaniOverrides.containsKey(overrideKey)}');
             if (registrovaniOverrides.containsKey(overrideKey)) {
               // Zameni sa podacima iz putovanja_istorija (ima status otkazan, pokupljen itd.)
               final overrideData = registrovaniOverrides[overrideKey]!;
               final overridePutnik = Putnik.fromPutovanjaIstorija(overrideData);
-              print(
-                  '✅ PRIMENJEN OVERRIDE: ${overridePutnik.ime} status=${overridePutnik.status} jeOtkazan=${overridePutnik.jeOtkazan}');
               combined.add(overridePutnik);
             } else {
               combined.add(p);
@@ -206,17 +194,11 @@ class PutnikService {
           }
         }
 
-//         // print('📊 UKUPNO KOMBINOVANIH PUTNIKA: ${combined.length}');
-        // for (final p in combined) {
-//           // print('📊 FINALNI PUTNIK: ${p.ime} - ${p.grad} - ${p.polazak}');
-        // }
-
         _lastValues[key] = combined; // Cache za replay
         if (!controller.isClosed) {
           controller.add(combined);
         }
       } catch (e) {
-//         // print('❌ GREŠKA U doFetch: $e');
         _lastValues[key] = [];
         if (!controller.isClosed) {
           controller.add([]);
@@ -238,7 +220,6 @@ class PutnikService {
         : RealtimeService.instance.combinedPutniciStream;
 
     final sub = refreshStream.listen((_) {
-      print('🔔 PutnikService: Primljen signal iz RealtimeService za key=$key, pozivam doFetch()');
       doFetch();
     });
     _subscriptions[key] = sub;
@@ -797,22 +778,16 @@ class PutnikService {
       }
 
       // 🔄 FORCE REFRESH SVA DVA STREAM-A
-//       // print('🔄 POZIVAM RealtimeService.refreshNow()...');
       await RealtimeService.instance.refreshNow();
 
       // 🔄 DODATNO: Resetuj cache za sigurnost
-//       // print('🗑️ BRIŠEM STREAM CACHE...');
       _streams.clear();
 
       // ⏳ KRATKA PAUZA da se obezbedi da je transakcija commitovana
-//       // print('⏳ PAUZA ZBOG TRANSAKCIJE...');
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // 🔄 DODATNI REFRESH NAKON PAUZE
-//       // print('🔄 DODATNI REFRESH NAKON PAUZE...');
       await RealtimeService.instance.refreshNow();
-
-//       // print('✅ DODAVANJE PUTNIKA ZAVRŠENO USPEŠNO!');
     } catch (e) {
       rethrow;
     }
@@ -1743,7 +1718,6 @@ class PutnikService {
 
         if (registrovaniList.isNotEmpty) {
           final registrovaniResponse = registrovaniList.first;
-          print('🔄 RESET: Ažuriram registrovani_putnici za "$imePutnika" - postavljam vreme_pokupljenja=null');
           // ✅ FIX: Update SVE putnike sa istim imenom (ako ih ima više)
           await supabase.from('registrovani_putnici').update({
             'aktivan': true, // ✅ KRITIČNO: VRATI na aktivan (jeOtkazan = false)
@@ -1755,7 +1729,6 @@ class PutnikService {
             'vozac_id': null, // ✅ UKLONI vozača (UUID kolona)
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('putnik_ime', imePutnika);
-          print('✅ RESET: Uspešno ažurirano registrovani_putnici za "$imePutnika"');
 
           // 📊 SINHRONIZUJ broj otkazivanja nakon reset-a (VAŽNO!)
           try {
@@ -1773,7 +1746,6 @@ class PutnikService {
           return;
         }
       } catch (e) {
-        print('❌ RESET GREŠKA za "$imePutnika": $e');
         // Ako nema u registrovani_putnici, ignoriši - svi putnici su sada registrovani
       }
 

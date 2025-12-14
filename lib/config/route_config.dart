@@ -158,7 +158,7 @@ class RouteConfig {
   // ═══════════════════════════════════════════════════════════════════════
 
   /// Timeout za OSRM API pozive
-  static const Duration osrmTimeout = Duration(seconds: 8);
+  static const Duration osrmTimeout = Duration(seconds: 10);
 
   /// Timeout za Nominatim geocoding
   static const Duration nominatimTimeout = Duration(seconds: 10);
@@ -167,7 +167,7 @@ class RouteConfig {
   static const Duration supabaseTimeout = Duration(seconds: 10);
 
   /// Maksimalan broj retry pokušaja za OSRM
-  static const int osrmMaxRetries = 3;
+  static const int osrmMaxRetries = 1;
 
   /// Maksimalan broj retry pokušaja za Nominatim
   static const int nominatimMaxRetries = 3;

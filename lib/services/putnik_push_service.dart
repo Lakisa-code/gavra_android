@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'firebase_service.dart';
@@ -29,7 +28,6 @@ class PutnikPushService {
       }
 
       if (token == null || provider == null) {
-        debugPrint('⚠️ PutnikPushService: Nema dostupnog push tokena');
         return false;
       }
 
@@ -39,10 +37,8 @@ class PutnikPushService {
         'push_provider': provider,
       }).eq('id', putnikId);
 
-      debugPrint('✅ PutnikPushService: Token registrovan za putnika $putnikId ($provider)');
       return true;
     } catch (e) {
-      debugPrint('❌ PutnikPushService greška: $e');
       return false;
     }
   }
@@ -54,10 +50,8 @@ class PutnikPushService {
         'push_token': null,
         'push_provider': null,
       }).eq('id', putnikId);
-
-      debugPrint('🗑️ PutnikPushService: Token obrisan za putnika $putnikId');
     } catch (e) {
-      debugPrint('❌ PutnikPushService clearToken greška: $e');
+      // Error clearing token
     }
   }
 
@@ -86,10 +80,8 @@ class PutnikPushService {
         }
       }
 
-      debugPrint('📋 PutnikPushService: Pronađeno ${result.length} tokena za ${putnikImena.length} putnika');
       return result;
     } catch (e) {
-      debugPrint('❌ PutnikPushService getTokens greška: $e');
       return {};
     }
   }

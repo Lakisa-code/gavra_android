@@ -14,7 +14,6 @@ import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
-import 'services/huawei_map_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/offline_map_service.dart';
 import 'services/realtime_notification_service.dart';
@@ -58,11 +57,9 @@ void main() async {
         // Debug helper: dump FCM token to logs so testers can use it for E2E
         if (kDebugMode) {
           try {
-            final fcmToken = await FirebaseService.getFCMToken();
-            // mask token in logs when printing publicly — but during local testing we show full token
-            debugPrint('FCM token (debug): ${fcmToken ?? '[null]'}');
+            await FirebaseService.getFCMToken();
           } catch (e) {
-            debugPrint('FCM token retrieval failed: $e');
+            // FCM token retrieval failed
           }
         }
       } catch (e) {
@@ -71,13 +68,11 @@ void main() async {
     } else {
       // No GMS available — initialize Huawei Push if possible
       try {
-        final token = await HuaweiPushService().initialize();
-        debugPrint(
-            'HMS init attempt returned token: ${token ?? 'null'} (no immediate token available — stream will register later if a token arrives)');
+        await HuaweiPushService().initialize();
         // Try to register any pending tokens from previous sessions
         await HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
-        debugPrint('HMS initialization attempt failed: $e');
+        // HMS initialization attempt failed
       }
     }
   } catch (e) {
@@ -91,13 +86,11 @@ void main() async {
       // FirebaseService.setupFCMListeners();
       // firebaseAvailable = true; // fallback succeeded
       try {
-        final token = await HuaweiPushService().initialize();
-        debugPrint(
-            'HMS fallback init returned token (masked): ${token != null ? '[REDACTED]' : 'null'} (no immediate token — stream may register later)');
+        await HuaweiPushService().initialize();
         // Try to register any pending tokens from previous sessions
         await HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
-        debugPrint('HMS fallback initialization attempt failed: $e');
+        // HMS fallback initialization attempt failed
       }
     } catch (_) {}
   }
@@ -114,7 +107,7 @@ void main() async {
     try {
       await HuaweiPushService().tryRegisterPendingToken();
     } catch (e) {
-      debugPrint('Error registering pending Huawei token after Supabase init: $e');
+      // Error registering pending Huawei token after Supabase init
     }
 
     // 🗂️ INICIJALIZUJ VOZAC MAPPING CACHE
@@ -129,16 +122,9 @@ void main() async {
     // Continue without Supabase if it fails
   }
 
-  // 🛰️ GPS MANAGER - centralizovani GPS singleton
+  // 🛠️ GPS MANAGER - centralizovani GPS singleton
   // GpsManager.instance se koristi lazy - ne treba inicijalizacija ovde
   // Tracking se pokreće kad je potreban (danas_screen, navigation widget)
-
-  // 🗺️ INITIALIZE HUAWEI MAP SERVICE (za routing bez Google Maps)
-  try {
-    await HuaweiMapService.initializeFromAssets();
-  } catch (e) {
-    debugPrint('Huawei Map Service initialization failed: $e');
-  }
 
   // 🗺️ INITIALIZE OFFLINE MAPS
   try {
@@ -192,10 +178,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> _forceSubscribeToTopics() async {
     try {
       await Future.delayed(const Duration(seconds: 2)); // Wait for Firebase init
-      debugPrint('🔔 FORCE: Attempting to subscribe to FCM topics...');
       await RealtimeNotificationService.subscribeToDriverTopics('test_driver');
     } catch (e) {
-      debugPrint('❌ FORCE subscribe failed: $e');
+      // FORCE subscribe failed
     }
   }
 
@@ -212,7 +197,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       try {
         HuaweiPushService().tryRegisterPendingToken();
       } catch (e) {
-        debugPrint('Error while trying pending token registration on resume: $e');
+        // Error while trying pending token registration on resume
       }
     }
   }

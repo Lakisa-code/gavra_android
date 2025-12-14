@@ -77,26 +77,28 @@ class SmartNavigationService {
         endDestination: endDestination,
       );
 
+      // ❌ OSRM neuspešan - vrati grešku
       if (!osrmResult.success || osrmResult.optimizedPutnici == null) {
         return NavigationResult.error(osrmResult.message);
       }
 
-      final optimizedRoute = osrmResult.optimizedPutnici!;
-      final coordinates = osrmResult.coordinates ?? {};
+      // ✅ OSRM uspešan
+      final List<Putnik> optimizedRoute = osrmResult.optimizedPutnici!;
+      final Map<Putnik, Position> coordinates = osrmResult.coordinates ?? {};
 
       // 🆕 Nađi preskočene putnike (nemaju koordinate)
       final skipped = putnici.where((p) => !coordinates.containsKey(p)).toList();
 
-      // 3. VRATI OPTIMIZOVANU RUTU BEZ OTVARANJA MAPE
+      // 3. VRATI OPTIMIZOVANU RUTU
       return NavigationResult.success(
-        message: osrmResult.usedFallback ? '✅ Ruta optimizovana (lokalno)' : '✅ Ruta optimizovana (OSRM)',
+        message: '✅ Ruta optimizovana',
         optimizedPutnici: optimizedRoute,
         totalDistance: osrmResult.totalDistanceKm != null
             ? osrmResult.totalDistanceKm! * 1000 // km -> m
             : await _calculateTotalDistance(currentPosition, optimizedRoute, coordinates),
         skippedPutnici: skipped.isNotEmpty ? skipped : null,
         cachedCoordinates: coordinates,
-        putniciEta: osrmResult.putniciEta, // 🆕 ETA za svakog putnika iz OSRM legs
+        putniciEta: osrmResult.putniciEta,
       );
     } catch (e) {
       return NavigationResult.error('❌ Greška pri optimizaciji: $e');

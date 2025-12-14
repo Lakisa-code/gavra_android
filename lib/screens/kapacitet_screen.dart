@@ -35,7 +35,7 @@ class _KapacitetScreenState extends State<KapacitetScreen> with SingleTickerProv
     try {
       _kapacitet = await KapacitetService.getKapacitet();
     } catch (e) {
-      debugPrint('❌ Greška pri učitavanju kapaciteta: $e');
+      // Error loading kapacitet
     }
     if (mounted) {
       setState(() => _isLoading = false);

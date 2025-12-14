@@ -75,7 +75,7 @@ class GradAdresaValidator {
   /// 🏘️ PROVERI DA LI JE ADRESA U DOZVOLJENIM OPŠTINAMA (Bela Crkva ili Vršac)
   static bool isAdresaInAllowedCity(String? adresa, String? putnikGrad) {
     if (adresa == null || adresa.trim().isEmpty) {
-      return true; // Bez adrese je OK
+      return false; // Adresa je OBAVEZNA - ne dozvoljavamo putnike bez adrese
     }
 
     final normalizedAdresa = normalizeString(adresa);

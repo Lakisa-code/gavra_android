@@ -18,6 +18,7 @@ import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/vozac_boja.dart';
 import '../widgets/dug_button.dart';
 import 'admin_map_screen.dart'; // OpenStreetMap verzija
+import 'adrese_screen.dart'; // 📍 Upravljanje adresama
 import 'auth_screen.dart'; // DODANO za auth admin
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
@@ -655,7 +656,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               const padding = 8.0;
                               final availableWidth = screenWidth - padding;
                               // Broj dugmadi zavisi od korisnika
-                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 6 : 2;
+                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 7 : 2;
                               final buttonWidth = (availableWidth - (spacing * (buttonCount - 1))) / buttonCount;
 
                               return Row(
@@ -946,6 +947,45 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ),
                                       ),
                                     ),
+
+                                  // 📍 DUGME ADRESE
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const AdreseScreen(),
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Theme.of(context).glassBorder, width: 1.5),
+                                        ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'Adrese',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               );
                             },

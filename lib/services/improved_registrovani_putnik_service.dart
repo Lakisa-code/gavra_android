@@ -35,7 +35,6 @@ class ImprovedRegistrovaniPutnikService extends RegistrovaniPutnikService {
       return response.map((json) => RegistrovaniPutnik.fromMap(json as Map<String, dynamic>)).toList();
     } catch (e) {
       // Fallback na standardnu logiku ako SQL funkcija nije dostupna
-      // print('⚠️ SQL funkcija nije dostupna, koristim fallback: $e');
       return await _getFallbackFiltered(
         targetDay: targetDay,
         searchTerm: searchTerm,
@@ -142,7 +141,6 @@ class ImprovedRegistrovaniPutnikService extends RegistrovaniPutnikService {
 
       return stats;
     } catch (e) {
-      // print('❌ Greška pri dohvatanju statistika: $e');
       return <String, int>{};
     }
   }

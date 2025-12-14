@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// 🌤️ Weather Service - Open-Meteo ECMWF API
@@ -147,15 +146,14 @@ class WeatherService {
     double lon,
     String locationKey,
   ) async {
-    try {
-      // Proveri cache za ovu lokaciju
-      final cachedWeather = locationKey == 'BC' ? _cachedWeatherBC : _cachedWeatherVS;
-      final cacheTime = locationKey == 'BC' ? _cacheTimeBC : _cacheTimeVS;
+    // Keširani podaci - dostupni i u catch bloku
+    final cachedWeather = locationKey == 'BC' ? _cachedWeatherBC : _cachedWeatherVS;
+    final cacheTime = locationKey == 'BC' ? _cacheTimeBC : _cacheTimeVS;
 
+    try {
       if (cachedWeather != null && cacheTime != null) {
         final elapsed = DateTime.now().difference(cacheTime);
         if (elapsed < _cacheDuration) {
-          debugPrint('🌤️ Weather $locationKey: using cached data (${elapsed.inMinutes}min old)');
           return cachedWeather;
         }
       }
@@ -166,8 +164,6 @@ class WeatherService {
           '&timezone=Europe/Belgrade'
           '&models=ecmwf_ifs025' // ECMWF model - najtačniji za Evropu!
           );
-
-      debugPrint('🌤️ Weather $locationKey: fetching from Open-Meteo ECMWF...');
 
       final response = await http.get(url).timeout(
             const Duration(seconds: 10),
@@ -186,15 +182,12 @@ class WeatherService {
           _cacheTimeVS = DateTime.now();
         }
 
-        debugPrint('🌤️ Weather $locationKey: ${weather['temp']}°C, ${weather['description']}');
         return weather;
       } else {
-        debugPrint('⚠️ Weather $locationKey API error: ${response.statusCode}');
-        return _getMockWeather();
+        return {};
       }
     } catch (e) {
-      debugPrint('⚠️ Weather $locationKey fetch error: $e');
-      return _getMockWeather();
+      return {};
     }
   }
 
@@ -225,60 +218,8 @@ class WeatherService {
         'weatherCode': weatherCode,
       };
     } catch (e) {
-      debugPrint('⚠️ Weather parse error: $e');
-      return _getMockWeather();
+      return {};
     }
-  }
-
-  /// Fallback kada API ne radi - sezonski mock
-  static Map<String, dynamic> _getMockWeather() {
-    final month = DateTime.now().month;
-
-    // Zima: sneg
-    if (month == 12 || month == 1 || month == 2) {
-      return {
-        'condition': 'snow',
-        'temp': -2,
-        'description': 'sneg',
-        'humidity': 85,
-        'windSpeed': 10,
-        'weatherCode': 73,
-      };
-    }
-
-    // Proleće: kiša
-    if (month >= 3 && month <= 5) {
-      return {
-        'condition': 'rain',
-        'temp': 12,
-        'description': 'slaba kiša',
-        'humidity': 70,
-        'windSpeed': 15,
-        'weatherCode': 61,
-      };
-    }
-
-    // Leto: sunčano
-    if (month >= 6 && month <= 8) {
-      return {
-        'condition': 'sunny',
-        'temp': 28,
-        'description': 'vedro',
-        'humidity': 45,
-        'windSpeed': 8,
-        'weatherCode': 0,
-      };
-    }
-
-    // Jesen: oblačno
-    return {
-      'condition': 'cloudy',
-      'temp': 10,
-      'description': 'oblačno',
-      'humidity': 65,
-      'windSpeed': 12,
-      'weatherCode': 3,
-    };
   }
 
   /// Vraća Lottie asset path za dati uslov
@@ -308,7 +249,6 @@ class WeatherService {
     _cachedAlertVS = null;
     _alertCacheTimeBC = null;
     _alertCacheTimeVS = null;
-    debugPrint('🌤️ Weather cache cleared');
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -353,7 +293,6 @@ class WeatherService {
       if (cachedAlert != null && cacheTime != null) {
         final elapsed = DateTime.now().difference(cacheTime);
         if (elapsed < _alertCacheDuration) {
-          debugPrint('🚨 Alert $locationKey: using cached (${elapsed.inMinutes}min old)');
           return cachedAlert.severity != AlertSeverity.none ? cachedAlert : null;
         }
       }
@@ -365,8 +304,6 @@ class WeatherService {
           '&forecast_days=1'
           '&timezone=Europe/Belgrade'
           '&models=ecmwf_ifs025');
-
-      debugPrint('🚨 Alert $locationKey: checking conditions...');
 
       final response = await http.get(url).timeout(const Duration(seconds: 10));
 
@@ -384,13 +321,12 @@ class WeatherService {
         }
 
         if (alert.severity != AlertSeverity.none) {
-          debugPrint('🚨 Alert $locationKey: ${alert.severity.name} - ${alert.title}');
           return alert;
         }
         return null;
       }
     } catch (e) {
-      debugPrint('⚠️ Alert $locationKey check error: $e');
+      // Error checking alert
     }
     return null;
   }
@@ -595,7 +531,6 @@ class WeatherService {
         location: cityName,
       );
     } catch (e) {
-      debugPrint('⚠️ Alert analysis error: $e');
       return WeatherAlert(
         severity: AlertSeverity.none,
         title: '',

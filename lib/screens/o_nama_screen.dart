@@ -184,6 +184,8 @@ class _ONamaScreenState extends State<ONamaScreen> {
                     const Divider(color: Colors.white24, height: 16),
                     _buildInfoRow('Datum osnivanja', '25.04.2003.'),
                     const Divider(color: Colors.white24, height: 16),
+                    _buildInfoRow('Žiro račun', '340-11436537-92'),
+                    const Divider(color: Colors.white24, height: 16),
                     _buildInfoRow('Vlasnik', 'Bojan Gavrilović'),
                   ],
                 ),

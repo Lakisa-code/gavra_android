@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
-import 'huawei_map_service.dart';
 import 'unified_geocoding_service.dart';
 
 /// 🗺️ OSRM SERVICE - OpenStreetMap Routing Machine
@@ -77,32 +76,7 @@ class OsrmService {
       final osrmResponse = await _callOsrmWithRetry(coordsString, hasEndDestination: hasEndDestination);
 
       if (osrmResponse == null) {
-        // 🎯 FALLBACK 1: Pokušaj Huawei Map Kit
-        final huaweiResult = await _tryHuaweiOptimization(
-          startPosition: startPosition,
-          putnici: putniciWithCoords,
-          coordinates: coordinates,
-        );
-
-        if (huaweiResult != null) {
-          return huaweiResult;
-        }
-
-        // 🎯 FALLBACK 2: Lokalni algoritam
-        final fallbackRoute = await UnifiedGeocodingService.fallbackOptimization(
-          startPosition: startPosition,
-          putnici: putniciWithCoords,
-          coordinates: coordinates,
-          use2opt: true,
-        );
-
-        return OsrmResult.success(
-          optimizedPutnici: fallbackRoute,
-          totalDistanceKm: _calculateTotalDistance(startPosition, fallbackRoute, coordinates),
-          totalDurationMin: 0, // Nepoznato bez OSRM
-          coordinates: coordinates,
-          usedFallback: true,
-        );
+        return OsrmResult.error('OSRM server nije dostupan. Proverite internet konekciju.');
       }
 
       // 4. Parsiraj i validiraj OSRM odgovor
@@ -177,7 +151,10 @@ class OsrmService {
   }
 
   /// 🎯 ISPRAVNO PARSIRANJE OSRM ODGOVORA
-  /// Koristi trips[0].legs za ETA svakog putnika
+  /// OSRM Trip API vraća:
+  /// - data['waypoints'] - waypoints u ULAZNOM redosledu, sa waypoint_index koji pokazuje poziciju u optimalnoj ruti
+  /// - trips[0]['legs'] - segmenti u OPTIMIZOVANOM redosledu
+  ///
   /// [hasEndDestination] - ako je true, ignoriše poslednji waypoint jer je to fiksna destinacija
   static _OsrmParseResult? _parseOsrmResponse(
     Map<String, dynamic> data,
@@ -191,35 +168,42 @@ class OsrmService {
 
       final trip = trips[0] as Map<String, dynamic>;
       final waypoints = data['waypoints'] as List?;
-      final legs = trip['legs'] as List?; // 🆕 Izvuci legs za ETA
+      final legs = trip['legs'] as List?;
 
       if (waypoints == null || waypoints.isEmpty) return null;
+
+      // 🎯 KLJUČNO: waypoint_index pokazuje poziciju u OPTIMIZOVANOJ ruti
+      // waypoints su u ULAZNOM redosledu, ali waypoint_index daje optimalni redosled
+      //
+      // Primer:
+      // Input: start, putnikA, putnikB, putnikC
+      // waypoints[0] (start):    waypoint_index=0
+      // waypoints[1] (putnikA):  waypoint_index=2  -> treći u optimalnoj ruti
+      // waypoints[2] (putnikB):  waypoint_index=1  -> drugi u optimalnoj ruti
+      // waypoints[3] (putnikC):  waypoint_index=3  -> četvrti u optimalnoj ruti
+      // Optimalni redosled: start(0) -> putnikB(1) -> putnikA(2) -> putnikC(3)
 
       // 🎯 Ako imamo krajnju destinaciju, poslednji waypoint je destinacija, ne putnik!
       final waypointsToProcess = hasEndDestination ? waypoints.length - 1 : waypoints.length;
 
-      // Kreiraj listu (waypointIndex, originalIndex) parova
-      final waypointMapping = <_WaypointMapping>[];
-
-      for (int i = 0; i < waypointsToProcess; i++) {
+      // Kreiraj mapu: waypoint_index -> index putnika u putniciWithCoords
+      // Preskačemo waypoints[0] jer je to startna pozicija
+      final indexByWaypointIndex = <int, int>{};
+      for (int i = 1; i < waypointsToProcess; i++) {
         final wp = waypoints[i] as Map<String, dynamic>;
         final waypointIndex = wp['waypoint_index'] as int;
-        waypointMapping.add(_WaypointMapping(
-          originalIndex: i,
-          waypointIndex: waypointIndex,
-        ));
+        indexByWaypointIndex[waypointIndex] = i - 1; // Index putnika (0-based)
       }
 
-      // Sortiraj po waypoint_index da dobijemo optimalni redosled
-      waypointMapping.sort((a, b) => a.waypointIndex.compareTo(b.waypointIndex));
+      // Sortiraj waypoint_index vrednosti da dobijemo optimalni redosled
+      final sortedWaypointIndices = indexByWaypointIndex.keys.toList()..sort();
 
-      // Mapiraj nazad na putnike (preskoči prvi waypoint koji je start pozicija)
+      // Mapiraj nazad na putnike u sortiranom redosledu
       final orderedPutnici = <Putnik>[];
-
-      for (final mapping in waypointMapping) {
-        // originalIndex 0 je startna pozicija vozača - preskoči
-        if (mapping.originalIndex > 0 && mapping.originalIndex <= putniciWithCoords.length) {
-          orderedPutnici.add(putniciWithCoords[mapping.originalIndex - 1]);
+      for (final wpIndex in sortedWaypointIndices) {
+        final putnikIndex = indexByWaypointIndex[wpIndex]!;
+        if (putnikIndex >= 0 && putnikIndex < putniciWithCoords.length) {
+          orderedPutnici.add(putniciWithCoords[putnikIndex]);
         }
       }
 
@@ -274,56 +258,6 @@ class OsrmService {
     }
   }
 
-  /// 📝 Izračunaj ukupnu distancu rute
-  static double _calculateTotalDistance(
-    Position start,
-    List<Putnik> route,
-    Map<Putnik, Position> coordinates,
-  ) {
-    if (route.isEmpty) return 0;
-
-    double total = 0;
-    Position current = start;
-
-    for (final putnik in route) {
-      if (coordinates.containsKey(putnik)) {
-        total += calculateDistance(current, coordinates[putnik]!);
-        current = coordinates[putnik]!;
-      }
-    }
-
-    return total / 1000; // Konvertuj u km
-  }
-
-  /// 🇸🇰 HUAWEI FALLBACK - Pokušaj optimizaciju preko Huawei Map Kit
-  static Future<OsrmResult?> _tryHuaweiOptimization({
-    required Position startPosition,
-    required List<Putnik> putnici,
-    required Map<Putnik, Position> coordinates,
-  }) async {
-    try {
-      final huaweiResult = await HuaweiMapService.optimizeRoute(
-        startPosition: startPosition,
-        putnici: putnici,
-        coordinates: coordinates,
-      );
-
-      if (huaweiResult.success && huaweiResult.optimizedPutnici != null) {
-        return OsrmResult.success(
-          optimizedPutnici: huaweiResult.optimizedPutnici!,
-          totalDistanceKm: huaweiResult.totalDistanceKm ?? 0,
-          totalDurationMin: huaweiResult.totalDurationMin ?? 0,
-          coordinates: coordinates,
-          usedFallback: true,
-        );
-      }
-    } catch (e) {
-      // Huawei Map Kit greška
-    }
-
-    return null; // Huawei nije uspešan, nastavi sa sledećim fallback-om
-  }
-
   /// 🗺️ Dobij koordinate za sve putnike
   /// DELEGIRA na UnifiedGeocodingService
   static Future<Map<Putnik, Position>> getCoordinatesForPutnici(
@@ -345,32 +279,6 @@ class OsrmService {
       pos2.longitude,
     );
   }
-
-  /// 🔄 Fallback optimizacija (Nearest Neighbor + 2-opt)
-  /// DELEGIRA na UnifiedGeocodingService
-  static Future<List<Putnik>> fallbackOptimization({
-    required Position startPosition,
-    required List<Putnik> putnici,
-    required Map<Putnik, Position> coordinates,
-  }) async {
-    return UnifiedGeocodingService.fallbackOptimization(
-      startPosition: startPosition,
-      putnici: putnici,
-      coordinates: coordinates,
-      use2opt: true,
-    );
-  }
-}
-
-/// Helper klasa za waypoint mapiranje
-class _WaypointMapping {
-  const _WaypointMapping({
-    required this.originalIndex,
-    required this.waypointIndex,
-  });
-
-  final int originalIndex;
-  final int waypointIndex;
 }
 
 /// Helper klasa za OSRM parse rezultat
@@ -397,8 +305,7 @@ class OsrmResult {
     this.totalDistanceKm,
     this.totalDurationMin,
     this.coordinates,
-    this.putniciEta, // 🆕 ETA za svakog putnika
-    this.usedFallback = false,
+    this.putniciEta,
   });
 
   factory OsrmResult.success({
@@ -406,18 +313,16 @@ class OsrmResult {
     required double totalDistanceKm,
     required double totalDurationMin,
     Map<Putnik, Position>? coordinates,
-    Map<String, int>? putniciEta, // 🆕
-    bool usedFallback = false,
+    Map<String, int>? putniciEta,
   }) {
     return OsrmResult._(
       success: true,
-      message: usedFallback ? '✅ Ruta optimizovana (lokalno)' : '✅ Ruta optimizovana (OSRM)',
+      message: '✅ Ruta optimizovana (OSRM)',
       optimizedPutnici: optimizedPutnici,
       totalDistanceKm: totalDistanceKm,
       totalDurationMin: totalDurationMin,
       coordinates: coordinates,
       putniciEta: putniciEta,
-      usedFallback: usedFallback,
     );
   }
 
@@ -434,6 +339,5 @@ class OsrmResult {
   final double? totalDistanceKm;
   final double? totalDurationMin;
   final Map<Putnik, Position>? coordinates;
-  final Map<String, int>? putniciEta; // 🆕 ime_putnika -> ETA u minutama
-  final bool usedFallback;
+  final Map<String, int>? putniciEta;
 }

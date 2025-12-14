@@ -147,17 +147,8 @@ class AdresaSupabaseService {
 
       final response = await queryBuilder.order('naziv').limit(20);
 
-      // DEBUG: Print response
-      print('🔍 searchAdrese query="$query" grad="$grad"');
-      print('🔍 searchAdrese response count: ${response.length}');
-      if (response.isNotEmpty) {
-        print('🔍 searchAdrese first item: ${response.first}');
-      }
-
       return response.map((json) => Adresa.fromMap(json)).toList();
-    } catch (e, stack) {
-      print('❌ searchAdrese error: $e');
-      print('❌ searchAdrese stack: $stack');
+    } catch (e) {
       return [];
     }
   }

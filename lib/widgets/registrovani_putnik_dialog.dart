@@ -92,7 +92,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Greška pri učitavanju adresa: $e');
+      // Error loading addresses
     }
   }
 
@@ -610,10 +610,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             isExpanded: true,
             hint: const Text('Izaberi adresu...', style: TextStyle(color: Colors.grey)),
             items: [
-              const DropdownMenuItem<String>(
-                value: null,
-                child: Text('Bez adrese', style: TextStyle(color: Colors.grey)),
-              ),
               ..._adreseBelaCrkva.map((adresa) => DropdownMenuItem<String>(
                     value: adresa['id'],
                     child: Text(adresa['naziv'] ?? ''),
@@ -645,10 +641,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             isExpanded: true,
             hint: const Text('Izaberi adresu...', style: TextStyle(color: Colors.grey)),
             items: [
-              const DropdownMenuItem<String>(
-                value: null,
-                child: Text('Bez adrese', style: TextStyle(color: Colors.grey)),
-              ),
               ..._adreseVrsac.map((adresa) => DropdownMenuItem<String>(
                     value: adresa['id'],
                     child: Text(adresa['naziv'] ?? ''),
@@ -1097,7 +1089,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   Future<void> _savePutnik() async {
-    print('🔵 _savePutnik() started');
     final validationError = _validateForm();
     if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1112,15 +1103,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     setState(() => _isLoading = true);
 
     try {
-      print('🔵 isEditing: ${widget.isEditing}');
       if (widget.isEditing) {
         await _updateExistingPutnik();
       } else {
         await _createNewPutnik();
       }
-    } catch (e, stack) {
-      print('❌ _savePutnik error: $e');
-      print('❌ _savePutnik stack: $stack');
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1137,19 +1125,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   Future<void> _createNewPutnik() async {
-    print('🟢 _createNewPutnik() started');
-
     // 🔧 FIX: Dobavi trenutnog vozača za dodali_vozaci
     final prefs = await SharedPreferences.getInstance();
     final currentDriver = prefs.getString('current_driver');
-    print('🟢 currentDriver: $currentDriver');
 
     // 🏠 Adrese - samo koristi ID iz dropdown-a (nema kreiranja novih)
     String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
     String? adresaVrsacId = _adresaVrsacId;
-
-    print('🟢 _adresaBelaCrkvaId: $_adresaBelaCrkvaId');
-    print('🟢 _adresaVrsacId: $_adresaVrsacId');
 
     // Create new passenger
     // 🔧 FIX: Dodaj trenutnog vozača u dodaliVozaci
@@ -1178,8 +1160,6 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       dodaliVozaci: dodaliVozaciList, // 🔧 FIX: Dodaj ko je kreirao putnika
     );
 
-    print('🟢 noviPutnik.status: ${noviPutnik.status}');
-    print('🟢 noviPutnik.toMap(): ${noviPutnik.toMap()}');
     final dodatiPutnik = await _registrovaniPutnikService.dodajMesecnogPutnika(noviPutnik);
 
     if (mounted) {

@@ -12,11 +12,11 @@ import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_counter_service.dart'; // 🔔 Za notification count
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
-import '../services/route_optimization_service.dart';
 import '../services/simplified_daily_checkin.dart';
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart';
+import '../utils/grad_adresa_validator.dart'; // 🏘️ Za validaciju gradova
 import '../utils/schedule_utils.dart';
 import '../utils/text_utils.dart'; // 🎯 Za TextUtils.isStatusActive
 import '../utils/vozac_boja.dart'; // 🎯 Za validaciju vozača
@@ -39,9 +39,7 @@ class VozacScreen extends StatefulWidget {
 class _VozacScreenState extends State<VozacScreen> {
   final String _vozacIme = 'Ivan';
   final PutnikService _putnikService = PutnikService();
-  final RouteOptimizationService _routeOptimizationService = RouteOptimizationService();
 
-  Position? _lastDriverPosition;
   StreamSubscription<Position>? _driverPositionSubscription;
 
   String _selectedGrad = 'Bela Crkva';
@@ -96,9 +94,7 @@ class _VozacScreenState extends State<VozacScreen> {
     RealtimeGpsService.startTracking().catchError((Object e) {});
 
     // Subscribe to driver position updates
-    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {
-      _lastDriverPosition = pos;
-    });
+    _driverPositionSubscription = RealtimeGpsService.positionStream.listen((pos) {});
   }
 
   @override
@@ -512,17 +508,12 @@ class _VozacScreenState extends State<VozacScreen> {
     }
   }
 
-  // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU - IDENTIČNO KAO DANAS SCREEN
-  // ✅ ISPRAVKA: Koristi FutureBuilder + RouteOptimizationService
+  // 🚀 KOMPAKTNO DUGME ZA OPTIMIZACIJU
+  // ✅ ISPRAVKA: Koristi StreamBuilder + PutnikService direktno
   Widget _buildOptimizeButton() {
-    return FutureBuilder<List<Putnik>>(
-      // ✅ Key koji se menja kada se filteri promene
-      key: ValueKey('route_$_selectedGrad$_selectedVreme${_lastDriverPosition?.latitude}'),
-      future: _routeOptimizationService.fetchPassengersForRoute(
-        grad: _selectedGrad,
-        vreme: _selectedVreme,
-        driverPosition: _lastDriverPosition,
-      ),
+    return StreamBuilder<List<Putnik>>(
+      // ✅ Koristi isti stream kao ostatak screen-a
+      stream: _putnikService.streamPutnici(),
       builder: (context, snapshot) {
         // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -560,7 +551,30 @@ class _VozacScreenState extends State<VozacScreen> {
           );
         }
 
-        final filtriraniPutnici = snapshot.data ?? [];
+        // 🎯 Filtriraj putnike po gradu i vremenu
+        final sviPutnici = snapshot.data ?? [];
+        final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
+        final filtriraniPutnici = sviPutnici.where((p) {
+          // Vreme filter
+          final pTime = GradAdresaValidator.normalizeTime(p.polazak);
+          if (pTime != normFilterTime) return false;
+
+          // Grad filter
+          final isRegistrovaniPutnik = p.mesecnaKarta == true;
+          bool gradMatch;
+          if (isRegistrovaniPutnik) {
+            gradMatch = p.grad == _selectedGrad;
+          } else {
+            gradMatch = GradAdresaValidator.isGradMatch(p.grad, p.adresa, _selectedGrad);
+          }
+          if (!gradMatch) return false;
+
+          // Status filter - samo aktivni
+          if (!TextUtils.isStatusActive(p.status)) return false;
+
+          return true;
+        }).toList();
+
         final hasPassengers = filtriraniPutnici.isNotEmpty;
         final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
 

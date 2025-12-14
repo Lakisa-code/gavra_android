@@ -344,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _showWeatherAlertDialog(alerts);
       });
     } catch (e) {
-      debugPrint('⚠️ Weather alert check error: $e');
+      // Weather alert check error
     }
   }
 
@@ -1765,8 +1765,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final bc600 = brojPutnikaBC['6:00'] ?? 0;
             final ukupno = brojPutnikaBC.values.fold(0, (a, b) => a + b);
             if (_lastBc6Count != bc600 || _lastBcTotalCount != ukupno) {
-              debugPrint('🏠 HOME: BC 6:00 = $bc600');
-              debugPrint('🏠 HOME: Ukupno BC putnika = $ukupno');
               _lastBc6Count = bc600;
               _lastBcTotalCount = ukupno;
             }

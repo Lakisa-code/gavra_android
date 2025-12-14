@@ -47,7 +47,6 @@ class VozacBoja {
       _isInitialized = true;
     } catch (e) {
       // Ako baza nije dostupna, koristi fallback
-      debugPrint('⚠️ VozacBoja: Greška pri učitavanju iz baze, koristim fallback: $e');
       _bojeCache = Map.from(_fallbackBoje);
       _isInitialized = true;
     }
@@ -78,7 +77,6 @@ class VozacBoja {
     }
 
     _lastCacheUpdate = DateTime.now();
-    debugPrint('✅ VozacBoja: Učitano ${_bojeCache!.length} boja iz baze');
   }
 
   /// Proverava da li je cache validan

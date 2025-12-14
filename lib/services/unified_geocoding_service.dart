@@ -2,7 +2,6 @@
 /// Centralizovani servis za geocoding sa:
 /// - Paralelnim fetch-om koordinata
 /// - Prioritetnim redosledom (Baza → Memory → Disk → API)
-/// - 2-opt improvement za fallback optimizaciju
 /// - Progress callback za UI
 library;
 
@@ -199,140 +198,6 @@ class UnifiedGeocodingService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 🎯 FALLBACK OPTIMIZACIJA (Nearest Neighbor + 2-opt)
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// Nearest Neighbor optimizacija sa 2-opt improvement
-  static Future<List<Putnik>> fallbackOptimization({
-    required Position startPosition,
-    required List<Putnik> putnici,
-    required Map<Putnik, Position> coordinates,
-    bool use2opt = true,
-  }) async {
-    // Filtriraj samo putnike sa koordinatama
-    final putniciWithCoords = putnici.where((p) => coordinates.containsKey(p)).toList();
-
-    if (putniciWithCoords.isEmpty) return [];
-    if (putniciWithCoords.length == 1) return putniciWithCoords;
-
-    // 1. Nearest Neighbor algoritam
-    final route = await _nearestNeighborOptimization(
-      startPosition,
-      putniciWithCoords,
-      coordinates,
-    );
-
-    // 2. 2-opt improvement (ako je omogućen)
-    if (use2opt && route.length >= 4) {
-      return _twoOptImprovement(startPosition, route, coordinates);
-    }
-
-    return route;
-  }
-
-  /// Nearest Neighbor algoritam
-  static Future<List<Putnik>> _nearestNeighborOptimization(
-    Position start,
-    List<Putnik> putnici,
-    Map<Putnik, Position> coordinates,
-  ) async {
-    final unvisited = List<Putnik>.from(putnici);
-    final route = <Putnik>[];
-    Position currentPosition = start;
-
-    while (unvisited.isNotEmpty) {
-      Putnik? nearest;
-      double shortestDistance = double.infinity;
-
-      for (final putnik in unvisited) {
-        final distance = _calculateDistance(
-          currentPosition,
-          coordinates[putnik]!,
-        );
-        if (distance < shortestDistance) {
-          shortestDistance = distance;
-          nearest = putnik;
-        }
-      }
-
-      if (nearest != null) {
-        route.add(nearest);
-        currentPosition = coordinates[nearest]!;
-        unvisited.remove(nearest);
-      }
-    }
-
-    return route;
-  }
-
-  /// 2-opt improvement algoritam
-  /// Poboljšava Nearest Neighbor rutu za 10-15%
-  static List<Putnik> _twoOptImprovement(
-    Position start,
-    List<Putnik> route,
-    Map<Putnik, Position> coordinates,
-  ) {
-    if (route.length < 4) return route;
-
-    List<Putnik> bestRoute = List.from(route);
-    double bestDistance = _calculateTotalRouteDistance(
-      start,
-      bestRoute,
-      coordinates,
-    );
-    bool improved = true;
-    int iterations = 0;
-    const maxIterations = 100; // Limit za performance
-
-    while (improved && iterations < maxIterations) {
-      improved = false;
-      iterations++;
-
-      for (int i = 0; i < bestRoute.length - 1; i++) {
-        for (int j = i + 2; j < bestRoute.length; j++) {
-          // Probaj 2-opt swap: reverziraj segment između i+1 i j
-          final newRoute = _twoOptSwap(bestRoute, i, j);
-          final newDistance = _calculateTotalRouteDistance(
-            start,
-            newRoute,
-            coordinates,
-          );
-
-          if (newDistance < bestDistance) {
-            bestRoute = newRoute;
-            bestDistance = newDistance;
-            improved = true;
-          }
-        }
-      }
-    }
-
-    return bestRoute;
-  }
-
-  /// 2-opt swap - reverziraj segment između i+1 i j
-  static List<Putnik> _twoOptSwap(List<Putnik> route, int i, int j) {
-    final newRoute = <Putnik>[];
-
-    // Dodaj elemente od 0 do i
-    for (int k = 0; k <= i; k++) {
-      newRoute.add(route[k]);
-    }
-
-    // Dodaj elemente od j do i+1 u obrnutom redosledu
-    for (int k = j; k > i; k--) {
-      newRoute.add(route[k]);
-    }
-
-    // Dodaj ostatak rute
-    for (int k = j + 1; k < route.length; k++) {
-      newRoute.add(route[k]);
-    }
-
-    return newRoute;
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
   // 📐 HELPER FUNKCIJE
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -416,37 +281,6 @@ class UnifiedGeocodingService {
     } catch (e) {
       // Ignoriši greške - koordinate će se ponovo dohvatiti sledeći put
     }
-  }
-
-  /// Izračunaj distancu između dve tačke (Haversine)
-  static double _calculateDistance(Position pos1, Position pos2) {
-    return Geolocator.distanceBetween(
-      pos1.latitude,
-      pos1.longitude,
-      pos2.latitude,
-      pos2.longitude,
-    );
-  }
-
-  /// Izračunaj ukupnu distancu rute
-  static double _calculateTotalRouteDistance(
-    Position start,
-    List<Putnik> route,
-    Map<Putnik, Position> coordinates,
-  ) {
-    if (route.isEmpty) return 0;
-
-    double total = 0;
-    Position current = start;
-
-    for (final putnik in route) {
-      if (coordinates.containsKey(putnik)) {
-        total += _calculateDistance(current, coordinates[putnik]!);
-        current = coordinates[putnik]!;
-      }
-    }
-
-    return total;
   }
 
   /// Izvršava taskove sekvencijalno sa pauzom između zahteva

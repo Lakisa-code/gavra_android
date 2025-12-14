@@ -281,7 +281,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Greška pri učitavanju adresa: $e');
+      // Error loading addresses
     }
   }
 

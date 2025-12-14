@@ -207,39 +207,6 @@ class _AutocompleteAdresaFieldState extends State<AutocompleteAdresaField> {
             ),
             child: Column(
               children: [
-                // Opcija "Bez adrese" - prikazuje se kad je fokusiran ali prazan
-                if (widget.controller.text.isEmpty)
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(
-                      Icons.location_off,
-                      color: Colors.grey,
-                      size: 18,
-                    ),
-                    title: Text(
-                      'Bez adrese',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Putnik se dodaje bez adrese',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    onTap: () {
-                      widget.controller.clear();
-                      _removeOverlay();
-                      _focusNode.unfocus();
-                    },
-                  ),
-                // Separator ako ima i opciju bez adrese i adrese
-                if (widget.controller.text.isEmpty && _filteredAdrese.isNotEmpty)
-                  Divider(height: 1, color: Colors.grey[300]),
                 // ListView.builder za adrese
                 Flexible(
                   child: ListView.builder(

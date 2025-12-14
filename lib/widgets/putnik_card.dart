@@ -76,8 +76,6 @@ class _PutnikCardState extends State<PutnikCard> {
     super.didUpdateWidget(oldWidget);
     // Ažuriraj _putnik kada se promeni widget.putnik iz StreamBuilder-a
     if (widget.putnik != oldWidget.putnik) {
-      debugPrint(
-          '🔄 DIDUPDATEWIDGET: ${_putnik.ime} stari status=${oldWidget.putnik.status} novi status=${widget.putnik.status} jeOtkazan=${widget.putnik.jeOtkazan}');
       _putnik = widget.putnik;
     }
   }
@@ -142,8 +140,7 @@ class _PutnikCardState extends State<PutnikCard> {
           try {
             await GlobalCacheManager.clearAllCachesAndRefresh();
           } catch (e) {
-            // Ignore cache refresh errors but log for debugging
-            debugPrint('❌ Greška pri cache refresh-u nakon pokupljenja: $e');
+            // Ignore cache refresh errors
           }
 
           // 🆕 DODAJ KRATKU PAUZU pre dohvatanja (da se baza ažurira)
@@ -2706,8 +2703,6 @@ class _PutnikCardState extends State<PutnikCard> {
           selectedGrad: _putnik.grad,
         );
 
-        debugPrint('✅ OTKAZIVANJE USPEŠNO: ${_putnik.ime} - baza ažurirana');
-
         // ✅ FIX: Ažuriraj lokalni _putnik sa novim statusom
         if (mounted) {
           setState(() {
@@ -2739,8 +2734,6 @@ class _PutnikCardState extends State<PutnikCard> {
               brojTelefona: _putnik.brojTelefona,
               datum: _putnik.datum,
             );
-            debugPrint(
-                '✅ LOKALNI _PUTNIK AŽURIRAN: ${_putnik.ime} status=${_putnik.status} jeOtkazan=${_putnik.jeOtkazan}');
           });
         }
 
@@ -2760,10 +2753,9 @@ class _PutnikCardState extends State<PutnikCard> {
         try {
           await GlobalCacheManager.clearAllCachesAndRefresh();
         } catch (e) {
-          debugPrint('❌ Greška pri čišćenju cache-a nakon otkazivanja: $e');
+          // Ignore cache clear errors
         }
       } catch (e) {
-        debugPrint('❌ OTKAZIVANJE GREŠKA: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
@@ -2817,7 +2809,6 @@ class _PutnikCardState extends State<PutnikCard> {
           );
         }
       } catch (e) {
-        debugPrint('❌ BRISANJE GREŠKA: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SmartSnackBar.error('Greška pri brisanju: $e', context),

@@ -201,32 +201,24 @@ class RealtimeNotificationService {
 
   /// Subscribe to Firebase topics for driver-specific notifications
   static Future<void> subscribeToDriverTopics(String? driverId) async {
-    debugPrint('🔔 subscribeToDriverTopics called with driverId: $driverId');
-
     if (driverId == null || driverId.isEmpty) {
-      debugPrint('⚠️ subscribeToDriverTopics: driverId is null or empty, skipping');
       return;
     }
 
     try {
       if (Firebase.apps.isEmpty) {
-        debugPrint('⚠️ subscribeToDriverTopics: Firebase.apps is empty, skipping');
         return;
       }
 
       final messaging = FirebaseMessaging.instance;
 
       // Subscribe to driver-specific topic
-      debugPrint('📌 Subscribing to gavra_driver_${driverId.toLowerCase()}...');
       await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
       // Subscribe to general all-drivers topic
-      debugPrint('📌 Subscribing to gavra_all_drivers...');
       await messaging.subscribeToTopic('gavra_all_drivers');
-
-      debugPrint('✅ Subscribed to FCM topics for driver: $driverId');
     } catch (e) {
-      debugPrint('⚠️ Topic subscription failed: $e');
+      // Topic subscription failed
     }
   }
 
@@ -303,15 +295,8 @@ class RealtimeNotificationService {
       final granted = settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
 
-      if (granted) {
-        debugPrint('✅ Notification permissions granted');
-      } else {
-        debugPrint('⚠️ Notification permissions denied');
-      }
-
       return granted;
     } catch (e) {
-      debugPrint('❌ Request notification permissions failed: $e');
       return false;
     }
   }

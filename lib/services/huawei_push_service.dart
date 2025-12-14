@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:huawei_push/huawei_push.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,17 +37,15 @@ class HuaweiPushService {
       try {
         // Read the App ID and AGConnect values from `agconnect-services.json`
         try {
-          final appId = await Push.getAppId();
-          debugPrint('HMS getAppId: $appId');
+          await Push.getAppId();
         } catch (e) {
-          debugPrint('HMS getAppId failed: $e');
+          // HMS getAppId failed
         }
 
         try {
-          final agc = await Push.getAgConnectValues();
-          debugPrint('HMS getAgConnectValues: $agc');
+          await Push.getAgConnectValues();
         } catch (e) {
-          debugPrint('HMS getAgConnectValues failed: $e');
+          // HMS getAgConnectValues failed
         }
 
         // Request the token explicitly: the Push.getToken requires a scope
@@ -57,12 +54,11 @@ class HuaweiPushService {
         // chance of getting a token quickly.
         try {
           Push.getToken('HCM');
-          debugPrint('HMS getToken() requested via Push.getToken("HCM")');
         } catch (e) {
-          debugPrint('HMS getToken() request failed: $e');
+          // HMS getToken request failed
         }
       } catch (e) {
-        debugPrint('HMS getToken helper exception: $e');
+        // HMS getToken helper exception
       }
 
       // The plugin emits tokens asynchronously on the stream. Wait a short while for the first
@@ -84,7 +80,6 @@ class HuaweiPushService {
       return null;
     } catch (e) {
       // Non-fatal: plugin may throw if not configured on device.
-      debugPrint('HuaweiPushService.initialize failed: $e');
       return null;
     }
   }
@@ -121,20 +116,15 @@ class HuaweiPushService {
 
       try {
         await supabase.functions.invoke('register-push-token', body: payload);
-        debugPrint('✅ Huawei token registered with server. user=${driverName ?? 'null'}');
       } on FunctionException catch (e) {
         // Edge Function ne postoji ili vraća grešku
         if (e.status == 404) {
           // 404 = Edge Function ne postoji - ovo je očekivano ako nije deploy-ovana
-          debugPrint('⚠️ HMS: Edge Function "register-push-token" ne postoji (404). Token sačuvan lokalno.');
-        } else {
-          debugPrint('⚠️ HMS: Edge Function greška (${e.status}): ${e.details}');
         }
         // Sačuvaj token lokalno za kasnije
         await _savePendingToken(token);
       }
     } catch (e) {
-      debugPrint('⚠️ HMS token registration failed: $e');
       // Sačuvaj token lokalno za kasnije
       await _savePendingToken(token);
     }
@@ -145,9 +135,8 @@ class HuaweiPushService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pending_huawei_token', token);
-      debugPrint('📱 HMS token sačuvan lokalno za kasnije');
     } catch (e) {
-      debugPrint('❌ Greška pri čuvanju HMS tokena: $e');
+      // Error saving pending token
     }
   }
 
@@ -162,7 +151,7 @@ class HuaweiPushService {
       await prefs.remove('pending_huawei_token');
       await _registerTokenWithServer(token);
     } catch (e) {
-      debugPrint('tryRegisterPendingToken failed: $e');
+      // tryRegisterPendingToken failed
     }
   }
 }

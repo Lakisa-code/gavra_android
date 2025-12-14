@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
@@ -98,10 +97,8 @@ class KapacitetService {
       _kapacitetCache = result;
       _cacheTime = DateTime.now();
 
-      debugPrint('✅ KapacitetService: Učitan kapacitet - BC: ${result['BC']!.length}, VS: ${result['VS']!.length}');
       return result;
     } catch (e) {
-      debugPrint('❌ KapacitetService getKapacitet greška: $e');
       // Vrati default vrednosti (sva vremena obe sezone)
       return {
         'BC': {for (final v in svaVremenaBc) v: 8},
@@ -154,10 +151,8 @@ class KapacitetService {
       // Invalidate cache
       _kapacitetCache = null;
 
-      debugPrint('✅ KapacitetService: Kapacitet postavljen - $grad $vreme = $maxMesta');
       return true;
     } catch (e) {
-      debugPrint('❌ KapacitetService setKapacitet greška: $e');
       return false;
     }
   }
@@ -168,10 +163,8 @@ class KapacitetService {
       await _supabase.from('kapacitet_polazaka').update({'aktivan': false}).eq('grad', grad).eq('vreme', vreme);
 
       _kapacitetCache = null;
-      debugPrint('🚫 KapacitetService: Polazak deaktiviran - $grad $vreme');
       return true;
     } catch (e) {
-      debugPrint('❌ KapacitetService deaktivirajPolazak greška: $e');
       return false;
     }
   }
@@ -182,10 +175,8 @@ class KapacitetService {
       await _supabase.from('kapacitet_polazaka').update({'aktivan': true}).eq('grad', grad).eq('vreme', vreme);
 
       _kapacitetCache = null;
-      debugPrint('✅ KapacitetService: Polazak aktiviran - $grad $vreme');
       return true;
     } catch (e) {
-      debugPrint('❌ KapacitetService aktivirajPolazak greška: $e');
       return false;
     }
   }
@@ -202,7 +193,6 @@ class KapacitetService {
 
       return response?['napomena'] as String?;
     } catch (e) {
-      debugPrint('❌ KapacitetService getNapomena greška: $e');
       return null;
     }
   }
@@ -211,7 +201,6 @@ class KapacitetService {
   static void clearCache() {
     _kapacitetCache = null;
     _cacheTime = null;
-    debugPrint('🗑️ KapacitetService: Cache očišćen');
   }
 
   /// Dohvati kapacitet za grad/vreme iz cache-a (sinhrono)

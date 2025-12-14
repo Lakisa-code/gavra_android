@@ -73,7 +73,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         });
       }
     } catch (e) {
-      debugPrint('❌ Greška pri osvežavanju podataka: $e');
+      // Error refreshing data
     }
   }
 
@@ -133,9 +133,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final adresaVsId = _putnikData['adresa_vrsac_id'] as String?;
       final grad = _putnikData['grad'] as String? ?? 'BC';
 
-      debugPrint('🏠 adresaBcId: $adresaBcId, adresaVsId: $adresaVsId');
-      debugPrint('🏠 _putnikData keys: ${_putnikData.keys.toList()}');
-
       try {
         if (adresaBcId != null && adresaBcId.isNotEmpty) {
           final bcResponse = await Supabase.instance.client
@@ -174,7 +171,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
           }
         }
       } catch (e) {
-        debugPrint('Greška pri učitavanju adresa: $e');
+        // Error loading addresses
       }
 
       // 🚐 Određivanje sledećeg polaska za GPS tracking
@@ -192,11 +189,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // Za testiranje - uzmi prvi sledeći polazak ili prvi u listi
       sledeciPolazak = _getNextPolazak(vremenaPolazaka, now.hour, now.minute) ??
           (debugAlwaysShowTracking && vremenaPolazaka.isNotEmpty ? vremenaPolazaka.first : null);
-      if (debugAlwaysShowTracking && sledeciPolazak != null) {
-        debugPrint('🧪 DEBUG MODE: Forsiram prikaz tracking widgeta sa polaskom $sledeciPolazak');
-      }
-
-      debugPrint('🚐 Sledeći polazak za $grad: $sledeciPolazak, koordinate: $putnikLat, $putnikLng');
 
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
@@ -270,7 +262,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Greška pri učitavanju statistika: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -355,7 +346,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
       return result;
     } catch (e) {
-      debugPrint('Greška pri učitavanju istorije plaćanja: $e');
       return [];
     }
   }
@@ -754,8 +744,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   Widget _buildRasporedCard() {
     // Parsiranje polasci_po_danu iz putnikData
     final polasciRaw = _putnikData['polasci_po_danu'];
-    debugPrint('🕐 polasci_po_danu raw: $polasciRaw');
-    debugPrint('🕐 polasci_po_danu type: ${polasciRaw.runtimeType}');
     Map<String, Map<String, String?>> polasci = {};
 
     // Helper funkcija za sigurno parsiranje vremena
@@ -776,7 +764,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
       });
     }
-    debugPrint('🕐 polasci parsed: $polasci');
 
     final dani = ['pon', 'uto', 'sre', 'cet', 'pet'];
     final daniLabels = {
@@ -1011,7 +998,6 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
         }
       }
     } catch (e) {
-      debugPrint('❌ Greška pri čuvanju polaska: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

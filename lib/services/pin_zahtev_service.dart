@@ -34,7 +34,6 @@ class PinZahtevService {
 
       return true;
     } catch (e) {
-      print('❌ PinZahtevService.posaljiZahtev error: $e');
       return false;
     }
   }
@@ -55,7 +54,6 @@ class PinZahtevService {
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('❌ PinZahtevService.dohvatiZahteveKojiCekaju error: $e');
       return [];
     }
   }
@@ -67,7 +65,6 @@ class PinZahtevService {
 
       return (response as List).length;
     } catch (e) {
-      print('❌ PinZahtevService.brojZahtevaKojiCekaju error: $e');
       return 0;
     }
   }
@@ -93,7 +90,6 @@ class PinZahtevService {
 
       return true;
     } catch (e) {
-      print('❌ PinZahtevService.odobriZahtev error: $e');
       return false;
     }
   }
@@ -105,7 +101,6 @@ class PinZahtevService {
 
       return true;
     } catch (e) {
-      print('❌ PinZahtevService.odbijZahtev error: $e');
       return false;
     }
   }
@@ -118,7 +113,6 @@ class PinZahtevService {
 
       return response != null;
     } catch (e) {
-      print('❌ PinZahtevService.imaZahtevKojiCeka error: $e');
       return false;
     }
   }
@@ -133,7 +127,6 @@ class PinZahtevService {
 
       return true;
     } catch (e) {
-      print('❌ PinZahtevService.azurirajEmail error: $e');
       return false;
     }
   }

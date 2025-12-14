@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
-
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
 import '../utils/grad_adresa_validator.dart';
@@ -45,145 +42,6 @@ class RouteOptimizationService {
           normalizedAdresa.contains(city) ||
           city.contains(normalizedAdresa),
     );
-  }
-
-  /// 🗺️ LEGACY: Geografska optimizacija
-  /// ⚠️ DEPRECATED: Koristi SmartNavigationService.optimizeRouteOnly() umesto ove metode
-  /// SmartNavigationService koristi OSRM za pravu TSP optimizaciju sa fallback na 2-opt
-  @Deprecated('Koristi SmartNavigationService.optimizeRouteOnly() za bolju optimizaciju')
-  static Future<List<Putnik>> optimizeRouteGeographically(
-    List<Putnik> putnici, {
-    Position? driverPosition, // Trenutna lokacija vozača
-    String? startAddress, // Ili početna adresa kao fallback
-  }) async {
-    if (putnici.isEmpty) return putnici;
-
-    // 🎯 FILTRIRAJ SAMO BELA CRKVA I VRŠAC gradove za navigaciju
-    // Filtriraj samo aktivne putnike sa adresama iz dozvoljenih gradova
-    final aktivniPutnici = putnici
-        .where(
-          (p) =>
-              p.status != 'otkazan' &&
-              p.status != 'Otkazano' &&
-              p.adresa != null &&
-              p.adresa!.isNotEmpty &&
-              _dozvoljeninGradovi.any((grad) => p.adresa!.contains(grad)),
-        )
-        .toList();
-
-    if (aktivniPutnici.isEmpty) return putnici;
-    if (aktivniPutnici.length == 1) return aktivniPutnici;
-
-    try {
-      // 1. Određi početnu lokaciju
-      Position? startLocation;
-
-      if (driverPosition != null) {
-        startLocation = driverPosition;
-      } else if (startAddress != null) {
-        // Geokodiraj početnu adresu u koordinate
-        startLocation = await _geocodeAddress(startAddress);
-      } else {
-        // Pokušaj da dohvatiš trenutnu GPS lokaciju
-        try {
-          startLocation = await Geolocator.getCurrentPosition(
-              // desiredAccuracy: deprecated, use settings parameter
-              // timeLimit: const Duration(seconds: 5), // deprecated, use settings parameter
-              );
-        } catch (e) {
-          return _fallbackToOriginalOrder(aktivniPutnici);
-        }
-      }
-
-      if (startLocation == null) {
-        return _fallbackToOriginalOrder(aktivniPutnici);
-      }
-
-      // 2. Geokodiraj sve adrese putnika u koordinate
-      final putnikCoordinates = <Putnik, Position>{};
-
-      for (final putnik in aktivniPutnici) {
-        final coordinates = await _geocodeAddress(putnik.adresa!);
-        if (coordinates != null) {
-          putnikCoordinates[putnik] = coordinates;
-        }
-      }
-
-      if (putnikCoordinates.isEmpty) {
-        return _fallbackToOriginalOrder(aktivniPutnici);
-      }
-
-      // 3. Koristi Traveling Salesman Problem (TSP) algoritam
-      final optimizedRoute = await _solveTSP(
-        startLocation,
-        putnikCoordinates,
-      );
-
-      return optimizedRoute;
-    } catch (e) {
-      return _fallbackToOriginalOrder(aktivniPutnici);
-    }
-  }
-
-  /// 🌍 Geocoding uklonjen - koristi se lokalna optimizacija
-  static Future<Position?> _geocodeAddress(String address) async {
-    // 🔒 GOOGLE GEOCODING API UKLONJEN ZA BEZBEDNOST
-    // Vraćamo null da se koristi lokalna optimizacija
-    return null;
-  }
-
-  /// 🧮 Reši Traveling Salesman Problem (TSP) - Nearest Neighbor algoritam
-  static Future<List<Putnik>> _solveTSP(
-    Position start,
-    Map<Putnik, Position> destinations,
-  ) async {
-    final List<Putnik> optimizedRoute = [];
-    final unvisited = Set<Putnik>.from(destinations.keys);
-    Position currentPosition = start;
-
-    // Nearest Neighbor algoritam
-    while (unvisited.isNotEmpty) {
-      Putnik? nearest;
-      double shortestDistance = double.infinity;
-
-      // Pronađi najbližu destinaciju
-      for (final putnik in unvisited) {
-        final distance = _calculateDistance(
-          currentPosition,
-          destinations[putnik]!,
-        );
-
-        if (distance < shortestDistance) {
-          shortestDistance = distance;
-          nearest = putnik;
-        }
-      }
-
-      if (nearest != null) {
-        optimizedRoute.add(nearest);
-        currentPosition = destinations[nearest]!;
-        unvisited.remove(nearest);
-      }
-    }
-
-    return optimizedRoute;
-  }
-
-  /// 📐 Izračunaj udaljenost između dve geografske tačke (Haversine formula)
-  static double _calculateDistance(Position pos1, Position pos2) {
-    return Geolocator.distanceBetween(
-      pos1.latitude,
-      pos1.longitude,
-      pos2.latitude,
-      pos2.longitude,
-    );
-  }
-
-  /// � Jednostavno vrati originalni redosled ako GPS optimizacija ne uspe
-  static List<Putnik> _fallbackToOriginalOrder(List<Putnik> putnici) {
-    // Jednostavno vrati putnice u originalnom redosledu
-    // Originalni redosled iz baze je često logičan i pošten (FIFO)
-    return List<Putnik>.from(putnici);
   }
 
   // Optimizuj rutu za određeni polazak (specifično za grad i vreme)
@@ -459,20 +317,17 @@ class RouteOptimizationService {
   /// Fetch passengers for the selected grad + vreme.
   /// Uses a ttl-backed in-memory cache to reduce repeated Supabase queries.
   /// Vraća listu putnika za dati grad/vreme/dan.
-  /// Ako je `driverPosition` prosleđena, koristi geografsku optimizaciju.
   Future<List<Putnik>> fetchPassengersForRoute({
     required String grad,
     required String vreme,
     String? dan,
     bool optimize = true,
-    Position? driverPosition,
   }) async {
     final dayNormalized = _normalizeDayName(dan);
     final key = _cacheKey(grad, vreme, dayNormalized);
     final now = DateTime.now();
     final cached = _cache[key];
     if (cached != null && cached.expiry.isAfter(now)) {
-      debugPrint('🔍 fetchPassengersForRoute: CACHE HIT za $grad $vreme - ${cached.data.length} putnika');
       return cached.data;
     }
 
@@ -480,12 +335,6 @@ class RouteOptimizationService {
     final allPutnici = (_fetchFn != null)
         ? await _fetchFn!(targetDay: dayNormalized)
         : await (_putnikService ??= PutnikService()).getAllPutniciFromBothTables(targetDay: dayNormalized);
-
-    debugPrint('🔍 fetchPassengersForRoute: učitano ${allPutnici.length} ukupno putnika za dan=$dayNormalized');
-    // DEBUG: Prikaži dan za svako putnika
-    for (final p in allPutnici.take(5)) {
-      debugPrint('   📋 ${p.ime} | p.dan="${p.dan}" | tražimo="$dayNormalized"');
-    }
 
     // Normalize times for comparison
     final normFilterTime = GradAdresaValidator.normalizeTime(vreme);
@@ -519,30 +368,12 @@ class RouteOptimizationService {
       return true;
     }).toList();
 
-    debugPrint(
-        '🔍 fetchPassengersForRoute: posle filtriranja ${filtered.length} putnika za $grad $vreme (dan=$dayNormalized)');
-    for (final p in filtered) {
-      debugPrint('   ✅ ${p.ime} | dan=${p.dan} | grad=${p.grad} | polazak=${p.polazak}');
-    }
-
     // If requested, try to optimize route ordering using TSP based algorithm
     List<Putnik> result;
     if (optimize) {
       try {
-        List<Putnik> optimized = [];
-        if (driverPosition != null) {
-          // pokušaj GPS optimizacije
-          // ignore: deprecated_member_use_from_same_package
-          optimized = await optimizeRouteGeographically(
-            filtered,
-            driverPosition: driverPosition,
-            startAddress: grad == 'Bela Crkva' ? 'Bela Crkva' : null,
-          );
-        }
-        if (optimized.isEmpty) {
-          optimized =
-              await RouteOptimizationService.optimizeRouteForCityAndTime(allPutnici, grad, vreme, dayNormalized);
-        }
+        final optimized =
+            await RouteOptimizationService.optimizeRouteForCityAndTime(allPutnici, grad, vreme, dayNormalized);
         // If optimization returned something non-empty, use it. Otherwise use filtered.
         result = optimized.isNotEmpty ? optimized : filtered;
       } catch (_) {
