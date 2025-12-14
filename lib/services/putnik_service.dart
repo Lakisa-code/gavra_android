@@ -358,6 +358,48 @@ class PutnikService {
     }
   }
 
+  // 🆕 BATCH UČITAVANJE PUTNIKA IZ BILO KOJE TABELE (po listi ID-eva)
+  // Efikasnije od pojedinačnih poziva - koristi IN operator
+  Future<List<Putnik>> getPutniciByIds(List<dynamic> ids) async {
+    if (ids.isEmpty) return [];
+
+    final results = <Putnik>[];
+    final stringIds = ids.map((id) => id.toString()).toList();
+
+    try {
+      // Batch query za putovanja_istorija
+      final putovanjaResponse = await supabase.from('putovanja_istorija').select().inFilter('id', stringIds);
+
+      final foundInPutovanja = <String>{};
+      for (final row in putovanjaResponse) {
+        results.add(Putnik.fromPutovanjaIstorija(row));
+        foundInPutovanja.add(row['id'].toString());
+      }
+
+      // Pronađi ID-eve koji nisu u putovanja_istorija
+      final remainingIds = stringIds.where((id) => !foundInPutovanja.contains(id)).toList();
+
+      if (remainingIds.isNotEmpty) {
+        // Batch query za registrovani_putnici
+        final registrovaniResponse =
+            await supabase.from('registrovani_putnici').select(registrovaniFields).inFilter('id', remainingIds);
+
+        for (final row in registrovaniResponse) {
+          results.add(Putnik.fromRegistrovaniPutnici(row));
+        }
+      }
+
+      return results;
+    } catch (e) {
+      // Fallback na pojedinačne pozive ako batch ne uspe
+      for (final id in ids) {
+        final putnik = await getPutnikFromAnyTable(id);
+        if (putnik != null) results.add(putnik);
+      }
+      return results;
+    }
+  }
+
   // 🆕 NOVI: Učitaj sve putnike iz obe tabele
   Future<List<Putnik>> getAllPutniciFromBothTables({String? targetDay}) async {
     List<Putnik> allPutnici = [];

@@ -29,9 +29,8 @@ class DriverLocationService {
   String? _currentGrad;
   String? _currentVremePolaska;
   String? _currentSmer; // BC_VS ili VS_BC
-  Map<String, int>? _currentPutniciEta; // ETA za svakog putnika
-  Map<String, Position>? _putniciCoordinates; // 🆕 Koordinate putnika za dinamički ETA
-  VoidCallback? _onAllPassengersPickedUp; // 🆕 Callback za auto-stop
+  Map<String, int>? _currentPutniciEta; // ETA za svakog putnika (iz OSRM)
+  VoidCallback? _onAllPassengersPickedUp; // Callback za auto-stop
 
   // Getteri
   bool get isTracking => _isTracking;
@@ -39,8 +38,7 @@ class DriverLocationService {
   int get remainingPassengers => _currentPutniciEta?.length ?? 0;
 
   /// Pokreni praćenje lokacije za vozača
-  /// [putniciEta] - Mapa ime_putnika -> ETA u minutama
-  /// [putniciCoordinates] - Mapa ime_putnika -> Position za dinamički ETA
+  /// [putniciEta] - Mapa ime_putnika -> ETA u minutama (iz OSRM)
   /// [onAllPassengersPickedUp] - Callback kada su svi putnici pokupljeni (auto-stop)
   Future<bool> startTracking({
     required String vozacId,
@@ -49,8 +47,8 @@ class DriverLocationService {
     String? vremePolaska,
     String? smer, // BC_VS ili VS_BC
     Map<String, int>? putniciEta,
-    Map<String, Position>? putniciCoordinates, // 🆕 Za dinamički ETA
-    VoidCallback? onAllPassengersPickedUp, // 🆕 Za auto-stop
+    @Deprecated('Ne koristi se više - ETA dolazi iz OSRM') Map<String, Position>? putniciCoordinates,
+    VoidCallback? onAllPassengersPickedUp,
   }) async {
     if (_isTracking) {
       return true;
@@ -68,7 +66,6 @@ class DriverLocationService {
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
     _currentPutniciEta = putniciEta != null ? Map.from(putniciEta) : null;
-    _putniciCoordinates = putniciCoordinates;
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
 
@@ -104,7 +101,6 @@ class DriverLocationService {
     _currentVremePolaska = null;
     _currentSmer = null;
     _currentPutniciEta = null;
-    _putniciCoordinates = null;
     _onAllPassengersPickedUp = null;
     _lastPosition = null;
   }
@@ -117,44 +113,13 @@ class DriverLocationService {
     // Umesto brisanja, postavi ETA na -1 što znači "pokupljen"
     // Tako widget može da prikaže "Pokupljen" umesto "Čekanje..."
     _currentPutniciEta![putnikIme] = -1;
-    _putniciCoordinates?.remove(putnikIme);
 
-    // 🆕 AUTO-STOP: Ako su svi putnici pokupljeni (svi imaju ETA = -1)
+    // AUTO-STOP: Ako su svi putnici pokupljeni (svi imaju ETA = -1)
     final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
     if (aktivniPutnici == 0) {
       _onAllPassengersPickedUp?.call();
       stopTracking();
     }
-  }
-
-  /// 🆕 Ažuriraj ETA dinamički na osnovu trenutne pozicije
-  void _updateDynamicEta(Position currentPosition) {
-    if (_putniciCoordinates == null || _putniciCoordinates!.isEmpty) return;
-    if (_currentPutniciEta == null) return;
-
-    // Prosečna brzina u m/s (pretpostavljamo 40 km/h u gradu)
-    const averageSpeedMps = 11.1; // 40 km/h = 11.1 m/s
-
-    final updatedEta = <String, int>{};
-
-    for (final entry in _putniciCoordinates!.entries) {
-      final putnikIme = entry.key;
-      final putnikPosition = entry.value;
-
-      // Izračunaj udaljenost do putnika
-      final distanceMeters = Geolocator.distanceBetween(
-        currentPosition.latitude,
-        currentPosition.longitude,
-        putnikPosition.latitude,
-        putnikPosition.longitude,
-      );
-
-      // Izračunaj ETA u minutama
-      final etaMinutes = (distanceMeters / averageSpeedMps / 60).round();
-      updatedEta[putnikIme] = etaMinutes.clamp(1, 120); // Min 1 min, max 2h
-    }
-
-    _currentPutniciEta = updatedEta;
   }
 
   /// Proveri i zatraži dozvole za lokaciju - CENTRALIZOVANO
@@ -189,8 +154,7 @@ class DriverLocationService {
 
       _lastPosition = position;
 
-      // 🆕 Ažuriraj ETA dinamički na osnovu trenutne pozicije
-      _updateDynamicEta(position);
+      // ETA se koristi iz OSRM (tačan, po rutama) - NE računamo vazdušnu liniju!
 
       // 🔄 Delete + Insert umesto upsert (nema unique constraint na vozac_id)
       // Prvo obriši stare zapise za ovog vozača

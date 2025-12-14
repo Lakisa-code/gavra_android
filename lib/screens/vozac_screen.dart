@@ -59,6 +59,10 @@ class _VozacScreenState extends State<VozacScreen> {
   bool _isGpsTracking = false; // 🛰️ GPS tracking status
   bool _isPopisLoading = false; // 📋 Loading state za POPIS dugme
 
+  // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
+  DateTime? _lastSyncTime;
+  static const Duration _syncThrottleDuration = Duration(milliseconds: 500);
+
   // Hardkodovana vremena za vozač screen
   static const List<String> _bcVremena = [
     '5:00',
@@ -178,34 +182,25 @@ class _VozacScreenState extends State<VozacScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // 🔄 DOHVATI SVEŽE PODATKE IZ BAZE - lokalni objekti mogu biti zastareli
+    // 🔄 BATCH DOHVATI SVEŽE PODATKE IZ BAZE - efikasnije od pojedinačnih poziva
     final putnikService = PutnikService();
-    final sveziPutnici = <Putnik>[];
+    final ids = _optimizedRoute.where((p) => p.id != null).map((p) => p.id!).toList();
+    final sveziPutnici = await putnikService.getPutniciByIds(ids);
 
-    for (final p in _optimizedRoute) {
-      if (p.id != null) {
-        final svez = await putnikService.getPutnikFromAnyTable(p.id!);
-        if (svez != null) {
-          sveziPutnici.add(svez);
-        }
-      }
-    }
+    // 🔄 UJEDNAČENO SA DANAS_SCREEN: Razdvoji pokupljene/otkazane od preostalih
+    final pokupljeniIOtkazani = sveziPutnici.where((p) {
+      return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo;
+    }).toList();
 
-    // Filtriraj samo nepokupljene i neotkazane putnike
     final preostaliPutnici = sveziPutnici.where((p) {
-      final isPokupljen = p.jePokupljen;
-      final isOtkazan = p.jeOtkazan;
-      final isOdsustvo = p.jeOdsustvo;
-      return !isPokupljen && !isOtkazan && !isOdsustvo;
+      return !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
     }).toList();
 
     if (preostaliPutnici.isEmpty) {
-      // Svi putnici su pokupljeni ili otkazani
+      // Svi putnici su pokupljeni ili otkazani - ZADRŽI ih u listi
       if (mounted) {
         setState(() {
-          _optimizedRoute.clear();
-          _isRouteOptimized = false;
-          _isListReordered = false;
+          _optimizedRoute = pokupljeniIOtkazani; // ✅ ZADRŽI pokupljene u listi
           _currentPassengerIndex = 0;
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -228,14 +223,15 @@ class _VozacScreenState extends State<VozacScreen> {
       if (result.success && result.optimizedPutnici != null) {
         if (mounted) {
           setState(() {
-            _optimizedRoute = result.optimizedPutnici!;
+            // ✅ KOMBINUJ: optimizovani preostali + pokupljeni/otkazani na kraju
+            _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
             _currentPassengerIndex = 0;
           });
 
-          final sledeci = _optimizedRoute.isNotEmpty ? _optimizedRoute.first.ime : 'N/A';
+          final sledeci = result.optimizedPutnici!.isNotEmpty ? result.optimizedPutnici!.first.ime : 'N/A';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${_optimizedRoute.length} preostalo)'),
+              content: Text('🔄 Ruta ažurirana! Sledeći: $sledeci (${preostaliPutnici.length} preostalo)'),
               backgroundColor: Colors.blue,
               duration: const Duration(seconds: 2),
             ),
@@ -244,6 +240,53 @@ class _VozacScreenState extends State<VozacScreen> {
       }
     } catch (_) {
       // Greška pri reoptimizaciji
+    }
+  }
+
+  // 🔄 SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
+  // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
+  // ✅ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max 2x/sec)
+  void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
+    if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
+
+    // 🕒 THROTTLING: Ignoriši ako je prošlo manje od 500ms od poslednje sinhronizacije
+    final now = DateTime.now();
+    if (_lastSyncTime != null && now.difference(_lastSyncTime!) < _syncThrottleDuration) {
+      return; // Preskoči - previše brzo
+    }
+    _lastSyncTime = now;
+
+    bool hasChanges = false;
+    final updatedRoute = <Putnik>[];
+
+    for (final optimizedPutnik in _optimizedRoute) {
+      // Pronađi putnika u stream-u po ID-u
+      final streamPutnik = streamPutnici.firstWhere(
+        (p) => p.id == optimizedPutnik.id,
+        orElse: () => optimizedPutnik,
+      );
+
+      // Ako se status promenio, koristi novi status
+      if (streamPutnik.id == optimizedPutnik.id) {
+        if (streamPutnik.jePokupljen != optimizedPutnik.jePokupljen ||
+            streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan ||
+            streamPutnik.jeOdsustvo != optimizedPutnik.jeOdsustvo ||
+            streamPutnik.status != optimizedPutnik.status) {
+          hasChanges = true;
+          updatedRoute.add(streamPutnik);
+        } else {
+          updatedRoute.add(optimizedPutnik);
+        }
+      } else {
+        updatedRoute.add(optimizedPutnik);
+      }
+    }
+
+    // Samo ažuriraj ako ima promena
+    if (hasChanges && mounted) {
+      setState(() {
+        _optimizedRoute = updatedRoute;
+      });
     }
   }
 
@@ -553,6 +596,14 @@ class _VozacScreenState extends State<VozacScreen> {
 
         // 🎯 Filtriraj putnike po gradu i vremenu
         final sviPutnici = snapshot.data ?? [];
+
+        // 🔄 REALTIME SYNC: Ažuriraj statuse u optimizovanoj ruti
+        if (_isRouteOptimized && sviPutnici.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _syncOptimizedRouteWithStream(sviPutnici);
+          });
+        }
+
         final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
         final filtriraniPutnici = sviPutnici.where((p) {
           // Vreme filter

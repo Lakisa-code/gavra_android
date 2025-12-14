@@ -205,22 +205,16 @@ class OptimizedRealtimeService {
   }
 
   /// 🔄 EMIT COMBINED DATA with optimization
+  /// NAPOMENA: Ova funkcija se NE KORISTI - ekrani koriste direktno PutnikService.combinedPutniciStream()
+  /// Ostavljena je za potencijalnu buduću upotrebu sa implementiranom logikom
   void _emitCombinedData() {
-    try {
-      // Use batch processing to reduce frequent updates
-      PerformanceOptimizerService.batchUIUpdate('realtime_combined_emit', () {
-        final combined = <Putnik>[];
-
-        // Process and combine data efficiently
-        // ... processing logic here ...
-
-        if (!_combinedPutniciController.isClosed) {
-          _combinedPutniciController.add(combined);
-        }
-      });
-    } catch (e) {
-      _trackEvent('combined_emit_error');
-    }
+    // NAPOMENA: combinedPutniciStream se ne koristi u aplikaciji
+    // Ekrani (danas_screen, vozac_screen) koriste PutnikService.streamKombinovaniPutniciFiltered()
+    // koji ima svoju implementaciju. Ova funkcija je placeholder.
+    //
+    // Ako se ubuduće odluči da se koristi ovaj stream, treba implementirati
+    // kombinovanje podataka iz _putovanjaController i _dailyCheckinsController
+    _trackEvent('combined_emit_skipped');
   }
 
   /// 📥 FETCH INITIAL DATA

@@ -79,6 +79,10 @@ class _DanasScreenState extends State<DanasScreen> {
   // Previously used to compare heartbeat state; kept for potential future re-enable
   // bool _wasRealtimeHealthy = true;
 
+  // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
+  DateTime? _lastSyncTime;
+  static const Duration _syncThrottleDuration = Duration(milliseconds: 500);
+
   // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM
   bool _isPopisLoading = false; // ✅ ISPRAVKA: Loading state za POPIS dugme
 
@@ -1077,18 +1081,10 @@ class _DanasScreenState extends State<DanasScreen> {
   Future<void> _reoptimizeAfterStatusChange() async {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // 🔄 DOHVATI SVEŽE PODATKE IZ BAZE - lokalni objekti mogu biti zastareli
+    // 🔄 BATCH DOHVATI SVEŽE PODATKE IZ BAZE - efikasnije od pojedinačnih poziva
     final putnikService = PutnikService();
-    final sveziPutnici = <Putnik>[];
-
-    for (final p in _optimizedRoute) {
-      if (p.id != null) {
-        final svez = await putnikService.getPutnikFromAnyTable(p.id!);
-        if (svez != null) {
-          sveziPutnici.add(svez);
-        }
-      }
-    }
+    final ids = _optimizedRoute.where((p) => p.id != null).map((p) => p.id!).toList();
+    final sveziPutnici = await putnikService.getPutniciByIds(ids);
 
     // Razdvoji pokupljene/otkazane od preostalih
     final pokupljeniIOtkazani = sveziPutnici.where((p) {
@@ -1143,6 +1139,53 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     } catch (_) {
       // Greška pri reoptimizaciji
+    }
+  }
+
+  // 🔄 SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
+  // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
+  // ✅ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max 2x/sec)
+  void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
+    if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
+
+    // 🕒 THROTTLING: Ignoriši ako je prošlo manje od 500ms od poslednje sinhronizacije
+    final now = DateTime.now();
+    if (_lastSyncTime != null && now.difference(_lastSyncTime!) < _syncThrottleDuration) {
+      return; // Preskoči - previše brzo
+    }
+    _lastSyncTime = now;
+
+    bool hasChanges = false;
+    final updatedRoute = <Putnik>[];
+
+    for (final optimizedPutnik in _optimizedRoute) {
+      // Pronađi putnika u stream-u po ID-u
+      final streamPutnik = streamPutnici.firstWhere(
+        (p) => p.id == optimizedPutnik.id,
+        orElse: () => optimizedPutnik,
+      );
+
+      // Ako se status promenio, koristi novi status
+      if (streamPutnik.id == optimizedPutnik.id) {
+        if (streamPutnik.jePokupljen != optimizedPutnik.jePokupljen ||
+            streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan ||
+            streamPutnik.jeOdsustvo != optimizedPutnik.jeOdsustvo ||
+            streamPutnik.status != optimizedPutnik.status) {
+          hasChanges = true;
+          updatedRoute.add(streamPutnik);
+        } else {
+          updatedRoute.add(optimizedPutnik);
+        }
+      } else {
+        updatedRoute.add(optimizedPutnik);
+      }
+    }
+
+    // Samo ažuriraj ako ima promena
+    if (hasChanges && mounted) {
+      setState(() {
+        _optimizedRoute = updatedRoute;
+      });
     }
   }
 
@@ -1746,17 +1789,9 @@ class _DanasScreenState extends State<DanasScreen> {
 
         // 🚐 POKRENI REALTIME TRACKING ZA PUTNIKE
         // Šalje GPS lokaciju + ETA za svakog putnika u Supabase
+        // ETA dolazi iz OSRM (tačan, kumulativan po rutama)
         if (_currentDriver != null && result.putniciEta != null) {
           final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
-
-          // 🆕 Konvertuj koordinate za dinamički ETA
-          Map<String, Position>? putniciCoordinates;
-          if (result.cachedCoordinates != null) {
-            putniciCoordinates = {};
-            for (final entry in result.cachedCoordinates!.entries) {
-              putniciCoordinates[entry.key.ime] = entry.value;
-            }
-          }
 
           await DriverLocationService.instance.startTracking(
             vozacId: _currentDriver!,
@@ -1765,7 +1800,6 @@ class _DanasScreenState extends State<DanasScreen> {
             vremePolaska: _selectedVreme,
             smer: smer,
             putniciEta: result.putniciEta,
-            putniciCoordinates: putniciCoordinates, // 🆕 Za dinamički ETA
             onAllPassengersPickedUp: () {
               // 🆕 Auto-stop callback
               if (mounted) {
@@ -2125,6 +2159,14 @@ class _DanasScreenState extends State<DanasScreen> {
                     }
 
                     final sviPutnici = snapshot.data ?? [];
+
+                    // 🔄 REALTIME SYNC: Ažuriraj statuse u optimizovanoj ruti
+                    if (_isRouteOptimized && sviPutnici.isNotEmpty) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _syncOptimizedRouteWithStream(sviPutnici);
+                      });
+                    }
+
                     final danasnjiDan = _getTodayForDatabase();
                     final todayIso = DateTime.now().toIso8601String().split('T')[0];
 

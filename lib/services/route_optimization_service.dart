@@ -255,27 +255,24 @@ class RouteOptimizationService {
   }
 
   // Proveri da li je ruta logično organizovana (bez alfabetskog sortiranja)
+  // ✅ OPTIMIZOVANO: O(n) umesto O(n²) kompleksnosti
   static Future<bool> isRouteOptimized(List<Putnik> putnici) async {
     if (putnici.isEmpty) return true;
+    if (putnici.length < 2) return true;
 
-    final aktivniPutnici = putnici.where((p) => p.status != 'otkazan' && p.status != 'Otkazano').toList();
+    // Jednostavna provera: da li su svi otkazani putnici na kraju liste?
+    // Single-pass algoritam: kad naiđemo na otkazanog, svi sledeći moraju biti otkazani
+    bool foundCancelled = false;
+    for (final p in putnici) {
+      final isCancelled = p.status == 'otkazan' || p.status == 'Otkazano';
+      if (foundCancelled && !isCancelled) {
+        // Nađen aktivan putnik NAKON otkazanog - nije optimizovano
+        return false;
+      }
+      if (isCancelled) foundCancelled = true;
+    }
 
-    if (aktivniPutnici.length < 2) return true;
-
-    // Jednostavno proverava da li lista ima logičnu strukturu
-    // bez forsiranja alfabetskog redosleda
-
-    // Proveri da li su otkazani putnici na kraju
-    final imaAktivnihNaKraju = putnici.any(
-      (p) =>
-          (p.status == 'otkazan' || p.status == 'Otkazano') &&
-          putnici.indexOf(p) < putnici.length - 1 &&
-          putnici.sublist(putnici.indexOf(p) + 1).any(
-                (next) => next.status != 'otkazan' && next.status != 'Otkazano',
-              ),
-    );
-
-    return !imaAktivnihNaKraju; // True ako otkazani NISU između aktivnih
+    return true; // Svi otkazani su na kraju (ili ih nema)
   }
 
   // -------------------- NEW: CACHED FETCH API --------------------
