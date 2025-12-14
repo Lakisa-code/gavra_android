@@ -246,6 +246,7 @@ class _VozacScreenState extends State<VozacScreen> {
   // 🔄 SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
   // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
   // ✅ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max 2x/sec)
+  // ✅ AUTO-REOPTIMIZACIJA: Kada se doda ili otkaže putnik, automatski reoptimizuje rutu
   void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
@@ -256,37 +257,148 @@ class _VozacScreenState extends State<VozacScreen> {
     }
     _lastSyncTime = now;
 
+    // Kreiraj Set ID-ova iz stream-a za brzu pretragu
+    final streamIds = streamPutnici.map((p) => p.id).toSet();
+    final optimizedIds = _optimizedRoute.map((p) => p.id).toSet();
+
     bool hasChanges = false;
+    bool hasNewPassengers = false;
+    bool hasCancelledOrDeleted = false;
+    final newPassengerNames = <String>[];
+    final cancelledNames = <String>[];
     final updatedRoute = <Putnik>[];
 
+    // 1️⃣ Ažuriraj postojeće putnike i detektuj obrisane/otkazane
     for (final optimizedPutnik in _optimizedRoute) {
+      // Proveri da li putnik još postoji u stream-u
+      if (!streamIds.contains(optimizedPutnik.id)) {
+        // 🗑️ Putnik obrisan iz baze
+        hasChanges = true;
+        hasCancelledOrDeleted = true;
+        cancelledNames.add(optimizedPutnik.ime);
+        continue;
+      }
+
       // Pronađi putnika u stream-u po ID-u
       final streamPutnik = streamPutnici.firstWhere(
         (p) => p.id == optimizedPutnik.id,
-        orElse: () => optimizedPutnik,
       );
 
-      // Ako se status promenio, koristi novi status
-      if (streamPutnik.id == optimizedPutnik.id) {
-        if (streamPutnik.jePokupljen != optimizedPutnik.jePokupljen ||
-            streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan ||
-            streamPutnik.jeOdsustvo != optimizedPutnik.jeOdsustvo ||
-            streamPutnik.status != optimizedPutnik.status) {
-          hasChanges = true;
-          updatedRoute.add(streamPutnik);
-        } else {
-          updatedRoute.add(optimizedPutnik);
-        }
+      // Proveri da li je putnik UPRAVO otkazan (bio aktivan, sada nije)
+      final wasActive = !optimizedPutnik.jeOtkazan && !optimizedPutnik.jeOdsustvo;
+      final isNowCancelled = streamPutnik.jeOtkazan || streamPutnik.jeOdsustvo;
+      if (wasActive && isNowCancelled) {
+        hasCancelledOrDeleted = true;
+        cancelledNames.add(streamPutnik.ime);
+      }
+
+      // Proveri da li se status promenio
+      if (streamPutnik.jePokupljen != optimizedPutnik.jePokupljen ||
+          streamPutnik.jeOtkazan != optimizedPutnik.jeOtkazan ||
+          streamPutnik.jeOdsustvo != optimizedPutnik.jeOdsustvo ||
+          streamPutnik.status != optimizedPutnik.status) {
+        hasChanges = true;
+        updatedRoute.add(streamPutnik);
       } else {
         updatedRoute.add(optimizedPutnik);
       }
     }
 
-    // Samo ažuriraj ako ima promena
+    // 2️⃣ Detektuj nove putnike koji nisu u optimizovanoj ruti
+    final newPassengers = <Putnik>[];
+    for (final streamPutnik in streamPutnici) {
+      if (!optimizedIds.contains(streamPutnik.id)) {
+        hasNewPassengers = true;
+        newPassengers.add(streamPutnik);
+        newPassengerNames.add(streamPutnik.ime);
+      }
+    }
+
+    // 🆕 AUTO-REOPTIMIZACIJA: Ako ima novih ILI otkazanih putnika
+    if ((hasNewPassengers || hasCancelledOrDeleted) && mounted) {
+      // Prikaži notifikaciju
+      String message;
+      Color bgColor;
+      if (hasNewPassengers && hasCancelledOrDeleted) {
+        message = '🔄 Promene: +${newPassengerNames.join(", ")} / -${cancelledNames.join(", ")} - Reoptimizujem...';
+        bgColor = Colors.purple;
+      } else if (hasNewPassengers) {
+        message = '🆕 Novi putnik: ${newPassengerNames.join(", ")} - Reoptimizujem rutu...';
+        bgColor = Colors.blue;
+      } else {
+        message = '❌ Otkazano: ${cancelledNames.join(", ")} - Reoptimizujem rutu...';
+        bgColor = Colors.orange;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: bgColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Kombinuj postojeće + nove putnike i pokreni reoptimizaciju
+      final allPassengers = [...updatedRoute, ...newPassengers];
+      _autoReoptimizeRoute(allPassengers);
+      return; // Ne ažuriraj state ovde, _autoReoptimizeRoute će to uraditi
+    }
+
+    // Samo ažuriraj ako ima promena (bez novih/otkazanih putnika)
     if (hasChanges && mounted) {
       setState(() {
         _optimizedRoute = updatedRoute;
       });
+    }
+  }
+
+  // 🔄 AUTO-REOPTIMIZACIJA RUTE SA NOVIM PUTNICIMA
+  // Poziva OSRM da dobije novu optimalnu rutu
+  Future<void> _autoReoptimizeRoute(List<Putnik> allPassengers) async {
+    // Filtriraj samo putnike sa validnim adresama
+    final filtriraniPutnici = allPassengers.where((p) {
+      final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
+          (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
+      // Isključi pokupljene i otkazane
+      final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
+      return hasValidAddress && isActive;
+    }).toList();
+
+    if (filtriraniPutnici.isEmpty) return;
+
+    try {
+      final result = await SmartNavigationService.optimizeRouteOnly(
+        putnici: filtriraniPutnici,
+        startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
+      );
+
+      if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _optimizedRoute = result.optimizedPutnici!;
+            _cachedCoordinates = result.cachedCoordinates;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Ruta uspešno reoptimizovana sa novim putnikom!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Greška pri reoptimizaciji - zadrži postojeću rutu
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Greška pri reoptimizaciji: $e'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
