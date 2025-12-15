@@ -2752,8 +2752,6 @@ class _PutnikCardState extends State<PutnikCard> {
         } catch (_) {}
 
         // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
-        // Ovo osigurava da override entries (putovanja_istorija) postanu
-        // vidljivi prilikom povratka na ekran (kartica ostaje crvena)
         try {
           await GlobalCacheManager.clearAllCachesAndRefresh();
         } catch (e) {

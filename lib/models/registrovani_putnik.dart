@@ -250,14 +250,12 @@ class RegistrovaniPutnik {
   /// Iznos plaćanja - kompatibilnost sa statistika_service
   double? get iznosPlacanja => cena ?? ukupnaCenaMeseca;
 
-  /// Stvarni iznos plaćanja koji treba da se kombinuje sa putovanja_istorija
-  /// Ovo je placeholder - potrebno je da se implementira kombinovanje sa istorijom
+  /// Stvarni iznos plaćanja
   double? get stvarniIznosPlacanja {
     // Ako postoji cena u registrovani_putnici, vrati je
     if (cena != null && cena! > 0) return cena;
 
-    // Inače treba da se pretraži putovanja_istorija tabela
-    // Za sada vraćamo cenu ili ukupnaCenaMeseca kao fallback
+    // Vraćamo cenu ili ukupnaCenaMeseca kao fallback
     return cena ?? (ukupnaCenaMeseca > 0 ? ukupnaCenaMeseca : null);
   }
 

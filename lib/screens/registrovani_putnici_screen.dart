@@ -2621,7 +2621,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   }
 
   // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
-  // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
+  // Koristi voznje_log za praćenje vožnji
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
     String putnikId,
     String period,

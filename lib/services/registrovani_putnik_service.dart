@@ -167,9 +167,6 @@ class RegistrovaniPutnikService {
     RegistrovaniPutnik putnik,
     DateTime datum,
   ) async {
-    // ✅ Kreiranje dnevnih putovanja iz mesečnih putnika
-    // Ova metoda kreira zapise u putovanja_istorija tabeli za svaki polazak
-
     // Implementacija će biti dodana kada bude potrebna za scheduling funkcionalnost
     // Trenutno se koristi direktno unošenje kroz glavnu logiku aplikacije
   }
@@ -195,7 +192,7 @@ class RegistrovaniPutnikService {
   }
 
   /// Ažurira plaćanje za mesec (vozacId je UUID)
-  /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
+  /// Koristi voznje_log za praćenje vožnji
   Future<bool> azurirajPlacanjeZaMesec(
     String putnikId,
     double iznos,
@@ -414,7 +411,6 @@ class RegistrovaniPutnikService {
   }
 
   /// Izračunava broj putovanja iz voznje_log
-  /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
   static Future<int> izracunajBrojPutovanjaIzIstorije(
     String mesecniPutnikId,
   ) async {
@@ -438,7 +434,6 @@ class RegistrovaniPutnikService {
   }
 
   /// Izračunava broj otkazivanja iz voznje_log
-  /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
   static Future<int> izracunajBrojOtkazivanjaIzIstorije(
     String mesecniPutnikId,
   ) async {

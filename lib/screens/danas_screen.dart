@@ -2347,7 +2347,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
                     final danasPutnici = sviPutnici.where((p) {
                       // Dan u nedelji filter - ISTA LOGIKA KAO HOME_SCREEN
-                      // Ako ima datum (iz putovanja_istorija), koristi ga; inače koristi dan
+                      // Koristimo dan ili datum za filtriranje
                       final dayMatch = p.datum != null
                           ? p.datum == todayIso
                           : p.dan.toLowerCase().contains(danasnjiDan.toLowerCase());

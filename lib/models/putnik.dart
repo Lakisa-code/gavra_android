@@ -537,7 +537,6 @@ class Putnik {
           vremePokupljenja?.toIso8601String(), // ✅ FIXED: Koristi vreme_pokupljenja umesto poslednje_putovanje
       // UUID validacija za vozac_id
       'vozac_id': (vozac?.isEmpty ?? true) ? null : vozac,
-      // Ne uključujemo 'obrisan' kolonu za putovanja_istorija tabelu
       'created_at': vremeDodavanja?.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };

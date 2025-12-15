@@ -109,8 +109,7 @@ class RealtimeService {
       }
     });
 
-    // 🔄 POJEDNOSTAVLJENO: Sada koristimo SAMO registrovani_putnici
-    // Tabela putovanja_istorija je uklonjena, sve je u registrovani_putnici
+    // Koristimo registrovani_putnici tabelu za sve putnike
     _registrovaniSub = tableStream('registrovani_putnici').listen(
       (dynamic data) {
         try {
@@ -139,8 +138,7 @@ class RealtimeService {
     try {
       final combined = <Putnik>[];
 
-      // 🔄 POJEDNOSTAVLJENO: Samo registrovani_putnici (putovanja_istorija više ne postoji)
-      // Convert registrovani rows - use current RegistrovaniPutnik model structure
+      // Konvertuj registrovani_putnici redove u Putnik objekte
       for (final Map<String, dynamic> map in _lastRegistrovaniRows) {
         try {
           // ✅ ISPRAVKA: Koristi Putnik.fromRegistrovaniPutniciMultipleForDay za sve dane

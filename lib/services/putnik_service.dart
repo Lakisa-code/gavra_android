@@ -92,8 +92,7 @@ class PutnikService {
       try {
         final combined = <Putnik>[];
 
-        // 🔄 POJEDNOSTAVLJENO: Svi putnici su u registrovani_putnici tabeli
-        // Nema više putovanja_istorija za override logiku
+        // Svi putnici su u registrovani_putnici tabeli
 
         // Fetch monthly rows for the relevant day (if isoDate provided, convert)
         String? danKratica;
@@ -418,64 +417,32 @@ class PutnikService {
 
       switch (lastAction.type) {
         case 'delete':
-          if (tabela == 'registrovani_putnici') {
-            await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'],
-              'aktivan': true, // Vraća na aktivan umesto obrisan: false
-            }).eq('id', lastAction.putnikId as String);
-          } else {
-            // putovanja_istorija - koristi novu 'status' kolonu
-            await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'] ?? 'radi',
-              'obrisan': false, // ✅ FIXED: Koristi obrisan umesto pokupljen
-            }).eq('id', lastAction.putnikId as String);
-          }
+          await supabase.from(tabela).update({
+            'status': lastAction.oldData['status'],
+            'aktivan': true,
+          }).eq('id', lastAction.putnikId as String);
           return 'Poništeno brisanje putnika';
 
         case 'pickup':
-          if (tabela == 'registrovani_putnici') {
-            await supabase.from(tabela).update({
-              'broj_putovanja': lastAction.oldData['broj_putovanja'],
-              'pokupljen': false, // ✅ RESETUJ pokupljen flag za mesecne putnike
-              'vreme_pokupljenja': null, // ✅ FIXED: Resetuj vreme pokupljanja umesto poslednje_putovanje
-            }).eq('id', lastAction.putnikId as String);
-          } else {
-            await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'],
-              // 'vreme_akcije': null, // UKLONITI - kolona ne postoji
-            }).eq('id', lastAction.putnikId as String);
-          }
+          await supabase.from(tabela).update({
+            'broj_putovanja': lastAction.oldData['broj_putovanja'],
+            'pokupljen': false,
+            'vreme_pokupljenja': null,
+          }).eq('id', lastAction.putnikId as String);
           return 'Poništeno pokupljanje';
 
         case 'payment':
-          if (tabela == 'registrovani_putnici') {
-            await supabase.from(tabela).update({
-              'cena': null, // ✅ RESETUJ cenu za mesecne putnike
-              'vreme_placanja': null, // ✅ RESETUJ vreme placanja
-              'vozac_id': null, // ✅ RESETUJ vozača kao UUID (uklanja i legacy)
-            }).eq('id', lastAction.putnikId as String);
-          } else {
-            // ✅ FIXED: putovanja_istorija nema placeno/iznos_placanja/vreme_placanja kolone
-            await supabase.from(tabela).update({
-              'cena': 0, // ✅ Resetuj cenu
-              'status': lastAction.oldData['status'] ?? 'radi', // ✅ RESETUJ status
-              'updated_at': DateTime.now().toIso8601String(),
-            }).eq('id', lastAction.putnikId as String);
-          }
+          await supabase.from(tabela).update({
+            'cena': null,
+            'vreme_placanja': null,
+            'vozac_id': null,
+          }).eq('id', lastAction.putnikId as String);
           return 'Poništeno plaćanje';
 
         case 'cancel':
-          if (tabela == 'registrovani_putnici') {
-            await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'],
-            }).eq('id', lastAction.putnikId as String);
-          } else {
-            // ✅ FIXED: putovanja_istorija nema 'vozac' kolonu - koristi samo status
-            await supabase.from(tabela).update({
-              'status': lastAction.oldData['status'] ?? 'radi',
-              'updated_at': DateTime.now().toIso8601String(),
-            }).eq('id', lastAction.putnikId as String);
-          }
+          await supabase.from(tabela).update({
+            'status': lastAction.oldData['status'],
+          }).eq('id', lastAction.putnikId as String);
           return 'Poništeno otkazivanje';
 
         default:
@@ -746,19 +713,6 @@ class PutnikService {
       } catch (e) {
         // Silently ignore sync errors
       }
-    } else {
-      // Za putovanja_istorija koristi action_log
-      final now = DateTime.now();
-      final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver) ?? currentDriver;
-      final actionLog2 = ActionLog.fromDynamic(response['action_log']);
-      final updatedActionLog2 = actionLog2.addAction(ActionType.picked, vozacUuid, 'Pokupljen');
-
-      await supabase.from(tabela).update({
-        'status': 'pokupljen',
-        'vreme_pokupljenja': now.toIso8601String(),
-        'action_log': updatedActionLog2.toJson(),
-        'updated_at': now.toIso8601String(),
-      }).eq('id', id as String);
     }
 
     // 📊 AŽURIRAJ STATISTIKE ako je mesečni putnik i pokupljen je
@@ -802,39 +756,22 @@ class PutnikService {
     // 📝 DODAJ U UNDO STACK (sigurno mapiranje)
     final undoPayment = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
     _addToUndoStack('payment', id, undoPayment);
-    if (tabela == 'registrovani_putnici') {
-      // Za mesečne putnike ažuriraj SVE potrebne kolone za plaćanje
-      final now = DateTime.now();
-      String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
 
-      // ✅ FIXED: Ažuriraj action_log.paid_by
-      final actionLog = ActionLog.fromDynamic(undoPayment['action_log']);
-      final updatedActionLog = actionLog.addAction(ActionType.paid, validVozacId ?? naplatioVozac, 'Plaćeno $iznos');
+    // Za mesečne putnike ažuriraj SVE potrebne kolone za plaćanje
+    final now = DateTime.now();
+    String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
 
-      await supabase.from(tabela).update({
-        'cena': iznos, // ✅ CENA mesečne karte
-        'vreme_placanja': now.toIso8601String(), // ✅ TIMESTAMP plaćanja
-        'vozac_id': validVozacId, // ✅ FIXED: Samo UUID, null ako nema mapiranja
-        'action_log': updatedActionLog.toJson(), // ✅ FIXED: Ažuriraj action_log.paid_by
-        'updated_at': now.toIso8601String(), // ✅ AŽURIRAJ timestamp
-      }).eq('id', id as String);
-    } else {
-      // Za putovanja_istorija koristi action_log
-      String? validVozacId = naplatioVozac.isEmpty ? null : VozacMappingService.getVozacUuidSync(naplatioVozac);
+    // Ažuriraj action_log.paid_by
+    final actionLog = ActionLog.fromDynamic(undoPayment['action_log']);
+    final updatedActionLog = actionLog.addAction(ActionType.paid, validVozacId ?? naplatioVozac, 'Plaćeno $iznos');
 
-      // ✅ FIXED: Ažuriraj action_log.paid_by
-      final actionLog2 = ActionLog.fromDynamic(undoPayment['action_log']);
-      final updatedActionLog2 = actionLog2.addAction(ActionType.paid, validVozacId ?? naplatioVozac, 'Plaćeno $iznos');
-
-      await supabase.from(tabela).update({
-        'cena': iznos,
-        'vozac_id': validVozacId, // ✅ FIXED: Samo UUID, null ako nema mapiranja
-        // ✅ FIXED: vreme_placanja NE POSTOJI u putovanja_istorija - koristi updated_at
-        'updated_at': DateTime.now().toIso8601String(), // ✅ Koristi updated_at umesto vreme_placanja
-        'action_log': updatedActionLog2.toJson(), // ✅ FIXED: Ažuriraj action_log.paid_by
-        'status': 'placeno', // ✅ DODAJ STATUS plaćanja (konzistentno)
-      }).eq('id', id as String);
-    } // (Uklonjeno slanje notifikacije za plaćanje)
+    await supabase.from(tabela).update({
+      'cena': iznos,
+      'vreme_placanja': now.toIso8601String(),
+      'vozac_id': validVozacId,
+      'action_log': updatedActionLog.toJson(),
+      'updated_at': now.toIso8601String(),
+    }).eq('id', id as String);
   }
 
   /// ✅ OTKAZI PUTNIKA
@@ -923,7 +860,7 @@ class PutnikService {
         // Nastavi dalje - notifikacija nije kritična
       }
 
-      // 📊 SINHRONIZACIJA UKLONJENA - putovanja_istorija više ne postoji
+      // Sinhronizacija završena
     } catch (e) {
       rethrow;
     }
@@ -956,19 +893,11 @@ class PutnikService {
     }
 
     try {
-      if (tabela == 'registrovani_putnici') {
-        // ✅ DIREKTNO SETOVANJE STATUSA - zahteva ALTER constraint u bazi
-        await supabase.from(tabela).update({
-          'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
-          'aktivan': true, // Putnik ostaje aktivan, samo je na odsustvu
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', id as String);
-      } else {
-        // Za putovanja_istorija koristi 'status' kolonu
-        await supabase.from(tabela).update({
-          'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
-        }).eq('id', id as String);
-      }
+      await supabase.from(tabela).update({
+        'status': statusZaBazu, // 'bolovanje' ili 'godišnji'
+        'aktivan': true, // Putnik ostaje aktivan, samo je na odsustvu
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', id as String);
     } catch (e) {
       rethrow;
     }
@@ -1079,7 +1008,7 @@ class PutnikService {
         // Silently ignore reset errors
       }
 
-      // 🔄 POJEDNOSTAVLJENO: Nema više dnevnih putnika u putovanja_istorija
+      // Reset završen
     } catch (e) {
       // Ignore outer errors
     }

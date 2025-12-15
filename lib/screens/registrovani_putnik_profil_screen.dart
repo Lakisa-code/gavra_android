@@ -86,7 +86,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final startOfMonth = DateTime(now.year, now.month, 1);
       final pocetakGodine = DateTime(now.year, 1, 1);
 
-      // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
+      // Koristi voznje_log za statistiku vožnji
       // Broj vožnji ovog meseca - JEDINSTVENI DATUMI
       final voznjeResponse = await Supabase.instance.client
           .from('voznje_log')

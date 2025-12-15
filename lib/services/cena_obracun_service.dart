@@ -74,7 +74,7 @@ class CenaObracunService {
       final pocetakMeseca = DateTime(godina, mesec, 1);
       final krajMeseca = DateTime(godina, mesec + 1, 0);
 
-      // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
+      // Koristi voznje_log za brojanje vožnji
       final response = await _supabase
           .from('voznje_log')
           .select('datum')
