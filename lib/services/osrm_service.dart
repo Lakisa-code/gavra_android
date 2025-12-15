@@ -127,10 +127,7 @@ class OsrmService {
 
         final response = await http.get(
           Uri.parse(url),
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'GavraAndroidApp/1.0 (transport app)',
-          },
+          headers: {'Accept': 'application/json'},
         ).timeout(RouteConfig.osrmTimeout);
 
         if (response.statusCode == 200) {
