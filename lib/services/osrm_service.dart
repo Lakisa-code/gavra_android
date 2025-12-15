@@ -130,6 +130,8 @@ class OsrmService {
           headers: {'Accept': 'application/json'},
         ).timeout(RouteConfig.osrmTimeout);
 
+        print('🌐 OSRM response: ${response.statusCode}');
+
         if (response.statusCode == 200) {
           final data = json.decode(response.body) as Map<String, dynamic>;
 
@@ -139,6 +141,7 @@ class OsrmService {
           }
         }
       } catch (e) {
+        print('❌ OSRM attempt $attempt failed: $e');
         // OSRM pokušaj neuspešan - nastavi sa retry
       }
 
