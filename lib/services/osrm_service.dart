@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
+import 'adresa_supabase_service.dart';
 import 'unified_geocoding_service.dart';
 
 /// 🗺️ OSRM SERVICE - OpenStreetMap Routing Machine
@@ -34,6 +35,9 @@ class OsrmService {
     }
 
     try {
+      // 🧹 Očisti cache pre geocodinga da dobijemo sveže koordinate iz baze
+      AdresaSupabaseService.clearCache();
+
       // 1. Dobij koordinate za sve putnike (koristi UnifiedGeocodingService)
       final coordinates = await UnifiedGeocodingService.getCoordinatesForPutnici(
         putnici,
@@ -123,7 +127,10 @@ class OsrmService {
 
         final response = await http.get(
           Uri.parse(url),
-          headers: {'Accept': 'application/json'},
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'GavraAndroidApp/1.0 (transport app)',
+          },
         ).timeout(RouteConfig.osrmTimeout);
 
         if (response.statusCode == 200) {
@@ -133,11 +140,9 @@ class OsrmService {
           if (data['code'] == 'Ok' && data['trips'] != null && (data['trips'] as List).isNotEmpty) {
             return data;
           }
-        } else {
-          // HTTP greška
         }
       } catch (e) {
-        // OSRM pokušaj neuspešan
+        // OSRM pokušaj neuspešan - nastavi sa retry
       }
 
       // Exponential backoff pre sledećeg pokušaja
@@ -256,28 +261,6 @@ class OsrmService {
     } catch (e) {
       return null;
     }
-  }
-
-  /// 🗺️ Dobij koordinate za sve putnike
-  /// DELEGIRA na UnifiedGeocodingService
-  static Future<Map<Putnik, Position>> getCoordinatesForPutnici(
-    List<Putnik> putnici, {
-    GeocodingProgressCallback? onProgress,
-  }) async {
-    return UnifiedGeocodingService.getCoordinatesForPutnici(
-      putnici,
-      onProgress: onProgress,
-    );
-  }
-
-  /// 📏 Izračunaj distancu između dve tačke (Haversine formula)
-  static double calculateDistance(Position pos1, Position pos2) {
-    return Geolocator.distanceBetween(
-      pos1.latitude,
-      pos1.longitude,
-      pos2.latitude,
-      pos2.longitude,
-    );
   }
 }
 

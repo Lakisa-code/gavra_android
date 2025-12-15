@@ -74,19 +74,19 @@ class CenaObracunService {
       final pocetakMeseca = DateTime(godina, mesec, 1);
       final krajMeseca = DateTime(godina, mesec + 1, 0);
 
-      // Uzmi sva pokupljenja iz putovanja_istorija za ovog putnika
+      // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
       final response = await _supabase
-          .from('putovanja_istorija')
-          .select('datum_putovanja')
-          .eq('mesecni_putnik_id', putnikId)
-          .eq('status', 'pokupljen')
-          .gte('datum_putovanja', pocetakMeseca.toIso8601String().split('T')[0])
-          .lte('datum_putovanja', krajMeseca.toIso8601String().split('T')[0]);
+          .from('voznje_log')
+          .select('datum')
+          .eq('putnik_id', putnikId)
+          .eq('tip', 'voznja')
+          .gte('datum', pocetakMeseca.toIso8601String().split('T')[0])
+          .lte('datum', krajMeseca.toIso8601String().split('T')[0]);
 
       // Prebroji UNIKALNE dane
       final Set<String> uniqueDays = {};
       for (final record in response) {
-        final datum = record['datum_putovanja'] as String?;
+        final datum = record['datum'] as String?;
         if (datum != null) {
           uniqueDays.add(datum.split('T')[0]); // Samo datum bez vremena
         }

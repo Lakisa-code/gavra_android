@@ -94,50 +94,6 @@ class GPSLokacija {
         1000;
   }
 
-  /// Formatirana tacnost za prikaz
-  String get displayTacnost {
-    if (tacnost == null) return 'N/A';
-    return '${tacnost!.toStringAsFixed(1)} m';
-  }
-
-  /// Da li je lokacija "sveža" (manja od 5 minuta)
-  bool get isFresh => DateTime.now().difference(vreme).inMinutes < 5;
-
-  /// Validira GPS koordinate
-  bool get isValidCoordinates {
-    return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
-  }
-
-  /// Validira brzinu (realna vrednost)
-  bool get isValidSpeed {
-    return brzina == null || (brzina! >= 0 && brzina! <= 200);
-  }
-
-  /// Validira tacnost (realna vrednost)
-  bool get isValidAccuracy {
-    return tacnost == null || (tacnost! >= 0 && tacnost! <= 1000);
-  }
-
-  /// Formatirana brzina za prikaz
-  String get displayBrzina {
-    if (brzina == null) return 'N/A';
-    return '${brzina!.toStringAsFixed(1)} km/h';
-  }
-
-  /// Formatiran pravac za prikaz
-  String get displayPravac {
-    if (pravac == null) return 'N/A';
-    final directions = ['S', 'SI', 'I', 'JI', 'J', 'JZ', 'Z', 'SZ'];
-    final index = ((pravac! + 22.5) % 360 / 45).floor();
-    return '${directions[index]} (${pravac!.toStringAsFixed(0)}°)';
-  }
-
-  /// Da li je GPS lokacija aktivna (nije obrisana)
-  bool get isActive => !obrisan;
-
-  /// Da li je GPS lokacija obrisana
-  bool get isDeleted => obrisan;
-
   /// Kopira GPS lokaciju sa izmenjenim vrednostima
   GPSLokacija copyWith({
     String? id,

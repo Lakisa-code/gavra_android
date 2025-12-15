@@ -511,44 +511,6 @@ class PermissionService {
     }
   }
 
-  /// 📞 INSTANT POZIV (bez dodatnih dialoga)
-  static Future<bool> ensurePhonePermission() async {
-    try {
-      final status = await Permission.phone.status;
-      if (status.isGranted || status.isLimited) {
-        return true;
-      }
-
-      final result = await Permission.phone.request();
-      return result.isGranted || result.isLimited;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // 📱 SMS DOZVOLA NIJE POTREBNA
-  // Aplikacija koristi url_launcher (sms: URI scheme) koji otvara SMS aplikaciju
-  // Korisnik sam klikne "Pošalji" - ne treba SEND_SMS permission
-
-  /// 🔔 STATUS SVIH DOZVOLA
-  static Future<Map<String, bool>> getPermissionStatus() async {
-    return {
-      'location': await _isLocationPermissionGranted(),
-      'phone': (await Permission.phone.status).isGranted,
-      'notification': (await Permission.notification.status).isGranted,
-    };
-  }
-
-  /// ⚙️ OTVORI SETTINGS ZA RUČNO PODEŠAVANJE
-  static Future<void> openPermissionSettings() async {
-    // Otvori system settings za dozvole aplikacije
-    try {
-      await Permission.phone.request(); // Ovo će otvoriti settings ako je potrebno
-    } catch (e) {
-      // Silently ignore
-    }
-  }
-
   /// 📞 HUAWEI SPECIFIČNA LOGIKA - Phone permission
   static Future<bool> ensurePhonePermissionHuawei() async {
     try {

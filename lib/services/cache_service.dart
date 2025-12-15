@@ -43,15 +43,6 @@ class CacheService {
     return null;
   }
 
-  /// 🔍 PROVERI DA LI POSTOJI U CACHE
-  static bool hasInMemory(String key) {
-    final timestamp = _cacheTimestamp[key];
-    if (timestamp != null && DateTime.now().difference(timestamp) < const Duration(minutes: 10)) {
-      return _memoryCache.containsKey(key);
-    }
-    return false;
-  }
-
   /// 💾 POSTAVI U MEMORY CACHE sa optional duration
   static void setMemory<T>(String key, T value, {Duration? duration}) {
     _memoryCache[key] = value;
@@ -123,12 +114,6 @@ class CacheService {
     final timestampKey = '${key}_timestamp';
     await _prefs!.remove(key);
     await _prefs!.remove(timestampKey);
-  }
-
-  /// 🧹 Očisti specifičan key iz memory cache
-  static void clearFromMemory(String key) {
-    _memoryCache.remove(key);
-    _cacheTimestamp.remove(key);
   }
 
   /// 🕐 Automatski cleanup - poziva se periodično
@@ -204,21 +189,4 @@ class CacheService {
 class CacheKeys {
   // Geocoding cache
   static String geocoding(String address) => 'geocoding_$address';
-
-  // Putnici cache
-  static const String putnici = 'putnici_list';
-  static String putniksByDay(String day) => 'putnici_$day';
-
-  // Statistike cache
-  static String statistikeVozac(String vozac, String period) => 'stats_${vozac}_$period';
-  static String ukupneStatistike(String period) => 'total_stats_$period';
-
-  // Adrese cache
-  static String adrese(String grad) => 'adrese_$grad';
-
-  // GPS cache
-  static String gpsLokacije(String vozac) => 'gps_$vozac';
-
-  // Mesečne karte cache
-  static String mesecneKarte(String mesec) => 'mesecne_karte_$mesec';
 }

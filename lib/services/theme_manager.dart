@@ -78,36 +78,12 @@ class ThemeManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Promeni temu po display imenu
-  Future<void> changeThemeByName(String displayName) async {
-    final themeId = ThemeRegistry.getThemeIdByName(displayName);
-    if (themeId != null) {
-      await changeTheme(themeId);
-    } else {
-      throw Exception('Tema "$displayName" ne postoji!');
-    }
-  }
-
   /// Sledeća tema u listi (za cycling)
   Future<void> nextTheme() async {
     final themeNames = ThemeRegistry.themeNames;
     final currentIndex = themeNames.indexOf(_currentThemeId);
     final nextIndex = (currentIndex + 1) % themeNames.length;
     await changeTheme(themeNames[nextIndex]);
-  }
-
-  /// Prethodna tema u listi (za cycling)
-  Future<void> previousTheme() async {
-    final themeNames = ThemeRegistry.themeNames;
-    final currentIndex = themeNames.indexOf(_currentThemeId);
-    final previousIndex = (currentIndex - 1 + themeNames.length) % themeNames.length;
-    await changeTheme(themeNames[previousIndex]);
-  }
-
-  /// Reset na default temu
-  Future<void> resetToDefault() async {
-    final defaultTheme = ThemeRegistry.defaultTheme;
-    await changeTheme(defaultTheme.id);
   }
 
   /// Loguj promenu teme u analytics

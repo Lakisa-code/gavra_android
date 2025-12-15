@@ -139,60 +139,6 @@ class TurnByTurnInstruction {
     }
   }
 
-  /// Ikona za tip instrukcije
-  String get iconName {
-    switch (type) {
-      case InstructionType.turnLeft:
-        return 'turn_left';
-      case InstructionType.turnRight:
-        return 'turn_right';
-      case InstructionType.turnSharpLeft:
-        return 'turn_sharp_left';
-      case InstructionType.turnSharpRight:
-        return 'turn_sharp_right';
-      case InstructionType.turnSlightLeft:
-        return 'turn_slight_left';
-      case InstructionType.turnSlightRight:
-        return 'turn_slight_right';
-      case InstructionType.straight:
-        return 'straight';
-      case InstructionType.uturn:
-        return 'u_turn';
-      case InstructionType.roundabout:
-        return 'roundabout';
-      case InstructionType.exitRoundabout:
-        return 'exit_roundabout';
-      case InstructionType.arrive:
-        return 'arrive';
-      case InstructionType.depart:
-        return 'depart';
-      case InstructionType.merge:
-        return 'merge';
-      case InstructionType.rampLeft:
-        return 'ramp_left';
-      case InstructionType.rampRight:
-        return 'ramp_right';
-    }
-  }
-
-  /// Da li je ovo instrukcija za skretanje
-  bool get isTurn {
-    return [
-      InstructionType.turnLeft,
-      InstructionType.turnRight,
-      InstructionType.turnSharpLeft,
-      InstructionType.turnSharpRight,
-      InstructionType.turnSlightLeft,
-      InstructionType.turnSlightRight,
-      InstructionType.uturn,
-    ].contains(type);
-  }
-
-  /// Da li je ovo instrukcija za destinaciju
-  bool get isDestination {
-    return type == InstructionType.arrive;
-  }
-
   /// JSON serijalizacija
   Map<String, dynamic> toJson() {
     return {

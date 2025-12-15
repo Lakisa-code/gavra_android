@@ -191,15 +191,6 @@ class WeatherService {
     }
   }
 
-  /// Legacy metoda za kompatibilnost
-  static Future<Map<String, dynamic>> getCurrentWeather({
-    double? lat,
-    double? lon,
-  }) async {
-    // Default na BC
-    return getWeatherBC();
-  }
-
   /// Parsira Open-Meteo response
   static Map<String, dynamic> _parseOpenMeteoData(Map<String, dynamic> data) {
     try {
@@ -239,18 +230,6 @@ class WeatherService {
     }
   }
 
-  /// Forsira refresh (briše cache)
-  static void clearCache() {
-    _cachedWeatherBC = null;
-    _cachedWeatherVS = null;
-    _cacheTimeBC = null;
-    _cacheTimeVS = null;
-    _cachedAlertBC = null;
-    _cachedAlertVS = null;
-    _alertCacheTimeBC = null;
-    _alertCacheTimeVS = null;
-  }
-
   // ═══════════════════════════════════════════════════════════════════════════
   // 🚨 WEATHER ALERTS - Upozorenja za ekstremne vremenske uslove
   // ═══════════════════════════════════════════════════════════════════════════
@@ -272,12 +251,6 @@ class WeatherService {
       getAlertVS(),
     ]);
     return results.whereType<WeatherAlert>().toList();
-  }
-
-  /// Proverava da li ima bilo kakvih aktivnih alertova
-  static Future<bool> hasAnyAlert() async {
-    final alerts = await getAllAlerts();
-    return alerts.isNotEmpty;
   }
 
   static Future<WeatherAlert?> _getAlertForLocation(

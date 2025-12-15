@@ -240,20 +240,6 @@ class SlobodnaMestaService {
     return false;
   }
 
-  /// Dohvati broj slobodnih mesta za određeni polazak
-  static Future<int> getBrojSlobodnihMesta(String grad, String vreme, {String? datum}) async {
-    final slobodna = await getSlobodnaMesta(datum: datum);
-    final lista = slobodna[grad.toUpperCase()];
-    if (lista == null) return 0;
-
-    for (final s in lista) {
-      if (s.vreme == vreme) {
-        return s.slobodna;
-      }
-    }
-    return 0;
-  }
-
   /// Promeni vreme polaska za putnika
   /// Vraća: {'success': bool, 'message': String}
   ///

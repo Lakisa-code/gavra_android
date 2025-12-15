@@ -11,7 +11,6 @@ import '../services/adresa_supabase_service.dart';
 import '../services/advanced_geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/improved_registrovani_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
-import '../services/placanje_service.dart'; // DODANO za konsolidovanu logiku plaćanja
 import '../services/realtime_service.dart'; // Za stream osvezavanje
 import '../services/registrovani_putnik_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
@@ -194,10 +193,14 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  // 💰 UČITAJ STVARNA PLAĆANJA iz kombinovanih tabela - OPTIMIZOVANO bez setState loops
+  // 💰 UČITAJ STVARNA PLAĆANJA iz registrovani_putnici direktno
   Future<void> _ucitajStvarnaPlacanja(List<RegistrovaniPutnik> putnici) async {
     try {
-      final placanja = await PlacanjeService.getStvarnaPlacanja(putnici);
+      // Sada koristimo samo registrovani_putnici - cena je direktno u tabeli
+      final Map<String, double> placanja = {};
+      for (final putnik in putnici) {
+        placanja[putnik.id] = putnik.cena ?? 0.0;
+      }
       if (mounted) {
         // 🔄 ANTI-REBUILD OPTIMIZATION: Samo update ako su se podaci stvarno promenili
         final existingKeys = _stvarnaPlacanja.keys.toSet();
@@ -2618,12 +2621,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   }
 
   // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
+  // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
     String putnikId,
     String period,
   ) {
     // 🔄 KORISTI RealtimeService za osvezavanje (bez RxDart)
-    return RealtimeService.instance.tableStream('putovanja_istorija').asyncMap((_) async {
+    return RealtimeService.instance.tableStream('voznje_log').asyncMap((_) async {
       try {
         // Posebni slučajevi
         if (period == 'Cela 2025') {
@@ -2670,12 +2674,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   }
 
   // 📅 GODIŠNJE STATISTIKE (2025)
+  // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<Map<String, dynamic>> _getGodisnjeStatistike(String putnikId) async {
     final startOfYear = DateTime(2025);
     final endOfYear = DateTime(2025, 12, 31);
 
     final response = await supabase
-        .from('putovanja_istorija')
+        .from('voznje_log')
         .select()
         .eq('putnik_id', putnikId)
         .gte('created_at', startOfYear.toIso8601String())
@@ -2688,14 +2693,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     double ukupanPrihod = 0;
 
     for (final record in response) {
-      final status = record['status'];
-      // Iznos može biti u 'cena' (novi zapisi) ili 'iznos_placanja' (legacy)
-      final double iznos = ((record['cena'] ?? record['iznos_placanja'] ?? 0) as num).toDouble();
+      final tip = record['tip'] as String?;
+      final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
 
-      if (status == 'pokupljen' || status == 'placeno') {
+      if (tip == 'voznja') {
         putovanja++;
         ukupanPrihod += iznos;
-      } else if (status == 'otkazan') {
+      } else if (tip == 'otkazivanje') {
         otkazivanja++;
       }
 
@@ -2718,12 +2722,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   }
 
   // 🏆 UKUPNE STATISTIKE (SVI PODACI)
+  // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<Map<String, dynamic>> _getUkupneStatistike(String putnikId) async {
-    final response = await supabase
-        .from('putovanja_istorija')
-        .select()
-        .eq('putnik_id', putnikId)
-        .order('created_at', ascending: false);
+    final response =
+        await supabase.from('voznje_log').select().eq('putnik_id', putnikId).order('created_at', ascending: false);
 
     int putovanja = 0;
     int otkazivanja = 0;
@@ -2731,14 +2733,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     double ukupanPrihod = 0;
 
     for (final record in response) {
-      final status = record['status'];
-      // Iznos može biti u 'cena' (novi zapisi) ili 'iznos_placanja' (legacy)
-      final double iznos = ((record['cena'] ?? record['iznos_placanja'] ?? 0) as num).toDouble();
+      final tip = record['tip'] as String?;
+      final double iznos = ((record['iznos'] ?? 0) as num).toDouble();
 
-      if (status == 'pokupljen' || status == 'placeno') {
+      if (tip == 'voznja') {
         putovanja++;
         ukupanPrihod += iznos;
-      } else if (status == 'otkazan') {
+      } else if (tip == 'otkazivanje') {
         otkazivanja++;
       }
 
@@ -2847,7 +2848,8 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     }
   }
 
-  // � GENERIČKA FUNKCIJA ZA STATISTIKE PO MESECIMA
+  // 📊 GENERIČKA FUNKCIJA ZA STATISTIKE PO MESECIMA
+  // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<Map<String, dynamic>> _getStatistikeZaMesec(
     String putnikId,
     int mesec,
@@ -2860,34 +2862,33 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       final String startStr = mesecStart.toIso8601String().split('T')[0];
       final String endStr = mesecEnd.toIso8601String().split('T')[0];
 
-      // Dohvati sva putovanja za dati mesec
+      // Dohvati sve zapise iz voznje_log za dati mesec
       final response = await Supabase.instance.client
-          .from('putovanja_istorija')
-          .select('datum, status, pokupljen, created_at')
+          .from('voznje_log')
+          .select('datum, tip, created_at')
           .eq('putnik_id', putnikId)
           .gte('datum', startStr)
           .lte('datum', endStr)
           .order('created_at', ascending: false);
 
-      final putovanja = response as List<dynamic>;
+      final zapisi = response as List<dynamic>;
 
       List<String> uspesniDatumi = [];
       List<String> otkazaniDatumi = [];
       String? poslednjiDatum;
 
-      // Procesuiraj putovanja po datumima
-      for (final putovanje in putovanja) {
-        final datum = putovanje['datum'] as String;
-        final status = putovanje['status'] as String?;
-        final pokupljen = putovanje['pokupljen'] as bool?;
+      // Procesuiraj zapise po datumima
+      for (final zapis in zapisi) {
+        final datum = zapis['datum'] as String;
+        final tip = zapis['tip'] as String?;
 
         poslednjiDatum ??= datum;
 
-        if (pokupljen == true) {
+        if (tip == 'voznja') {
           if (!uspesniDatumi.contains(datum)) {
             uspesniDatumi.add(datum);
           }
-        } else if (status == 'otkazan' || status == 'otkazano') {
+        } else if (tip == 'otkazivanje') {
           if (!otkazaniDatumi.contains(datum) && !uspesniDatumi.contains(datum)) {
             otkazaniDatumi.add(datum);
           }
@@ -3007,6 +3008,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   }
 
   // 📊 DOBIJ MESEČNE STATISTIKE ZA SEPTEMBAR 2025
+  // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<Map<String, dynamic>> _getMesecneStatistike(String putnikId) async {
     try {
       final DateTime septembarStart = DateTime(2025, 9);
@@ -3015,30 +3017,29 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
       final String startStr = septembarStart.toIso8601String().split('T')[0];
       final String endStr = septembarEnd.toIso8601String().split('T')[0];
 
-      // Dohvati sva putovanja za septembar 2025
+      // Dohvati sve zapise iz voznje_log za septembar 2025
       final response = await Supabase.instance.client
-          .from('putovanja_istorija')
-          .select('datum, status, pokupljen, created_at')
-          .eq('mesecni_putnik_id', putnikId)
+          .from('voznje_log')
+          .select('datum, tip, created_at')
+          .eq('putnik_id', putnikId)
           .gte('datum', startStr)
           .lte('datum', endStr)
           .order('datum', ascending: false);
 
-      // Broji jedinstvene datume kada je pokupljen
+      // Broji jedinstvene datume po tipu
       final Set<String> uspesniDatumi = {};
       final Set<String> otkazaniDatumi = {};
       String? poslednjiDatum;
 
       for (final red in response) {
         final String datum = red['datum'] as String;
-        final bool pokupljen = red['pokupljen'] as bool? ?? false;
-        final String status = red['status'] as String? ?? '';
+        final String tip = red['tip'] as String? ?? '';
 
         poslednjiDatum ??= datum;
 
-        if (pokupljen || status == 'pokupljen') {
+        if (tip == 'voznja') {
           uspesniDatumi.add(datum);
-        } else if (status == 'otkazan' || status == 'otkazano') {
+        } else if (tip == 'otkazivanje') {
           otkazaniDatumi.add(datum);
         }
       }

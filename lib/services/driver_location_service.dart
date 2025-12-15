@@ -50,7 +50,13 @@ class DriverLocationService {
     @Deprecated('Ne koristi se više - ETA dolazi iz OSRM') Map<String, Position>? putniciCoordinates,
     VoidCallback? onAllPassengersPickedUp,
   }) async {
+    // 🔄 REALTIME FIX: Ako je tracking već aktivan, samo ažuriraj ETA
     if (_isTracking) {
+      if (putniciEta != null) {
+        _currentPutniciEta = Map.from(putniciEta);
+        // Odmah pošalji ažurirani ETA u Supabase
+        await _sendCurrentLocation();
+      }
       return true;
     }
 
@@ -103,6 +109,16 @@ class DriverLocationService {
     _currentPutniciEta = null;
     _onAllPassengersPickedUp = null;
     _lastPosition = null;
+  }
+
+  /// 🔄 REALTIME FIX: Ažuriraj ETA za putnike bez ponovnog pokretanja trackinga
+  /// Poziva se nakon reoptimizacije rute kada se doda/otkaže putnik
+  Future<void> updatePutniciEta(Map<String, int> newPutniciEta) async {
+    if (!_isTracking) return;
+
+    _currentPutniciEta = Map.from(newPutniciEta);
+    // Odmah pošalji ažurirani ETA u Supabase
+    await _sendCurrentLocation();
   }
 
   /// 🆕 Označi putnika kao pokupljenог (ETA = -1)
@@ -251,32 +267,5 @@ class DriverLocationService {
     } catch (e) {
       return null;
     }
-  }
-
-  /// Stream lokacije vozača (realtime za putnika)
-  static Stream<Map<String, dynamic>?> streamDriverLocation({
-    required String grad,
-    String? vremePolaska,
-    String? smer,
-  }) {
-    return Supabase.instance.client.from('vozac_lokacije').stream(primaryKey: ['id']).eq('grad', grad).map((list) {
-          if (list.isEmpty) return null;
-          // Filtriraj aktivne
-          var active = list.where((l) => l['aktivan'] == true).toList();
-          if (active.isEmpty) return null;
-
-          // Filtriraj po smeru ako je zadat
-          if (smer != null) {
-            active = active.where((l) => l['smer'] == smer).toList();
-            if (active.isEmpty) return null;
-          }
-
-          // Ako ima vreme polaska filter
-          if (vremePolaska != null) {
-            final filtered = active.where((l) => l['vreme_polaska'] == vremePolaska).toList();
-            return filtered.isNotEmpty ? filtered.first : active.first;
-          }
-          return active.first;
-        });
   }
 }

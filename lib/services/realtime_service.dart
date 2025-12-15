@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/putnik.dart';
-import '../utils/grad_adresa_validator.dart';
 import 'supabase_safe.dart';
 
 typedef RealtimePayloadHandler = void Function(Map<String, dynamic> payload);
@@ -15,73 +14,37 @@ class RealtimeService {
   RealtimeService._internal();
   static final RealtimeService instance = RealtimeService._internal();
 
-  // Raw controllers for commonly used tables
-  final StreamController<List<Map<String, dynamic>>> _putovanjaController =
-      StreamController<List<Map<String, dynamic>>>.broadcast();
-  final StreamController<List<Map<String, dynamic>>> _dailyCheckinsController =
-      StreamController<List<Map<String, dynamic>>>.broadcast();
-
   // Combined Putnik stream controller
   final StreamController<List<Putnik>> _combinedPutniciController = StreamController<List<Putnik>>.broadcast();
 
-  Stream<List<Map<String, dynamic>>> get putovanjaStream => _putovanjaController.stream;
-  Stream<List<Map<String, dynamic>>> get dailyCheckinsStream => _dailyCheckinsController.stream;
-
   Stream<List<Putnik>> get combinedPutniciStream => _combinedPutniciController.stream;
 
-  // 📅 Jednostavna konverzija ISO datuma u dan u nedelji
-  String _isoDateToDayAbbr(String isoDate) {
-    try {
-      final date = DateTime.parse(isoDate);
-      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-      return dani[date.weekday - 1];
-    } catch (e) {
-      return 'pon'; // fallback
-    }
-  }
-
-  StreamSubscription<dynamic>? _putovanjaSub;
+  // ignore: unused_field - subscriptions are kept alive intentionally
   StreamSubscription<dynamic>? _registrovaniSub;
+  // ignore: unused_field - subscriptions are kept alive intentionally
   StreamSubscription<dynamic>? _dailySub;
 
   // Keep last known rows so we can emit combined payloads
-  List<Map<String, dynamic>> _lastPutovanjaRows = [];
   List<Map<String, dynamic>> _lastRegistrovaniRows = [];
   List<Map<String, dynamic>> _lastDailyRows = [];
 
   // Expose read-only copies
-  List<Map<String, dynamic>> get lastPutovanjaRows => List.unmodifiable(_lastPutovanjaRows);
   List<Map<String, dynamic>> get lastRegistrovaniRows => List.unmodifiable(_lastRegistrovaniRows);
   List<Map<String, dynamic>> get lastDailyRows => List.unmodifiable(_lastDailyRows);
-
-  // Parametric subscriptions: per-filter controllers and state
-  final Map<String, StreamController<List<Putnik>>> _paramControllers = {};
-  final Map<String, List<Map<String, dynamic>>> _paramLastPutovanja = {};
-  final Map<String, List<StreamSubscription<dynamic>>> _paramSubscriptions = {};
-
-  String _paramKey({String? isoDate, String? grad, String? vreme}) {
-    return '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
-  }
 
   /// Vrati stream za tabelu. Pozivaoci mogu sami da se pretplate i obrade evente.
   Stream<dynamic> tableStream(String table) {
     final client = Supabase.instance.client;
     try {
-      // Debug logging removed for production
       final stream = client.from(table).stream(primaryKey: ['id']).timeout(
         const Duration(seconds: 30),
         onTimeout: (sink) {
-          // Debug logging removed for production
           sink.close();
         },
       );
-      return stream.map((data) {
-        // Debug logging removed for production
-        return data;
-      });
+      return stream;
     } catch (e) {
-      // Debug logging removed for production
-// Return an empty list stream so callers can subscribe safely.
+      // Return an empty list stream so callers can subscribe safely.
       return Stream.value(<dynamic>[]);
     }
   }
@@ -94,14 +57,9 @@ class RealtimeService {
     void Function()? onDone,
     bool? cancelOnError,
   }) {
-    void loggedOnData(dynamic data) {
-      // Debug logging removed for production
-      onData(data);
-    }
-
     final stream = tableStream(table);
     return stream.listen(
-      loggedOnData,
+      onData,
       onError: onError,
       onDone: onDone,
       cancelOnError: cancelOnError,
@@ -121,38 +79,10 @@ class RealtimeService {
           _lastRegistrovaniRows = rows;
           _emitCombinedPutnici();
         });
-      } else if (table == 'putovanja_istorija') {
-        client.from('putovanja_istorija').select().then((data) {
-          final rows = (data as List<dynamic>).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-          _lastPutovanjaRows = rows;
-          if (!_putovanjaController.isClosed) {
-            _putovanjaController.add(rows);
-          }
-          _emitCombinedPutnici();
-        });
       }
+      // voznje_log se ne koristi za realtime UI, samo za istoriju
     } catch (e) {
       // Ignore errors - stream će se osvežiti prirodno
-    }
-  }
-
-  Future<void> unsubscribeAll() async {
-    // _dailySub je aktivna
-    try {
-      await _dailySub?.cancel();
-    } catch (_) {}
-    try {
-      await _putovanjaSub?.cancel();
-    } catch (_) {}
-    try {
-      await _registrovaniSub?.cancel();
-    } catch (_) {}
-    // Clear controllers
-    if (!_putovanjaController.isClosed) {
-      _putovanjaController.add([]);
-    }
-    if (!_combinedPutniciController.isClosed) {
-      _combinedPutniciController.add([]);
     }
   }
 
@@ -173,45 +103,14 @@ class RealtimeService {
           }
         }
         _lastDailyRows = rows;
-        if (!_dailyCheckinsController.isClosed) {
-          _dailyCheckinsController.add(rows);
-        }
         _emitCombinedPutnici();
       } catch (e) {
         // ignore parsing errors
       }
     });
 
-    // 🔄 STANDARDIZOVANO: putovanja_istorija (glavni naziv tabele)
-    _putovanjaSub = tableStream('putovanja_istorija').listen(
-      (dynamic data) {
-        try {
-          final rows = <Map<String, dynamic>>[];
-          for (final r in (data as List<dynamic>)) {
-            if (r is Map) {
-              rows.add(Map<String, dynamic>.from(r));
-            }
-          }
-          _lastPutovanjaRows = rows;
-          try {
-            // Debug logging removed for production
-          } catch (_) {}
-          if (!_putovanjaController.isClosed) {
-            _putovanjaController.add(rows);
-          }
-          _emitCombinedPutnici();
-        } catch (e) {
-          // Debug logging removed for production
-// Nastavi rad bez prekidanja
-        }
-      },
-      onError: (Object error) {
-        // Debug logging removed for production
-// Pokušaj reconnect preko ConnectionResilience
-      },
-    );
-
-    // 🔄 STANDARDIZOVANO: registrovani_putnici sa boljim error handling
+    // 🔄 POJEDNOSTAVLJENO: Sada koristimo SAMO registrovani_putnici
+    // Tabela putovanja_istorija je uklonjena, sve je u registrovani_putnici
     _registrovaniSub = tableStream('registrovani_putnici').listen(
       (dynamic data) {
         try {
@@ -222,18 +121,13 @@ class RealtimeService {
             }
           }
           _lastRegistrovaniRows = rows;
-          try {
-            // Debug logging removed for production
-          } catch (_) {}
           _emitCombinedPutnici();
         } catch (e) {
-          // Debug logging removed for production
-// Nastavi rad bez prekidanja
+          // Nastavi rad bez prekidanja
         }
       },
       onError: (Object error) {
-        // Debug logging removed for production
-// Pokušaj reconnect preko ConnectionResilience
+        // Pokušaj reconnect preko ConnectionResilience
       },
     );
 
@@ -241,102 +135,14 @@ class RealtimeService {
     refreshNow();
   }
 
-  /// Stop any centralized subscriptions started with [startForDriver]
-  Future<void> stopForDriver() async {
-    // Debug logging removed for production
-// Zaustavi sve aktivne subscription-e sa proper error handling
-    try {
-      await _putovanjaSub?.cancel();
-      _putovanjaSub = null;
-    } catch (e) {
-      // Debug logging removed for production
-    }
-    try {
-      await _registrovaniSub?.cancel();
-      _registrovaniSub = null;
-    } catch (e) {
-      // Debug logging removed for production
-    }
-
-    // Clear internal state
-    _lastPutovanjaRows.clear();
-    _lastRegistrovaniRows.clear();
-
-    // Emit empty lists to clear UI
-    if (!_putovanjaController.isClosed) {
-      _putovanjaController.add([]);
-    }
-    if (!_combinedPutniciController.isClosed) {
-      _combinedPutniciController.add([]);
-    }
-    // Debug logging removed for production
-  }
-
-  /// 🔄 EMERGENCY RESTART REALTIME CONNECTIONS
-  Future<void> restartConnections(String? vozac) async {
-    // Debug logging removed for production
-    await stopForDriver();
-    await Future<void>.delayed(const Duration(seconds: 2)); // Brief pause
-    startForDriver(vozac);
-    // Debug logging removed for production
-  }
-
   void _emitCombinedPutnici() {
     try {
       final combined = <Putnik>[];
 
-      // 🔄 Convert putovanja_istorija rows to Putnik objects
-      for (final r in _lastPutovanjaRows) {
-        try {
-          // 🔄 Za putovanja istorija, trebaju podaci iz registrovani_putnici tabele
-          // Pronađi odgovarajući mesečni putnik red
-          String? putnikIme;
-          String? grad;
-          double? iznosPlacanja;
-
-          final mesecniPutnikId = r['mesecni_putnik_id'] as String?;
-          if (mesecniPutnikId != null) {
-            // Pronađi odgovarajući mesečni putnik
-            for (final registrovaniMap in _lastRegistrovaniRows) {
-              if (registrovaniMap['id'] == mesecniPutnikId) {
-                putnikIme = registrovaniMap['putnik_ime'] as String?;
-                iznosPlacanja = (registrovaniMap['ukupna_cena_meseca'] as num?)?.toDouble();
-                // Za grad, koristimo logiku: ako je mesečno plaćanje, označavamo kao takvo
-                grad = 'mesecno_placanje';
-                break;
-              }
-            }
-          }
-
-          final putnik = Putnik(
-            id: r['id'] as String? ?? '',
-            ime: putnikIme ?? '',
-            polazak: r['vreme_polaska'] as String? ?? 'mesecno_placanje',
-            grad: grad ?? '',
-            dan: r['dan'] as String? ?? '',
-            adresa: r['adresa'] as String?,
-            datum: r['datum_putovanja']?.toString(),
-            status: r['status'] as String?,
-            obrisan: r['obrisan'] == true,
-            mesecnaKarta: mesecniPutnikId != null, // ✅ FIX: registrovani ako ima mesecni_putnik_id
-            cena: iznosPlacanja,
-            // ✅ FIXED: putovanja_istorija nema vreme_pokupljenja - koristi updated_at ili null
-            vremePokupljenja: r['updated_at'] != null ? DateTime.tryParse(r['updated_at'].toString()) : null,
-            brojTelefona: r['broj_telefona']?.toString(),
-          );
-          combined.add(putnik);
-        } catch (e) {
-          // Debug logging removed for production
-        }
-      }
-
+      // 🔄 POJEDNOSTAVLJENO: Samo registrovani_putnici (putovanja_istorija više ne postoji)
       // Convert registrovani rows - use current RegistrovaniPutnik model structure
       for (final Map<String, dynamic> map in _lastRegistrovaniRows) {
         try {
-          // 🔄 Koristi RegistrovaniPutnik.fromMap da parsira mesečne putnike
-          // PROBLEM: RegistrovaniPutnik ima drukčiju strukturu od Putnik objekta
-          // Za sada, direktno kreiraj Putnik objekat iz registrovani_putnici tabele
-
           // ✅ ISPRAVKA: Koristi Putnik.fromRegistrovaniPutniciMultipleForDay za sve dane
           final radniDani =
               (map['radni_dani'] as String? ?? '').split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
@@ -349,180 +155,29 @@ class RealtimeService {
           }
           continue;
         } catch (e) {
-          // Debug logging removed for production
+          // Ignoriši greške pri parsiranju pojedinih putnika
         }
       }
-      // Debug logging removed for production
-      try {
-        // Debug logging removed for production
-      } catch (_) {}
+
       if (!_combinedPutniciController.isClosed) {
         _combinedPutniciController.add(combined);
       }
     } catch (e) {
-      // Debug logging removed for production
+      // Ignoriši greške - stream će se osvježiti prirodno
     }
-  }
-
-  /// Expose a filtered stream for a specific isoDate. This applies client-side filter
-  /// currently; later we will parametrize server queries for efficiency.
-  Stream<List<Putnik>> streamKombinovaniPutnici({
-    String? isoDate,
-    String? grad,
-    String? vreme,
-  }) {
-    if (isoDate == null && grad == null && vreme == null) {
-      return combinedPutniciStream;
-    }
-
-    return combinedPutniciStream.map((list) {
-      Iterable<Putnik> filtered = list;
-      if (isoDate != null) {
-        final targetDayAbbr = _isoDateToDayAbbr(isoDate);
-
-        filtered = filtered.where((p) {
-          final matches = (p.datum != null && p.datum == isoDate) ||
-              (p.datum == null &&
-                  GradAdresaValidator.normalizeString(p.dan).contains(
-                    GradAdresaValidator.normalizeString(targetDayAbbr),
-                  ));
-
-          return matches;
-        });
-      }
-      if (grad != null) {
-        filtered = filtered.where((p) {
-          final matches = GradAdresaValidator.isGradMatch(p.grad, p.adresa, grad);
-
-          return matches;
-        });
-      }
-      if (vreme != null) {
-        filtered = filtered.where((p) {
-          final matches = GradAdresaValidator.normalizeTime(p.polazak) == GradAdresaValidator.normalizeTime(vreme);
-
-          return matches;
-        });
-      }
-      final result = filtered.toList();
-      // Debug logging removed for production
-      return result;
-    });
-  }
-
-  /// Parametric combined stream: creates per-filter realtime subscriptions
-  /// and emits only Putnik lists relevant for the given filter key.
-  Stream<List<Putnik>> streamKombinovaniPutniciParametric({
-    String? isoDate,
-    String? grad,
-    String? vreme,
-  }) {
-    if (isoDate == null && grad == null && vreme == null) {
-      return combinedPutniciStream;
-    }
-
-    final key = _paramKey(isoDate: isoDate, grad: grad, vreme: vreme);
-    if (_paramControllers.containsKey(key)) {
-      return _paramControllers[key]!.stream;
-    }
-
-    final controller = StreamController<List<Putnik>>.broadcast();
-    _paramControllers[key] = controller;
-    _paramLastPutovanja[key] = [];
-
-    // Helper to emit combined for this key
-    void emitForKey() {
-      try {
-        final combined = <Putnik>[];
-        for (final r in _paramLastPutovanja[key] ?? []) {
-          try {
-            combined.add(Putnik.fromMap(r as Map<String, dynamic>));
-          } catch (_) {}
-        }
-        if (!controller.isClosed) controller.add(combined);
-      } catch (_) {}
-    }
-
-    // Subscribe to putovanja_istorija za realtime update-e
-    final putovanjaSub = tableStream('putovanja_istorija').listen((dynamic data) {
-      try {
-        final rows = <Map<String, dynamic>>[];
-        for (final r in (data as List<dynamic>)) {
-          if (r is Map<String, dynamic>) {
-            if (isoDate != null) {
-              // match by datum if present, otherwise accept and rely on PutnikService filtering
-              if ((r['datum']?.toString() ?? '') != isoDate) {
-                continue;
-              }
-            }
-            if (grad != null) {
-              final putnikGrad = (r['grad'] ?? '').toString();
-              final putnikAdresa = (r['adresa'] ?? '').toString();
-              if (!GradAdresaValidator.isGradMatch(
-                putnikGrad,
-                putnikAdresa,
-                grad,
-              )) {
-                continue;
-              }
-            }
-            if (vreme != null) {
-              final pVreme = (r['polazak'] ?? r['vreme'] ?? '').toString();
-              if (GradAdresaValidator.normalizeTime(pVreme) != GradAdresaValidator.normalizeTime(vreme)) {
-                continue;
-              }
-            }
-            rows.add(Map<String, dynamic>.from(r));
-          }
-        }
-        _paramLastPutovanja[key] = rows;
-        emitForKey();
-      } catch (_) {}
-    });
-
-    _paramSubscriptions[key] = [putovanjaSub];
-
-    controller.onCancel = () async {
-      try {
-        for (final s in _paramSubscriptions[key] ?? []) {
-          await s.cancel();
-        }
-      } catch (_) {}
-      _paramSubscriptions.remove(key);
-      _paramControllers.remove(key);
-      _paramLastPutovanja.remove(key);
-    };
-
-    return controller.stream;
   }
 
   /// Trigger a one-off refresh (useful after resets) which will make the service re-query
   /// and emit the latest combined set.
   Future<void> refreshNow() async {
     try {
-// 🔄 STANDARDIZOVANO: koristi putovanja_istorija i registrovani_putnici
-      final putovanjaData = await SupabaseSafe.select('putovanja_istorija');
+      // 🔄 POJEDNOSTAVLJENO: Samo registrovani_putnici
       final registrovaniData = await SupabaseSafe.select('registrovani_putnici');
 
-      // 🔄 Ažuriraj interne varijable sa standardizovanim nazivima
-      _lastPutovanjaRows =
-          (putovanjaData is List) ? putovanjaData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
       _lastRegistrovaniRows =
           (registrovaniData is List) ? registrovaniData.map((e) => Map<String, dynamic>.from(e as Map)).toList() : [];
 
       _emitCombinedPutnici();
-
-      // 🔄 NOVO: Emituj i za sve parametarske streamove
-      // Ovo osigurava da se home_screen lista osvežava nakon dodavanja putnika
-      for (final key in _paramControllers.keys.toList()) {
-        try {
-          final controller = _paramControllers[key];
-          if (controller != null && !controller.isClosed) {
-            // Emituj praznu listu da triggeruje re-fetch u PutnikService
-            controller.add([]);
-          }
-        } catch (_) {}
-      }
     } catch (_) {
       // Ignoriši greške pri osvežavanju - stream će se osvežiti prirodno
     }

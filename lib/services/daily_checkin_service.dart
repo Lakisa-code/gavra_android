@@ -33,21 +33,6 @@ class DailyCheckInService {
     }
   }
 
-  /// Helper: Dobij kusur iz oba izvora - prioritet ima KusurService
-  static Future<double> getAmountFromBothSources(String vozac) async {
-    // ❌ DEPRECATED: Use MasterRealtimeStream instead
-    // try {
-    //   final kusurFromBaza = await SimplifiedKusurService.getKusurForVozac(vozac);
-    //   if (kusurFromBaza > 0) return kusurFromBaza;
-    // } catch (e) {
-    //   // Ignoriši grešku KusurService
-    // }
-
-    // 2. Fallback na SharedPreferences
-    final localAmount = await getTodayAmount(vozac);
-    return localAmount ?? 0.0;
-  }
-
   /// Inicijalizuj realtime stream za vozača tako da kocka prati bazu
   static StreamSubscription<dynamic> initializeRealtimeForDriver(String vozac) {
     // Start centralized realtime subscriptions for this driver
@@ -59,21 +44,6 @@ class DailyCheckInService {
     // Return a dummy subscription since daily_checkins functionality is removed
     // ignore: prefer_const_constructors
     return Stream<dynamic>.empty().listen((_) {});
-  }
-
-  /// Zaustavi centralizovane realtime pretplate za vozača
-  static Future<void> stopRealtimeForDriver() async {
-    try {
-      await RealtimeService.instance.stopForDriver();
-    } catch (e) {
-      // stopRealtimeForDriver failed
-    }
-  }
-
-  /// Pokušaj prvo pročitati vrednost iz Supabase; fallback na SharedPreferences
-  static Future<double?> getTodayAmountRemote(String vozac) async {
-    // Čitaj iz SharedPreferences umesto da vraćaš 0.0
-    return await getTodayAmount(vozac);
   }
 
   /// Proveri da li je vozač već uradio check-in danas
@@ -179,51 +149,12 @@ class DailyCheckInService {
     }
   }
 
-  /// 🚨 EMERGENCY LOCAL SAVE - kada se sve ostalo zaglavi!
-  static Future<void> saveLokalno(
-    String vozac,
-    double sitanNovac, {
-    double dnevniPazari = 0.0,
-  }) async {
-    final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(todayKey, true);
-    await prefs.setDouble('${todayKey}_amount', sitanNovac);
-    await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
-    await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
-
-    // Emituj update za stream
-    if (!_sitanNovacController.isClosed) {
-      _sitanNovacController.add(sitanNovac);
-    }
-  }
-
   /// Dohvati iznos za danas
   static Future<double?> getTodayAmount(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
     return prefs.getDouble('${todayKey}_amount');
-  }
-
-  /// Dohvati dnevne pazare za danas
-  static Future<double?> getTodayPazari(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-    return prefs.getDouble('${todayKey}_pazari');
-  }
-
-  /// Dohvati kompletne podatke za danas (kusur + pazari)
-  static Future<Map<String, double?>> getTodayData(String vozac) async {
-    final kusur = await getTodayAmount(vozac);
-    final pazari = await getTodayPazari(vozac);
-    return {
-      'kusur': kusur,
-      'pazari': pazari,
-    };
   }
 
   /// Dohvati kompletne podatke za danas kao Map<String, dynamic> (za kompatibilnost)
@@ -312,116 +243,6 @@ class DailyCheckInService {
     }
   }
 
-  /// 🛠️ FORSIRAJ KREIRANJE TABELE - za ekstremne slučajeve
-  static Future<bool> forceCreateTable() async {
-    try {
-      final supabase = Supabase.instance.client;
-
-      // 1. Test da li tabela postoji
-      try {
-        await supabase.from('daily_checkins').select('id').limit(1);
-        return true; // Tabela već postoji
-      } catch (e) {
-        // Tabela ne postoji, nastavi sa kreiranjem
-      }
-
-      // 2. Pokušaj RPC kreiranje
-      try {
-        await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
-
-        // Test ponovo
-        await Future<void>.delayed(const Duration(seconds: 2));
-        await supabase.from('daily_checkins').select('id').limit(1);
-        return true;
-      } catch (e) {
-        // RPC neuspešan
-      }
-
-      // 3. Pokušaj direktno SQL preko exec_sql
-      try {
-        const sqlCreate = '''
-          CREATE TABLE IF NOT EXISTS public.daily_checkins (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            vozac TEXT NOT NULL,
-            datum DATE NOT NULL,
-            sitan_novac DECIMAL(10,2) DEFAULT 0.0,
-            dnevni_pazari DECIMAL(10,2) DEFAULT 0.0,
-            ukupno DECIMAL(10,2) DEFAULT 0.0,
-            checkin_vreme TIMESTAMPTZ DEFAULT now(),
-            created_at TIMESTAMPTZ DEFAULT now(),
-            updated_at TIMESTAMPTZ DEFAULT now(),
-            UNIQUE(vozac, datum)
-          );
-          
-          CREATE INDEX IF NOT EXISTS idx_daily_checkins_vozac ON public.daily_checkins(vozac);
-          CREATE INDEX IF NOT EXISTS idx_daily_checkins_datum ON public.daily_checkins(datum);
-          
-          ALTER TABLE public.daily_checkins ENABLE ROW LEVEL SECURITY;
-          
-          DROP POLICY IF EXISTS "daily_checkins_read_policy" ON public.daily_checkins;
-          CREATE POLICY "daily_checkins_read_policy" ON public.daily_checkins FOR SELECT TO authenticated USING (true);
-          
-          DROP POLICY IF EXISTS "daily_checkins_insert_policy" ON public.daily_checkins;
-          CREATE POLICY "daily_checkins_insert_policy" ON public.daily_checkins FOR INSERT TO authenticated WITH CHECK (true);
-          
-          DROP POLICY IF EXISTS "daily_checkins_update_policy" ON public.daily_checkins;
-          CREATE POLICY "daily_checkins_update_policy" ON public.daily_checkins FOR UPDATE TO authenticated USING (true);
-          
-          GRANT SELECT, INSERT, UPDATE, DELETE ON public.daily_checkins TO authenticated;
-        ''';
-
-        await supabase.rpc<void>('exec_sql', params: {'query': sqlCreate});
-
-        // Test ponovo
-        await Future<void>.delayed(const Duration(seconds: 2));
-        await supabase.from('daily_checkins').select('id').limit(1);
-        return true;
-      } catch (e) {
-        // SQL neuspešan
-      }
-
-      return false; // Sve je neuspešno
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// Dohvati istoriju check-in-ova za vozača
-  static Future<List<Map<String, dynamic>>> getCheckInHistory(
-    String vozac, {
-    int days = 7,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<Map<String, dynamic>> history = [];
-    final today = DateTime.now();
-    for (int i = 0; i < days; i++) {
-      final date = today.subtract(Duration(days: i));
-      final dateKey = '$_checkInPrefix${vozac}_${date.year}_${date.month}_${date.day}';
-      final hasCheckedIn = prefs.getBool(dateKey) ?? false;
-      if (hasCheckedIn) {
-        final amount = prefs.getDouble('${dateKey}_amount') ?? 0.0;
-        final timestampStr = prefs.getString('${dateKey}_timestamp');
-        history.add({
-          'datum': date,
-          'iznos': amount,
-          'timestamp': timestampStr != null ? DateTime.parse(timestampStr) : date,
-        });
-      }
-    }
-    return history;
-  }
-
-  /// Reset check-in za testiranje
-  static Future<void> resetCheckInForToday(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-    await prefs.remove(todayKey);
-    await prefs.remove('${todayKey}_amount');
-    await prefs.remove('${todayKey}_timestamp');
-    await prefs.remove('${todayKey}_popis'); // 📊 NOVI: Ukloni i popis
-  }
-
   /// 📊 NOVI: Sačuvaj kompletan dnevni popis
   static Future<void> saveDailyReport(
     String vozac,
@@ -473,19 +294,6 @@ class DailyCheckInService {
       }
     }
     return null;
-  }
-
-  /// 📊 NOVI: Proveri da li treba prikazati popis iz prethodnog dana
-  static Future<bool> shouldShowPreviousDayReport(String vozac) async {
-    final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now();
-    final yesterday = today.subtract(const Duration(days: 1));
-    final yesterdayKey = '$_checkInPrefix${vozac}_${yesterday.year}_${yesterday.month}_${yesterday.day}';
-    final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
-    // Ako je juče imao popis, a danas se prvi put uloguje
-    final hadReportYesterday = prefs.getString('${yesterdayKey}_popis') != null;
-    final checkedInToday = prefs.getBool(todayKey) ?? false;
-    return hadReportYesterday && !checkedInToday;
   }
 
   /// 📊 AUTOMATSKO GENERISANJE POPISA ZA PRETHODNI DAN
@@ -547,7 +355,7 @@ class DailyCheckInService {
       double sitanNovac;
       try {
         // Pokušaj da učitaš ručno unet kusur za taj dan
-        sitanNovac = await getAmountFromBothSources(vozac);
+        sitanNovac = await getTodayAmount(vozac) ?? 0.0;
       } catch (e) {
         sitanNovac = 0.0; // Fallback ako nema unetog kusura
       }

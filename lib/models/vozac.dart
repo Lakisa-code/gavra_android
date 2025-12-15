@@ -149,11 +149,6 @@ class Vozac {
     return errors;
   }
 
-  /// Vraca formatiran kusur za prikaz
-  String get displayKusur {
-    return '${kusur.toStringAsFixed(2)} RSD';
-  }
-
   /// Kreira kopiju vozača sa promenjenim vrednostima
   Vozac copyWith({
     String? ime,

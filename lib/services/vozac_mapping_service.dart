@@ -91,30 +91,6 @@ class VozacMappingService {
     return await getVozacIme(uuid); // Može biti null
   }
 
-  /// Provjeri da li je ime vozača validno
-  static Future<bool> isValidVozacIme(String ime) async {
-    await _ensureMappingLoaded();
-    return _vozacNameToUuid?.containsKey(ime) ?? false;
-  }
-
-  /// Provjeri da li je UUID vozača validan
-  static Future<bool> isValidVozacUuid(String uuid) async {
-    await _ensureMappingLoaded();
-    return _vozacUuidToName?.containsKey(uuid) ?? false;
-  }
-
-  /// Dobij listu svih imena vozača
-  static Future<List<String>> getAllVozacNames() async {
-    await _ensureMappingLoaded();
-    return _vozacNameToUuid?.keys.toList() ?? [];
-  }
-
-  /// Dobij listu svih UUID-ova vozača
-  static Future<List<String>> getAllVozacUuids() async {
-    await _ensureMappingLoaded();
-    return _vozacNameToUuid?.values.toList() ?? [];
-  }
-
   /// Forsira ponovno učitavanje mapiranja iz baze
   static Future<void> refreshMapping() async {
     _lastCacheUpdate = null;
@@ -150,45 +126,5 @@ class VozacMappingService {
       return false;
     }
     return _vozacUuidToName?.containsKey(uuid) ?? false;
-  }
-
-  /// 🔄 CROSS-VALIDATION: Proveri da li se VozacBoja i VozacMappingService slažu
-  static Future<Map<String, dynamic>> validateConsistency() async {
-    await _ensureMappingLoaded();
-
-    final errors = <String>[];
-    final warnings = <String>[];
-
-    // Import VozacBoja da pristupimo validDrivers
-    final hardcodedDrivers = [
-      'Bruda',
-      'Bilevski',
-      'Bojan',
-      'Svetlana',
-      'Ivan',
-    ]; // VozacBoja.validDrivers
-    final dynamicDrivers = _vozacNameToUuid?.keys.toList() ?? [];
-
-    // Proveri da li svi hardcoded vozači postoje u bazi
-    for (final driver in hardcodedDrivers) {
-      if (!dynamicDrivers.contains(driver)) {
-        errors.add('Vozač "$driver" postoji u VozacBoja ali ne u bazi!');
-      }
-    }
-
-    // Proveri da li u bazi postoje vozači koji nisu u VozacBoja
-    for (final driver in dynamicDrivers) {
-      if (!hardcodedDrivers.contains(driver)) {
-        warnings.add('Vozač "$driver" postoji u bazi ali ne u VozacBoja!');
-      }
-    }
-
-    return {
-      'isValid': errors.isEmpty,
-      'errors': errors,
-      'warnings': warnings,
-      'hardcodedDrivers': hardcodedDrivers,
-      'dynamicDrivers': dynamicDrivers,
-    };
   }
 }

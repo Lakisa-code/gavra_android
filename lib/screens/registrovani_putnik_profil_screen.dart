@@ -86,37 +86,35 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       final startOfMonth = DateTime(now.year, now.month, 1);
       final pocetakGodine = DateTime(now.year, 1, 1);
 
-      // Broj vožnji ovog meseca - JEDINSTVENI DATUMI (1 dan = 1 vožnja)
-      // VOŽNJA = samo kada je status 'pokupljen'
-      // Kolona 'pokupljen' boolean NE POSTOJI u tabeli putovanja_istorija
+      // 🔄 POJEDNOSTAVLJENO: Koristi voznje_log umesto putovanja_istorija
+      // Broj vožnji ovog meseca - JEDINSTVENI DATUMI
       final voznjeResponse = await Supabase.instance.client
-          .from('putovanja_istorija')
-          .select('datum_putovanja')
-          .eq('mesecni_putnik_id', putnikId)
-          .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
-          .eq('status', 'pokupljen');
+          .from('voznje_log')
+          .select('datum')
+          .eq('putnik_id', putnikId)
+          .gte('datum', startOfMonth.toIso8601String().split('T')[0])
+          .eq('tip', 'voznja');
 
       // Broji jedinstvene datume
       final jedinstveniDatumiVoznji = <String>{};
       for (final v in voznjeResponse) {
-        final datum = v['datum_putovanja'] as String?;
+        final datum = v['datum'] as String?;
         if (datum != null) jedinstveniDatumiVoznji.add(datum);
       }
       final brojVoznji = jedinstveniDatumiVoznji.length;
 
       // Broj otkazivanja ovog meseca - JEDINSTVENI DATUMI
-      // NAPOMENA: U bazi je status 'otkazan' (ne 'otkazano')
       final otkazivanjaResponse = await Supabase.instance.client
-          .from('putovanja_istorija')
-          .select('datum_putovanja')
-          .eq('mesecni_putnik_id', putnikId)
-          .gte('datum_putovanja', startOfMonth.toIso8601String().split('T')[0])
-          .eq('status', 'otkazan');
+          .from('voznje_log')
+          .select('datum')
+          .eq('putnik_id', putnikId)
+          .gte('datum', startOfMonth.toIso8601String().split('T')[0])
+          .eq('tip', 'otkazivanje');
 
       // Broji jedinstvene datume otkazivanja
       final jedinstveniDatumiOtkazivanja = <String>{};
       for (final o in otkazivanjaResponse) {
-        final datum = o['datum_putovanja'] as String?;
+        final datum = o['datum'] as String?;
         if (datum != null) jedinstveniDatumiOtkazivanja.add(datum);
       }
       final brojOtkazivanja = jedinstveniDatumiOtkazivanja.length;
@@ -193,43 +191,40 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
       // 💰 Istorija plaćanja - poslednjih 6 meseci
       final istorija = await _loadIstorijuPlacanja(putnikId);
 
-      // 📊 Vožnje po mesecima (cela godina)
+      // 📊 Vožnje po mesecima (cela godina) - koristi voznje_log
       final sveVoznje = await Supabase.instance.client
-          .from('putovanja_istorija')
-          .select('datum_putovanja, status, created_at')
-          .eq('mesecni_putnik_id', putnikId)
-          .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
-          .order('datum_putovanja', ascending: false);
+          .from('voznje_log')
+          .select('datum, tip, created_at')
+          .eq('putnik_id', putnikId)
+          .gte('datum', pocetakGodine.toIso8601String().split('T')[0])
+          .order('datum', ascending: false);
 
-      // Grupiši podatke po JEDINSTVENIM datumima (Set eliminiše duplikate)
-      // VOŽNJA = samo status 'pokupljen' (jedinstveni datum)
-      // OTKAZIVANJE = samo status 'otkazan' (u bazi je 'otkazan', ne 'otkazano')
+      // Grupiši podatke po JEDINSTVENIM datumima
       final Map<String, Set<String>> voznjeDetaljnoMap = {};
       final Map<String, Set<String>> otkazivanjaDetaljnoMap = {};
 
       for (final v in sveVoznje) {
-        final datumStr = v['datum_putovanja'] as String?;
+        final datumStr = v['datum'] as String?;
         if (datumStr == null) continue;
 
         final datum = DateTime.tryParse(datumStr);
         if (datum == null) continue;
 
         final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
-        final status = v['status'] as String?;
+        final tip = v['tip'] as String?;
 
-        if (status == 'otkazan') {
-          // Otkazivanja - status je 'otkazan' u bazi
+        if (tip == 'otkazivanje') {
+          // Otkazivanja
           otkazivanjaDetaljnoMap[mesecKey] = {...(otkazivanjaDetaljnoMap[mesecKey] ?? {}), datumStr};
-        } else if (status == 'pokupljen') {
-          // Vožnje - SAMO status 'pokupljen' se broji kao vožnja
+        } else if (tip == 'voznja') {
+          // Vožnje
           voznjeDetaljnoMap[mesecKey] = {...(voznjeDetaljnoMap[mesecKey] ?? {}), datumStr};
         }
-        // Ignoriši: placeno, resetovan, nije_se_pojavio, radi
       }
 
       // Izračunaj ukupno zaduženje
-      final tip = _putnikData['tip'] ?? 'radnik';
-      final cenaPoVoznji = tip == 'ucenik' ? 600.0 : 700.0;
+      final tipPutnika = _putnikData['tip'] ?? 'radnik';
+      final cenaPoVoznji = tipPutnika == 'ucenik' ? 600.0 : 700.0;
       double ukupnoVoznji = 0;
       for (final lista in voznjeDetaljnoMap.values) {
         ukupnoVoznji += lista.length;
@@ -288,34 +283,34 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
   }
 
   /// 💰 Učitaj istoriju plaćanja - od 1. januara tekuće godine
+  /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log
   Future<List<Map<String, dynamic>>> _loadIstorijuPlacanja(String putnikId) async {
     try {
       final now = DateTime.now();
-      // Od 1. januara tekuće godine
       final pocetakGodine = DateTime(now.year, 1, 1);
 
-      // ✅ FIX: Uklonjen filter tip_putnika='mesecni' - mesecni_putnik_id je dovoljan
+      // Koristi voznje_log za uplate
       final placanja = await Supabase.instance.client
-          .from('putovanja_istorija')
-          .select('cena, datum_putovanja, created_at')
-          .eq('mesecni_putnik_id', putnikId)
-          .eq('status', 'placeno')
-          .gte('datum_putovanja', pocetakGodine.toIso8601String().split('T')[0])
-          .order('datum_putovanja', ascending: false);
+          .from('voznje_log')
+          .select('iznos, datum, created_at')
+          .eq('putnik_id', putnikId)
+          .eq('tip', 'uplata')
+          .gte('datum', pocetakGodine.toIso8601String().split('T')[0])
+          .order('datum', ascending: false);
 
       // Grupiši po mesecima
       final Map<String, double> poMesecima = {};
       final Map<String, DateTime> poslednjeDatum = {};
 
       for (final p in placanja) {
-        final datumStr = p['datum_putovanja'] as String?;
+        final datumStr = p['datum'] as String?;
         if (datumStr == null) continue;
 
         final datum = DateTime.tryParse(datumStr);
         if (datum == null) continue;
 
         final mesecKey = '${datum.year}-${datum.month.toString().padLeft(2, '0')}';
-        final iznos = (p['cena'] as num?)?.toDouble() ?? 0.0;
+        final iznos = (p['iznos'] as num?)?.toDouble() ?? 0.0;
 
         poMesecima[mesecKey] = (poMesecima[mesecKey] ?? 0.0) + iznos;
 

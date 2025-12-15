@@ -9,7 +9,7 @@ import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
-import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
+import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
 import '../services/vozac_mapping_service.dart'; // 🔧 VOZAC MAPIRANJE
@@ -26,9 +26,7 @@ import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
-import 'putovanja_istorija_screen.dart'; // DODANO za istoriju putovanja
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
-import 'statistika_detail_screen.dart'; // DODANO za statistike
 import 'vozac_screen.dart'; // DODANO za vozac screen
 
 class AdminScreen extends StatefulWidget {
@@ -354,62 +352,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
 
-                                  // STATISTIKE - desno-sredina
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: InkWell(
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => const StatistikaDetailScreen(),
-                                        ),
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        height: 28,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).glassContainer,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Theme.of(context).glassBorder,
-                                            width: 1.5,
-                                          ),
-                                          // no boxShadow — keep transparent glass + border only
-                                        ),
-                                        child: const Center(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  'Statistike',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                    color: Colors.white,
-                                                    shadows: const [
-                                                      Shadow(
-                                                        offset: Offset(1, 1),
-                                                        blurRadius: 3,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
                                   // GEOCODING ADMIN - novo
                                   SizedBox(
                                     width: buttonWidth,
@@ -450,69 +392,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                                     fontSize: 14,
                                                     color: Colors.white,
                                                     letterSpacing: 0.3,
-                                                    shadows: const [
-                                                      Shadow(
-                                                        offset: Offset(1, 1),
-                                                        blurRadius: 3,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // ISTORIJA DUGME - četvrto
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: InkWell(
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => const PutovanjaIstorijaScreen(),
-                                        ),
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        height: 28,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).glassContainer,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Theme.of(context).glassBorder,
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 4),
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
-                                        ),
-                                        child: const Center(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  'Istorija',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                    color: Colors.white,
                                                     shadows: const [
                                                       Shadow(
                                                         offset: Offset(1, 1),
@@ -655,13 +534,12 @@ class _AdminScreenState extends State<AdminScreen> {
                               const spacing = 1.0;
                               const padding = 8.0;
                               final availableWidth = screenWidth - padding;
-                              // Broj dugmadi zavisi od korisnika
-                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 7 : 2;
+                              // Broj dugmadi zavisi od korisnika - uvek 6 za ravnomerni raspored
+                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 6 : 2;
                               final buttonWidth = (availableWidth - (spacing * (buttonCount - 1))) / buttonCount;
 
                               return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   // AUTH dugme
                                   SizedBox(

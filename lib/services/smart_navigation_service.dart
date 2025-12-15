@@ -18,12 +18,13 @@ import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geoc
 /// - Offline mape, poštuje redosled putnika
 class SmartNavigationService {
   /// 🏁 Vrati krajnju destinaciju na osnovu startCity
-  /// Ako krećeš iz Bele Crkve, krajnja destinacija je Vršac i obrnuto
+  /// startCity je grad ODAKLE putnici kreću (polazište)
+  /// Npr. startCity="Bela Crkva" znači da putnici kreću IZ BC, pa je end destination = Vršac
   static Position? _getEndDestination(String startCity) {
     final normalized = startCity.toLowerCase().trim();
 
     if (normalized.contains('bela') || normalized.contains('bc')) {
-      // Kreće iz Bele Crkve -> krajnja destinacija je Vršac
+      // Putnici kreću IZ Bele Crkve -> krajnja destinacija je Vršac
       return Position(
         latitude: RouteConfig.vrsacLat,
         longitude: RouteConfig.vrsacLng,
@@ -39,7 +40,7 @@ class SmartNavigationService {
     }
 
     if (normalized.contains('vrsac') || normalized.contains('vršac') || normalized.contains('vs')) {
-      // Kreće iz Vršca -> krajnja destinacija je Bela Crkva
+      // Putnici kreću IZ Vršca -> krajnja destinacija je Bela Crkva
       return Position(
         latitude: RouteConfig.belaCrkvaLat,
         longitude: RouteConfig.belaCrkvaLng,

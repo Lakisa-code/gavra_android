@@ -15,11 +15,9 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
-import 'services/offline_map_service.dart';
 import 'services/realtime_notification_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
-import 'services/voice_navigation_service.dart';
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'supabase_client.dart';
 
@@ -125,20 +123,6 @@ void main() async {
   // 🛠️ GPS MANAGER - centralizovani GPS singleton
   // GpsManager.instance se koristi lazy - ne treba inicijalizacija ovde
   // Tracking se pokreće kad je potreban (danas_screen, navigation widget)
-
-  // 🗺️ INITIALIZE OFFLINE MAPS
-  try {
-    await OfflineMapService.initialize();
-  } catch (e) {
-    // Ignoriši greške u offline maps - optional feature
-  }
-
-  // 🔊 INITIALIZE VOICE NAVIGATION
-  try {
-    await VoiceNavigationService.initialize();
-  } catch (e) {
-    // Ignoriši greške u voice navigation - optional feature
-  }
 
   // 🔐 INITIALIZE CACHE SERVICE
   try {

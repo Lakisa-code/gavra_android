@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../models/registrovani_putnik.dart';
 import '../screens/danas_screen.dart';
-import 'supabase_safe.dart';
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -340,33 +339,12 @@ class LocalNotificationService {
   }
 
   /// 🔍 FETCH PUTNIK DATA FROM DATABASE BY NAME
+  /// 🔄 POJEDNOSTAVLJENO: Koristi samo registrovani_putnici
   static Future<Map<String, dynamic>?> _fetchPutnikFromDatabase(
     String putnikIme,
   ) async {
     try {
       final supabase = Supabase.instance.client;
-
-      // Traži u putovanja_istorija tabeli (dnevni putnici)
-      final dnevniResult = await SupabaseSafe.run(
-        () => supabase
-            .from('putovanja_istorija')
-            .select('putnik_ime, grad, vreme_polaska, dan, polazak')
-            .eq('putnik_ime', putnikIme)
-            .eq('obrisan', false)
-            .order('created_at', ascending: false)
-            .limit(1),
-        fallback: <dynamic>[],
-      );
-
-      if (dnevniResult is List && dnevniResult.isNotEmpty) {
-        final data = dnevniResult.first;
-        return {
-          'grad': data['grad'],
-          'polazak': data['vreme_polaska'] ?? data['polazak'],
-          'dan': data['dan'],
-          'tip': 'dnevni',
-        };
-      }
 
       // Traži u registrovani_putnici tabeli
       const registrovaniFields = '*,'

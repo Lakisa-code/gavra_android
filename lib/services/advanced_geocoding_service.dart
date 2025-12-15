@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/text_utils.dart';
 import 'cache_service.dart';
@@ -116,46 +115,6 @@ class AdvancedGeocodingService {
       // Logger removed
       return null;
     }
-  }
-
-  /// 🔍 BATCH GEOCODING - optimizovano za više adresa odjednom
-  static Future<Map<String, GeocodeResult?>> batchGeocode({
-    required Map<String, String> addresses, // key -> address
-    int batchSize = 10,
-    Duration delay = const Duration(milliseconds: 100),
-  }) async {
-    final results = <String, GeocodeResult?>{};
-    final batches = _createBatches(addresses, batchSize);
-
-    for (int i = 0; i < batches.length; i++) {
-      final batch = batches[i];
-
-      // Paralelno geocoding za batch
-      final futures = batch.map((entry) async {
-        final parts = entry.value.split(',');
-        if (parts.length >= 2) {
-          final grad = parts[1].trim();
-          final adresa = parts[0].trim();
-          return MapEntry(
-            entry.key,
-            await getAdvancedCoordinates(grad: grad, adresa: adresa),
-          );
-        }
-        return MapEntry(entry.key, null);
-      });
-
-      final batchResults = await Future.wait(futures);
-      for (final result in batchResults) {
-        results[result.key] = result.value;
-      }
-
-      // Rate limiting
-      if (i < batches.length - 1) {
-        await Future<void>.delayed(delay);
-      }
-    }
-
-    return results;
   }
 
   /// 🧹 PREPROCESS CITY - normalizacija i alias handling
@@ -467,35 +426,6 @@ class AdvancedGeocodingService {
       _cachePrefix + key,
       json.encode(result.toJson()),
     );
-  }
-
-  /// 📦 BATCH UTILITIES
-  static List<List<MapEntry<String, String>>> _createBatches(
-    Map<String, String> items,
-    int batchSize,
-  ) {
-    final entries = items.entries.toList();
-    final batches = <List<MapEntry<String, String>>>[];
-
-    for (int i = 0; i < entries.length; i += batchSize) {
-      batches.add(entries.sublist(i, math.min(i + batchSize, entries.length)));
-    }
-
-    return batches;
-  }
-
-  /// 🧹 CACHE MANAGEMENT
-  static Future<void> clearCache() async {
-    final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().where((key) => key.startsWith(_cachePrefix));
-    for (final key in keys) {
-      await prefs.remove(key);
-    }
-  }
-
-  static Future<int> getCacheSize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).length;
   }
 }
 

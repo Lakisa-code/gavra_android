@@ -26,8 +26,7 @@ class PrintingService {
     BuildContext context,
   ) async {
     try {
-      // Debug logging removed for production
-// ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
+      // ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
       // Try to compute isoDate from selectedDay (if present) - otherwise leave null
       String? isoDate;
       try {
@@ -165,9 +164,7 @@ class PrintingService {
 
       // Open the generated PDF using platform default viewer (Android will show print/share options)
       await OpenFilex.open(file.path);
-      // Debug logging removed for production
     } catch (e) {
-      // Debug logging removed for production
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

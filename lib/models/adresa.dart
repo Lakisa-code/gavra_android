@@ -68,15 +68,6 @@ class Adresa {
   double? get latitude => _parseLatitudeFromJsonb();
   double? get longitude => _parseLongitudeFromJsonb();
 
-  // Puna adresa za kompatibilnost
-  String get punaAdresa {
-    final delovi = <String>[];
-    if (ulica != null && ulica!.isNotEmpty) delovi.add(ulica!);
-    if (broj != null && broj!.isNotEmpty) delovi.add(broj!);
-    if (grad != null && grad!.isNotEmpty) delovi.add(grad!);
-    return delovi.join(', ');
-  }
-
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -126,32 +117,6 @@ class Adresa {
 
   /// Validation methods
   bool get hasValidCoordinates => latitude != null && longitude != null;
-
-  bool get isValidAddress => (ulica?.isNotEmpty ?? false) && (grad?.isNotEmpty ?? false);
-
-  bool get hasCompleteAddress => isValidAddress && broj != null && broj!.isNotEmpty;
-
-  /// Standardized address format
-  String get standardizedAddress {
-    final parts = <String>[];
-
-    // Add street
-    if (ulica != null && ulica!.isNotEmpty) {
-      parts.add(_capitalizeWords(ulica!));
-    }
-
-    // Add number if exists
-    if (broj != null && broj!.isNotEmpty) {
-      parts.add(broj!);
-    }
-
-    // Add city
-    if (grad != null && grad!.isNotEmpty) {
-      parts.add(_capitalizeWords(grad!));
-    }
-
-    return parts.join(', ');
-  }
 
   /// Distance calculation between two addresses
   double? distanceTo(Adresa other) {
@@ -306,46 +271,6 @@ class Adresa {
     return parts.join(' ');
   }
 
-  /// Get full address including city
-  String get fullAddress {
-    final parts = <String>[];
-
-    final address = displayAddress;
-    if (address.isNotEmpty) {
-      parts.add(address);
-    }
-
-    if (grad != null && grad!.isNotEmpty) {
-      parts.add(_capitalizeWords(grad!));
-    }
-
-    return parts.join(', ');
-  }
-
-  /// Get short address for UI lists
-  String get shortAddress {
-    if (displayAddress.length <= 25) {
-      return displayAddress;
-    }
-    return '${displayAddress.substring(0, 22)}...';
-  }
-
-  /// Calculate walking time to another address (assumes 5 km/h walking speed)
-  Duration? walkingTimeTo(Adresa other) {
-    final distance = distanceTo(other);
-    if (distance == null) return null;
-
-    const walkingSpeedKmh = 5.0;
-    final hours = distance / walkingSpeedKmh;
-    return Duration(milliseconds: (hours * 3600 * 1000).round());
-  }
-
-  /// Check if two addresses are approximately the same location
-  bool isNearby(Adresa other, {double radiusKm = 0.1}) {
-    final distance = distanceTo(other);
-    return distance != null && distance <= radiusKm;
-  }
-
   /// Get municipality name
   String get municipality {
     if (grad == null || grad!.trim().isEmpty) return 'Unknown';
@@ -378,36 +303,6 @@ class Adresa {
 
     if (belongsToBelaCrkva) return 'Bela Crkva';
     return 'Vršac'; // Default for all other valid addresses
-  }
-
-  // ✅ UI HELPER METHODS
-
-  /// Get icon for address type
-  String get addressIcon {
-    final lowerNaziv = naziv.toLowerCase();
-
-    if (lowerNaziv.contains('bolnica')) return '🏥';
-    if (lowerNaziv.contains('skola') || lowerNaziv.contains('škola')) {
-      return '🏫';
-    }
-    if (lowerNaziv.contains('vrtic') || lowerNaziv.contains('vrtić')) {
-      return '🏠';
-    }
-    if (lowerNaziv.contains('posta') || lowerNaziv.contains('pošta')) {
-      return '📮';
-    }
-    if (lowerNaziv.contains('banka')) return '🏛️';
-    if (lowerNaziv.contains('crkva')) return '⛪';
-    if (lowerNaziv.contains('park')) return '🌳';
-    if (lowerNaziv.contains('stadion')) return '🏟️';
-    if (lowerNaziv.contains('market') || lowerNaziv.contains('prodavnica')) {
-      return '🏪';
-    }
-    if (lowerNaziv.contains('restoran') || lowerNaziv.contains('kafic') || lowerNaziv.contains('kafić')) {
-      return '🍽️';
-    }
-
-    return '📍'; // Default location icon
   }
 
   /// Get priority score for sorting (important locations first)
@@ -468,11 +363,6 @@ class Adresa {
       koordinate: createCoordinatesJsonb(latitude, longitude),
       updatedAt: DateTime.now(),
     );
-  }
-
-  /// Create a copy marking it as updated
-  Adresa markAsUpdated() {
-    return copyWith(updatedAt: DateTime.now());
   }
 
   /// Helper methods

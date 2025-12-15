@@ -87,10 +87,6 @@ class ActionLog {
     };
   }
 
-  String toJsonString() {
-    return jsonEncode(toJson());
-  }
-
   /// Kreira novi ActionLog sa dodanim akcijom
   ActionLog addAction(ActionType type, String vozacId, [String? note]) {
     final newAction = ActionEntry(
@@ -109,33 +105,6 @@ class ActionLog {
       createdAt: createdAt,
       actions: [...actions, newAction],
     );
-  }
-
-  /// Poslednja akcija određenog tipa
-  ActionEntry? getLastAction(ActionType type) {
-    return actions.where((action) => action.type == type).fold<ActionEntry?>(null, (latest, current) {
-      if (latest == null) return current;
-      return current.timestamp.isAfter(latest.timestamp) ? current : latest;
-    });
-  }
-
-  /// Provera da li je akcija izvršena
-  bool hasAction(ActionType type) {
-    return actions.any((action) => action.type == type);
-  }
-
-  /// ID vozača koji je izvršio određenu akciju
-  String? getVozacForAction(ActionType type) {
-    switch (type) {
-      case ActionType.created:
-        return createdBy;
-      case ActionType.paid:
-        return paidBy;
-      case ActionType.picked:
-        return pickedBy;
-      case ActionType.cancelled:
-        return cancelledBy;
-    }
   }
 
   @override

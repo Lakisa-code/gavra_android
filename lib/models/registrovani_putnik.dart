@@ -1,7 +1,4 @@
-﻿import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
-import '../services/adresa_supabase_service.dart';
+﻿import '../services/adresa_supabase_service.dart';
 import '../utils/registrovani_helpers.dart';
 
 /// Model za mesečne putnike - ažurirana verzija
@@ -361,100 +358,9 @@ class RegistrovaniPutnik {
     );
   }
 
-  /// Lista svih vremena polaska za dati dan
-  List<String> getPolasciZaDan(String dan) {
-    return polasciPoDanu[dan] ?? [];
-  }
-
-  /// Dodaje vreme polaska za dati dan
-  void dodajPolazak(String dan, String vreme) {
-    if (!polasciPoDanu.containsKey(dan)) {
-      polasciPoDanu[dan] = [];
-    }
-    if (!polasciPoDanu[dan]!.contains(vreme)) {
-      polasciPoDanu[dan]!.add(vreme);
-    }
-  }
-
-  /// Uklanja vreme polaska za dati dan
-  void ukloniPolazak(String dan, String vreme) {
-    polasciPoDanu[dan]?.remove(vreme);
-    if (polasciPoDanu[dan]?.isEmpty ?? false) {
-      polasciPoDanu.remove(dan);
-    }
-  }
-
   @override
   String toString() {
     return 'RegistrovaniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan)';
-  }
-
-  // ==================== VALIDATION METHODS ====================
-
-  /// Validira da li su osnovna polja popunjena
-  bool isValid() {
-    return putnikIme.isNotEmpty && tip.isNotEmpty && polasciPoDanu.isNotEmpty && id.isNotEmpty;
-  }
-
-  /// Validira format telefona (srpski brojevi)
-  bool isValidPhoneNumber(String? phone) {
-    if (phone == null || phone.isEmpty) return true; // Optional field
-    final phoneRegex = RegExp(r'^(\+381|0)[6-9]\d{7,8}$');
-    return phoneRegex.hasMatch(phone.replaceAll(RegExp(r'[\s\-\(\)]'), ''));
-  }
-
-  /// Validira da li su svi kontakt brojevi u ispravnom formatu
-  bool hasValidPhoneNumbers() {
-    return isValidPhoneNumber(brojTelefona) &&
-        isValidPhoneNumber(brojTelefonaOca) &&
-        isValidPhoneNumber(brojTelefonaMajke);
-  }
-
-  /// Validira da li putnik ima validnu adresu
-  bool hasValidAddress() {
-    return (adresaBelaCrkvaId != null && adresaBelaCrkvaId!.isNotEmpty) ||
-        (adresaVrsacId != null && adresaVrsacId!.isNotEmpty);
-  }
-
-  /// Validira da li je period važenja valjan
-  bool hasValidPeriod() {
-    return datumKrajaMeseca.isAfter(datumPocetkaMeseca);
-  }
-
-  /// Kompletna validacija sa detaljnim rezultatom
-  Map<String, String> validateFull() {
-    final errors = <String, String>{};
-
-    if (putnikIme.trim().isEmpty) {
-      errors['putnikIme'] = 'Ime putnika je obavezno';
-    }
-
-    // ✅ ISPRAVKA: Uključen 'dnevni' kao validan tip
-    if (tip.isEmpty || !['radnik', 'ucenik', 'dnevni'].contains(tip)) {
-      errors['tip'] = 'Tip mora biti "radnik", "ucenik" ili "dnevni"';
-    }
-
-    if (tip == 'ucenik' && (tipSkole == null || tipSkole!.isEmpty)) {
-      errors['tipSkole'] = 'Tip škole je obavezan za učenike';
-    }
-
-    if (!hasValidPhoneNumbers()) {
-      errors['telefoni'] = 'Jedan ili više brojeva telefona nije u ispravnom formatu';
-    }
-
-    if (polasciPoDanu.isEmpty) {
-      errors['polasciPoDanu'] = 'Mora biti definisan bar jedan polazak';
-    }
-
-    if (!hasValidPeriod()) {
-      errors['period'] = 'Datum kraja mora biti posle datuma početka';
-    }
-
-    if (cena != null && cena! < 0) {
-      errors['cena'] = 'Cena ne može biti negativna';
-    }
-
-    return errors;
   }
 
   // ==================== ADDRESS HELPERS ====================
@@ -469,18 +375,6 @@ class RegistrovaniPutnik {
   Future<String?> getAdresaVrsacNaziv() async {
     if (adresaVrsacId == null) return null;
     return await AdresaSupabaseService.getNazivAdreseByUuid(adresaVrsacId);
-  }
-
-  /// Dobija formatiran prikaz adresa (za UI)
-  Future<String> getFormatiranePrikkazAdresa() async {
-    final bcNaziv = await getAdresaBelaCrkvaNaziv();
-    final vsNaziv = await getAdresaVrsacNaziv();
-
-    final adrese = <String>[];
-    if (bcNaziv != null) adrese.add(bcNaziv); // Uklonjen "BC:" prefiks
-    if (vsNaziv != null) adrese.add(vsNaziv); // Uklonjen "VS:" prefiks
-
-    return adrese.isEmpty ? 'Nema adresa' : adrese.join(' | ');
   }
 
   /// Dobija adresu za prikaz na osnovu selektovanog grada
@@ -500,105 +394,6 @@ class RegistrovaniPutnik {
     }
 
     return 'Nema adresa';
-  }
-
-  /// Legacy kompatibilnost - vraća TEXT naziv Bela Crkva adrese
-  @Deprecated('Koristi getAdresaBelaCrkvaNaziv() umesto TEXT polja')
-  Future<String?> get adresaBelaCrkva async => await getAdresaBelaCrkvaNaziv();
-
-  /// Legacy kompatibilnost - vraća TEXT naziv Vršac adrese
-  @Deprecated('Koristi getAdresaVrsacNaziv() umesto TEXT polja')
-  Future<String?> get adresaVrsac async => await getAdresaVrsacNaziv();
-
-  // ==================== RELATIONSHIP HELPERS ===================="
-
-  /// Da li putnik ima mesečnu kartu (uvek true za RegistrovaniPutnik)
-  bool get hasMesecnaKarta => true;
-
-  /// Da li je putnik učenik
-  bool get isUcenik => tip == 'ucenik';
-
-  /// Da li je putnik radnik
-  bool get isRadnik => tip == 'radnik';
-
-  /// Da li je putnik dnevni
-  bool get isDnevni => tip == 'dnevni';
-
-  /// Da li putnik radi danas
-  bool radiDanas() {
-    final today = DateTime.now();
-    final days = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final todayKey = days[today.weekday - 1];
-    final daniList = radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
-    return daniList.contains(todayKey);
-  }
-
-  /// Dobija polazna vremena za danas
-  List<String> getPolasciZaDanas() {
-    final today = DateTime.now();
-    final days = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-    final todayKey = days[today.weekday - 1];
-    return polasciPoDanu[todayKey] ?? [];
-  }
-
-  /// Da li putnik treba da bude pokupljen u određeno vreme
-  bool trebaPokupiti(String vreme) {
-    final polasciDanas = getPolasciZaDanas();
-    return polasciDanas.any((polazak) => polazak.contains(vreme));
-  }
-
-  /// Broj aktivnih dana u nedelji
-  int get brojAktivnihDana {
-    return radniDani.split(',').map((d) => d.trim()).where((dan) => dan.isNotEmpty).length;
-  }
-
-  /// Da li je plaćen za trenutni mesec
-  bool get isPlacenZaTrenutniMesec {
-    if (vremePlacanja == null) return false;
-    final now = DateTime.now();
-    return placeniMesec == now.month && placenaGodina == now.year;
-  }
-
-  /// Kalkuliše mesečnu cenu na osnovu broja aktivnih dana
-  double kalkulirajMesecnuCenu(double dnevnaCena) {
-    return dnevnaCena * brojAktivnihDana * 4; // 4 nedelje u mesecu
-  }
-
-  // ==================== UI HELPERS ====================
-
-  /// Dobija boju na osnovu statusa
-  Color getStatusColor() {
-    if (!aktivan) return Colors.grey;
-    switch (status.toLowerCase()) {
-      case 'aktivan':
-      case 'radi':
-        return Colors.green;
-      case 'neaktivan':
-      case 'pauza':
-        return Colors.orange;
-      case 'obrisan':
-        return Colors.red;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  /// Formatiran prikaz perioda važenja
-  String get formatiraniPeriod {
-    final formatter = DateFormat('dd.MM.yyyy');
-    return '${formatter.format(datumPocetkaMeseca)} - ${formatter.format(datumKrajaMeseca)}';
-  }
-
-  /// Kratki opis putnika za UI
-  String get shortDescription {
-    final tipText = isUcenik ? '👨‍🎓' : '👨‍💼';
-    final statusText = aktivan ? '✅' : '❌';
-    return '$tipText $putnikIme $statusText';
-  }
-
-  /// Detaljni opis za debug
-  String get detailDescription {
-    return 'RegistrovaniPutnik(id: $id, ime: $putnikIme, tip: $tip, aktivan: $aktivan, status: $status, polasci: ${polasciPoDanu.length}, period: $formatiraniPeriod)';
   }
 
   /// ✅ HELPER: Generiši UUID ako nedostaje iz baze

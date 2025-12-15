@@ -10,6 +10,7 @@ import '../models/registrovani_putnik.dart' as novi_model;
 import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart'; // 🆕 Obračun cene po pokupljenjima
 import '../services/haptic_service.dart';
+import '../services/native_vibration_service.dart'; // 📳 Native vibracija za Huawei
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 📍 GPS LEARN
@@ -243,6 +244,10 @@ class _PutnikCardState extends State<PutnikCard> {
         // Long press = SAMO pokupljanje
 
         if (_putnik.vremePokupljenja == null) {
+          // 📳 JAKA VIBRACIJA ODMAH KAD SE AKTIVIRA (pre await)
+          // Koristi Native Vibration Service za Huawei kompatibilnost
+          await NativeVibrationService.pickup();
+
           await _handlePokupljen();
 
           // 🔄 FORSIRAJ PARENT WIDGET REFRESH
@@ -259,12 +264,11 @@ class _PutnikCardState extends State<PutnikCard> {
             }
           }
 
-          // 📳 Haptic feedback za pokupljanje - SUCCESS pattern!
-          HapticService.success();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Putnik označen kao pokupljen (1.5s long press)'),
+                content: Text('✅ Putnik pokupljen'),
+                duration: Duration(seconds: 1),
               ),
             );
           }

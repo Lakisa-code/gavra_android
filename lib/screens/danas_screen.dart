@@ -20,7 +20,6 @@ import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikaci
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network status service
-import '../services/realtime_notification_counter_service.dart'; // 🔔 DODANO za notification count
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
@@ -80,8 +79,15 @@ class _DanasScreenState extends State<DanasScreen> {
   // bool _wasRealtimeHealthy = true;
 
   // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
+  // ✅ Povećano na 800ms da spreči race conditions, ali i dalje dovoljno brzo za UX
   DateTime? _lastSyncTime;
-  static const Duration _syncThrottleDuration = Duration(milliseconds: 500);
+  static const Duration _syncThrottleDuration = Duration(milliseconds: 800);
+
+  // 🔄 PENDING SYNC - čuva poslednje promene ako je throttling aktivan
+  List<Putnik>? _pendingSyncPutnici;
+
+  // 🔒 LOCK ZA KONKURENTNE REOPTIMIZACIJE
+  bool _isReoptimizing = false;
 
   // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM
   bool _isPopisLoading = false; // ✅ ISPRAVKA: Loading state za POPIS dugme
@@ -308,13 +314,13 @@ class _DanasScreenState extends State<DanasScreen> {
           }
         }
 
-        // Uključi današnje "zakupljeno" iz putovanja_istorija da ne bismo propustili grupne rezervacije
+        // Uključi današnje "zakupljeno" iz registrovani_putnici
         int zakupljenoCount = 0;
         try {
           final zakupljenoRows = await RegistrovaniPutnikService.getZakupljenoDanas();
           for (final z in zakupljenoRows) {
             try {
-              final putnikZ = Putnik.fromPutovanjaIstorija(z);
+              final putnikZ = Putnik.fromRegistrovaniPutnici(z);
               // 🎓 FIKSNO: Broji samo zakupljene koji su krenuli iz Bele Crkve (u školu)
               final gradNorm = TextUtils.normalizeText(putnikZ.grad);
               final jeIzBeleCrkve = gradNorm.contains('bela');
@@ -954,7 +960,7 @@ class _DanasScreenState extends State<DanasScreen> {
       late double ukupanPazar;
       try {
         ukupanPazar = await StatistikaService.streamPazarZaVozaca(
-          vozac,
+          vozac: vozac,
           from: dayStart,
           to: dayEnd,
         ).first.timeout(const Duration(seconds: 10));
@@ -1144,17 +1150,29 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🔄 SINHRONIZACIJA OPTIMIZOVANE RUTE SA REALTIME STREAM-om
   // Ažurira statuse putnika u optimizovanoj listi kada se promene u bazi
-  // ✅ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max 2x/sec)
+  // ✅ SA THROTTLING-om: Sprečava prekomerne UI rebuilde (max ~1.25x/sec)
   // ✅ AUTO-REOPTIMIZACIJA: Kada se doda ili otkaže putnik, automatski reoptimizuje rutu
+  // ✅ PENDING SYNC: Ne gubi važne promene tokom throttling-a
   void _syncOptimizedRouteWithStream(List<Putnik> streamPutnici) {
     if (!_isRouteOptimized || _optimizedRoute.isEmpty) return;
 
-    // 🕒 THROTTLING: Ignoriši ako je prošlo manje od 500ms od poslednje sinhronizacije
+    // 🕒 THROTTLING: Ignoriši ako je prošlo manje od 800ms od poslednje sinhronizacije
+    // ✅ ALI: Sačuvaj pending podatke za sledeći sync
     final now = DateTime.now();
     if (_lastSyncTime != null && now.difference(_lastSyncTime!) < _syncThrottleDuration) {
-      return; // Preskoči - previše brzo
+      _pendingSyncPutnici = streamPutnici; // Sačuvaj za kasnije
+      // Zakaži odloženi sync ako nije već zakazan
+      Future.delayed(_syncThrottleDuration, () {
+        if (_pendingSyncPutnici != null && mounted) {
+          final pending = _pendingSyncPutnici!;
+          _pendingSyncPutnici = null;
+          _syncOptimizedRouteWithStream(pending);
+        }
+      });
+      return;
     }
     _lastSyncTime = now;
+    _pendingSyncPutnici = null; // Očisti pending jer procesiramo sada
 
     // Kreiraj Set ID-ova iz stream-a za brzu pretragu
     final streamIds = streamPutnici.map((p) => p.id).toSet();
@@ -1204,12 +1222,30 @@ class _DanasScreenState extends State<DanasScreen> {
     }
 
     // 2️⃣ Detektuj nove putnike koji nisu u optimizovanoj ruti
+    // 🔧 FIX: Filtriraj nove putnike SAMO za trenutni grad i vreme
     final newPassengers = <Putnik>[];
+    final normFilterTime = GradAdresaValidator.normalizeTime(_selectedVreme);
     for (final streamPutnik in streamPutnici) {
       if (!optimizedIds.contains(streamPutnik.id)) {
-        hasNewPassengers = true;
-        newPassengers.add(streamPutnik);
-        newPassengerNames.add(streamPutnik.ime);
+        // ✅ Proveri da li putnik pripada trenutnom gradu i vremenu
+        final normStreamTime = GradAdresaValidator.normalizeTime(streamPutnik.polazak);
+        final vremeMatch = normStreamTime == normFilterTime;
+
+        final gradMatch = _isGradMatch(
+          streamPutnik.grad,
+          streamPutnik.adresa,
+          _selectedGrad,
+          isRegistrovaniPutnik: streamPutnik.mesecnaKarta == true,
+        );
+
+        // ✅ Samo aktivni putnici (ne otkazani/obrisani)
+        final isActive = !streamPutnik.jeOtkazan && !streamPutnik.jeOdsustvo && !streamPutnik.obrisan;
+
+        if (vremeMatch && gradMatch && isActive) {
+          hasNewPassengers = true;
+          newPassengers.add(streamPutnik);
+          newPassengerNames.add(streamPutnik.ime);
+        }
       }
     }
 
@@ -1253,19 +1289,40 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🔄 AUTO-REOPTIMIZACIJA RUTE SA NOVIM PUTNICIMA
   // Poziva OSRM da dobije novu optimalnu rutu
+  // ✅ SA LOCK MEHANIZMOM: Sprečava konkurentne reoptimizacije
+  // ✅ ČUVA pokupljene/otkazane putnike na kraju liste
   Future<void> _autoReoptimizeRoute(List<Putnik> allPassengers) async {
-    // Filtriraj samo putnike sa validnim adresama
-    final filtriraniPutnici = allPassengers.where((p) {
-      final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
-          (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
-      // Isključi pokupljene i otkazane
-      final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
-      return hasValidAddress && isActive;
-    }).toList();
-
-    if (filtriraniPutnici.isEmpty) return;
+    // 🔒 LOCK: Ako je već u toku reoptimizacija, preskoči
+    if (_isReoptimizing) {
+      return;
+    }
+    _isReoptimizing = true;
 
     try {
+      // 🔄 Razdvoji pokupljene/otkazane od aktivnih putnika
+      final pokupljeniIOtkazani = allPassengers.where((p) {
+        return p.jePokupljen || p.jeOtkazan || p.jeOdsustvo;
+      }).toList();
+
+      // Filtriraj samo AKTIVNE putnike sa validnim adresama za optimizaciju
+      final filtriraniPutnici = allPassengers.where((p) {
+        final hasValidAddress = (p.adresaId != null && p.adresaId!.isNotEmpty) ||
+            (p.adresa != null && p.adresa!.isNotEmpty && p.adresa != p.grad);
+        // Isključi pokupljene i otkazane
+        final isActive = !p.jePokupljen && !p.jeOtkazan && !p.jeOdsustvo;
+        return hasValidAddress && isActive;
+      }).toList();
+
+      // ✅ Ako nema aktivnih putnika, zadrži samo pokupljene/otkazane
+      if (filtriraniPutnici.isEmpty) {
+        if (pokupljeniIOtkazani.isNotEmpty && mounted) {
+          setState(() {
+            _optimizedRoute = pokupljeniIOtkazani;
+          });
+        }
+        return;
+      }
+
       final result = await SmartNavigationService.optimizeRouteOnly(
         putnici: filtriraniPutnici,
         startCity: _selectedGrad.isNotEmpty ? _selectedGrad : 'Vršac',
@@ -1274,31 +1331,27 @@ class _DanasScreenState extends State<DanasScreen> {
       if (result.success && result.optimizedPutnici != null && result.optimizedPutnici!.isNotEmpty) {
         if (mounted) {
           setState(() {
-            _optimizedRoute = result.optimizedPutnici!;
+            // ✅ KOMBINUJ: optimizovani aktivni + pokupljeni/otkazani na kraju
+            _optimizedRoute = [...result.optimizedPutnici!, ...pokupljeniIOtkazani];
             _cachedCoordinates = result.cachedCoordinates;
           });
 
           // Ažuriraj ETA u DriverLocationService ako je tracking aktivan
           if (DriverLocationService.instance.isTracking && result.putniciEta != null) {
-            // Restart tracking sa novim ETA
-            final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
-            await DriverLocationService.instance.startTracking(
-              vozacId: _currentDriver!,
-              vozacIme: _currentDriver!,
-              grad: _selectedGrad,
-              vremePolaska: _selectedVreme,
-              smer: smer,
-              putniciEta: result.putniciEta,
-            );
+            // 🔄 REALTIME FIX: Koristi novu updatePutniciEta metodu
+            await DriverLocationService.instance.updatePutniciEta(result.putniciEta!);
           }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Ruta uspešno reoptimizovana sa novim putnikom!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          // ✅ FIX: Ponovna provera mounted posle await operacije
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Ruta uspešno reoptimizovana sa novim putnikom!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -1312,6 +1365,9 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         );
       }
+    } finally {
+      // 🔓 UNLOCK: Uvek oslobodi lock
+      _isReoptimizing = false;
     }
   }
 
@@ -1668,9 +1724,6 @@ class _DanasScreenState extends State<DanasScreen> {
     // Start network status listener to auto-refetch when we recover connectivity
     _prevNetworkStatus = RealtimeNetworkStatusService.instance.networkStatus.value;
     RealtimeNetworkStatusService.instance.networkStatus.addListener(_onNetworkStatusChanged);
-
-    //  REAL-TIME NOTIFICATION COUNTER
-    RealtimeNotificationCounterService.initialize();
 
     // 🛰️ START GPS TRACKING
     RealtimeGpsService.startTracking().catchError((Object e) {});
@@ -2073,24 +2126,17 @@ class _DanasScreenState extends State<DanasScreen> {
           }
         }
       } else {
-        // SmartNavigationService nije uspeo - fallback na osnovno sortiranje
-        final optimizedPutnici = List<Putnik>.from(filtriraniPutnici)
-          ..sort((a, b) => (a.adresa ?? '').compareTo(b.adresa ?? ''));
-
+        // ❌ OSRM/SmartNavigationService nije uspeo - NE koristi fallback, prikaži grešku
         if (mounted) {
           setState(() {
-            _optimizedRoute = optimizedPutnici;
-            _isRouteOptimized = true;
-            _isListReordered = true;
-            _currentPassengerIndex = 0;
-            // NE postavljaj _isGpsTracking - aktivira se tek kad korisnik pritisne NAV
             _isLoading = false;
+            // NE postavljaj _isRouteOptimized = true jer ruta NIJE optimizovana!
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('⚠️ ${result.message}\nKoristim osnovno sortiranje.'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 4),
+              content: Text('❌ Optimizacija neuspešna: ${result.message}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
             ),
           );
         }
@@ -2402,7 +2448,7 @@ class _DanasScreenState extends State<DanasScreen> {
                     final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
                     return StreamBuilder<double>(
                       stream: StatistikaService.streamPazarZaVozaca(
-                        _currentDriver ?? '',
+                        vozac: _currentDriver ?? '',
                         from: dayStart,
                         to: dayEnd,
                       ),
@@ -2466,9 +2512,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                       ),
                                       child: StreamBuilder<int>(
                                         stream: StatistikaService.streamBrojRegistrovanihZaVozaca(
-                                          _currentDriver ?? '',
-                                          from: dayStart,
-                                          to: dayEnd,
+                                          vozac: _currentDriver ?? '',
                                         ),
                                         builder: (context, registrovaniSnapshot) {
                                           final brojRegistrovanih = registrovaniSnapshot.data ?? 0;

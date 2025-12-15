@@ -25,7 +25,6 @@ class SimplifiedDailyCheckInService {
       }
       return true;
     } catch (e) {
-      // Debug logging removed for production
       return false;
     }
   }
@@ -82,7 +81,6 @@ class SimplifiedDailyCheckInService {
     try {
       return await DailyCheckInService.hasCheckedInToday(vozac);
     } catch (e) {
-      // Debug logging removed for production
       return false;
     }
   }
@@ -120,7 +118,7 @@ class SimplifiedDailyCheckInService {
     try {
       await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
     } catch (e) {
-      // Debug logging removed for production
+      // Ignoriši greške - nema potrebe za logom
     }
   }
 
@@ -129,23 +127,5 @@ class SimplifiedDailyCheckInService {
     String vozac,
   ) {
     return DailyCheckInService.initializeRealtimeForDriver(vozac);
-  }
-
-  /// 🔄 SYNC OFFLINE CHANGES
-  static Future<void> syncOfflineChanges() async {
-    // SimplifiedDailyCheckInService doesn't need offline sync
-    // because it uses SharedPreferences directly
-  }
-
-  /// 🧹 CLEANUP
-  static Future<void> cleanup() async {
-    // SimplifiedDailyCheckInService cleanup
-  }
-
-  /// 🔒 DISPOSE RESOURCES
-  static void dispose() {
-    if (!_streamController.isClosed) {
-      _streamController.close();
-    }
   }
 }

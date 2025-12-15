@@ -95,38 +95,6 @@ class RealtimeNotificationService {
     await Future.wait(notifications);
   }
 
-  /// 🎯 Pošalji notifikaciju specifičnom vozaču (via server-side push)
-  static Future<void> sendNotificationToDriver({
-    required String driverId,
-    required String title,
-    required String body,
-    Map<String, dynamic>? data,
-  }) async {
-    // Multi-channel strategija za specifičnog vozača
-    final List<Future<void>> notifications = [];
-
-    // 1. FCM Topic - topic za specifičnog vozača
-    notifications.add(
-      sendPushNotification(
-        title: title,
-        body: body,
-        topic: 'gavra_driver_${driverId.toLowerCase()}',
-        data: data,
-      ).then((_) {}),
-    );
-
-    // 2. Local notification
-    notifications.add(
-      LocalNotificationService.showRealtimeNotification(
-        title: title,
-        body: body,
-        payload: jsonEncode(data ?? {}),
-      ),
-    );
-
-    await Future.wait(notifications);
-  }
-
   /// Public helper to handle an initial/cold-start RemoteMessage (from getInitialMessage)
   static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
     if (messageData == null) return;
@@ -219,63 +187,6 @@ class RealtimeNotificationService {
       await messaging.subscribeToTopic('gavra_all_drivers');
     } catch (e) {
       // Topic subscription failed
-    }
-  }
-
-  /// Real-time notifications using Firebase + Huawei + Local notifications (server-side push via Supabase functions)
-  static Future<void> sendRealtimeNotification(
-    String title,
-    String body,
-    Map<String, dynamic> data,
-  ) async {
-    // Logger removed
-
-    try {
-      // 1. Send local notification immediately (highest priority)
-      // Convert data to JSON string payload for notification
-      final String payloadJson = jsonEncode(data);
-
-      await LocalNotificationService.showRealtimeNotification(
-        title: title,
-        body: body,
-        payload: payloadJson,
-      );
-      // Logger removed
-
-      // 2. FCM topic/broadcast putem send-push-notification
-      await RealtimeNotificationService.sendPushNotification(
-        title: title,
-        body: body,
-        topic: 'gavra_all_drivers',
-        data: data,
-      );
-    } catch (e) {
-      // Logger removed
-    }
-  }
-
-  /// Test notification functionality with multi-channel support
-  static Future<void> sendTestNotification(String message) async {
-    // Show local notification
-    await LocalNotificationService.showRealtimeNotification(
-      title: 'Gavra Test - Multi Channel',
-      body: message,
-      payload: 'test_notification',
-    );
-  }
-
-  /// Check notification permissions for Firebase
-  static Future<bool> hasNotificationPermissions() async {
-    try {
-      if (Firebase.apps.isEmpty) return false;
-
-      final messaging = FirebaseMessaging.instance;
-      final settings = await messaging.getNotificationSettings();
-
-      return settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional;
-    } catch (e) {
-      return false;
     }
   }
 
