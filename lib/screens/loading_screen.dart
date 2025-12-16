@@ -238,59 +238,67 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       decoration: const BoxDecoration(
         gradient: tripleBlueFashionGradient,
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 🎯 V3.0 ENHANCED LOADING ANIMATION
-            _buildAdvancedLoadingIndicator(),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 🎯 V3.0 ENHANCED LOADING ANIMATION
+                  _buildAdvancedLoadingIndicator(),
 
-            const SizedBox(height: 48),
+                  const SizedBox(height: 48),
 
-            // 📱 APP LOGO/TITLE
-            _buildAppBranding(),
+                  // 📱 APP LOGO/TITLE
+                  _buildAppBranding(),
 
-            const SizedBox(height: 40),
+                  const SizedBox(height: 40),
 
-            // 📊 DYNAMIC STATUS MESSAGE
-            ValueListenableBuilder<String>(
-              valueListenable: _statusMessage,
-              builder: (context, message, child) => AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  message,
-                  key: ValueKey(message),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
+                  // 📊 DYNAMIC STATUS MESSAGE
+                  ValueListenableBuilder<String>(
+                    valueListenable: _statusMessage,
+                    builder: (context, message, child) => AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        message,
+                        key: ValueKey(message),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
+
+                  const SizedBox(height: 24),
+
+                  // 📈 V3.0 PROGRESS BAR
+                  _buildEnhancedProgressBar(),
+
+                  const SizedBox(height: 16),
+
+                  // 🔄 STAGE INDICATOR
+                  ValueListenableBuilder<LoadingStage>(
+                    valueListenable: _currentStage,
+                    builder: (context, stage, child) => Text(
+                      'Korak ${stage.index + 1} od ${LoadingStage.values.length}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            // 📈 V3.0 PROGRESS BAR
-            _buildEnhancedProgressBar(),
-
-            const SizedBox(height: 16),
-
-            // 🔄 STAGE INDICATOR
-            ValueListenableBuilder<LoadingStage>(
-              valueListenable: _currentStage,
-              builder: (context, stage, child) => Text(
-                'Korak ${stage.index + 1} od ${LoadingStage.values.length}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

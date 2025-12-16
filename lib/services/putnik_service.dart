@@ -76,10 +76,21 @@ class PutnikService {
   }) {
     final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
 
+    // 🔧 FIX: Proveri da li stream postoji I da li subscription postoji
+    // Ako subscription ne postoji (cancelovan), treba ponovo kreirati
     if (_streams.containsKey(key) && !_streams[key]!.isClosed) {
-      // Ako imamo cached vrednost, emituj je odmah
       final controller = _streams[key]!;
-      if (_lastValues.containsKey(key)) {
+
+      // 🔧 FIX: Ako subscription ne postoji, ponovo je kreiraj
+      if (!_subscriptions.containsKey(key)) {
+        final sub = RealtimeService.instance.combinedPutniciStream.listen((_) {
+          _doFetchForStream(key, isoDate, grad, vreme, controller);
+        });
+        _subscriptions[key] = sub;
+        // Odmah uradi fetch jer je subscription tek kreiran
+        _doFetchForStream(key, isoDate, grad, vreme, controller);
+      } else if (_lastValues.containsKey(key)) {
+        // Ako imamo cached vrednost, emituj je odmah
         Future.microtask(() => controller.add(_lastValues[key]!));
       }
       return controller.stream;
@@ -88,68 +99,13 @@ class PutnikService {
     final controller = StreamController<List<Putnik>>.broadcast();
     _streams[key] = controller;
 
-    Future<void> doFetch() async {
-      try {
-        final combined = <Putnik>[];
-
-        // Svi putnici su u registrovani_putnici tabeli
-
-        // Fetch monthly rows for the relevant day (if isoDate provided, convert)
-        String? danKratica;
-        if (isoDate != null) {
-          try {
-            final dt = DateTime.parse(isoDate);
-            const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
-            danKratica = dani[dt.weekday - 1];
-          } catch (_) {}
-        }
-        danKratica ??= _getDayAbbreviationFromName(_getTodayName());
-
-        // Query registrovani_putnici - uzmi aktivne putnike za ciljani dan
-        final registrovani = await supabase
-            .from('registrovani_putnici')
-            .select(registrovaniFields)
-            .eq('aktivan', true)
-            .eq('obrisan', false);
-
-        for (final m in registrovani) {
-          // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan
-          final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
-          for (final p in putniciZaDan) {
-            // apply grad/vreme filter if provided
-            final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
-            final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
-
-            if (grad != null && p.grad != grad) {
-              continue;
-            }
-            if (normVremeFilter != null && normVreme != normVremeFilter) {
-              continue;
-            }
-
-            combined.add(p);
-          }
-        }
-
-        _lastValues[key] = combined; // Cache za replay
-        if (!controller.isClosed) {
-          controller.add(combined);
-        }
-      } catch (e) {
-        _lastValues[key] = [];
-        if (!controller.isClosed) {
-          controller.add([]);
-        }
-      }
-    }
-
     // initial fetch
-    doFetch();
+    _doFetchForStream(key, isoDate, grad, vreme, controller);
 
     // 🔄 POJEDNOSTAVLJENO: Koristi samo combinedPutniciStream za sve slučajeve
     // Parametric stream je uklonjen jer doFetch() radi svoje filtriranje
     final sub = RealtimeService.instance.combinedPutniciStream.listen((_) {
-      doFetch();
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
     _subscriptions[key] = sub;
 
@@ -162,6 +118,84 @@ class PutnikService {
     };
 
     return controller.stream;
+  }
+
+  /// 🔧 Helper metoda za fetch podataka za stream
+  Future<void> _doFetchForStream(
+    String key,
+    String? isoDate,
+    String? grad,
+    String? vreme,
+    StreamController<List<Putnik>> controller,
+  ) async {
+    try {
+      final combined = <Putnik>[];
+
+      // Svi putnici su u registrovani_putnici tabeli
+
+      // Fetch monthly rows for the relevant day (if isoDate provided, convert)
+      String? danKratica;
+      if (isoDate != null) {
+        try {
+          final dt = DateTime.parse(isoDate);
+          const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+          danKratica = dani[dt.weekday - 1];
+        } catch (_) {}
+      }
+      danKratica ??= _getDayAbbreviationFromName(_getTodayName());
+
+      // Današnji datum za filter uklonjenih termina
+      final todayDate = isoDate ?? DateTime.now().toIso8601String().split('T')[0];
+
+      // Query registrovani_putnici - uzmi aktivne putnike za ciljani dan
+      final registrovani = await supabase
+          .from('registrovani_putnici')
+          .select(registrovaniFields)
+          .eq('aktivan', true)
+          .eq('obrisan', false);
+
+      for (final m in registrovani) {
+        // ✅ ISPRAVKA: Kreiraj putnike SAMO za ciljani dan
+        final putniciZaDan = Putnik.fromRegistrovaniPutniciMultipleForDay(m, danKratica);
+
+        // 🆕 Dohvati uklonjene termine za ovog putnika
+        final uklonjeniTermini = m['uklonjeni_termini'] as List<dynamic>? ?? [];
+
+        for (final p in putniciZaDan) {
+          // apply grad/vreme filter if provided
+          final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+          final normVremeFilter = vreme != null ? GradAdresaValidator.normalizeTime(vreme) : null;
+
+          if (grad != null && p.grad != grad) {
+            continue;
+          }
+          if (normVremeFilter != null && normVreme != normVremeFilter) {
+            continue;
+          }
+
+          // 🆕 Proveri da li je putnik uklonjen iz ovog termina
+          final jeUklonjen = uklonjeniTermini.any((ut) {
+            final utMap = ut as Map<String, dynamic>;
+            return utMap['datum'] == todayDate && utMap['vreme'] == p.polazak && utMap['grad'] == p.grad;
+          });
+          if (jeUklonjen) {
+            continue;
+          }
+
+          combined.add(p);
+        }
+      }
+
+      _lastValues[key] = combined; // Cache za replay
+      if (!controller.isClosed) {
+        controller.add(combined);
+      }
+    } catch (e) {
+      _lastValues[key] = [];
+      if (!controller.isClosed) {
+        controller.add([]);
+      }
+    }
   }
 
   // Fields to explicitly request from registrovani_putnici
@@ -627,6 +661,41 @@ class PutnikService {
     });
   }
 
+  /// ✅ UKLONI IZ TERMINA - samo nestane sa liste, bez otkazivanja/statistike
+  Future<void> ukloniIzTermina(
+    dynamic id, {
+    required String datum,
+    required String vreme,
+    required String grad,
+  }) async {
+    final tabela = await _getTableForPutnik(id);
+
+    // Dohvati trenutne uklonjene termine
+    final response = await supabase.from(tabela).select('uklonjeni_termini').eq('id', id as String).single();
+
+    List<dynamic> uklonjeni = [];
+    if (response['uklonjeni_termini'] != null) {
+      uklonjeni = List<dynamic>.from(response['uklonjeni_termini'] as List);
+    }
+
+    // Dodaj novi uklonjen termin
+    uklonjeni.add({
+      'datum': datum,
+      'vreme': vreme,
+      'grad': grad,
+    });
+
+    // Sačuvaj
+    await supabase.from(tabela).update({
+      'uklonjeni_termini': uklonjeni,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', id);
+
+    // Refresh
+    await RealtimeService.instance.refreshNow();
+    _streams.clear();
+  }
+
   /// ✅ OBRISI PUTNIKA (Soft Delete - čuva statistike)
   Future<void> obrisiPutnika(dynamic id) async {
     // Određi tabelu na osnovu ID-ja
@@ -706,6 +775,20 @@ class PutnikService {
         'action_log': updatedActionLog.toJson(), // ✅ FIXED: Ažuriraj action_log.picked_by
         'updated_at': now.toIso8601String(), // ✅ AŽURIRAJ timestamp
       }).eq('id', id as String);
+
+      // 📝 DODAJ ZAPIS U voznje_log za praćenje vožnji
+      final danas = now.toIso8601String().split('T')[0];
+      try {
+        await supabase.from('voznje_log').insert({
+          'putnik_id': id.toString(),
+          'datum': danas,
+          'tip': 'voznja',
+          'iznos': 0,
+          'vozac_id': vozacUuid,
+        });
+      } catch (logError) {
+        // Nije kritično ako log ne uspe
+      }
 
       // 🔄 AUTOMATSKA SINHRONIZACIJA - ažuriraj brojPutovanja iz istorije
       try {

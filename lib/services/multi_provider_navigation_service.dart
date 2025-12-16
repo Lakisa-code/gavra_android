@@ -19,7 +19,9 @@ import '../utils/navigation_url_builder.dart';
 class MultiProviderNavigationService {
   static const _playStoreUrl = 'market://details?id=com.here.app.maps';
   static const _appGalleryUrl = 'appmarket://details?id=com.here.app.maps';
-  static const _maxWaypoints = 10;
+  // HERE WeGo limit: 9 waypoints + 1 destinacija = 10 tačaka
+  // Koristimo 8 da ostavimo prostora za destinaciju
+  static const _maxWaypoints = 8;
 
   /// 🚀 Pokreni navigaciju sa HERE WeGo
   static Future<MultiNavResult> startNavigation({

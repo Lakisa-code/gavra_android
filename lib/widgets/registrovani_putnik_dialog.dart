@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,6 +48,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   final TextEditingController _adresaVrsacController = TextEditingController();
   final TextEditingController _cenaPoDanuController = TextEditingController(); // 🆕 Cena po danu
   final TextEditingController _emailController = TextEditingController(); // 📧 Email
+  // 🧾 Kontroleri za podatke o firmi (račun)
+  final TextEditingController _firmaNazivController = TextEditingController();
+  final TextEditingController _firmaPibController = TextEditingController();
+  final TextEditingController _firmaMbController = TextEditingController();
+  final TextEditingController _firmaZiroController = TextEditingController();
+  final TextEditingController _firmaAdresaController = TextEditingController();
+  bool _trebaRacun = false;
   // Selected address UUIDs (keeps track when user chooses a suggestion)
   String? _adresaBelaCrkvaId;
   String? _adresaVrsacId;
@@ -87,13 +95,31 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
       if (mounted) {
         setState(() {
-          _adreseBelaCrkva = adreseBC.map((a) => {'id': a.id, 'naziv': a.naziv}).toList();
-          _adreseVrsac = adreseVS.map((a) => {'id': a.id, 'naziv': a.naziv}).toList();
+          _adreseBelaCrkva = adreseBC.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
+            ..sort((a, b) => _serbianCompare(a['naziv'] ?? '', b['naziv'] ?? ''));
+          _adreseVrsac = adreseVS.map((a) => {'id': a.id, 'naziv': a.naziv}).toList()
+            ..sort((a, b) => _serbianCompare(a['naziv'] ?? '', b['naziv'] ?? ''));
         });
       }
     } catch (e) {
       // Error loading addresses
     }
+  }
+
+  /// 🔤 Srpsko sortiranje - pravilno sortira č, ć, š, ž, đ
+  int _serbianCompare(String a, String b) {
+    // Normalizuj za sortiranje: zameni srpske karaktere
+    String normalize(String s) {
+      return s
+          .toLowerCase()
+          .replaceAll('č', 'c~')
+          .replaceAll('ć', 'c~~')
+          .replaceAll('đ', 'd~')
+          .replaceAll('š', 's~')
+          .replaceAll('ž', 'z~');
+    }
+
+    return normalize(a).compareTo(normalize(b));
   }
 
   void _initializeControllers() {
@@ -124,6 +150,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
       // 📧 Load email
       _emailController.text = putnik.email ?? '';
+
+      // 🧾 Load podaci za račun
+      _trebaRacun = putnik.trebaRacun;
+      _firmaNazivController.text = putnik.firmaNaziv ?? '';
+      _firmaPibController.text = putnik.firmaPib ?? '';
+      _firmaMbController.text = putnik.firmaMb ?? '';
+      _firmaZiroController.text = putnik.firmaZiro ?? '';
+      _firmaAdresaController.text = putnik.firmaAdresa ?? '';
 
       // Load times for each day
       for (final dan in ['pon', 'uto', 'sre', 'cet', 'pet']) {
@@ -231,6 +265,12 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     _adresaVrsacController.dispose();
     _cenaPoDanuController.dispose();
     _emailController.dispose();
+    // 🧾 Dispose račun kontrolera
+    _firmaNazivController.dispose();
+    _firmaPibController.dispose();
+    _firmaMbController.dispose();
+    _firmaZiroController.dispose();
+    _firmaAdresaController.dispose();
 
     for (final c in _polazakBcControllers.values) {
       c.dispose();
@@ -243,12 +283,25 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // 📱 Izračunaj dostupnu visinu uzimajući u obzir tastaturу
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight - keyboardHeight;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      insetPadding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 24,
+        bottom: keyboardHeight > 0 ? 8 : 24, // Manji padding kad je tastatura otvorena
+      ),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxHeight: keyboardHeight > 0
+              ? availableHeight * 0.95 // Kad je tastatura - koristi skoro svu dostupnu visinu
+              : screenHeight * 0.85, // Kad nema tastature - standardno
           maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
         decoration: BoxDecoration(
@@ -344,6 +397,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   Widget _buildContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
+      dragStartBehavior: DragStartBehavior.down, // Omogući long press na child widgetima
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,84 +559,244 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     icon: Icons.woman,
                     keyboardType: TextInputType.phone,
                   ),
-                  const SizedBox(height: 16),
-                  // 🆕 Fiksna cena sekcija
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.attach_money, color: Colors.amber, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Cena po danu (opciono)',
-                                style: TextStyle(
-                                  color: Colors.amber,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Ako ostavite prazno, cena se računa automatski:\n• Radnik: 700 RSD po danu\n• Učenik: 600 RSD po danu\n• Dnevni: po dogovoru',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _cenaPoDanuController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Cena po danu (RSD)',
-                            hintText: 'npr. 500',
-                            prefixIcon: const Icon(Icons.payments),
-                            suffixText: 'RSD',
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        const SizedBox(height: 16),
-                        // 📧 EMAIL POLJE
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            labelText: 'Email (opciono)',
-                            hintText: 'npr. putnik@email.com',
-                            prefixIcon: const Icon(Icons.email),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
           ],
+          // 🆕 Cena po danu sekcija - VIDLJIVA ZA SVE TIPOVE (učenik, radnik, dnevni)
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.attach_money, color: Colors.amber, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cena po danu (opciono)',
+                        style: TextStyle(
+                          color: Colors.amber,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Ako ostavite prazno, cena se računa automatski:\n• Radnik: 700 RSD po danu\n• Učenik: 600 RSD po danu\n• Dnevni: po dogovoru',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _cenaPoDanuController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Cena po danu (RSD)',
+                    hintText: 'npr. 500',
+                    prefixIcon: const Icon(Icons.payments),
+                    suffixText: 'RSD',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  style: const TextStyle(color: Colors.black),
+                ),
+                const SizedBox(height: 16),
+                // 📧 EMAIL POLJE
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email (opciono)',
+                    hintText: 'npr. putnik@email.com',
+                    prefixIcon: const Icon(Icons.email),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  style: const TextStyle(color: Colors.black),
+                ),
+                const SizedBox(height: 16),
+                // 🧾 CHECKBOX ZA RAČUN
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _trebaRacun ? Colors.green.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _trebaRacun ? Colors.green.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.receipt_long,
+                            color: _trebaRacun ? Colors.green : Colors.grey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Treba račun na kraju meseca',
+                              style: TextStyle(
+                                color: _trebaRacun ? Colors.green : Colors.white70,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Switch(
+                            value: _trebaRacun,
+                            activeThumbColor: Colors.green,
+                            onChanged: (value) {
+                              setState(() {
+                                _trebaRacun = value;
+                              });
+                              if (value) {
+                                _showFirmaDialog();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      if (_trebaRacun && _firmaNazivController.text.isNotEmpty) ...[
+                        const Divider(color: Colors.white24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${_firmaNazivController.text}\nPIB: ${_firmaPibController.text}',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.white70, size: 18),
+                              onPressed: _showFirmaDialog,
+                              tooltip: 'Uredi podatke firme',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🧾 Popup za unos podataka firme
+  void _showFirmaDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(dialogContext).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.business, color: Colors.green),
+            const SizedBox(width: 8),
+            const Text('Podaci firme za račun'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _firmaNazivController,
+                decoration: const InputDecoration(
+                  labelText: 'Naziv firme *',
+                  hintText: 'npr. PR Optičarska radnja MAZA',
+                  prefixIcon: Icon(Icons.business),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _firmaPibController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'PIB *',
+                  hintText: '111394041',
+                  prefixIcon: Icon(Icons.numbers),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _firmaMbController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Matični broj',
+                  hintText: '65380200',
+                  prefixIcon: Icon(Icons.badge),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _firmaZiroController,
+                decoration: const InputDecoration(
+                  labelText: 'Žiro račun',
+                  hintText: '340-0000011427591-61',
+                  prefixIcon: Icon(Icons.account_balance),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _firmaAdresaController,
+                decoration: const InputDecoration(
+                  labelText: 'Adresa firme',
+                  hintText: 'Ulica i broj, grad',
+                  prefixIcon: Icon(Icons.location_on),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Otkaži'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () {
+              if (_firmaNazivController.text.trim().isEmpty || _firmaPibController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Unesite naziv firme i PIB'), backgroundColor: Colors.orange),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext);
+              setState(() {}); // Refresh UI
+            },
+            child: const Text('Sačuvaj'),
+          ),
         ],
       ),
     );
@@ -952,6 +1166,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.black87),
       validator: validator,
+      enableInteractiveSelection: true,
+      onTapOutside: (_) => FocusScope.of(context).unfocus(),
       decoration: InputDecoration(
         hintText: label,
         border: OutlineInputBorder(
@@ -1158,6 +1374,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       cenaPoDanu: _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
       email: _emailController.text.isEmpty ? null : _emailController.text.trim(), // 📧 Email
       dodaliVozaci: dodaliVozaciList, // 🔧 FIX: Dodaj ko je kreirao putnika
+      // 🧾 Polja za račun
+      trebaRacun: _trebaRacun,
+      firmaNaziv: _firmaNazivController.text.isEmpty ? null : _firmaNazivController.text.trim(),
+      firmaPib: _firmaPibController.text.isEmpty ? null : _firmaPibController.text.trim(),
+      firmaMb: _firmaMbController.text.isEmpty ? null : _firmaMbController.text.trim(),
+      firmaZiro: _firmaZiroController.text.isEmpty ? null : _firmaZiroController.text.trim(),
+      firmaAdresa: _firmaAdresaController.text.isEmpty ? null : _firmaAdresaController.text.trim(),
     );
 
     final dodatiPutnik = await _registrovaniPutnikService.dodajMesecnogPutnika(noviPutnik);
@@ -1202,6 +1425,13 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
       // 📧 Email
       'email': _emailController.text.isEmpty ? null : _emailController.text.trim(),
+      // 🧾 Polja za račun
+      'treba_racun': _trebaRacun,
+      'firma_naziv': _firmaNazivController.text.isEmpty ? null : _firmaNazivController.text.trim(),
+      'firma_pib': _firmaPibController.text.isEmpty ? null : _firmaPibController.text.trim(),
+      'firma_mb': _firmaMbController.text.isEmpty ? null : _firmaMbController.text.trim(),
+      'firma_ziro': _firmaZiroController.text.isEmpty ? null : _firmaZiroController.text.trim(),
+      'firma_adresa': _firmaAdresaController.text.isEmpty ? null : _firmaAdresaController.text.trim(),
     };
 
     try {

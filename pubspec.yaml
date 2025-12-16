@@ -101,3 +101,4 @@ flutter:
     - assets/weather/  # 🌤️ Lottie animacije za vremensku prognozu
     - assets/logo_gavra.jpg # 🎨 Logo firme Gavra 013
     - assets/logo_transparent.png # 🎨 Logo sa transparentnom pozadinom
+    - assets/fonts/  # 🔤 Fontovi za PDF sa srpskim slovima

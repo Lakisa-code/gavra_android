@@ -507,10 +507,10 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
         if (automatskiGenerisal) {
           // AUTOMATSKI POPIS - Prikaži kao automatski
-          _showAutomaticReportDialog(popis);
+          await _showAutomaticReportDialog(popis);
         } else {
           // RUČNI POPIS - Prikaži ga
-          _showPreviousDayReportDialog(lastReport);
+          await _showPreviousDayReportDialog(lastReport);
         }
       } else {
         // NEMA RUČNOG POPISA - Generiši automatski
@@ -521,7 +521,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
         if (automatskiPopis != null && mounted) {
           // Prikaži automatski generisan popis
-          _showAutomaticReportDialog(automatskiPopis);
+          await _showAutomaticReportDialog(automatskiPopis);
         }
       }
     } catch (e) {
@@ -530,12 +530,12 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   }
 
   // 📊 DIALOG ZA PRIKAZ POPISA IZ PRETHODNOG DANA
-  void _showPreviousDayReportDialog(Map<String, dynamic> lastReport) {
+  Future<void> _showPreviousDayReportDialog(Map<String, dynamic> lastReport) async {
     final datum = lastReport['datum'] as DateTime;
     final vozacColor = VozacBoja.get(widget.vozac);
     final popis = lastReport['popis'] as Map<String, dynamic>;
 
-    showDialog<void>(
+    await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Color.lerp(vozacColor, Colors.white, 0.95), // Koristi dinamičku svetlu boju
@@ -673,7 +673,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
   }
 
   // 🤖 DIALOG ZA AUTOMATSKI GENERISAN POPIS
-  void _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
+  Future<void> _showAutomaticReportDialog(Map<String, dynamic> automatskiPopis) async {
     final datum = DateTime.parse(automatskiPopis['datum'] as String);
     final vozacColor = VozacBoja.get(widget.vozac); // DODANO: Koristi boju vozača
 

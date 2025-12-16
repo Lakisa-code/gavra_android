@@ -2767,13 +2767,13 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 🗑️ BRISANJE - izdvojeno u funkciju
+  // 🗑️ UKLONI IZ TERMINA - samo nestane sa liste, bez otkazivanja
   Future<void> _handleBrisanje() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Brisanje putnika'),
-        content: const Text('Da li ste sigurni da želite da obrišete ovog putnika?'),
+        title: const Text('Ukloni iz termina'),
+        content: Text('Ukloniti ${_putnik.ime} sa liste?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -2789,9 +2789,15 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (confirm == true) {
       try {
-        await PutnikService().obrisiPutnika(_putnik.id!);
+        // ✅ Samo ukloni iz ovog termina (datum + vreme + grad)
+        await PutnikService().ukloniIzTermina(
+          _putnik.id!,
+          datum: _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],
+          vreme: _putnik.polazak,
+          grad: _putnik.grad,
+        );
 
-        // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM AKCIJAMA
+        // 🔄 OSVJEŽI REALTIME STREAM
         try {
           await RealtimeService.instance.refreshNow();
         } catch (_) {}
@@ -2807,13 +2813,13 @@ class _PutnikCardState extends State<PutnikCard> {
         if (mounted) {
           setState(() {});
           ScaffoldMessenger.of(context).showSnackBar(
-            SmartSnackBar.success('Putnik ${_putnik.ime} je obrisan', context),
+            SmartSnackBar.success('${_putnik.ime} uklonjen/a iz termina', context),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SmartSnackBar.error('Greška pri brisanju: $e', context),
+            SmartSnackBar.error('Greška: $e', context),
           );
         }
       }

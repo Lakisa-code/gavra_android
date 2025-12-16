@@ -5,10 +5,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_api_availability/google_api_availability.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'globals.dart';
-import 'screens/loading_screen.dart';
 import 'screens/welcome_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
@@ -17,12 +17,16 @@ import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/realtime_notification_service.dart';
 import 'services/simple_usage_monitor.dart';
+import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'supabase_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
+  await initializeDateFormatting('sr_RS', null);
 
   // 📊 POKRETANJE MONITORING SERVISA
   try {
@@ -131,6 +135,14 @@ void main() async {
     // Ignoriši greške u cache - optional feature
   }
 
+  // 📱 POKRENI SMS SERVIS - automatski podsetnici za plaćanje
+  // Predzadnji dan meseca u 20:00 + prvi dan meseca u 10:00
+  try {
+    SMSService.startAutomaticSMSService();
+  } catch (e) {
+    // Ignoriši greške u SMS servisu
+  }
+
   runApp(const MyApp());
 }
 
@@ -142,7 +154,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  bool _isInitialized = false;
   String? _initError;
 
   @override
@@ -202,11 +213,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         CacheService.performAutomaticCleanup();
       });
 
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
-      }
+      // Inicijalizacija završena
+      debugPrint('✅ App inicijalizacija završena');
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -238,13 +246,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   Widget _buildHome() {
     if (_initError != null) {
-      return LoadingScreen(error: _initError);
+      // Samo prikaži grešku u konzoli i idi na WelcomeScreen
+      debugPrint('Init error: $_initError');
     }
 
-    if (!_isInitialized) {
-      return const LoadingScreen();
-    }
-
+    // Uvek idi direktno na WelcomeScreen - bez Loading ekrana
     return const WelcomeScreen();
   }
 }

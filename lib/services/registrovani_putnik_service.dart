@@ -28,6 +28,19 @@ class RegistrovaniPutnikService {
     return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
   }
 
+  /// Dohvata putnike kojima treba račun (treba_racun = true)
+  Future<List<RegistrovaniPutnik>> getPutniciZaRacun() async {
+    final response = await _supabase
+        .from('registrovani_putnici')
+        .select('*')
+        .eq('aktivan', true)
+        .eq('obrisan', false)
+        .eq('treba_racun', true)
+        .order('putnik_ime');
+
+    return response.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+  }
+
   /// Dohvata mesečnog putnika po ID-u
   Future<RegistrovaniPutnik?> getRegistrovaniPutnikById(String id) async {
     final response = await _supabase.from('registrovani_putnici').select('''

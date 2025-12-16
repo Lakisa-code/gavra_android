@@ -1,8 +1,8 @@
 // 'dart:typed_data' not required; elements available via Flutter packages
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +15,21 @@ import '../utils/text_utils.dart';
 
 class PrintingService {
   static final PutnikService _putnikService = PutnikService();
+
+  // ========== FONTOVI SA PODRŠKOM ZA SRPSKA SLOVA ==========
+  static pw.Font? _regularFont;
+  static pw.Font? _boldFont;
+
+  static Future<void> _loadFonts() async {
+    if (_regularFont == null) {
+      final regularData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+      _regularFont = pw.Font.ttf(regularData);
+    }
+    if (_boldFont == null) {
+      final boldData = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
+      _boldFont = pw.Font.ttf(boldData);
+    }
+  }
 
   // Use centralized logger
 
@@ -144,6 +159,9 @@ class PrintingService {
         return;
       }
 
+      // Učitaj fontove sa podrškom za srpska slova
+      await _loadFonts();
+
       // Kreiraj PDF dokument
       final pdf = await _createPutniksPDF(
         putnici,
@@ -194,10 +212,19 @@ class PrintingService {
     // Danas datum
     final danas = DateFormat('dd.MM.yyyy').format(DateTime.now());
 
+    // Kreiraj temu sa fontovima koji podržavaju srpska slova
+    final theme = pw.ThemeData.withFont(
+      base: _regularFont,
+      bold: _boldFont,
+      italic: _regularFont,
+      boldItalic: _boldFont,
+    );
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
+        theme: theme,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,

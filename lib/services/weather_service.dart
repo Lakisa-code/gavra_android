@@ -36,7 +36,14 @@ class WeatherService {
   /// https://open-meteo.com/en/docs
   static String _wmoCodeToCondition(int code) {
     // 0: Clear sky
-    if (code == 0) return 'sunny';
+    if (code == 0) {
+      // 🌙 Proveri da li je noć (pre 6:00 ili posle 18:00)
+      final hour = DateTime.now().hour;
+      if (hour < 6 || hour >= 18) {
+        return 'night'; // Noću prikaži mesec i zvezde
+      }
+      return 'sunny';
+    }
 
     // 1-3: Mainly clear, partly cloudy, overcast
     if (code >= 1 && code <= 3) return 'cloudy';
@@ -218,6 +225,8 @@ class WeatherService {
     switch (condition) {
       case 'sunny':
         return 'assets/weather/sunny.json';
+      case 'night':
+        return 'assets/weather/night.json';
       case 'rain':
         return 'assets/weather/rain.json';
       case 'snow':

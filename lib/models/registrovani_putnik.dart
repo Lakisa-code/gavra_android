@@ -48,6 +48,13 @@ class RegistrovaniPutnik {
     this.pin,
     this.email, // 📧 Email za kontakt i Google Play testing
     this.cenaPoDanu, // 🆕 Custom cena po danu (ako je NULL, koristi default: 700 radnik, 600 učenik)
+    // 🧾 Polja za račune
+    this.trebaRacun = false,
+    this.firmaNaziv,
+    this.firmaPib,
+    this.firmaMb,
+    this.firmaZiro,
+    this.firmaAdresa,
     // Uklonjeno: ime, prezime, datumPocetka, datumKraja - duplikati
     // Uklonjeno: adresaBelaCrkva, adresaVrsac - koristimo UUID reference
   });
@@ -114,6 +121,13 @@ class RegistrovaniPutnik {
       pin: map['pin'] as String?,
       email: map['email'] as String?, // 📧 Email
       cenaPoDanu: (map['cena_po_danu'] as num?)?.toDouble(), // 🆕 Custom cena po danu
+      // 🧾 Polja za račune
+      trebaRacun: map['treba_racun'] as bool? ?? false,
+      firmaNaziv: map['firma_naziv'] as String?,
+      firmaPib: map['firma_pib'] as String?,
+      firmaMb: map['firma_mb'] as String?,
+      firmaZiro: map['firma_ziro'] as String?,
+      firmaAdresa: map['firma_adresa'] as String?,
       // Uklonjeno: ime, prezime - koristi se putnikIme
       // Uklonjeno: datumPocetka, datumKraja - koriste se datumPocetkaMeseca/datumKrajaMeseca
     );
@@ -166,6 +180,13 @@ class RegistrovaniPutnik {
   final String? pin; // 🔐 PIN za login
   final String? email; // 📧 Email za kontakt i Google Play testing
   final double? cenaPoDanu; // 🆕 Custom cena po danu (NULL = default 700/600)
+  // 🧾 Polja za račune
+  final bool trebaRacun;
+  final String? firmaNaziv;
+  final String? firmaPib;
+  final String? firmaMb;
+  final String? firmaZiro;
+  final String? firmaAdresa;
 
   Map<String, dynamic> toMap() {
     // Build normalized polasci_po_danu structure
@@ -231,6 +252,13 @@ class RegistrovaniPutnik {
       'datum_placanja': datumPlacanja?.toIso8601String(),
       'email': email, // 📧 Email
       'cena_po_danu': cenaPoDanu, // 🆕 Custom cena po danu
+      // 🧾 Polja za račune
+      'treba_racun': trebaRacun,
+      'firma_naziv': firmaNaziv,
+      'firma_pib': firmaPib,
+      'firma_mb': firmaMb,
+      'firma_ziro': firmaZiro,
+      'firma_adresa': firmaAdresa,
       // 'pin': pin, // PIN se ne šalje iz modela, čuva se posebno
     };
 
@@ -316,6 +344,13 @@ class RegistrovaniPutnik {
     List<dynamic>? dodaliVozaci,
     bool? placeno,
     DateTime? datumPlacanja,
+    // 🧾 Polja za račune
+    bool? trebaRacun,
+    String? firmaNaziv,
+    String? firmaPib,
+    String? firmaMb,
+    String? firmaZiro,
+    String? firmaAdresa,
   }) {
     return RegistrovaniPutnik(
       id: id ?? this.id,
@@ -353,6 +388,13 @@ class RegistrovaniPutnik {
       dodaliVozaci: dodaliVozaci ?? this.dodaliVozaci,
       placeno: placeno ?? this.placeno,
       datumPlacanja: datumPlacanja ?? this.datumPlacanja,
+      // 🧾 Polja za račune
+      trebaRacun: trebaRacun ?? this.trebaRacun,
+      firmaNaziv: firmaNaziv ?? this.firmaNaziv,
+      firmaPib: firmaPib ?? this.firmaPib,
+      firmaMb: firmaMb ?? this.firmaMb,
+      firmaZiro: firmaZiro ?? this.firmaZiro,
+      firmaAdresa: firmaAdresa ?? this.firmaAdresa,
     );
   }
 

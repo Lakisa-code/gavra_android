@@ -290,7 +290,8 @@ class _AdminScreenState extends State<AdminScreen> {
                               const spacing = 1.0; // Minimal spacing
                               const padding = 8.0; // Safety padding
                               final availableWidth = screenWidth - padding;
-                              final buttonWidth = (availableWidth - (spacing * 4)) / 5; // 5 buttons with 4 spaces
+                              // 4 dugmeta: Putnici, API, Kapacit, Dropdown
+                              final buttonWidth = (availableWidth - (spacing * 3)) / 4; // 4 buttons with 3 spaces
 
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -402,6 +403,55 @@ class _AdminScreenState extends State<AdminScreen> {
                                                   ),
                                                 ),
                                               ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  // 🎫 DUGME KAPACITET - podešavanje kapaciteta polazaka
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const KapacitetScreen(),
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'Mesta',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 3,
+                                                    color: Colors.black54,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -534,8 +584,8 @@ class _AdminScreenState extends State<AdminScreen> {
                               const spacing = 1.0;
                               const padding = 8.0;
                               final availableWidth = screenWidth - padding;
-                              // Broj dugmadi zavisi od korisnika - uvek 6 za ravnomerni raspored
-                              final buttonCount = (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana') ? 6 : 2;
+                              // 5 dugmadi - samo admini vide ovaj ekran
+                              const buttonCount = 5;
                               final buttonWidth = (availableWidth - (spacing * (buttonCount - 1))) / buttonCount;
 
                               return Row(
@@ -639,192 +689,139 @@ class _AdminScreenState extends State<AdminScreen> {
                                     ),
                                   ),
 
-                                  // 🎯 DUGME DODELI - samo za Bojan i Svetlana
-                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
-                                    SizedBox(
-                                      width: buttonWidth,
-                                      child: InkWell(
-                                        onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) => const DodeliPutnikeScreen(),
+                                  // 🎯 DUGME DODELI
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (context) => const DodeliPutnikeScreen(),
+                                        ),
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        height: 28,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).glassContainer,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Theme.of(context).glassBorder,
+                                            width: 1.5,
                                           ),
                                         ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          height: 28,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).glassContainer,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Theme.of(context).glassBorder,
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: const Center(
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                'Dodeli',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      offset: Offset(1, 1),
-                                                      blurRadius: 3,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ],
-                                                ),
+                                        child: const Center(
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              'Dodeli',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    offset: Offset(1, 1),
+                                                    blurRadius: 3,
+                                                    color: Colors.black54,
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-
-                                  // 🎫 DUGME KAPACITET - podešavanje kapaciteta polazaka
-                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
-                                    SizedBox(
-                                      width: buttonWidth,
-                                      child: InkWell(
-                                        onTap: () => Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) => const KapacitetScreen(),
-                                          ),
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          height: 28,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).glassContainer,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Theme.of(context).glassBorder,
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: const Center(
-                                            child: FittedBox(
-                                              fit: BoxFit.scaleDown,
-                                              child: Text(
-                                                'Kapacit',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      offset: Offset(1, 1),
-                                                      blurRadius: 3,
-                                                      color: Colors.black54,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                  ),
 
                                   // 📨 DUGME PIN ZAHTEVI - sa badge-om
-                                  if (_currentDriver == 'Bojan' || _currentDriver == 'Svetlana')
-                                    SizedBox(
-                                      width: buttonWidth,
-                                      child: InkWell(
-                                        onTap: () async {
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute<void>(
-                                              builder: (context) => const PinZahteviScreen(),
+                                  SizedBox(
+                                    width: buttonWidth,
+                                    child: InkWell(
+                                      onTap: () async {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (context) => const PinZahteviScreen(),
+                                          ),
+                                        );
+                                        // Refresh badge nakon povratka
+                                        _loadBrojPinZahteva();
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Container(
+                                            height: 28,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                              vertical: 2,
                                             ),
-                                          );
-                                          // Refresh badge nakon povratka
-                                          _loadBrojPinZahteva();
-                                        },
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Stack(
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            Container(
-                                              height: 28,
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 4,
-                                                vertical: 2,
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).glassContainer,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color:
+                                                    _brojPinZahteva > 0 ? Colors.orange : Theme.of(context).glassBorder,
+                                                width: 1.5,
                                               ),
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context).glassContainer,
-                                                borderRadius: BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: _brojPinZahteva > 0
-                                                      ? Colors.orange
-                                                      : Theme.of(context).glassBorder,
-                                                  width: 1.5,
-                                                ),
-                                              ),
-                                              child: const Center(
-                                                child: FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  child: Text(
-                                                    'PIN',
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.w600,
-                                                      fontSize: 14,
-                                                      color: Colors.white,
-                                                      shadows: [
-                                                        Shadow(
-                                                          offset: Offset(1, 1),
-                                                          blurRadius: 3,
-                                                          color: Colors.black54,
-                                                        ),
-                                                      ],
-                                                    ),
+                                            ),
+                                            child: const Center(
+                                              child: FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  'PIN',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 14,
+                                                    color: Colors.white,
+                                                    shadows: [
+                                                      Shadow(
+                                                        offset: Offset(1, 1),
+                                                        blurRadius: 3,
+                                                        color: Colors.black54,
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
                                             ),
-                                            // Badge sa brojem zahteva
-                                            if (_brojPinZahteva > 0)
-                                              Positioned(
-                                                right: -4,
-                                                top: -4,
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: const BoxDecoration(
-                                                    color: Colors.orange,
-                                                    shape: BoxShape.circle,
+                                          ),
+                                          // Badge sa brojem zahteva
+                                          if (_brojPinZahteva > 0)
+                                            Positioned(
+                                              right: -4,
+                                              top: -4,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.orange,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 16,
+                                                  minHeight: 16,
+                                                ),
+                                                child: Text(
+                                                  '$_brojPinZahteva',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
-                                                  constraints: const BoxConstraints(
-                                                    minWidth: 16,
-                                                    minHeight: 16,
-                                                  ),
-                                                  child: Text(
-                                                    '$_brojPinZahteva',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                  ),
+                                                  textAlign: TextAlign.center,
                                                 ),
                                               ),
-                                          ],
-                                        ),
+                                            ),
+                                        ],
                                       ),
                                     ),
+                                  ),
 
                                   // 📍 DUGME ADRESE
                                   SizedBox(

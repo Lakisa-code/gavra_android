@@ -63,7 +63,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Future<void> _addAdresa() async {
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, String?>>(
       context: context,
       builder: (context) => _AdresaDialog(),
     );
@@ -95,7 +95,7 @@ class _AdreseScreenState extends State<AdreseScreen> {
   }
 
   Future<void> _editAdresa(Map<String, dynamic> adresa) async {
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, String?>>(
       context: context,
       builder: (context) => _AdresaDialog(
         initialNaziv: adresa['naziv'],
