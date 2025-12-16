@@ -9,7 +9,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/advanced_geocoding_service.dart'; // 🌍 Za geocoding adresa
-import '../services/improved_registrovani_putnik_service.dart';
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/realtime_service.dart'; // Za stream osvezavanje
 import '../services/registrovani_putnik_service.dart';
@@ -46,8 +45,8 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   // Supabase klijent
   final SupabaseClient supabase = Supabase.instance.client;
 
-  // Novi servis instance (Improved)
-  final ImprovedRegistrovaniPutnikService _registrovaniPutnikService = ImprovedRegistrovaniPutnikService();
+  // Novi servis instance
+  final RegistrovaniPutnikService _registrovaniPutnikService = RegistrovaniPutnikService();
 
   // 🔄 OPTIMIZACIJA: Connection resilience
   StreamSubscription<dynamic>? _connectionSubscription;

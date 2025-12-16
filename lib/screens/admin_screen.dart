@@ -1,10 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 
+import '../globals.dart';
 import '../models/putnik.dart';
 import '../services/admin_security_service.dart'; // 🔐 ADMIN SECURITY
 import '../services/firebase_service.dart';
 import '../services/local_notification_service.dart';
-import '../services/optimized_kusur_service.dart'; // 🔥 ZAMENЈENO: kusur stream umesto MasterRealtimeStream
 import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
@@ -160,6 +160,23 @@ class _AdminScreenState extends State<AdminScreen> {
       }
     } catch (e) {
       // Ignorišemo grešku, badge jednostavno neće prikazati broj
+    }
+  }
+
+  // 💰 Direktan Supabase upit za kusur vozača
+  Future<double> _getKusurForVozac(String vozacIme) async {
+    try {
+      final vozacUuid = await VozacMappingService.getVozacUuid(vozacIme);
+      if (vozacUuid == null) return 0.0;
+
+      final response = await supabase.from('vozaci').select('kusur').eq('id', vozacUuid).maybeSingle();
+
+      if (response != null && response['kusur'] != null) {
+        return (response['kusur'] as num).toDouble();
+      }
+      return 0.0;
+    } catch (e) {
+      return 0.0;
     }
   }
 
@@ -1215,11 +1232,11 @@ class _AdminScreenState extends State<AdminScreen> {
                         // 💸 KUSUR KOCKE (REAL-TIME)
                         Row(
                           children: [
-                            // Kusur za Bruda - REAL-TIME (OPTIMIZED)
+                            // Kusur za Bruda - DIREKTAN SUPABASE POZIV
                             Expanded(
-                              child: StreamBuilder<double>(
-                                // 🔥 ZAMENЈENO: OptimizedKusurService umesto MasterRealtimeStream
-                                stream: OptimizedKusurService.instance.streamKusurForVozac('Bruda'),
+                              child: FutureBuilder<double>(
+                                // Direktan Supabase upit za kusur
+                                future: _getKusurForVozac('Bruda'),
                                 builder: (context, snapshot) {
                                   // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {
@@ -1349,11 +1366,11 @@ class _AdminScreenState extends State<AdminScreen> {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            // Kusur za Bilevski - REAL-TIME (OPTIMIZED)
+                            // Kusur za Bilevski - DIREKTAN SUPABASE POZIV
                             Expanded(
-                              child: StreamBuilder<double>(
-                                // 🔥 ZAMENЈENO: OptimizedKusurService umesto MasterRealtimeStream
-                                stream: OptimizedKusurService.instance.streamKusurForVozac('Bilevski'),
+                              child: FutureBuilder<double>(
+                                // Direktan Supabase upit za kusur
+                                future: _getKusurForVozac('Bilevski'),
                                 builder: (context, snapshot) {
                                   // Heartbeat indicator pokazuje status konekcije
                                   if (snapshot.hasError) {

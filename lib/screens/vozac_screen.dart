@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart'; // 🗺️ Za GPS poziciju
 
 import '../models/putnik.dart';
 import '../services/auth_manager.dart';
+import '../services/daily_checkin_service.dart';
 import '../services/driver_location_service.dart'; // 🚐 Za ETA tracking
 import '../services/firebase_service.dart'; // 🎯 Za vozača
 import '../services/local_notification_service.dart'; // 🔔 Za lokalne notifikacije
@@ -12,7 +13,6 @@ import '../services/pickup_tracking_service.dart'; // 🛰️ Za GPS pickup trac
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 🛰️ Za GPS tracking
 import '../services/realtime_notification_service.dart'; // 🔔 Za realtime notifikacije
-import '../services/simplified_daily_checkin.dart';
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart';
 import '../theme.dart';
@@ -1236,7 +1236,7 @@ class _VozacScreenState extends State<VozacScreen> {
       }
 
       // 5. SITAN NOVAC
-      final sitanNovac = await SimplifiedDailyCheckInService.getTodayAmount(vozac);
+      final sitanNovac = await DailyCheckInService.getTodayAmount(vozac) ?? 0.0;
 
       // 6. MAPIRANJE PODATAKA
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
@@ -1459,8 +1459,8 @@ class _VozacScreenState extends State<VozacScreen> {
   // 💾 SAČUVAJ POPIS U DAILY CHECK-IN SERVICE
   Future<void> _sacuvajPopis(String vozac, DateTime datum, Map<String, dynamic> podaci) async {
     try {
-      await SimplifiedDailyCheckInService.saveDailyReport(vozac, datum, podaci);
-      await SimplifiedDailyCheckInService.saveCheckIn(vozac, podaci['sitanNovac'] as double);
+      await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
+      await DailyCheckInService.saveCheckIn(vozac, podaci['sitanNovac'] as double);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1623,7 +1623,7 @@ class _VozacScreenState extends State<VozacScreen> {
                             // KUSUR
                             Expanded(
                               child: StreamBuilder<double>(
-                                stream: SimplifiedDailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
+                                stream: DailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
                                 builder: (context, snapshot) {
                                   final kusur = snapshot.data ?? 0.0;
                                   return _buildStatBox(

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/auth_manager.dart';
-import '../services/simplified_daily_checkin.dart';
+import '../services/daily_checkin_service.dart';
 import '../theme.dart';
 import 'daily_checkin_screen.dart';
 import 'home_screen.dart';
@@ -143,7 +143,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
       if (!mounted) return;
 
       // Proveri daily check-in
-      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(widget.vozacIme);
+      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(widget.vozacIme);
 
       if (!mounted) return;
 

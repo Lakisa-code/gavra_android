@@ -11,7 +11,6 @@ import '../models/putnik.dart';
 import '../models/registrovani_putnik.dart';
 import '../services/daily_checkin_service.dart'; // 🔧 DODANO za kusur stream initialize
 import '../services/driver_location_service.dart'; // 🚐 DODANO za realtime ETA putnicima
-import '../services/fail_fast_stream_manager_new.dart'; // 🚨 NOVO fail-fast stream manager
 import '../services/firebase_service.dart';
 import '../services/kapacitet_service.dart'; // 🎫 Kapacitet za bottom nav bar
 import '../services/local_notification_service.dart';
@@ -19,11 +18,9 @@ import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pick
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
-import '../services/realtime_network_status_service.dart'; // 🚥 NOVO network status service
 import '../services/realtime_notification_service.dart';
 import '../services/realtime_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
-import '../services/simplified_daily_checkin.dart'; // 🚀 OPTIMIZOVANI servis za kusur
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/theme_manager.dart';
@@ -73,10 +70,6 @@ class _DanasScreenState extends State<DanasScreen> {
   // 💓 HEARTBEAT MONITORING VARIABLES
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
   final Map<String, DateTime> _streamHeartbeats = {};
-  // Listen to higher-level network status (better than raw heartbeat)
-  NetworkStatus? _prevNetworkStatus;
-  // Previously used to compare heartbeat state; kept for potential future re-enable
-  // bool _wasRealtimeHealthy = true;
 
   // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
   // ✅ Povećano na 800ms da spreči race conditions, ali i dalje dovoljno brzo za UX
@@ -121,28 +114,7 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
   void _registerStreamHeartbeat(String streamName) {
-    final now = DateTime.now();
-    final prev = _streamHeartbeats[streamName];
-    final responseTime = prev != null ? now.difference(prev) : const Duration(milliseconds: 250);
-    _streamHeartbeats[streamName] = now;
-
-    try {
-      // Update global network status metrics using the computed response time
-      RealtimeNetworkStatusService.instance.registerStreamResponse(streamName, responseTime, hasError: false);
-    } catch (_) {}
-  }
-
-  void _onNetworkStatusChanged() {
-    final status = RealtimeNetworkStatusService.instance.networkStatus.value;
-    if (_prevNetworkStatus != status) {
-      // If we've recovered to good/excellent, trigger UI refresh
-      if ((status == NetworkStatus.excellent || status == NetworkStatus.good) &&
-          (_prevNetworkStatus == NetworkStatus.offline || _prevNetworkStatus == NetworkStatus.poor)) {
-        // Stream automatski ažurira podatke - samo osvežimo UI
-        if (mounted) setState(() {});
-      }
-      _prevNetworkStatus = status;
-    }
+    _streamHeartbeats[streamName] = DateTime.now();
   }
 
   // Auto-refetch is disabled; method kept for future re-enable
@@ -154,23 +126,8 @@ class _DanasScreenState extends State<DanasScreen> {
     for (final entry in _streamHeartbeats.entries) {
       final timeSinceLastHeartbeat = now.difference(entry.value);
       if (timeSinceLastHeartbeat.inSeconds > 30) {
-        // 30 sekundi timeout
         isHealthy = false;
         break;
-      }
-    }
-
-    // Detect stale streams and notify the network status service about errors
-    for (final entry in _streamHeartbeats.entries) {
-      final timeSinceLastHeartbeat = now.difference(entry.value);
-      if (timeSinceLastHeartbeat.inSeconds > 45) {
-        try {
-          RealtimeNetworkStatusService.instance.registerStreamResponse(
-            entry.key,
-            const Duration(milliseconds: 0),
-            hasError: true,
-          );
-        } catch (_) {}
       }
     }
 
@@ -187,72 +144,6 @@ class _DanasScreenState extends State<DanasScreen> {
       _checkStreamHealth,
       isPeriodic: true,
     );
-  }
-
-  // 🚨 BUILD FAIL-FAST STATUS WIDGETS
-  List<Widget> _buildFailFastStatus() {
-    final status = FailFastStreamManager.instance.getSubscriptionStatus();
-    final subscriptions = status['subscriptions'] as List<dynamic>;
-
-    return [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Active: ${status['activeCount']}'),
-          Text('Critical: ${status['criticalCount']}'),
-          Text('Errors: ${status['totalErrors']}'),
-        ],
-      ),
-      const SizedBox(height: 4),
-      if (subscriptions.isEmpty)
-        const Text(
-          'No subscriptions',
-          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.orange),
-        )
-      else
-        ...subscriptions.map((sub) {
-          final isCritical = sub['isCritical'] as bool;
-          final errorCount = sub['errorCount'] as int;
-          final isStale = sub['isStale'] as bool;
-
-          Color statusColor = Colors.green;
-          if (isStale) statusColor = Colors.orange;
-          if (errorCount > 0) statusColor = Colors.red;
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 1),
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  sub['name'] as String,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    fontWeight: isCritical ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                const Spacer(),
-                if (errorCount > 0)
-                  Text(
-                    '${errorCount}E',
-                    style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.bold),
-                  ),
-                if (isCritical)
-                  const Text(
-                    'CRIT',
-                    style: TextStyle(fontSize: 9, color: Colors.purple, fontWeight: FontWeight.bold),
-                  ),
-              ],
-            ),
-          );
-        }).toList(),
-    ];
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
@@ -483,11 +374,6 @@ class _DanasScreenState extends State<DanasScreen> {
                   ),
                 );
               }),
-              const SizedBox(height: 16),
-              // 🚨 FAIL-FAST STREAM STATUS
-              const Text('Fail-Fast Status:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ..._buildFailFastStatus(),
             ],
           ),
         ),
@@ -969,7 +855,7 @@ class _DanasScreenState extends State<DanasScreen> {
       }
 
       // 5. SITAN NOVAC
-      final sitanNovac = await SimplifiedDailyCheckInService.getTodayAmount(vozac);
+      final sitanNovac = await DailyCheckInService.getTodayAmount(vozac) ?? 0.0;
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
       final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
@@ -1519,10 +1405,10 @@ class _DanasScreenState extends State<DanasScreen> {
     try {
       // Uklonjena striktna provera vozača
       // Sačuvaj kompletan popis
-      await SimplifiedDailyCheckInService.saveDailyReport(vozac, datum, podaci);
+      await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
 
       // Takođe sačuvaj i sitan novac (za kompatibilnost)
-      await SimplifiedDailyCheckInService.saveCheckIn(vozac, podaci['sitanNovac'] as double);
+      await DailyCheckInService.saveCheckIn(vozac, podaci['sitanNovac'] as double);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1659,14 +1545,6 @@ class _DanasScreenState extends State<DanasScreen> {
     // 🎫 Učitaj kapacitet cache na startu
     KapacitetService.ensureCacheLoaded();
 
-    // 🚥 INICIJALIZUJ NETWORK STATUS SERVICE
-    RealtimeNetworkStatusService.instance.initialize();
-
-    // 🚨 INICIJALIZUJ FAIL-FAST STREAM MANAGER
-    // Registruj kritične stream-ove koji ne smeju da ne rade
-    FailFastStreamManager.instance.registerCriticalStream('putnici_stream');
-    // NAPOMENA: pazar_stream NIJE kritičan - to je samo prikaz statistike
-
     // ✅ SETUP FILTERS FROM NOTIFICATION DATA
     if (widget.filterGrad != null) {
       _selectedGrad = widget.filterGrad!;
@@ -1701,7 +1579,7 @@ class _DanasScreenState extends State<DanasScreen> {
           // Initialize kusur stream to show current value
           DailyCheckInService.initializeStreamForVozac(_currentDriver!);
 
-          _dailyCheckinSub = SimplifiedDailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
+          _dailyCheckinSub = DailyCheckInService.initializeRealtimeForDriver(_currentDriver!);
 
           // 💓 POKRENI HEARTBEAT MONITORING
           _startHealthMonitoring();
@@ -1720,10 +1598,6 @@ class _DanasScreenState extends State<DanasScreen> {
       }
     });
     // Dodato: NIŠTA - koristimo direktne supabase pozive bez cache
-
-    // Start network status listener to auto-refetch when we recover connectivity
-    _prevNetworkStatus = RealtimeNetworkStatusService.instance.networkStatus.value;
-    RealtimeNetworkStatusService.instance.networkStatus.addListener(_onNetworkStatusChanged);
 
     // 🛰️ START GPS TRACKING
     RealtimeGpsService.startTracking().catchError((Object e) {});
@@ -1827,13 +1701,6 @@ class _DanasScreenState extends State<DanasScreen> {
       // Silently ignore
     }
 
-    // 🚨 FAIL-FAST CLEANUP - DISPOSE ALL STREAMS
-    FailFastStreamManager.instance.disposeAll();
-    try {
-      RealtimeNetworkStatusService.instance.networkStatus.removeListener(_onNetworkStatusChanged);
-    } catch (e) {
-      // Silently ignore
-    }
     try {
       _driverPositionSubscription?.cancel();
     } catch (e) {
@@ -2302,20 +2169,6 @@ class _DanasScreenState extends State<DanasScreen> {
                       }
                     }
 
-                    // 🚥 REGISTRUJ NETWORK STATUS - SUCCESS/ERROR
-                    if (snapshot.hasData && !snapshot.hasError) {
-                      RealtimeNetworkStatusService.instance.registerStreamResponse(
-                        'putnici_stream',
-                        const Duration(milliseconds: 500), // Estimated response time
-                      );
-                    } else if (snapshot.hasError) {
-                      RealtimeNetworkStatusService.instance.registerStreamResponse(
-                        'putnici_stream',
-                        const Duration(seconds: 30), // Error timeout
-                        hasError: true,
-                      );
-                    }
-
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -2608,7 +2461,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                         border: Border.all(color: Colors.orange[300]!),
                                       ),
                                       child: StreamBuilder<double>(
-                                        stream: SimplifiedDailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
+                                        stream: DailyCheckInService.streamTodayAmount(_currentDriver ?? ''),
                                         builder: (context, sitanSnapshot) {
                                           final sitanNovac = sitanSnapshot.data ?? 0.0;
                                           return FittedBox(

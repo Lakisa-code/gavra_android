@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../services/auth_manager.dart';
+import '../services/daily_checkin_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_notification_service.dart';
-import '../services/simplified_daily_checkin.dart';
 import '../theme.dart';
 import '../utils/vozac_boja.dart';
 import 'daily_checkin_screen.dart';
@@ -131,7 +131,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       if (!mounted) return;
 
       // Direktno na Daily Check-in ili Home Screen
-      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(driverName);
+      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(driverName);
 
       if (!hasCheckedIn) {
         if (!mounted) return;
@@ -198,7 +198,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
       }
 
       // 📅 PROVERI DA LI JE VOZAČ URADIO DAILY CHECK-IN
-      final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(activeDriver);
+      final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(activeDriver);
 
       if (!mounted) return;
 
@@ -320,7 +320,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
         if (!mounted) return;
 
         // Direktno na Daily Check-in ili Home Screen
-        final hasCheckedIn = await SimplifiedDailyCheckInService.hasCheckedInToday(correctName);
+        final hasCheckedIn = await DailyCheckInService.hasCheckedInToday(correctName);
 
         if (!hasCheckedIn) {
           if (!mounted) return;

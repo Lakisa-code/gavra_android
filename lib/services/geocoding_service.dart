@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cache_service.dart';
 import 'geocoding_stats_service.dart';
-import 'performance_optimizer_service.dart';
 
 class GeocodingService {
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
@@ -72,35 +71,25 @@ class GeocodingService {
         return diskCached;
       }
 
-      // 3. Pozovi API samo ako nema cache - SA BATCH OPTIMIZACIJOM
-      PerformanceOptimizerService.batchDatabaseOperation(
-        'geocoding_api_call',
-        () async {
-          try {
-            await GeocodingStatsService.incrementApiCalls();
-            final coords = await _fetchFromNominatim(grad, adresa);
-            if (coords != null) {
-              // Sacuvaj u oba cache-a
-              CacheService.saveToMemory(cacheKey, coords);
-              await CacheService.saveToDisk(cacheKey, coords);
-              await GeocodingStatsService.addPopularLocation(requestKey);
-              _completeRequest(requestKey, coords);
-            } else {
-              _completeRequest(requestKey, null);
-            }
-          } catch (e) {
-            _completeRequest(requestKey, null);
-          }
-        },
-      );
+      // 3. Pozovi API
+      try {
+        await GeocodingStatsService.incrementApiCalls();
+        final coords = await _fetchFromNominatim(grad, adresa);
+        if (coords != null) {
+          CacheService.saveToMemory(cacheKey, coords);
+          await CacheService.saveToDisk(cacheKey, coords);
+          await GeocodingStatsService.addPopularLocation(requestKey);
+          _completeRequest(requestKey, coords);
+        } else {
+          _completeRequest(requestKey, null);
+        }
+      } catch (e) {
+        _completeRequest(requestKey, null);
+      }
 
       return await completer.future;
     } finally {
       stopwatch.stop();
-      PerformanceOptimizerService().trackOperation(
-        'geocoding_getKoordinateZaAdresu',
-        stopwatch.elapsed,
-      );
     }
   }
 

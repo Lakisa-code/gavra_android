@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // ❌ DEPRECATED: Use daily_checkin_screen_v2.dart instead
 // import '../services/dnevni_kusur_service.dart';
-import '../services/simplified_daily_checkin.dart';
+import '../services/daily_checkin_service.dart';
 import '../theme.dart';
 import '../utils/smart_colors.dart';
 import '../utils/vozac_boja.dart';
@@ -98,7 +98,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
 
     try {
       // 🚀 DIREKTAN POZIV - saveCheckIn već ima 8s timeout
-      await SimplifiedDailyCheckInService.saveCheckIn(widget.vozac, iznos);
+      await DailyCheckInService.saveCheckIn(widget.vozac, iznos);
 
       if (mounted) {
         // Reset loading state first
@@ -498,7 +498,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
       }
 
       // Proveri da li postoji popis od juče
-      final lastReport = await SimplifiedDailyCheckInService.getLastDailyReport(widget.vozac);
+      final lastReport = await DailyCheckInService.getLastDailyReport(widget.vozac);
 
       if (lastReport != null && mounted) {
         // Proveri da li je automatski generisan
@@ -514,7 +514,7 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
         }
       } else {
         // NEMA RUČNOG POPISA - Generiši automatski
-        final automatskiPopis = await SimplifiedDailyCheckInService.generateAutomaticReport(
+        final automatskiPopis = await DailyCheckInService.generateAutomaticReport(
           widget.vozac,
           yesterday,
         );
