@@ -129,7 +129,7 @@ class _DugoviScreenState extends State<DugoviScreen> {
           _dugoviStreamHealthy.value = true;
 
           // ✅ Filter dužnike - SAMO DNEVNI PUTNICI koji nisu platili
-          final duznici = putnici
+          final duzniciRaw = putnici
               .where(
                 (p) =>
                     (p.mesecnaKarta != true) && // ✅ SAMO dnevni putnici (isključi mesečne)
@@ -138,6 +138,15 @@ class _DugoviScreenState extends State<DugoviScreen> {
                     (p.status == null || (p.status != 'Otkazano' && p.status != 'otkazan')),
               )
               .toList();
+
+          // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
+          final seenIds = <dynamic>{};
+          final duznici = duzniciRaw.where((p) {
+            final key = p.id ?? '${p.ime}_${p.dan}';
+            if (seenIds.contains(key)) return false;
+            seenIds.add(key);
+            return true;
+          }).toList();
 
           // Sort dužnike
           _sortDugovi(duznici);

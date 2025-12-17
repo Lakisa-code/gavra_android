@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'vozac_mapping_service.dart';
+
 /// Servis za statistiku - koristi SAMO registrovani_putnici tabelu
 /// Sve statistike se čuvaju u JSONB kolonama: statistics, action_log
 class StatistikaService {
@@ -66,13 +68,67 @@ class StatistikaService {
     });
   }
 
-  /// Stream broja registrovanih za vozača
+  /// Stream broja mesečnih karata koje je vozač naplatio DANAS
   static Stream<int> streamBrojRegistrovanihZaVozaca({required String vozac}) {
+    final now = DateTime.now();
+    final danPocetak = DateTime(now.year, now.month, now.day);
+    final danKraj = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    // Dohvati UUID vozača za poređenje
+    final vozacUuid = VozacMappingService.getVozacUuidSync(vozac);
+
     return _supabase.from('registrovani_putnici').stream(primaryKey: ['id']).map((data) {
-      return data.where((row) {
-        final vozacId = row['vozac_id']?.toString() ?? '';
-        return vozacId.isNotEmpty && row['aktivan'] == true;
-      }).length;
+      int count = 0;
+      for (final row in data) {
+        // Proveri da li je mesečni putnik (ucenik ili radnik, ne dnevni)
+        final tip = row['tip'] as String?;
+        if (tip == 'dnevni') continue;
+
+        // Proveri da li je plaćeno danas
+        final vremePlacanja = row['vreme_placanja'] as String?;
+        if (vremePlacanja == null) continue;
+
+        try {
+          final placenoDatum = DateTime.parse(vremePlacanja);
+          if (placenoDatum.isAfter(danPocetak) && placenoDatum.isBefore(danKraj)) {
+            // Pronađi vozača koji je naplatio iz action_log
+            final actionLog = row['action_log'];
+            if (actionLog is Map) {
+              // Nova struktura: {actions: [...], paid_by: "uuid"}
+              final paidBy = actionLog['paid_by']?.toString() ?? '';
+              if (paidBy == vozac || paidBy == vozacUuid || paidBy.contains(vozac)) {
+                count++;
+                continue;
+              }
+              // Proveri i actions listu
+              final actions = actionLog['actions'] as List?;
+              if (actions != null) {
+                for (final action in actions.reversed) {
+                  if (action is Map && action['type'] == 'paid') {
+                    final actionBy = action['vozac_id']?.toString() ?? '';
+                    if (actionBy == vozac || actionBy == vozacUuid || actionBy.contains(vozac)) {
+                      count++;
+                      break;
+                    }
+                  }
+                }
+              }
+            } else if (actionLog is List) {
+              // Stara struktura: lista akcija
+              for (final action in actionLog.reversed) {
+                if (action is Map && (action['action'] == 'paid' || action['type'] == 'paid')) {
+                  final paidBy = action['by']?.toString() ?? action['vozac_id']?.toString() ?? '';
+                  if (paidBy == vozac || paidBy == vozacUuid || paidBy.contains(vozac)) {
+                    count++;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
+      return count;
     });
   }
 

@@ -2271,7 +2271,7 @@ class _DanasScreenState extends State<DanasScreen> {
                           }).toList()
                         : filtriraniPutnici;
                     // 💳 DUŽNICI - SAMO DNEVNI PUTNICI koji nisu platili (najnoviji na vrhu)
-                    final filteredDuznici = danasPutnici.where((putnik) {
+                    final filteredDuzniciRaw = danasPutnici.where((putnik) {
                       final jesteRegistrovani = putnik.mesecnaKarta == true;
                       if (jesteRegistrovani) return false; // ✅ ISKLJUČI mesečne putnike
 
@@ -2283,6 +2283,15 @@ class _DanasScreenState extends State<DanasScreen> {
                       // Uklonjeno filtriranje po vozaču - jeOvajVozac filter
 
                       return nijePlatio && nijeOtkazan && pokupljen;
+                    }).toList();
+
+                    // ✅ DEDUPLIKACIJA: Jedan putnik može imati više termina, ali je jedan dužnik
+                    final seenIds = <dynamic>{};
+                    final filteredDuznici = filteredDuzniciRaw.where((p) {
+                      final key = p.id ?? '${p.ime}_${p.dan}';
+                      if (seenIds.contains(key)) return false;
+                      seenIds.add(key);
+                      return true;
                     }).toList();
 
                     // Sortiraj po vremenu pokupljenja (najnoviji na vrhu)
