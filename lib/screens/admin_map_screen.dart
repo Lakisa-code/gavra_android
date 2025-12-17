@@ -216,12 +216,12 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
           Marker(
             point: LatLng(lokacija.latitude, lokacija.longitude),
             child: Container(
-              width: 60,
-              height: 60,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 color: _getDriverColor(vozacIme),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
+                border: Border.all(color: Colors.white, width: 2),
                 boxShadow: const [
                   BoxShadow(
                     color: Colors.black26,
@@ -232,18 +232,20 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.directions_car,
                     color: Colors.white,
-                    size: 20,
+                    size: 18,
                   ),
                   Text(
                     vozacIme.isNotEmpty ? vozacIme.substring(0, 1).toUpperCase() : '?',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
+                      height: 1.0,
                     ),
                   ),
                 ],
