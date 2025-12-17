@@ -120,8 +120,8 @@ class _DugoviScreenState extends State<DugoviScreen> {
 
     _dugoviSubscription = PutnikService()
         .streamKombinovaniPutniciFiltered(
-          isoDate: DateTime.now().toIso8601String().split('T')[0],
-        )
+      isoDate: DateTime.now().toIso8601String().split('T')[0],
+    )
         .listen(
       (putnici) {
         if (mounted) {
