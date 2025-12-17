@@ -35,11 +35,11 @@ class _AuthScreenState extends State<AuthScreen> {
     const Color(0xFFFF9800), // narandžasta
     const Color(0xFF00E5FF), // cyan
     const Color(0xFFFF1493), // pink
-    const Color(0xFF8B4513), // braon
+    const Color(0xFFFFD700), // žuta (Gold)
     const Color(0xFF4CAF50), // zelena
     const Color(0xFFE91E63), // crvena-pink
     const Color(0xFF2196F3), // plava
-    const Color(0xFFFFEB3B), // žuta
+    const Color(0xFFFFEB3B), // svetla žuta
     const Color(0xFF9C27B0), // tamno ljubičasta
   ];
 
@@ -106,7 +106,7 @@ class _AuthScreenState extends State<AuthScreen> {
           'email': 'kadpitamkurac@gmail.com',
           'sifra': '333333',
           'telefon': '0605073073',
-          'boja': 0xFF8B4513, // braon
+          'boja': 0xFFFFD700, // žuta (Gold)
         },
       ];
       await _saveVozaci();

@@ -8,7 +8,6 @@ import '../services/local_notification_service.dart';
 import '../services/pin_zahtev_service.dart'; // 📨 PIN ZAHTEVI
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_notification_service.dart';
-import '../services/realtime_service.dart';
 import '../services/statistika_service.dart'; // 📊 STATISTIKA
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 TIMER MANAGEMENT
@@ -93,10 +92,6 @@ class _AdminScreenState extends State<AdminScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Initialize realtime service
       try {
-        // Forsiraj refresh RealtimeService
-        await RealtimeService.instance.refreshNow();
-        // RealtimeService refresh completed
-
         // Pokreni refresh da osiguramo podatke
         _putnikService.getAllPutniciFromBothTables().then((data) {
           // Successfully retrieved passenger data

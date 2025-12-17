@@ -56,7 +56,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
     },
     {
       'name': 'Ivan',
-      'color': const Color(0xFF8B4513), // braon
+      'color': VozacBoja.get('Ivan'),
       'icon': Icons.directions_car,
     },
     {

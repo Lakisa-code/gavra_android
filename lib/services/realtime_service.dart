@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'supabase_safe.dart';
-
 /// ✅ POJEDNOSTAVLJEN RealtimeService
 /// Samo helper funkcije za Supabase realtime - bez posredničkih streamova
 class RealtimeService {
@@ -44,30 +42,13 @@ class RealtimeService {
   void startForDriver(String? vozac) {
     // daily_checkins stream
     _dailySub = tableStream('daily_checkins').listen((data) {
-      // 🔄 DEBUG: Log stream event
-      // ignore: avoid_print
-      print('🔄 [REALTIME] daily_checkins stream event: ${(data as List).length} redova');
+      // Supabase realtime automatski prati promene
     });
 
     // registrovani_putnici stream
     _registrovaniSub = tableStream('registrovani_putnici').listen((data) {
-      // 🔄 DEBUG: Log stream event
-      // ignore: avoid_print
-      print('🔄 [REALTIME] registrovani_putnici global stream event: ${(data as List).length} redova');
+      // Supabase realtime automatski prati promene
     });
-
-    // Initial data fetch
-    refreshNow();
-  }
-
-  /// Refresh podataka - triggeruje sve aktivne streamove
-  Future<void> refreshNow() async {
-    try {
-      // Jednostavan ping ka bazi da osveži Supabase realtime konekciju
-      await SupabaseSafe.select('registrovani_putnici');
-    } catch (_) {
-      // Ignore errors
-    }
   }
 
   /// Cleanup subscriptions

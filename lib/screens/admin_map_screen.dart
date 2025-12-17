@@ -279,7 +279,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       case 'bilevski':
         return const Color(0xFFFF9800); // narandžasta
       case 'ivan':
-        return const Color(0xFF795548); // braon
+        return const Color(0xFFFFD700); // žuta (Gold)
       default:
         return const Color(0xFF607D8B); // Siva
     }
@@ -556,7 +556,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       _buildLegendItem(const Color(0xFFFF1493), '🚗 Svetlana'),
                       _buildLegendItem(const Color(0xFF7C4DFF), '🚗 Bruda'),
                       _buildLegendItem(const Color(0xFFFF9800), '🚗 Bilevski'),
-                      _buildLegendItem(const Color(0xFF795548), '🚗 Ivan'),
+                      _buildLegendItem(const Color(0xFFFFD700), '🚗 Ivan'),
                     ],
                     const SizedBox(height: 8),
                     Container(

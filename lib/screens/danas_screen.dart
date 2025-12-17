@@ -19,7 +19,6 @@ import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikaci
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
 import '../services/realtime_notification_service.dart';
-import '../services/realtime_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
@@ -2764,7 +2763,6 @@ class _DanasScreenState extends State<DanasScreen> {
                           if (mounted) setState(() => _resettingSlots.add(key));
                           try {
                             await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
-                            await RealtimeService.instance.refreshNow();
                           } finally {
                             if (mounted) {
                               setState(() => _resettingSlots.remove(key));
@@ -2810,7 +2808,6 @@ class _DanasScreenState extends State<DanasScreen> {
                             }
                             try {
                               await _putnikService.resetPokupljenjaNaPolazak(vreme, grad, _currentDriver ?? 'Unknown');
-                              await RealtimeService.instance.refreshNow();
                             } finally {
                               if (mounted) {
                                 setState(() => _resettingSlots.remove(key));

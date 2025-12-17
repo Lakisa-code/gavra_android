@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
-import 'realtime_service.dart'; // 🔄 DODATO za refresh nakon brisanja
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
@@ -285,15 +284,8 @@ class RegistrovaniPutnikService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
-      // 🔄 FORSIRAJ REALTIME REFRESH NAKON BRISANJA
-      await RealtimeService.instance.refreshNow();
-
       // Očisti cache nakon brisanja da se promene odmah vide
       clearCache();
-
-      // ⏳ DODATNI REFRESH NAKON PAUZE
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      await RealtimeService.instance.refreshNow();
 
       return true;
     } catch (e) {

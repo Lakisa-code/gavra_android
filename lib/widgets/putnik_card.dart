@@ -14,7 +14,6 @@ import '../services/native_vibration_service.dart'; // 📳 Native vibracija za 
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart'; // 📍 GPS LEARN
-import '../services/realtime_service.dart'; // 🔄 Za refresh nakon reset-a
 import '../services/registrovani_putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
@@ -130,11 +129,6 @@ class _PutnikCardState extends State<PutnikCard> {
           if (mounted && widget.onChanged != null) {
             widget.onChanged!();
           }
-
-          // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM AKCIJAMA
-          try {
-            await RealtimeService.instance.refreshNow();
-          } catch (_) {}
 
           // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
           // Ensures UI reflects persisted pokupljen state on navigation refresh
@@ -332,15 +326,7 @@ class _PutnikCardState extends State<PutnikCard> {
         selectedGrad: widget.selectedGrad,
       );
 
-      // 🔄 PRVO OČISTI KEŠ pre refresh-a da se ne koriste stari podaci
-      PutnikService.invalidateCachedValues();
-
-      // 🔄 Malo sačekaj da se baza sigurno commituje
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM EKRANIMA
-      await RealtimeService.instance.refreshNow();
-
+      // Supabase realtime automatski triggeruje refresh
       // Malo sačekaj da se podaci propagiraju
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
@@ -1394,9 +1380,8 @@ class _PutnikCardState extends State<PutnikCard> {
           widget.onChanged!();
         }
 
-        // 🔄 OSVJEŽI REALTIME STREAM I CACHE - KONZISTENTNO SA SVIM AKCIJAMA
+        // 🔄 OSVJEŽI CACHE
         try {
-          await RealtimeService.instance.refreshNow();
           await GlobalCacheManager.clearAllCachesAndRefresh();
         } catch (_) {}
 
@@ -2749,11 +2734,6 @@ class _PutnikCardState extends State<PutnikCard> {
           widget.onChanged!();
         }
 
-        // 🔄 OSVJEŽI REALTIME STREAM - KONZISTENTNO SA SVIM AKCIJAMA
-        try {
-          await RealtimeService.instance.refreshNow();
-        } catch (_) {}
-
         // 🔄 GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
         try {
           await GlobalCacheManager.clearAllCachesAndRefresh();
@@ -2792,21 +2772,14 @@ class _PutnikCardState extends State<PutnikCard> {
 
     if (confirm == true) {
       try {
-        // ✅ Samo ukloni iz ovog termina (datum + vreme + grad)
+        // ✅ Ukloni iz ovog termina (datum + vreme + grad)
+        // Supabase realtime će automatski osvežiti listu
         await PutnikService().ukloniIzTermina(
           _putnik.id!,
           datum: _putnik.datum ?? DateTime.now().toIso8601String().split('T')[0],
           vreme: _putnik.polazak,
           grad: _putnik.grad,
         );
-
-        // 🔄 OSVJEŽI REALTIME STREAM
-        try {
-          await RealtimeService.instance.refreshNow();
-        } catch (_) {}
-
-        // 🔄 GLOBALNI CACHE CLEAR I REFRESH
-        await GlobalCacheManager.clearAllCachesAndRefresh();
 
         // 🔄 POZOVI onChanged callback da forsira parent refresh
         if (widget.onChanged != null) {

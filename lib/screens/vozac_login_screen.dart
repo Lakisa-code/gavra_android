@@ -82,7 +82,7 @@ class _VozacLoginScreenState extends State<VozacLoginScreen> {
         'email': 'kadpitamkurac@gmail.com',
         'sifra': '333333',
         'telefon': '0605073073',
-        'boja': 0xFF8B4513, // braon
+        'boja': 0xFFFFD700, // žuta (Gold)
       },
     ];
 

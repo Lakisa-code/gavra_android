@@ -1725,15 +1725,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // Duplikat provera se vrši u PutnikService.dodajPutnika()
                                         await _putnikService.dodajPutnika(putnik);
 
-                                        // 🔄 FIX: Invalidiraj cache pre refresh-a
-                                        PutnikService.invalidateCachedValues();
-
-                                        // 🔄 FORSIRAJ REALTIME REFRESH da se stream ažurira
-                                        try {
-                                          await RealtimeService.instance.refreshNow();
-                                        } catch (e) {
-                                          // Ignoriši greške u refresh-u
-                                        }
+                                        // Supabase realtime automatski triggeruje refresh
 
                                         if (!context.mounted) return;
 
