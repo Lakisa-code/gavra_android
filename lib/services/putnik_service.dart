@@ -94,7 +94,10 @@ class PutnikService {
 
     // ✅ POJEDNOSTAVLJENO: Direktno slušaj Supabase realtime stream
     // Bez posrednika (combinedPutniciStream) - čist WebSocket
-    final sub = supabase.from('registrovani_putnici').stream(primaryKey: ['id']).listen((_) {
+    final sub = supabase.from('registrovani_putnici').stream(primaryKey: ['id']).listen((data) {
+      // 🔄 DEBUG: Log kada stream primi event
+      // ignore: avoid_print
+      print('🔄 [REALTIME] registrovani_putnici stream event: ${data.length} redova');
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
     _subscriptions[key] = sub;

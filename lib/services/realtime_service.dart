@@ -43,13 +43,17 @@ class RealtimeService {
   /// Start subscriptions za tabele (poziva se iz main.dart)
   void startForDriver(String? vozac) {
     // daily_checkins stream
-    _dailySub = tableStream('daily_checkins').listen((_) {
-      // Stream aktivno sluša - PutnikService će sam refetch-ovati
+    _dailySub = tableStream('daily_checkins').listen((data) {
+      // 🔄 DEBUG: Log stream event
+      // ignore: avoid_print
+      print('🔄 [REALTIME] daily_checkins stream event: ${(data as List).length} redova');
     });
 
     // registrovani_putnici stream
-    _registrovaniSub = tableStream('registrovani_putnici').listen((_) {
-      // Stream aktivno sluša - PutnikService će sam refetch-ovati
+    _registrovaniSub = tableStream('registrovani_putnici').listen((data) {
+      // 🔄 DEBUG: Log stream event
+      // ignore: avoid_print
+      print('🔄 [REALTIME] registrovani_putnici global stream event: ${(data as List).length} redova');
     });
 
     // Initial data fetch
