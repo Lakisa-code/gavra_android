@@ -887,13 +887,14 @@ class PutnikService {
 
       if (tabela == 'registrovani_putnici') {
         // 🔄 POJEDNOSTAVLJENO: Ažuriraj status direktno u registrovani_putnici
-        // i dodaj zapis u voznje_log za istoriju
         final danas = DateTime.now().toIso8601String().split('T')[0];
         final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
 
-        // Ažuriraj status u registrovani_putnici
+        // Ažuriraj status, vreme otkazivanja i vozač koji je otkazao
         await supabase.from('registrovani_putnici').update({
           'status': 'otkazan',
+          'vreme_otkazivanja': DateTime.now().toIso8601String(),
+          'otkazao_vozac': otkazaoVozac,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', id.toString());
 

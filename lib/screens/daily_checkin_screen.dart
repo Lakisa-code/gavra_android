@@ -114,7 +114,9 @@ class _DailyCheckInScreenState extends State<DailyCheckInScreen> with TickerProv
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Dobro jutro ${widget.vozac}! Uspešno zabeleženo.'),
+                Expanded(
+                  child: Text('Dobro jutro ${widget.vozac}! Uspešno zabeleženo.'),
+                ),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.smartSuccess,

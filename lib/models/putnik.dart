@@ -136,6 +136,10 @@ class Putnik {
       brojTelefona: map['broj_telefona'] as String?,
       brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
       tipPutnika: tipPutnika, // 🆕 Tip putnika: radnik, ucenik, dnevni
+      // ✅ DODATO: Parsiranje vremena otkazivanja i vozača
+      vremeOtkazivanja:
+          map['vreme_otkazivanja'] != null ? DateTime.parse(map['vreme_otkazivanja'] as String).toLocal() : null,
+      otkazaoVozac: map['otkazao_vozac'] as String?,
     );
   }
 
@@ -352,6 +356,9 @@ class Putnik {
           brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
               map, normalizedTarget, 'bc'), // 🆕 Broj rezervisanih mesta iz JSON-a
           tipPutnika: tipPutnika, // 🆕 FIX: dodaj tip putnika
+          vremeOtkazivanja:
+              map['vreme_otkazivanja'] != null ? DateTime.parse(map['vreme_otkazivanja'] as String).toLocal() : null,
+          otkazaoVozac: map['otkazao_vozac'] as String?,
         ),
       );
     }
@@ -414,6 +421,9 @@ class Putnik {
           brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
               map, normalizedTarget, 'vs'), // 🆕 Broj rezervisanih mesta iz JSON-a
           tipPutnika: tipPutnika, // 🆕 FIX: dodaj tip putnika
+          vremeOtkazivanja:
+              map['vreme_otkazivanja'] != null ? DateTime.parse(map['vreme_otkazivanja'] as String).toLocal() : null,
+          otkazaoVozac: map['otkazao_vozac'] as String?,
         ),
       );
     }
