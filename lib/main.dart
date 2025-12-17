@@ -10,7 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'globals.dart';
 import 'screens/welcome_screen.dart';
-import 'services/analytics_service.dart';
 import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
@@ -53,7 +52,6 @@ void main() async {
         } catch (_) {}
 
         await FirebaseService.initialize();
-        await AnalyticsService.initialize();
         FirebaseService.setupFCMListeners();
         // firebaseAvailable = true; // used to reflect successful Firebase init
         // Debug helper: dump FCM token to logs so testers can use it for E2E
@@ -235,9 +233,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           debugShowCheckedModeBanner: false,
           theme: themeData, // Light tema
           // Samo jedna tema - nema dark mode
-          navigatorObservers: [
-            if (AnalyticsService.observer != null) AnalyticsService.observer!,
-          ],
+          navigatorObservers: [],
           home: _buildHome(),
         );
       },

@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'analytics_service.dart';
 import 'local_notification_service.dart';
 import 'realtime_notification_service.dart';
 
@@ -44,22 +43,13 @@ class FirebaseService {
     _currentDriver = driver;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('current_driver', driver);
-
-    // 📊 Analytics - vozač se prijavio
-    await AnalyticsService.logVozacPrijavljen(driver);
   }
 
   /// Briše trenutnog vozača
   static Future<void> clearCurrentDriver() async {
-    final oldDriver = _currentDriver;
     _currentDriver = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('current_driver');
-
-    // 📊 Analytics - vozač se odjavio
-    if (oldDriver != null) {
-      await AnalyticsService.logVozacOdjavljen(oldDriver);
-    }
   }
 
   /// Dobija FCM token

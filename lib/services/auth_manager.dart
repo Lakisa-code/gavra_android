@@ -8,7 +8,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../globals.dart';
 import '../screens/welcome_screen.dart';
 import '../utils/vozac_boja.dart';
-import 'analytics_service.dart';
 import 'firebase_service.dart';
 
 /// � CENTRALIZOVANI AUTH MANAGER - SUPABASE EDITION
@@ -68,7 +67,6 @@ class AuthManager {
       await _saveDriverSession(driverName);
       // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešne registracije (ako je traženo)
       if (remember) await rememberDevice(email, driverName);
-      await AnalyticsService.logVozacPrijavljen(driverName);
 
       return AuthResult.success('Registracija uspešna! Proverite svoj email za confirmation link.');
     } catch (e) {
@@ -103,7 +101,6 @@ class AuthManager {
         await _saveDriverSession(driverName);
         // 📱 AUTOMATSKI ZAPAMTI UREĐAJ posle uspešnog login-a (ako je traženo)
         if (remember) await rememberDevice(email, driverName);
-        await AnalyticsService.logVozacPrijavljen(driverName);
 
         return AuthResult.success('Uspešno ulogovanje!');
       } else {
@@ -124,7 +121,6 @@ class AuthManager {
     }
     await _saveDriverSession(driverName);
     await FirebaseService.setCurrentDriver(driverName);
-    await AnalyticsService.logVozacPrijavljen(driverName);
     // Push service removed - using only realtime notifications
   }
 
@@ -153,7 +149,6 @@ class AuthManager {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final currentDriver = prefs.getString(_driverKey);
 
       // 1. Obriši Supabase Auth session
       await Supabase.instance.client.auth.signOut();
@@ -168,16 +163,7 @@ class AuthManager {
         await FirebaseService.clearCurrentDriver();
       } catch (_) {}
 
-      // 4. Analytics
-      if (currentDriver != null) {
-        try {
-          await AnalyticsService.logVozacOdjavljen(currentDriver);
-        } catch (e) {
-          // Analytics greška
-        }
-      }
-
-      // 5. Zatvori loading i navigiraj
+      // 4. Zatvori loading i navigiraj
       navigator.pop();
       navigator.pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const WelcomeScreen()),

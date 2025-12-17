@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'analytics_service.dart';
 import 'theme_registry.dart';
 
 // 🎯 THEME MANAGER - Upravljanje trenutnom temom
@@ -86,16 +85,8 @@ class ThemeManager extends ChangeNotifier {
     await changeTheme(themeNames[nextIndex]);
   }
 
-  /// Loguj promenu teme u analytics
+  /// Loguj promenu teme (placeholder)
   Future<void> _logThemeChange(String oldThemeId, String newThemeId) async {
-    try {
-      await AnalyticsService.logCustomEvent('tema_promenjena', {
-        'stara_tema': oldThemeId,
-        'nova_tema': newThemeId,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      });
-    } catch (e) {
-      // Greška pri logovanju promene teme
-    }
+    // Analytics uklonjen - placeholder za buduće logovanje
   }
 }

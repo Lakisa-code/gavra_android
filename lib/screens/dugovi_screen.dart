@@ -122,7 +122,6 @@ class _DugoviScreenState extends State<DugoviScreen> {
         .streamKombinovaniPutniciFiltered(
           isoDate: DateTime.now().toIso8601String().split('T')[0],
         )
-        .timeout(const Duration(seconds: 30))
         .listen(
       (putnici) {
         if (mounted) {
