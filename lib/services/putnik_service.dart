@@ -76,21 +76,11 @@ class PutnikService {
   }) {
     final key = _streamKey(isoDate: isoDate, grad: grad, vreme: vreme);
 
-    // 🔧 FIX: Proveri da li stream postoji I da li subscription postoji
-    // Ako subscription ne postoji (cancelovan), treba ponovo kreirati
+    // Proveri da li stream već postoji i nije zatvoren
     if (_streams.containsKey(key) && !_streams[key]!.isClosed) {
       final controller = _streams[key]!;
-
-      // 🔧 FIX: Ako subscription ne postoji, ponovo je kreiraj
-      if (!_subscriptions.containsKey(key)) {
-        final sub = RealtimeService.instance.combinedPutniciStream.listen((_) {
-          _doFetchForStream(key, isoDate, grad, vreme, controller);
-        });
-        _subscriptions[key] = sub;
-        // Odmah uradi fetch jer je subscription tek kreiran
-        _doFetchForStream(key, isoDate, grad, vreme, controller);
-      } else if (_lastValues.containsKey(key)) {
-        // Ako imamo cached vrednost, emituj je odmah
+      // Ako imamo cached vrednost, emituj je odmah
+      if (_lastValues.containsKey(key)) {
         Future.microtask(() => controller.add(_lastValues[key]!));
       }
       return controller.stream;
@@ -99,12 +89,12 @@ class PutnikService {
     final controller = StreamController<List<Putnik>>.broadcast();
     _streams[key] = controller;
 
-    // initial fetch
+    // Initial fetch
     _doFetchForStream(key, isoDate, grad, vreme, controller);
 
-    // 🔄 POJEDNOSTAVLJENO: Koristi samo combinedPutniciStream za sve slučajeve
-    // Parametric stream je uklonjen jer doFetch() radi svoje filtriranje
-    final sub = RealtimeService.instance.combinedPutniciStream.listen((_) {
+    // ✅ POJEDNOSTAVLJENO: Direktno slušaj Supabase realtime stream
+    // Bez posrednika (combinedPutniciStream) - čist WebSocket
+    final sub = supabase.from('registrovani_putnici').stream(primaryKey: ['id']).listen((_) {
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
     _subscriptions[key] = sub;

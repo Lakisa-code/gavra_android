@@ -2229,9 +2229,10 @@ class _DanasScreenState extends State<DanasScreen> {
                         isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                       );
 
-                      // 🔄 UJEDNAČENA LOGIKA: Prikaži sve putnike osim otkazanih/obrisanih
-                      // Bolovanje/godišnji SE PRIKAZUJU (žutom bojom) ali se ne broje kao zauzeta mesta
-                      final statusOk = TextUtils.isStatusVisible(putnik.status);
+                      // 🔄 UJEDNAČENA LOGIKA SA HOME_SCREEN: Prikaži sve putnike osim obrisanih
+                      // Otkazani SE PRIKAZUJU (crvenom bojom) - vozač treba da vidi ko je otkazao
+                      final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
+                      final statusOk = normalizedStatus != 'obrisan';
                       return vremeMatch && gradMatch && statusOk;
                     }).toList();
 
@@ -2261,9 +2262,10 @@ class _DanasScreenState extends State<DanasScreen> {
                               isRegistrovaniPutnik: putnik.mesecnaKarta == true,
                             );
 
-                            // 🔄 UJEDNAČENA LOGIKA: Prikaži sve putnike osim otkazanih/obrisanih
-                            // Bolovanje/godišnji SE PRIKAZUJU (žutom bojom)
-                            final statusOk = TextUtils.isStatusVisible(putnik.status);
+                            // 🔄 UJEDNAČENA LOGIKA SA HOME_SCREEN: Prikaži sve putnike osim obrisanih
+                            // Otkazani SE PRIKAZUJU (crvenom bojom) - vozač treba da vidi ko je otkazao
+                            final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
+                            final statusOk = normalizedStatus != 'obrisan';
 
                             return vremeMatch && gradMatch && statusOk;
                           }).toList()
