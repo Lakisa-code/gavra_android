@@ -63,7 +63,7 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// Stream za aktivne mesečne putnike (legacy compatibility)
+  /// Stream za mesečne putnike (aktivni + neaktivni, neaktivni na dnu)
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
     try {
       final supabase = Supabase.instance.client;
@@ -75,18 +75,28 @@ class RegistrovaniPutnikService {
             try {
               final listRaw = data as List<dynamic>;
 
+              // Uključi sve koji nisu obrisani (i aktivne i neaktivne)
               final filtered = listRaw.where((row) {
                 final map = row as Map<String, dynamic>;
-                return (map['aktivan'] == true) && (map['obrisan'] != true);
+                return map['obrisan'] != true;
               }).toList();
 
-              return filtered
+              final putnici = filtered
                   .map(
                     (json) => RegistrovaniPutnik.fromMap(
                       Map<String, dynamic>.from(json as Map),
                     ),
                   )
                   .toList();
+
+              // Sortiraj: aktivni na vrhu (po imenu), neaktivni na dnu (po imenu)
+              putnici.sort((a, b) {
+                if (a.aktivan && !b.aktivan) return -1;
+                if (!a.aktivan && b.aktivan) return 1;
+                return a.putnikIme.compareTo(b.putnikIme);
+              });
+
+              return putnici;
             } catch (e) {
               return <RegistrovaniPutnik>[];
             }
@@ -97,19 +107,22 @@ class RegistrovaniPutnikService {
     } catch (e) {
       // fallback to a one-time fetch if stream creation fails
       return Stream.fromFuture(
-        Supabase.instance.client
-            .from('registrovani_putnici')
-            .select()
-            .eq('aktivan', true)
-            .eq('obrisan', false)
-            .order('putnik_ime')
-            .then(
-              (response) => response
-                  .map(
-                    (json) => RegistrovaniPutnik.fromMap(Map<String, dynamic>.from(json)),
-                  )
-                  .toList(),
-            ),
+        Supabase.instance.client.from('registrovani_putnici').select().eq('obrisan', false).order('putnik_ime').then(
+          (response) {
+            final putnici = response
+                .map(
+                  (json) => RegistrovaniPutnik.fromMap(Map<String, dynamic>.from(json)),
+                )
+                .toList();
+            // Sortiraj: aktivni na vrhu, neaktivni na dnu
+            putnici.sort((a, b) {
+              if (a.aktivan && !b.aktivan) return -1;
+              if (!a.aktivan && b.aktivan) return 1;
+              return a.putnikIme.compareTo(b.putnikIme);
+            });
+            return putnici;
+          },
+        ),
       );
     }
   }

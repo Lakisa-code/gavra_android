@@ -962,7 +962,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: bolovanje ? Colors.orange : (putnik.aktivan ? Colors.green : Colors.orange),
+                          color: bolovanje ? Colors.orange : (putnik.aktivan ? Colors.green : Colors.grey),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -970,6 +970,9 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                         value: putnik.aktivan,
                         onChanged: bolovanje ? null : (value) => _toggleAktivnost(putnik),
                         activeThumbColor: Colors.green,
+                        activeTrackColor: Colors.green.shade200,
+                        inactiveThumbColor: Colors.grey,
+                        inactiveTrackColor: Colors.grey.shade300,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ],
