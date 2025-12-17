@@ -79,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // 🚨 REALTIME MONITORING VARIABLES
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
-  // Note: FailFastStreamManagerNew and NetworkStatus will be integrated later
   StreamSubscription<dynamic>? _networkStatusSubscription;
 
   final List<String> _dani = [
