@@ -10,7 +10,6 @@ import '../models/registrovani_putnik.dart' as novi_model;
 import '../services/adresa_supabase_service.dart';
 import '../services/cena_obracun_service.dart';
 import '../services/haptic_service.dart';
-import '../services/native_vibration_service.dart'; // 📳 Native vibracija za Huawei
 import '../services/permission_service.dart';
 import '../services/putnik_service.dart';
 import '../services/realtime_gps_service.dart';
@@ -228,8 +227,7 @@ class _PutnikCardState extends State<PutnikCard> {
 
         if (_putnik.vremePokupljenja == null) {
           // 📳 JAKA VIBRACIJA ODMAH KAD SE AKTIVIRA (pre await)
-          // Koristi Native Vibration Service za Huawei kompatibilnost
-          await NativeVibrationService.pickup();
+          HapticService.heavyImpact();
 
           await _handlePokupljen();
 

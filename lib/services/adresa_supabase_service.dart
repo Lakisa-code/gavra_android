@@ -1,6 +1,6 @@
 import '../globals.dart';
 import '../models/adresa.dart';
-import 'advanced_geocoding_service.dart';
+import 'geocoding_service.dart';
 
 /// Servis za rad sa normalizovanim adresama iz Supabase tabele
 /// 🎯 KORISTI UUID REFERENCE umesto TEXT polja
@@ -107,28 +107,34 @@ class AdresaSupabaseService {
   /// 🌍 Geocodira adresu i ažurira u bazi
   static Future<Adresa?> _geocodeAndUpdateAdresa(Adresa adresa, String grad) async {
     try {
-      final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
-        grad: grad,
-        adresa: adresa.naziv,
+      final coordsString = await GeocodingService.getKoordinateZaAdresu(
+        grad,
+        adresa.naziv,
       );
 
-      if (geocodeResult != null && geocodeResult.confidence > 50) {
-        // Ažuriraj u bazi
-        final response = await supabase
-            .from('adrese')
-            .update({
-              'koordinate': {'lat': geocodeResult.latitude, 'lng': geocodeResult.longitude},
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', adresa.id)
-            .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
-            .single();
+      if (coordsString != null) {
+        final parts = coordsString.split(',');
+        if (parts.length == 2) {
+          final lat = double.tryParse(parts[0]);
+          final lng = double.tryParse(parts[1]);
 
-        final updatedAdresa = Adresa.fromMap(response);
-        _cache[updatedAdresa.id] = updatedAdresa;
-        return updatedAdresa;
-      } else {
-        // Low confidence
+          if (lat != null && lng != null) {
+            // Ažuriraj u bazi
+            final response = await supabase
+                .from('adrese')
+                .update({
+                  'koordinate': {'lat': lat, 'lng': lng},
+                  'updated_at': DateTime.now().toIso8601String(),
+                })
+                .eq('id', adresa.id)
+                .select('id, naziv, grad, ulica, broj, koordinate, created_at, updated_at')
+                .single();
+
+            final updatedAdresa = Adresa.fromMap(response);
+            _cache[updatedAdresa.id] = updatedAdresa;
+            return updatedAdresa;
+          }
+        }
       }
     } catch (_) {
       // Geocoding greška

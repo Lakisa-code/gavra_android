@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
-import '../services/advanced_geocoding_service.dart'; // 🌍 Za geocoding adresa
+import '../services/geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
 import '../services/realtime_hub_service.dart';
 import '../services/registrovani_putnik_service.dart';
@@ -1439,19 +1439,24 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     // 🎯 Ako nema koordinate, pokušaj geocoding
     if (lat == null || lng == null) {
       try {
-        final geocodeResult = await AdvancedGeocodingService.getAdvancedCoordinates(
-          grad: grad,
-          adresa: adresa.naziv,
+        final coordsString = await GeocodingService.getKoordinateZaAdresu(
+          grad,
+          adresa.naziv,
         );
-        if (geocodeResult != null && geocodeResult.confidence > 50) {
-          lat = geocodeResult.latitude;
-          lng = geocodeResult.longitude;
-          // Sačuvaj koordinate za buduće korišćenje
-          await AdresaSupabaseService.updateKoordinate(
-            adresaId,
-            lat: lat,
-            lng: lng,
-          );
+        if (coordsString != null) {
+          final parts = coordsString.split(',');
+          if (parts.length == 2) {
+            lat = double.tryParse(parts[0]);
+            lng = double.tryParse(parts[1]);
+            // Sačuvaj koordinate za buduće korišćenje
+            if (lat != null && lng != null) {
+              await AdresaSupabaseService.updateKoordinate(
+                adresaId,
+                lat: lat,
+                lng: lng,
+              );
+            }
+          }
         }
       } catch (e) {
         // Geocoding greška

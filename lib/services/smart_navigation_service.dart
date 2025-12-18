@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../config/route_config.dart';
 import '../models/putnik.dart';
-import 'multi_provider_navigation_service.dart';
+import 'here_wego_navigation_service.dart';
 import 'osrm_service.dart';
 import 'permission_service.dart';
 import 'unified_geocoding_service.dart';
@@ -143,7 +143,7 @@ class SmartNavigationService {
       if (!context.mounted) {
         return NavigationResult.error('❌ Context nije više aktivan');
       }
-      final result = await MultiProviderNavigationService.startNavigation(
+      final result = await HereWeGoNavigationService.startNavigation(
         context: context,
         putnici: putnici,
         coordinates: coordinates,
@@ -167,7 +167,7 @@ class SmartNavigationService {
 
   /// Proveri status navigacionih aplikacija na uređaju
   static Future<NavigationStatus> checkNavigationStatus() async {
-    return MultiProviderNavigationService.checkNavigationStatus();
+    return HereWeGoNavigationService.checkNavigationStatus();
   }
 
   // ═══════════════════════════════════════════════════════════════════════
