@@ -12,7 +12,6 @@ import 'driver_location_service.dart';
 import 'realtime_hub_service.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
-import 'supabase_safe.dart';
 import 'vozac_mapping_service.dart';
 
 // ?? UNDO STACK - Stack za cuvanje poslednih akcija
@@ -638,12 +637,8 @@ class PutnikService {
   /// ? OBRISI PUTNIKA (Soft Delete - cuva statistike)
   Future<void> obrisiPutnika(dynamic id) async {
     // Odredi tabelu na osnovu ID-ja
-    final tabela = await _getTableForPutnik(
-      id,
-    ); // Prvo dohvati podatke putnika za undo stack
-    final response = await SupabaseSafe.run(
-      () => supabase.from(tabela).select().eq('id', id as String).single(),
-    );
+    final tabela = await _getTableForPutnik(id);
+    final response = await supabase.from(tabela).select().eq('id', id as String).maybeSingle();
 
     // ?? DODAJ U UNDO STACK (sigurno mapiranje)
     final undoResponse = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
@@ -654,7 +649,7 @@ class PutnikService {
     // 'aktivan', 'neaktivan', 'pauziran', 'radi', 'bolovanje', 'godi�nji'
     await supabase.from(tabela).update({
       'obrisan': true, // ? Soft delete flag
-    }).eq('id', id as String);
+    }).eq('id', id);
     // Supabase realtime automatski triggeruje refresh
   }
 
@@ -677,13 +672,9 @@ class PutnikService {
     final tabela = await _getTableForPutnik(id);
 
     // Prvo dohvati podatke putnika za notifikaciju
-    final response = await SupabaseSafe.run(
-      () => supabase.from(tabela).select().eq('id', id as String).single(),
-    );
-    if (response == null) {
-      return;
-    }
-    final putnik = Putnik.fromMap(Map<String, dynamic>.from(response as Map));
+    final response = await supabase.from(tabela).select().eq('id', id as String).maybeSingle();
+    if (response == null) return;
+    final putnik = Putnik.fromMap(response);
 
     // ?? DODAJ U UNDO STACK (sigurno mapiranje)
     final undoPickup = Map<String, dynamic>.from(response);
@@ -704,7 +695,7 @@ class PutnikService {
         'vozac_id': vozacUuid, // ? FIXED: Samo UUID, null ako nema mapiranja
         'action_log': updatedActionLog.toJson(), // ? FIXED: A�uriraj action_log.picked_by
         'updated_at': now.toIso8601String(), // ? A�URIRAJ timestamp
-      }).eq('id', id as String);
+      }).eq('id', id);
 
       // ?? DODAJ ZAPIS U voznje_log za pracenje vo�nji
       final danas = now.toIso8601String().split('T')[0];
@@ -761,13 +752,10 @@ class PutnikService {
     // Odredi tabelu na osnovu ID-ja
     final tabela = await _getTableForPutnik(id);
 
-    // Prvo dohvati podatke putnika za notifikaciju
-    final response = await SupabaseSafe.run(
-      () => supabase.from(tabela).select().eq('id', id as String).single(),
-    );
+    final response = await supabase.from(tabela).select().eq('id', id as String).maybeSingle();
+    if (response == null) return;
 
-    // ?? DODAJ U UNDO STACK (sigurno mapiranje)
-    final undoPayment = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
+    final undoPayment = response;
     _addToUndoStack('payment', id, undoPayment);
 
     // Za mesecne putnike a�uriraj SVE potrebne kolone za placanje
@@ -784,7 +772,7 @@ class PutnikService {
       'vozac_id': validVozacId,
       'action_log': updatedActionLog.toJson(),
       'updated_at': now.toIso8601String(),
-    }).eq('id', id as String);
+    }).eq('id', id);
   }
 
   /// ? OTKAZI PUTNIKA
@@ -799,11 +787,9 @@ class PutnikService {
       // Odredi tabelu na osnovu ID-ja
       final tabela = await _getTableForPutnik(idStr);
 
-      // Prvo dohvati podatke putnika za notifikaciju
-      final response = await SupabaseSafe.run(
-        () => supabase.from(tabela).select().eq('id', idStr).single(),
-      );
-      final respMap = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
+      final response = await supabase.from(tabela).select().eq('id', idStr).maybeSingle();
+      if (response == null) return;
+      final respMap = response;
       final cancelName = (respMap['putnik_ime'] ?? respMap['ime']) ?? '';
 
       // ?? Proveri da li je putnik vec otkazan
@@ -891,13 +877,10 @@ class PutnikService {
     // Odredi tabelu na osnovu ID-ja
     final tabela = await _getTableForPutnik(id);
 
-    // Prvo dohvati podatke putnika za undo stack
-    final response = await SupabaseSafe.run(
-      () => supabase.from(tabela).select().eq('id', id as String).single(),
-    );
+    final response = await supabase.from(tabela).select().eq('id', id as String).maybeSingle();
+    if (response == null) return;
 
-    // ?? DODAJ U UNDO STACK (sigurno mapiranje)
-    final undoOdsustvo = response == null ? <String, dynamic>{} : Map<String, dynamic>.from(response as Map);
+    final undoOdsustvo = response;
     _addToUndoStack('odsustvo', id, undoOdsustvo);
 
     // ?? FIX: Konvertuj 'godisnji' u 'godi�nji' za bazu (constraint zahteva dijakritiku)
@@ -911,7 +894,7 @@ class PutnikService {
         'status': statusZaBazu, // 'bolovanje' ili 'godi�nji'
         'aktivan': true, // Putnik ostaje aktivan, samo je na odsustvu
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', id as String);
+      }).eq('id', id);
     } catch (e) {
       rethrow;
     }

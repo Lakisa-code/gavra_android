@@ -18,7 +18,6 @@ import '../services/registrovani_putnik_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 import '../utils/card_color_helper.dart';
-import '../utils/global_cache_manager.dart';
 import '../utils/smart_colors.dart';
 import '../utils/text_utils.dart';
 import '../utils/vozac_boja.dart';
@@ -126,14 +125,6 @@ class _PutnikCardState extends State<PutnikCard> {
           // FORSIRAJ UI REFRESH NA PARENT WIDGET
           if (mounted && widget.onChanged != null) {
             widget.onChanged!();
-          }
-
-          // GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
-          // Ensures UI reflects persisted pokupljen state on navigation refresh
-          try {
-            await GlobalCacheManager.clearAllCachesAndRefresh();
-          } catch (e) {
-            // Ignore cache refresh errors
           }
 
           // DODAJ KRATKU PAUZU pre dohvatanja (da se baza ažurira)
@@ -361,11 +352,6 @@ class _PutnikCardState extends State<PutnikCard> {
       if (mounted && widget.onChanged != null) {
         widget.onChanged!();
       }
-
-      // GLOBALNI CACHE CLEAR - PONOVO ZA SIGURNOST na svim ekranima
-      try {
-        await GlobalCacheManager.clearAllCachesAndRefresh();
-      } catch (_) {}
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1377,11 +1363,6 @@ class _PutnikCardState extends State<PutnikCard> {
         if (widget.onChanged != null) {
           widget.onChanged!();
         }
-
-        // OSVJEŽI CACHE
-        try {
-          await GlobalCacheManager.clearAllCachesAndRefresh();
-        } catch (_) {}
 
         // Prikaži success poruku
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2730,13 +2711,6 @@ class _PutnikCardState extends State<PutnikCard> {
         // Pozovi parent callback da se lista ponovo sortira
         if (widget.onChanged != null) {
           widget.onChanged!();
-        }
-
-        // GLOBALNI CACHE CLEAR I FORSIRAJ REFRESH
-        try {
-          await GlobalCacheManager.clearAllCachesAndRefresh();
-        } catch (e) {
-          // Ignore cache clear errors
         }
       } catch (e) {
         if (mounted) {

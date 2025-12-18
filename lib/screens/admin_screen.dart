@@ -23,7 +23,6 @@ import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
 import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
-import 'monitoring_ekran.dart'; // 📊 MONITORING
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
 import 'vozac_screen.dart'; // DODANO za vozac screen
@@ -1597,73 +1596,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                         ),
                                         Text(
                                           'GPS',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                            shadows: [
-                                              Shadow(
-                                                offset: Offset(1, 1),
-                                                blurRadius: 3,
-                                                color: Colors.black54,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // 📊 SUPABASE MONITORING
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (context) => const MonitoringEkran(),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    height: 54,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2), // Glassmorphism
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: Theme.of(context).glassBorder,
-                                        width: 1.5,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.blue.withValues(alpha: 0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.analytics,
-                                          color: Colors.white,
-                                          size: 16,
-                                          shadows: [
-                                            Shadow(
-                                              offset: Offset(1, 1),
-                                              blurRadius: 3,
-                                              color: Colors.black54,
-                                            ),
-                                          ],
-                                        ),
-                                        Text(
-                                          'Monitor',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,

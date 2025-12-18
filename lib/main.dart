@@ -16,7 +16,6 @@ import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
 import 'services/realtime_hub_service.dart'; // 🚀 OPTIMIZACIJA: Centralni realtime
 import 'services/realtime_notification_service.dart';
-import 'services/simple_usage_monitor.dart';
 import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
@@ -27,13 +26,6 @@ void main() async {
 
   // 🌍 INICIJALIZACIJA LOCALE ZA FORMATIRANJE DATUMA
   await initializeDateFormatting('sr_RS', null);
-
-  // 📊 POKRETANJE MONITORING SERVISA
-  try {
-    await SimpleUsageMonitor.pokreni();
-  } catch (e) {
-    // Ignoriši greške u monitoring-u
-  }
 
   // 🔥 CLOUD/NOTIFICATION PROVIDER INITIALIZATION
   // Decide which push provider to use depending on device capabilities.
