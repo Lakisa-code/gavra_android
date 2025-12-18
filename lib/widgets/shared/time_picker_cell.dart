@@ -4,7 +4,7 @@ import '../../config/route_config.dart';
 import '../../services/theme_manager.dart';
 import '../../utils/schedule_utils.dart';
 
-/// 🕐 UNIVERZALNI TIME PICKER CELL WIDGET
+/// UNIVERZALNI TIME PICKER CELL WIDGET
 /// Koristi se za prikaz i izbor vremena polaska (BC ili VS)
 ///
 /// Koristi se na:

@@ -48,7 +48,7 @@ class CustomBackButton extends StatelessWidget {
   }
 }
 
-/// 🎨 GRADIENT BACK BUTTON VARIANT
+/// GRADIENT BACK BUTTON VARIANT
 /// Specijalna varijanta za gradijent AppBar-ove
 class GradientBackButton extends StatelessWidget {
   const GradientBackButton({

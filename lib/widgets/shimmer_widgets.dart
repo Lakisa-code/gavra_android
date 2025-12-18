@@ -112,7 +112,7 @@ class ShimmerWidgets {
     );
   }
 
-  /// 📋 Shimmer za liste
+  /// Shimmer za liste
   static Widget listItemShimmer(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,

@@ -1,4 +1,4 @@
-/// 🕐 TIME VALIDATION UTILITY
+/// TIME VALIDATION UTILITY
 /// Standardizovane funkcije za validaciju i formatiranje vremena
 class TimeValidator {
   // Dozvoljeni time format patterns

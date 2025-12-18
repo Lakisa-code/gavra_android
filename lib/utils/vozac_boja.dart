@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/vozac.dart';
 import '../services/vozac_service.dart';
 
-/// 🎨 VozacBoja - Centralizovana logika boja za vozače
+/// VozacBoja - Centralizovana logika boja za vozače
 ///
 /// Ova klasa sada podržava dinamičko učitavanje boja iz baze podataka
 /// sa fallback-om na hardkodovane vrednosti za backward kompatibilnost.
@@ -38,7 +38,7 @@ class VozacBoja {
   static bool _isInitialized = false;
   static const Duration _cacheValidityPeriod = Duration(minutes: 30);
 
-  /// 🚀 INICIJALIZACIJA - Pozovite na startupu aplikacije
+  /// INICIJALIZACIJA - Pozovite na startupu aplikacije
   static Future<void> initialize() async {
     if (_isInitialized && _isCacheValid()) return;
 
@@ -121,7 +121,7 @@ class VozacBoja {
   static List<String> get validDrivers => boje.keys.toList();
 
   /// Vraća boju vozača ili default boju za nepoznate vozače
-  /// 🔧 FIX: Case-insensitive poređenje za robusnost
+  /// FIX: Case-insensitive poređenje za robusnost
   static Color getColorOrDefault(String? ime, Color defaultColor) {
     if (ime == null || ime.isEmpty) return defaultColor;
 
@@ -131,7 +131,7 @@ class VozacBoja {
       return currentBoje[ime]!;
     }
 
-    // 🔧 FIX: Case-insensitive fallback
+    // FIX: Case-insensitive fallback
     final imeLower = ime.toLowerCase();
     for (final entry in currentBoje.entries) {
       if (entry.key.toLowerCase() == imeLower) {
@@ -147,9 +147,9 @@ class VozacBoja {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EMAIL I TELEFON VALIDACIJA (ostaje hardkodovano za sada)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════
 
-  // 🔒 DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
+  // DOZVOLJENI EMAIL ADRESE ZA VOZAČE - STRIKTNO!
   static const Map<String, String> dozvoljenEmails = {
     'Bojan': 'gavriconi19@gmail.com',
     'Bruda': 'igor.jovanovic.1984@icloud.com',
@@ -158,7 +158,7 @@ class VozacBoja {
     'Ivan': 'kadpitamkurac@gmail.com',
   };
 
-  // 🔒 VALIDACIJA: email -> vozač mapiranje
+  // VALIDACIJA: email -> vozač mapiranje
   static const Map<String, String> emailToVozac = {
     'gavriconi19@gmail.com': 'Bojan',
     'igor.jovanovic.1984@icloud.com': 'Bruda',
@@ -167,7 +167,7 @@ class VozacBoja {
     'kadpitamkurac@gmail.com': 'Ivan',
   };
 
-  // 📞 BROJEVI TELEFONA VOZAČA
+  // BROJEVI TELEFONA VOZAČA
   static const Map<String, String> telefoni = {
     'Bojan': '0641162560',
     'Bruda': '0641202844',
@@ -176,7 +176,7 @@ class VozacBoja {
     'Ivan': '0605073073',
   };
 
-  // 🔒 HELPER FUNKCIJE ZA EMAIL VALIDACIJU
+  // HELPER FUNKCIJE ZA EMAIL VALIDACIJU
   static String? getDozvoljenEmailForVozac(String? vozac) {
     return vozac != null ? dozvoljenEmails[vozac] : null;
   }
@@ -196,7 +196,7 @@ class VozacBoja {
 
   static List<String> get sviDozvoljenEmails => dozvoljenEmails.values.toList();
 
-  // 📞 HELPER ZA TELEFON
+  // HELPER ZA TELEFON
   static String? getTelefonForVozac(String? vozac) {
     return vozac != null ? telefoni[vozac] : null;
   }

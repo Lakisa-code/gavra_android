@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// 🔐 PIN DIALOG za mesečne putnike
+/// PIN DIALOG za mesečne putnike
 /// Prikazuje/generiše/šalje PIN kod
 class PinDialog extends StatefulWidget {
   final String putnikId;
@@ -56,7 +56,7 @@ class _PinDialogState extends State<PinDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ PIN sačuvan!'),
+            content: Text('PIN sačuvan!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -130,7 +130,7 @@ class _PinDialogState extends State<PinDialog> {
       Clipboard.setData(ClipboardData(text: _pin!));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('📋 PIN kopiran!'),
+          content: Text('PIN kopiran!'),
           backgroundColor: Colors.blue,
           duration: Duration(seconds: 1),
         ),

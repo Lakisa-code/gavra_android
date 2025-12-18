@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// 🎨 SMART COLORS EXTENSION - Pametne boje koje prate temu!
+/// SMART COLORS EXTENSION - Pametne boje koje prate temu!
 /// Koristi umesto hardkovanih Colors.red, Colors.green itd.
 extension SmartColors on ColorScheme {
-  // 🚨 ERROR COLORS - Pametna crvena za greške
+  // ERROR COLORS - Pametna crvena za greške
   Color get smartError {
     switch (brightness) {
       case Brightness.light:
@@ -24,7 +24,7 @@ extension SmartColors on ColorScheme {
     }
   }
 
-  // ✅ SUCCESS COLORS - Pametna zelena za uspeh
+  // SUCCESS COLORS - Pametna zelena za uspeh
   Color get smartSuccess {
     switch (brightness) {
       case Brightness.light:
@@ -52,7 +52,7 @@ extension SmartColors on ColorScheme {
     }
   }
 
-  // ⚠️ WARNING COLORS - Pametna žuta/narandžasta za upozorenja
+  // WARNING COLORS - Pametna žuta/narandžasta za upozorenja
   Color get smartWarning {
     switch (brightness) {
       case Brightness.light:
@@ -75,7 +75,7 @@ extension SmartColors on ColorScheme {
     }
   }
 
-  // ℹ️ INFO COLORS - Pametna plava za informacije
+  // INFO COLORS - Pametna plava za informacije
   Color get smartInfo {
     switch (brightness) {
       case Brightness.light:
@@ -98,7 +98,7 @@ extension SmartColors on ColorScheme {
     }
   }
 
-  // 📱 COMMUNICATION COLORS - Za pozive, SMS
+  // COMMUNICATION COLORS - Za pozive, SMS
   Color get smartPhone {
     switch (brightness) {
       case Brightness.light:
@@ -117,7 +117,7 @@ extension SmartColors on ColorScheme {
     }
   }
 
-  // 👤 GENDER COLORS - Za muško/žensko
+  // GENDER COLORS - Za muško/žensko
   Color get smartMale {
     switch (brightness) {
       case Brightness.light:
@@ -145,9 +145,9 @@ extension SmartColors on ColorScheme {
   }
 }
 
-/// 🎨 SMART SNACKBAR HELPER - Pametni SnackBar-ovi
+/// SMART SNACKBAR HELPER - Pametni SnackBar-ovi
 class SmartSnackBar {
-  /// ✅ Success SnackBar sa pametnim bojama
+  /// Success SnackBar sa pametnim bojama
   static SnackBar success(String message, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return SnackBar(
@@ -167,7 +167,7 @@ class SmartSnackBar {
     );
   }
 
-  /// 🚨 Error SnackBar sa pametnim bojama
+  /// Error SnackBar sa pametnim bojama
   static SnackBar error(String message, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return SnackBar(
@@ -187,7 +187,7 @@ class SmartSnackBar {
     );
   }
 
-  /// ⚠️ Warning SnackBar sa pametnim bojama
+  /// Warning SnackBar sa pametnim bojama
   static SnackBar warning(String message, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return SnackBar(
@@ -207,7 +207,7 @@ class SmartSnackBar {
     );
   }
 
-  /// ℹ️ Info SnackBar sa pametnim bojama
+  /// Info SnackBar sa pametnim bojama
   static SnackBar info(String message, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return SnackBar(

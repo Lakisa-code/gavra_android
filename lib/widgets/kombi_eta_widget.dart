@@ -134,7 +134,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     final String message;
 
     if (isPokupljen) {
-      title = '✅ POKUPLJEN';
+      title = 'POKUPLJEN';
       // Prikaži vreme pokupljenja
       if (_vremePokupljenja != null) {
         final h = _vremePokupljenja!.hour.toString().padLeft(2, '0');
@@ -144,10 +144,10 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         message = 'Uživajte u vožnji!';
       }
     } else if (hasEta) {
-      title = '🚐 KOMBI STIŽE ZA';
+      title = 'KOMBI STIŽE ZA';
       message = _formatEta(_etaMinutes!);
     } else {
-      title = '🚐 PRAĆENJE UŽIVO';
+      title = 'PRAĆENJE UŽIVO';
       message = 'Vozač će uskoro krenuti';
     }
 

@@ -6,9 +6,9 @@ import '../services/weather_service.dart';
 /// Lokacija za weather widget
 enum WeatherLocation { belaCrkva, vrsac }
 
-/// 🌤️ Animated Weather Widget za AppBar
+/// Animated Weather Widget za AppBar
 /// Prikazuje Lottie animaciju trenutnog vremena za BC ili VS
-/// 🚨 Trepće kad ima vremensko upozorenje!
+/// Trepće kad ima vremensko upozorenje!
 class WeatherWidget extends StatefulWidget {
   final double size;
   final VoidCallback? onTap;
@@ -30,7 +30,7 @@ class _WeatherWidgetState extends State<WeatherWidget> with SingleTickerProvider
   WeatherAlert? _alert;
   bool _isLoading = true;
 
-  // 🚨 Animacija za trepćenje
+  // Animacija za trepćenje
   late AnimationController _blinkController;
   late Animation<double> _blinkAnimation;
 
@@ -123,7 +123,7 @@ class _WeatherWidgetState extends State<WeatherWidget> with SingleTickerProvider
       repeat: true,
     );
 
-    // 🚨 Ako ima alert, dodaj trepćenje i warning overlay
+    // Ako ima alert, dodaj trepćenje i warning overlay
     if (hasAlert) {
       weatherIcon = AnimatedBuilder(
         animation: _blinkAnimation,
@@ -236,7 +236,7 @@ class _WeatherWidgetState extends State<WeatherWidget> with SingleTickerProvider
             _buildInfoRow(Icons.water_drop, 'Vlažnost', '$humidity%'),
             const SizedBox(height: 8),
             _buildInfoRow(Icons.air, 'Vetar', '$windSpeed km/h'),
-            // 🚨 Prikaži alert ako postoji
+            // Prikaži alert ako postoji
             if (_alert != null) ...[
               const SizedBox(height: 16),
               const Divider(color: Colors.white24),
