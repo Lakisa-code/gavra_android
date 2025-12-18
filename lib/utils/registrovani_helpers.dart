@@ -43,7 +43,7 @@ class RegistrovaniHelpers {
     return out;
   }
 
-  // 🆕 Get broj mesta for a day and place (place 'bc' or 'vs').
+  // Get broj mesta for a day and place (place 'bc' or 'vs').
   static int getBrojMestaForDay(
     Map<String, dynamic> rawMap,
     String dayKratica,

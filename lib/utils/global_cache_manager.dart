@@ -4,20 +4,20 @@ import 'package:flutter/foundation.dart';
 
 import '../services/registrovani_putnik_service.dart';
 
-/// 🔄 GLOBALNI CACHE MANAGER
+/// GLOBALNI CACHE MANAGER
 /// Centralizovano upravljanje cache-om kada se putnici brišu/ažuriraju
 class GlobalCacheManager {
   // ═══════════════════════════════════════════════════════════════════════════
-  // 🎯 GLOBALNI REFRESH SIGNAL - Kada se promeni, svi StreamBuilder-i se rebuildu-ju
+  // GLOBALNI REFRESH SIGNAL - Kada se promeni, svi StreamBuilder-i se rebuildu-ju
   // ═══════════════════════════════════════════════════════════════════════════
   static final ValueNotifier<int> refreshSignal = ValueNotifier<int>(0);
 
-  /// 🔄 Inkrementiraj refresh signal - forsira sve listenere da se rebuildu-ju
+  /// Inkrementiraj refresh signal - forsira sve listenere da se rebuildu-ju
   static void triggerGlobalRefresh() {
     refreshSignal.value++;
   }
 
-  /// 🧹 OČISTI SVE CACHE-OVE I FORSIRAJ REFRESH - BEZ DEBOUNCING-a
+  /// OČISTI SVE CACHE-OVE I FORSIRAJ REFRESH - BEZ DEBOUNCING-a
   static Future<void> clearAllCachesAndRefresh() async {
     try {
       // Očisti SAMO keširane vrednosti
@@ -30,7 +30,7 @@ class GlobalCacheManager {
     }
   }
 
-  /// 🔄 SOFT REFRESH (bez clearing cache-a)
+  /// SOFT REFRESH (bez clearing cache-a)
   static Future<void> softRefresh() async {
     try {
       triggerGlobalRefresh();
@@ -39,7 +39,7 @@ class GlobalCacheManager {
     }
   }
 
-  /// 🧹 FORSIRAJ CLEAR - Alias za clearAllCachesAndRefresh
+  /// FORSIRAJ CLEAR - Alias za clearAllCachesAndRefresh
   static Future<void> forceClearAndRefresh() async {
     await clearAllCachesAndRefresh();
   }
