@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/registrovani_putnik.dart';
@@ -459,19 +460,17 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       title: '📱 Kontakt informacije',
       child: Column(
         children: [
-          _buildTextField(
+          _buildPhoneFieldWithContactPicker(
             controller: _brojTelefonaController,
             label: _tip == 'ucenik' ? 'Broj telefona učenika' : 'Broj telefona',
             icon: Icons.phone,
-            keyboardType: TextInputType.phone,
           ),
           const SizedBox(height: 12),
           // 🆕 Drugi broj telefona za sve tipove
-          _buildTextField(
+          _buildPhoneFieldWithContactPicker(
             controller: _brojTelefona2Controller,
             label: 'Drugi broj telefona (opciono)',
             icon: Icons.phone_android,
-            keyboardType: TextInputType.phone,
           ),
           if (_tip == 'ucenik') ...[
             const SizedBox(height: 16),
@@ -546,18 +545,16 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildTextField(
+                  _buildPhoneFieldWithContactPicker(
                     controller: _brojTelefonaOcaController,
                     label: 'Broj telefona oca',
                     icon: Icons.man,
-                    keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 12),
-                  _buildTextField(
+                  _buildPhoneFieldWithContactPicker(
                     controller: _brojTelefonaMajkeController,
                     label: 'Broj telefona majke',
                     icon: Icons.woman,
-                    keyboardType: TextInputType.phone,
                   ),
                 ],
               ),
@@ -1186,6 +1183,85 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         fillColor: Colors.white.withValues(alpha: 0.9),
         filled: true,
       ),
+    );
+  }
+
+  /// 📇 Polje za telefon sa dugmetom za biranje iz imenika
+  Widget _buildPhoneFieldWithContactPicker({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+  }) {
+    final contactPicker = FlutterNativeContactPicker();
+
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: controller,
+            keyboardType: TextInputType.phone,
+            style: const TextStyle(color: Colors.black87),
+            enableInteractiveSelection: true,
+            onTapOutside: (_) => FocusScope.of(context).unfocus(),
+            decoration: InputDecoration(
+              hintText: label,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.grey),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.blue, width: 2),
+              ),
+              prefixIcon: Icon(icon, color: Colors.blue, size: 20),
+              fillColor: Colors.white.withValues(alpha: 0.9),
+              filled: true,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 📇 Dugme za biranje iz imenika
+        Material(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              try {
+                final contact = await contactPicker.selectContact();
+                if (contact != null && contact.phoneNumbers != null && contact.phoneNumbers!.isNotEmpty) {
+                  // Uzmi prvi broj telefona
+                  String phoneNumber = contact.phoneNumbers!.first;
+                  // Očisti broj od razmaka i specijalnih karaktera
+                  phoneNumber = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+                  controller.text = phoneNumber;
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Greška pri izboru kontakta: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: const Icon(
+                Icons.contacts,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
