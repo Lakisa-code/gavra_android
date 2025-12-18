@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../services/realtime_hub_service.dart';
 
 /// 🚐 Jednostavan widget koji prikazuje ETA dolaska kombija
-/// Čita iz Supabase vozac_lokacije.putnici_eta
+/// ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
     Key? key,
@@ -40,66 +41,62 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   }
 
   void _startListening() {
-    // Slušaj promene u vozac_lokacije tabeli za ovaj grad
-    _subscription = Supabase.instance.client
-        .from('vozac_lokacije')
-        .stream(primaryKey: ['id'])
-        .eq('grad', widget.grad)
-        .listen((list) {
-          if (!mounted) return;
+    // ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
+    _subscription = RealtimeHubService.instance.gpsStreamPoGradu(widget.grad).listen((list) {
+      if (!mounted) return;
 
-          // Nađi aktivnog vozača
-          final activeDrivers = list.where((l) => l['aktivan'] == true).toList();
+      // Nađi aktivnog vozača
+      final activeDrivers = list.where((l) => l['aktivan'] == true).toList();
 
-          if (activeDrivers.isEmpty) {
-            setState(() {
-              _isActive = false;
-              _etaMinutes = null;
-              _isLoading = false;
-            });
-            return;
-          }
-
-          // Uzmi prvog aktivnog vozača
-          final driver = activeDrivers.first;
-          final putniciEta = driver['putnici_eta'] as Map<String, dynamic>?;
-          final vozacIme = driver['vozac_ime'] as String?;
-
-          // Pronađi ETA za ovog putnika
-          int? eta;
-          if (putniciEta != null) {
-            // Probaj tačno ime
-            if (putniciEta.containsKey(widget.putnikIme)) {
-              eta = putniciEta[widget.putnikIme] as int?;
-            } else {
-              // Probaj case-insensitive pretragu
-              for (final entry in putniciEta.entries) {
-                if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
-                  eta = entry.value as int?;
-                  break;
-                }
-              }
-            }
-          }
-
-          setState(() {
-            _isActive = true;
-            // 🆕 Zapamti vreme kada se status promeni na pokupljen
-            if (eta == -1 && _etaMinutes != -1) {
-              _vremePokupljenja = DateTime.now();
-            }
-            _etaMinutes = eta;
-            _vozacIme = vozacIme;
-            _isLoading = false;
-          });
-        }, onError: (e) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-              _isActive = false;
-            });
-          }
+      if (activeDrivers.isEmpty) {
+        setState(() {
+          _isActive = false;
+          _etaMinutes = null;
+          _isLoading = false;
         });
+        return;
+      }
+
+      // Uzmi prvog aktivnog vozača
+      final driver = activeDrivers.first;
+      final putniciEta = driver['putnici_eta'] as Map<String, dynamic>?;
+      final vozacIme = driver['vozac_ime'] as String?;
+
+      // Pronađi ETA za ovog putnika
+      int? eta;
+      if (putniciEta != null) {
+        // Probaj tačno ime
+        if (putniciEta.containsKey(widget.putnikIme)) {
+          eta = putniciEta[widget.putnikIme] as int?;
+        } else {
+          // Probaj case-insensitive pretragu
+          for (final entry in putniciEta.entries) {
+            if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
+              eta = entry.value as int?;
+              break;
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _isActive = true;
+        // 🆕 Zapamti vreme kada se status promeni na pokupljen
+        if (eta == -1 && _etaMinutes != -1) {
+          _vremePokupljenja = DateTime.now();
+        }
+        _etaMinutes = eta;
+        _vozacIme = vozacIme;
+        _isLoading = false;
+      });
+    }, onError: (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isActive = false;
+        });
+      }
+    });
   }
 
   @override

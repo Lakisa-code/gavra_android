@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import 'dnevni_kusur_service.dart';
 import 'putnik_service.dart';
-import 'realtime_service.dart';
+import 'realtime_hub_service.dart';
 // import 'simplified_kusur_service.dart';
 import 'statistika_service.dart';
 
@@ -15,14 +15,10 @@ class DailyCheckInService {
   // Stream controller za real-time ažuriranje kocke
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
-  /// Stream za real-time ažuriranje sitnog novca u UI
-  static Stream<double> streamTodayAmount(String vozac) async* {
-    // Odmah emituj trenutnu vrednost iz SharedPreferences
-    final currentAmount = await getTodayAmount(vozac) ?? 0.0;
-    yield currentAmount;
-
-    // Zatim slušaj stream controller za ažuriranja
-    yield* _sitanNovacController.stream;
+  /// Stream za real-time ažuriranje kusura iz Supabase vozaci tabele
+  /// ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
+  static Stream<double> streamTodayAmount(String vozac) {
+    return RealtimeHubService.instance.streamKusurZaVozaca(vozac);
   }
 
   /// Initialize stream with current value from SharedPreferences
@@ -35,12 +31,7 @@ class DailyCheckInService {
 
   /// Inicijalizuj realtime stream za vozača tako da kocka prati bazu
   static StreamSubscription<dynamic> initializeRealtimeForDriver(String vozac) {
-    // Start centralized realtime subscriptions for this driver
-    try {
-      RealtimeService.instance.startForDriver(vozac);
-    } catch (e) {
-      // RealtimeService.startForDriver failed
-    }
+    // Supabase realtime se koristi direktno gde je potrebno
     // Return a dummy subscription since daily_checkins functionality is removed
     // ignore: prefer_const_constructors
     return Stream<dynamic>.empty().listen((_) {});
@@ -141,9 +132,11 @@ class DailyCheckInService {
       rethrow;
     }
 
-    // 🌐 REMOTE ČUVANJE - asinhrono u pozadini sa timeout-om
+    // 🌐 REMOTE ČUVANJE
     try {
       await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
+      // Ažuriraj kusur u vozaci tabeli
+      await Supabase.instance.client.from('vozaci').update({'kusur': sitanNovac}).eq('ime', vozac);
     } catch (e) {
       // Ako remote save ne uspe, ali lokalna je OK, nastavi dalje
     }

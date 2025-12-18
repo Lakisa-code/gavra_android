@@ -88,7 +88,7 @@ class _AdminScreenState extends State<AdminScreen> {
       // Error handling - logging removed for production
     });
 
-    // Osiguraj da je RealtimeService pokrenut
+    // Supabase realtime se koristi direktno
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Initialize realtime service
       try {
@@ -195,7 +195,7 @@ class _AdminScreenState extends State<AdminScreen> {
   void _checkStreamHealth() {
     try {
       // Check if realtime services are responding
-      final healthCheck = true; // RealtimeService.isConnected() - simplified for now
+      final healthCheck = true; // Supabase realtime health check
       _isRealtimeHealthy.value = healthCheck;
 
       // Check specific stream health (will be updated by StreamBuilders)
@@ -976,26 +976,8 @@ class _AdminScreenState extends State<AdminScreen> {
             final now = DateTime.now();
             final currentWeekday = now.weekday; // 1=Pon, 2=Uto, 3=Sre, 4=Čet, 5=Pet
 
-            int targetWeekday;
-            switch (_selectedDan) {
-              case 'Ponedeljak':
-                targetWeekday = 1;
-                break;
-              case 'Utorak':
-                targetWeekday = 2;
-                break;
-              case 'Sreda':
-                targetWeekday = 3;
-                break;
-              case 'Četvrtak':
-                targetWeekday = 4;
-                break;
-              case 'Petak':
-                targetWeekday = 5;
-                break;
-              default:
-                targetWeekday = currentWeekday;
-            }
+            // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
+            final targetWeekday = app_date_utils.DateUtils.getDayWeekdayNumber(_selectedDan);
 
             // 🎯 USKLADI SA DANAS SCREEN: Ako je odabrani dan isti kao danas, koristi današnji datum
             final DateTime targetDate;

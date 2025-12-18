@@ -11,6 +11,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
+import '../utils/date_utils.dart' as app_date_utils; // DODATO za centralnu getDayAbbreviation
 import '../utils/text_utils.dart';
 
 class PrintingService {
@@ -61,25 +62,9 @@ class PrintingService {
           .first;
 
       // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
+      // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
       String getDayAbbreviation(String fullDayName) {
-        switch (fullDayName.toLowerCase()) {
-          case 'ponedeljak':
-            return 'pon';
-          case 'utorak':
-            return 'uto';
-          case 'sreda':
-            return 'sre';
-          case 'četvrtak':
-            return 'cet';
-          case 'petak':
-            return 'pet';
-          case 'subota':
-            return 'sub';
-          case 'nedelja':
-            return 'ned';
-          default:
-            return fullDayName.toLowerCase();
-        }
+        return app_date_utils.DateUtils.getDayAbbreviation(fullDayName);
       }
 
       // Normalizuj vreme format - konvertuj "05:00:00" u "5:00"

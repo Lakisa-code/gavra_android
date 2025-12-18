@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../utils/schedule_utils.dart';
+import 'realtime_hub_service.dart';
 
 /// 🎫 Servis za upravljanje kapacitetom polazaka
 /// Omogućava realtime prikaz slobodnih mesta i admin kontrolu
@@ -108,24 +109,19 @@ class KapacitetService {
   }
 
   /// Stream kapaciteta (realtime ažuriranje)
+  /// ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
-    return _supabase.from('kapacitet_polazaka').stream(primaryKey: ['id']).map((data) {
+    return RealtimeHubService.instance.kapacitetStream.map((hubData) {
+      // Dodaj default vrednosti za sva vremena
       final result = <String, Map<String, int>>{
         'BC': {for (final v in svaVremenaBc) v: 8},
         'VS': {for (final v in svaVremenaVs) v: 8},
       };
 
-      for (final row in data) {
-        if (row['aktivan'] != true) continue;
-
-        final grad = row['grad'] as String?;
-        final vreme = row['vreme'] as String?;
-        final maxMesta = row['max_mesta'] as int?;
-
-        if (grad != null && vreme != null && maxMesta != null) {
-          if (result.containsKey(grad)) {
-            result[grad]![vreme] = maxMesta;
-          }
+      // Merge sa podacima iz huba
+      for (final grad in hubData.keys) {
+        if (result.containsKey(grad)) {
+          result[grad]!.addAll(hubData[grad]!);
         }
       }
 

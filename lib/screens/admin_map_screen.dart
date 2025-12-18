@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/gps_lokacija.dart';
 import '../services/permission_service.dart';
+import '../services/realtime_hub_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 
@@ -28,10 +29,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   DateTime? _lastGpsLoad;
   static const cacheDuration = Duration(seconds: 30);
 
-  // V3.0 Clean Monitoring - realtime stream za vozač lokacije
+  // ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
   StreamSubscription<List<Map<String, dynamic>>>? _gpsSubscription;
-  int _retryCount = 0; // ✅ ISPRAVKA: Retry limit
-  static const int _maxRetries = 3;
 
   // Početna pozicija - Bela Crkva/Vršac region
   static const LatLng _initialCenter = LatLng(44.9, 21.4);
@@ -39,20 +38,17 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeRealtimeMonitoring(); // V3.0 Clean monitoring
+    _initializeRealtimeMonitoring();
     _getCurrentLocation();
     _loadGpsLokacije(); // Fallback
   }
 
-  // V3.0 Clean - Setup realtime monitoring with resilience
+  // ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
   void _initializeRealtimeMonitoring() {
-    // ✅ ISPRAVKA: Otkaži stare subscriptions pre kreiranja novih
     _gpsSubscription?.cancel();
 
-    // GPS Realtime Stream sa vozac_lokacije tabele (prava tabela sa podacima)
-    _gpsSubscription = Supabase.instance.client.from('vozac_lokacije').stream(primaryKey: ['id']).listen(
+    _gpsSubscription = RealtimeHubService.instance.gpsStream.listen(
       (data) {
-        _retryCount = 0; // Reset retry count on success
         if (mounted) {
           try {
             // Mapiranje iz vozac_lokacije strukture u GPSLokacija
@@ -81,15 +77,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         }
       },
       onError: (Object error) {
-        // ✅ ISPRAVKA: Retry sa limitom
-        if (_retryCount < _maxRetries && mounted) {
-          _retryCount++;
-          Timer(const Duration(seconds: 5), () {
-            if (mounted) {
-              _initializeRealtimeMonitoring();
-            }
-          });
-        }
+        // RealtimeHubService ima ugrađen retry mehanizam
       },
     );
   }
@@ -379,7 +367,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                     // 🔄 Refresh dugme
                     TextButton(
                       onPressed: () {
-                        _retryCount = 0; // Reset retry count
                         _loadGpsLokacije();
                       },
                       child: const Text(

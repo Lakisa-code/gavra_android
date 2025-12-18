@@ -10,7 +10,7 @@ import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/advanced_geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
-import '../services/realtime_service.dart'; // Za stream osvezavanje
+import '../services/realtime_hub_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
@@ -2623,13 +2623,13 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   }
 
   // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
-  // Koristi voznje_log za praćenje vožnji
+  // ✅ OPTIMIZOVANO: Koristi RealtimeHubService za voznje_log
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
     String putnikId,
     String period,
   ) {
-    // 🔄 KORISTI RealtimeService za osvezavanje (bez RxDart)
-    return RealtimeService.instance.tableStream('voznje_log').asyncMap((_) async {
+    // 🔄 Koristi RealtimeHubService za detekciju promena
+    return RealtimeHubService.instance.voznjeLogChangeStream.asyncMap((_) async {
       try {
         // Posebni slučajevi
         if (period == 'Cela 2025') {
