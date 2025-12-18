@@ -4,10 +4,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/putnik.dart';
 import 'navigation_provider.dart';
 
-/// 🔗 NAVIGATION URL BUILDER
+/// NAVIGATION URL BUILDER
 /// Gradi URL-ove za različite navigacione aplikacije
 class NavigationUrlBuilder {
-  /// 🗺️ Gradi URL za navigaciju sa koordinatama
+  /// Gradi URL za navigaciju sa koordinatama
   ///
   /// [provider] - Navigaciona aplikacija (uvek HERE WeGo)
   /// [waypoints] - Lista koordinata (lat, lng parovi)
@@ -23,7 +23,7 @@ class NavigationUrlBuilder {
     return _buildHereWeGoUrl(waypoints, destination);
   }
 
-  /// 🗺️ Gradi URL za navigaciju sa putnicima
+  /// Gradi URL za navigaciju sa putnicima
   static String buildUrlFromPutnici({
     required NavigationProvider provider,
     required List<Putnik> putnici,
@@ -59,11 +59,11 @@ class NavigationUrlBuilder {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 🔗 HERE WEGO URL BUILDER (JEDINA PODRŽANA NAVIGACIJA)
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════
+  // HERE WEGO URL BUILDER (JEDINA PODRŽANA NAVIGACIJA)
+  // ═════════════════════════════════════════════════════════════════════
 
-  /// 🔗 HERE WeGo Navigation URL
+  /// HERE WeGo Navigation URL
   /// Format: here-route://LAT,LNG,NAME/LAT,LNG,NAME?m=d
   /// Alternativno: https://share.here.com/r/LAT,LNG,NAME/LAT,LNG,NAME?m=d
   static String _buildHereWeGoUrl(List<Position> waypoints, Position destination) {
@@ -85,11 +85,11 @@ class NavigationUrlBuilder {
     return url.toString();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 🚀 LAUNCH HELPERS
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════════════════════════
+  // LAUNCH HELPERS
+  // ═════════════════════════════════════════════════════════════════════
 
-  /// 🚀 Otvori navigacionu aplikaciju
+  /// Otvori navigacionu aplikaciju
   static Future<bool> launch({
     required NavigationProvider provider,
     required List<Position> waypoints,
@@ -117,7 +117,7 @@ class NavigationUrlBuilder {
     }
   }
 
-  /// 🚀 Otvori navigacionu aplikaciju sa putnicima
+  /// Otvori navigacionu aplikaciju sa putnicima
   static Future<bool> launchWithPutnici({
     required NavigationProvider provider,
     required List<Putnik> putnici,
@@ -147,7 +147,7 @@ class NavigationUrlBuilder {
     }
   }
 
-  /// 🏪 Otvori store za instalaciju HERE WeGo
+  /// Otvori store za instalaciju HERE WeGo
   static Future<bool> openStore(NavigationProvider provider) async {
     try {
       final uri = Uri.parse(provider.playStoreUrl);
@@ -168,10 +168,10 @@ class NavigationUrlBuilder {
   }
 }
 
-/// 🔀 ROUTE SEGMENTATION
+/// ROUTE SEGMENTATION
 /// Razbija rutu na segmente prema limitu waypoinata
 class RouteSegmentation {
-  /// 📊 Segmentiraj putnike prema limitu providera
+  /// Segmentiraj putnike prema limitu providera
   static List<List<Putnik>> segmentPutnici(
     List<Putnik> putnici,
     NavigationProvider provider,
@@ -179,7 +179,7 @@ class RouteSegmentation {
     return provider.segmentWaypoints(putnici);
   }
 
-  /// 📊 Segmentiraj koordinate prema limitu providera
+  /// Segmentiraj koordinate prema limitu providera
   static List<List<Position>> segmentCoordinates(
     List<Position> coordinates,
     NavigationProvider provider,
@@ -187,7 +187,7 @@ class RouteSegmentation {
     return provider.segmentWaypoints(coordinates);
   }
 
-  /// 📊 Dobij informacije o segmentaciji
+  /// Dobij informacije o segmentaciji
   static SegmentationInfo getSegmentationInfo(
     List<Putnik> putnici,
     NavigationProvider provider,
@@ -204,7 +204,7 @@ class RouteSegmentation {
   }
 }
 
-/// 📊 Informacije o segmentaciji rute
+/// Informacije o segmentaciji rute
 class SegmentationInfo {
   const SegmentationInfo({
     required this.totalPutnici,

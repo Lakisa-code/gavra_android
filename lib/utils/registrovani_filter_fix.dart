@@ -1,15 +1,15 @@
-﻿/// 🔧 POBOLJŠANA LOGIKA FILTRIRANJA MESEČNIH PUTNIKA
+﻿/// POBOLJŠANA LOGIKA FILTRIRANJA MESEČNIH PUTNIKA
 /// Centralizovana logika za konzistentno filtriranje
 
 class RegistrovaniFilterFix {
-  /// ✅ ISPRAVKA 1: Tačno matchovanje dana umesto contains()
+  /// ISPRAVKA 1: Tačno matchovanje dana umesto contains()
   static bool matchesDan(String radniDani, String dan) {
     final daniList = radniDani.toLowerCase().split(',').map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
 
     return daniList.contains(dan.toLowerCase().trim());
   }
 
-  /// ✅ ISPRAVKA 2: Standardizovano mapiranje kratice dana
+  /// ISPRAVKA 2: Standardizovano mapiranje kratice dana
   static String getDayAbbreviation(DateTime date) {
     const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
     return dani[date.weekday - 1];
@@ -28,7 +28,7 @@ class RegistrovaniFilterFix {
     return dayMap[dayName.toLowerCase()] ?? 'pon';
   }
 
-  /// ✅ ISPRAVKA 3: Poboljšana validacija vremena polaska
+  /// ISPRAVKA 3: Poboljšana validacija vremena polaska
   static bool isValidPolazak(String? polazak) {
     if (polazak == null || polazak.isEmpty) return false;
 
@@ -43,7 +43,7 @@ class RegistrovaniFilterFix {
     return timeRegex.hasMatch(cleaned);
   }
 
-  /// ✅ ISPRAVKA 4: Centralizovana logika aktivnosti
+  /// ISPRAVKA 4: Centralizovana logika aktivnosti
   static bool isAktivan(dynamic putnik) {
     // Za Map objekte iz baze
     if (putnik is Map<String, dynamic>) {
@@ -60,7 +60,7 @@ class RegistrovaniFilterFix {
     }
   }
 
-  /// ✅ ISPRAVKA 5: Standardizovano filtriranje po statusu
+  /// ISPRAVKA 5: Standardizovano filtriranje po statusu
   static bool isValidStatus(String? status) {
     if (status == null) return true;
 
@@ -77,7 +77,7 @@ class RegistrovaniFilterFix {
     return !invalidStatuses.contains(normalizedStatus);
   }
 
-  /// ✅ ISPRAVKA 6: Kompletan filter za mesečne putnike
+  /// ISPRAVKA 6: Kompletan filter za mesečne putnike
   static bool shouldIncludeRegistrovaniPutnik({
     required dynamic putnik,
     String? targetDay,
@@ -123,7 +123,7 @@ class RegistrovaniFilterFix {
     return true;
   }
 
-  /// ✅ ISPRAVKA 7: Optimizovani SQL upit za mesečne putnike
+  /// ISPRAVKA 7: Optimizovani SQL upit za mesečne putnike
   static String buildOptimizedQuery({
     String? targetDay,
     bool activeOnly = true,

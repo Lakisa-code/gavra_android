@@ -597,7 +597,7 @@ class _PutnikCardState extends State<PutnikCard> {
   Future<void> _pozoviBroj() async {
     if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) {
       try {
-        // 📞 HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
+        // HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
         final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
         if (!hasPermission) {
           if (mounted) {
@@ -640,7 +640,7 @@ class _PutnikCardState extends State<PutnikCard> {
   /// Pozovi roditelja na telefon (otac ili majka)
   Future<void> _pozoviBrojRoditelja(String brojTelefona) async {
     try {
-      // 📞 HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
+      // HUAWEI KOMPATIBILNO - koristi Huawei specifičnu logiku
       final hasPermission = await PermissionService.ensurePhonePermissionHuawei();
       if (!hasPermission) {
         if (mounted) {
@@ -1413,7 +1413,7 @@ class _PutnikCardState extends State<PutnikCard> {
     _longPressTimer?.cancel();
   }
 
-  // 🏖️ Prikaži picker za odsustvo (godišnji/bolovanje)
+  // Prikaži picker za odsustvo (godišnji/bolovanje)
   Future<void> _pokaziOdsustvoPicker() async {
     final String? odabraniStatus = await showDialog<String>(
       context: context,
@@ -1481,7 +1481,7 @@ class _PutnikCardState extends State<PutnikCard> {
   // Postavi odsustvo za putnika
   Future<void> _postaviOdsustvo(String status) async {
     try {
-      // 🔍 DEBUG: Proveri ID pre poziva
+      // DEBUG: Proveri ID pre poziva
       final putnikId = _putnik.id;
       if (putnikId == null || putnikId.isEmpty) {
         throw Exception('Putnik nema validan ID (id=$putnikId)');
@@ -1582,7 +1582,7 @@ class _PutnikCardState extends State<PutnikCard> {
   // Otvara navigaciju sa poboljšanim error handling-om (preferirano OpenStreetMap - besplatno)
   Future<void> _otvoriNavigaciju(String koordinate) async {
     try {
-      // 🛰️ INSTANT GPS - koristi novi PermissionService (bez dialoga)
+      // INSTANT GPS - koristi novi PermissionService (bez dialoga)
       bool gpsReady = await PermissionService.ensureGpsForNavigation();
       if (!gpsReady) {
         if (mounted) {
@@ -1618,7 +1618,7 @@ class _PutnikCardState extends State<PutnikCard> {
         throw Exception('Koordinate nisu validni brojevi: $lat, $lng');
       }
 
-      // 🚗 HERE WEGO - JEDINA NAVIGACIONA APLIKACIJA
+      // HERE WEGO - JEDINA NAVIGACIONA APLIKACIJA
       final navigacijeUrls = [
         // HERE WeGo - podržava sve uređaje (GMS i HMS)
         'here-route://mylocation/$lat,$lng',
@@ -1713,7 +1713,7 @@ class _PutnikCardState extends State<PutnikCard> {
     // Proverava uslove za prikazivanje X ikone
     if (_putnik.ime == 'Ljilla') {}
 
-    // 🎨 REFAKTORISANO: Koristi CardColorHelper za centralizovanu logiku boja
+    // REFAKTORISANO: Koristi CardColorHelper za centralizovanu logiku boja
     final cardDecoration = CardColorHelper.getCardDecoration(_putnik);
     final textColor = CardColorHelper.getTextColorWithTheme(
       _putnik,
@@ -1744,7 +1744,7 @@ class _PutnikCardState extends State<PutnikCard> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 2),
-        decoration: cardDecoration, // 🎨 Koristi CardColorHelper
+        decoration: cardDecoration, // Koristi CardColorHelper
         child: Padding(
           padding: const EdgeInsets.all(6.0),
           child: Column(
@@ -1761,7 +1761,7 @@ class _PutnikCardState extends State<PutnikCard> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 14,
-                          color: textColor, // 🎨 Koristi CardColorHelper
+                          color: textColor, // Koristi CardColorHelper
                         ),
                       ),
                     ),
@@ -1807,7 +1807,7 @@ class _PutnikCardState extends State<PutnikCard> {
                               ),
                           ],
                         ),
-                        // 🏠 ADRESA - jednostavno prikaži adresu ako postoji
+                        // ADRESA - jednostavno prikaži adresu ako postoji
                         if (_putnik.adresa != null &&
                             _putnik.adresa!.isNotEmpty &&
                             _putnik.adresa != 'Adresa nije definisana')
@@ -1963,7 +1963,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                                   // Dugme za navigaciju - uvek prikaži, koordinate će se dobiti po potrebi
                                                   TextButton.icon(
                                                     onPressed: () async {
-                                                      // 🔒 INSTANT GPS - koristi novi PermissionService
+                                                      // INSTANT GPS - koristi novi PermissionService
                                                       final hasPermission =
                                                           await PermissionService.ensureGpsForNavigation();
                                                       if (!hasPermission) {
@@ -2169,7 +2169,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                         ),
                                         // keep spacing minimal for compact layout
                                       ],
-                                      // 📞 TELEFON IKONA - ako putnik ima telefon
+                                      // TELEFON IKONA - ako putnik ima telefon
                                       if (_putnik.brojTelefona != null && _putnik.brojTelefona!.isNotEmpty) ...[
                                         GestureDetector(
                                           onTap: _pozovi,
@@ -2251,7 +2251,7 @@ class _PutnikCardState extends State<PutnikCard> {
                                         ),
                                         // spacer removed to let Wrap spacing control gaps
                                       ],
-                                      // ❌ IKS DUGME - za sve korisnike (4. po redu)
+                                      // IKS DUGME - za sve korisnike (4. po redu)
                                       // Vozači: direktno otkazivanje | Admini: popup sa opcijama
                                       if (!_putnik.jeOtkazan &&
                                           (_putnik.mesecnaKarta == true ||
@@ -2748,7 +2748,7 @@ class _PutnikCardState extends State<PutnikCard> {
     }
   }
 
-  // 🗑️ UKLONI IZ TERMINA - samo nestane sa liste, bez otkazivanja
+  // UKLONI IZ TERMINA - samo nestane sa liste, bez otkazivanja
   Future<void> _handleBrisanje() async {
     final confirm = await showDialog<bool>(
       context: context,

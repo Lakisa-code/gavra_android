@@ -1,4 +1,4 @@
-/// 🧭 NAVIGATION PROVIDER ENUM
+/// NAVIGATION PROVIDER ENUM
 /// Definiše podržanu navigacionu aplikaciju
 ///
 /// KORISTI SE ISKLJUČIVO HERE WEGO:
@@ -44,13 +44,13 @@ enum NavigationProvider {
   /// Da li zahteva Google Mobile Services
   final bool requiresGms;
 
-  /// 📊 Izračunaj koliko segmenata je potrebno za datu rutu
+  /// Izračunaj koliko segmenata je potrebno za datu rutu
   int calculateSegments(int totalWaypoints) {
     if (totalWaypoints <= maxWaypoints) return 1;
     return (totalWaypoints / maxWaypoints).ceil();
   }
 
-  /// 📊 Podeli listu waypointa na segmente
+  /// Podeli listu waypointa na segmente
   List<List<T>> segmentWaypoints<T>(List<T> waypoints) {
     if (waypoints.length <= maxWaypoints) {
       return [waypoints];
@@ -68,7 +68,7 @@ enum NavigationProvider {
   String toString() => displayName;
 }
 
-/// 🔧 Extension metode za NavigationProvider
+/// Extension metode za NavigationProvider
 extension NavigationProviderExtension on NavigationProvider {
   /// Da li podržava offline mape
   bool get supportsOfflineMaps => true; // HERE WeGo podržava

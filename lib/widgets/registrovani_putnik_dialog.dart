@@ -60,7 +60,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   String? _adresaBelaCrkvaId;
   String? _adresaVrsacId;
 
-  // 🏠 Liste odobrenih adresa za dropdown
+  // Liste odobrenih adresa za dropdown
   List<Map<String, String>> _adreseBelaCrkva = [];
   List<Map<String, String>> _adreseVrsac = [];
 
@@ -84,11 +84,11 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   void initState() {
     super.initState();
     _initializeControllers();
-    _loadAdreseFromDatabase(); // 🏠 Učitaj adrese
+    _loadAdreseFromDatabase(); // Učitaj adrese
     _loadDataFromExistingPutnik();
   }
 
-  /// 🏠 Učitaj odobrene adrese iz baze
+  /// Učitaj odobrene adrese iz baze
   Future<void> _loadAdreseFromDatabase() async {
     try {
       final adreseBC = await AdresaSupabaseService.getAdreseZaGrad('Bela Crkva');
@@ -804,7 +804,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       title: '🏠 Adrese',
       child: Column(
         children: [
-          // 🏠 DROPDOWN ZA BELA CRKVA
+          // DROPDOWN ZA BELA CRKVA
           DropdownButtonFormField<String>(
             key: ValueKey('bc_$_adresaBelaCrkvaId'),
             initialValue: _adresaBelaCrkvaId,
@@ -835,7 +835,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             },
           ),
           const SizedBox(height: 12),
-          // 🏠 DROPDOWN ZA VRŠAC
+          // DROPDOWN ZA VRŠAC
           DropdownButtonFormField<String>(
             key: ValueKey('vs_$_adresaVrsacId'),
             initialValue: _adresaVrsacId,
@@ -1478,7 +1478,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   Future<void> _updateExistingPutnik() async {
-    // 🏠 Adrese - samo koristi ID iz dropdown-a (nema kreiranja novih)
+    // Adrese - samo koristi ID iz dropdown-a (nema kreiranja novih)
     String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
     String? adresaVrsacId = _adresaVrsacId;
 
