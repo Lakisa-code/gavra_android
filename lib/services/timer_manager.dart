@@ -141,26 +141,3 @@ class TimerManager {
     return longRunning;
   }
 }
-
-/// HELPER EXTENSION za lakše upravljanje timer-ima
-extension TimerManagerExtension on Widget {
-  /// Helper za kreiranje timer-a vezanih za widget
-  Timer createNamedTimer(
-    String name,
-    Duration duration,
-    VoidCallback callback, {
-    bool isPeriodic = false,
-  }) {
-    return TimerManager.createTimer(
-      '${runtimeType}_$name',
-      duration,
-      callback,
-      isPeriodic: isPeriodic,
-    );
-  }
-
-  /// Helper za otkazivanje timer-a vezanih za widget
-  void cancelNamedTimer(String name) {
-    TimerManager.cancelTimer('${runtimeType}_$name');
-  }
-}

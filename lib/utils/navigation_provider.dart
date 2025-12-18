@@ -67,15 +67,3 @@ enum NavigationProvider {
   @override
   String toString() => displayName;
 }
-
-/// Extension metode za NavigationProvider
-extension NavigationProviderExtension on NavigationProvider {
-  /// Da li podržava offline mape
-  bool get supportsOfflineMaps => true; // HERE WeGo podržava
-
-  /// Preporučena poruka
-  String get recommendation {
-    return 'HERE WeGo je besplatan, podržava offline mape i radi na svim uređajima. '
-        'Podržava do 10 waypointa.';
-  }
-}
