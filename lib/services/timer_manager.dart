@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-/// 🕐 TIMER MANAGER - Centralizovano upravljanje timer-ima za sprečavanje memory leak-ova
+/// TIMER MANAGER - Centralizovano upravljanje timer-ima za sprečavanje memory leak-ova
 class TimerManager {
   static final Map<String, Timer> _activeTimers = {};
   static final Map<String, DateTime> _timerStartTimes = {};
 
-  /// ⏰ Kreiraj imenovani timer
+  /// Kreiraj imenovani timer
   static Timer createTimer(
     String name,
     Duration duration,
@@ -25,7 +25,7 @@ class TimerManager {
     return timer;
   }
 
-  /// ❌ Otkaži timer po imenu
+  /// Otkaži timer po imenu
   static void cancelTimer(String name) {
     final timer = _activeTimers[name];
     if (timer != null) {
@@ -35,12 +35,12 @@ class TimerManager {
     }
   }
 
-  /// 🔍 Proveri da li timer postoji
+  /// Proveri da li timer postoji
   static bool hasTimer(String name) {
     return _activeTimers.containsKey(name) && _activeTimers[name]!.isActive;
   }
 
-  /// ⏱️ Dobij koliko dugo timer radi
+  /// Dobij koliko dugo timer radi
   static Duration? getTimerUptime(String name) {
     final startTime = _timerStartTimes[name];
     if (startTime != null) {
@@ -49,7 +49,7 @@ class TimerManager {
     return null;
   }
 
-  /// 🧹 Otkaži sve timer-e
+  /// Otkaži sve timer-e
   static void cancelAllTimers() {
     for (final entry in _activeTimers.entries) {
       entry.value.cancel();
@@ -59,7 +59,7 @@ class TimerManager {
     _timerStartTimes.clear();
   }
 
-  /// 📊 Dobij statistike timer-a
+  /// Dobij statistike timer-a
   static Map<String, dynamic> getStats() {
     final activeCount = _activeTimers.values.where((t) => t.isActive).length;
     final inactiveCount = _activeTimers.length - activeCount;
@@ -80,7 +80,7 @@ class TimerManager {
     };
   }
 
-  /// 🔄 Restartuj timer
+  /// Restartuj timer
   static Timer restartTimer(
     String name,
     Duration duration,
@@ -91,7 +91,7 @@ class TimerManager {
     return createTimer(name, duration, callback, isPeriodic: isPeriodic);
   }
 
-  /// ⚡ Kreiraj debounced timer (za input fields, search, etc.)
+  /// Kreiraj debounced timer (za input fields, search, etc.)
   static void debounce(
     String name,
     Duration delay,
@@ -101,7 +101,7 @@ class TimerManager {
     createTimer(name, delay, callback);
   }
 
-  /// 🧹 Cleanup neaktivnih timer-a
+  /// Cleanup neaktivnih timer-a
   static void cleanupInactiveTimers() {
     final inactiveNames = <String>[];
 
@@ -121,7 +121,7 @@ class TimerManager {
     }
   }
 
-  /// ⚠️ Detektuj dugotrajne timer-e (potencijalni leak)
+  /// Detektuj dugotrajne timer-e (potencijalni leak)
   static List<String> detectLongRunningTimers({
     Duration threshold = const Duration(hours: 1),
   }) {
@@ -142,7 +142,7 @@ class TimerManager {
   }
 }
 
-/// 🎯 HELPER EXTENSION za lakše upravljanje timer-ima
+/// HELPER EXTENSION za lakše upravljanje timer-ima
 extension TimerManagerExtension on Widget {
   /// Helper za kreiranje timer-a vezanih za widget
   Timer createNamedTimer(

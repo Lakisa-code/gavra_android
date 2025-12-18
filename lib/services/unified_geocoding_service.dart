@@ -1,4 +1,4 @@
-/// 🎯 UNIFIED GEOCODING SERVICE
+/// UNIFIED GEOCODING SERVICE
 /// Centralizovani servis za geocoding sa:
 /// - Paralelnim fetch-om koordinata
 /// - Prioritetnim redosledom (Baza → Memory → Disk → API)
@@ -39,12 +39,12 @@ class GeocodingResult {
   bool get success => position != null;
 }
 
-/// 🎯 UNIFIED GEOCODING SERVICE
+/// UNIFIED GEOCODING SERVICE
 class UnifiedGeocodingService {
   UnifiedGeocodingService._();
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 📍 GLAVNA FUNKCIJA - Dobij koordinate za više putnika (PARALELNO)
+  // GLAVNA FUNKCIJA - Dobij koordinate za više putnika (PARALELNO)
   // ═══════════════════════════════════════════════════════════════════════
 
   /// Dobij koordinate za listu putnika sa paralelnim fetch-om
@@ -104,7 +104,7 @@ class UnifiedGeocodingService {
       String? source;
       String? realAddressName;
 
-      // 🎯 PRIORITET 1: Koordinate iz baze (preko adresaId)
+      // PRIORITET 1: Koordinate iz baze (preko adresaId)
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
         final adresaFromDb = await AdresaSupabaseService.getAdresaByUuid(
           putnik.adresaId!,
@@ -123,7 +123,7 @@ class UnifiedGeocodingService {
         }
       }
 
-      // 🎯 PRIORITET 2: Memory cache
+      // PRIORITET 2: Memory cache
       if (position == null) {
         final cacheKey = _getCacheKey(putnik);
         final memoryCached = CacheService.getFromMemory<String>(
@@ -136,7 +136,7 @@ class UnifiedGeocodingService {
         }
       }
 
-      // 🎯 PRIORITET 3: Disk cache
+      // PRIORITET 3: Disk cache
       if (position == null) {
         final cacheKey = _getCacheKey(putnik);
         final diskCached = await CacheService.getFromDisk<String>(
@@ -153,7 +153,7 @@ class UnifiedGeocodingService {
         }
       }
 
-      // 🎯 PRIORITET 4: Nominatim API
+      // PRIORITET 4: Nominatim API
       if (position == null) {
         final addressToGeocode = realAddressName ?? putnik.adresa!;
         final coordsString = await GeocodingService.getKoordinateZaAdresu(
@@ -198,12 +198,12 @@ class UnifiedGeocodingService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 📐 HELPER FUNKCIJE
+  // HELPER FUNKCIJE
   // ═══════════════════════════════════════════════════════════════════════
 
   /// Proveri da li putnik ima validnu adresu
   static bool _hasValidAddress(Putnik putnik) {
-    // 🎯 MESEČNI PUTNICI: Imaju adresaId koji pokazuje na pravu adresu
+    // MESEČNI PUTNICI: Imaju adresaId koji pokazuje na pravu adresu
     if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
       return true;
     }
@@ -306,7 +306,7 @@ class UnifiedGeocodingService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 📊 STATISTIKE I DEBUG
+  // STATISTIKE I DEBUG
   // ═══════════════════════════════════════════════════════════════════════
 
   /// Generiši statistiku geocodinga

@@ -143,7 +143,7 @@ class SMSService {
           // Pošalji SMS putniku
           await _sendSMS(putnik.brojTelefona!, message);
           successCount++;
-          debugPrint('✅ SMS poslat: ${putnik.putnikIme} (${putnik.brojTelefona})');
+          debugPrint('SMS poslat: ${putnik.putnikIme} (${putnik.brojTelefona})');
 
           // Pošalji SMS i roditeljima za učenike
           if (putnik.tip == 'ucenik') {
@@ -154,13 +154,13 @@ class SMSService {
           await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
           errorCount++;
-          debugPrint('❌ Greška slanja SMS: ${putnik.putnikIme} - $e');
+          debugPrint('Greška slanja SMS: ${putnik.putnikIme} - $e');
         }
       }
 
-      debugPrint('📊 SMS rezultati: $successCount uspešno, $errorCount greška');
+      debugPrint('SMS rezultati: $successCount uspešno, $errorCount greška');
     } catch (e) {
-      debugPrint('💥 Greška u SMS servisu: $e');
+      debugPrint('Greška u SMS servisu: $e');
     }
   }
 

@@ -4,20 +4,20 @@ import 'package:geolocator/geolocator.dart';
 import '../config/route_config.dart';
 import '../models/putnik.dart';
 import 'multi_provider_navigation_service.dart';
-import 'osrm_service.dart'; // 🎯 OSRM za pravu TSP optimizaciju
+import 'osrm_service.dart';
 import 'permission_service.dart';
-import 'unified_geocoding_service.dart'; // 🎯 REFACTORED: Centralizovani geocoding
+import 'unified_geocoding_service.dart';
 
-/// 🎯 SMART NAVIGATION SERVICE
+/// SMART NAVIGATION SERVICE
 /// Implementira pravu GPS navigaciju sa optimizovanim redosledom putnika
 /// Koristi OSRM za optimizaciju rute i HERE WeGo za navigaciju
 ///
-/// 🧭 HERE WEGO ONLY:
+/// HERE WEGO ONLY:
 /// - HERE WeGo (10 waypoints) - besplatno, radi na svim uređajima
 /// - Automatska segmentacija rute kada prelazi limit waypoinata
 /// - Offline mape, poštuje redosled putnika
 class SmartNavigationService {
-  /// 🏁 Vrati krajnju destinaciju na osnovu startCity
+  /// Vrati krajnju destinaciju na osnovu startCity
   /// startCity je grad ODAKLE putnici kreću (polazište)
   /// Npr. startCity="Bela Crkva" znači da putnici kreću IZ BC, pa je end destination = Vršac
   static Position? _getEndDestination(String startCity) {
@@ -58,7 +58,7 @@ class SmartNavigationService {
     return null; // Nije prepoznat grad
   }
 
-  /// 🎯 SAMO OPTIMIZACIJA RUTE (bez otvaranja mape) - za "Pokreni" dugme
+  /// SAMO OPTIMIZACIJA RUTE (bez otvaranja mape) - za "Pokreni" dugme
   static Future<NavigationResult> optimizeRouteOnly({
     required List<Putnik> putnici,
     required String startCity,
@@ -68,26 +68,26 @@ class SmartNavigationService {
       // 1. DOBIJ TRENUTNU GPS POZICIJU VOZAČA
       final currentPosition = await _getCurrentPosition();
 
-      // 🏁 Odredi krajnju destinaciju (suprotni grad)
+      // Odredi krajnju destinaciju (suprotni grad)
       final endDestination = _getEndDestination(startCity);
 
-      // 2. 🎯 KORISTI OSRM ZA PRAVU TSP OPTIMIZACIJU (sa fallback na lokalni algoritam)
+      // KORISTI OSRM ZA PRAVU TSP OPTIMIZACIJU (sa fallback na lokalni algoritam)
       final osrmResult = await OsrmService.optimizeRoute(
         startPosition: currentPosition,
         putnici: putnici,
         endDestination: endDestination,
       );
 
-      // ❌ OSRM neuspešan - vrati grešku
+      // OSRM neuspešan - vrati grešku
       if (!osrmResult.success || osrmResult.optimizedPutnici == null) {
         return NavigationResult.error(osrmResult.message);
       }
 
-      // ✅ OSRM uspešan
+      // OSRM uspešan
       final List<Putnik> optimizedRoute = osrmResult.optimizedPutnici!;
       final Map<Putnik, Position> coordinates = osrmResult.coordinates ?? {};
 
-      // 🆕 Nađi preskočene putnike (nemaju koordinate)
+      // Nađi preskočene putnike (nemaju koordinate)
       final skipped = putnici.where((p) => !coordinates.containsKey(p)).toList();
 
       // 3. VRATI OPTIMIZOVANU RUTU
@@ -107,10 +107,10 @@ class SmartNavigationService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 🧭 HERE WEGO NAVIGATION
+  // HERE WEGO NAVIGATION
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// 🧭 GLAVNA FUNKCIJA - HERE WeGo navigacija
+  /// GLAVNA FUNKCIJA - HERE WeGo navigacija
   /// Koristi isključivo HERE WeGo - besplatno, radi na svim uređajima
   ///
   /// [context] - BuildContext za dijaloge
@@ -165,18 +165,18 @@ class SmartNavigationService {
     }
   }
 
-  /// 📊 Proveri status navigacionih aplikacija na uređaju
+  /// Proveri status navigacionih aplikacija na uređaju
   static Future<NavigationStatus> checkNavigationStatus() async {
     return MultiProviderNavigationService.checkNavigationStatus();
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 📐 HELPER FUNKCIJE
+  // HELPER FUNKCIJE
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// 📍 Dobij trenutnu GPS poziciju vozača
+  /// Dobij trenutnu GPS poziciju vozača
   static Future<Position> _getCurrentPosition() async {
-    // 🔐 CENTRALIZOVANA PROVERA GPS DOZVOLA (uključuje i GPS service check)
+    // Centralizovana provera GPS dozvola (uključuje i GPS service check)
     final hasPermission = await PermissionService.ensureGpsForNavigation();
     if (!hasPermission) {
       throw Exception('GPS dozvole nisu odobrene ili GPS nije uključen');
@@ -186,11 +186,7 @@ class SmartNavigationService {
     return await Geolocator.getCurrentPosition();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // 📐 HELPER FUNKCIJE
-  // ═══════════════════════════════════════════════════════════════════════
-
-  /// 📐 Izračunaj distancu između dve pozicije (Haversine formula)
+  /// Izračunaj distancu između dve pozicije (Haversine formula)
   static double _calculateDistance(Position pos1, Position pos2) {
     return Geolocator.distanceBetween(
       pos1.latitude,
@@ -200,7 +196,7 @@ class SmartNavigationService {
     );
   }
 
-  /// 📊 Izračunaj ukupnu distancu optimizovane rute
+  /// Izračunaj ukupnu distancu optimizovane rute
   static Future<double> _calculateTotalDistance(
     Position start,
     List<Putnik> route,
@@ -221,7 +217,7 @@ class SmartNavigationService {
   }
 }
 
-/// 📊 Rezultat navigacije
+/// Rezultat navigacije
 class NavigationResult {
   NavigationResult._({
     required this.success,
@@ -230,7 +226,7 @@ class NavigationResult {
     this.totalDistance,
     this.skippedPutnici,
     this.cachedCoordinates,
-    this.putniciEta, // 🆕 ETA za svakog putnika
+    this.putniciEta,
   });
 
   factory NavigationResult.success({
@@ -239,7 +235,7 @@ class NavigationResult {
     double? totalDistance,
     List<Putnik>? skippedPutnici,
     Map<Putnik, Position>? cachedCoordinates,
-    Map<String, int>? putniciEta, // 🆕 ETA za svakog putnika
+    Map<String, int>? putniciEta,
   }) {
     return NavigationResult._(
       success: true,
@@ -264,5 +260,5 @@ class NavigationResult {
   final double? totalDistance;
   final List<Putnik>? skippedPutnici;
   final Map<Putnik, Position>? cachedCoordinates;
-  final Map<String, int>? putniciEta; // 🆕 ime_putnika -> ETA u minutama
+  final Map<String, int>? putniciEta;
 }

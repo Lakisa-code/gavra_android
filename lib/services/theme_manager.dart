@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'theme_registry.dart';
 
-// 🎯 THEME MANAGER - Upravljanje trenutnom temom
+// THEME MANAGER - Upravljanje trenutnom temom
 class ThemeManager extends ChangeNotifier {
   factory ThemeManager() => _instance;
   ThemeManager._internal();

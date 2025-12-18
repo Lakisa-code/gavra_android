@@ -104,7 +104,7 @@ class VozacMappingService {
   static String? getVozacImeWithFallbackSync(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
 
-    // ⚠️ WARN: Ako cache nije učitan, vrati null umesto crash
+    // WARN: Ako cache nije učitan, vrati null umesto crash
     if (!_isInitialized || _vozacUuidToName == null) {
       return null;
     }
