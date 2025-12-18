@@ -21,7 +21,6 @@ import 'adrese_screen.dart'; // 📍 Upravljanje adresama
 import 'auth_screen.dart'; // DODANO za auth admin
 import 'dodeli_putnike_screen.dart'; // DODANO za raspodelu putnika vozačima
 import 'dugovi_screen.dart';
-import 'geocoding_admin_screen.dart'; // DODANO za geocoding admin
 import 'kapacitet_screen.dart'; // DODANO za kapacitet polazaka
 import 'pin_zahtevi_screen.dart'; // 📨 PIN ZAHTEVI
 import 'registrovani_putnici_screen.dart'; // DODANO za mesečne putnike
@@ -347,63 +346,6 @@ class _AdminScreenState extends State<AdminScreen> {
                                                     fontWeight: FontWeight.w600,
                                                     fontSize: 14,
                                                     color: Colors.white,
-                                                    shadows: const [
-                                                      Shadow(
-                                                        offset: Offset(1, 1),
-                                                        blurRadius: 3,
-                                                        color: Colors.black54,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  // GEOCODING ADMIN - novo
-                                  SizedBox(
-                                    width: buttonWidth,
-                                    child: InkWell(
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute<void>(
-                                          builder: (context) => const GeocodingAdminScreen(),
-                                        ),
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        height: 28,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).glassContainer,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Theme.of(context).glassBorder,
-                                            width: 1.5,
-                                          ),
-                                          // no boxShadow — keep transparent glass + border only
-                                        ),
-                                        child: const Center(
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  'API',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                    color: Colors.white,
-                                                    letterSpacing: 0.3,
                                                     shadows: const [
                                                       Shadow(
                                                         offset: Offset(1, 1),

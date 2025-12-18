@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cache_service.dart';
-import 'geocoding_stats_service.dart';
 
 class GeocodingService {
   static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
@@ -51,8 +50,6 @@ class GeocodingService {
         maxAge: const Duration(hours: 6), // Koordinate se retko menjaju
       );
       if (memoryCached != null) {
-        await GeocodingStatsService.incrementCacheHits();
-        await GeocodingStatsService.addPopularLocation(requestKey);
         _completeRequest(requestKey, memoryCached);
         return memoryCached;
       }
@@ -65,20 +62,16 @@ class GeocodingService {
       if (diskCached != null) {
         // Sacuvaj u memory za sledeći put
         CacheService.saveToMemory(cacheKey, diskCached);
-        await GeocodingStatsService.incrementCacheHits();
-        await GeocodingStatsService.addPopularLocation(requestKey);
         _completeRequest(requestKey, diskCached);
         return diskCached;
       }
 
       // 3. Pozovi API
       try {
-        await GeocodingStatsService.incrementApiCalls();
         final coords = await _fetchFromNominatim(grad, adresa);
         if (coords != null) {
           CacheService.saveToMemory(cacheKey, coords);
           await CacheService.saveToDisk(cacheKey, coords);
-          await GeocodingStatsService.addPopularLocation(requestKey);
           _completeRequest(requestKey, coords);
         } else {
           _completeRequest(requestKey, null);

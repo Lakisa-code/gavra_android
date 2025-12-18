@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import '../utils/text_utils.dart';
 import 'cache_service.dart';
-import 'geocoding_stats_service.dart';
 
 /// 🚀 ADVANCED GEOCODING SERVICE - Multiple providers, AI matching, auto-correction
 /// 100% BESPLATNO sa enterprise-level funkcionalnostima!
@@ -61,8 +60,6 @@ class AdvancedGeocodingService {
       if (useCache) {
         final cached = await _getCachedResult(cacheKey);
         if (cached != null) {
-          await GeocodingStatsService.incrementCacheHits();
-          // Logger removed
           return cached;
         }
       }
@@ -106,8 +103,6 @@ class AdvancedGeocodingService {
       // 5. 💾 SAVE TO CACHE
       if (bestResult != null && useCache) {
         await _cacheResult(cacheKey, bestResult);
-        await GeocodingStatsService.incrementApiCalls();
-        await GeocodingStatsService.addPopularLocation(cacheKey);
       }
 
       return bestResult;
