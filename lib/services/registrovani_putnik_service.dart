@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
+import 'realtime_hub_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
@@ -63,67 +64,9 @@ class RegistrovaniPutnikService {
   }
 
   /// Stream za mesečne putnike (aktivni + neaktivni, neaktivni na dnu)
+  /// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
-    try {
-      final supabase = Supabase.instance.client;
-      return supabase
-          .from('registrovani_putnici')
-          .stream(primaryKey: ['id'])
-          .order('putnik_ime')
-          .map((data) {
-            try {
-              final listRaw = data as List<dynamic>;
-
-              // Uključi sve koji nisu obrisani (i aktivne i neaktivne)
-              final filtered = listRaw.where((row) {
-                final map = row as Map<String, dynamic>;
-                return map['obrisan'] != true;
-              }).toList();
-
-              final putnici = filtered
-                  .map(
-                    (json) => RegistrovaniPutnik.fromMap(
-                      Map<String, dynamic>.from(json as Map),
-                    ),
-                  )
-                  .toList();
-
-              // Sortiraj: aktivni na vrhu (po imenu), neaktivni na dnu (po imenu)
-              putnici.sort((a, b) {
-                if (a.aktivan && !b.aktivan) return -1;
-                if (!a.aktivan && b.aktivan) return 1;
-                return a.putnikIme.compareTo(b.putnikIme);
-              });
-
-              return putnici;
-            } catch (e) {
-              return <RegistrovaniPutnik>[];
-            }
-          })
-          .handleError((err) {
-            return <RegistrovaniPutnik>[];
-          });
-    } catch (e) {
-      // fallback to a one-time fetch if stream creation fails
-      return Stream.fromFuture(
-        Supabase.instance.client.from('registrovani_putnici').select().eq('obrisan', false).order('putnik_ime').then(
-          (response) {
-            final putnici = response
-                .map(
-                  (json) => RegistrovaniPutnik.fromMap(Map<String, dynamic>.from(json)),
-                )
-                .toList();
-            // Sortiraj: aktivni na vrhu, neaktivni na dnu
-            putnici.sort((a, b) {
-              if (a.aktivan && !b.aktivan) return -1;
-              if (!a.aktivan && b.aktivan) return 1;
-              return a.putnikIme.compareTo(b.putnikIme);
-            });
-            return putnici;
-          },
-        ),
-      );
-    }
+    return RealtimeHubService.instance.putnikStream;
   }
 
   /// Kreira novog mesečnog putnika
@@ -389,43 +332,9 @@ class RegistrovaniPutnikService {
   }
 
   /// Stream za realtime ažuriranja mesečnih putnika
+  /// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
   Stream<List<RegistrovaniPutnik>> get registrovaniPutniciStream {
-    try {
-      return _supabase
-          .from('registrovani_putnici')
-          .stream(primaryKey: ['id'])
-          .order('putnik_ime')
-          .map((data) {
-            try {
-              final listRaw = data as List<dynamic>;
-              final filtered = listRaw.where((row) {
-                try {
-                  final map = row as Map<String, dynamic>;
-                  final aktivan = map['aktivan'] ?? true;
-                  final obrisan = map['obrisan'] ?? false;
-                  return (aktivan as bool) && !(obrisan as bool);
-                } catch (_) {
-                  return true;
-                }
-              }).toList();
-
-              return filtered
-                  .map(
-                    (json) => RegistrovaniPutnik.fromMap(
-                      Map<String, dynamic>.from(json as Map),
-                    ),
-                  )
-                  .toList();
-            } catch (e) {
-              return <RegistrovaniPutnik>[];
-            }
-          })
-          .handleError((err) {
-            return <RegistrovaniPutnik>[];
-          });
-    } catch (e) {
-      return getAktivniregistrovaniPutnici().asStream();
-    }
+    return RealtimeHubService.instance.aktivniPutnikStream;
   }
 
   /// Izračunava broj putovanja iz voznje_log
@@ -485,24 +394,20 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
-  /// 🔄 POJEDNOSTAVLJENO: Koristi voznje_log + registrovani_putnici
+  /// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
   static Stream<String?> streamVozacPoslednjegPlacanja(String putnikId) {
-    // Koristi registrovani_putnici stream i vraća vozac_id
-    return Supabase.instance.client
-        .from('registrovani_putnici')
-        .stream(primaryKey: ['id'])
-        .eq('id', putnikId)
-        .map((data) {
-          try {
-            if (data.isEmpty) return null;
-            final vozacId = data.first['vozac_id'] as String?;
-            if (vozacId != null && vozacId.isNotEmpty) {
-              return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
-            }
-            return null;
-          } catch (e) {
-            return null;
-          }
-        });
+    return RealtimeHubService.instance.putnikStream.map((putnici) {
+      try {
+        final putnik = putnici.where((p) => p.id == putnikId).firstOrNull;
+        if (putnik == null) return null;
+        final vozacId = putnik.vozacId;
+        if (vozacId != null && vozacId.isNotEmpty) {
+          return VozacMappingService.getVozacImeWithFallbackSync(vozacId);
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    });
   }
 }

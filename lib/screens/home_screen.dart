@@ -18,8 +18,8 @@ import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/racun_service.dart';
+import '../services/realtime_hub_service.dart'; // 🚀 OPTIMIZACIJA: Centralni realtime
 import '../services/realtime_notification_service.dart';
-import '../services/realtime_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
 import '../services/theme_manager.dart'; // 🎨 Tema sistem
@@ -197,28 +197,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return targetDate.toIso8601String().split('T')[0];
   }
 
-  // replaced by RealtimeService streamKombinovaniPutnici
-
   // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
+  // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
   String _getDayAbbreviation(String fullDayName) {
-    switch (fullDayName.toLowerCase()) {
-      case 'ponedeljak':
-        return 'pon';
-      case 'utorak':
-        return 'uto';
-      case 'sreda':
-        return 'sre';
-      case 'četvrtak':
-        return 'cet';
-      case 'petak':
-        return 'pet';
-      case 'subota':
-        return 'sub';
-      case 'nedelja':
-        return 'ned';
-      default:
-        return fullDayName.toLowerCase();
-    }
+    return app_date_utils.DateUtils.getDayAbbreviation(fullDayName);
   }
 
   // Normalizuj vreme format - konvertuj "05:00:00" u "5:00"
@@ -493,13 +475,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _initializeRealtimeService() async {
-    try {
-      // Start centralized RealtimeService for current driver
-      final driver = await FirebaseService.getCurrentDriver();
-      RealtimeService.instance.startForDriver(driver);
-    } catch (e) {
-      // Ignoriši grešku ako realtime ne može da se pokrene
-    }
+    // Supabase realtime se koristi direktno preko .stream() metode
+    // Nema potrebe za centralnim servisom
   }
 
   // 🚨 NOVO: Setup realtime monitoring system
@@ -532,12 +509,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _setupRealtimeListener() {
-    // Use centralized RealtimeService to avoid duplicate Supabase subscriptions
+    // 🚀 OPTIMIZOVANO: Koristi RealtimeHubService umesto direktnog .stream()
     _realtimeSubscription?.cancel();
 
-    // 🔄 Pretplata na registrovani_putnici tabelu
-    _realtimeSubscription = RealtimeService.instance.subscribe('registrovani_putnici', (data) {
-      // Stream will update StreamBuilder via service layers
+    // Pretplata na centralni hub - samo za health check
+    _realtimeSubscription = RealtimeHubService.instance.putnikStream.listen((_) {
+      // Stream update-ovi se automatski propagiraju kroz service layer-e
     });
   }
 
@@ -2000,7 +1977,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
     }
 
-    // 🔄 PRAVI REALTIME STREAM: streamKombinovaniPutnici() koristi RealtimeService
+    // 🔄 SUPABASE REALTIME STREAM: streamKombinovaniPutnici()
     // Auto-refresh kada se promeni status putnika (pokupljen/naplaćen/otkazan)
     // Use a parametric stream filtered to the currently selected day
     // so monthly passengers (registrovani_putnici) are created for that day
@@ -2077,14 +2054,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final dayMatch =
                 p.datum != null ? p.datum == targetDateIso : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
 
-            // Vremski filter - samo poslednja nedelja za dnevne putnike
-            bool timeMatch = true;
-            if (p.mesecnaKarta != true && p.vremeDodavanja != null) {
-              final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
-              timeMatch = p.vremeDodavanja!.isAfter(oneWeekAgo);
-            }
-
-            return dayMatch && timeMatch;
+            return dayMatch;
           });
           // Capture passengers for the selected day (but before applying the
           // selected-time filter). We use this set for counting bottom-bar slots

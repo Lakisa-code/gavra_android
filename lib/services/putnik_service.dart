@@ -4,12 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/action_log.dart';
 import '../models/putnik.dart';
+import '../utils/date_utils.dart' as app_date_utils; // DODATO za centralnu getDayAbbreviation
 import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
 import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_boja.dart'; // DODATO za validaciju vozaca
 import 'driver_location_service.dart'; // DODANO za dinamicki ETA update
+import 'realtime_hub_service.dart'; // 🚀 OPTIMIZACIJA: Centralni realtime
 import 'realtime_notification_service.dart';
-import 'realtime_service.dart';
 import 'registrovani_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
 import 'supabase_safe.dart';
 import 'vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
@@ -84,8 +85,8 @@ class PutnikService {
     // Initial fetch
     _doFetchForStream(key, isoDate, grad, vreme, controller);
 
-    // ? Direktno slu�aj Supabase realtime stream (cist WebSocket)
-    final sub = supabase.from('registrovani_putnici').stream(primaryKey: ['id']).listen((data) {
+    // 🚀 OPTIMIZOVANO: Koristi RealtimeHubService umesto direktnog .stream()
+    final sub = RealtimeHubService.instance.putnikStream.listen((_) {
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
     _subscriptions[key] = sub;
@@ -379,25 +380,9 @@ class PutnikService {
   }
 
   // Helper funkcija za konverziju punog naziva dana u kraticu
+  // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
   String _getDayAbbreviationFromName(String dayName) {
-    switch (dayName.toLowerCase()) {
-      case 'ponedeljak':
-        return 'pon';
-      case 'utorak':
-        return 'uto';
-      case 'sreda':
-        return 'sre';
-      case 'cetvrtak':
-        return 'cet';
-      case 'petak':
-        return 'pet';
-      case 'subota':
-        return 'sub';
-      case 'nedelja':
-        return 'ned';
-      default:
-        return 'pon'; // default fallback
-    }
+    return app_date_utils.DateUtils.getDayAbbreviation(dayName);
   }
 
   // ?? NOVI: Sacuvaj putnika u odgovarajucu tabelu (workaround - sve u registrovani_putnici)
@@ -607,24 +592,14 @@ class PutnikService {
     }
   }
 
-  /// ? STREAM SVIH PUTNIKA (iz registrovani_putnici tabele - workaround za RLS)
+  /// 🚀 OPTIMIZOVANO: STREAM SVIH PUTNIKA koristi RealtimeHubService
   Stream<List<Putnik>> streamPutnici() {
-    return RealtimeService.instance.tableStream('registrovani_putnici').map((data) {
+    return RealtimeHubService.instance.putnikStream.map((registrovani) {
       final allPutnici = <Putnik>[];
-      final items = data is List ? data : <dynamic>[];
 
-      // Sort by created_at descending if possible
-      try {
-        items.sort((a, b) {
-          final aTime = DateTime.tryParse(a['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-          final bTime = DateTime.tryParse(b['created_at']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-          return bTime.compareTo(aTime);
-        });
-      } catch (_) {}
-
-      for (final item in items) {
+      for (final item in registrovani) {
         // NOVA LOGIKA: Koristi fromRegistrovaniPutniciMultiple
-        final registrovaniPutnici = Putnik.fromRegistrovaniPutniciMultiple(item as Map<String, dynamic>);
+        final registrovaniPutnici = Putnik.fromRegistrovaniPutniciMultiple(item.toMap());
         allPutnici.addAll(registrovaniPutnici);
       }
       return allPutnici;

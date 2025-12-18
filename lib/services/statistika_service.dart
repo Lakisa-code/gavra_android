@@ -1,42 +1,40 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'realtime_hub_service.dart';
 import 'vozac_mapping_service.dart';
 
 /// Servis za statistiku - koristi SAMO registrovani_putnici tabelu
 /// Sve statistike se čuvaju u JSONB kolonama: statistics, action_log
+/// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
 class StatistikaService {
-  static final _supabase = Supabase.instance.client;
-
   /// Stream pazara za sve vozače - SIMPLIFIKOVANO
   /// Vraća mapu {vozacIme: iznos, '_ukupno': ukupno}
+  /// 🚀 OPTIMIZOVANO: Koristi RealtimeHubService (raw data za action_log pristup)
   static Stream<Map<String, double>> streamPazarZaSveVozace({
     required DateTime from,
     required DateTime to,
   }) {
-    // Koristi registrovani_putnici tabelu
-    return _supabase.from('registrovani_putnici').stream(primaryKey: ['id']).map((data) {
+    // Koristi centralni RealtimeHubService - raw data za action_log
+    return RealtimeHubService.instance.putnikStream.map((putnici) {
       final Map<String, double> pazar = {};
       double ukupno = 0;
 
-      for (final row in data) {
+      for (final putnik in putnici) {
         // Proveri da li je plaćeno u datom periodu
-        final datumPlacanja = row['datum_placanja'] as String?;
+        final datumPlacanja = putnik.datumPlacanja;
         if (datumPlacanja == null) continue;
 
         try {
-          final placenoDatum = DateTime.parse(datumPlacanja);
-          if (placenoDatum.isAfter(from) && placenoDatum.isBefore(to.add(const Duration(days: 1)))) {
-            final cena = (row['cena'] as num?)?.toDouble() ?? 0;
+          if (datumPlacanja.isAfter(from) && datumPlacanja.isBefore(to.add(const Duration(days: 1)))) {
+            final cena = putnik.cena ?? 0;
 
-            // Pronađi vozača koji je naplatio
-            final actionLog = row['action_log'];
+            // Pronađi vozača koji je naplatio iz actionLog (List<dynamic>)
             String vozacIme = 'Nepoznat';
+            final actionLog = putnik.actionLog;
 
-            if (actionLog is List && actionLog.isNotEmpty) {
+            if (actionLog.isNotEmpty) {
               // Pronađi poslednju 'paid' akciju
               for (final action in actionLog.reversed) {
-                if (action is Map && action['action'] == 'paid') {
-                  vozacIme = action['by']?.toString() ?? 'Nepoznat';
+                if (action is Map && (action['action'] == 'paid' || action['type'] == 'paid')) {
+                  vozacIme = action['by']?.toString() ?? action['vozac_id']?.toString() ?? 'Nepoznat';
                   break;
                 }
               }
@@ -69,6 +67,7 @@ class StatistikaService {
   }
 
   /// Stream broja mesečnih karata koje je vozač naplatio DANAS
+  /// 🚀 OPTIMIZOVANO: Koristi RealtimeHubService
   static Stream<int> streamBrojRegistrovanihZaVozaca({required String vozac}) {
     final now = DateTime.now();
     final danPocetak = DateTime(now.year, now.month, now.day);
@@ -77,51 +76,26 @@ class StatistikaService {
     // Dohvati UUID vozača za poređenje
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozac);
 
-    return _supabase.from('registrovani_putnici').stream(primaryKey: ['id']).map((data) {
+    return RealtimeHubService.instance.putnikStream.map((putnici) {
       int count = 0;
-      for (final row in data) {
+      for (final putnik in putnici) {
         // Proveri da li je mesečni putnik (ucenik ili radnik, ne dnevni)
-        final tip = row['tip'] as String?;
-        if (tip == 'dnevni') continue;
+        if (putnik.tip == 'dnevni') continue;
 
         // Proveri da li je plaćeno danas
-        final vremePlacanja = row['vreme_placanja'] as String?;
+        final vremePlacanja = putnik.vremePlacanja;
         if (vremePlacanja == null) continue;
 
         try {
-          final placenoDatum = DateTime.parse(vremePlacanja);
-          if (placenoDatum.isAfter(danPocetak) && placenoDatum.isBefore(danKraj)) {
-            // Pronađi vozača koji je naplatio iz action_log
-            final actionLog = row['action_log'];
-            if (actionLog is Map) {
-              // Nova struktura: {actions: [...], paid_by: "uuid"}
-              final paidBy = actionLog['paid_by']?.toString() ?? '';
-              if (paidBy == vozac || paidBy == vozacUuid || paidBy.contains(vozac)) {
-                count++;
-                continue;
-              }
-              // Proveri i actions listu
-              final actions = actionLog['actions'] as List?;
-              if (actions != null) {
-                for (final action in actions.reversed) {
-                  if (action is Map && action['type'] == 'paid') {
-                    final actionBy = action['vozac_id']?.toString() ?? '';
-                    if (actionBy == vozac || actionBy == vozacUuid || actionBy.contains(vozac)) {
-                      count++;
-                      break;
-                    }
-                  }
-                }
-              }
-            } else if (actionLog is List) {
-              // Stara struktura: lista akcija
-              for (final action in actionLog.reversed) {
-                if (action is Map && (action['action'] == 'paid' || action['type'] == 'paid')) {
-                  final paidBy = action['by']?.toString() ?? action['vozac_id']?.toString() ?? '';
-                  if (paidBy == vozac || paidBy == vozacUuid || paidBy.contains(vozac)) {
-                    count++;
-                    break;
-                  }
+          if (vremePlacanja.isAfter(danPocetak) && vremePlacanja.isBefore(danKraj)) {
+            // Pronađi vozača koji je naplatio iz action_log (List<dynamic>)
+            final actionLog = putnik.actionLog;
+            for (final action in actionLog.reversed) {
+              if (action is Map && (action['action'] == 'paid' || action['type'] == 'paid')) {
+                final paidBy = action['by']?.toString() ?? action['vozac_id']?.toString() ?? '';
+                if (paidBy == vozac || paidBy == vozacUuid || paidBy.contains(vozac)) {
+                  count++;
+                  break;
                 }
               }
             }
@@ -133,11 +107,10 @@ class StatistikaService {
   }
 
   /// Stream broja dužnika za vozača
+  /// 🚀 OPTIMIZOVANO: Koristi RealtimeHubService
   static Stream<int> streamBrojDuznikaZaVozaca({required String vozac}) {
-    return _supabase.from('registrovani_putnici').stream(primaryKey: ['id']).map((data) {
-      return data.where((row) {
-        return row['aktivan'] == true && row['placeno'] != true;
-      }).length;
+    return RealtimeHubService.instance.putnikStream.map((putnici) {
+      return putnici.where((p) => p.aktivan && p.placeno != true).length;
     });
   }
 

@@ -14,6 +14,7 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
+import 'services/realtime_hub_service.dart'; // 🚀 OPTIMIZACIJA: Centralni realtime
 import 'services/realtime_notification_service.dart';
 import 'services/simple_usage_monitor.dart';
 import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
@@ -115,6 +116,13 @@ void main() async {
       await VozacMappingService.initialize();
     } catch (e) {
       // Nastavi bez vozac mapping-a ako ne uspe
+    }
+
+    // 🚀 INICIJALIZUJ REALTIME HUB SERVICE (centralni Postgres Changes)
+    try {
+      await RealtimeHubService.instance.initialize();
+    } catch (e) {
+      // Nastavi bez realtime hub-a ako ne uspe
     }
 
     // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
