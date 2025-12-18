@@ -4,16 +4,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/action_log.dart';
 import '../models/putnik.dart';
-import '../utils/date_utils.dart' as app_date_utils; // DODATO za centralnu getDayAbbreviation
-import '../utils/grad_adresa_validator.dart'; // DODANO za validaciju gradova i adresa
+import '../utils/date_utils.dart' as app_date_utils;
+import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
-import '../utils/vozac_boja.dart'; // DODATO za validaciju vozaca
-import 'driver_location_service.dart'; // DODANO za dinamicki ETA update
-import 'realtime_hub_service.dart'; // 🚀 OPTIMIZACIJA: Centralni realtime
+import '../utils/vozac_boja.dart';
+import 'driver_location_service.dart';
+import 'realtime_hub_service.dart';
 import 'realtime_notification_service.dart';
-import 'registrovani_putnik_service.dart'; // DODANO za automatsku sinhronizaciju
+import 'registrovani_putnik_service.dart';
 import 'supabase_safe.dart';
-import 'vozac_mapping_service.dart'; // DODATO za UUID<->ime konverziju
+import 'vozac_mapping_service.dart';
 
 // ?? UNDO STACK - Stack za cuvanje poslednih akcija
 class UndoAction {
@@ -379,7 +379,6 @@ class PutnikService {
   }
 
   // Helper funkcija za konverziju punog naziva dana u kraticu
-  // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
   String _getDayAbbreviationFromName(String dayName) {
     return app_date_utils.DateUtils.getDayAbbreviation(dayName);
   }

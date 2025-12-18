@@ -12,20 +12,20 @@ class BottomNavBarLetnji extends StatefulWidget {
     required this.selectedVreme,
     required this.onPolazakChanged,
     required this.getPutnikCount,
-    this.getKapacitet, // ✅ Opcionalno - vraća kapacitet za grad/vreme
+    this.getKapacitet,
     this.isSlotLoading,
-    this.bcVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
-    this.vsVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
+    this.bcVremena,
+    this.vsVremena,
   });
   final List<String> sviPolasci;
   final String selectedGrad;
   final String selectedVreme;
   final void Function(String grad, String vreme) onPolazakChanged;
   final int Function(String grad, String vreme) getPutnikCount;
-  final int Function(String grad, String vreme)? getKapacitet; // ✅ Kapacitet
+  final int Function(String grad, String vreme)? getKapacitet;
   final bool Function(String grad, String vreme)? isSlotLoading;
-  final List<String>? bcVremena; // ✅ Custom BC vremena
-  final List<String>? vsVremena; // ✅ Custom VS vremena
+  final List<String>? bcVremena;
+  final List<String>? vsVremena;
 
   @override
   State<BottomNavBarLetnji> createState() => _BottomNavBarLetnjieState();
@@ -56,7 +56,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // 🎯 Koristi prosleđena vremena ili fallback na RouteConfig
+    // Koristi prosleđena vremena ili fallback na RouteConfig
     final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaLetnji;
     final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaLetnji;
 
@@ -93,7 +93,7 @@ class _BottomNavBarLetnjieState extends State<BottomNavBarLetnji> {
   @override
   Widget build(BuildContext context) {
     final currentThemeId = ThemeManager().currentThemeId;
-    // 🎯 Koristi prosleđena vremena ili fallback na RouteConfig
+    // Koristi prosleđena vremena ili fallback na RouteConfig
     final bcVremena = widget.bcVremena ?? RouteConfig.bcVremenaLetnji;
     final vsVremena = widget.vsVremena ?? RouteConfig.vsVremenaLetnji;
 

@@ -13,20 +13,20 @@ class BottomNavBarZimski extends StatefulWidget {
     required this.selectedVreme,
     required this.onPolazakChanged,
     required this.getPutnikCount,
-    this.getKapacitet, // ✅ Opcionalno - vraća kapacitet za grad/vreme
+    this.getKapacitet,
     this.isSlotLoading,
-    this.bcVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
-    this.vsVremena, // ✅ Opcionalno - ako nije prosleđeno, koristi RouteConfig
+    this.bcVremena,
+    this.vsVremena,
   });
   final List<String> sviPolasci;
   final String selectedGrad;
   final String selectedVreme;
   final void Function(String grad, String vreme) onPolazakChanged;
   final int Function(String grad, String vreme) getPutnikCount;
-  final int Function(String grad, String vreme)? getKapacitet; // ✅ Kapacitet
+  final int Function(String grad, String vreme)? getKapacitet;
   final bool Function(String grad, String vreme)? isSlotLoading;
-  final List<String>? bcVremena; // ✅ Custom BC vremena
-  final List<String>? vsVremena; // ✅ Custom VS vremena
+  final List<String>? bcVremena;
+  final List<String>? vsVremena;
 
   @override
   State<BottomNavBarZimski> createState() => _BottomNavBarZimskiState();
@@ -57,7 +57,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
   void _scrollToSelected() {
     const double itemWidth = 60.0; // width + margin
 
-    // 🎯 Automatska provera sezone
+    // Automatska provera sezone
     final jeZimski = isZimski(DateTime.now());
     final bcVremena = widget.bcVremena ?? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji);
     final vsVremena = widget.vsVremena ?? (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);
@@ -94,7 +94,7 @@ class _BottomNavBarZimskiState extends State<BottomNavBarZimski> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎯 Automatska provera sezone
+    // Automatska provera sezone
     final jeZimski = isZimski(DateTime.now());
     final bcVremena = widget.bcVremena ?? (jeZimski ? RouteConfig.bcVremenaZimski : RouteConfig.bcVremenaLetnji);
     final vsVremena = widget.vsVremena ?? (jeZimski ? RouteConfig.vsVremenaZimski : RouteConfig.vsVremenaLetnji);

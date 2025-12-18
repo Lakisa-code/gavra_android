@@ -76,7 +76,7 @@ class ShimmerWidgets {
     );
   }
 
-  /// 📊 Shimmer za statistike
+  /// Shimmer za statistike
   static Widget statistikaShimmer(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -169,7 +169,7 @@ class ShimmerWidgets {
   }
 }
 
-/// 🔄 Shimmer Loading State Manager
+/// Shimmer Loading State Manager
 class ShimmerState {
   static Widget buildShimmerOrContent({
     required bool isLoading,

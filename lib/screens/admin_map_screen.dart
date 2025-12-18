@@ -195,7 +195,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
 
       // Kreiraj markere za svakog vozača
       najnovijeLokacije.forEach((vozacUuid, lokacija) {
-        // ✅ ISPRAVKA: Konvertuj UUID u ime vozača
+        // Konvertuj UUID u ime vozača
         final vozacIme = VozacMappingService.getVozacImeWithFallbackSync(vozacUuid) ?? 'Nepoznat';
 
         markers.add(
@@ -251,7 +251,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
   }
 
-  // ✅ ISPRAVKA: Prima ime vozača umesto GPSLokacija
+  // Prima ime vozača umesto GPSLokacija
   Color _getDriverColor(String vozacIme) {
     final ime = vozacIme.toLowerCase();
 
@@ -362,7 +362,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       tooltip: _showDrivers ? 'Sakrij vozače' : 'Prikaži vozače',
                     ),
                     // 👥 Putnici toggle - DISABLED (geocoding nije implementiran)
-                    // 🔄 Refresh dugme
+                    // Refresh dugme
                     TextButton(
                       onPressed: () {
                         _loadGpsLokacije();
@@ -409,11 +409,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                   userAgentPackageName: 'rs.gavra.transport',
                   maxZoom: 19,
                 ),
-                // 📍 Markeri
+                // Markeri
                 MarkerLayer(markers: _markers),
               ],
             ),
-            // 📊 V3.0 Loading State - Elegant design
+            // V3.0 Loading State - Elegant design
             if (_isLoading)
               Container(
                 decoration: BoxDecoration(

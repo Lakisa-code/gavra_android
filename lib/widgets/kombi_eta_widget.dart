@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/realtime_hub_service.dart';
 
-/// 🚐 Widget koji prikazuje ETA dolaska kombija
+/// Widget koji prikazuje ETA dolaska kombija
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
     Key? key,
@@ -25,7 +25,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   bool _isLoading = true;
   bool _isActive = false;
   String? _vozacIme;
-  DateTime? _vremePokupljenja; // 🆕 Vreme kada je pokupljen
+  DateTime? _vremePokupljenja;
 
   @override
   void initState() {
@@ -79,7 +79,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       setState(() {
         _isActive = true;
-        // 🆕 Zapamti vreme kada se status promeni na pokupljen
+        // Zapamti vreme kada se status promeni na pokupljen
         if (eta == -1 && _etaMinutes != -1) {
           _vremePokupljenja = DateTime.now();
         }
@@ -127,7 +127,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
     // Odredi boje i poruku na osnovu stanja
     final bool hasEta = _isActive && _etaMinutes != null;
-    final bool isPokupljen = _etaMinutes == -1; // 🆕 ETA = -1 znači pokupljen
+    final bool isPokupljen = _etaMinutes == -1;
 
     // Poruka i naslov
     final String title;

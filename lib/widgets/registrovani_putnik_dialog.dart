@@ -10,7 +10,7 @@ import '../theme.dart';
 import '../utils/registrovani_helpers.dart';
 import '../widgets/shared/time_row.dart';
 
-/// 🆕🔧 UNIFIKOVANI WIDGET ZA DODAVANJE I EDITOVANJE MESEČNIH PUTNIKA
+/// UNIFIKOVANI WIDGET ZA DODAVANJE I EDITOVANJE MESEČNIH PUTNIKA
 ///
 /// Kombinuje funkcionalnost iz add_registrovani_putnik_dialog.dart i edit_registrovani_putnik_dialog.dart
 /// u jedan optimizovan widget koji radi i za dodavanje i za editovanje.
@@ -47,8 +47,8 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   final TextEditingController _brojTelefonaMajkeController = TextEditingController();
   final TextEditingController _adresaBelaCrkvaController = TextEditingController();
   final TextEditingController _adresaVrsacController = TextEditingController();
-  final TextEditingController _cenaPoDanuController = TextEditingController(); // 🆕 Cena po danu
-  final TextEditingController _emailController = TextEditingController(); // 📧 Email
+  final TextEditingController _cenaPoDanuController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   // 🧾 Kontroleri za podatke o firmi (račun)
   final TextEditingController _firmaNazivController = TextEditingController();
   final TextEditingController _firmaPibController = TextEditingController();
@@ -144,7 +144,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       _brojTelefonaOcaController.text = putnik.brojTelefonaOca ?? '';
       _brojTelefonaMajkeController.text = putnik.brojTelefonaMajke ?? '';
 
-      // 🆕 Load cena po danu
+      // Load cena po danu
       if (putnik.cenaPoDanu != null && putnik.cenaPoDanu! > 0) {
         _cenaPoDanuController.text = putnik.cenaPoDanu!.toStringAsFixed(0);
       }
@@ -466,7 +466,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
             icon: Icons.phone,
           ),
           const SizedBox(height: 12),
-          // 🆕 Drugi broj telefona za sve tipove
+          // Drugi broj telefona za sve tipove
           _buildPhoneFieldWithContactPicker(
             controller: _brojTelefona2Controller,
             label: 'Drugi broj telefona (opciono)',
@@ -560,7 +560,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
               ),
             ),
           ],
-          // 🆕 Cena po danu sekcija - VIDLJIVA ZA SVE TIPOVE (učenik, radnik, dnevni)
+          // Cena po danu sekcija - VIDLJIVA ZA SVE TIPOVE (učenik, radnik, dnevni)
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
@@ -1307,7 +1307,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     );
   }
 
-  /// 🔧 ISPRAVKA: Radni dani se sada računaju iz unetih vremena polaska
+  /// Radni dani se sada računaju iz unetih vremena polaska
   /// Ako je uneto bilo koje vreme (BC ili VS) za dan, taj dan je radni dan
   String _getRadniDaniString() {
     List<String> aktivniDani = [];
@@ -1417,7 +1417,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
   }
 
   Future<void> _createNewPutnik() async {
-    // 🔧 FIX: Dobavi trenutnog vozača za dodali_vozaci
+    // Dobavi trenutnog vozača za dodali_vozaci
     final prefs = await SharedPreferences.getInstance();
     final currentDriver = prefs.getString('current_driver');
 
@@ -1426,7 +1426,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     String? adresaVrsacId = _adresaVrsacId;
 
     // Create new passenger
-    // 🔧 FIX: Dodaj trenutnog vozača u dodaliVozaci
+    // Dodaj trenutnog vozača u dodaliVozaci
     final dodaliVozaciList = currentDriver != null && currentDriver.isNotEmpty ? [currentDriver] : <String>[];
 
     final noviPutnik = RegistrovaniPutnik(
@@ -1448,9 +1448,9 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
       updatedAt: DateTime.now(),
       status: 'radi', // Dozvoljeni: radi, bolovanje, godisnji, odsustvo, otkazan
       cenaPoDanu: _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
-      email: _emailController.text.isEmpty ? null : _emailController.text.trim(), // 📧 Email
-      dodaliVozaci: dodaliVozaciList, // 🔧 FIX: Dodaj ko je kreirao putnika
-      // 🧾 Polja za račun
+      email: _emailController.text.isEmpty ? null : _emailController.text.trim(),
+      dodaliVozaci: dodaliVozaciList,
+      // Polja za račun
       trebaRacun: _trebaRacun,
       firmaNaziv: _firmaNazivController.text.isEmpty ? null : _firmaNazivController.text.trim(),
       firmaPib: _firmaPibController.text.isEmpty ? null : _firmaPibController.text.trim(),
@@ -1482,7 +1482,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     String? adresaBelaCrkvaId = _adresaBelaCrkvaId;
     String? adresaVrsacId = _adresaVrsacId;
 
-    // 🔧 DIREKTNO KREIRAJ MAPU ZA UPDATE - zaobilazi copyWith problem sa null vrednostima
+    // DIREKTNO KREIRAJ MAPU ZA UPDATE - zaobilazi copyWith problem sa null vrednostima
     final updateMap = <String, dynamic>{
       'putnik_ime': _imeController.text.trim(),
       'tip': _tip,
@@ -1494,14 +1494,14 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
           _brojTelefonaMajkeController.text.isEmpty ? null : _brojTelefonaMajkeController.text.trim(),
       'polasci_po_danu': _getPolasciPoDanuMap(),
       'radni_dani': _getRadniDaniString(),
-      // ✅ KLJUČNO: Eksplicitno postavi adrese (uključujući null za brisanje)
+      // Eksplicitno postavi adrese (uključujući null za brisanje)
       'adresa_bela_crkva_id': adresaBelaCrkvaId,
       'adresa_vrsac_id': adresaVrsacId,
-      // 🆕 Cena po danu (custom ili null za default)
+      // Cena po danu (custom ili null za default)
       'cena_po_danu': _cenaPoDanuController.text.isEmpty ? null : double.tryParse(_cenaPoDanuController.text),
-      // 📧 Email
+      // Email
       'email': _emailController.text.isEmpty ? null : _emailController.text.trim(),
-      // 🧾 Polja za račun
+      // Polja za račun
       'treba_racun': _trebaRacun,
       'firma_naziv': _firmaNazivController.text.isEmpty ? null : _firmaNazivController.text.trim(),
       'firma_pib': _firmaPibController.text.isEmpty ? null : _firmaPibController.text.trim(),
@@ -1526,7 +1526,7 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
         // Ignore errors in daily travel creation
       }
 
-      // ✅ Očisti cache (refresh se dešava kroz ValueKey u parent screen-u)
+      // Očisti cache (refresh se dešava kroz ValueKey u parent screen-u)
       RegistrovaniPutnikService.clearCache();
 
       if (mounted) {

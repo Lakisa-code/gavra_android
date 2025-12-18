@@ -15,10 +15,10 @@ class PutnikList extends StatelessWidget {
     this.bcVremena,
     this.vsVremena,
     this.useProvidedOrder = false,
-    this.onPutnikStatusChanged, // 🎯 NOVO: callback kad se promeni status
-    this.onPokupljen, // 🔊 NOVO: callback za glasovnu najavu sledećeg
-    this.selectedGrad, // 📍 NOVO: za GPS navigaciju mesečnih putnika
-    this.selectedVreme, // 📍 NOVO: za GPS navigaciju
+    this.onPutnikStatusChanged,
+    this.onPokupljen,
+    this.selectedGrad,
+    this.selectedVreme,
   }) : super(key: key);
   final bool showActions;
   final String? currentDriver;
@@ -27,13 +27,13 @@ class PutnikList extends StatelessWidget {
   final List<String>? bcVremena;
   final List<String>? vsVremena;
   final bool useProvidedOrder;
-  final VoidCallback? onPutnikStatusChanged; // 🎯 NOVO
-  final VoidCallback? onPokupljen; // 🔊 NOVO: za glasovnu najavu
-  final String? selectedGrad; // 📍 NOVO: za GPS navigaciju mesečnih putnika
-  final String? selectedVreme; // 📍 NOVO: za GPS navigaciju
+  final VoidCallback? onPutnikStatusChanged;
+  final VoidCallback? onPokupljen;
+  final String? selectedGrad;
+  final String? selectedVreme;
 
   // Helper metoda za sortiranje putnika po grupama
-  // 🔄 SINHRONIZOVANO sa CardColorHelper.getCardState() prioritetom
+  // SINHRONIZOVANO sa CardColorHelper.getCardState() prioritetom
   int _putnikSortKey(Putnik p) {
     // PRIORITET (isti kao CardColorHelper):
     // 1. Odsustvo (žuto) - na dno
@@ -68,12 +68,12 @@ class PutnikList extends StatelessWidget {
     return 1;
   }
 
-  // 🆕 Helper za proveru da li putnik treba da ima redni broj
+  // Helper za proveru da li putnik treba da ima redni broj
   bool _imaRedniBroj(Putnik p) {
     return !p.jeOdsustvo && !(p.status?.toLowerCase() == 'otkazano' || p.status?.toLowerCase() == 'otkazan');
   }
 
-  // 🆕 Vraća početni redni broj za putnika (prvi broj od njegovih mesta)
+  // Vraća početni redni broj za putnika (prvi broj od njegovih mesta)
   int _pocetniRedniBroj(List<Putnik> putnici, int currentIndex) {
     int redniBroj = 1;
     for (int i = 0; i < currentIndex; i++) {
@@ -118,7 +118,7 @@ class PutnikList extends StatelessWidget {
           }
           var filteredPutnici = snapshot.data!.where(prikaziPutnika).toList();
           filteredPutnici = deduplicatePutnici(filteredPutnici);
-          // 🎯 UVEK KORISTI STANDARDNO GRUPNO SORTIRANJE: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
+          // UVEK KORISTI STANDARDNO GRUPNO SORTIRANJE: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
           // Ovo je prioritet nad optimizovanom rutom jer korisnik želi striktne grupe
           filteredPutnici.sort((a, b) {
             final aSortKey = _putnikSortKey(a);
@@ -139,7 +139,7 @@ class PutnikList extends StatelessWidget {
             itemCount: prikaz.length,
             itemBuilder: (context, index) {
               final putnik = prikaz[index];
-              // 🆕 Redni broj: računa sa brojem mesta svakog putnika
+              // Redni broj: računa sa brojem mesta svakog putnika
               int? redniBroj;
               if (_imaRedniBroj(putnik)) {
                 redniBroj = _pocetniRedniBroj(prikaz, index);
@@ -152,10 +152,10 @@ class PutnikList extends StatelessWidget {
                 redniBroj: redniBroj,
                 bcVremena: bcVremena,
                 vsVremena: vsVremena,
-                selectedGrad: selectedGrad, // 📍 NOVO: za GPS navigaciju
-                selectedVreme: selectedVreme, // 📍 NOVO: za GPS navigaciju
-                onChanged: onPutnikStatusChanged, // 🎯 NOVO
-                onPokupljen: onPokupljen, // 🔊 glasovna najava
+                selectedGrad: selectedGrad,
+                selectedVreme: selectedVreme,
+                onChanged: onPutnikStatusChanged,
+                onPokupljen: onPokupljen,
               );
             },
           );
@@ -174,7 +174,7 @@ class PutnikList extends StatelessWidget {
       // 4) CRVENE - Otkazani
       // 5) ŽUTE - Odsustvo (godišnji/bolovanje) (na dnu)
 
-      // 🎯 HIBRIDNO SORTIRANJE ZA OPTIMIZOVANU RUTU:
+      // HIBRIDNO SORTIRANJE ZA OPTIMIZOVANU RUTU:
       // Bele kartice (nepokupljeni) → zadržavaju geografski redosled
       // Plave/Zelene/Crvene/Žute → sortiraju se po grupama ispod belih
       if (useProvidedOrder) {
@@ -216,7 +216,7 @@ class PutnikList extends StatelessWidget {
           itemCount: prikaz.length,
           itemBuilder: (context, index) {
             final putnik = prikaz[index];
-            // 🆕 Redni broj: računa sa brojem mesta svakog putnika
+            // Redni broj: računa sa brojem mesta svakog putnika
             int? redniBroj;
             if (_imaRedniBroj(putnik)) {
               redniBroj = _pocetniRedniBroj(prikaz, index);
@@ -228,16 +228,16 @@ class PutnikList extends StatelessWidget {
               redniBroj: redniBroj,
               bcVremena: bcVremena,
               vsVremena: vsVremena,
-              selectedGrad: selectedGrad, // 📍 NOVO: za GPS navigaciju
-              selectedVreme: selectedVreme, // 📍 NOVO: za GPS navigaciju
-              onChanged: onPutnikStatusChanged, // 🎯 NOVO
-              onPokupljen: onPokupljen, // 🔊 glasovna najava
+              selectedGrad: selectedGrad,
+              selectedVreme: selectedVreme,
+              onChanged: onPutnikStatusChanged,
+              onPokupljen: onPokupljen,
             );
           },
         );
       }
 
-      // 🎯 SORTIRAJ PO GRUPAMA: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
+      // SORTIRAJ PO GRUPAMA: 1-BELI, 2-PLAVI, 3-ZELENI, 4-CRVENI, 5-ŽUTI
       filteredPutnici.sort((a, b) {
         final aSortKey = _putnikSortKey(a);
         final bSortKey = _putnikSortKey(b);
@@ -253,7 +253,7 @@ class PutnikList extends StatelessWidget {
         itemCount: filteredPutnici.length,
         itemBuilder: (context, index) {
           final putnik = filteredPutnici[index];
-          // 🆕 Redni broj: računa sa brojem mesta svakog putnika
+          // Redni broj: računa sa brojem mesta svakog putnika
           int? redniBroj;
           if (_imaRedniBroj(putnik)) {
             redniBroj = _pocetniRedniBroj(filteredPutnici, index);
@@ -265,10 +265,10 @@ class PutnikList extends StatelessWidget {
             redniBroj: redniBroj,
             bcVremena: bcVremena,
             vsVremena: vsVremena,
-            selectedGrad: selectedGrad, // 📍 NOVO: za GPS navigaciju
-            selectedVreme: selectedVreme, // 📍 NOVO: za GPS navigaciju
-            onChanged: onPutnikStatusChanged, // 🎯 NOVO
-            onPokupljen: onPokupljen, // 🔊 glasovna najava
+            selectedGrad: selectedGrad,
+            selectedVreme: selectedVreme,
+            onChanged: onPutnikStatusChanged,
+            onPokupljen: onPokupljen,
           );
         },
       );

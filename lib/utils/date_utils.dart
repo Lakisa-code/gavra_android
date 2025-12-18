@@ -1,10 +1,10 @@
-/// 🎯 JEDINSTVENA LOGIKA ZA SVE SCREEN-OVE
+/// JEDINSTVENA LOGIKA ZA SVE SCREEN-OVE
 ///
 /// Ova klasa sadrži centralnu logiku za rukovanje datumima
 /// u celoj aplikaciji. Svi screen-ovi treba da koriste ove funkcije
 /// umesto da implementiraju svoju logiku.
 class DateUtils {
-  /// 🎯 KONVERTER DANA: Pretvara broj dana u string
+  /// KONVERTER DANA: Pretvara broj dana u string
   static String weekdayToString(int weekday) {
     switch (weekday) {
       case DateTime.monday:
@@ -26,7 +26,7 @@ class DateUtils {
     }
   }
 
-  /// 🎯 CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u kraticu (pon, uto, sre, cet, pet, sub, ned)
+  /// CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u kraticu (pon, uto, sre, cet, pet, sub, ned)
   /// Podržava sve varijante: sa/bez dijakritika, uppercase/lowercase
   static String getDayAbbreviation(String fullDayName) {
     // Normalizuj: lowercase i zameni dijakritike
@@ -61,7 +61,7 @@ class DateUtils {
     }
   }
 
-  /// 🎯 CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u weekday broj (1=Pon, 2=Uto, ...)
+  /// CENTRALNA FUNKCIJA: Konvertuj pun naziv dana u weekday broj (1=Pon, 2=Uto, ...)
   /// Podržava sve varijante: sa/bez dijakritika, uppercase/lowercase
   static int getDayWeekdayNumber(String fullDayName) {
     final abbr = getDayAbbreviation(fullDayName);
@@ -85,7 +85,7 @@ class DateUtils {
     }
   }
 
-  /// 🎯 ADMIN SCREEN HELPER: Vraća puni naziv dana za dropdown
+  /// ADMIN SCREEN HELPER: Vraća puni naziv dana za dropdown
   static String getTodayFullName([DateTime? inputDate]) {
     final today = inputDate ?? DateTime.now();
     final dayNames = [
@@ -102,7 +102,7 @@ class DateUtils {
     return todayName;
   }
 
-  /// 🎯 DATUM RANGE GENERATOR: Kreiranje from/to datuma za query-je
+  /// DATUM RANGE GENERATOR: Kreiranje from/to datuma za query-je
   static Map<String, DateTime> getDateRange([DateTime? targetDate]) {
     final date = targetDate ?? DateTime.now();
 
