@@ -66,10 +66,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   String? _currentDriver;
 
-  // CACHE UKLONJEN - nepotrebne varijable uklonjene
-  // 🕐 TIMER MANAGEMENT - sada koristi TimerManager singleton umesto direktnih Timer-a
-  final List<Putnik> _allPutnici = [];
-
   // Real-time subscription variables
   StreamSubscription<dynamic>? _realtimeSubscription;
 
@@ -252,12 +248,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return;
       }
 
-      // 🚨 POPRAVLJENO: Async inicijalizacija bez blokiranje UI
-      _initializeRealtimeService().catchError((e) => <String, dynamic>{});
-      _setupRealtimeMonitoring(); // 🚨 NOVO: Setup realtime monitoring
+      // 🚨 Setup realtime monitoring
+      _setupRealtimeMonitoring();
       // StreamBuilder će automatski učitati data - ne treba eksplicitno _loadPutnici()
       _setupRealtimeListener();
-      _startSmartNotifikacije();
 
       // CACHE UKLONJEN - koristimo direktne Supabase pozive
 
@@ -474,12 +468,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> _initializeRealtimeService() async {
-    // Supabase realtime se koristi direktno preko .stream() metode
-    // Nema potrebe za centralnim servisom
-  }
-
-  // 🚨 NOVO: Setup realtime monitoring system
+  // 🚨 Setup realtime monitoring system
   void _setupRealtimeMonitoring() {
     try {
       // 🕐 KORISTI TIMER MANAGER za heartbeat monitoring - STANDARDIZOVANO
@@ -516,41 +505,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _realtimeSubscription = RealtimeHubService.instance.putnikStream.listen((_) {
       // Stream update-ovi se automatski propagiraju kroz service layer-e
     });
-  }
-
-  void _startSmartNotifikacije() {
-    // 🕐 KORISTI TIMER MANAGER umesto običnog Timer-a - SPREČAVA MEMORY LEAK
-    TimerManager.cancelTimer('home_screen_smart_notifikacije');
-
-    TimerManager.createTimer(
-      'home_screen_smart_notifikacije',
-      const Duration(minutes: 15),
-      () async {
-        await _pokretniSmartFunkcionalnosti();
-      },
-      isPeriodic: true,
-    );
-
-    // Pokreni odmah prva analiza
-    _pokretniSmartFunkcionalnosti();
-  }
-
-  Future<void> _pokretniSmartFunkcionalnosti() async {
-    try {
-      // Koristi globalno čuvane putike
-      if (_allPutnici.isNotEmpty) {
-        // Smart notifikacije - ISKLJUČENO
-        // await SmartNotifikacijeService.analizirajIposaljiNotifikacije(
-        //     _allPutnici);
-
-        // Ruta optimizacija - ISKLJUČENO (servis ne postoji)
-        // await RutaOptimizacijaService.analizirajIpredloziRutu(_allPutnici);
-      }
-
-      // Weather alerts removed
-    } catch (e) {
-      // Ignore smart functionality errors in production
-    }
   }
 
   // _loadPutnici metoda uklonjena - StreamBuilder automatski učitava podatke
@@ -2831,7 +2785,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     // 🕐 KORISTI TIMER MANAGER za cleanup - SPREČAVA MEMORY LEAK
-    TimerManager.cancelTimer('home_screen_smart_notifikacije');
     TimerManager.cancelTimer('home_screen_realtime_health');
 
     // 🧹 KOMPLETNO ZATVARANJE STREAM CONTROLLER-A
