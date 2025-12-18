@@ -109,7 +109,6 @@ class KapacitetService {
   }
 
   /// Stream kapaciteta (realtime ažuriranje)
-  /// ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
     return RealtimeHubService.instance.kapacitetStream.map((hubData) {
       // Dodaj default vrednosti za sva vremena

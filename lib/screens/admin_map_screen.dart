@@ -29,7 +29,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   DateTime? _lastGpsLoad;
   static const cacheDuration = Duration(seconds: 30);
 
-  // ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
   StreamSubscription<List<Map<String, dynamic>>>? _gpsSubscription;
 
   // Početna pozicija - Bela Crkva/Vršac region
@@ -43,7 +42,6 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     _loadGpsLokacije(); // Fallback
   }
 
-  // ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
   void _initializeRealtimeMonitoring() {
     _gpsSubscription?.cancel();
 

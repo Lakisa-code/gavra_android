@@ -15,8 +15,7 @@ class DailyCheckInService {
   // Stream controller za real-time ažuriranje kocke
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
-  /// Stream za real-time ažuriranje kusura iz Supabase vozaci tabele
-  /// ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
+  /// Stream za real-time ažuriranje kusura
   static Stream<double> streamTodayAmount(String vozac) {
     return RealtimeHubService.instance.streamKusurZaVozaca(vozac);
   }

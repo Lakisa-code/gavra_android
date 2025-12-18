@@ -764,8 +764,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                 key: ValueKey(_streamRefreshKey), // 🔄 Forsira novi stream nakon čuvanja
                 stream: RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
                 builder: (context, snapshot) {
-                  // 🔄 OPTIMIZOVANO: Enhanced error handling sa retry opcijom
-                  // NE ČEKAJ ZAUVEK - prikaži praznu listu ako nema podataka
                   if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return const Center(
                       child: CircularProgressIndicator(),
@@ -2344,7 +2342,6 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 📊 OPTIMIZOVANO: StreamBuilder umesto FutureBuilder
                     StreamBuilder<Map<String, dynamic>>(
                       stream: _streamStatistikeZaPeriod(putnik.id, selectedPeriod),
                       builder: (context, snapshot) {
@@ -2622,13 +2619,10 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     );
   }
 
-  // 📊 REAL-TIME STATISTIKE STREAM - SINHRONIZOVANO SA BAZOM
-  // ✅ OPTIMIZOVANO: Koristi RealtimeHubService za voznje_log
   Stream<Map<String, dynamic>> _streamStatistikeZaPeriod(
     String putnikId,
     String period,
   ) {
-    // 🔄 Koristi RealtimeHubService za detekciju promena
     return RealtimeHubService.instance.voznjeLogChangeStream.asyncMap((_) async {
       try {
         // Posebni slučajevi

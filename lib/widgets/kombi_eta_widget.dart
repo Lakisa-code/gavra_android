@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/realtime_hub_service.dart';
 
-/// 🚐 Jednostavan widget koji prikazuje ETA dolaska kombija
-/// ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
+/// 🚐 Widget koji prikazuje ETA dolaska kombija
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
     Key? key,
@@ -41,7 +40,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   }
 
   void _startListening() {
-    // ✅ OPTIMIZOVANO: Koristi RealtimeHubService umesto .stream()
     _subscription = RealtimeHubService.instance.gpsStreamPoGradu(widget.grad).listen((list) {
       if (!mounted) return;
 

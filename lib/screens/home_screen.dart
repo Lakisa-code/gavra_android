@@ -498,20 +498,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _setupRealtimeListener() {
-    // 🚀 OPTIMIZOVANO: Koristi RealtimeHubService umesto direktnog .stream()
     _realtimeSubscription?.cancel();
-
-    // Pretplata na centralni hub - samo za health check
-    _realtimeSubscription = RealtimeHubService.instance.putnikStream.listen((_) {
-      // Stream update-ovi se automatski propagiraju kroz service layer-e
-    });
+    _realtimeSubscription = RealtimeHubService.instance.putnikStream.listen((_) {});
   }
 
-  // _loadPutnici metoda uklonjena - StreamBuilder automatski učitava podatke
-
-  // _getPutnikCount je uklonjen jer nije korišćen
-
-  // 🌟 GLASSMORPHISM Helper metoda za stat rows
   Widget _buildGlassStatRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

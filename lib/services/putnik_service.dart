@@ -85,7 +85,6 @@ class PutnikService {
     // Initial fetch
     _doFetchForStream(key, isoDate, grad, vreme, controller);
 
-    // 🚀 OPTIMIZOVANO: Koristi RealtimeHubService umesto direktnog .stream()
     final sub = RealtimeHubService.instance.putnikStream.listen((_) {
       _doFetchForStream(key, isoDate, grad, vreme, controller);
     });
@@ -592,7 +591,6 @@ class PutnikService {
     }
   }
 
-  /// 🚀 OPTIMIZOVANO: STREAM SVIH PUTNIKA koristi RealtimeHubService
   Stream<List<Putnik>> streamPutnici() {
     return RealtimeHubService.instance.putnikStream.map((registrovani) {
       final allPutnici = <Putnik>[];

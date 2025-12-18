@@ -1,18 +1,3 @@
-// 🚀 REALTIME HUB SERVICE - Centralizovani Supabase Realtime Channels
-// ✅ OPTIMIZACIJA: Koristi prave WebSocket channels umesto .stream()
-//
-// PREDNOSTI:
-// - Šalje SAMO promene (INSERT/UPDATE/DELETE), ne sve podatke
-// - Manji bandwidth i manja cena
-// - Centralizovani kanali za sve tabele
-//
-// PODRŽANE TABELE:
-// - registrovani_putnici (glavni)
-// - vozac_lokacije (GPS)
-// - vozaci (kusur)
-// - kapacitet_polazaka
-// - voznje_log
-
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/registrovani_putnik.dart';
 
 /// Singleton servis koji održava Realtime Channels za sve tabele
-/// Koristi Postgres Changes umesto .stream() za manju potrošnju
 class RealtimeHubService {
   // Singleton pattern
   RealtimeHubService._internal();
