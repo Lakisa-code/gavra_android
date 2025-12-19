@@ -43,7 +43,8 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   Future<void> _loadGpsData() async {
     try {
       final supabase = Supabase.instance.client;
-      final data = await supabase.from('driver_locations').select().eq('grad', widget.grad).eq('aktivan', true);
+      // Učitaj sve aktivne vozače, ne filtriraj po gradu
+      final data = await supabase.from('vozac_lokacije').select().eq('aktivan', true);
 
       if (!mounted) return;
 
@@ -102,19 +103,14 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     // Učitaj inicijalne podatke
     _loadGpsData();
 
-    // Direktan Supabase realtime
+    // Direktan Supabase realtime - sluša sve aktivne vozače
     final supabase = Supabase.instance.client;
-    _channel = supabase.channel('gps_${widget.grad}');
+    _channel = supabase.channel('gps_eta_${widget.putnikIme}');
     _channel!
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'driver_locations',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'grad',
-            value: widget.grad,
-          ),
+          table: 'vozac_lokacije',
           callback: (payload) {
             _loadGpsData();
           },
