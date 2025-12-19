@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 // import 'dnevni_kusur_service.dart';
 import 'putnik_service.dart';
-import 'realtime_hub_service.dart';
 // import 'simplified_kusur_service.dart';
 import 'statistika_service.dart';
 
@@ -15,9 +14,62 @@ class DailyCheckInService {
   // Stream controller za real-time ažuriranje kocke
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
-  /// Stream za real-time ažuriranje kusura
+  /// Stream za real-time ažuriranje kusura - direktan Supabase
   static Stream<double> streamTodayAmount(String vozac) {
-    return RealtimeHubService.instance.streamKusurZaVozaca(vozac);
+    final controller = StreamController<double>.broadcast();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    final supabase = Supabase.instance.client;
+
+    // Učitaj inicijalne podatke
+    supabase
+        .from('daily_checkins')
+        .select('sitan_novac')
+        .eq('vozac', vozac)
+        .eq('datum', today)
+        .maybeSingle()
+        .then((data) {
+      if (!controller.isClosed) {
+        final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+        controller.add(amount);
+      }
+    });
+
+    // Direktan Supabase realtime
+    final channel = supabase.channel('kusur_$vozac');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'daily_checkins',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'vozac',
+            value: vozac,
+          ),
+          callback: (payload) {
+            // Na promenu, ponovo učitaj
+            supabase
+                .from('daily_checkins')
+                .select('sitan_novac')
+                .eq('vozac', vozac)
+                .eq('datum', today)
+                .maybeSingle()
+                .then((data) {
+              if (!controller.isClosed) {
+                final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+                controller.add(amount);
+              }
+            });
+          },
+        )
+        .subscribe();
+
+    // Cleanup
+    controller.onCancel = () {
+      channel.unsubscribe();
+    };
+
+    return controller.stream;
   }
 
   /// Initialize stream with current value from SharedPreferences

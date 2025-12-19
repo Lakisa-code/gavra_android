@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../utils/schedule_utils.dart';
-import 'realtime_hub_service.dart';
 
 /// 🎫 Servis za upravljanje kapacitetom polazaka
 /// Omogućava realtime prikaz slobodnih mesta i admin kontrolu
@@ -108,28 +107,41 @@ class KapacitetService {
     }
   }
 
-  /// Stream kapaciteta (realtime ažuriranje)
+  /// Stream kapaciteta (realtime ažuriranje) - direktan Supabase
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
-    return RealtimeHubService.instance.kapacitetStream.map((hubData) {
-      // Dodaj default vrednosti za sva vremena
-      final result = <String, Map<String, int>>{
-        'BC': {for (final v in svaVremenaBc) v: 8},
-        'VS': {for (final v in svaVremenaVs) v: 8},
-      };
+    final controller = StreamController<Map<String, Map<String, int>>>.broadcast();
 
-      // Merge sa podacima iz huba
-      for (final grad in hubData.keys) {
-        if (result.containsKey(grad)) {
-          result[grad]!.addAll(hubData[grad]!);
-        }
+    // Učitaj inicijalne podatke
+    getKapacitet().then((data) {
+      if (!controller.isClosed) {
+        controller.add(data);
       }
-
-      // Ažuriraj cache
-      _kapacitetCache = result;
-      _cacheTime = DateTime.now();
-
-      return result;
     });
+
+    // Direktan Supabase realtime
+    final channel = _supabase.channel('kapacitet_polazaka_stream');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'kapacitet_polazaka',
+          callback: (payload) {
+            // Na bilo koju promenu, ponovo učitaj sve
+            getKapacitet().then((data) {
+              if (!controller.isClosed) {
+                controller.add(data);
+              }
+            });
+          },
+        )
+        .subscribe();
+
+    // Cleanup kad se stream zatvori
+    controller.onCancel = () {
+      channel.unsubscribe();
+    };
+
+    return controller.stream;
   }
 
   /// Admin: Promeni kapacitet za određeni polazak

@@ -1,19 +1,19 @@
-import 'realtime_hub_service.dart';
+import 'registrovani_putnik_service.dart';
 import 'vozac_mapping_service.dart';
 
 /// Servis za statistiku - koristi SAMO registrovani_putnici tabelu
 /// Sve statistike se čuvaju u JSONB kolonama: statistics, action_log
-/// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
+/// 🚀 Pojednostavljen: Direktan Supabase realtime
 class StatistikaService {
   /// Stream pazara za sve vozače - SIMPLIFIKOVANO
   /// Vraća mapu {vozacIme: iznos, '_ukupno': ukupno}
-  /// 🚀 OPTIMIZOVANO: Koristi RealtimeHubService (raw data za action_log pristup)
+  /// 🚀 Koristi direktan Supabase stream
   static Stream<Map<String, double>> streamPazarZaSveVozace({
     required DateTime from,
     required DateTime to,
   }) {
-    // Koristi centralni RealtimeHubService - raw data za action_log
-    return RealtimeHubService.instance.putnikStream.map((putnici) {
+    // Koristi direktan stream iz RegistrovaniPutnikService
+    return RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici().map((putnici) {
       final Map<String, double> pazar = {};
       double ukupno = 0;
 
@@ -24,9 +24,9 @@ class StatistikaService {
 
         try {
           if (datumPlacanja.isAfter(from) && datumPlacanja.isBefore(to.add(const Duration(days: 1)))) {
-            final cena = putnik.cena ?? 0;
+            final cena = putnik.cena ?? putnik.ukupnaCenaMeseca;
 
-            // Pronađi vozača koji je naplatio iz actionLog (List<dynamic>)
+            // Pronađi vozača koji je naplatio iz actionLog
             String vozacIme = 'Nepoznat';
             final actionLog = putnik.actionLog;
 
@@ -67,7 +67,7 @@ class StatistikaService {
   }
 
   /// Stream broja mesečnih karata koje je vozač naplatio DANAS
-  /// 🚀 OPTIMIZOVANO: Koristi RealtimeHubService
+  /// 🚀 Pojednostavljen: Direktan Supabase stream
   static Stream<int> streamBrojRegistrovanihZaVozaca({required String vozac}) {
     final now = DateTime.now();
     final danPocetak = DateTime(now.year, now.month, now.day);
@@ -76,7 +76,7 @@ class StatistikaService {
     // Dohvati UUID vozača za poređenje
     final vozacUuid = VozacMappingService.getVozacUuidSync(vozac);
 
-    return RealtimeHubService.instance.putnikStream.map((putnici) {
+    return RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici().map((putnici) {
       int count = 0;
       for (final putnik in putnici) {
         // Proveri da li je mesečni putnik (ucenik ili radnik, ne dnevni)
@@ -88,7 +88,7 @@ class StatistikaService {
 
         try {
           if (vremePlacanja.isAfter(danPocetak) && vremePlacanja.isBefore(danKraj)) {
-            // Pronađi vozača koji je naplatio iz action_log (List<dynamic>)
+            // Pronađi vozača koji je naplatio iz action_log
             final actionLog = putnik.actionLog;
             for (final action in actionLog.reversed) {
               if (action is Map && (action['action'] == 'paid' || action['type'] == 'paid')) {
@@ -107,9 +107,9 @@ class StatistikaService {
   }
 
   /// Stream broja dužnika za vozača
-  /// 🚀 OPTIMIZOVANO: Koristi RealtimeHubService
+  /// 🚀 Pojednostavljen: Direktan Supabase stream
   static Stream<int> streamBrojDuznikaZaVozaca({required String vozac}) {
-    return RealtimeHubService.instance.putnikStream.map((putnici) {
+    return RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici().map((putnici) {
       return putnici.where((p) => p.aktivan && p.placeno != true).length;
     });
   }

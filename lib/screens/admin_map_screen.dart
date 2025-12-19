@@ -8,7 +8,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/gps_lokacija.dart';
 import '../services/permission_service.dart';
-import '../services/realtime_hub_service.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 
@@ -29,7 +28,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   DateTime? _lastGpsLoad;
   static const cacheDuration = Duration(seconds: 30);
 
-  StreamSubscription<List<Map<String, dynamic>>>? _gpsSubscription;
+  RealtimeChannel? _gpsChannel;
 
   // Početna pozicija - Bela Crkva/Vršac region
   static const LatLng _initialCenter = LatLng(44.9, 21.4);
@@ -43,46 +42,25 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   }
 
   void _initializeRealtimeMonitoring() {
-    _gpsSubscription?.cancel();
+    _gpsChannel?.unsubscribe();
 
-    _gpsSubscription = RealtimeHubService.instance.gpsStream.listen(
-      (data) {
-        if (mounted) {
-          try {
-            // Mapiranje iz vozac_lokacije strukture u GPSLokacija
-            final gpsLokacije = data
-                .map((json) => GPSLokacija(
-                      id: json['id'] as String,
-                      vozacId: json['vozac_id'] as String?,
-                      latitude: (json['lat'] as num).toDouble(),
-                      longitude: (json['lng'] as num).toDouble(),
-                      vreme: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : DateTime.now(),
-                    ))
-                .toList();
-            if (mounted) {
-              setState(() {
-                _gpsLokacije = gpsLokacije;
-                _isLoading = false;
-                _updateMarkers();
-              });
-            }
-          } catch (e) {
-            // Fallback to cached data
-            if (_gpsLokacije.isEmpty) {
-              _loadGpsLokacije();
-            }
-          }
-        }
-      },
-      onError: (Object error) {
-        // RealtimeHubService ima ugrađen retry mehanizam
-      },
-    );
+    final supabase = Supabase.instance.client;
+    _gpsChannel = supabase.channel('admin_gps_stream');
+    _gpsChannel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'driver_locations',
+          callback: (payload) {
+            _loadGpsLokacije();
+          },
+        )
+        .subscribe();
   }
 
   @override
   void dispose() {
-    _gpsSubscription?.cancel();
+    _gpsChannel?.unsubscribe();
     super.dispose();
   }
 

@@ -17,7 +17,6 @@ import '../services/local_notification_service.dart';
 import '../services/printing_service.dart';
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/racun_service.dart';
-import '../services/realtime_hub_service.dart'; // 🚀 OPTIMIZACIJA: Centralni realtime
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/slobodna_mesta_service.dart'; // 🎫 Provera kapaciteta
@@ -332,7 +331,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _setupRealtimeListener() {
     _realtimeSubscription?.cancel();
-    _realtimeSubscription = RealtimeHubService.instance.putnikStream.listen((_) {});
+    // Direktan Supabase realtime umesto RealtimeHubService
+    _realtimeSubscription = RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici().listen((_) {});
   }
 
   Widget _buildGlassStatRow(String label, String value) {

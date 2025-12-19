@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
-import 'realtime_hub_service.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
@@ -68,10 +67,10 @@ class RegistrovaniPutnikService {
   /// Stream za mesečne putnike - direktan Supabase realtime
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
     final supabase = Supabase.instance.client;
-    
+
     // Kontroler za broadcast stream
     final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
-    
+
     // Učitaj inicijalne podatke
     supabase
         .from('registrovani_putnici')
@@ -85,7 +84,7 @@ class RegistrovaniPutnikService {
         controller.add(putnici);
       }
     });
-    
+
     // Pretplati se na promene
     final channel = supabase.channel('registrovani_putnici_simple');
     channel
@@ -110,12 +109,12 @@ class RegistrovaniPutnikService {
           },
         )
         .subscribe();
-    
+
     // Cleanup kad se stream zatvori
     controller.onCancel = () {
       channel.unsubscribe();
     };
-    
+
     return controller.stream;
   }
 
@@ -444,9 +443,9 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
-  /// Koristi centralni RealtimeHubService
+  /// Koristi direktan Supabase stream
   static Stream<String?> streamVozacPoslednjegPlacanja(String putnikId) {
-    return RealtimeHubService.instance.aktivniPutnikStream.map((putnici) {
+    return streamAktivniRegistrovaniPutnici().map((putnici) {
       try {
         final putnik = putnici.where((p) => p.id == putnikId).firstOrNull;
         if (putnik == null) return null;

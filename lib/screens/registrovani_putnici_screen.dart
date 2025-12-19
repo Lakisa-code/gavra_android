@@ -2630,7 +2630,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     // Jednostavan stream koji vraća podatke jednom
     return Stream.fromFuture(_getStatistikeForPeriod(putnikId, period));
   }
-  
+
   Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period) async {
     try {
       // Posebni slučajevi

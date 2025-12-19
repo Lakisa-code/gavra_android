@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../services/realtime_hub_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Widget koji prikazuje ETA dolaska kombija
 class KombiEtaWidget extends StatefulWidget {
@@ -21,6 +20,7 @@ class KombiEtaWidget extends StatefulWidget {
 
 class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   StreamSubscription? _subscription;
+  RealtimeChannel? _channel;
   int? _etaMinutes;
   bool _isLoading = true;
   bool _isActive = false;
@@ -36,14 +36,18 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   @override
   void dispose() {
     _subscription?.cancel();
+    _channel?.unsubscribe();
     super.dispose();
   }
 
-  void _startListening() {
-    _subscription = RealtimeHubService.instance.gpsStreamPoGradu(widget.grad).listen((list) {
+  Future<void> _loadGpsData() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final data = await supabase.from('driver_locations').select().eq('grad', widget.grad).eq('aktivan', true);
+
       if (!mounted) return;
 
-      // Nađi aktivnog vozača
+      final list = data as List<dynamic>;
       final activeDrivers = list.where((l) => l['aktivan'] == true).toList();
 
       if (activeDrivers.isEmpty) {
@@ -63,11 +67,9 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       // Pronađi ETA za ovog putnika
       int? eta;
       if (putniciEta != null) {
-        // Probaj tačno ime
         if (putniciEta.containsKey(widget.putnikIme)) {
           eta = putniciEta[widget.putnikIme] as int?;
         } else {
-          // Probaj case-insensitive pretragu
           for (final entry in putniciEta.entries) {
             if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
               eta = entry.value as int?;
@@ -79,7 +81,6 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
       setState(() {
         _isActive = true;
-        // Zapamti vreme kada se status promeni na pokupljen
         if (eta == -1 && _etaMinutes != -1) {
           _vremePokupljenja = DateTime.now();
         }
@@ -87,14 +88,38 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
         _vozacIme = vozacIme;
         _isLoading = false;
       });
-    }, onError: (e) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _isActive = false;
         });
       }
-    });
+    }
+  }
+
+  void _startListening() {
+    // Učitaj inicijalne podatke
+    _loadGpsData();
+
+    // Direktan Supabase realtime
+    final supabase = Supabase.instance.client;
+    _channel = supabase.channel('gps_${widget.grad}');
+    _channel!
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'driver_locations',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'grad',
+            value: widget.grad,
+          ),
+          callback: (payload) {
+            _loadGpsData();
+          },
+        )
+        .subscribe();
   }
 
   @override

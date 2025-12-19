@@ -9,7 +9,6 @@ import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_boja.dart';
 import 'driver_location_service.dart';
-import 'realtime_hub_service.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'vozac_mapping_service.dart';
@@ -84,15 +83,22 @@ class PutnikService {
     // Initial fetch
     _doFetchForStream(key, isoDate, grad, vreme, controller);
 
-    final sub = RealtimeHubService.instance.putnikStream.listen((_) {
-      _doFetchForStream(key, isoDate, grad, vreme, controller);
-    });
-    _subscriptions[key] = sub;
+    // Direktan Supabase realtime umesto RealtimeHubService
+    final channel = supabase.channel('putnici_$key');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'registrovani_putnici',
+          callback: (payload) {
+            _doFetchForStream(key, isoDate, grad, vreme, controller);
+          },
+        )
+        .subscribe();
 
     // Cleanup kada se controller zatvori
     controller.onCancel = () async {
-      await _subscriptions[key]?.cancel();
-      _subscriptions.remove(key);
+      channel.unsubscribe();
       _streams.remove(key);
       _lastValues.remove(key);
     };
@@ -590,7 +596,7 @@ class PutnikService {
   }
 
   Stream<List<Putnik>> streamPutnici() {
-    return RealtimeHubService.instance.putnikStream.map((registrovani) {
+    return RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici().map((registrovani) {
       final allPutnici = <Putnik>[];
 
       for (final item in registrovani) {
