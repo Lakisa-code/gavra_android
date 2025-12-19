@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'osrm_service.dart';
 import 'permission_service.dart';
 
 /// Servis za slanje GPS lokacije vozača u realtime
@@ -17,10 +18,12 @@ class DriverLocationService {
 
   // Konfiguracija
   static const Duration _updateInterval = Duration(seconds: 15);
+  static const Duration _etaUpdateInterval = Duration(minutes: 2); // Realtime ETA osvežavanje
   static const double _minDistanceMeters = 50; // Minimalna udaljenost za update
 
   // State
   Timer? _locationTimer;
+  Timer? _etaTimer; // 🆕 Timer za realtime ETA
   StreamSubscription<Position>? _positionSubscription;
   Position? _lastPosition;
   bool _isTracking = false;
@@ -30,6 +33,8 @@ class DriverLocationService {
   String? _currentVremePolaska;
   String? _currentSmer; // BC_VS ili VS_BC
   Map<String, int>? _currentPutniciEta; // ETA za svakog putnika (iz OSRM)
+  Map<String, Position>? _putniciCoordinates; // 🆕 Koordinate putnika za realtime ETA
+  List<String>? _putniciRedosled; // 🆕 Redosled putnika (optimizovan)
   VoidCallback? _onAllPassengersPickedUp; // Callback za auto-stop
 
   // Getteri
@@ -39,6 +44,8 @@ class DriverLocationService {
 
   /// Pokreni praćenje lokacije za vozača
   /// [putniciEta] - Mapa ime_putnika -> ETA u minutama (iz OSRM)
+  /// [putniciCoordinates] - Koordinate putnika za realtime ETA osvežavanje
+  /// [putniciRedosled] - Optimizovan redosled putnika
   /// [onAllPassengersPickedUp] - Callback kada su svi putnici pokupljeni (auto-stop)
   Future<bool> startTracking({
     required String vozacId,
@@ -47,7 +54,8 @@ class DriverLocationService {
     String? vremePolaska,
     String? smer, // BC_VS ili VS_BC
     Map<String, int>? putniciEta,
-    @Deprecated('Ne koristi se više - ETA dolazi iz OSRM') Map<String, Position>? putniciCoordinates,
+    Map<String, Position>? putniciCoordinates, // 🆕 Za realtime ETA
+    List<String>? putniciRedosled, // 🆕 Optimizovan redosled
     VoidCallback? onAllPassengersPickedUp,
   }) async {
     // 🔄 REALTIME FIX: Ako je tracking već aktivan, samo ažuriraj ETA
@@ -72,14 +80,21 @@ class DriverLocationService {
     _currentVremePolaska = vremePolaska;
     _currentSmer = smer;
     _currentPutniciEta = putniciEta != null ? Map.from(putniciEta) : null;
+    _putniciCoordinates = putniciCoordinates != null ? Map.from(putniciCoordinates) : null;
+    _putniciRedosled = putniciRedosled != null ? List.from(putniciRedosled) : null;
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
 
     // Odmah pošalji trenutnu lokaciju
     await _sendCurrentLocation();
 
-    // Pokreni periodično slanje
+    // Pokreni periodično slanje lokacije
     _locationTimer = Timer.periodic(_updateInterval, (_) => _sendCurrentLocation());
+
+    // 🆕 Pokreni periodično osvežavanje ETA (svakih 2 min)
+    if (_putniciCoordinates != null && _putniciRedosled != null) {
+      _etaTimer = Timer.periodic(_etaUpdateInterval, (_) => _refreshRealtimeEta());
+    }
 
     // Alternativno: stream-based tracking sa distance filter
     // _startStreamTracking();
@@ -94,6 +109,9 @@ class DriverLocationService {
     _locationTimer?.cancel();
     _locationTimer = null;
 
+    _etaTimer?.cancel(); // 🆕 Zaustavi ETA timer
+    _etaTimer = null;
+
     await _positionSubscription?.cancel();
     _positionSubscription = null;
 
@@ -107,6 +125,8 @@ class DriverLocationService {
     _currentVremePolaska = null;
     _currentSmer = null;
     _currentPutniciEta = null;
+    _putniciCoordinates = null; // 🆕
+    _putniciRedosled = null; // 🆕
     _onAllPassengersPickedUp = null;
     _lastPosition = null;
   }
@@ -119,6 +139,39 @@ class DriverLocationService {
     _currentPutniciEta = Map.from(newPutniciEta);
     // Odmah pošalji ažurirani ETA u Supabase
     await _sendCurrentLocation();
+  }
+
+  /// 🆕 REALTIME ETA: Osvežava ETA pozivom OSRM Route API
+  /// Poziva se svakih 2 minuta tokom vožnje
+  Future<void> _refreshRealtimeEta() async {
+    if (!_isTracking || _lastPosition == null) return;
+    if (_putniciCoordinates == null || _putniciRedosled == null) return;
+
+    // Filtriraj samo aktivne putnike (ETA >= 0)
+    final aktivniPutnici = _putniciRedosled!
+        .where((ime) =>
+            _currentPutniciEta != null &&
+            _currentPutniciEta!.containsKey(ime) &&
+            _currentPutniciEta![ime]! >= 0)
+        .toList();
+
+    if (aktivniPutnici.isEmpty) return;
+
+    // Pozovi OSRM Route API
+    final result = await OsrmService.getRealtimeEta(
+      currentPosition: _lastPosition!,
+      putnikImena: aktivniPutnici,
+      putnikCoordinates: _putniciCoordinates!,
+    );
+
+    if (result.success && result.putniciEta != null) {
+      // Ažuriraj ETA za aktivne putnike
+      for (final entry in result.putniciEta!.entries) {
+        _currentPutniciEta![entry.key] = entry.value;
+      }
+      // Pošalji ažurirani ETA u bazu
+      await _sendCurrentLocation();
+    }
   }
 
   /// 🆕 Označi putnika kao pokupljenог (ETA = -1)

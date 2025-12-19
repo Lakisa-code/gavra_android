@@ -1587,6 +1587,18 @@ class _DanasScreenState extends State<DanasScreen> {
         if (_currentDriver != null && result.putniciEta != null) {
           final smer = _selectedGrad.toLowerCase().contains('bela') || _selectedGrad == 'BC' ? 'BC_VS' : 'VS_BC';
 
+          // 🆕 Konvertuj koordinate: Map<Putnik, Position> -> Map<String, Position>
+          Map<String, Position>? coordsByName;
+          if (_cachedCoordinates != null) {
+            coordsByName = {};
+            for (final entry in _cachedCoordinates!.entries) {
+              coordsByName[entry.key.ime] = entry.value;
+            }
+          }
+
+          // 🆕 Izvuci redosled imena putnika
+          final putniciRedosled = _optimizedRoute.map((p) => p.ime).toList();
+
           await DriverLocationService.instance.startTracking(
             vozacId: _currentDriver!,
             vozacIme: _currentDriver!,
@@ -1594,6 +1606,8 @@ class _DanasScreenState extends State<DanasScreen> {
             vremePolaska: _selectedVreme,
             smer: smer,
             putniciEta: result.putniciEta,
+            putniciCoordinates: coordsByName, // 🆕 Za realtime ETA
+            putniciRedosled: putniciRedosled, // 🆕 Optimizovan redosled
             onAllPassengersPickedUp: () {
               // 🆕 Auto-stop callback
               if (mounted) {
