@@ -7,23 +7,26 @@ import 'package:http/http.dart' as http;
 class WeatherData {
   final double temperature;
   final int weatherCode;
+  final bool isDay;
   final String icon;
 
   WeatherData({
     required this.temperature,
     required this.weatherCode,
+    required this.isDay,
     required this.icon,
   });
 
-  /// Konvertuj weather code u ikonu
-  static String getIconForCode(int code) {
+  /// Konvertuj weather code u ikonu (sa dan/noć podrškom)
+  /// Za maglu vraća 'FOG_ASSET' da bi UI mogao da prikaže sliku
+  static String getIconForCode(int code, {bool isDay = true}) {
     // WMO Weather interpretation codes
     // https://open-meteo.com/en/docs
-    if (code == 0) return '☀️'; // Clear sky
-    if (code == 1) return '🌤️'; // Mainly clear
-    if (code == 2) return '⛅'; // Partly cloudy
+    if (code == 0) return isDay ? '☀️' : '🌙'; // Clear sky
+    if (code == 1) return isDay ? '🌤️' : '🌙'; // Mainly clear
+    if (code == 2) return isDay ? '⛅' : '☁️'; // Partly cloudy
     if (code == 3) return '☁️'; // Overcast
-    if (code >= 45 && code <= 48) return '🌫️'; // Fog
+    if (code >= 45 && code <= 48) return 'FOG_ASSET'; // Fog - koristi sliku
     if (code >= 51 && code <= 55) return '🌧️'; // Drizzle
     if (code >= 56 && code <= 57) return '🌧️❄️'; // Freezing drizzle
     if (code >= 61 && code <= 65) return '🌧️'; // Rain
@@ -33,6 +36,15 @@ class WeatherData {
     if (code >= 85 && code <= 86) return '❄️'; // Snow showers
     if (code >= 95 && code <= 99) return '⛈️'; // Thunderstorm
     return '🌡️'; // Default
+  }
+
+  /// Da li ikona treba da bude asset slika
+  static bool isAssetIcon(String icon) => icon == 'FOG_ASSET';
+
+  /// Vrati putanju do asset slike
+  static String getAssetPath(String icon) {
+    if (icon == 'FOG_ASSET') return 'assets/weather/fog.png';
+    return '';
   }
 }
 
@@ -76,10 +88,11 @@ class WeatherService {
       if (coords == null) return null;
 
       // Open-Meteo API - besplatan, bez ključa
+      // Dodato is_day za razlikovanje dan/noć ikona
       final url = Uri.parse(
         'https://api.open-meteo.com/v1/forecast?'
         'latitude=${coords['lat']}&longitude=${coords['lon']}'
-        '&current=temperature_2m,weather_code'
+        '&current=temperature_2m,weather_code,is_day'
         '&timezone=Europe/Belgrade',
       );
 
@@ -89,11 +102,13 @@ class WeatherService {
         final data = json.decode(response.body);
         final temp = (data['current']['temperature_2m'] as num).toDouble();
         final code = (data['current']['weather_code'] as num).toInt();
+        final isDay = (data['current']['is_day'] as num).toInt() == 1;
 
         final weatherData = WeatherData(
           temperature: temp,
           weatherCode: code,
-          icon: WeatherData.getIconForCode(code),
+          isDay: isDay,
+          icon: WeatherData.getIconForCode(code, isDay: isDay),
         );
 
         // Sačuvaj u cache

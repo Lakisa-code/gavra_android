@@ -315,15 +315,18 @@ class _DanasScreenState extends State<DanasScreen> {
           ),
         ),
         const SizedBox(height: 2),
-        // 3. RED: ĐAČKI BROJAČ - NAV - SPEEDOMETER
+        // 3. RED: ĐAČKI BROJAČ - NAV (samo kad je ruta optimizovana) - SPEEDOMETER
         SizedBox(
           height: 26,
           child: Row(
             children: [
               Expanded(child: _buildDjackiBrojacButton()),
               const SizedBox(width: 4),
-              Expanded(child: _buildMapsButton()),
-              const SizedBox(width: 4),
+              // NAV se prikazuje samo kad je ruta optimizovana
+              if (_isRouteOptimized) ...[
+                Expanded(child: _buildMapsButton()),
+                const SizedBox(width: 4),
+              ],
               Expanded(child: _buildSpeedometerButton()),
             ],
           ),
@@ -351,10 +354,22 @@ class _DanasScreenState extends State<DanasScreen> {
                         : Colors.orange)
             : Colors.grey;
 
+        // Widget za ikonu - slika ili emoji
+        Widget iconWidget;
+        if (WeatherData.isAssetIcon(icon)) {
+          iconWidget = Image.asset(
+            WeatherData.getAssetPath(icon),
+            width: 18,
+            height: 18,
+          );
+        } else {
+          iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
+        }
+
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(icon, style: const TextStyle(fontSize: 14)),
+            iconWidget,
             const SizedBox(width: 2),
             Text(
               '$grad $tempStr',
@@ -415,21 +430,14 @@ class _DanasScreenState extends State<DanasScreen> {
           // Heartbeat indikator će pokazati grešku - ne prikazujemo dodatne error widget-e
           return SizedBox(
             height: 26,
-            child: ElevatedButton(
-              onPressed: null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade400,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              ),
-              child: const Text(
+            child: Center(
+              child: Text(
                 'ERR',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
+                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
                 ),
               ),
             ),
@@ -440,25 +448,21 @@ class _DanasScreenState extends State<DanasScreen> {
         final ostalo = statistike['ostalo'] ?? 0; // 10 - ostalo da se vrati
         final ukupnoUjutro = statistike['ukupno_ujutro'] ?? 0; // 30 - ukupno ujutro
 
+        // Boja teksta - narandžasta ako ima ostalo, inače bela
+        final textColor = ostalo > 0 ? Colors.orange : Theme.of(context).colorScheme.onPrimary;
+
         return SizedBox(
-          height: 26, // povećao sa 24 na 26
-          child: ElevatedButton(
-            onPressed: () => _showDjackiDialog(statistike),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+          height: 26,
+          child: GestureDetector(
+            onTap: () => _showDjackiDialog(statistike),
+            child: Center(
               child: Text(
                 '$ostalo/$ukupnoUjutro',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: ostalo > 0 ? Colors.orange : Theme.of(context).colorScheme.onPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
                 ),
               ),
             ),
@@ -474,10 +478,15 @@ class _DanasScreenState extends State<DanasScreen> {
     final hasPassengers = _currentPutnici.isNotEmpty;
     final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
 
+    // Boja teksta zavisi od stanja
+    final textColor = _isRouteOptimized
+        ? Colors.green.shade300
+        : (hasPassengers && isDriverValid ? Theme.of(context).colorScheme.onPrimary : Colors.grey.shade400);
+
     return SizedBox(
       height: 26,
-      child: ElevatedButton(
-        onPressed: _isLoading || !hasPassengers || !isDriverValid
+      child: GestureDetector(
+        onTap: _isLoading || !hasPassengers || !isDriverValid
             ? null
             : () {
                 if (_isRouteOptimized) {
@@ -486,20 +495,15 @@ class _DanasScreenState extends State<DanasScreen> {
                   _optimizeCurrentRoute(_currentPutnici, isAlreadyOptimized: false);
                 }
               },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _isRouteOptimized
-              ? Colors.green.shade600
-              : (hasPassengers ? Theme.of(context).primaryColor : Colors.grey.shade400),
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          elevation: hasPassengers ? 2 : 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
+        child: Center(
           child: Text(
             _isRouteOptimized ? 'Reset' : 'Ruta',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: textColor,
+              shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+            ),
           ),
         ),
       ),
@@ -512,32 +516,38 @@ class _DanasScreenState extends State<DanasScreen> {
       stream: RealtimeGpsService.speedStream,
       builder: (context, speedSnapshot) {
         final speed = speedSnapshot.data ?? 0.0;
-        final speedColor = speed >= 90
+
+        // Boja pozadine zavisi od brzine (providno kad je 0)
+        final bgColor = speed >= 90
             ? Colors.red
             : speed >= 60
                 ? Colors.orange
                 : speed > 0
                     ? Colors.green
-                    : Theme.of(context).colorScheme.onSurface;
+                    : Colors.transparent;
+
+        // Tekst beo kad ima pozadinu, inače beo sa senkom
+        final textColor = speed > 0 ? Colors.white : Theme.of(context).colorScheme.onPrimary;
 
         return SizedBox(
           height: 26,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: speedColor.withValues(alpha: 0.4)),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+            decoration: bgColor != Colors.transparent
+                ? BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(16),
+                  )
+                : null,
+            child: Center(
               child: Text(
                 speed.toStringAsFixed(0),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: speedColor,
+                  color: textColor,
                   fontFamily: 'monospace',
+                  shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
                 ),
               ),
             ),
