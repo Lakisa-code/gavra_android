@@ -18,7 +18,7 @@ class DriverLocationService {
 
   // Konfiguracija
   static const Duration _updateInterval = Duration(seconds: 15);
-  static const Duration _etaUpdateInterval = Duration(minutes: 2); // Realtime ETA osvežavanje
+  static const Duration _etaUpdateInterval = Duration(minutes: 1); // Realtime ETA osvežavanje
   static const double _minDistanceMeters = 50; // Minimalna udaljenost za update
 
   // State
