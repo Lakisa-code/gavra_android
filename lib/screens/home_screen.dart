@@ -1087,6 +1087,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     int brojMesta = 1; // 🆕 Broj rezervisanih mesta (default 1)
     bool promeniAdresuSamoDanas = false; // 🆕 Opcija za promenu adrese samo za danas
     String? samoDanasAdresa; // 🆕 Adresa samo za danas
+    String? samoDanasAdresaId; // 🆕 ID adrese samo za danas (za brži geocoding)
     List<Map<String, String>> dostupneAdrese = []; // 🆕 Lista adresa za dropdown
 
     // Povuci SVE registrovane putnike iz registrovani_putnici tabele (učenici, radnici, dnevni)
@@ -1405,6 +1406,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         // Reset "samo danas" opcije kad se promeni putnik
                                         promeniAdresuSamoDanas = false;
                                         samoDanasAdresa = null;
+                                        samoDanasAdresaId = null;
                                       });
                                     }
                                   },
@@ -1435,6 +1437,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       promeniAdresuSamoDanas = !promeniAdresuSamoDanas;
                                       if (!promeniAdresuSamoDanas) {
                                         samoDanasAdresa = null;
+                                        samoDanasAdresaId = null;
                                       }
                                     });
                                   },
@@ -1447,6 +1450,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                             promeniAdresuSamoDanas = value ?? false;
                                             if (!promeniAdresuSamoDanas) {
                                               samoDanasAdresa = null;
+                                              samoDanasAdresaId = null;
                                             }
                                           });
                                         },
@@ -1467,7 +1471,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 if (promeniAdresuSamoDanas) ...[
                                   const SizedBox(height: 8),
                                   DropdownButtonFormField<String>(
-                                    initialValue: samoDanasAdresa,
+                                    // ignore: deprecated_member_use
+                                    value: samoDanasAdresaId,
                                     decoration: InputDecoration(
                                       labelText: 'Adresa samo za danas',
                                       prefixIcon: const Icon(Icons.edit_location_alt, color: Colors.orange),
@@ -1479,13 +1484,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ),
                                     items: dostupneAdrese.map((adresa) {
                                       return DropdownMenuItem<String>(
-                                        value: adresa['naziv'],
+                                        value: adresa['id'], // Čuvamo ID kao value
                                         child: Text(adresa['naziv'] ?? ''),
                                       );
                                     }).toList(),
                                     onChanged: (value) {
                                       setStateDialog(() {
-                                        samoDanasAdresa = value;
+                                        samoDanasAdresaId = value;
+                                        // Nađi naziv po ID-u
+                                        samoDanasAdresa = dostupneAdrese
+                                            .firstWhere((a) => a['id'] == value, orElse: () => {})['naziv'];
                                       });
                                     },
                                     hint: const Text('Izaberi adresu'),
@@ -1779,6 +1787,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         final adresaZaKoristiti = promeniAdresuSamoDanas && samoDanasAdresa != null
                                             ? samoDanasAdresa
                                             : (adresaController.text.isEmpty ? null : adresaController.text);
+                                        // 🆕 Koristi "samo danas" adresaId ako je postavljen
+                                        final adresaIdZaKoristiti = promeniAdresuSamoDanas && samoDanasAdresaId != null
+                                            ? samoDanasAdresaId
+                                            : null; // Stalna adresa ima adresaId u registrovani_putnici
 
                                         final putnik = Putnik(
                                           ime: selectedPutnik!.putnikIme,
@@ -1789,6 +1801,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           vremeDodavanja: DateTime.now(),
                                           dodaoVozac: _currentDriver!, // Safe non-null assertion nakon validacije
                                           adresa: adresaZaKoristiti,
+                                          adresaId: adresaIdZaKoristiti, // 🆕 Za brži geocoding
                                           brojTelefona: selectedPutnik!.brojTelefona,
                                           brojMesta: brojMesta, // 🆕 Prosleđujemo broj rezervisanih mesta
                                         );
