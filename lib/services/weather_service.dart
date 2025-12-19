@@ -1,0 +1,150 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+/// Model za vremensku prognozu
+class WeatherData {
+  final double temperature;
+  final int weatherCode;
+  final String icon;
+
+  WeatherData({
+    required this.temperature,
+    required this.weatherCode,
+    required this.icon,
+  });
+
+  /// Konvertuj weather code u ikonu
+  static String getIconForCode(int code) {
+    // WMO Weather interpretation codes
+    // https://open-meteo.com/en/docs
+    if (code == 0) return '☀️'; // Clear sky
+    if (code == 1) return '🌤️'; // Mainly clear
+    if (code == 2) return '⛅'; // Partly cloudy
+    if (code == 3) return '☁️'; // Overcast
+    if (code >= 45 && code <= 48) return '🌫️'; // Fog
+    if (code >= 51 && code <= 55) return '🌧️'; // Drizzle
+    if (code >= 56 && code <= 57) return '🌧️❄️'; // Freezing drizzle
+    if (code >= 61 && code <= 65) return '🌧️'; // Rain
+    if (code >= 66 && code <= 67) return '🌧️❄️'; // Freezing rain
+    if (code >= 71 && code <= 77) return '❄️'; // Snow
+    if (code >= 80 && code <= 82) return '🌧️'; // Rain showers
+    if (code >= 85 && code <= 86) return '❄️'; // Snow showers
+    if (code >= 95 && code <= 99) return '⛈️'; // Thunderstorm
+    return '🌡️'; // Default
+  }
+}
+
+/// Servis za vremensku prognozu koristeći Open-Meteo API (besplatan, bez API ključa)
+class WeatherService {
+  // Koordinate gradova
+  static const Map<String, Map<String, double>> _gradKoordinate = {
+    'BC': {'lat': 44.8989, 'lon': 21.4181}, // Bela Crkva
+    'VS': {'lat': 45.1167, 'lon': 21.3036}, // Vršac
+  };
+
+  // Cache za podatke (osvežava se svakih 15 minuta)
+  static final Map<String, WeatherData?> _dataCache = {};
+  static final Map<String, DateTime> _cacheTime = {};
+  static const _cacheDuration = Duration(minutes: 15);
+
+  // Stream controlleri za real-time temperature
+  static final _bcController = StreamController<WeatherData?>.broadcast();
+  static final _vsController = StreamController<WeatherData?>.broadcast();
+
+  static Stream<WeatherData?> get bcWeatherStream => _bcController.stream;
+  static Stream<WeatherData?> get vsWeatherStream => _vsController.stream;
+
+  /// Dohvati trenutnu temperaturu za grad (legacy - za kompatibilnost)
+  static Future<double?> getTemperature(String grad) async {
+    final data = await getWeatherData(grad);
+    return data?.temperature;
+  }
+
+  /// Dohvati kompletne vremenske podatke za grad
+  static Future<WeatherData?> getWeatherData(String grad) async {
+    // Proveri cache
+    if (_dataCache.containsKey(grad) &&
+        _cacheTime.containsKey(grad) &&
+        DateTime.now().difference(_cacheTime[grad]!) < _cacheDuration) {
+      return _dataCache[grad];
+    }
+
+    try {
+      final coords = _gradKoordinate[grad];
+      if (coords == null) return null;
+
+      // Open-Meteo API - besplatan, bez ključa
+      final url = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast?'
+        'latitude=${coords['lat']}&longitude=${coords['lon']}'
+        '&current=temperature_2m,weather_code'
+        '&timezone=Europe/Belgrade',
+      );
+
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final temp = (data['current']['temperature_2m'] as num).toDouble();
+        final code = (data['current']['weather_code'] as num).toInt();
+
+        final weatherData = WeatherData(
+          temperature: temp,
+          weatherCode: code,
+          icon: WeatherData.getIconForCode(code),
+        );
+
+        // Sačuvaj u cache
+        _dataCache[grad] = weatherData;
+        _cacheTime[grad] = DateTime.now();
+
+        // Emituj na stream
+        if (grad == 'BC') {
+          _bcController.add(weatherData);
+        } else if (grad == 'VS') {
+          _vsController.add(weatherData);
+        }
+
+        return weatherData;
+      }
+    } catch (e) {
+      // Greška - vrati cached vrednost ako postoji
+      return _dataCache[grad];
+    }
+
+    return null;
+  }
+
+  /// Osveži podatke za oba grada
+  static Future<void> refreshAll() async {
+    await Future.wait([
+      getWeatherData('BC'),
+      getWeatherData('VS'),
+    ]);
+  }
+
+  /// Pokreni periodično osvežavanje (svakih 15 min)
+  static Timer? _refreshTimer;
+
+  static void startPeriodicRefresh() {
+    _refreshTimer?.cancel();
+    refreshAll(); // Odmah učitaj
+    _refreshTimer = Timer.periodic(const Duration(minutes: 15), (_) {
+      refreshAll();
+    });
+  }
+
+  static void stopPeriodicRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
+  /// Cleanup
+  static void dispose() {
+    stopPeriodicRefresh();
+    _bcController.close();
+    _vsController.close();
+  }
+}

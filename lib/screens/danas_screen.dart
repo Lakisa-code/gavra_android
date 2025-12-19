@@ -24,6 +24,7 @@ import '../services/smart_navigation_service.dart';
 import '../services/statistika_service.dart'; // DODANO za jedinstvenu logiku pazara
 import '../services/theme_manager.dart';
 import '../services/timer_manager.dart'; // 🕐 DODANO za heartbeat management
+import '../services/weather_service.dart'; // 🌤️ DODANO za vremensku prognozu
 import '../theme.dart';
 import '../utils/grad_adresa_validator.dart'; // 🏘️ NOVO za validaciju gradova
 import '../utils/schedule_utils.dart'; // Za isZimski funkciju
@@ -79,36 +80,6 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🔒 LOCK ZA KONKURENTNE REOPTIMIZACIJE
   bool _isReoptimizing = false;
-
-  // 🎯 DANAS SCREEN - UVEK KORISTI TRENUTNI DATUM
-  bool _isPopisLoading = false; // ✅ ISPRAVKA: Loading state za POPIS dugme
-
-  Widget _buildPopisButton() {
-    final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
-    return SizedBox(
-      height: 26,
-      child: ElevatedButton(
-        onPressed: (!isDriverValid || _isPopisLoading) ? null : () => _showPopisDana(),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _isPopisLoading ? Colors.grey.shade400 : Theme.of(context).colorScheme.secondary,
-          foregroundColor: Theme.of(context).colorScheme.onSecondary,
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        ),
-        child: _isPopisLoading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text('POPIS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.3)),
-              ),
-      ),
-    );
-  }
 
   // 💓 HEARTBEAT MONITORING FUNCTIONS
   void _registerStreamHeartbeat(String streamName) {
@@ -259,8 +230,9 @@ class _DanasScreenState extends State<DanasScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // 1. RED: DATUM - DAN - VREME
         SizedBox(
-          height: 24,
+          height: 22,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -328,7 +300,74 @@ class _DanasScreenState extends State<DanasScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 2),
+        // 2. RED: TEMP BC - RUTA - TEMP VS
+        SizedBox(
+          height: 26,
+          child: Row(
+            children: [
+              Expanded(child: Center(child: _buildWeatherCompact('BC'))),
+              const SizedBox(width: 4),
+              Expanded(child: _buildOptimizeButton()),
+              const SizedBox(width: 4),
+              Expanded(child: Center(child: _buildWeatherCompact('VS'))),
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
+        // 3. RED: ĐAČKI BROJAČ - NAV - SPEEDOMETER
+        SizedBox(
+          height: 26,
+          child: Row(
+            children: [
+              Expanded(child: _buildDjackiBrojacButton()),
+              const SizedBox(width: 4),
+              Expanded(child: _buildMapsButton()),
+              const SizedBox(width: 4),
+              Expanded(child: _buildSpeedometerButton()),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  // 🌤️ KOMPAKTAN PRIKAZ TEMPERATURE ZA DATUM RED SA IKONOM
+  Widget _buildWeatherCompact(String grad) {
+    return FutureBuilder<WeatherData?>(
+      future: WeatherService.getWeatherData(grad),
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final temp = data?.temperature;
+        final icon = data?.icon ?? '🌡️';
+        final tempStr = temp != null ? '${temp.round()}°' : '--';
+        final tempColor = temp != null
+            ? (temp < 0
+                ? Colors.lightBlue
+                : temp < 15
+                    ? Colors.cyan
+                    : temp < 25
+                        ? Colors.green
+                        : Colors.orange)
+            : Colors.grey;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 2),
+            Text(
+              '$grad $tempStr',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: tempColor,
+                shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -784,121 +823,6 @@ class _DanasScreenState extends State<DanasScreen> {
     );
   }
 
-  // 📊 POPIS DANA - REALTIME PODACI SA ISTIM NAZIVIMA KAO U STATISTIKA SCREEN
-  Future<void> _showPopisDana() async {
-    if (_currentDriver == null || _currentDriver!.isEmpty || !VozacBoja.isValidDriver(_currentDriver)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Morate biti ulogovani i ovlašćeni da biste koristili Popis.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-    final vozac = _currentDriver!;
-
-    // ✅ ISPRAVKA: Pokreni loading indikator
-    if (mounted) setState(() => _isPopisLoading = true);
-
-    try {
-      // 1. OSNOVNI PODACI
-      final today = DateTime.now();
-      final dayStart = DateTime(today.year, today.month, today.day);
-      final dayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-
-      // 2. REALTIME STREAM ZA KOMBINOVANE PUTNIKE
-      // ✅ ISPRAVKA: Koristi postojeću _putnikService instancu
-      late List<Putnik> putnici;
-      try {
-        final isoDate = DateTime.now().toIso8601String().split('T')[0];
-        final stream = _putnikService.streamKombinovaniPutniciFiltered(
-          isoDate: isoDate,
-          grad: widget.filterGrad ?? _selectedGrad,
-          vreme: widget.filterVreme ?? _selectedVreme,
-        );
-        putnici = await stream.first.timeout(const Duration(seconds: 10));
-      } catch (e) {
-        putnici = []; // Prazan list kao fallback
-      }
-
-      // 3. REALTIME DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-      final detaljneStats = await StatistikaService.instance.detaljneStatistikePoVozacima(putnici, dayStart, dayEnd);
-      final vozacStats = detaljneStats[vozac] ?? {};
-
-      // 4. REALTIME PAZAR STREAM - PERSONALIZOVANO ZA ULOGOVANOG VOZAČA
-      late double ukupanPazar;
-      try {
-        ukupanPazar = await StatistikaService.streamPazarZaVozaca(
-          vozac: vozac,
-          from: dayStart,
-          to: dayEnd,
-        ).first.timeout(const Duration(seconds: 10));
-      } catch (e) {
-        ukupanPazar = 0.0; // Fallback vrednost
-      }
-
-      // 5. SITAN NOVAC
-      final sitanNovac = await DailyCheckInService.getTodayAmount(vozac) ?? 0.0;
-
-      // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
-      final dodatiPutnici = (vozacStats['dodati'] ?? 0) as int;
-      final otkazaniPutnici = (vozacStats['otkazani'] ?? 0) as int;
-      final naplaceniPutnici = (vozacStats['naplaceni'] ?? 0) as int;
-      final pokupljeniPutnici = (vozacStats['pokupljeni'] ?? 0) as int;
-      final dugoviPutnici = (vozacStats['dugovi'] ?? 0) as int;
-      final mesecneKarte = (vozacStats['mesecneKarte'] ?? 0) as int;
-
-      // 🚗 REALTIME GPS KILOMETRAŽA (umesto statične vrednosti)
-      late double kilometraza;
-      try {
-        kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
-      } catch (e) {
-        kilometraza = 0.0; // Fallback vrednost
-      }
-
-      // 7. PRIKAŽI POPIS DIALOG SA REALTIME PODACIMA
-      final bool sacuvaj = await _showPopisDialog(
-        vozac: vozac,
-        datum: today,
-        ukupanPazar: ukupanPazar,
-        sitanNovac: sitanNovac,
-        dodatiPutnici: dodatiPutnici,
-        otkazaniPutnici: otkazaniPutnici,
-        naplaceniPutnici: naplaceniPutnici,
-        pokupljeniPutnici: pokupljeniPutnici,
-        dugoviPutnici: dugoviPutnici,
-        mesecneKarte: mesecneKarte,
-        kilometraza: kilometraza,
-      );
-
-      // 8. SAČUVAJ POPIS AKO JE POTVRĐEN
-      if (sacuvaj) {
-        await _sacuvajPopis(vozac, today, {
-          'ukupanPazar': ukupanPazar,
-          'sitanNovac': sitanNovac,
-          'dodatiPutnici': dodatiPutnici,
-          'otkazaniPutnici': otkazaniPutnici,
-          'naplaceniPutnici': naplaceniPutnici,
-          'pokupljeniPutnici': pokupljeniPutnici,
-          'dugoviPutnici': dugoviPutnici,
-          'mesecneKarte': mesecneKarte,
-          'kilometraza': kilometraza,
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('❌ Greška pri učitavanju popisa: $e'), backgroundColor: Colors.red));
-      }
-    } finally {
-      // ✅ ISPRAVKA: Uvek ugasi loading indikator
-      if (mounted) setState(() => _isPopisLoading = false);
-    }
-  }
-
   bool _isLoading = false;
 
   Future<void> _loadPutnici() async {
@@ -1239,177 +1163,6 @@ class _DanasScreenState extends State<DanasScreen> {
     } finally {
       // 🔓 UNLOCK: Uvek oslobodi lock
       _isReoptimizing = false;
-    }
-  }
-
-  // 📊 DIALOG ZA PRIKAZ POPISA DANA - IDENTIČAN FORMAT SA STATISTIKA SCREEN
-  Future<bool> _showPopisDialog({
-    required String vozac,
-    required DateTime datum,
-    required double ukupanPazar,
-    required double sitanNovac,
-    required int dodatiPutnici,
-    required int otkazaniPutnici,
-    required int naplaceniPutnici,
-    required int pokupljeniPutnici,
-    required int dugoviPutnici,
-    required int mesecneKarte,
-    required double kilometraza,
-  }) async {
-    final vozacColor = VozacBoja.get(vozac);
-
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.person, color: vozacColor, size: 20),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                'POPIS - ${datum.day}.${datum.month}.${datum.year}',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Card(
-              margin: const EdgeInsets.all(0),
-              elevation: 4,
-              color: vozacColor.withValues(alpha: 0.25),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: vozacColor.withValues(alpha: 0.6), width: 2),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // HEADER SA VOZAČEM
-                    Row(
-                      children: [
-                        Icon(Icons.person, color: vozacColor, size: 24),
-                        const SizedBox(width: 8),
-                        Text(
-                          vozac,
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // DETALJNE STATISTIKE - IDENTIČNE SA STATISTIKA SCREEN
-                    _buildStatRow('Dodati putnici', dodatiPutnici, Icons.add_circle, Colors.blue),
-                    _buildStatRow('Otkazani', otkazaniPutnici, Icons.cancel, Colors.red),
-                    _buildStatRow('Naplaćeni', naplaceniPutnici, Icons.payment, Colors.green),
-                    _buildStatRow('Pokupljeni', pokupljeniPutnici, Icons.check_circle, Colors.orange),
-                    _buildStatRow('Dugovi', dugoviPutnici, Icons.warning, Colors.redAccent),
-                    _buildStatRow('Mesečne karte', mesecneKarte, Icons.card_membership, Colors.purple),
-                    _buildStatRow('Kilometraža', '${kilometraza.toStringAsFixed(1)} km', Icons.route, Colors.teal),
-
-                    Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.24)),
-
-                    // UKUPAN PAZAR - GLAVNI PODATAK
-                    _buildStatRow(
-                      'Ukupno pazar',
-                      '${ukupanPazar.toStringAsFixed(0)} RSD',
-                      Icons.monetization_on,
-                      Colors.amber,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // DODATNE INFORMACIJE
-                    if (sitanNovac > 0)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.account_balance_wallet, color: Colors.orange, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Sitan novac: ${sitanNovac.toStringAsFixed(0)} RSD',
-                              style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    const SizedBox(height: 12),
-
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: const Text(
-                        '📋 Ovaj popis će biti sačuvan i prikazan pri sledećem check-in-u.',
-                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Otkaži')),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.save),
-            label: const Text('Sačuvaj popis'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: vozacColor,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
-
-  //  SAČUVAJ POPIS U DAILY CHECK-IN SERVICE
-  Future<void> _sacuvajPopis(String vozac, DateTime datum, Map<String, dynamic> podaci) async {
-    try {
-      // Uklonjena striktna provera vozača
-      // Sačuvaj kompletan popis
-      await DailyCheckInService.saveDailyReport(vozac, datum, podaci);
-
-      // Takođe sačuvaj i sitan novac (za kompatibilnost)
-      await DailyCheckInService.saveCheckIn(vozac, podaci['sitanNovac'] as double);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Popis je uspešno sačuvan!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('❌ Greška pri čuvanju popisa: $e'), backgroundColor: Colors.red));
-      }
     }
   }
 
@@ -2063,7 +1816,7 @@ class _DanasScreenState extends State<DanasScreen> {
         child: Scaffold(
           backgroundColor: Colors.transparent, // Transparentna pozadina
           appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(56),
+            preferredSize: const Size.fromHeight(95),
             child: Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).glassContainer, // Transparentni glassmorphism
@@ -2078,28 +1831,8 @@ class _DanasScreenState extends State<DanasScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // DATUM TEKST - kao rezervacije
-                      Center(child: _buildDigitalDateDisplay()), // dodano Center widget
-                      const SizedBox(height: 4),
-                      // DUGMAD U APP BAR-U - dinamički broj dugmića
-                      Row(
-                        children: [
-                          // 🎓 ĐAČKI BROJAČ
-                          Expanded(child: _buildDjackiBrojacButton()),
-                          const SizedBox(width: 1),
-                          // 🚀 DUGME ZA OPTIMIZACIJU RUTE
-                          Expanded(child: _buildOptimizeButton()),
-                          const SizedBox(width: 1),
-                          // 📋 DUGME ZA POPIS DANA
-                          Expanded(child: _buildPopisButton()),
-                          const SizedBox(width: 1),
-                          // 🗺️ DUGME ZA NAVIGACIJU (OpenStreetMap / free)
-                          Expanded(child: _buildMapsButton()),
-                          const SizedBox(width: 1),
-                          // ⚡ SPEEDOMETER
-                          Expanded(child: _buildSpeedometerButton()),
-                        ],
-                      ),
+                      // APP BAR SADRŽAJ - 3 REDA
+                      _buildDigitalDateDisplay(),
                     ],
                   ),
                 ),
