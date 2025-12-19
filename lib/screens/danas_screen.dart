@@ -232,7 +232,7 @@ class _DanasScreenState extends State<DanasScreen> {
       children: [
         // 1. RED: DATUM - DAN - VREME
         SizedBox(
-          height: 22,
+          height: 20,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -245,10 +245,10 @@ class _DanasScreenState extends State<DanasScreen> {
                   child: Text(
                     '$dayStr.$monthStr.$yearStr',
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 1.8,
+                      letterSpacing: 1.5,
                       shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                     ),
                   ),
@@ -267,10 +267,10 @@ class _DanasScreenState extends State<DanasScreen> {
                         child: Text(
                           dayName,
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: isHealthy ? Colors.green.shade300 : Colors.red.shade300,
-                            letterSpacing: 1.8,
+                            letterSpacing: 1.5,
                             shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                           ),
                         ),
@@ -287,10 +287,10 @@ class _DanasScreenState extends State<DanasScreen> {
                   alignment: Alignment.centerRight,
                   child: ClockTicker(
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.onPrimary,
-                      letterSpacing: 1.8,
+                      letterSpacing: 1.5,
                       shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                     ),
                     showSeconds: true,
@@ -303,7 +303,7 @@ class _DanasScreenState extends State<DanasScreen> {
         const SizedBox(height: 2),
         // 2. RED: TEMP BC - RUTA - TEMP VS
         SizedBox(
-          height: 26,
+          height: 24,
           child: Row(
             children: [
               Expanded(child: Center(child: _buildWeatherCompact('BC'))),
@@ -317,7 +317,7 @@ class _DanasScreenState extends State<DanasScreen> {
         const SizedBox(height: 2),
         // 3. RED: ĐAČKI BROJAČ - NAV (samo kad je ruta optimizovana) - SPEEDOMETER
         SizedBox(
-          height: 26,
+          height: 24,
           child: Row(
             children: [
               Expanded(child: _buildDjackiBrojacButton()),
@@ -354,13 +354,13 @@ class _DanasScreenState extends State<DanasScreen> {
                         : Colors.orange)
             : Colors.grey;
 
-        // Widget za ikonu - slika ili emoji
+        // Widget za ikonu - slika ili emoji (usklađene veličine)
         Widget iconWidget;
         if (WeatherData.isAssetIcon(icon)) {
           iconWidget = Image.asset(
             WeatherData.getAssetPath(icon),
-            width: 18,
-            height: 18,
+            width: 32,
+            height: 32,
           );
         } else {
           iconWidget = Text(icon, style: const TextStyle(fontSize: 14));
@@ -374,7 +374,7 @@ class _DanasScreenState extends State<DanasScreen> {
             Text(
               '$grad $tempStr',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: tempColor,
                 shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
@@ -429,12 +429,12 @@ class _DanasScreenState extends State<DanasScreen> {
         if (snapshot.hasError) {
           // Heartbeat indikator će pokazati grešku - ne prikazujemo dodatne error widget-e
           return SizedBox(
-            height: 26,
+            height: 24,
             child: Center(
               child: Text(
                 'ERR',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
                   shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black54)],
@@ -452,7 +452,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final textColor = ostalo > 0 ? Colors.orange : Theme.of(context).colorScheme.onPrimary;
 
         return SizedBox(
-          height: 26,
+          height: 24,
           child: GestureDetector(
             onTap: () => _showDjackiDialog(statistike),
             child: Center(
@@ -484,7 +484,7 @@ class _DanasScreenState extends State<DanasScreen> {
         : (hasPassengers && isDriverValid ? Theme.of(context).colorScheme.onPrimary : Colors.grey.shade400);
 
     return SizedBox(
-      height: 26,
+      height: 24,
       child: GestureDetector(
         onTap: _isLoading || !hasPassengers || !isDriverValid
             ? null
@@ -530,7 +530,7 @@ class _DanasScreenState extends State<DanasScreen> {
         final textColor = speed > 0 ? Colors.white : Theme.of(context).colorScheme.onPrimary;
 
         return SizedBox(
-          height: 26,
+          height: 24,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: bgColor != Colors.transparent
@@ -543,7 +543,7 @@ class _DanasScreenState extends State<DanasScreen> {
               child: Text(
                 speed.toStringAsFixed(0),
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: textColor,
                   fontFamily: 'monospace',
@@ -562,7 +562,7 @@ class _DanasScreenState extends State<DanasScreen> {
     final hasOptimizedRoute = _isRouteOptimized && _optimizedRoute.isNotEmpty;
     final bool isDriverValid = _currentDriver != null && VozacBoja.isValidDriver(_currentDriver);
     return SizedBox(
-      height: 26,
+      height: 24,
       child: ElevatedButton(
         onPressed: hasOptimizedRoute && isDriverValid
             ? () => (_isGpsTracking ? _stopSmartNavigation() : _showNavigationOptionsDialog())
@@ -583,13 +583,13 @@ class _DanasScreenState extends State<DanasScreen> {
             children: [
               Icon(
                 _isGpsTracking ? Icons.stop : Icons.navigation,
-                size: 10,
+                size: 12,
                 color: Theme.of(context).colorScheme.onPrimary,
               ),
               const SizedBox(width: 2),
               Text(
                 _isGpsTracking ? 'STOP' : 'NAV',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ],
           ),

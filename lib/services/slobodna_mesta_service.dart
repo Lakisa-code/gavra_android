@@ -69,7 +69,8 @@ class SlobodnaMestaService {
       final jeVS = putnikGrad.contains('vrsac') || putnikGrad.contains('vršac') || putnikGrad == 'vs';
 
       if ((normalizedGrad == 'bc' && jeBC) || (normalizedGrad == 'vs' && jeVS)) {
-        count++;
+        // ✅ FIX: Broji broj mesta (brojMesta), ne samo broj putnika
+        count += p.brojMesta;
       }
     }
 
