@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'osrm_service.dart';
+import 'openrouteservice.dart';
 import 'permission_service.dart';
 
 /// Servis za slanje GPS lokacije vozača u realtime
@@ -141,7 +141,7 @@ class DriverLocationService {
     await _sendCurrentLocation();
   }
 
-  /// 🆕 REALTIME ETA: Osvežava ETA pozivom OSRM Route API
+  /// 🆕 REALTIME ETA: Osvežava ETA pozivom OpenRouteService API
   /// Poziva se svakih 2 minuta tokom vožnje
   Future<void> _refreshRealtimeEta() async {
     if (!_isTracking || _lastPosition == null) return;
@@ -150,15 +150,13 @@ class DriverLocationService {
     // Filtriraj samo aktivne putnike (ETA >= 0)
     final aktivniPutnici = _putniciRedosled!
         .where((ime) =>
-            _currentPutniciEta != null &&
-            _currentPutniciEta!.containsKey(ime) &&
-            _currentPutniciEta![ime]! >= 0)
+            _currentPutniciEta != null && _currentPutniciEta!.containsKey(ime) && _currentPutniciEta![ime]! >= 0)
         .toList();
 
     if (aktivniPutnici.isEmpty) return;
 
-    // Pozovi OSRM Route API
-    final result = await OsrmService.getRealtimeEta(
+    // Pozovi OpenRouteService Directions API
+    final result = await OpenRouteService.getRealtimeEta(
       currentPosition: _lastPosition!,
       putnikImena: aktivniPutnici,
       putnikCoordinates: _putniciCoordinates!,

@@ -16,84 +16,6 @@ import 'unified_geocoding_service.dart';
 class OsrmService {
   OsrmService._();
 
-  /// 🆕 REALTIME ETA: Koristi Route API za brzo osvežavanje ETA tokom vožnje
-  /// Route API ne optimizuje redosled - samo računa vreme za dati redosled tačaka
-  /// Poziva se periodično (svakih 2 min) dok vozač vozi
-  static Future<RealtimeEtaResult> getRealtimeEta({
-    required Position currentPosition,
-    required List<String> putnikImena,
-    required Map<String, Position> putnikCoordinates,
-  }) async {
-    if (putnikImena.isEmpty) {
-      return RealtimeEtaResult.failure('Nema putnika');
-    }
-
-    try {
-      // Pripremi koordinate: vozač -> putnici u redosledu
-      final coordsList = <String>[];
-      coordsList.add('${currentPosition.longitude},${currentPosition.latitude}');
-
-      final validPutnici = <String>[];
-      for (final ime in putnikImena) {
-        final pos = putnikCoordinates[ime];
-        if (pos != null) {
-          coordsList.add('${pos.longitude},${pos.latitude}');
-          validPutnici.add(ime);
-        }
-      }
-
-      if (validPutnici.isEmpty) {
-        return RealtimeEtaResult.failure('Nema putnika sa koordinatama');
-      }
-
-      final coordsString = coordsList.join(';');
-
-      // Pozovi OSRM Route API (ne Trip!)
-      final url = '${RouteConfig.osrmBaseUrl}/route/v1/driving/$coordsString'
-          '?overview=false'
-          '&annotations=duration';
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 8));
-
-      if (response.statusCode != 200) {
-        return RealtimeEtaResult.failure('OSRM error: ${response.statusCode}');
-      }
-
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      if (data['code'] != 'Ok') {
-        return RealtimeEtaResult.failure('OSRM error: ${data['code']}');
-      }
-
-      final routes = data['routes'] as List?;
-      if (routes == null || routes.isEmpty) {
-        return RealtimeEtaResult.failure('Nema rute');
-      }
-
-      final legs = routes[0]['legs'] as List?;
-      if (legs == null || legs.isEmpty) {
-        return RealtimeEtaResult.failure('Nema segmenata');
-      }
-
-      // Izračunaj kumulativni ETA za svakog putnika
-      final putniciEta = <String, int>{};
-      double cumulativeSec = 0;
-
-      for (int i = 0; i < legs.length && i < validPutnici.length; i++) {
-        final leg = legs[i] as Map<String, dynamic>;
-        final duration = (leg['duration'] as num?)?.toDouble() ?? 0;
-        cumulativeSec += duration;
-        putniciEta[validPutnici[i]] = (cumulativeSec / 60).round();
-      }
-
-      return RealtimeEtaResult.success(putniciEta);
-    } catch (e) {
-      return RealtimeEtaResult.failure('Greška: $e');
-    }
-  }
-
   /// 🎯 GLAVNA FUNKCIJA: Optimizuj rutu pomoću OSRM Trip API
   /// OSRM Trip API rešava TSP problem i vraća optimalnu rutu
   /// https://project-osrm.org/docs/v5.24.0/api/#trip-service
@@ -401,19 +323,4 @@ class OsrmResult {
   final double? totalDurationMin;
   final Map<Putnik, Position>? coordinates;
   final Map<String, int>? putniciEta;
-}
-
-/// 🆕 Rezultat realtime ETA poziva
-class RealtimeEtaResult {
-  final bool success;
-  final Map<String, int>? putniciEta;
-  final String? error;
-
-  RealtimeEtaResult.success(this.putniciEta)
-      : success = true,
-        error = null;
-
-  RealtimeEtaResult.failure(this.error)
-      : success = false,
-        putniciEta = null;
 }
