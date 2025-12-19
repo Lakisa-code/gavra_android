@@ -2064,7 +2064,7 @@ class _DanasScreenState extends State<DanasScreen> {
         child: Scaffold(
           backgroundColor: Colors.transparent, // Transparentna pozadina
           appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
+            preferredSize: const Size.fromHeight(56),
             child: Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).glassContainer, // Transparentni glassmorphism
