@@ -34,7 +34,6 @@ import '../widgets/bottom_nav_bar_letnji.dart'; // 🚀 DODANO za letnji nav bar
 import '../widgets/bottom_nav_bar_zimski.dart';
 import '../widgets/clock_ticker.dart';
 import '../widgets/putnik_list.dart';
-import '../widgets/weather_widget.dart'; // 🌤️ DODANO za vremensku prognozu
 import 'dugovi_screen.dart';
 import 'welcome_screen.dart';
 
@@ -284,11 +283,6 @@ class _DanasScreenState extends State<DanasScreen> {
                   ),
                 ),
               ),
-              // 🌤️ LEVI Weather Widget - BELA CRKVA (između datuma i dana)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: WeatherWidget(size: 24, location: WeatherLocation.belaCrkva),
-              ),
               // SREDINA - DAN (menja boju na osnovu stream health-a)
               Expanded(
                 flex: 2,
@@ -313,11 +307,6 @@ class _DanasScreenState extends State<DanasScreen> {
                     );
                   },
                 ),
-              ),
-              // 🌤️ DESNI Weather Widget - VRŠAC (između dana i vremena)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: WeatherWidget(size: 24, location: WeatherLocation.vrsac),
               ),
               // DESNO - VREME
               Expanded(
