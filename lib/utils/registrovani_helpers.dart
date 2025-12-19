@@ -49,6 +49,7 @@ class RegistrovaniHelpers {
     String dayKratica,
     String place,
   ) {
+    // 1. Prvo probaj iz polasci_po_danu JSON (bc_mesta / vs_mesta)
     final parsed = parsePolasciPoDanu(rawMap['polasci_po_danu']);
     final pday = parsed[dayKratica];
     if (pday != null) {
@@ -61,6 +62,13 @@ class RegistrovaniHelpers {
         }
       }
     }
+
+    // 2. Fallback: koristi globalnu kolonu broj_mesta ako postoji
+    final globalBrojMesta = rawMap['broj_mesta'];
+    if (globalBrojMesta != null) {
+      return (globalBrojMesta as num?)?.toInt() ?? 1;
+    }
+
     return 1; // Default 1 mesto
   }
 
