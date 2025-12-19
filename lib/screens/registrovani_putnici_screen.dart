@@ -10,7 +10,6 @@ import '../models/registrovani_putnik.dart';
 import '../services/adresa_supabase_service.dart';
 import '../services/geocoding_service.dart'; // 🌍 Za geocoding adresa
 import '../services/permission_service.dart'; // DODANO za konzistentnu telefon logiku
-import '../services/realtime_hub_service.dart';
 import '../services/registrovani_putnik_service.dart';
 import '../services/timer_manager.dart'; // 🔄 DODANO: TimerManager za memory leak prevention
 import '../services/vozac_mapping_service.dart';
@@ -758,11 +757,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
             const SizedBox(height: 16),
 
-            // 📋 LISTA PUTNIKA - Koristi centralni RealtimeHubService
+            // 📋 LISTA PUTNIKA - direktan Supabase realtime stream
             Expanded(
               child: StreamBuilder<List<RegistrovaniPutnik>>(
                 key: ValueKey(_streamRefreshKey), // 🔄 Forsira novi stream nakon čuvanja
-                stream: RealtimeHubService.instance.aktivniPutnikStream,
+                stream: RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return const Center(
@@ -2628,50 +2627,45 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
     String putnikId,
     String period,
   ) {
-    return RealtimeHubService.instance.voznjeLogChangeStream.asyncMap((_) async {
-      try {
-        // Posebni slučajevi
-        if (period == 'Cela 2025') {
-          return await _getGodisnjeStatistike(putnikId);
-        }
-        if (period == 'Ukupno') {
-          return await _getUkupneStatistike(putnikId);
-        }
+    // Jednostavan stream koji vraća podatke jednom
+    return Stream.fromFuture(_getStatistikeForPeriod(putnikId, period));
+  }
+  
+  Future<Map<String, dynamic>> _getStatistikeForPeriod(String putnikId, String period) async {
+    try {
+      // Posebni slučajevi
+      if (period == 'Cela 2025') {
+        return await _getGodisnjeStatistike(putnikId);
+      }
+      if (period == 'Ukupno') {
+        return await _getUkupneStatistike(putnikId);
+      }
 
-        // Parsiraj mesec u formatu "Septembar 2025"
-        final parts = period.split(' ');
-        if (parts.length == 2) {
-          final monthName = parts[0];
-          final year = int.tryParse(parts[1]);
+      // Parsiraj mesec u formatu "Septembar 2025"
+      final parts = period.split(' ');
+      if (parts.length == 2) {
+        final monthName = parts[0];
+        final year = int.tryParse(parts[1]);
 
-          if (year != null) {
-            final monthNumber = _getMonthNumber(monthName);
-            if (monthNumber > 0) {
-              return await _getStatistikeZaMesec(putnikId, monthNumber, year);
-            }
+        if (year != null) {
+          final monthNumber = _getMonthNumber(monthName);
+          if (monthNumber > 0) {
+            return await _getStatistikeZaMesec(putnikId, monthNumber, year);
           }
         }
-
-        // Fallback na trenutni mesec
-        return await _getMesecneStatistike(putnikId);
-      } catch (e) {
-        return {
-          'putovanja': 0,
-          'otkazivanja': 0,
-          'poslednje': 'Greška pri učitavanju',
-          'uspesnost': 0,
-          'error': true,
-        };
       }
-    }).handleError((Object error) {
+
+      // Fallback na trenutni mesec
+      return await _getMesecneStatistike(putnikId);
+    } catch (e) {
       return {
         'putovanja': 0,
         'otkazivanja': 0,
-        'poslednje': 'Stream greška',
+        'poslednje': 'Greška pri učitavanju',
         'uspesnost': 0,
         'error': true,
       };
-    });
+    }
   }
 
   // 📅 GODIŠNJE STATISTIKE (2025)

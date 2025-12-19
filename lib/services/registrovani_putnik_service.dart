@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
@@ -63,9 +65,58 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// Stream za mesečne putnike - koristi centralni RealtimeHubService
+  /// Stream za mesečne putnike - direktan Supabase realtime
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
-    return RealtimeHubService.instance.aktivniPutnikStream;
+    final supabase = Supabase.instance.client;
+    
+    // Kontroler za broadcast stream
+    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
+    
+    // Učitaj inicijalne podatke
+    supabase
+        .from('registrovani_putnici')
+        .select()
+        .eq('aktivan', true)
+        .eq('obrisan', false)
+        .order('putnik_ime')
+        .then((data) {
+      if (!controller.isClosed) {
+        final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+        controller.add(putnici);
+      }
+    });
+    
+    // Pretplati se na promene
+    final channel = supabase.channel('registrovani_putnici_simple');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'registrovani_putnici',
+          callback: (payload) {
+            // Na bilo koju promenu, ponovo učitaj sve
+            supabase
+                .from('registrovani_putnici')
+                .select()
+                .eq('aktivan', true)
+                .eq('obrisan', false)
+                .order('putnik_ime')
+                .then((data) {
+              if (!controller.isClosed) {
+                final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+                controller.add(putnici);
+              }
+            });
+          },
+        )
+        .subscribe();
+    
+    // Cleanup kad se stream zatvori
+    controller.onCancel = () {
+      channel.unsubscribe();
+    };
+    
+    return controller.stream;
   }
 
   /// Kreira novog mesečnog putnika

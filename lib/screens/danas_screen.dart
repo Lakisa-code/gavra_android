@@ -18,7 +18,6 @@ import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pick
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
-import '../services/realtime_hub_service.dart'; // 🚀 Centralni Realtime
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/smart_navigation_service.dart';
@@ -146,9 +145,9 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
-  // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ - koristi centralni RealtimeHubService
+  // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ - direktan Supabase stream
   Stream<Map<String, int>> _streamDjackieBrojevi() {
-    final registrovaniStream = RealtimeHubService.instance.aktivniPutnikStream;
+    final registrovaniStream = RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici();
 
     return registrovaniStream.asyncMap((sviRegistrovaniPutnici) async {
       try {
