@@ -758,11 +758,11 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
 
             const SizedBox(height: 16),
 
-            // 📋 LISTA PUTNIKA - Koristi ISTI stream kao danas_screen koji RADI
+            // 📋 LISTA PUTNIKA - Koristi centralni RealtimeHubService
             Expanded(
               child: StreamBuilder<List<RegistrovaniPutnik>>(
                 key: ValueKey(_streamRefreshKey), // 🔄 Forsira novi stream nakon čuvanja
-                stream: RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici(),
+                stream: RealtimeHubService.instance.aktivniPutnikStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                     return const Center(

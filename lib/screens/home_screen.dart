@@ -1305,9 +1305,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                         visualDensity: VisualDensity.compact,
                                       ),
-                                      const Text(
-                                        'Promeni adresu samo za danas',
-                                        style: TextStyle(fontSize: 14),
+                                      const Expanded(
+                                        child: Text(
+                                          'Promeni adresu samo za danas',
+                                          style: TextStyle(fontSize: 14),
+                                        ),
                                       ),
                                     ],
                                   ),

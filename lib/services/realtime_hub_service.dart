@@ -154,8 +154,23 @@ class RealtimeHubService {
   }
 
   Stream<List<RegistrovaniPutnik>> get putnikStream {
-    if (!_isInitialized) initialize();
-    return _putnikController.stream;
+    if (!_isInitialized) {
+      initialize();
+    }
+    // 🔧 FIX: Emituj keširane podatke odmah pa onda slušaj stream
+    return Stream.multi((controller) {
+      // Odmah emituj keširane podatke
+      if (_cachedPutnici.isNotEmpty) {
+        controller.add(_cachedPutnici);
+      }
+      // Slušaj buduće promene
+      final subscription = _putnikController.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = subscription.cancel;
+    });
   }
 
   Stream<PostgresChangePayload> get putnikChangeStream => _putnikChangeController.stream;

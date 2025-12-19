@@ -63,10 +63,9 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// Stream za mesečne putnike (aktivni + neaktivni, neaktivni na dnu)
-  /// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
+  /// Stream za mesečne putnike - koristi centralni RealtimeHubService
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
-    return RealtimeHubService.instance.putnikStream;
+    return RealtimeHubService.instance.aktivniPutnikStream;
   }
 
   /// Kreira novog mesečnog putnika
@@ -332,9 +331,9 @@ class RegistrovaniPutnikService {
   }
 
   /// Stream za realtime ažuriranja mesečnih putnika
-  /// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
+  /// Koristi direktan Supabase Realtime
   Stream<List<RegistrovaniPutnik>> get registrovaniPutniciStream {
-    return RealtimeHubService.instance.aktivniPutnikStream;
+    return streamAktivniRegistrovaniPutnici();
   }
 
   /// Izračunava broj putovanja iz voznje_log
@@ -394,9 +393,9 @@ class RegistrovaniPutnikService {
   }
 
   /// 🔍 Dobija vozača iz poslednjeg plaćanja za mesečnog putnika
-  /// 🚀 OPTIMIZOVANO: Koristi centralni RealtimeHubService (Postgres Changes)
+  /// Koristi centralni RealtimeHubService
   static Stream<String?> streamVozacPoslednjegPlacanja(String putnikId) {
-    return RealtimeHubService.instance.putnikStream.map((putnici) {
+    return RealtimeHubService.instance.aktivniPutnikStream.map((putnici) {
       try {
         final putnik = putnici.where((p) => p.id == putnikId).firstOrNull;
         if (putnik == null) return null;

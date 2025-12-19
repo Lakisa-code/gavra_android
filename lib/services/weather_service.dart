@@ -168,12 +168,10 @@ class WeatherService {
       // Open-Meteo API poziv - koristi ECMWF model
       final url = Uri.parse('$_baseUrl?latitude=$lat&longitude=$lon'
           '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m'
-          '&timezone=Europe/Belgrade'
-          '&models=ecmwf_ifs025' // ECMWF model - najtačniji za Evropu!
-          );
+          '&timezone=Europe/Belgrade');
 
       final response = await http.get(url).timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 5),
           );
 
       if (response.statusCode == 200) {
@@ -191,9 +189,13 @@ class WeatherService {
 
         return weather;
       } else {
+        // 🔧 FIX: Vrati keširane podatke ako API ne radi
+        if (cachedWeather != null) return cachedWeather;
         return {};
       }
     } catch (e) {
+      // 🔧 FIX: Vrati keširane podatke na greški
+      if (cachedWeather != null) return cachedWeather;
       return {};
     }
   }
@@ -236,6 +238,109 @@ class WeatherService {
       case 'cloudy':
       default:
         return 'assets/weather/cloudy.json';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 📅 HOURLY FORECAST - Prognoza po satima za ceo dan
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Cache za satnu prognozu
+  static Map<String, dynamic>? _cachedHourlyBC;
+  static Map<String, dynamic>? _cachedHourlyVS;
+  static DateTime? _hourlyTimeBC;
+  static DateTime? _hourlyTimeVS;
+  static const Duration _hourlyCacheDuration = Duration(minutes: 30);
+
+  /// Dohvata satnu prognozu za Belu Crkvu
+  static Future<List<Map<String, dynamic>>> getHourlyForecastBC() async {
+    return _getHourlyForecast(bcLat, bcLon, 'BC');
+  }
+
+  /// Dohvata satnu prognozu za Vršac
+  static Future<List<Map<String, dynamic>>> getHourlyForecastVS() async {
+    return _getHourlyForecast(vsLat, vsLon, 'VS');
+  }
+
+  /// Dohvata satnu prognozu - vraća listu sati za danas
+  static Future<List<Map<String, dynamic>>> _getHourlyForecast(
+    double lat,
+    double lon,
+    String locationKey,
+  ) async {
+    final cachedHourly = locationKey == 'BC' ? _cachedHourlyBC : _cachedHourlyVS;
+    final cacheTime = locationKey == 'BC' ? _hourlyTimeBC : _hourlyTimeVS;
+
+    try {
+      if (cachedHourly != null && cacheTime != null) {
+        final elapsed = DateTime.now().difference(cacheTime);
+        if (elapsed < _hourlyCacheDuration) {
+          return List<Map<String, dynamic>>.from(cachedHourly['hours'] ?? []);
+        }
+      }
+
+      // Open-Meteo API sa satnom prognozom
+      final url = Uri.parse('$_baseUrl?latitude=$lat&longitude=$lon'
+          '&hourly=temperature_2m,weather_code,precipitation_probability'
+          '&timezone=Europe/Belgrade'
+          '&forecast_days=1'
+          '&models=ecmwf_ifs025');
+
+      final response = await http.get(url).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final hours = _parseHourlyData(data);
+
+        // Cache
+        if (locationKey == 'BC') {
+          _cachedHourlyBC = {'hours': hours};
+          _hourlyTimeBC = DateTime.now();
+        } else {
+          _cachedHourlyVS = {'hours': hours};
+          _hourlyTimeVS = DateTime.now();
+        }
+
+        return hours;
+      } else {
+        if (cachedHourly != null) return List<Map<String, dynamic>>.from(cachedHourly['hours'] ?? []);
+        return [];
+      }
+    } catch (e) {
+      if (cachedHourly != null) return List<Map<String, dynamic>>.from(cachedHourly['hours'] ?? []);
+      return [];
+    }
+  }
+
+  /// Parsira satne podatke
+  static List<Map<String, dynamic>> _parseHourlyData(Map<String, dynamic> data) {
+    try {
+      final hourly = data['hourly'] ?? {};
+      final times = List<String>.from(hourly['time'] ?? []);
+      final temps = List<num>.from(hourly['temperature_2m'] ?? []);
+      final codes = List<int>.from(hourly['weather_code'] ?? []);
+      final precip = List<num>.from(hourly['precipitation_probability'] ?? []);
+
+      final now = DateTime.now();
+      final List<Map<String, dynamic>> result = [];
+
+      for (int i = 0; i < times.length; i++) {
+        final time = DateTime.parse(times[i]);
+        // Samo budući sati i prošli sat (za kontekst)
+        if (time.hour >= now.hour - 1) {
+          result.add({
+            'hour': time.hour,
+            'temp': temps[i].round(),
+            'condition': _wmoCodeToCondition(codes[i]),
+            'description': _wmoCodeToDescription(codes[i]),
+            'precipProb': precip[i].round(),
+          });
+        }
+      }
+
+      return result;
+    } catch (e) {
+      return [];
     }
   }
 

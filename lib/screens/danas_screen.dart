@@ -18,6 +18,7 @@ import '../services/pickup_tracking_service.dart'; // 🛰️ DODANO za GPS pick
 import '../services/putnik_push_service.dart'; // 📱 DODANO za push notifikacije putnicima
 import '../services/putnik_service.dart'; // ⏪ VRAĆEN na stari servis zbog grešaka u novom
 import '../services/realtime_gps_service.dart'; // 🛰️ DODANO za GPS tracking
+import '../services/realtime_hub_service.dart'; // 🚀 Centralni Realtime
 import '../services/realtime_notification_service.dart';
 import '../services/registrovani_putnik_service.dart'; // 🎓 DODANO za đačke statistike
 import '../services/smart_navigation_service.dart';
@@ -146,9 +147,9 @@ class _DanasScreenState extends State<DanasScreen> {
   }
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
-  // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ
+  // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ - koristi centralni RealtimeHubService
   Stream<Map<String, int>> _streamDjackieBrojevi() {
-    final registrovaniStream = RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici();
+    final registrovaniStream = RealtimeHubService.instance.aktivniPutnikStream;
 
     return registrovaniStream.asyncMap((sviRegistrovaniPutnici) async {
       try {
@@ -248,101 +249,98 @@ class _DanasScreenState extends State<DanasScreen> {
     });
   }
 
-  // ✨ DIGITALNI BROJAČ DATUM WIDGET - OPTIMIZOVANO (30s umesto 1s)
+  // ✨ DIGITALNI BROJAČ DATUM WIDGET - BEZ STREAMBUILDER-a
   Widget _buildDigitalDateDisplay() {
-    return StreamBuilder<DateTime>(
-      stream: Stream.periodic(const Duration(seconds: 30), (_) => DateTime.now()), // 🚀 PERFORMANCE: 30s umesto 1s
-      initialData: DateTime.now(),
-      builder: (context, snapshot) {
-        final now = snapshot.data ?? DateTime.now();
-        final dayNames = ['PONEDELJAK', 'UTORAK', 'SREDA', 'ČETVRTAK', 'PETAK', 'SUBOTA', 'NEDELJA'];
-        final dayName = dayNames[now.weekday - 1];
-        final dayStr = now.day.toString().padLeft(2, '0');
-        final monthStr = now.month.toString().padLeft(2, '0');
-        final yearStr = now.year.toString().substring(2);
+    final now = DateTime.now();
+    final dayNames = ['PONEDELJAK', 'UTORAK', 'SREDA', 'ČETVRTAK', 'PETAK', 'SUBOTA', 'NEDELJA'];
+    final dayName = dayNames[now.weekday - 1];
+    final dayStr = now.day.toString().padLeft(2, '0');
+    final monthStr = now.month.toString().padLeft(2, '0');
+    final yearStr = now.year.toString().substring(2);
 
-        // hour/minute/second are handled by ClockTicker (optimized) -
-        // don't compute them here to avoid redundant rebuilds.
-
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              height: 24,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // LEVO - DATUM
-                  Expanded(
-                    flex: 2,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        '$dayStr.$monthStr.$yearStr',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          letterSpacing: 1.8,
-                          shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
-                        ),
-                      ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          height: 24,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // LEVO - DATUM
+              Expanded(
+                flex: 2,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '$dayStr.$monthStr.$yearStr',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      letterSpacing: 1.8,
+                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
                     ),
                   ),
-                  // 🌤️ LEVI Weather Widget - BELA CRKVA (između datuma i dana)
-                  const WeatherWidget(size: 24, location: WeatherLocation.belaCrkva),
-                  // SREDINA - DAN (menja boju na osnovu stream health-a)
-                  Expanded(
-                    flex: 2,
-                    child: ValueListenableBuilder<bool>(
-                      valueListenable: _isRealtimeHealthy,
-                      builder: (context, isHealthy, child) {
-                        return GestureDetector(
-                          onTap: () => _showHealthDialog(),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              dayName,
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: isHealthy ? Colors.green.shade300 : Colors.red.shade300,
-                                letterSpacing: 1.8,
-                                shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // 🌤️ DESNI Weather Widget - VRŠAC (između dana i vremena)
-                  const WeatherWidget(size: 24, location: WeatherLocation.vrsac),
-                  // DESNO - VREME
-                  Expanded(
-                    flex: 2,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: ClockTicker(
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          letterSpacing: 1.8,
-                          shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
-                        ),
-                        showSeconds: true,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
+              // 🌤️ LEVI Weather Widget - BELA CRKVA (između datuma i dana)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: WeatherWidget(size: 24, location: WeatherLocation.belaCrkva),
+              ),
+              // SREDINA - DAN (menja boju na osnovu stream health-a)
+              Expanded(
+                flex: 2,
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: _isRealtimeHealthy,
+                  builder: (context, isHealthy, child) {
+                    return GestureDetector(
+                      onTap: () => _showHealthDialog(),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          dayName,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: isHealthy ? Colors.green.shade300 : Colors.red.shade300,
+                            letterSpacing: 1.8,
+                            shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // 🌤️ DESNI Weather Widget - VRŠAC (između dana i vremena)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: WeatherWidget(size: 24, location: WeatherLocation.vrsac),
+              ),
+              // DESNO - VREME
+              Expanded(
+                flex: 2,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: ClockTicker(
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      letterSpacing: 1.8,
+                      shadows: const [Shadow(offset: Offset(1, 1), blurRadius: 3, color: Colors.black54)],
+                    ),
+                    showSeconds: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -2319,7 +2317,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                 children: [
                                   Expanded(
                                     child: Container(
-                                      height: 69,
+                                      height: 45,
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.green.withValues(alpha: 0.2),
@@ -2358,7 +2356,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Container(
-                                      height: 69,
+                                      height: 45,
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.purple.withValues(alpha: 0.2),
@@ -2405,7 +2403,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Container(
-                                      height: 69,
+                                      height: 45,
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.red.withValues(alpha: 0.2),
@@ -2455,7 +2453,7 @@ class _DanasScreenState extends State<DanasScreen> {
                                   // 🌅 NOVA KOCKA ZA SITAN NOVAC
                                   Expanded(
                                     child: Container(
-                                      height: 69,
+                                      height: 45,
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.withValues(alpha: 0.2),
