@@ -151,23 +151,7 @@ class DailyCheckInService {
     final prefs = await SharedPreferences.getInstance();
     final alreadyChecked = prefs.getBool(todayKey) ?? false;
 
-    if (alreadyChecked) {
-      // Već je uneo kusur danas - samo ažuriraj lokalnu vrednost
-      await prefs.setDouble('${todayKey}_amount', sitanNovac);
-      if (!_sitanNovacController.isClosed) {
-        _sitanNovacController.add(sitanNovac);
-      }
-      return;
-    }
-
-    // 🌅 PRVI PUT DANAS - sačuvaj kusur koji vozač ima za smenu
-    // ❌ DEPRECATED: Use MasterRealtimeStream instead
-    // try {
-    //   await DnevniKusurService.unesiJutarnjiKusur(vozac, sitanNovac);
-    // } catch (e) {
-    //   // Nastavi sa lokalnim čuvanjem čak i ako baza ne radi
-    // }
-    // 📥 LOKALNO ČUVANJE - prioritet jer je brže i pouzdanije
+    // 📥 LOKALNO ČUVANJE - UVEK (i prvi put i ako je već čekiran)
     try {
       await prefs.setBool(todayKey, true);
       await prefs.setDouble('${todayKey}_amount', sitanNovac);
@@ -183,13 +167,21 @@ class DailyCheckInService {
       rethrow;
     }
 
-    // 🌐 REMOTE ČUVANJE
+    // 🛑 Ako je već čekiran danas, ne čuvaj ponovo u bazu (samo lokalno)
+    if (alreadyChecked) {
+      return;
+    }
+
+    // 🌐 REMOTE ČUVANJE - samo prvi put danas
     try {
       await _saveToSupabase(vozac, sitanNovac, today, dnevniPazari: dnevniPazari).timeout(const Duration(seconds: 5));
       // Ažuriraj kusur u vozaci tabeli
       await Supabase.instance.client.from('vozaci').update({'kusur': sitanNovac}).eq('ime', vozac);
     } catch (e) {
       // Ako remote save ne uspe, ali lokalna je OK, nastavi dalje
+      // 🔧 DEBUG: Log the error
+      // ignore: avoid_print
+      print('❌ DailyCheckInService: Greška pri čuvanju u Supabase: $e');
     }
   }
 
@@ -230,17 +222,21 @@ class DailyCheckInService {
     final supabase = Supabase.instance.client;
     try {
       // Prvo pokušaj da sačuvaš u tabelu
+      // 🔧 FIX: Dodaj onConflict za upsert da radi ispravno sa UNIQUE(vozac, datum)
       final response = await supabase
           .from('daily_checkins')
-          .upsert({
-            'vozac': vozac,
-            'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
-            'sitan_novac': sitanNovac,
-            'dnevni_pazari': dnevniPazari,
-            'ukupno': sitanNovac + dnevniPazari,
-            'checkin_vreme': DateTime.now().toIso8601String(),
-            'created_at': datum.toIso8601String(),
-          })
+          .upsert(
+            {
+              'vozac': vozac,
+              'datum': datum.toIso8601String().split('T')[0], // YYYY-MM-DD format
+              'sitan_novac': sitanNovac,
+              'dnevni_pazari': dnevniPazari,
+              'ukupno': sitanNovac + dnevniPazari,
+              'checkin_vreme': DateTime.now().toIso8601String(),
+              'created_at': datum.toIso8601String(),
+            },
+            onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
+          )
           .select()
           .maybeSingle();
 
@@ -254,15 +250,18 @@ class DailyCheckInService {
         // Ponovi pokušaj čuvanja nakon kreiranja tabele
         final response = await supabase
             .from('daily_checkins')
-            .upsert({
-              'vozac': vozac,
-              'datum': datum.toIso8601String().split('T')[0],
-              'sitan_novac': sitanNovac,
-              'dnevni_pazari': dnevniPazari,
-              'ukupno': sitanNovac + dnevniPazari,
-              'checkin_vreme': DateTime.now().toIso8601String(),
-              'created_at': datum.toIso8601String(),
-            })
+            .upsert(
+              {
+                'vozac': vozac,
+                'datum': datum.toIso8601String().split('T')[0],
+                'sitan_novac': sitanNovac,
+                'dnevni_pazari': dnevniPazari,
+                'ukupno': sitanNovac + dnevniPazari,
+                'checkin_vreme': DateTime.now().toIso8601String(),
+                'created_at': datum.toIso8601String(),
+              },
+              onConflict: 'vozac,datum', // 🎯 Ključno za upsert!
+            )
             .select()
             .maybeSingle();
 
