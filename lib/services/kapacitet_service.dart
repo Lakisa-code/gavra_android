@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
@@ -119,22 +120,39 @@ class KapacitetService {
     });
 
     // Direktan Supabase realtime
-    final channel = _supabase.channel('kapacitet_polazaka_stream');
+    const channelName = 'kapacitet_polazaka_stream';
+    final channel = _supabase.channel(channelName);
     channel
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'kapacitet_polazaka',
-          callback: (payload) {
-            // Na bilo koju promenu, ponovo učitaj sve
-            getKapacitet().then((data) {
-              if (!controller.isClosed) {
-                controller.add(data);
-              }
-            });
-          },
-        )
-        .subscribe();
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'kapacitet_polazaka',
+      callback: (payload) {
+        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
+        // Na bilo koju promenu, ponovo učitaj sve
+        getKapacitet().then((data) {
+          if (!controller.isClosed) {
+            controller.add(data);
+          }
+        });
+      },
+    )
+        .subscribe((status, [error]) {
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          debugPrint('✅ [$channelName] Subscribed successfully');
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          debugPrint('❌ [$channelName] Channel error: $error');
+          break;
+        case RealtimeSubscribeStatus.closed:
+          debugPrint('🔴 [$channelName] Channel closed');
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          debugPrint('⏰ [$channelName] Subscription timed out');
+          break;
+      }
+    });
 
     // Cleanup kad se stream zatvori
     controller.onCancel = () {

@@ -105,17 +105,34 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
 
     // Direktan Supabase realtime - sluša sve aktivne vozače
     final supabase = Supabase.instance.client;
-    _channel = supabase.channel('gps_eta_${widget.putnikIme}');
+    final channelName = 'gps_eta_${widget.putnikIme}';
+    _channel = supabase.channel(channelName);
     _channel!
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'vozac_lokacije',
-          callback: (payload) {
-            _loadGpsData();
-          },
-        )
-        .subscribe();
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'vozac_lokacije',
+      callback: (payload) {
+        debugPrint('🔄 [$channelName] GPS change: ${payload.eventType}');
+        _loadGpsData();
+      },
+    )
+        .subscribe((status, [error]) {
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          debugPrint('✅ [$channelName] Subscribed successfully');
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          debugPrint('❌ [$channelName] Channel error: $error');
+          break;
+        case RealtimeSubscribeStatus.closed:
+          debugPrint('🔴 [$channelName] Channel closed');
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          debugPrint('⏰ [$channelName] Subscription timed out');
+          break;
+      }
+    });
   }
 
   @override

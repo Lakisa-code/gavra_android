@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
@@ -86,29 +87,46 @@ class RegistrovaniPutnikService {
     });
 
     // Pretplati se na promene
-    final channel = supabase.channel('registrovani_putnici_simple');
+    const channelName = 'registrovani_putnici_simple';
+    final channel = supabase.channel(channelName);
     channel
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'registrovani_putnici',
-          callback: (payload) {
-            // Na bilo koju promenu, ponovo učitaj sve
-            supabase
-                .from('registrovani_putnici')
-                .select()
-                .eq('aktivan', true)
-                .eq('obrisan', false)
-                .order('putnik_ime')
-                .then((data) {
-              if (!controller.isClosed) {
-                final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
-                controller.add(putnici);
-              }
-            });
-          },
-        )
-        .subscribe();
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'registrovani_putnici',
+      callback: (payload) {
+        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
+        // Na bilo koju promenu, ponovo učitaj sve
+        supabase
+            .from('registrovani_putnici')
+            .select()
+            .eq('aktivan', true)
+            .eq('obrisan', false)
+            .order('putnik_ime')
+            .then((data) {
+          if (!controller.isClosed) {
+            final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+            controller.add(putnici);
+          }
+        });
+      },
+    )
+        .subscribe((status, [error]) {
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          debugPrint('✅ [$channelName] Subscribed successfully');
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          debugPrint('❌ [$channelName] Channel error: $error');
+          break;
+        case RealtimeSubscribeStatus.closed:
+          debugPrint('🔴 [$channelName] Channel closed');
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          debugPrint('⏰ [$channelName] Subscription timed out');
+          break;
+      }
+    });
 
     // Cleanup kad se stream zatvori
     controller.onCancel = () {

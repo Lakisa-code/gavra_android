@@ -100,6 +100,25 @@ class Putnik {
     // 🆕 Tip putnika iz baze
     final tipPutnika = map['tip'] as String?;
 
+    // ✅ FIX: Proveri da li je otkazivanje bilo DANAS - ako nije, vrati status na 'radi'
+    final statusIzBaze = map['status'] as String? ?? 'radi';
+    final vremeOtkazivanja =
+        map['vreme_otkazivanja'] != null ? DateTime.parse(map['vreme_otkazivanja'] as String).toLocal() : null;
+    final danas = DateTime.now();
+    String status = statusIzBaze;
+    if (statusIzBaze == 'otkazan' || statusIzBaze == 'otkazano') {
+      if (vremeOtkazivanja == null) {
+        status = 'radi';
+      } else {
+        final otkazanDanas = vremeOtkazivanja.year == danas.year &&
+            vremeOtkazivanja.month == danas.month &&
+            vremeOtkazivanja.day == danas.day;
+        if (!otkazanDanas) {
+          status = 'radi';
+        }
+      }
+    }
+
     return Putnik(
       id: map['id'], // ✅ UUID iz registrovani_putnici
       ime: map['putnik_ime'] as String? ?? '',
@@ -108,7 +127,7 @@ class Putnik {
       vremeDodavanja: map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null,
       mesecnaKarta: tipPutnika != 'dnevni', // 🆕 FIX: false za dnevni tip
       dan: map['radni_dani'] as String? ?? 'Pon',
-      status: map['status'] as String? ?? 'radi', // ✅ JEDNOSTAVNO
+      status: status, // ✅ Koristi provereni status
       statusVreme: map['updated_at'] as String?,
       vremePokupljenja: map['vreme_pokupljenja'] != null
           ? DateTime.parse(map['vreme_pokupljenja'] as String).toLocal()
@@ -137,8 +156,7 @@ class Putnik {
       brojMesta: (map['broj_mesta'] as int?) ?? 1, // 🆕 Broj rezervisanih mesta
       tipPutnika: tipPutnika, // 🆕 Tip putnika: radnik, ucenik, dnevni
       // ✅ DODATO: Parsiranje vremena otkazivanja i vozača
-      vremeOtkazivanja:
-          map['vreme_otkazivanja'] != null ? DateTime.parse(map['vreme_otkazivanja'] as String).toLocal() : null,
+      vremeOtkazivanja: vremeOtkazivanja,
       otkazaoVozac: map['otkazao_vozac'] as String?,
     );
   }
@@ -227,11 +245,31 @@ class Putnik {
   static List<Putnik> _parseAndCreatePutniciForDay(Map<String, dynamic> map, String targetDan) {
     final ime = map['putnik_ime'] as String? ?? map['ime'] as String? ?? '';
     final danString = map['radni_dani'] as String? ?? 'pon';
-    final status = map['status'] as String? ?? 'radi';
+    final statusIzBaze = map['status'] as String? ?? 'radi';
     final vremeDodavanja = map['created_at'] != null ? DateTime.parse(map['created_at'] as String) : null;
     final vremePokupljenja =
         map['vreme_pokupljenja'] != null ? DateTime.parse(map['vreme_pokupljenja'] as String) : null;
     final vremePlacanja = map['vreme_placanja'] != null ? DateTime.parse(map['vreme_placanja'] as String) : null;
+
+    // ✅ FIX: Proveri da li je otkazivanje bilo DANAS - ako nije, vrati status na 'radi'
+    final vremeOtkazivanja =
+        map['vreme_otkazivanja'] != null ? DateTime.parse(map['vreme_otkazivanja'] as String).toLocal() : null;
+    final danas = DateTime.now();
+    String status = statusIzBaze;
+    if (statusIzBaze == 'otkazan' || statusIzBaze == 'otkazano') {
+      if (vremeOtkazivanja == null) {
+        // Nema vreme otkazivanja - smatraj kao aktivnog
+        status = 'radi';
+      } else {
+        final otkazanDanas = vremeOtkazivanja.year == danas.year &&
+            vremeOtkazivanja.month == danas.month &&
+            vremeOtkazivanja.day == danas.day;
+        if (!otkazanDanas) {
+          // Otkazan ranije, ne danas - vrati na 'radi'
+          status = 'radi';
+        }
+      }
+    }
     final double iznosPlacanja = _parseDouble(map['cena']);
     final bool placeno = iznosPlacanja > 0;
     final vozac = (map['vozac'] as String?) ?? _getVozacIme(map['vozac_id'] as String?);

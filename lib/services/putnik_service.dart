@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/action_log.dart';
@@ -70,10 +71,17 @@ class PutnikService {
     // Proveri da li stream vec postoji i nije zatvoren
     if (_streams.containsKey(key) && !_streams[key]!.isClosed) {
       final controller = _streams[key]!;
-      // Ako imamo cached vrednost, emituj je odmah
+      // ✅ FIX: Ako imamo cache, emituj odmah za nove listenere
+      // Zatim uradi background fetch za svežije podatke
       if (_lastValues.containsKey(key)) {
-        Future.microtask(() => controller.add(_lastValues[key]!));
+        Future.microtask(() {
+          if (!controller.isClosed) {
+            controller.add(_lastValues[key]!);
+          }
+        });
       }
+      // Background refresh - osigurava da svi dobiju najnovije podatke
+      _doFetchForStream(key, isoDate, grad, vreme, controller);
       return controller.stream;
     }
 
@@ -84,21 +92,40 @@ class PutnikService {
     _doFetchForStream(key, isoDate, grad, vreme, controller);
 
     // Direktan Supabase realtime umesto RealtimeHubService
-    final channel = supabase.channel('putnici_$key');
+    // Sanitize channel name - ukloni specijalne karaktere
+    final channelName = 'putnici_${key.replaceAll(RegExp(r'[|: ]'), '_').toLowerCase()}';
+    final channel = supabase.channel(channelName);
     channel
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'registrovani_putnici',
-          callback: (payload) {
-            _doFetchForStream(key, isoDate, grad, vreme, controller);
-          },
-        )
-        .subscribe();
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'registrovani_putnici',
+      callback: (payload) {
+        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
+        _doFetchForStream(key, isoDate, grad, vreme, controller);
+      },
+    )
+        .subscribe((status, [error]) {
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          debugPrint('✅ [$channelName] Subscribed successfully');
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          debugPrint('❌ [$channelName] Channel error: $error');
+          break;
+        case RealtimeSubscribeStatus.closed:
+          debugPrint('🔴 [$channelName] Channel closed');
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          debugPrint('⏰ [$channelName] Subscription timed out');
+          break;
+      }
+    });
 
     // Cleanup kada se controller zatvori
     controller.onCancel = () async {
-      channel.unsubscribe();
+      debugPrint('🧹 [$channelName] Unsubscribing and cleaning up');
+      await channel.unsubscribe();
       _streams.remove(key);
       _lastValues.remove(key);
     };

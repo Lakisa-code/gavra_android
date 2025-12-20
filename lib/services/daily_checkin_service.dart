@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -35,34 +36,51 @@ class DailyCheckInService {
     });
 
     // Direktan Supabase realtime
-    final channel = supabase.channel('kusur_$vozac');
+    final channelName = 'kusur_$vozac';
+    final channel = supabase.channel(channelName);
     channel
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'daily_checkins',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'vozac',
-            value: vozac,
-          ),
-          callback: (payload) {
-            // Na promenu, ponovo učitaj
-            supabase
-                .from('daily_checkins')
-                .select('sitan_novac')
-                .eq('vozac', vozac)
-                .eq('datum', today)
-                .maybeSingle()
-                .then((data) {
-              if (!controller.isClosed) {
-                final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
-                controller.add(amount);
-              }
-            });
-          },
-        )
-        .subscribe();
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'daily_checkins',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'vozac',
+        value: vozac,
+      ),
+      callback: (payload) {
+        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
+        // Na promenu, ponovo učitaj
+        supabase
+            .from('daily_checkins')
+            .select('sitan_novac')
+            .eq('vozac', vozac)
+            .eq('datum', today)
+            .maybeSingle()
+            .then((data) {
+          if (!controller.isClosed) {
+            final amount = (data?['sitan_novac'] as num?)?.toDouble() ?? 0.0;
+            controller.add(amount);
+          }
+        });
+      },
+    )
+        .subscribe((status, [error]) {
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          debugPrint('✅ [$channelName] Subscribed successfully');
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          debugPrint('❌ [$channelName] Channel error: $error');
+          break;
+        case RealtimeSubscribeStatus.closed:
+          debugPrint('🔴 [$channelName] Channel closed');
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          debugPrint('⏰ [$channelName] Subscription timed out');
+          break;
+      }
+    });
 
     // Cleanup
     controller.onCancel = () {

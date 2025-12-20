@@ -45,17 +45,34 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     _gpsChannel?.unsubscribe();
 
     final supabase = Supabase.instance.client;
-    _gpsChannel = supabase.channel('admin_gps_stream');
+    const channelName = 'admin_gps_stream';
+    _gpsChannel = supabase.channel(channelName);
     _gpsChannel!
         .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'driver_locations',
-          callback: (payload) {
-            _loadGpsLokacije();
-          },
-        )
-        .subscribe();
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'driver_locations',
+      callback: (payload) {
+        debugPrint('🔄 [$channelName] GPS change: ${payload.eventType}');
+        _loadGpsLokacije();
+      },
+    )
+        .subscribe((status, [error]) {
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          debugPrint('✅ [$channelName] Subscribed successfully');
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          debugPrint('❌ [$channelName] Channel error: $error');
+          break;
+        case RealtimeSubscribeStatus.closed:
+          debugPrint('🔴 [$channelName] Channel closed');
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          debugPrint('⏰ [$channelName] Subscription timed out');
+          break;
+      }
+    });
   }
 
   @override
