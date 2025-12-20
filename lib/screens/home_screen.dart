@@ -1492,8 +1492,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       setStateDialog(() {
                                         samoDanasAdresaId = value;
                                         // Nađi naziv po ID-u
-                                        samoDanasAdresa = dostupneAdrese
-                                            .firstWhere((a) => a['id'] == value, orElse: () => {})['naziv'];
+                                        samoDanasAdresa = dostupneAdrese.firstWhere((a) => a['id'] == value,
+                                            orElse: () => {})['naziv'];
                                       });
                                     },
                                     hint: const Text('Izaberi adresu'),
