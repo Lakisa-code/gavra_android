@@ -91,7 +91,7 @@ class _AdminScreenState extends State<AdminScreen> {
       // Initialize realtime service
       try {
         // Pokreni refresh da osiguramo podatke
-        _putnikService.getAllPutniciFromBothTables().then((data) {
+        _putnikService.getAllPutnici().then((data) {
           // Successfully retrieved passenger data
         }).catchError((Object e) {
           // Error handling - logging removed for production
@@ -831,7 +831,7 @@ class _AdminScreenState extends State<AdminScreen> {
           ),
         ),
         body: FutureBuilder<List<Putnik>>(
-          future: _putnikService.getAllPutniciFromBothTables().timeout(
+          future: _putnikService.getAllPutnici().timeout(
             const Duration(seconds: 8),
             onTimeout: () {
               // Timeout handling - logging removed for production

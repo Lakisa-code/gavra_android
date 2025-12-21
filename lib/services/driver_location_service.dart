@@ -16,14 +16,13 @@ class DriverLocationService {
 
   static DriverLocationService get instance => _instance;
 
-  // Konfiguracija
   static const Duration _updateInterval = Duration(seconds: 15);
-  static const Duration _etaUpdateInterval = Duration(minutes: 1); // Realtime ETA osvežavanje
-  static const double _minDistanceMeters = 50; // Minimalna udaljenost za update
+  static const Duration _etaUpdateInterval = Duration(minutes: 1);
+  static const double _minDistanceMeters = 50;
 
   // State
   Timer? _locationTimer;
-  Timer? _etaTimer; // 🆕 Timer za realtime ETA
+  Timer? _etaTimer;
   StreamSubscription<Position>? _positionSubscription;
   Position? _lastPosition;
   bool _isTracking = false;
@@ -31,9 +30,9 @@ class DriverLocationService {
   String? _currentVozacIme;
   String? _currentGrad;
   String? _currentVremePolaska;
-  String? _currentSmer; // BC_VS ili VS_BC
-  Map<String, int>? _currentPutniciEta; // ETA za svakog putnika (iz OSRM)
-  Map<String, Position>? _putniciCoordinates; // 🆕 Koordinate putnika za realtime ETA
+  String? _currentSmer;
+  Map<String, int>? _currentPutniciEta;
+  Map<String, Position>? _putniciCoordinates;
   List<String>? _putniciRedosled; // 🆕 Redosled putnika (optimizovan)
   VoidCallback? _onAllPassengersPickedUp; // Callback za auto-stop
 
@@ -43,19 +42,15 @@ class DriverLocationService {
   int get remainingPassengers => _currentPutniciEta?.length ?? 0;
 
   /// Pokreni praćenje lokacije za vozača
-  /// [putniciEta] - Mapa ime_putnika -> ETA u minutama (iz OSRM)
-  /// [putniciCoordinates] - Koordinate putnika za realtime ETA osvežavanje
-  /// [putniciRedosled] - Optimizovan redosled putnika
-  /// [onAllPassengersPickedUp] - Callback kada su svi putnici pokupljeni (auto-stop)
   Future<bool> startTracking({
     required String vozacId,
     required String vozacIme,
     required String grad,
     String? vremePolaska,
-    String? smer, // BC_VS ili VS_BC
+    String? smer,
     Map<String, int>? putniciEta,
-    Map<String, Position>? putniciCoordinates, // 🆕 Za realtime ETA
-    List<String>? putniciRedosled, // 🆕 Optimizovan redosled
+    Map<String, Position>? putniciCoordinates,
+    List<String>? putniciRedosled,
     VoidCallback? onAllPassengersPickedUp,
   }) async {
     // 🔄 REALTIME FIX: Ako je tracking već aktivan, samo ažuriraj ETA
@@ -68,7 +63,6 @@ class DriverLocationService {
       return true;
     }
 
-    // Proveri dozvole za lokaciju
     final hasPermission = await _checkLocationPermission();
     if (!hasPermission) {
       return false;
@@ -85,19 +79,13 @@ class DriverLocationService {
     _onAllPassengersPickedUp = onAllPassengersPickedUp;
     _isTracking = true;
 
-    // Odmah pošalji trenutnu lokaciju
     await _sendCurrentLocation();
 
-    // Pokreni periodično slanje lokacije
     _locationTimer = Timer.periodic(_updateInterval, (_) => _sendCurrentLocation());
 
-    // 🆕 Pokreni periodično osvežavanje ETA (svakih 2 min)
     if (_putniciCoordinates != null && _putniciRedosled != null) {
       _etaTimer = Timer.periodic(_etaUpdateInterval, (_) => _refreshRealtimeEta());
     }
-
-    // Alternativno: stream-based tracking sa distance filter
-    // _startStreamTracking();
 
     return true;
   }
@@ -109,13 +97,12 @@ class DriverLocationService {
     _locationTimer?.cancel();
     _locationTimer = null;
 
-    _etaTimer?.cancel(); // 🆕 Zaustavi ETA timer
+    _etaTimer?.cancel();
     _etaTimer = null;
 
     await _positionSubscription?.cancel();
     _positionSubscription = null;
 
-    // Označi vozača kao neaktivnog u bazi
     await _setInactive();
 
     _isTracking = false;
@@ -125,8 +112,8 @@ class DriverLocationService {
     _currentVremePolaska = null;
     _currentSmer = null;
     _currentPutniciEta = null;
-    _putniciCoordinates = null; // 🆕
-    _putniciRedosled = null; // 🆕
+    _putniciCoordinates = null;
+    _putniciRedosled = null;
     _onAllPassengersPickedUp = null;
     _lastPosition = null;
   }
@@ -137,7 +124,6 @@ class DriverLocationService {
     if (!_isTracking) return;
 
     _currentPutniciEta = Map.from(newPutniciEta);
-    // Odmah pošalji ažurirani ETA u Supabase
     await _sendCurrentLocation();
   }
 
@@ -147,7 +133,6 @@ class DriverLocationService {
     if (!_isTracking || _lastPosition == null) return;
     if (_putniciCoordinates == null || _putniciRedosled == null) return;
 
-    // Filtriraj samo aktivne putnike (ETA >= 0)
     final aktivniPutnici = _putniciRedosled!
         .where((ime) =>
             _currentPutniciEta != null && _currentPutniciEta!.containsKey(ime) && _currentPutniciEta![ime]! >= 0)
@@ -155,7 +140,6 @@ class DriverLocationService {
 
     if (aktivniPutnici.isEmpty) return;
 
-    // Pozovi OpenRouteService Directions API
     final result = await OpenRouteService.getRealtimeEta(
       currentPosition: _lastPosition!,
       putnikImena: aktivniPutnici,
@@ -163,11 +147,9 @@ class DriverLocationService {
     );
 
     if (result.success && result.putniciEta != null) {
-      // Ažuriraj ETA za aktivne putnike
       for (final entry in result.putniciEta!.entries) {
         _currentPutniciEta![entry.key] = entry.value;
       }
-      // Pošalji ažurirani ETA u bazu
       await _sendCurrentLocation();
     }
   }
@@ -177,11 +159,8 @@ class DriverLocationService {
   void removePassenger(String putnikIme) {
     if (_currentPutniciEta == null) return;
 
-    // Umesto brisanja, postavi ETA na -1 što znači "pokupljen"
-    // Tako widget može da prikaže "Pokupljen" umesto "Čekanje..."
     _currentPutniciEta![putnikIme] = -1;
 
-    // AUTO-STOP: Ako su svi putnici pokupljeni (svi imaju ETA = -1)
     final aktivniPutnici = _currentPutniciEta!.values.where((v) => v >= 0).length;
     if (aktivniPutnici == 0) {
       _onAllPassengersPickedUp?.call();
@@ -206,7 +185,6 @@ class DriverLocationService {
         ),
       );
 
-      // Proveri da li se dovoljno pomerio
       if (_lastPosition != null) {
         final distance = Geolocator.distanceBetween(
           _lastPosition!.latitude,
@@ -221,14 +199,7 @@ class DriverLocationService {
 
       _lastPosition = position;
 
-      // ETA se koristi iz OSRM (tačan, po rutama) - NE računamo vazdušnu liniju!
-
-      // 🔄 Delete + Insert umesto upsert (nema unique constraint na vozac_id)
-      // Prvo obriši stare zapise za ovog vozača
-      await Supabase.instance.client.from('vozac_lokacije').delete().eq('vozac_id', _currentVozacId!);
-
-      // Zatim umetni novi zapis
-      await Supabase.instance.client.from('vozac_lokacije').insert({
+      await Supabase.instance.client.from('vozac_lokacije').upsert({
         'vozac_id': _currentVozacId,
         'vozac_ime': _currentVozacIme,
         'lat': position.latitude,
@@ -237,9 +208,9 @@ class DriverLocationService {
         'vreme_polaska': _currentVremePolaska,
         'smer': _currentSmer,
         'aktivan': true,
-        'putnici_eta': _currentPutniciEta, // Dinamički ažuriran ETA
+        'putnici_eta': _currentPutniciEta,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
-      });
+      }, onConflict: 'vozac_id');
     } catch (e) {
       // Error sending location
     }
@@ -261,7 +232,7 @@ class DriverLocationService {
   void _startStreamTracking() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 50, // Update na svakih 50m
+      distanceFilter: 50,
     );
 
     _positionSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
@@ -288,7 +259,7 @@ class DriverLocationService {
         'vreme_polaska': _currentVremePolaska,
         'smer': _currentSmer,
         'aktivan': true,
-        'putnici_eta': _currentPutniciEta, // 🆕 ETA za svakog putnika
+        'putnici_eta': _currentPutniciEta,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       }, onConflict: 'vozac_id');
     } catch (e) {

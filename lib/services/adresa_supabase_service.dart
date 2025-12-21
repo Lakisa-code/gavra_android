@@ -12,7 +12,6 @@ class AdresaSupabaseService {
 
   /// Dobija adresu po UUID-u
   static Future<Adresa?> getAdresaByUuid(String uuid) async {
-    // Proveri cache prvo
     if (_cache.containsKey(uuid) && _isCacheValid()) {
       return _cache[uuid];
     }
@@ -96,7 +95,7 @@ class AdresaSupabaseService {
         return postojeca;
       }
     } catch (_) {
-      // Greška pri pretrazi adrese
+      // 🔇 Ignore
     }
 
     // 🚫 NE KREIRAJ NOVU ADRESU - vrati null
@@ -137,7 +136,7 @@ class AdresaSupabaseService {
         }
       }
     } catch (_) {
-      // Geocoding greška
+      // 🔇 Ignore
     }
     return null;
   }
@@ -189,7 +188,6 @@ class AdresaSupabaseService {
   static Future<Map<String, Adresa>> getAdreseByUuids(List<String> uuids) async {
     final Map<String, Adresa> result = {};
 
-    // Proveri cache prvo
     final List<String> needToFetch = [];
     for (final uuid in uuids) {
       if (_cache.containsKey(uuid) && _isCacheValid()) {
@@ -199,10 +197,8 @@ class AdresaSupabaseService {
       }
     }
 
-    // Učitaj one koji nisu u cache-u
     if (needToFetch.isNotEmpty) {
       try {
-        // Učitaj jedan po jedan zbog ograničenja Supabase filtera
         for (final uuid in needToFetch) {
           final adresa = await getAdresaByUuid(uuid);
           if (adresa != null) {
@@ -210,7 +206,7 @@ class AdresaSupabaseService {
           }
         }
       } catch (e) {
-        // Ignoriši greške
+        // 🔇 Ignore
       }
     }
 
@@ -230,7 +226,6 @@ class AdresaSupabaseService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', uuid);
 
-      // Ažuriraj cache ako postoji
       if (_cache.containsKey(uuid)) {
         final existing = _cache[uuid]!;
         _cache[uuid] = existing.withCoordinates(lat, lng);
@@ -250,33 +245,27 @@ class AdresaSupabaseService {
     required double longitude,
   }) async {
     try {
-      // Validacija koordinata za Srbiju (širina: 42-46.5, dužina: 18-23)
       if (latitude < 42.0 || latitude > 46.5 || longitude < 18.0 || longitude > 23.0) {
         return false;
       }
 
-      // Proveri da li adresa već ima koordinate naučene iz GPS-a
       final existing = await getAdresaByUuid(adresaId);
       if (existing?.hasValidCoordinates == true) {
-        // Već ima koordinate, ne prepisuj ih
         return false;
       }
 
-      // Kreiraj JSONB koordinate
       final koordinate = {
         'lat': latitude,
         'lng': longitude,
-        'source': 'gps_learn', // Oznaka da su koordinate naučene iz GPS-a
+        'source': 'gps_learn',
         'learned_at': DateTime.now().toIso8601String(),
       };
 
-      // Ažuriraj u bazi
       await supabase.from('adrese').update({
         'koordinate': koordinate,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', adresaId);
 
-      // Invalidate cache
       _cache.remove(adresaId);
       return true;
     } catch (e) {

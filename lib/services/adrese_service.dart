@@ -33,7 +33,6 @@ class AdreseService {
 
     List<String> adrese = prefs.getStringList(kljuc) ?? [];
 
-    // Dodaj default adrese ako nema nijednu
     if (adrese.isEmpty) {
       adrese = _getDefaultAdrese(grad);
       await _sacuvajAdrese(grad, adrese);
@@ -108,14 +107,12 @@ class AdreseService {
     final adrese = await getAdreseZaGrad(grad);
     final adresaFormatted = _formatirajAdresu(adresa);
 
-    // Ako adresa već postoji, premesti je na vrh
     if (adrese.contains(adresaFormatted)) {
       adrese.remove(adresaFormatted);
     }
 
     adrese.insert(0, adresaFormatted);
 
-    // Ograniči na 30 adresa po gradu
     if (adrese.length > 30) {
       adrese.removeRange(30, adrese.length);
     }
@@ -134,30 +131,23 @@ class AdreseService {
       return await getAdreseZaGrad(grad);
     }
 
-    // 1. Prvo pretraži lokalne adrese
     final adrese = await getAdreseZaGrad(grad);
     final queryLower = query.toLowerCase();
 
     final localResults = adrese.where((adresa) => adresa.toLowerCase().contains(queryLower)).toList();
 
-    // 2. Ako nema lokalnih rezultata ili query liči na naziv mesta (bolnica, škola...)
     final isPlaceQuery = _isPlaceQuery(queryLower);
 
     if (localResults.isEmpty || isPlaceQuery) {
       try {
-        // Pokušaj da nađeš preko geocoding API
         final coords = await GeocodingService.getKoordinateZaAdresu(grad, query);
         if (coords != null) {
-          // Ako je pronađena lokacija, dodaj je kao rezultat
           final geocodedLocation = query.trim();
 
-          // Automatski sačuvaj pronađenu adresu u lokalnu listu
           await _sacuvajGeocodedAdresu(grad, geocodedLocation);
 
-          // Dodaj geocoded rezultat na vrh liste
           final combinedResults = <String>[geocodedLocation];
 
-          // Dodaj lokalne rezultate koje ne dupliciraju geocoded
           for (final local in localResults) {
             if (!local.toLowerCase().contains(queryLower)) {
               combinedResults.add(local);
@@ -165,14 +155,13 @@ class AdreseService {
           }
           combinedResults.addAll(localResults);
 
-          return combinedResults.take(10).toList(); // Ograniči na 10 rezultata
+          return combinedResults.take(10).toList();
         }
       } catch (e) {
-        // Ako geocoding ne radi, nastavi sa lokalnim rezultatima
+        // 🔇 Ignore
       }
     }
 
-    // 3. Vrati lokalne rezultate sa validacijom
     return localResults
         .where(
           (adresa) => GradAdresaValidator.isAdresaInAllowedCity(adresa, grad),
@@ -206,11 +195,7 @@ class AdreseService {
   }
 
   /// Ažurira adrese na osnovu postojećih putnika
-  static Future<void> azurirajAdreseIzBaze() async {
-    // Ovde možeš dodati logiku za dohvatanje adresa iz baze putnika
-    // i ažuriranje lokalnih adresa
-    // Trenutno ostavljam prazan jer zavisi od implementacije
-  }
+  static Future<void> azurirajAdreseIzBaze() async {}
 
   static Future<void> _sacuvajAdrese(String grad, List<String> adrese) async {
     final prefs = await SharedPreferences.getInstance();
@@ -224,28 +209,25 @@ class AdreseService {
       final postojeceAdrese = await getAdreseZaGrad(grad);
       final adresaFormatted = _formatirajAdresu(adresa);
 
-      // Ako adresa već postoji, premesti je na vrh
       if (postojeceAdrese.contains(adresaFormatted)) {
         postojeceAdrese.remove(adresaFormatted);
       }
 
       postojeceAdrese.insert(0, adresaFormatted);
 
-      // Ograniči na 30 adresa po gradu
       if (postojeceAdrese.length > 30) {
         postojeceAdrese.removeRange(30, postojeceAdrese.length);
       }
 
       await _sacuvajAdrese(grad, postojeceAdrese);
     } catch (e) {
-      // Ignoriši greške kod snimanja
+      // 🔇 Ignore
     }
   }
 
   static String _formatirajAdresu(String adresa) {
     if (adresa.trim().isEmpty) return '';
 
-    // Osnovno formatiranje
     return adresa
         .trim()
         .split(' ')

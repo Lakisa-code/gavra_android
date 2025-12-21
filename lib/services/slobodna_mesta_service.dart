@@ -88,7 +88,7 @@ class SlobodnaMestaService {
     }
   }
 
-  /// Konvertuj ISO datum u pun naziv dana (za getAllPutniciFromBothTables)
+  /// Konvertuj ISO datum u pun naziv dana
   static String _isoDateToDayName(String isoDate) {
     try {
       final date = DateTime.parse(isoDate);
@@ -113,7 +113,7 @@ class SlobodnaMestaService {
     Future<void> fetchData(Map<String, Map<String, int>> kapacitet) async {
       try {
         final danName = _isoDateToDayName(isoDate);
-        final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danName);
+        final putnici = await _putnikService.getAllPutnici(targetDay: danName);
 
         final result = <String, List<SlobodnaMesta>>{
           'BC': [],
@@ -152,7 +152,7 @@ class SlobodnaMestaService {
           controller.add(result);
         }
       } catch (e) {
-        // Error fetching data
+        // 🔇 Ignore
       }
     }
 
@@ -187,9 +187,9 @@ class SlobodnaMestaService {
     // Dohvati kapacitet
     final kapacitet = await KapacitetService.getKapacitet();
 
-    // Dohvati putnike - koristi getAllPutniciFromBothTables sa punim nazivom dana
+    // Dohvati putnike
     final danName = _isoDateToDayName(isoDate);
-    final putnici = await _putnikService.getAllPutniciFromBothTables(targetDay: danName);
+    final putnici = await _putnikService.getAllPutnici(targetDay: danName);
 
     final result = <String, List<SlobodnaMesta>>{
       'BC': [],

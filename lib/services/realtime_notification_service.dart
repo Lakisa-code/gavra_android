@@ -2,10 +2,6 @@ import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-// Firebase messaging removed for this branch; notification delivery is
-// handled server-side (Supabase functions) and platform-specific clients
-// (Huawei Push). This service focuses on server-side/in-app notification
-// helpers and local fallback notifications.
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,18 +9,14 @@ import 'local_notification_service.dart';
 import 'notification_navigation_service.dart';
 
 class RealtimeNotificationService {
-  /// IMPORTANT: Do NOT store provider REST/API keys in the client app.
-  /// This app uses FCM + Huawei Push; provider keys must be stored server-side as Supabase secrets.
-
-  /// 🔒 SIGURNO: Pošalji Push notifikaciju (FCM/Huawei) putem Supabase Edge Function
   static Future<bool> sendPushNotification({
     required String title,
     required String body,
-    String? playerId, // Ako želiš da šalješ pojedinačno
+    String? playerId,
     List<String>? externalUserIds,
     List<String>? driverIds,
-    List<Map<String, dynamic>>? tokens, // [{token, provider}]
-    String? topic, // FCM topic za broadcast (npr. 'gavra_all_drivers')
+    List<Map<String, dynamic>>? tokens,
+    String? topic,
     Map<String, dynamic>? data,
   }) async {
     try {
@@ -39,7 +31,6 @@ class RealtimeNotificationService {
         'data': data ?? {},
       };
 
-      // 🌐 Pozovi Supabase Edge Function umesto direktnog REST poziva
       final supabase = Supabase.instance.client;
       final response = await supabase.functions.invoke(
         'send-push-notification',
@@ -49,7 +40,6 @@ class RealtimeNotificationService {
       if (response.data != null && response.data['success'] == true) {
         return true;
       } else {
-        // Try local fallback
         await LocalNotificationService.showRealtimeNotification(
             title: title, body: body, payload: jsonEncode(data ?? {}));
         return false;
@@ -69,10 +59,8 @@ class RealtimeNotificationService {
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    // Multi-channel strategija
     final List<Future<void>> notifications = [];
 
-    // 1. FCM Topic - pošalji svim pretplatnicima topic-a putem send-push-notification
     notifications.add(
       sendPushNotification(
         title: title,
@@ -82,7 +70,6 @@ class RealtimeNotificationService {
       ).then((_) {}),
     );
 
-    // 2. Local notification kao fallback
     notifications.add(
       LocalNotificationService.showRealtimeNotification(
         title: title,
@@ -91,51 +78,38 @@ class RealtimeNotificationService {
       ),
     );
 
-    // Pokreni sve paralelno
     await Future.wait(notifications);
   }
 
-  /// Public helper to handle an initial/cold-start RemoteMessage (from getInitialMessage)
   static Future<void> handleInitialMessage(Map<String, dynamic>? messageData) async {
     if (messageData == null) return;
     try {
       await _handleNotificationTap(messageData);
     } catch (e) {
-      // ignore
+      // Ignoriši greške pri rukovanju inicijalnom porukom
     }
   }
 
-  /// Initialize service with real-time notifications only
   static Future<void> initialize() async {
     try {
-      // If Firebase hasn't been initialized (eg: no GMS on device) bail out
-      // — accessing FirebaseMessaging.instance will throw if no default app.
-      // No-op: Firebase messaging removed. Leave permission management to
-      // platform-specific push helpers (HuaweiPushService) or local notification
-      // permission flows.
+      // Firebase messaging inicijalizacija - no-op
     } catch (e) {
-      // ignore
+      // Ignoriši greške
     }
   }
 
-  /// 🔒 Flag da sprečimo višestruko registrovanje listenera
   static bool _foregroundListenerRegistered = false;
 
-  /// Setup foreground Firebase message listeners for real-time notifications
   static void listenForForegroundNotifications(BuildContext context) {
-    // ✅ Sprečava višestruko registrovanje listenera (duplirane notifikacije)
     if (_foregroundListenerRegistered) return;
     _foregroundListenerRegistered = true;
 
-    // Initialize Firebase listeners if available.
     if (Firebase.apps.isEmpty) return;
 
-    // Listen for foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       try {
         final data = message.data;
 
-        // Filtriraj notifikacije: samo za današnji dan i za tip "dodat"/"novi_putnik" ili "otkazan"/"otkazan_putnik"
         final type = (data['type'] ?? '').toString().toLowerCase();
         final datumString = (data['datum'] ?? data['date'] ?? '') as String;
         final danas = DateTime.now();
@@ -159,7 +133,6 @@ class RealtimeNotificationService {
       } catch (_) {}
     });
 
-    // Listen for message taps
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       try {
         _handleNotificationTap(message.data);
@@ -167,7 +140,6 @@ class RealtimeNotificationService {
     });
   }
 
-  /// Subscribe to Firebase topics for driver-specific notifications
   static Future<void> subscribeToDriverTopics(String? driverId) async {
     if (driverId == null || driverId.isEmpty) {
       return;
@@ -180,13 +152,11 @@ class RealtimeNotificationService {
 
       final messaging = FirebaseMessaging.instance;
 
-      // Subscribe to driver-specific topic
       await messaging.subscribeToTopic('gavra_driver_${driverId.toLowerCase()}');
 
-      // Subscribe to general all-drivers topic
       await messaging.subscribeToTopic('gavra_all_drivers');
     } catch (e) {
-      // Topic subscription failed
+      // Ignoriši greške pri pretplati na topic
     }
   }
 
@@ -212,29 +182,21 @@ class RealtimeNotificationService {
     }
   }
 
-  /// Handle Firebase notification tap - navigate to specific passenger
   static Future<void> _handleNotificationTap(Map<String, dynamic> messageData) async {
     try {
-      // Logger removed
-
-      // Extract notification type and passenger data from payload
       final notificationType = messageData['type'] ?? 'unknown';
       final putnikDataString = messageData['putnik'] as String?;
 
       if (putnikDataString != null) {
-        // Parse passenger data from JSON string
         final Map<String, dynamic> putnikData = jsonDecode(putnikDataString) as Map<String, dynamic>;
 
-        // Use NotificationNavigationService to show popup and navigate
         await NotificationNavigationService.navigateToPassenger(
           type: notificationType as String,
           putnikData: putnikData,
         );
-      } else {
-        // Logger removed
       }
     } catch (e) {
-      // Logger removed
+      // Ignoriši greške pri navigaciji
     }
   }
 }

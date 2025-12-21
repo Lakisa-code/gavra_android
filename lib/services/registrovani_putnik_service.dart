@@ -12,6 +12,13 @@ class RegistrovaniPutnikService {
   RegistrovaniPutnikService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
 
+  // 🔧 SINGLETON PATTERN za realtime stream
+  static StreamController<List<RegistrovaniPutnik>>? _sharedController;
+  static RealtimeChannel? _sharedChannel;
+  static List<RegistrovaniPutnik>? _lastValue;
+  static int _listenerCount = 0;
+  static bool _isReconnecting = false;
+
   /// Dohvata sve mesečne putnike
   Future<List<RegistrovaniPutnik>> getAllRegistrovaniPutnici() async {
     final response = await _supabase.from('registrovani_putnici').select('''
@@ -65,75 +72,134 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// Stream za mesečne putnike - direktan Supabase realtime
+  /// 🔧 SINGLETON STREAM za mesečne putnike - sprečava kreiranje više channel-a
+  /// Svi pozivi dele isti channel i controller
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
+    // Ako već postoji aktivan controller, koristi ga
+    if (_sharedController != null && !_sharedController!.isClosed) {
+      _listenerCount++;
+      debugPrint('📊 [RegistrovaniPutnikService] Reusing existing stream (listeners: $_listenerCount)');
+
+      // Emituj poslednju vrednost novom listener-u
+      if (_lastValue != null) {
+        Future.microtask(() {
+          if (_sharedController != null && !_sharedController!.isClosed) {
+            _sharedController!.add(_lastValue!);
+          }
+        });
+      }
+
+      return _sharedController!.stream;
+    }
+
+    // Kreiraj novi shared controller
+    _sharedController = StreamController<List<RegistrovaniPutnik>>.broadcast(
+      onCancel: () {
+        _listenerCount--;
+        debugPrint('📊 [RegistrovaniPutnikService] Listener removed (remaining: $_listenerCount)');
+
+        // NE UGASI channel dok ima aktivnih listener-a
+        // Channel se gasi samo kroz clearRealtimeCache()
+      },
+    );
+    _listenerCount = 1;
+
     final supabase = Supabase.instance.client;
 
-    // Kontroler za broadcast stream
-    final controller = StreamController<List<RegistrovaniPutnik>>.broadcast();
-
     // Učitaj inicijalne podatke
-    supabase
-        .from('registrovani_putnici')
-        .select()
-        .eq('aktivan', true)
-        .eq('obrisan', false)
-        .order('putnik_ime')
-        .then((data) {
-      if (!controller.isClosed) {
-        final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
-        controller.add(putnici);
-      }
-    });
+    _fetchAndEmit(supabase);
 
-    // Pretplati se na promene
-    const channelName = 'registrovani_putnici_simple';
-    final channel = supabase.channel(channelName);
-    channel
+    // Kreiraj channel samo ako ne postoji
+    _setupRealtimeChannel(supabase);
+
+    return _sharedController!.stream;
+  }
+
+  /// 🔄 Fetch podatke i emituj u stream
+  static Future<void> _fetchAndEmit(SupabaseClient supabase) async {
+    try {
+      final data = await supabase
+          .from('registrovani_putnici')
+          .select()
+          .eq('aktivan', true)
+          .eq('obrisan', false)
+          .order('putnik_ime');
+
+      final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
+      _lastValue = putnici;
+
+      if (_sharedController != null && !_sharedController!.isClosed) {
+        _sharedController!.add(putnici);
+      }
+    } catch (e) {
+      debugPrint('❌ [RegistrovaniPutnikService] Fetch error: $e');
+    }
+  }
+
+  /// 🔌 Setup realtime channel sa reconnect logikom
+  static void _setupRealtimeChannel(SupabaseClient supabase) {
+    if (_sharedChannel != null) {
+      _sharedChannel!.unsubscribe();
+    }
+
+    const channelName = 'registrovani_putnici_singleton';
+    _sharedChannel = supabase.channel(channelName);
+    _sharedChannel!
         .onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
       table: 'registrovani_putnici',
       callback: (payload) {
         debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
-        // Na bilo koju promenu, ponovo učitaj sve
-        supabase
-            .from('registrovani_putnici')
-            .select()
-            .eq('aktivan', true)
-            .eq('obrisan', false)
-            .order('putnik_ime')
-            .then((data) {
-          if (!controller.isClosed) {
-            final putnici = data.map((json) => RegistrovaniPutnik.fromMap(json)).toList();
-            controller.add(putnici);
-          }
-        });
+        _fetchAndEmit(supabase);
       },
     )
         .subscribe((status, [error]) {
       switch (status) {
         case RealtimeSubscribeStatus.subscribed:
           debugPrint('✅ [$channelName] Subscribed successfully');
+          _isReconnecting = false;
           break;
         case RealtimeSubscribeStatus.channelError:
           debugPrint('❌ [$channelName] Channel error: $error');
+          _scheduleReconnect(supabase);
           break;
         case RealtimeSubscribeStatus.closed:
           debugPrint('🔴 [$channelName] Channel closed');
+          _scheduleReconnect(supabase);
           break;
         case RealtimeSubscribeStatus.timedOut:
           debugPrint('⏰ [$channelName] Subscription timed out');
+          _scheduleReconnect(supabase);
           break;
       }
     });
+  }
 
-    // Cleanup kad se stream zatvori
-    controller.onCancel = () {
-      channel.unsubscribe();
-    };
+  /// 🔄 Schedule reconnect sa delay-om
+  static void _scheduleReconnect(SupabaseClient supabase) {
+    if (_isReconnecting) return;
+    _isReconnecting = true;
 
-    return controller.stream;
+    debugPrint('🔄 [RegistrovaniPutnikService] Scheduling reconnect in 3 seconds...');
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_sharedController != null && !_sharedController!.isClosed) {
+        debugPrint('🔄 [RegistrovaniPutnikService] Attempting reconnect...');
+        _setupRealtimeChannel(supabase);
+      }
+    });
+  }
+
+  /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve
+  static void clearRealtimeCache() {
+    debugPrint('🧹 [RegistrovaniPutnikService] Clearing realtime cache');
+    _sharedChannel?.unsubscribe();
+    _sharedChannel = null;
+    _sharedController?.close();
+    _sharedController = null;
+    _lastValue = null;
+    _listenerCount = 0;
+    _isReconnecting = false;
   }
 
   /// Kreira novog mesečnog putnika
@@ -142,7 +208,6 @@ class RegistrovaniPutnikService {
           *
         ''').single();
 
-    // Očisti cache nakon kreiranja da se novi putnik odmah vidi
     clearCache();
 
     return RegistrovaniPutnik.fromMap(response);
@@ -159,7 +224,6 @@ class RegistrovaniPutnikService {
           *
         ''').single();
 
-    // Očisti cache nakon update-a da se promene odmah vide
     clearCache();
 
     return RegistrovaniPutnik.fromMap(response);
@@ -173,7 +237,6 @@ class RegistrovaniPutnikService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
-      // Očisti cache nakon promene aktivnosti da se promene odmah vide
       clearCache();
 
       return true;
@@ -197,16 +260,7 @@ class RegistrovaniPutnikService {
     return await createRegistrovaniPutnik(putnik);
   }
 
-  /// Kreira dnevna putovanja iz mesečnih (placeholder - treba implementirati)
-  Future<void> kreirajDnevnaPutovanjaIzRegistrovanih(
-    RegistrovaniPutnik putnik,
-    DateTime datum,
-  ) async {
-    // Implementacija će biti dodana kada bude potrebna za scheduling funkcionalnost
-    // Trenutno se koristi direktno unošenje kroz glavnu logiku aplikacije
-  }
-
-  /// Sinhronizacija broja putovanja sa istorijom (placeholder)
+  /// Sinhronizacija broja putovanja sa istorijom
   static Future<bool> sinhronizujBrojPutovanjaSaIstorijom(String id) async {
     try {
       final brojIzIstorije = await izracunajBrojPutovanjaIzIstorije(id);
@@ -217,7 +271,6 @@ class RegistrovaniPutnikService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
-      // Očisti cache nakon sinhronizacije da se promene odmah vide
       clearCache();
 
       return true;
@@ -238,12 +291,10 @@ class RegistrovaniPutnikService {
     String? validVozacId;
 
     try {
-      // Validacija UUID-a pre slanja u bazu
       if (vozacId.isNotEmpty && vozacId != 'Nepoznat vozač') {
         if (_isValidUuid(vozacId)) {
           validVozacId = vozacId;
         } else {
-          // Pokušaj konverziju kroz VozacMappingService
           try {
             await VozacMappingService.initialize();
             final converted = VozacMappingService.getVozacUuidSync(vozacId);
@@ -254,7 +305,6 @@ class RegistrovaniPutnikService {
         }
       }
 
-      // 1. Dodaj zapis u voznje_log
       await VoznjeLogService.dodajUplatu(
         putnikId: putnikId,
         datum: DateTime.now(),
@@ -262,7 +312,6 @@ class RegistrovaniPutnikService {
         vozacId: validVozacId,
       );
 
-      // 2. Ažuriraj registrovani_putnici
       await updateRegistrovaniPutnik(putnikId, {
         'vreme_placanja': DateTime.now().toIso8601String(),
         'cena': iznos,
@@ -294,7 +343,6 @@ class RegistrovaniPutnikService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', id);
 
-      // Očisti cache nakon brisanja da se promene odmah vide
       clearCache();
 
       return true;
@@ -320,7 +368,6 @@ class RegistrovaniPutnikService {
     try {
       List<Map<String, dynamic>> svaPlacanja = [];
 
-      // Prvo nađi putnik ID
       final putnik = await _supabase
           .from('registrovani_putnici')
           .select('id, cena, vreme_placanja, vozac_id, placeni_mesec, placena_godina')
@@ -329,7 +376,6 @@ class RegistrovaniPutnikService {
 
       if (putnik == null) return [];
 
-      // 1. Plaćanja iz voznje_log
       final placanjaIzLoga = await _supabase
           .from('voznje_log')
           .select()
@@ -347,7 +393,6 @@ class RegistrovaniPutnikService {
         });
       }
 
-      // 2. Fallback: poslednje plaćanje iz registrovani_putnici
       if (svaPlacanja.isEmpty && putnik['vreme_placanja'] != null) {
         svaPlacanja.add({
           'cena': putnik['cena'],
@@ -373,7 +418,6 @@ class RegistrovaniPutnikService {
       final response = await _supabase.from('vozaci').select('ime').eq('id', vozacUuid).single();
       return response['ime'] as String?;
     } catch (e) {
-      // Fallback na mapping service
       return VozacMappingService.getVozacIme(vozacUuid);
     }
   }
@@ -383,7 +427,6 @@ class RegistrovaniPutnikService {
   static Future<List<Map<String, dynamic>>> getZakupljenoDanas() async {
     try {
       final supabase = Supabase.instance.client;
-      // Zakupljeno je sada status u registrovani_putnici
       final response = await supabase
           .from('registrovani_putnici')
           .select()
@@ -413,7 +456,6 @@ class RegistrovaniPutnikService {
       final response =
           await supabase.from('voznje_log').select('datum').eq('putnik_id', mesecniPutnikId).eq('tip', 'voznja');
 
-      // Broji JEDINSTVENE datume
       final jedinstveniDatumi = <String>{};
       for (final red in response) {
         if (red['datum'] != null) {
@@ -436,7 +478,6 @@ class RegistrovaniPutnikService {
       final response =
           await supabase.from('voznje_log').select('datum').eq('putnik_id', mesecniPutnikId).eq('tip', 'otkazivanje');
 
-      // Broji JEDINSTVENE datume
       final jedinstveniDatumi = <String>{};
       for (final red in response) {
         if (red['datum'] != null) {
@@ -452,10 +493,8 @@ class RegistrovaniPutnikService {
 
   // ==================== ENHANCED CAPABILITIES ====================
 
-  /// Cache za učestale upite
   static final Map<String, dynamic> _cache = {};
 
-  /// Čisti cache
   static void clearCache() {
     _cache.clear();
   }

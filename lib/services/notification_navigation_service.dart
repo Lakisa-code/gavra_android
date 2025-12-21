@@ -6,7 +6,6 @@ import '../globals.dart';
 import '../screens/danas_screen.dart';
 
 class NotificationNavigationService {
-  /// Navigate to a specific passenger when notification is tapped
   static Future<void> navigateToPassenger({
     required String type,
     required Map<String, dynamic> putnikData,
@@ -15,12 +14,10 @@ class NotificationNavigationService {
     if (context == null) return;
 
     try {
-      // Parse putnik data
       final putnikIme = putnikData['ime'] ?? 'Nepoznat putnik';
       final putnikDan = putnikData['dan'] ?? '';
       final mesecnaKarta = putnikData['mesecnaKarta'] ?? false;
 
-      // Show a popup with passenger info and navigation options
       await showDialog<void>(
         context: context,
         builder: (BuildContext context) {
@@ -108,21 +105,18 @@ class NotificationNavigationService {
         },
       );
     } catch (e) {
-      // Error parsing notification data
       if (context.mounted) {
         _showErrorDialog(context, 'Greška pri otvaranju putnika: $e');
       }
     }
   }
 
-  /// Navigate to appropriate screen based on passenger type
   static void _navigateToAppropriateScreen(
     BuildContext context,
     String type,
     Map<String, dynamic> putnikData,
     bool mesecnaKarta,
   ) {
-    // Navigate to today's screen with filters for the passenger
     final putnikIme = putnikData['ime'];
     final putnikGrad = putnikData['grad'];
     final putnikVreme = putnikData['polazak'] ?? putnikData['vreme'];
@@ -138,7 +132,6 @@ class NotificationNavigationService {
     );
   }
 
-  /// Show error dialog
   static void _showErrorDialog(BuildContext context, String message) {
     showDialog<void>(
       context: context,
@@ -163,27 +156,22 @@ class NotificationNavigationService {
     );
   }
 
-  /// Parse notification payload and extract putnik data
   static Map<String, dynamic>? parseNotificationPayload(String? payload) {
     if (payload == null || payload.isEmpty) return null;
 
     try {
-      // Try to parse as JSON
       final decoded = jsonDecode(payload);
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
       return null;
     } catch (e) {
-      // If not JSON, try to parse string format
       return _parseStringPayload(payload);
     }
   }
 
-  /// Parse string-format payload (fallback)
   static Map<String, dynamic>? _parseStringPayload(String payload) {
     try {
-      // Extract data from string like: {type: novi_putnik, putnik: {...}}
       final typeMatch = RegExp(r'type:\s*([^,}]+)').firstMatch(payload);
       final putnikMatch = RegExp(r'putnik:\s*(\{[^}]+\})').firstMatch(payload);
 
@@ -199,7 +187,7 @@ class NotificationNavigationService {
               'putnik': putnikData,
             };
           } catch (e) {
-            // JSON parse error
+            // 🔇 Ignore
           }
         }
       }

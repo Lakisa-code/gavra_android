@@ -11,7 +11,6 @@ import '../screens/danas_screen.dart';
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  // Recent notifications cache to prevent duplicates (notification_id or hash)
   static final Map<String, DateTime> _recentNotificationIds = {};
   static const Duration _dedupeDuration = Duration(seconds: 30);
 
@@ -26,12 +25,10 @@ class LocalNotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        // Handle notification tap - navigate to today screen
         _handleNotificationTap(response);
       },
     );
 
-    // Kreiraj kanal za heads-up notifikacije sa visokim prioritetom
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'gavra_realtime_channel',
       'Gavra Realtime Notifikacije',
@@ -43,12 +40,8 @@ class LocalNotificationService {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
-
-    // Permission requests are handled by RealtimeNotificationService
-    // to avoid conflicts - no local permission requests here
   }
 
-  /// Prikaz realtime notifikacije sa popup, zvuk i lock screen
   static Future<void> showRealtimeNotification({
     required String title,
     required String body,
@@ -56,7 +49,6 @@ class LocalNotificationService {
     bool playCustomSound = false, // 🔇 ONEMOGUĆENO: Custom zvuk ne radi
   }) async {
     try {
-      // Deduplicate based on payload id or title+body
       String dedupeKey = '';
       try {
         if (payload != null && payload.isNotEmpty) {
@@ -66,32 +58,24 @@ class LocalNotificationService {
           }
         }
       } catch (e) {
-        // ignore
+        // 🔇 Ignore
       }
       if (dedupeKey.isEmpty) {
         // fallback: simple hash of title+body+payload
         dedupeKey = '$title|$body|${payload ?? ''}';
       }
-      // Check cache
       final now = DateTime.now();
       if (_recentNotificationIds.containsKey(dedupeKey)) {
         final last = _recentNotificationIds[dedupeKey]!;
         if (now.difference(last) < _dedupeDuration) {
-          // Duplicate - ignore
           return;
         }
       }
       _recentNotificationIds[dedupeKey] = now;
-      // Clean up old entries
       _recentNotificationIds.removeWhere((k, v) => now.difference(v) > _dedupeDuration);
-      // 1. Preskoči custom zvuk - koristi sistemski
-      // if (playCustomSound) {
-      //   await _playNotificationSound(); // 🔇 ONEMOGUĆENO
-      // }
 
-      // 2. Vibracija da privuče pažnju
       await flutterLocalNotificationsPlugin.show(
-        DateTime.now().millisecondsSinceEpoch.remainder(100000), // Unique ID
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
         title,
         body,
         NotificationDetails(
@@ -101,12 +85,12 @@ class LocalNotificationService {
             channelDescription: 'Kanal za realtime heads-up notifikacije sa zvukom',
             importance: Importance.max,
             priority: Priority.high,
-            playSound: true, // 🔊 SISTEMSKI ZVUK umesto custom MP3
+            playSound: true,
             enableLights: true,
             when: DateTime.now().millisecondsSinceEpoch,
-            fullScreenIntent: true, // Za lock screen
-            category: AndroidNotificationCategory.call, // Visok prioritet
-            visibility: NotificationVisibility.public, // Prikaži na lock screen
+            fullScreenIntent: true,
+            category: AndroidNotificationCategory.call,
+            visibility: NotificationVisibility.public,
             ticker: '$title - $body',
             largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
             styleInformation: BigTextStyleInformation(
@@ -122,20 +106,16 @@ class LocalNotificationService {
         payload: payload,
       );
     } catch (e) {
-      // Ignorišemo greške sa prikazivanjem notifikacija
+      // 🔇 Ignore
     }
   }
 
-  /// Background-safe helper to show a local notification from a background isolate
-  /// This creates a fresh FlutterLocalNotificationsPlugin instance and shows a
-  /// basic notification. Avoids UI and audio playback (audio not supported in background isolate).
   static Future<void> showNotificationFromBackground({
     required String title,
     required String body,
     String? payload,
   }) async {
     try {
-      // Deduplicate similar logic by payload or hash
       String dedupeKey = '';
       try {
         if (payload != null && payload.isNotEmpty) {
@@ -145,14 +125,14 @@ class LocalNotificationService {
           }
         }
       } catch (e) {
-        // ignore parse errors
+        // 🔇 Ignore
       }
       if (dedupeKey.isEmpty) dedupeKey = '$title|$body|${payload ?? ''}';
       final now = DateTime.now();
       if (_recentNotificationIds.containsKey(dedupeKey)) {
         final last = _recentNotificationIds[dedupeKey]!;
         if (now.difference(last) < _dedupeDuration) {
-          return; // duplicate
+          return;
         }
       }
       _recentNotificationIds[dedupeKey] = now;
@@ -193,7 +173,6 @@ class LocalNotificationService {
     }
   }
 
-  /// Handle notification tap - navigate to passenger with filters
   static Future<void> _handleNotificationTap(
     NotificationResponse response,
   ) async {
@@ -201,7 +180,6 @@ class LocalNotificationService {
       final context = navigatorKey.currentContext;
       if (context == null) return;
 
-      // Parse payload to get passenger info
       String? putnikIme;
       String? notificationType;
       String? putnikGrad;
@@ -209,19 +187,16 @@ class LocalNotificationService {
 
       if (response.payload != null) {
         try {
-          // Parse the payload JSON
           final Map<String, dynamic> payloadData = jsonDecode(response.payload!) as Map<String, dynamic>;
 
           notificationType = payloadData['type'] as String?;
           final putnikData = payloadData['putnik'];
 
-          // Extract passenger name from different possible formats
           if (putnikData is Map<String, dynamic>) {
             putnikIme = (putnikData['ime'] ?? putnikData['name']) as String?;
             putnikGrad = putnikData['grad'] as String?;
             putnikVreme = (putnikData['vreme'] ?? putnikData['polazak']) as String?;
           } else if (putnikData is String) {
-            // Try to parse if it's JSON string
             try {
               final putnikMap = jsonDecode(putnikData);
               if (putnikMap is Map<String, dynamic>) {
@@ -230,7 +205,6 @@ class LocalNotificationService {
                 putnikVreme = (putnikMap['vreme'] ?? putnikMap['polazak']) as String?;
               }
             } catch (e) {
-              // If not JSON, use as direct string
               putnikIme = putnikData;
             }
           }
@@ -244,15 +218,14 @@ class LocalNotificationService {
                 putnikVreme = putnikVreme ?? (putnikInfo['polazak'] ?? putnikInfo['vreme_polaska']) as String?;
               }
             } catch (e) {
-              // Ignore database fetch errors - fallback to basic navigation
+              // 🔇 Ignore
             }
           }
         } catch (e) {
-          // If payload parsing fails, fall back to simple navigation
+          // 🔇 Ignore
         }
       }
 
-      // Navigate to dagens screen with filter parameters
       if (context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -265,7 +238,6 @@ class LocalNotificationService {
         );
       }
 
-      // Show info about the passenger if available
       if (putnikIme != null && context.mounted) {
         String message;
         Color bgColor;
@@ -285,7 +257,6 @@ class LocalNotificationService {
           icon = Icons.info;
         }
 
-        // Show snackbar with passenger info
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -310,7 +281,6 @@ class LocalNotificationService {
         );
       }
     } catch (e) {
-      // Error handling notification tap - fallback to simple navigation
       final context = navigatorKey.currentContext;
       if (context != null && context.mounted) {
         Navigator.of(context).push(
@@ -322,7 +292,6 @@ class LocalNotificationService {
     }
   }
 
-  /// Legacy metoda za kompatibilnost
   static Future<void> showNotification({
     required String title,
     required String body,
@@ -333,7 +302,6 @@ class LocalNotificationService {
     );
   }
 
-  /// Očisti sve notifikacije
   static Future<void> cancelAllNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
   }
@@ -346,7 +314,6 @@ class LocalNotificationService {
     try {
       final supabase = Supabase.instance.client;
 
-      // Traži u registrovani_putnici tabeli
       const registrovaniFields = '*,'
           'polasci_po_danu';
 
@@ -363,14 +330,12 @@ class LocalNotificationService {
         final data = registrovaniResult.first;
         final registrovaniPutnik = RegistrovaniPutnik.fromMap(data);
 
-        // Preuzmi trenutni dan i određi polazak
         final sada = DateTime.now();
         final danNedelje = _getDanNedelje(sada.weekday);
 
         String? polazak;
         String? grad;
 
-        // Pokušaj da nađeš polazak za trenutni dan
         final polazakBC = registrovaniPutnik.getPolazakBelaCrkvaZaDan(danNedelje);
         final polazakVS = registrovaniPutnik.getPolazakVrsacZaDan(danNedelje);
 
@@ -394,12 +359,10 @@ class LocalNotificationService {
 
       return null;
     } catch (e) {
-      // Return null on error - fallback to basic navigation
       return null;
     }
   }
 
-  // Helper metoda za formatiranje dana nedelje
   static String _getDanNedelje(int weekday) {
     switch (weekday) {
       case 1:

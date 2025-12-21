@@ -51,7 +51,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         .onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
-      table: 'driver_locations',
+      table: 'vozac_lokacije',
       callback: (payload) {
         debugPrint('🔄 [$channelName] GPS change: ${payload.eventType}');
         _loadGpsLokacije();

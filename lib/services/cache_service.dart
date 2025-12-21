@@ -16,9 +16,8 @@ class CacheService {
   static Future<void> initialize() async {
     try {
       _prefs = await SharedPreferences.getInstance();
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -33,7 +32,6 @@ class CacheService {
       return _memoryCache[key] as T?;
     }
 
-    // Ukloni expired cache
     if (timestamp != null) {
       _memoryCache.remove(key);
       _cacheTimestamp.remove(key);
@@ -47,14 +45,12 @@ class CacheService {
   static void setMemory<T>(String key, T value, {Duration? duration}) {
     _memoryCache[key] = value;
     _cacheTimestamp[key] = DateTime.now();
-    // Logger removed
   }
 
   /// 💾 Sacuvaj u memory cache
   static void saveToMemory<T>(String key, T value) {
     _memoryCache[key] = value;
     _cacheTimestamp[key] = DateTime.now();
-    // Logger removed
   }
 
   /// 🗂️ PERSISTENT CACHE - Za dugoročno čuvanje
@@ -71,7 +67,6 @@ class CacheService {
       if (timestamp != null) {
         final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
         if (DateTime.now().difference(cacheTime) > maxAge) {
-          // Expired - ukloni
           await clearFromDisk(key);
           return null;
         }
@@ -80,11 +75,10 @@ class CacheService {
       final cachedData = _prefs!.getString(key);
       if (cachedData != null) {
         final decoded = jsonDecode(cachedData);
-        // Logger removed
         return decoded as T;
       }
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
 
     return null;
@@ -100,10 +94,8 @@ class CacheService {
 
       await _prefs!.setString(key, encoded);
       await _prefs!.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
-
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -121,21 +113,15 @@ class CacheService {
     final now = DateTime.now();
     final expiredKeys = <String>[];
 
-    // Pronađi expired entries
     _cacheTimestamp.forEach((key, timestamp) {
       if (now.difference(timestamp) > const Duration(minutes: 10)) {
         expiredKeys.add(key);
       }
     });
 
-    // Ukloni expired entries
     for (final key in expiredKeys) {
       _memoryCache.remove(key);
       _cacheTimestamp.remove(key);
-    }
-
-    if (expiredKeys.isNotEmpty) {
-      // Logger removed - cleanup completed
     }
   }
 
@@ -147,8 +133,6 @@ class CacheService {
     if (_prefs != null) {
       await _prefs!.clear();
     }
-
-    // Logger removed
   }
 
   /// 📊 Cache statistike
@@ -156,7 +140,6 @@ class CacheService {
     final now = DateTime.now();
     int expiredCount = 0;
 
-    // Broji expired entries
     _cacheTimestamp.forEach((key, timestamp) {
       if (now.difference(timestamp) > const Duration(minutes: 10)) {
         expiredCount++;

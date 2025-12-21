@@ -10,7 +10,6 @@ class VozacMappingService {
   static DateTime? _lastCacheUpdate;
   static bool _isInitialized = false;
 
-  /// Cache validity period (30 minutes)
   static const Duration _cacheValidityPeriod = Duration(minutes: 30);
 
   /// 🚀 INICIJALIZACIJA CACHE-A NA STARTUP
@@ -20,7 +19,6 @@ class VozacMappingService {
       await _loadMappingFromDatabase();
       _isInitialized = true;
     } catch (e) {
-      // Postavi prazan cache da ne crashuje aplikaciju
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
       _isInitialized = true;
@@ -39,18 +37,15 @@ class VozacMappingService {
         _vozacNameToUuid![vozac.ime] = vozac.id;
         _vozacUuidToName![vozac.id] = vozac.ime;
 
-        // Dodaj i puno ime
         _vozacNameToUuid![vozac.punoIme] = vozac.id;
       }
 
       _lastCacheUpdate = DateTime.now();
     } catch (e) {
-      // Database connection failed - initialize empty cache
-      // This will force retry on next access
       _vozacNameToUuid = {};
       _vozacUuidToName = {};
-      _lastCacheUpdate = null; // Force refresh on next call
-      rethrow; // Propagate error to caller
+      _lastCacheUpdate = null;
+      rethrow;
     }
   }
 
@@ -104,7 +99,6 @@ class VozacMappingService {
   static String? getVozacImeWithFallbackSync(String? uuid) {
     if (uuid == null || uuid.isEmpty) return null;
 
-    // WARN: Ako cache nije učitan, vrati null umesto crash
     if (!_isInitialized || _vozacUuidToName == null) {
       return null;
     }

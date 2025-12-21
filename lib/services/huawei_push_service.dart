@@ -39,13 +39,13 @@ class HuaweiPushService {
         try {
           await Push.getAppId();
         } catch (e) {
-          // HMS getAppId failed
+          // 🔇 Ignore - HMS not available
         }
 
         try {
           await Push.getAgConnectValues();
         } catch (e) {
-          // HMS getAgConnectValues failed
+          // 🔇 Ignore - HMS not available
         }
 
         // Request the token explicitly: the Push.getToken requires a scope
@@ -55,10 +55,10 @@ class HuaweiPushService {
         try {
           Push.getToken('HCM');
         } catch (e) {
-          // HMS getToken request failed
+          // 🔇 Ignore - HMS not available
         }
       } catch (e) {
-        // HMS getToken helper exception
+        // 🔇 Ignore - HMS not available
       }
 
       // The plugin emits tokens asynchronously on the stream. Wait a short while for the first
@@ -136,7 +136,7 @@ class HuaweiPushService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pending_huawei_token', token);
     } catch (e) {
-      // Error saving pending token
+      // 🔇 Ignore
     }
   }
 
@@ -151,7 +151,7 @@ class HuaweiPushService {
       await prefs.remove('pending_huawei_token');
       await _registerTokenWithServer(token);
     } catch (e) {
-      // tryRegisterPendingToken failed
+      // 🔇 Ignore
     }
   }
 }

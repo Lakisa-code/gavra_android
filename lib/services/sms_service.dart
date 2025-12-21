@@ -21,7 +21,6 @@ class SMSService {
         '   📅 Predzadnji dan meseca u 20:00 - podsećaj da ističe sutra\n'
         '   📅 Prvi dan meseca u 10:00 - krajnji rok za prethodni mesec');
 
-    // Provera svakih sat vremena
     _monthlyTimer = Timer.periodic(const Duration(hours: 1), (timer) async {
       await _checkAndSendMonthlySMS();
     });
@@ -40,16 +39,12 @@ class SMSService {
     DateTime now = DateTime.now();
     DateTime secondToLastDay = _getSecondToLastDayOfMonth(now);
 
-    // Proverava da li je predzadnji dan u 20:00 - podsećaj da ističe sutra
     if (now.day == secondToLastDay.day && now.hour == 20 && now.minute >= 0 && now.minute < 5) {
-      // 5-minutni prozor
-      debugPrint('📅 Predzadnji dan meseca u 20:00 - šaljem SMS podsećaje...');
+      debugPrint('📅 Predzadnji dan meseca u 20:00 - šaljem SMS podsetićaje...');
       await sendSMSToUnpaidMonthlyPassengers();
     }
 
-    // Proverava da li je prvi dan meseca u 10:00 - krajnji rok upozorenje
     if (now.day == 1 && now.hour == 10 && now.minute >= 0 && now.minute < 5) {
-      // 5-minutni prozor
       debugPrint('📅 Prvi dan meseca u 10:00 - šaljem SMS krajnji rok...');
       await sendSMSToOverdueMonthlyPassengers();
     }
@@ -57,9 +52,7 @@ class SMSService {
 
   /// Računa predzadnji dan meseca
   static DateTime _getSecondToLastDayOfMonth(DateTime date) {
-    // Poslednji dan meseca
     DateTime lastDay = DateTime(date.year, date.month + 1, 0);
-    // Predzadnji dan meseca
     return lastDay.subtract(const Duration(days: 1));
   }
 
@@ -76,45 +69,37 @@ class SMSService {
 
       debugPrint('📱 Učitavam neplaćene mesečne putnike... (Vozač: $currentDriver)');
 
-      // Trenutni mesec i godina
       final now = DateTime.now();
       final currentMonth = now.month;
       final currentYear = now.year;
 
-      // Učitaj sve aktivne mesečne putnike koji NISU platili za trenutni mesec
       final response = await supabase
           .from('registrovani_putnici')
           .select('*')
           .eq('aktivan', true)
           .eq('obrisan', false)
-          .neq('tip', 'dnevni'); // Samo mesečni (radnik, ucenik)
+          .neq('tip', 'dnevni');
 
       final List<RegistrovaniPutnik> allPassengers =
           (response as List).map((data) => RegistrovaniPutnik.fromMap(data as Map<String, dynamic>)).toList();
 
-      // Filtriraj one koji nisu platili za trenutni mesec
       final unpaidPassengers = allPassengers.where((putnik) {
-        // Proveri da li ima telefon
         if (putnik.brojTelefona == null || putnik.brojTelefona!.isEmpty) {
           return false;
         }
-        // Proveri da li je platio za trenutni mesec
         final placeniMesec = putnik.placeniMesec;
         final placenaGodina = putnik.placenaGodina;
 
-        // Nije platio ako:
-        // - Nema uopšte plaćanje
-        // - Ili plaćanje nije za trenutni mesec/godinu
         if (placeniMesec == null || placenaGodina == null) {
-          return true; // Nije nikad platio
+          return true;
         }
         if (placenaGodina < currentYear) {
-          return true; // Platio prošle godine
+          return true;
         }
         if (placenaGodina == currentYear && placeniMesec < currentMonth) {
-          return true; // Platio ranije ove godine
+          return true;
         }
-        return false; // Platio za ovaj mesec
+        return false;
       }).toList();
 
       debugPrint('📋 Pronađeno ${unpaidPassengers.length} putnika koji nisu platili za ${_getMonthName(currentMonth)}');
@@ -124,13 +109,11 @@ class SMSService {
 
       for (RegistrovaniPutnik putnik in unpaidPassengers) {
         try {
-          // Izračunaj dugovanje
           final cenaPoDoanu = putnik.cenaPoDanu ?? (putnik.tip == 'ucenik' ? 600.0 : 700.0);
           final brojPutovanja = putnik.brojPutovanja;
           final brojOtkazivanja = putnik.brojOtkazivanja;
           final dugovanje = cenaPoDoanu * brojPutovanja;
 
-          // Kreiraj SMS poruku
           String message = _createReminderSMS(
             putnik.putnikIme,
             currentMonth,
@@ -140,17 +123,14 @@ class SMSService {
             dugovanje,
           );
 
-          // Pošalji SMS putniku
           await _sendSMS(putnik.brojTelefona!, message);
           successCount++;
           debugPrint('SMS poslat: ${putnik.putnikIme} (${putnik.brojTelefona})');
 
-          // Pošalji SMS i roditeljima za učenike
           if (putnik.tip == 'ucenik') {
             await _sendSMSToParents(putnik, message);
           }
 
-          // Pauza između SMS-ova (da se izbegne spam)
           await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
           errorCount++;
@@ -177,12 +157,10 @@ class SMSService {
 
       debugPrint('📱 Učitavam putnike koji nisu platili za prethodni mesec... (Vozač: $currentDriver)');
 
-      // Prethodni mesec
       final now = DateTime.now();
       final previousMonth = now.month == 1 ? 12 : now.month - 1;
       final previousYear = now.month == 1 ? now.year - 1 : now.year;
 
-      // Učitaj sve aktivne mesečne putnike koji NISU platili za prethodni mesec
       final response = await supabase
           .from('registrovani_putnici')
           .select('*')
@@ -193,7 +171,6 @@ class SMSService {
       final List<RegistrovaniPutnik> allPassengers =
           (response as List).map((data) => RegistrovaniPutnik.fromMap(data as Map<String, dynamic>)).toList();
 
-      // Filtriraj one koji nisu platili za prethodni mesec
       final overduePassengers = allPassengers.where((putnik) {
         if (putnik.brojTelefona == null || putnik.brojTelefona!.isEmpty) {
           return false;
@@ -204,14 +181,13 @@ class SMSService {
         if (placeniMesec == null || placenaGodina == null) {
           return true;
         }
-        // Proveri da li je platio za prethodni mesec ili kasnije
         if (placenaGodina > previousYear) {
-          return false; // Platio ove godine (nakon prethodnog meseca)
+          return false;
         }
         if (placenaGodina == previousYear && placeniMesec >= previousMonth) {
-          return false; // Platio za prethodni mesec ili kasnije
+          return false;
         }
-        return true; // Nije platio
+        return true;
       }).toList();
 
       debugPrint(
@@ -227,7 +203,6 @@ class SMSService {
           final brojOtkazivanja = putnik.brojOtkazivanja;
           final dugovanje = cenaPoDoanu * brojPutovanja;
 
-          // Kreiraj SMS poruku za krajnji rok
           String message = _createOverdueReminderSMS(
             putnik.putnikIme,
             previousMonth,
@@ -237,17 +212,14 @@ class SMSService {
             dugovanje,
           );
 
-          // Pošalji SMS
           await _sendSMS(putnik.brojTelefona!, message);
           successCount++;
           debugPrint('✅ Krajnji rok SMS poslat: ${putnik.putnikIme} (${putnik.brojTelefona})');
 
-          // Pošalji SMS i roditeljima za učenike
           if (putnik.tip == 'ucenik') {
             await _sendSMSToParents(putnik, message);
           }
 
-          // Pauza između SMS-ova
           await Future<void>.delayed(const Duration(seconds: 2));
         } catch (e) {
           errorCount++;
@@ -300,7 +272,6 @@ class SMSService {
   ) {
     final mesecNaziv = _getMonthName(mesec);
     final now = DateTime.now();
-    // Krajnji rok je 5. sledećeg meseca
     final krajnjiRokMesec = now.month;
     final krajnjiRokGodina = now.year;
     final krajnjiRokMesecNaziv = _getMonthName(krajnjiRokMesec);
@@ -346,9 +317,6 @@ class SMSService {
   /// Slanje SMS poruke
   static Future<void> _sendSMS(String phoneNumber, String message) async {
     try {
-      // NAPOMENA: Automatsko slanje SMS-a NIJE MOGUĆE zbog Android ograničenja
-      // Ovaj pristup otvara SMS aplikaciju sa prethodno popunjenim podacima
-
       final Uri smsUri = Uri(
         scheme: 'sms',
         path: phoneNumber,

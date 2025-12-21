@@ -1,6 +1,3 @@
-// Firebase usage removed for auth-only branch. This file now acts as a
-// lightweight local session manager (SharedPreferences) and no-ops any
-// Firebase-specific push functionality so the app compiles without FCM.
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';

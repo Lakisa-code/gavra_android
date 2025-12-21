@@ -125,7 +125,6 @@ class GeocodingService {
         } else {}
       } catch (e) {
         if (attempt < maxRetries) {
-          // Kratka pauza pre sledećeg pokušaja
           await Future<void>.delayed(Duration(milliseconds: 500 * attempt));
         }
       }
@@ -143,7 +142,7 @@ class GeocodingService {
         await prefs.remove(key);
       }
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 

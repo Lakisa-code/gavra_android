@@ -87,7 +87,7 @@ class _RegistrovaniPutniciScreenState extends State<RegistrovaniPutniciScreen> {
   // Services
   final List<StreamSubscription> _subscriptions = [];
 
-  // 💰 PLAĆANJE STATE - kombinovani podaci iz obe tabele + DEBOUNCE
+  // 💰 PLAĆANJE STATE
   Map<String, double> _stvarnaPlacanja = {};
   DateTime? _lastPaymentUpdate;
   Set<String> _lastPutnikIds = {};

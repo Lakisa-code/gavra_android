@@ -1511,20 +1511,10 @@ class _RegistrovaniPutnikDialogState extends State<RegistrovaniPutnikDialog> {
     };
 
     try {
-      final updated = await _registrovaniPutnikService.updateRegistrovaniPutnik(
+      await _registrovaniPutnikService.updateRegistrovaniPutnik(
         widget.existingPutnik!.id,
         updateMap,
       );
-
-      // Create daily travels for updated passenger
-      try {
-        await _registrovaniPutnikService.kreirajDnevnaPutovanjaIzRegistrovanih(
-          updated,
-          DateTime.now().add(const Duration(days: 1)),
-        );
-      } catch (_) {
-        // Ignore errors in daily travel creation
-      }
 
       // Očisti cache (refresh se dešava kroz ValueKey u parent screen-u)
       RegistrovaniPutnikService.clearCache();

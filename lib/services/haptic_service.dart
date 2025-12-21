@@ -8,9 +8,8 @@ class HapticService {
   static void lightImpact() {
     try {
       HapticFeedback.lightImpact();
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -18,9 +17,8 @@ class HapticService {
   static void mediumImpact() {
     try {
       HapticFeedback.mediumImpact();
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -28,9 +26,8 @@ class HapticService {
   static void heavyImpact() {
     try {
       HapticFeedback.heavyImpact();
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -38,9 +35,8 @@ class HapticService {
   static void selectionClick() {
     try {
       HapticFeedback.selectionClick();
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -48,13 +44,11 @@ class HapticService {
   static void success() {
     try {
       HapticFeedback.lightImpact();
-      // Double tap za success feeling
       Future.delayed(const Duration(milliseconds: 100), () {
         HapticFeedback.lightImpact();
       });
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 
@@ -62,9 +56,8 @@ class HapticService {
   static void error() {
     try {
       HapticFeedback.heavyImpact();
-      // Logger removed
     } catch (e) {
-      // Logger removed
+      // 🔇 Ignore
     }
   }
 }

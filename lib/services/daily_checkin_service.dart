@@ -12,7 +12,6 @@ import 'statistika_service.dart';
 
 class DailyCheckInService {
   static const String _checkInPrefix = 'daily_checkin_';
-  // Stream controller za real-time ažuriranje kocke
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
   /// Stream za real-time ažuriranje kusura - direktan Supabase
@@ -100,9 +99,6 @@ class DailyCheckInService {
 
   /// Inicijalizuj realtime stream za vozača tako da kocka prati bazu
   static StreamSubscription<dynamic> initializeRealtimeForDriver(String vozac) {
-    // Supabase realtime se koristi direktno gde je potrebno
-    // Return a dummy subscription since daily_checkins functionality is removed
-    // ignore: prefer_const_constructors
     return Stream<dynamic>.empty().listen((_) {});
   }
 
@@ -113,13 +109,11 @@ class DailyCheckInService {
     final today = DateTime.now();
     final todayKey = '$_checkInPrefix${vozac}_${today.year}_${today.month}_${today.day}';
 
-    // 1. Prvo proveri lokalno
     final localCheckedIn = prefs.getBool(todayKey) ?? false;
     if (localCheckedIn) {
       return true;
     }
 
-    // 2. Ako lokalno nema, proveri Supabase (za drugi uređaj)
     try {
       final supabase = Supabase.instance.client;
       final todayStr = today.toIso8601String().split('T')[0]; // YYYY-MM-DD
@@ -150,7 +144,7 @@ class DailyCheckInService {
         return true;
       }
     } catch (e) {
-      // Supabase nije dostupan - nastavi sa lokalnom proverom
+      // 🔇 Ignore
     }
 
     return false;
@@ -176,12 +170,10 @@ class DailyCheckInService {
       await prefs.setDouble('${todayKey}_pazari', dnevniPazari);
       await prefs.setString('${todayKey}_timestamp', today.toIso8601String());
 
-      // Emituj update za stream
       if (!_sitanNovacController.isClosed) {
         _sitanNovacController.add(sitanNovac);
       }
     } catch (e) {
-      // Ovo je kritična greška - lokalno čuvanje mora da radi
       rethrow;
     }
 
@@ -196,9 +188,6 @@ class DailyCheckInService {
       // Ažuriraj kusur u vozaci tabeli
       await Supabase.instance.client.from('vozaci').update({'kusur': sitanNovac}).eq('ime', vozac);
     } catch (e) {
-      // Ako remote save ne uspe, ali lokalna je OK, nastavi dalje
-      // 🔧 DEBUG: Log the error
-      // ignore: avoid_print
       print('❌ DailyCheckInService: Greška pri čuvanju u Supabase: $e');
     }
   }
@@ -239,8 +228,6 @@ class DailyCheckInService {
   }) async {
     final supabase = Supabase.instance.client;
     try {
-      // Prvo pokušaj da sačuvaš u tabelu
-      // 🔧 FIX: Dodaj onConflict za upsert da radi ispravno sa UNIQUE(vozac, datum)
       final response = await supabase
           .from('daily_checkins')
           .upsert(
@@ -258,14 +245,11 @@ class DailyCheckInService {
           .select()
           .maybeSingle();
 
-      // Vrati eventualno sačuvani red kako bi pozivalac mogao da koristi potvrđene vrednosti
       if (response is Map<String, dynamic>) return response;
       return null;
     } on PostgrestException catch (e) {
-      // Ako je tabela missing, pokušaj da je kreiraš
       if (e.code == 'PGRST106' || e.message.contains('does not exist') || e.code == '404') {
         await _createDailyCheckinsTable();
-        // Ponovi pokušaj čuvanja nakon kreiranja tabele
         final response = await supabase
             .from('daily_checkins')
             .upsert(
@@ -286,7 +270,7 @@ class DailyCheckInService {
         if (response is Map<String, dynamic>) return response;
         return null;
       } else {
-        rethrow; // Proslijedi dalju grešku
+        rethrow;
       }
     } catch (e) {
       rethrow;
@@ -297,10 +281,9 @@ class DailyCheckInService {
   static Future<void> _createDailyCheckinsTable() async {
     try {
       final supabase = Supabase.instance.client;
-      // Pokušaj kreiranje preko RPC ako postoji
       await supabase.rpc<void>('create_daily_checkins_table_if_not_exists');
     } catch (e) {
-      // Ne bacaj grešku jer tabela možda postoji ali RPC ne radi
+      // 🔇 Ignore
     }
   }
 
@@ -315,7 +298,7 @@ class DailyCheckInService {
       // Sačuvaj u Supabase (ako postoji tabela)
       await _savePopisToSupabase(vozac, popisPodaci, datum);
     } catch (e) {
-      // Silently ignore - fallback to SharedPreferences
+      // 🔇 Ignore
     }
     // Sačuvaj lokalno u SharedPreferences
     final prefs = await SharedPreferences.getInstance();
@@ -332,13 +315,11 @@ class DailyCheckInService {
   static Future<Map<String, dynamic>?> getLastDailyReport(String vozac) async {
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now();
-    // Proverava poslednja 7 dana
     for (int i = 1; i <= 7; i++) {
       final checkDate = today.subtract(Duration(days: i));
       final dateKey = '$_checkInPrefix${vozac}_${checkDate.year}_${checkDate.month}_${checkDate.day}';
       final popisString = prefs.getString('${dateKey}_popis');
       if (popisString != null) {
-        // Parsiraj JSON nazad u Map<String, dynamic>
         try {
           final decoded = jsonDecode(popisString) as Map<String, dynamic>;
           return {
@@ -346,7 +327,6 @@ class DailyCheckInService {
             'popis': decoded,
           };
         } catch (e) {
-          // Ako parsing padne, vrati raw string kao fallback
           return {
             'datum': checkDate,
             'popis': popisString,
@@ -367,7 +347,6 @@ class DailyCheckInService {
       if (targetDate.weekday == 6 || targetDate.weekday == 7) {
         return null;
       }
-      // Uvoz potrebnih servisa
       final PutnikService putnikService = PutnikService();
       // 1. OSNOVNI PODACI ZA CILJANI DATUM
       final dayStart = DateTime(targetDate.year, targetDate.month, targetDate.day);
@@ -401,7 +380,7 @@ class DailyCheckInService {
           to: dayEnd,
         ).map((pazarMap) => pazarMap[vozac] ?? 0.0).first.timeout(const Duration(seconds: 10));
       } catch (e) {
-        ukupanPazar = 0.0; // Fallback vrednost
+        ukupanPazar = 0.0;
       }
 
       // 6. MAPIRANJE PODATAKA - IDENTIČNO SA STATISTIKA SCREEN
@@ -415,17 +394,16 @@ class DailyCheckInService {
       // 5. SITAN NOVAC - UČITAJ RUČNO UNET KUSUR (ne kalkuliši automatski)
       double sitanNovac;
       try {
-        // Pokušaj da učitaš ručno unet kusur za taj dan
         sitanNovac = await getTodayAmount(vozac) ?? 0.0;
       } catch (e) {
-        sitanNovac = 0.0; // Fallback ako nema unetog kusura
+        sitanNovac = 0.0;
       }
       // 🚗 REALTIME GPS KILOMETRAŽA - IDENTIČNO SA _showPopisDana()
       double kilometraza;
       try {
         kilometraza = await StatistikaService.instance.getKilometrazu(vozac, dayStart, dayEnd);
       } catch (e) {
-        kilometraza = 0.0; // Fallback vrednost
+        kilometraza = 0.0;
       }
       // 6. KREIRAJ POPIS OBJEKAT
       final automatskiPopis = {
@@ -440,7 +418,7 @@ class DailyCheckInService {
         'dugoviPutnici': dugoviPutnici,
         'mesecneKarte': mesecneKarte,
         'kilometraza': kilometraza,
-        'automatskiGenerisal': true, // Marker da je automatski
+        'automatskiGenerisal': true,
         'timestamp': DateTime.now().toIso8601String(),
       };
       // 7. SAČUVAJ AUTOMATSKI POPIS
@@ -478,7 +456,6 @@ class DailyCheckInService {
         'created_at': datum.toIso8601String(),
       });
     } catch (e) {
-      // Tabela daily_reports možda ne postoji - potrebno je kreirati ručno
       rethrow;
     }
   }

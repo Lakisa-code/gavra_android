@@ -55,16 +55,13 @@ class UnifiedGeocodingService {
     bool saveToDatabase = true,
   }) async {
     final Map<Putnik, Position> coordinates = {};
-    // final List<Future<GeocodingResult>> futures = []; // REMOVED: Unused
 
-    // Filtriraj putnike sa adresama
     final putniciSaAdresama = putnici.where((p) => _hasValidAddress(p)).toList();
 
     if (putniciSaAdresama.isEmpty) {
       return coordinates;
     }
 
-    // Kreiraj funkcije za sekvencijalno izvršavanje
     final List<Future<GeocodingResult> Function()> tasks = [];
     int completed = 0;
     final int total = putniciSaAdresama.length;
@@ -78,13 +75,11 @@ class UnifiedGeocodingService {
       });
     }
 
-    // Izvrši taskove sekvencijalno sa pauzom
     final results = await _executeWithRateLimit(
       tasks,
       delay: RouteConfig.nominatimBatchDelay,
     );
 
-    // Popuni mapu sa uspešnim rezultatima
     for (final result in results) {
       if (result.success) {
         coordinates[result.putnik] = result.position!;
@@ -112,7 +107,6 @@ class UnifiedGeocodingService {
         if (adresaFromDb != null) {
           realAddressName = adresaFromDb.naziv;
 
-          // Ako ima koordinate u bazi, koristi ih
           if (adresaFromDb.latitude != null && adresaFromDb.longitude != null) {
             position = _createPosition(
               adresaFromDb.latitude!,
@@ -147,7 +141,6 @@ class UnifiedGeocodingService {
           position = _parsePosition(diskCached);
           if (position != null) {
             source = 'disk_cache';
-            // Sačuvaj u memory cache za brži pristup
             CacheService.saveToMemory(cacheKey, diskCached);
           }
         }
@@ -166,12 +159,10 @@ class UnifiedGeocodingService {
           if (position != null) {
             source = 'nominatim';
 
-            // Sačuvaj u cache
             final cacheKey = _getCacheKey(putnik);
             CacheService.saveToMemory(cacheKey, coordsString);
             await CacheService.saveToDisk(cacheKey, coordsString);
 
-            // Sačuvaj u bazu za sledeći put
             if (saveToDatabase) {
               await _saveCoordinatesToDatabase(
                 putnik: putnik,
@@ -212,7 +203,6 @@ class UnifiedGeocodingService {
     if (putnik.adresa == null || putnik.adresa!.trim().isEmpty) {
       return false;
     }
-    // Proveri da adresa nije samo naziv grada
     if (putnik.adresa!.toLowerCase().trim() == putnik.grad.toLowerCase().trim()) {
       return false;
     }
@@ -279,7 +269,7 @@ class UnifiedGeocodingService {
         );
       }
     } catch (e) {
-      // Ignoriši greške - koordinate će se ponovo dohvatiti sledeći put
+      // 🔇 Ignore
     }
   }
 
@@ -291,12 +281,9 @@ class UnifiedGeocodingService {
     final results = <GeocodingResult>[];
 
     for (int i = 0; i < tasks.length; i++) {
-      // Izvrši task
       final result = await tasks[i]();
       results.add(result);
 
-      // Ako je rezultat došao sa interneta (Nominatim), napravi pauzu
-      // Ako je iz keša/baze, ne treba pauza
       if (result.source == 'nominatim' && i < tasks.length - 1) {
         await Future.delayed(delay);
       }

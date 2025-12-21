@@ -8,8 +8,6 @@ import '../globals.dart'; // Import za navigatorKey
 import '../services/theme_manager.dart';
 
 /// 🔐 CENTRALIZOVANI SERVIS ZA SVE DOZVOLE
-/// Zahteva sve dozvole pri prvom pokretanju aplikacije
-/// i zatim ih koristi automatski bez dodatnih pitanja
 class PermissionService {
   static const String _firstLaunchKey = 'app_first_launch_permissions';
 
@@ -21,12 +19,10 @@ class PermissionService {
     final isFirstLaunch = prefs.getBool(_firstLaunchKey) ?? true;
 
     if (isFirstLaunch) {
-      // Proveri da li je context još uvek aktivan pre korišćenja
       if (!context.mounted) return false;
       return await _showPermissionSetupDialog(context);
     }
 
-    // Nije prvi pokret - proverava da li su dozvole i dalje aktivne
     return await _checkExistingPermissions();
   }
 
@@ -70,7 +66,6 @@ class PermissionService {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Header sa ikonom
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -84,8 +79,6 @@ class PermissionService {
                             ),
                           ),
                           const SizedBox(height: 20),
-
-                          // Naslov
                           const Text(
                             'Podešavanje aplikacije',
                             style: TextStyle(
@@ -96,7 +89,6 @@ class PermissionService {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
-
                           Text(
                             'Za potpunu funkcionalnost aplikacije potrebne su sledeće dozvole:',
                             style: TextStyle(
@@ -106,12 +98,8 @@ class PermissionService {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
-
-                          // Permission lista
                           ..._buildPermissionList(),
-
                           const SizedBox(height: 20),
-
                           Text(
                             'Dozvole se zahtevaju samo jednom. Možete ih kasnije promeniti u podešavanjima telefona.',
                             style: TextStyle(
@@ -121,8 +109,6 @@ class PermissionService {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
-
-                          // Dugmići
                           Row(
                             children: [
                               Expanded(
@@ -279,13 +265,9 @@ class PermissionService {
   /// ✅ BATCH PERMISSION REQUEST - Optimizovano za jedan klik
   static Future<bool> requestAllPermissions() async {
     try {
-      // 🚀 BATCH REQUEST - brži flow sa manje delay-ova
-
-      // 1. 📍 LOKACIJA (prvo, najvažnija)
       final locationStatus =
           await _requestLocationPermission().timeout(const Duration(seconds: 30), onTimeout: () => false);
 
-      // 2. 📦 BATCH REQUEST za ostale dozvole (SMS nije potreban - koristimo url_launcher)
       final permissions = [
         Permission.phone,
         Permission.notification,
@@ -294,16 +276,13 @@ class PermissionService {
 
       final phoneStatus = statuses[Permission.phone] ?? PermissionStatus.denied;
 
-      // Sačuvaj da su dozvole zatražene
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_firstLaunchKey, false);
 
-      // Vraća true ako su sve kritične dozvole odobrene (GPS + Phone)
       final allCriticalGranted = locationStatus && (phoneStatus.isGranted || phoneStatus.isLimited);
 
       return allCriticalGranted;
     } catch (e) {
-      // Graceful fallback - čak i ako se nešto zakuca, aplikacija nastavlja
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_firstLaunchKey, false);
       return false;
@@ -313,14 +292,11 @@ class PermissionService {
   /// 🛰️ SPECIJALNO ZAHTEVANJE LOKACIJSKIH DOZVOLA
   static Future<bool> _requestLocationPermission() async {
     try {
-      // Zahtevaj dozvole (samo jednom pri prvom pokretanju)
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
 
-      // GPS servis se uključuje po potrebi kada korisnik koristi navigaciju
-      // Ne forsiramo uključivanje ovde
       return permission != LocationPermission.denied && permission != LocationPermission.deniedForever;
     } catch (e) {
       return false;
@@ -332,7 +308,6 @@ class PermissionService {
     try {
       final location = await _isLocationPermissionGranted();
       final phone = await Permission.phone.status;
-      // SMS dozvola nije potrebna - koristimo url_launcher
 
       return location && (phone.isGranted || phone.isLimited);
     } catch (e) {
@@ -357,16 +332,13 @@ class PermissionService {
   /// 🚗 INSTANT GPS ZA NAVIGACIJU (bez dodatnih dialoga)
   static Future<bool> ensureGpsForNavigation() async {
     try {
-      // Brza provera - ako je sve OK, samo nastavi
       final isReady = await _isLocationPermissionGranted();
       if (isReady) {
         return true;
       }
 
-      // Proveri da li je GPS usluga uključena
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Pokaži upozorenje pre otvaranja settings
         final context = navigatorKey.currentContext;
         if (context != null && context.mounted) {
           final shouldOpen = await showDialog<bool>(
@@ -488,7 +460,6 @@ class PermissionService {
 
           if (shouldOpen == true) {
             await Geolocator.openLocationSettings();
-            // Sačekaj malo da korisnik uključi GPS
             await Future<void>.delayed(const Duration(seconds: 2));
             serviceEnabled = await Geolocator.isLocationServiceEnabled();
           }
@@ -521,14 +492,13 @@ class PermissionService {
 
       final result = await Permission.phone.request();
 
-      // Huawei fallback
       if (result.isDenied || result.isPermanentlyDenied) {
-        return true; // Vraća true jer će koristiti tel: URI
+        return true;
       }
 
       return result.isGranted || result.isLimited;
     } catch (e) {
-      return true; // Fallback na tel: URI
+      return true;
     }
   }
 
@@ -537,7 +507,6 @@ class PermissionService {
     try {
       return ThemeManager().currentGradient;
     } catch (e) {
-      // Fallback na default gradient ako ThemeManager nije spreman
       return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,

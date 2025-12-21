@@ -9,16 +9,14 @@ import '../models/putnik.dart';
 import 'permission_service.dart';
 
 /// 🎯 PICKUP TRACKING SERVICE
-/// Prati lokaciju vozača i detektuje blizinu putnika.
-/// Kada vozač dođe blizu putnika (~100m), prikazuje notifikaciju sa akcijama.
 class PickupTrackingService {
   static final PickupTrackingService _instance = PickupTrackingService._internal();
   factory PickupTrackingService() => _instance;
   PickupTrackingService._internal();
 
   // 📍 KONSTANTE
-  static const double proximityThresholdMeters = 100.0; // 100m za detekciju
-  static const Duration trackingInterval = Duration(seconds: 10); // Provera svakih 10 sekundi
+  static const double proximityThresholdMeters = 100.0;
+  static const Duration trackingInterval = Duration(seconds: 10);
 
   // 🔔 NOTIFICATION IDs
   static const int pickupNotificationId = 1001;
@@ -51,7 +49,6 @@ class PickupTrackingService {
       onDidReceiveNotificationResponse: _handleNotificationResponse,
     );
 
-    // Kreiraj notification channel za Android
     const androidChannel = AndroidNotificationChannel(
       channelId,
       channelName,
@@ -95,10 +92,8 @@ class PickupTrackingService {
     onApproachingPutnik = onApproaching;
     onAllPutniciCompleted = onCompleted;
 
-    // Sačuvaj stanje
     await _saveTrackingState();
 
-    // Pokreni GPS stream
     _startGpsStream();
     return true;
   }
@@ -112,10 +107,8 @@ class PickupTrackingService {
     _putnikCoordinates.clear();
     _currentPutnikIndex = 0;
 
-    // Ukloni notifikaciju
     await _notifications.cancel(pickupNotificationId);
 
-    // Obriši sačuvano stanje
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('pickup_tracking_active');
   }
@@ -124,7 +117,7 @@ class PickupTrackingService {
   void _startGpsStream() {
     const locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 20, // Update svakih 20m
+      distanceFilter: 20,
     );
 
     _positionSubscription = Geolocator.getPositionStream(
@@ -139,7 +132,6 @@ class PickupTrackingService {
   void _onPositionUpdate(Position driverPosition) {
     if (!_isTracking || _activePutnici.isEmpty) return;
     if (_currentPutnikIndex >= _activePutnici.length) {
-      // Svi putnici obrađeni
       onAllPutniciCompleted?.call();
       stopTracking();
       return;
@@ -153,17 +145,14 @@ class PickupTrackingService {
       return;
     }
 
-    // Izračunaj distancu
     final distanceMeters = _calculateDistance(
       driverPosition.latitude,
       driverPosition.longitude,
       putnikPosition.latitude,
       putnikPosition.longitude,
     );
-    // Callback za približavanje
     onApproachingPutnik?.call(currentPutnik, distanceMeters);
 
-    // Proveri proximity
     if (distanceMeters <= proximityThresholdMeters) {
       _showPickupNotification(currentPutnik, distanceMeters);
     }
@@ -177,7 +166,7 @@ class PickupTrackingService {
       channelDescription: 'Notifikacije za pokupljene putnike',
       importance: Importance.high,
       priority: Priority.high,
-      ongoing: true, // Ostaje dok korisnik ne reaguje
+      ongoing: true,
       autoCancel: false,
       actions: [
         const AndroidNotificationAction(
@@ -211,11 +200,9 @@ class PickupTrackingService {
     final currentPutnik = _activePutnici[_currentPutnikIndex];
 
     if (action == 'pokupio') {
-      // ✅ Putnik pokupljen
       onPutnikPickedUp?.call(currentPutnik, 'picked_up');
       _moveToNextPutnik();
     } else if (action == 'preskoci') {
-      // ⏭️ Preskoči putnika
       onPutnikSkipped?.call(currentPutnik);
       _moveToNextPutnik();
     }
@@ -226,12 +213,10 @@ class PickupTrackingService {
     _currentPutnikIndex++;
 
     if (_currentPutnikIndex >= _activePutnici.length) {
-      // Svi putnici obrađeni
       _notifications.cancel(pickupNotificationId);
       onAllPutniciCompleted?.call();
       stopTracking();
     } else {
-      // Prikaži info o sledećem putniku
       final nextPutnik = _activePutnici[_currentPutnikIndex];
       _updateToNextPutnikNotification(nextPutnik);
     }
@@ -265,7 +250,7 @@ class PickupTrackingService {
 
   /// 📏 CALCULATE DISTANCE (Haversine formula)
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371000; // meters
+    const double earthRadius = 6371000;
     final dLat = _toRadians(lat2 - lat1);
     final dLon = _toRadians(lon2 - lon1);
     final a =

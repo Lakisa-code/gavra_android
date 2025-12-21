@@ -4,23 +4,18 @@ import 'firebase_service.dart';
 import 'huawei_push_service.dart';
 
 /// 📱 Servis za registraciju push tokena mesečnih putnika
-/// Omogućava slanje notifikacija putnicima kada vozač krene
 class PutnikPushService {
   static final _supabase = Supabase.instance.client;
 
-  /// Registruj push token za putnika pri loginu
-  /// Vraća true ako je uspešno registrovan
   static Future<bool> registerPutnikToken(dynamic putnikId) async {
     try {
       String? token;
       String? provider;
 
-      // Probaj FCM prvo (Google)
       token = await FirebaseService.getFCMToken();
       if (token != null && token.isNotEmpty) {
         provider = 'fcm';
       } else {
-        // Probaj Huawei HMS
         token = await HuaweiPushService().initialize();
         if (token != null && token.isNotEmpty) {
           provider = 'huawei';
@@ -31,7 +26,6 @@ class PutnikPushService {
         return false;
       }
 
-      // Sačuvaj u bazu
       await _supabase.from('registrovani_putnici').update({
         'push_token': token,
         'push_provider': provider,
@@ -43,7 +37,6 @@ class PutnikPushService {
     }
   }
 
-  /// Obriši push token (pri logout-u)
   static Future<void> clearPutnikToken(dynamic putnikId) async {
     try {
       await _supabase.from('registrovani_putnici').update({
@@ -51,12 +44,10 @@ class PutnikPushService {
         'push_provider': null,
       }).eq('id', putnikId);
     } catch (e) {
-      // Error clearing token
+      // ❌ Greška pri brisanju tokena
     }
   }
 
-  /// Dohvati tokene za listu putnika (po imenu)
-  /// Vraća mapu: ime -> {token, provider}
   static Future<Map<String, Map<String, String>>> getTokensForPutnici(
     List<String> putnikImena,
   ) async {

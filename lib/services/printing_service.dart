@@ -1,4 +1,3 @@
-// 'dart:typed_data' not required; elements available via Flutter packages
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,7 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../models/putnik.dart';
 import '../services/putnik_service.dart';
-import '../utils/date_utils.dart' as app_date_utils; // DODATO za centralnu getDayAbbreviation
+import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/text_utils.dart';
 
 class PrintingService {
@@ -32,9 +31,6 @@ class PrintingService {
     }
   }
 
-  // Use centralized logger
-
-  /// Štampa spisak putnika za selektovani dan i vreme
   static Future<void> printPutniksList(
     String selectedDay,
     String selectedVreme,
@@ -42,12 +38,8 @@ class PrintingService {
     BuildContext context,
   ) async {
     try {
-      // ✅ KORISTI ISTI STREAM kao home_screen za tačne podatke
-      // Try to compute isoDate from selectedDay (if present) - otherwise leave null
       String? isoDate;
       try {
-        // selectedDay is a full name like "Ponedeljak" - map to next matching date (best-effort)
-        // Fallback: use today
         isoDate = DateTime.now().toIso8601String().split('T')[0];
       } catch (_) {
         isoDate = DateTime.now().toIso8601String().split('T')[0];
@@ -61,25 +53,20 @@ class PrintingService {
           )
           .first;
 
-      // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
-      // ✅ KORISTI CENTRALNU FUNKCIJU IZ DateUtils
       String getDayAbbreviation(String fullDayName) {
         return app_date_utils.DateUtils.getDayAbbreviation(fullDayName);
       }
 
-      // Normalizuj vreme format - konvertuj "05:00:00" u "5:00"
       String normalizeTime(String? time) {
         if (time == null || time.isEmpty) return '';
 
         String normalized = time.trim();
 
-        // Ukloni sekunde ako postoje (05:00:00 -> 05:00)
         if (normalized.contains(':') && normalized.split(':').length == 3) {
           List<String> parts = normalized.split(':');
           normalized = '${parts[0]}:${parts[1]}';
         }
 
-        // Ukloni leading zero (05:00 -> 5:00)
         if (normalized.startsWith('0')) {
           normalized = normalized.substring(1);
         }
@@ -89,38 +76,31 @@ class PrintingService {
 
       final danBaza = getDayAbbreviation(selectedDay);
 
-      // Filtriraj putnike za selektovani dan, vreme i grad (ISTA LOGIKA KAO U HOMESCREEN)
       List<Putnik> putnici = sviPutnici.where((putnik) {
         final normalizedStatus = TextUtils.normalizeText(putnik.status ?? '');
 
-        // MESEČNI PUTNICI - sada imaju polazak kolonu!
         if (putnik.mesecnaKarta == true) {
-          // Mesečni putnici se filtriraju po gradu, polazku, danu i statusu
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
           final odgovarajuciGrad =
               normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
-          // Poređenje vremena - normalizuj oba formata
           final putnikPolazak = putnik.polazak.toString().trim();
           final selectedVremeStr = selectedVreme.trim();
           final odgovarajuciPolazak = normalizeTime(putnikPolazak) == normalizeTime(selectedVremeStr) ||
               (normalizeTime(putnikPolazak).startsWith(normalizeTime(selectedVremeStr)));
 
-          // DODAJ FILTRIRANJE PO DANU I ZA MESEČNE PUTNIKE
           final odgovarajuciDan = putnik.dan.toLowerCase().contains(danBaza.toLowerCase());
 
           final result = odgovarajuciGrad && odgovarajuciPolazak && odgovarajuciDan && normalizedStatus != 'obrisan';
 
           return result;
         } else {
-          // DNEVNI/OBIČNI PUTNICI - standardno filtriranje
           final normalizedPutnikGrad = TextUtils.normalizeText(putnik.grad);
           final normalizedGrad = TextUtils.normalizeText(selectedGrad);
           final gradMatch =
               normalizedPutnikGrad.contains(normalizedGrad) || normalizedGrad.contains(normalizedPutnikGrad);
 
-          // Konvertuj pun naziv dana u kraticu za poređenje sa bazom
           final odgovara = gradMatch &&
               normalizeTime(putnik.polazak) == normalizeTime(selectedVreme) &&
               putnik.dan.toLowerCase().contains(danBaza.toLowerCase()) &&
@@ -144,10 +124,8 @@ class PrintingService {
         return;
       }
 
-      // Učitaj fontove sa podrškom za srpska slova
       await _loadFonts();
 
-      // Kreiraj PDF dokument
       final pdf = await _createPutniksPDF(
         putnici,
         selectedDay,
@@ -155,8 +133,6 @@ class PrintingService {
         selectedGrad,
       );
 
-      // Save PDF to a local temporary file and open it.
-      // `_createPutniksPDF` already returns `Uint8List` bytes
       final bytes = pdf;
       final tempDir = await getTemporaryDirectory();
       final fileName =
@@ -165,7 +141,6 @@ class PrintingService {
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(bytes, flush: true);
 
-      // Open the generated PDF using platform default viewer (Android will show print/share options)
       await OpenFilex.open(file.path);
     } catch (e) {
       if (context.mounted) {
@@ -179,7 +154,6 @@ class PrintingService {
     }
   }
 
-  /// Kreira PDF dokument sa spiskom putnika - IDENTIČNO KAO PAPIRNI NALOG
   static Future<Uint8List> _createPutniksPDF(
     List<Putnik> putnici,
     String selectedDay,
@@ -188,16 +162,12 @@ class PrintingService {
   ) async {
     final pdf = pw.Document();
 
-    // Sortiraj putnike po imenu
     putnici.sort((a, b) => a.ime.compareTo(b.ime));
 
-    // Odredi relaciju na osnovu grada i vremena
     String relacija = _odredjiRelaciju(selectedGrad, selectedVreme);
 
-    // Danas datum
     final danas = DateFormat('dd.MM.yyyy').format(DateTime.now());
 
-    // Kreiraj temu sa fontovima koji podržavaju srpska slova
     final theme = pw.ThemeData.withFont(
       base: _regularFont,
       bold: _boldFont,
@@ -405,10 +375,8 @@ class PrintingService {
     return pdf.save();
   }
 
-  /// Određuje relaciju na osnovu grada
   static String _odredjiRelaciju(String grad, String vreme) {
     final normalizedGrad = grad.toLowerCase();
-    // Jutarnji polasci iz BC idu u VS, popodnevni iz VS u BC
     if (normalizedGrad.contains('bela crkva') || normalizedGrad.contains('bc')) {
       return 'Bela Crkva - Vršac';
     } else if (normalizedGrad.contains('vrsac') || normalizedGrad.contains('vs')) {
@@ -417,7 +385,6 @@ class PrintingService {
     return '$grad - ______';
   }
 
-  /// Gradi red sa labelom i vrednošću
   static pw.Widget _buildInfoRow(String label, String value) {
     return pw.Row(
       children: [
