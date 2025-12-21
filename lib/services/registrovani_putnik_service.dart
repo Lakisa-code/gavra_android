@@ -77,7 +77,7 @@ class RegistrovaniPutnikService {
     // Ako već postoji aktivan controller, koristi ga
     if (_sharedController != null && !_sharedController!.isClosed) {
       // NE POVEĆAVAJ listener count - broadcast stream deli istu pretplatu
-      debugPrint('📊 [RegistrovaniPutnikService] Reusing existing stream');
+      // debugPrint('📊 [RegistrovaniPutnikService] Reusing existing stream'); // Disabled - too spammy
 
       // Emituj poslednju vrednost novom listener-u
       if (_lastValue != null) {

@@ -1,11 +1,47 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../globals.dart';
 import '../screens/danas_screen.dart';
+import '../screens/registrovani_putnik_profil_screen.dart';
 
 class NotificationNavigationService {
+  /// 🚐 Navigiraj na putnikov profil ekran (za "transport_started" notifikaciju)
+  static Future<void> navigateToPassengerProfile() async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    try {
+      // Dohvati sačuvane podatke putnika iz SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final putnikId = prefs.getString('registrovani_putnik_id');
+      
+      if (putnikId == null) return;
+      
+      // Dohvati putnikove podatke iz baze
+      final response = await Supabase.instance.client
+          .from('registrovani_putnici')
+          .select()
+          .eq('id', putnikId)
+          .single();
+      
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (context) => RegistrovaniPutnikProfilScreen(
+              putnikData: Map<String, dynamic>.from(response),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Ignoriši greške
+    }
+  }
+
   static Future<void> navigateToPassenger({
     required String type,
     required Map<String, dynamic> putnikData,

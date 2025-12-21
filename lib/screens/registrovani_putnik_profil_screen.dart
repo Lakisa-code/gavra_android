@@ -603,7 +603,7 @@ class _RegistrovaniPutnikProfilScreenState extends State<RegistrovaniPutnikProfi
 
                       // 🚐 ETA Widget - prikazuje "Kombi stiže za X min" ako je vozač aktivan
                       KombiEtaWidget(
-                        putnikIme: ime,
+                        putnikIme: fullName,
                         grad: grad,
                       ),
 

@@ -20,6 +20,7 @@ import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
 import 'services/vozac_mapping_service.dart'; // 🗂️ DODATO za inicijalizaciju mapiranja
 import 'supabase_client.dart';
+import 'utils/realtime_debugger.dart'; // 🔍 DEBUG: Dijagnostika realtime-a
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -116,6 +117,9 @@ void main() async {
       // Pretplati se na registrovani_putnici - glavni stream za sve putnike
       RealtimeManager.instance.subscribe('registrovani_putnici');
       debugPrint('✅ [main] RealtimeManager initialized for registrovani_putnici');
+
+      // 🔍 DEBUG: Pokreni dijagnostiku realtime-a (ukloni posle testiranja)
+      RealtimeDebugger.runFullDiagnostics();
     } catch (e) {
       debugPrint('❌ [main] RealtimeManager init failed: $e');
     }

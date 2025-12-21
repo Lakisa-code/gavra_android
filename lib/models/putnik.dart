@@ -696,6 +696,7 @@ class Putnik {
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🎯 EQUALITY OPERATORS - za stabilno mapiranje u Map<Putnik, Position>
+  // 🔧 FIX: Uključi SVE relevantne atribute za detekciju promena iz realtime-a
   // ═══════════════════════════════════════════════════════════════════════
 
   @override
@@ -703,23 +704,25 @@ class Putnik {
     if (identical(this, other)) return true;
     if (other is! Putnik) return false;
 
-    // Ako oba imaju id, koristi id za poređenje
-    if (id != null && other.id != null) {
-      return id == other.id;
-    }
-
-    // Fallback: koristi ime + grad + polazak za jedinstvenu identifikaciju
-    return ime == other.ime && grad == other.grad && polazak == other.polazak;
+    // 🔧 FIX: Poredi SVE relevantne atribute, ne samo id
+    // Ovo omogućava da didUpdateWidget detektuje promene iz realtime-a
+    return id == other.id &&
+        ime == other.ime &&
+        grad == other.grad &&
+        polazak == other.polazak &&
+        status == other.status &&
+        pokupljen == other.pokupljen &&
+        placeno == other.placeno &&
+        cena == other.cena &&
+        vremePokupljenja == other.vremePokupljenja;
   }
 
   @override
   int get hashCode {
-    // Ako ima id, koristi ga za hash
+    // Koristi samo stabilne atribute za hash (id ili ime+grad+polazak)
     if (id != null) {
       return id.hashCode;
     }
-
-    // Fallback: kombinacija ime + grad + polazak
     return Object.hash(ime, grad, polazak);
   }
 }

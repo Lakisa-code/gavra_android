@@ -70,6 +70,9 @@ class _DanasScreenState extends State<DanasScreen> {
   final ValueNotifier<bool> _isRealtimeHealthy = ValueNotifier(true);
   final Map<String, DateTime> _streamHeartbeats = {};
 
+  // 🔧 CACHED STREAMS - sprečava kreiranje novih stream-ova na svaki build
+  Stream<Map<String, int>>? _cachedDjackiStream;
+
   // 🕒 THROTTLING ZA REALTIME SYNC - sprečava prekomerne UI rebuilde
   // ✅ Povećano na 800ms da spreči race conditions, ali i dalje dovoljno brzo za UX
   DateTime? _lastSyncTime;
@@ -117,10 +120,16 @@ class _DanasScreenState extends State<DanasScreen> {
 
   // 🎓 FUNKCIJA ZA RAČUNANJE ĐAČKIH STATISTIKA
   // 🔥 REALTIME STREAM ZA ĐAČKI BROJAČ - direktan Supabase stream
+  // 🔧 CACHED: Stream se kreira jednom i reuse-uje, ne na svaki build
   Stream<Map<String, int>> _streamDjackieBrojevi() {
+    // Ako već postoji keširan stream, koristi ga
+    if (_cachedDjackiStream != null) {
+      return _cachedDjackiStream!;
+    }
+
     final registrovaniStream = RegistrovaniPutnikService.streamAktivniRegistrovaniPutnici();
 
-    return registrovaniStream.asyncMap((sviRegistrovaniPutnici) async {
+    final resultStream = registrovaniStream.asyncMap((sviRegistrovaniPutnici) async {
       try {
         final danasnjiDan = _getTodayForDatabase();
 
@@ -216,6 +225,10 @@ class _DanasScreenState extends State<DanasScreen> {
         return {'ukupno_ujutro': 0, 'reseni': 0, 'otkazali': 0, 'ostalo': 0};
       }
     });
+
+    // 🔧 KESIRAJ stream za reuse
+    _cachedDjackiStream = resultStream;
+    return resultStream;
   }
 
   // ✨ DIGITALNI BROJAČ DATUM WIDGET - BEZ STREAMBUILDER-a

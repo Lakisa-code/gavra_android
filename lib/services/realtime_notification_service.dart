@@ -185,6 +185,13 @@ class RealtimeNotificationService {
   static Future<void> _handleNotificationTap(Map<String, dynamic> messageData) async {
     try {
       final notificationType = messageData['type'] ?? 'unknown';
+
+      // 🚐 Za "transport_started" - otvori putnikov profil ekran
+      if (notificationType == 'transport_started') {
+        await NotificationNavigationService.navigateToPassengerProfile();
+        return;
+      }
+
       final putnikDataString = messageData['putnik'] as String?;
 
       if (putnikDataString != null) {

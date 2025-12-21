@@ -22,7 +22,7 @@ class DailyCheckInService {
   static Stream<double> streamTodayAmount(String vozac) {
     // Ako već postoji aktivan controller za ovog vozača, koristi ga
     if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
-      debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $vozac');
+      // debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $vozac'); // Disabled - too spammy
       return _kusurControllers[vozac]!.stream;
     }
 

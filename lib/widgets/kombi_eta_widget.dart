@@ -69,16 +69,32 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
       // Pronađi ETA za ovog putnika
       int? eta;
       if (putniciEta != null) {
+        // Prvo pokušaj exact match
         if (putniciEta.containsKey(widget.putnikIme)) {
           eta = putniciEta[widget.putnikIme] as int?;
         } else {
+          // Probaj case-insensitive match
           for (final entry in putniciEta.entries) {
             if (entry.key.toLowerCase() == widget.putnikIme.toLowerCase()) {
               eta = entry.value as int?;
               break;
             }
           }
+          // Ako još nema match, probaj partial match (ime sadrži putnikIme ili obrnuto)
+          if (eta == null) {
+            final putnikLower = widget.putnikIme.toLowerCase();
+            for (final entry in putniciEta.entries) {
+              final keyLower = entry.key.toLowerCase();
+              if (keyLower.contains(putnikLower) || putnikLower.contains(keyLower)) {
+                eta = entry.value as int?;
+                debugPrint('🔍 [KombiEtaWidget] Partial match: "${entry.key}" ~ "${widget.putnikIme}"');
+                break;
+              }
+            }
+          }
         }
+        debugPrint(
+            '🚐 [KombiEtaWidget] putnikIme="${widget.putnikIme}", eta=$eta, putniciEta keys: ${putniciEta.keys.toList()}');
       }
 
       setState(() {

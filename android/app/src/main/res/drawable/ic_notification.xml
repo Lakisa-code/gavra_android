@@ -1,13 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Notification icon - white silhouette on transparent background -->
+<!-- Notification icon - Gavra 013 logo silhouette -->
 <!-- Used for status bar notifications -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- Simple "G" letter representing Gavra for notifications -->
+    android:viewportWidth="100"
+    android:viewportHeight="60">
+    <!-- Gavra text stylized -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C14.76,22 17.26,20.88 19.07,19.07L19.07,12L12,12L12,14L17.07,14L17.07,17.59C15.86,18.77 14.02,19.5 12,19.5C8.14,19.5 5,16.36 5,12.5C5,8.64 8.14,5.5 12,5.5C14.22,5.5 16.18,6.56 17.43,8.18L19.5,6.5C17.68,4.08 15,2 12,2Z"/>
+        android:pathData="M5,25 Q5,15 15,15 L20,15 L20,20 L15,20 Q10,20 10,25 L10,35 Q10,40 15,40 L20,40 L20,30 L15,30 L15,25 L25,25 L25,40 Q25,45 15,45 Q5,45 5,35 Z"/>
+    <!-- a -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M27,25 Q27,20 32,20 L37,20 Q42,20 42,25 L42,45 L37,45 L37,35 L32,35 L32,45 L27,45 Z M32,25 L32,30 L37,30 L37,25 Z"/>
+    <!-- v -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,20 L49,20 L51.5,35 L54,20 L59,20 L54,45 L49,45 Z"/>
+    <!-- r -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M61,20 L66,20 L66,25 Q66,20 71,20 L73,20 L73,25 L71,25 Q66,25 66,30 L66,45 L61,45 Z"/>
+    <!-- a2 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,25 Q75,20 80,20 L85,20 Q90,20 90,25 L90,45 L85,45 L85,35 L80,35 L80,45 L75,45 Z M80,25 L80,30 L85,30 L85,25 Z"/>
+    <!-- 013 below -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,48 Q30,47 33,47 L37,47 Q40,47 40,48 L40,55 Q40,58 37,58 L33,58 Q30,58 30,55 Z M33,50 L33,55 L37,55 L37,50 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M45,47 L48,47 L48,58 L45,58 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M53,48 Q53,47 56,47 L60,47 Q63,47 63,48 L63,51 Q63,52 60,52 Q63,52 63,53 L63,55 Q63,58 60,58 L56,58 Q53,58 53,55 L56,55 L56,55 L60,55 L60,53 L56,53 L56,51 L60,51 L60,50 L56,50 Z"/>
 </vector>
