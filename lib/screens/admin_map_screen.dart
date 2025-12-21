@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/gps_lokacija.dart';
 import '../services/permission_service.dart';
+import '../services/realtime/realtime_manager.dart';
 import '../services/vozac_mapping_service.dart';
 import '../theme.dart';
 
@@ -28,7 +29,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   DateTime? _lastGpsLoad;
   static const cacheDuration = Duration(seconds: 30);
 
-  RealtimeChannel? _gpsChannel;
+  StreamSubscription? _gpsSubscription;
 
   // Početna pozicija - Bela Crkva/Vršac region
   static const LatLng _initialCenter = LatLng(44.9, 21.4);
@@ -42,42 +43,19 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
   }
 
   void _initializeRealtimeMonitoring() {
-    _gpsChannel?.unsubscribe();
+    _gpsSubscription?.cancel();
 
-    final supabase = Supabase.instance.client;
-    const channelName = 'admin_gps_stream';
-    _gpsChannel = supabase.channel(channelName);
-    _gpsChannel!
-        .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'vozac_lokacije',
-      callback: (payload) {
-        debugPrint('🔄 [$channelName] GPS change: ${payload.eventType}');
-        _loadGpsLokacije();
-      },
-    )
-        .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          debugPrint('✅ [$channelName] Subscribed successfully');
-          break;
-        case RealtimeSubscribeStatus.channelError:
-          debugPrint('❌ [$channelName] Channel error: $error');
-          break;
-        case RealtimeSubscribeStatus.closed:
-          debugPrint('🔴 [$channelName] Channel closed');
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-          debugPrint('⏰ [$channelName] Subscription timed out');
-          break;
-      }
+    // Koristi centralizovani RealtimeManager
+    _gpsSubscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
+      debugPrint('🔄 [AdminMapScreen] GPS change: ${payload.eventType}');
+      _loadGpsLokacije();
     });
   }
 
   @override
   void dispose() {
-    _gpsChannel?.unsubscribe();
+    _gpsSubscription?.cancel();
+    RealtimeManager.instance.unsubscribe('vozac_lokacije');
     super.dispose();
   }
 

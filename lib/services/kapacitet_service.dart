@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/route_config.dart';
 import '../utils/schedule_utils.dart';
+import 'realtime/realtime_manager.dart';
 
 /// 🎫 Servis za upravljanje kapacitetom polazaka
 /// Omogućava realtime prikaz slobodnih mesta i admin kontrolu
@@ -108,9 +109,10 @@ class KapacitetService {
     }
   }
 
-  /// Stream kapaciteta (realtime ažuriranje) - direktan Supabase
+  /// Stream kapaciteta (realtime ažuriranje) - koristi RealtimeManager
   static Stream<Map<String, Map<String, int>>> streamKapacitet() {
     final controller = StreamController<Map<String, Map<String, int>>>.broadcast();
+    StreamSubscription? subscription;
 
     // Učitaj inicijalne podatke
     getKapacitet().then((data) {
@@ -119,44 +121,21 @@ class KapacitetService {
       }
     });
 
-    // Direktan Supabase realtime
-    const channelName = 'kapacitet_polazaka_stream';
-    final channel = _supabase.channel(channelName);
-    channel
-        .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'kapacitet_polazaka',
-      callback: (payload) {
-        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
-        // Na bilo koju promenu, ponovo učitaj sve
-        getKapacitet().then((data) {
-          if (!controller.isClosed) {
-            controller.add(data);
-          }
-        });
-      },
-    )
-        .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          debugPrint('✅ [$channelName] Subscribed successfully');
-          break;
-        case RealtimeSubscribeStatus.channelError:
-          debugPrint('❌ [$channelName] Channel error: $error');
-          break;
-        case RealtimeSubscribeStatus.closed:
-          debugPrint('🔴 [$channelName] Channel closed');
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-          debugPrint('⏰ [$channelName] Subscription timed out');
-          break;
-      }
+    // Koristi centralizovani RealtimeManager
+    subscription = RealtimeManager.instance.subscribe('kapacitet_polazaka').listen((payload) {
+      debugPrint('🔄 [KapacitetService] Postgres change: ${payload.eventType}');
+      // Na bilo koju promenu, ponovo učitaj sve
+      getKapacitet().then((data) {
+        if (!controller.isClosed) {
+          controller.add(data);
+        }
+      });
     });
 
     // Cleanup kad se stream zatvori
     controller.onCancel = () {
-      channel.unsubscribe();
+      subscription?.cancel();
+      RealtimeManager.instance.unsubscribe('kapacitet_polazaka');
     };
 
     return controller.stream;

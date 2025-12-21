@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../services/realtime/realtime_manager.dart';
+
 /// Widget koji prikazuje ETA dolaska kombija
 class KombiEtaWidget extends StatefulWidget {
   const KombiEtaWidget({
@@ -20,7 +22,6 @@ class KombiEtaWidget extends StatefulWidget {
 
 class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   StreamSubscription? _subscription;
-  RealtimeChannel? _channel;
   int? _etaMinutes;
   bool _isLoading = true;
   bool _isActive = false;
@@ -36,7 +37,7 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
   @override
   void dispose() {
     _subscription?.cancel();
-    _channel?.unsubscribe();
+    RealtimeManager.instance.unsubscribe('vozac_lokacije');
     super.dispose();
   }
 
@@ -103,35 +104,10 @@ class _KombiEtaWidgetState extends State<KombiEtaWidget> {
     // Učitaj inicijalne podatke
     _loadGpsData();
 
-    // Direktan Supabase realtime - sluša sve aktivne vozače
-    final supabase = Supabase.instance.client;
-    final channelName = 'gps_eta_${widget.putnikIme}';
-    _channel = supabase.channel(channelName);
-    _channel!
-        .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'vozac_lokacije',
-      callback: (payload) {
-        debugPrint('🔄 [$channelName] GPS change: ${payload.eventType}');
-        _loadGpsData();
-      },
-    )
-        .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          debugPrint('✅ [$channelName] Subscribed successfully');
-          break;
-        case RealtimeSubscribeStatus.channelError:
-          debugPrint('❌ [$channelName] Channel error: $error');
-          break;
-        case RealtimeSubscribeStatus.closed:
-          debugPrint('🔴 [$channelName] Channel closed');
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-          debugPrint('⏰ [$channelName] Subscription timed out');
-          break;
-      }
+    // Koristi centralizovani RealtimeManager - deli channel sa drugim widgetima
+    _subscription = RealtimeManager.instance.subscribe('vozac_lokacije').listen((payload) {
+      debugPrint('🔄 [KombiEtaWidget] GPS change: ${payload.eventType}');
+      _loadGpsData();
     });
   }
 

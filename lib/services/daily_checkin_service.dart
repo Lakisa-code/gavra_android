@@ -14,9 +14,21 @@ class DailyCheckInService {
   static const String _checkInPrefix = 'daily_checkin_';
   static final StreamController<double> _sitanNovacController = StreamController<double>.broadcast();
 
-  /// Stream za real-time ažuriranje kusura - direktan Supabase
+  // 🔧 SINGLETON PATTERN za kusur stream - sprečava kreiranje više channel-a
+  static final Map<String, StreamController<double>> _kusurControllers = {};
+  static final Map<String, RealtimeChannel> _kusurChannels = {};
+
+  /// Stream za real-time ažuriranje kusura - SINGLETON po vozaču
   static Stream<double> streamTodayAmount(String vozac) {
+    // Ako već postoji aktivan controller za ovog vozača, koristi ga
+    if (_kusurControllers.containsKey(vozac) && !_kusurControllers[vozac]!.isClosed) {
+      debugPrint('📊 [DailyCheckInService] Reusing existing kusur stream for $vozac');
+      return _kusurControllers[vozac]!.stream;
+    }
+
     final controller = StreamController<double>.broadcast();
+    _kusurControllers[vozac] = controller;
+
     final today = DateTime.now().toIso8601String().split('T')[0];
     final supabase = Supabase.instance.client;
 
@@ -34,9 +46,13 @@ class DailyCheckInService {
       }
     });
 
-    // Direktan Supabase realtime
+    // Zatvori stari channel ako postoji
+    _kusurChannels[vozac]?.unsubscribe();
+
     final channelName = 'kusur_$vozac';
     final channel = supabase.channel(channelName);
+    _kusurChannels[vozac] = channel;
+
     channel
         .onPostgresChanges(
       event: PostgresChangeEvent.all,
@@ -81,12 +97,27 @@ class DailyCheckInService {
       }
     });
 
-    // Cleanup
-    controller.onCancel = () {
-      channel.unsubscribe();
-    };
-
     return controller.stream;
+  }
+
+  /// 🧹 Čisti kusur cache za vozača
+  static void clearKusurCache(String vozac) {
+    _kusurChannels[vozac]?.unsubscribe();
+    _kusurChannels.remove(vozac);
+    _kusurControllers[vozac]?.close();
+    _kusurControllers.remove(vozac);
+  }
+
+  /// 🧹 Čisti sve kusur cache-eve
+  static void clearAllKusurCache() {
+    for (final channel in _kusurChannels.values) {
+      channel.unsubscribe();
+    }
+    for (final controller in _kusurControllers.values) {
+      controller.close();
+    }
+    _kusurChannels.clear();
+    _kusurControllers.clear();
   }
 
   /// Initialize stream with current value from SharedPreferences

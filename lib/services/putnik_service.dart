@@ -10,6 +10,7 @@ import '../utils/grad_adresa_validator.dart';
 import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_boja.dart';
 import 'driver_location_service.dart';
+import 'realtime/realtime_manager.dart';
 import 'realtime_notification_service.dart';
 import 'registrovani_putnik_service.dart';
 import 'vozac_mapping_service.dart';
@@ -43,9 +44,8 @@ class PutnikService {
   static final Map<String, List<Putnik>> _lastValues = {};
   static final Map<String, _StreamParams> _streamParams = {};
 
-  static RealtimeChannel? _globalChannel;
+  static StreamSubscription? _globalSubscription;
   static bool _isSubscribed = false;
-  static bool _isReconnecting = false; // 🔄 Za reconnect logiku
 
   static void clearCache() {
     for (final controller in _streams.values) {
@@ -56,9 +56,10 @@ class PutnikService {
     _streams.clear();
     _lastValues.clear();
     _streamParams.clear();
-    // Ugasi globalni channel
-    _globalChannel?.unsubscribe();
-    _globalChannel = null;
+    // Ugasi globalni subscription
+    _globalSubscription?.cancel();
+    RealtimeManager.instance.unsubscribe('registrovani_putnici');
+    _globalSubscription = null;
     _isSubscribed = false;
   }
 
@@ -66,59 +67,17 @@ class PutnikService {
     return '${isoDate ?? ''}|${grad ?? ''}|${vreme ?? ''}';
   }
 
-  /// 🔄 Schedule reconnect sa delay-om
-  void _scheduleReconnect() {
-    if (_isReconnecting) return;
-    _isReconnecting = true;
-
-    debugPrint('🔄 [PutnikService] Scheduling reconnect in 3 seconds...');
-    Future.delayed(const Duration(seconds: 3), () {
-      if (_streams.isNotEmpty) {
-        debugPrint('🔄 [PutnikService] Attempting reconnect...');
-        _globalChannel?.unsubscribe();
-        _globalChannel = null;
-        _isSubscribed = false;
-        _isReconnecting = false;
-        _ensureGlobalChannel();
-      }
-    });
-  }
-
-  /// Inicijalizuje globalni channel JEDNOM
+  /// Inicijalizuje globalni subscription JEDNOM - koristi RealtimeManager
   void _ensureGlobalChannel() {
-    if (_isSubscribed && _globalChannel != null) return;
+    if (_isSubscribed && _globalSubscription != null) return;
 
-    const channelName = 'putnici_global';
-    _globalChannel = supabase.channel(channelName);
-    _globalChannel!
-        .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'registrovani_putnici',
-      callback: (payload) {
-        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
-        _refreshAllStreams();
-      },
-    )
-        .subscribe((status, [error]) {
-      if (status == RealtimeSubscribeStatus.subscribed) {
-        debugPrint('✅ [$channelName] Global channel subscribed');
-        _isSubscribed = true;
-        _isReconnecting = false;
-      } else if (status == RealtimeSubscribeStatus.channelError) {
-        debugPrint('❌ [$channelName] Error: $error');
-        _isSubscribed = false;
-        _scheduleReconnect(); // 🔄 AUTO-RECONNECT
-      } else if (status == RealtimeSubscribeStatus.closed) {
-        debugPrint('🔴 [$channelName] Channel closed');
-        _isSubscribed = false;
-        _scheduleReconnect(); // 🔄 AUTO-RECONNECT
-      } else if (status == RealtimeSubscribeStatus.timedOut) {
-        debugPrint('⏰ [$channelName] Subscription timed out');
-        _isSubscribed = false;
-        _scheduleReconnect(); // 🔄 AUTO-RECONNECT
-      }
+    // Koristi centralizovani RealtimeManager
+    _globalSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+      debugPrint('🔄 [PutnikService] Postgres change: ${payload.eventType}');
+      _refreshAllStreams();
     });
+    _isSubscribed = true;
+    debugPrint('✅ [PutnikService] Global subscription created via RealtimeManager');
   }
 
   /// Osvežava SVE aktivne streamove

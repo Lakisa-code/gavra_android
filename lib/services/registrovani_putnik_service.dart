@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/registrovani_putnik.dart';
+import 'realtime/realtime_manager.dart';
 import 'vozac_mapping_service.dart';
 import 'voznje_log_service.dart'; // 🔄 DODATO za istoriju vožnji
 
@@ -12,12 +13,10 @@ class RegistrovaniPutnikService {
   RegistrovaniPutnikService({SupabaseClient? supabaseClient}) : _supabase = supabaseClient ?? Supabase.instance.client;
   final SupabaseClient _supabase;
 
-  // 🔧 SINGLETON PATTERN za realtime stream
+  // 🔧 SINGLETON PATTERN za realtime stream - koristi RealtimeManager
   static StreamController<List<RegistrovaniPutnik>>? _sharedController;
-  static RealtimeChannel? _sharedChannel;
+  static StreamSubscription? _sharedSubscription;
   static List<RegistrovaniPutnik>? _lastValue;
-  static int _listenerCount = 0;
-  static bool _isReconnecting = false;
 
   /// Dohvata sve mesečne putnike
   Future<List<RegistrovaniPutnik>> getAllRegistrovaniPutnici() async {
@@ -72,13 +71,13 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// 🔧 SINGLETON STREAM za mesečne putnike - sprečava kreiranje više channel-a
-  /// Svi pozivi dele isti channel i controller
+  /// 🔧 SINGLETON STREAM za mesečne putnike - koristi RealtimeManager
+  /// Svi pozivi dele isti controller
   static Stream<List<RegistrovaniPutnik>> streamAktivniRegistrovaniPutnici() {
     // Ako već postoji aktivan controller, koristi ga
     if (_sharedController != null && !_sharedController!.isClosed) {
-      _listenerCount++;
-      debugPrint('📊 [RegistrovaniPutnikService] Reusing existing stream (listeners: $_listenerCount)');
+      // NE POVEĆAVAJ listener count - broadcast stream deli istu pretplatu
+      debugPrint('📊 [RegistrovaniPutnikService] Reusing existing stream');
 
       // Emituj poslednju vrednost novom listener-u
       if (_lastValue != null) {
@@ -93,24 +92,15 @@ class RegistrovaniPutnikService {
     }
 
     // Kreiraj novi shared controller
-    _sharedController = StreamController<List<RegistrovaniPutnik>>.broadcast(
-      onCancel: () {
-        _listenerCount--;
-        debugPrint('📊 [RegistrovaniPutnikService] Listener removed (remaining: $_listenerCount)');
-
-        // NE UGASI channel dok ima aktivnih listener-a
-        // Channel se gasi samo kroz clearRealtimeCache()
-      },
-    );
-    _listenerCount = 1;
+    _sharedController = StreamController<List<RegistrovaniPutnik>>.broadcast();
 
     final supabase = Supabase.instance.client;
 
     // Učitaj inicijalne podatke
     _fetchAndEmit(supabase);
 
-    // Kreiraj channel samo ako ne postoji
-    _setupRealtimeChannel(supabase);
+    // Kreiraj subscription preko RealtimeManager
+    _setupRealtimeSubscription(supabase);
 
     return _sharedController!.stream;
   }
@@ -136,70 +126,27 @@ class RegistrovaniPutnikService {
     }
   }
 
-  /// 🔌 Setup realtime channel sa reconnect logikom
-  static void _setupRealtimeChannel(SupabaseClient supabase) {
-    if (_sharedChannel != null) {
-      _sharedChannel!.unsubscribe();
-    }
+  /// 🔌 Setup realtime subscription preko RealtimeManager
+  static void _setupRealtimeSubscription(SupabaseClient supabase) {
+    _sharedSubscription?.cancel();
 
-    const channelName = 'registrovani_putnici_singleton';
-    _sharedChannel = supabase.channel(channelName);
-    _sharedChannel!
-        .onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'registrovani_putnici',
-      callback: (payload) {
-        debugPrint('🔄 [$channelName] Postgres change: ${payload.eventType}');
-        _fetchAndEmit(supabase);
-      },
-    )
-        .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          debugPrint('✅ [$channelName] Subscribed successfully');
-          _isReconnecting = false;
-          break;
-        case RealtimeSubscribeStatus.channelError:
-          debugPrint('❌ [$channelName] Channel error: $error');
-          _scheduleReconnect(supabase);
-          break;
-        case RealtimeSubscribeStatus.closed:
-          debugPrint('🔴 [$channelName] Channel closed');
-          _scheduleReconnect(supabase);
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-          debugPrint('⏰ [$channelName] Subscription timed out');
-          _scheduleReconnect(supabase);
-          break;
-      }
+    // Koristi centralizovani RealtimeManager
+    _sharedSubscription = RealtimeManager.instance.subscribe('registrovani_putnici').listen((payload) {
+      debugPrint('🔄 [RegistrovaniPutnikService] Postgres change: ${payload.eventType}');
+      _fetchAndEmit(supabase);
     });
-  }
-
-  /// 🔄 Schedule reconnect sa delay-om
-  static void _scheduleReconnect(SupabaseClient supabase) {
-    if (_isReconnecting) return;
-    _isReconnecting = true;
-
-    debugPrint('🔄 [RegistrovaniPutnikService] Scheduling reconnect in 3 seconds...');
-    Future.delayed(const Duration(seconds: 3), () {
-      if (_sharedController != null && !_sharedController!.isClosed) {
-        debugPrint('🔄 [RegistrovaniPutnikService] Attempting reconnect...');
-        _setupRealtimeChannel(supabase);
-      }
-    });
+    debugPrint('✅ [RegistrovaniPutnikService] Subscription created via RealtimeManager');
   }
 
   /// 🧹 Čisti singleton cache - pozovi kad treba resetovati sve
   static void clearRealtimeCache() {
     debugPrint('🧹 [RegistrovaniPutnikService] Clearing realtime cache');
-    _sharedChannel?.unsubscribe();
-    _sharedChannel = null;
+    _sharedSubscription?.cancel();
+    RealtimeManager.instance.unsubscribe('registrovani_putnici');
+    _sharedSubscription = null;
     _sharedController?.close();
     _sharedController = null;
     _lastValue = null;
-    _listenerCount = 0;
-    _isReconnecting = false;
   }
 
   /// Kreira novog mesečnog putnika
