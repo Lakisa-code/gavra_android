@@ -14,6 +14,7 @@ import 'services/cache_service.dart';
 import 'services/firebase_background_handler.dart';
 import 'services/firebase_service.dart';
 import 'services/huawei_push_service.dart';
+import 'services/realtime/realtime_manager.dart'; // 🔄 DODATO za inicijalizaciju realtime-a
 import 'services/realtime_notification_service.dart';
 import 'services/sms_service.dart'; // 📱 SMS podsetnici za plaćanje
 import 'services/theme_manager.dart'; // 🎨 Novi tema sistem
@@ -107,6 +108,16 @@ void main() async {
       await VozacMappingService.initialize();
     } catch (e) {
       // Nastavi bez vozac mapping-a ako ne uspe
+    }
+
+    // 🔄 INICIJALIZUJ REALTIME MANAGER - pretplati se na ključne tabele ODMAH
+    // Ovo osigurava da realtime radi čim se app pokrene
+    try {
+      // Pretplati se na registrovani_putnici - glavni stream za sve putnike
+      RealtimeManager.instance.subscribe('registrovani_putnici');
+      debugPrint('✅ [main] RealtimeManager initialized for registrovani_putnici');
+    } catch (e) {
+      debugPrint('❌ [main] RealtimeManager init failed: $e');
     }
 
     // GPS Learn će naučiti prave koordinate kada vozač pokupi putnika
