@@ -184,7 +184,12 @@ class PutnikService {
           // ?? Proveri da li je putnik uklonjen iz ovog termina
           final jeUklonjen = uklonjeniTermini.any((ut) {
             final utMap = ut as Map<String, dynamic>;
-            return utMap['datum'] == todayDate && utMap['vreme'] == p.polazak && utMap['grad'] == p.grad;
+            // Normalizuj vreme za poređenje
+            final utVreme = GradAdresaValidator.normalizeTime(utMap['vreme']?.toString());
+            final pVreme = GradAdresaValidator.normalizeTime(p.polazak);
+            // Datum može biti ISO format ili kraći format
+            final utDatum = utMap['datum']?.toString().split('T')[0];
+            return utDatum == todayDate && utVreme == pVreme && utMap['grad'] == p.grad;
           });
           if (jeUklonjen) {
             continue;
@@ -550,7 +555,7 @@ class PutnikService {
       } else {
         danPolasci.remove('${gradKey}_mesta');
       }
-      
+
       // 🆕 Dodaj "adresa danas" ako je prosleđena (override za ovaj dan)
       if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
         danPolasci['${gradKey}_adresa_danas_id'] = putnik.adresaId;
@@ -558,7 +563,7 @@ class PutnikService {
       if (putnik.adresa != null && putnik.adresa!.isNotEmpty && putnik.adresa != 'Adresa nije definisana') {
         danPolasci['${gradKey}_adresa_danas'] = putnik.adresa;
       }
-      
+
       polasciPoDanu[danKratica] = danPolasci;
 
       String radniDani = registrovaniPutnik['radni_dani'] as String? ?? '';
@@ -639,9 +644,13 @@ class PutnikService {
       uklonjeni = List<dynamic>.from(response['uklonjeni_termini'] as List);
     }
 
+    // Normalizuj vrednosti pre čuvanja za konzistentno poređenje
+    final normDatum = datum.split('T')[0]; // ISO format bez vremena
+    final normVreme = GradAdresaValidator.normalizeTime(vreme);
+
     uklonjeni.add({
-      'datum': datum,
-      'vreme': vreme,
+      'datum': normDatum,
+      'vreme': normVreme,
       'grad': grad,
     });
 
