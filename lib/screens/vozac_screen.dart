@@ -139,6 +139,17 @@ class _VozacScreenState extends State<VozacScreen> {
     if (mounted) setState(() {});
   }
 
+  // 🔧 IDENTIČNA LOGIKA SA DANAS SCREEN - konvertuj ISO datum u kraći dan
+  String _isoDateToDayAbbr(String isoDate) {
+    try {
+      final date = DateTime.parse(isoDate);
+      const dani = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+      return dani[date.weekday - 1];
+    } catch (e) {
+      return 'pon'; // fallback
+    }
+  }
+
   // Callback za BottomNavBar
   void _onPolazakChanged(String grad, String vreme) {
     if (mounted) {
@@ -1670,21 +1681,48 @@ class _VozacScreenState extends State<VozacScreen> {
 
             // 🔧 IDENTIČNA LOGIKA SA HOME_SCREEN I DANAS_SCREEN ZA BROJANJE PUTNIKA
             final Map<String, int> brojPutnikaBC = {
-              '5:00': 0, '6:00': 0, '7:00': 0, '8:00': 0, '9:00': 0,
-              '11:00': 0, '12:00': 0, '13:00': 0, '14:00': 0, '15:30': 0, '18:00': 0,
+              '5:00': 0,
+              '6:00': 0,
+              '7:00': 0,
+              '8:00': 0,
+              '9:00': 0,
+              '11:00': 0,
+              '12:00': 0,
+              '13:00': 0,
+              '14:00': 0,
+              '15:30': 0,
+              '18:00': 0,
             };
             final Map<String, int> brojPutnikaVS = {
-              '6:00': 0, '7:00': 0, '8:00': 0, '10:00': 0, '11:00': 0,
-              '12:00': 0, '13:00': 0, '14:00': 0, '15:30': 0, '17:00': 0, '19:00': 0,
+              '6:00': 0,
+              '7:00': 0,
+              '8:00': 0,
+              '10:00': 0,
+              '11:00': 0,
+              '12:00': 0,
+              '13:00': 0,
+              '14:00': 0,
+              '15:30': 0,
+              '17:00': 0,
+              '19:00': 0,
             };
 
             for (final p in allPutnici) {
               if (!TextUtils.isStatusActive(p.status)) continue;
 
+              // 🔧 Provera dana - samo danas
+              final targetDateIso = DateTime.now().toIso8601String().split('T')[0];
+              final targetDayAbbr = _isoDateToDayAbbr(targetDateIso);
+              final dayMatch = p.datum != null
+                  ? p.datum == targetDateIso
+                  : p.dan.toLowerCase().contains(targetDayAbbr.toLowerCase());
+              if (!dayMatch) continue;
+
               final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
               final putnikGrad = p.grad.toLowerCase();
 
-              final jeBelaCrkva = putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
+              final jeBelaCrkva =
+                  putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
               final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
 
               if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {

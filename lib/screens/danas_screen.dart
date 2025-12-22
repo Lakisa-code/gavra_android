@@ -2471,8 +2471,9 @@ class _DanasScreenState extends State<DanasScreen> {
 
               // Helper funkcija za brojanje putnika
               int getPutnikCount(String grad, String vreme) {
-                if (grad == 'Bela Crkva') return brojPutnikaBC[vreme] ?? 0;
-                if (grad == 'Vršac') return brojPutnikaVS[vreme] ?? 0;
+                final normVreme = GradAdresaValidator.normalizeTime(vreme);
+                if (grad == 'Bela Crkva') return brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0;
+                if (grad == 'Vršac') return brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0;
                 return 0;
               }
 
