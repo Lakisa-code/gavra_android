@@ -7,7 +7,6 @@ import '../models/action_log.dart';
 import '../models/putnik.dart';
 import '../utils/date_utils.dart' as app_date_utils;
 import '../utils/grad_adresa_validator.dart';
-import '../utils/registrovani_helpers.dart';
 import '../utils/vozac_boja.dart';
 import 'driver_location_service.dart';
 import 'realtime/realtime_manager.dart';
@@ -930,90 +929,15 @@ class PutnikService {
     }
   }
 
-  /// ?? RESETUJ POKUPLJENE PUTNIKE KADA SE PROMENI VREME POLASKA
+  /// ❌ UKLONJENA LOGIKA - Admin ručno resetuje putnike
+  /// Ova funkcija više ne radi automatski reset baziran na vremenu
   Future<void> resetPokupljenjaNaPolazak(
     String novoVreme,
     String grad,
     String currentDriver,
   ) async {
-    try {
-      if (currentDriver.isEmpty) {
-        return;
-      }
-
-      try {
-        final registrovaniPutnici = await supabase
-            .from('registrovani_putnici')
-            .select(
-              'id, putnik_ime, polasci_po_danu, vreme_pokupljenja',
-            ) // ? FIXED: Koristi vreme_pokupljenja
-            .eq('aktivan', true)
-            .not(
-              'vreme_pokupljenja',
-              'is',
-              null,
-            ); // ? FIXED: Koristi vreme_pokupljenja
-
-        for (final putnik in registrovaniPutnici) {
-          final vremePokupljenja = DateTime.tryParse(
-            putnik['vreme_pokupljenja'] as String,
-          ); // ? FIXED: Koristi vreme_pokupljenja
-
-          if (vremePokupljenja == null) continue;
-
-          String? polazakVreme;
-          final danasnjiDan = _getDanNedelje();
-
-          final place = grad == 'Bela Crkva' ? 'bc' : 'vs';
-          polazakVreme = RegistrovaniHelpers.getPolazakForDay(putnik, danasnjiDan, place);
-
-          if (polazakVreme == null || polazakVreme.isEmpty || polazakVreme == '00:00:00') {
-            continue;
-          }
-
-          final novoPolazakSati = int.tryParse(novoVreme.split(':')[0]) ?? 0;
-          final pokupljenSati = vremePokupljenja.hour;
-          final razlika = (pokupljenSati - novoPolazakSati).abs();
-
-          // Ako je pokupljen van tolerancije (�3 sata) od novog vremena polaska, resetuj ga
-          if (razlika > 3) {
-            await supabase.from('registrovani_putnici').update({
-              'vreme_pokupljenja': null, // ? FIXED: Koristi vreme_pokupljenja
-              'updated_at': DateTime.now().toIso8601String(),
-            }).eq('id', putnik['id'] as String);
-          }
-        }
-      } catch (e) {
-        // Reset not critical
-      }
-    } catch (e) {
-      // Outer error ignored
-    }
-  }
-
-  // Helper metod za dobijanje naziva dana nedelje
-  String _getDanNedelje() {
-    final sada = DateTime.now();
-    final danNedelje = sada.weekday;
-
-    switch (danNedelje) {
-      case 1:
-        return 'pon';
-      case 2:
-        return 'uto';
-      case 3:
-        return 'sre';
-      case 4:
-        return 'cet';
-      case 5:
-        return 'pet';
-      case 6:
-        return 'sub';
-      case 7:
-        return 'ned';
-      default:
-        return 'pon';
-    }
+    // Namerno prazna - pokupljeni putnici ostaju pokupljeni dok admin ne resetuje
+    return;
   }
 
   /// ?? PREBACI PUTNIKA DRUGOM VOZACU

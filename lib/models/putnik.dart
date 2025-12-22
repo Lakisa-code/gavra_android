@@ -338,23 +338,13 @@ class Putnik {
 
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
-      // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
+      // ✅ POJEDNOSTAVLJENA LOGIKA: Ako je pokupljen danas, ostaje pokupljen dok admin ne resetuje
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
-        // ✅ FIX: Prvo proveri da li je vremePokupljenja od DANAS
         final danas = DateTime.now();
         final pokupljenDatum = vremePokupljenja.toLocal();
-        final jeDanas =
+        pokupljenZaOvajPolazak =
             pokupljenDatum.year == danas.year && pokupljenDatum.month == danas.month && pokupljenDatum.day == danas.day;
-
-        if (jeDanas) {
-          final polazakSati = int.tryParse(polazakBC.split(':')[0]) ?? 0;
-          final pokupljenSati = vremePokupljenja.hour;
-
-          // Proveri da li je pokupljen u razumnom vremenskom okviru oko polaska
-          final razlika = (pokupljenSati - polazakSati).abs();
-          pokupljenZaOvajPolazak = razlika <= 3; // ± 3 sata tolerancija
-        }
       }
 
       putnici.add(
@@ -403,23 +393,13 @@ class Putnik {
 
     // Kreiraj putnik za Vršac ako ima polazak za targetDan
     if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
-      // 🕐 LOGIKA ZA SPECIFIČNI POLAZAK - proveri da li je pokupljen za ovaj polazak
+      // ✅ POJEDNOSTAVLJENA LOGIKA: Ako je pokupljen danas, ostaje pokupljen dok admin ne resetuje
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
-        // ✅ FIX: Prvo proveri da li je vremePokupljenja od DANAS
         final danas = DateTime.now();
         final pokupljenDatum = vremePokupljenja.toLocal();
-        final jeDanas =
+        pokupljenZaOvajPolazak =
             pokupljenDatum.year == danas.year && pokupljenDatum.month == danas.month && pokupljenDatum.day == danas.day;
-
-        if (jeDanas) {
-          final polazakSati = int.tryParse(polazakVS.split(':')[0]) ?? 0;
-          final pokupljenSati = vremePokupljenja.hour;
-
-          // Proveri da li je pokupljen u razumnom vremenskom okviru oko polaska
-          final razlika = (pokupljenSati - polazakSati).abs();
-          pokupljenZaOvajPolazak = razlika <= 3; // ± 3 sata tolerancija
-        }
       }
 
       putnici.add(
