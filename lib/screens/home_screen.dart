@@ -415,10 +415,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
               children: [
-                Icon(Icons.receipt_long, color: Colors.green),
+                Icon(Icons.receipt_long, color: Theme.of(dialogContext).colorScheme.primary),
                 const SizedBox(width: 8),
-                const Expanded(
-                  child: Text('Računi za štampanje'),
+                Expanded(
+                  child: Text(
+                    'Računi za štampanje',
+                    style: TextStyle(color: Theme.of(dialogContext).colorScheme.onSurface),
+                  ),
                 ),
               ],
             ),
@@ -437,53 +440,82 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         final cena = p.cenaPoDanu ?? (p.tip == 'ucenik' ? 600.0 : 700.0);
                         final dana = brojDana[p.id] ?? 22;
                         final iznos = cena * dana;
+                        final colorScheme = Theme.of(context).colorScheme;
 
                         return Card(
                           color: selected[p.id] == true
-                              ? Colors.green.withValues(alpha: 0.1)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          child: ListTile(
-                            leading: Checkbox(
-                              value: selected[p.id],
-                              activeColor: Colors.green,
-                              onChanged: (val) {
-                                setDialogState(() {
-                                  selected[p.id] = val ?? false;
-                                });
-                              },
-                            ),
-                            title: Text(
-                              p.putnikIme,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              ? colorScheme.primary.withValues(alpha: 0.1)
+                              : colorScheme.surfaceContainerHighest,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            child: Row(
                               children: [
-                                if (p.firmaNaziv != null && p.firmaNaziv!.isNotEmpty)
-                                  Text(p.firmaNaziv!, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                Text(
-                                  '${cena.toStringAsFixed(0)} RSD × $dana dana = ${iznos.toStringAsFixed(0)} RSD',
-                                  style: const TextStyle(fontSize: 12),
+                                // Checkbox
+                                Checkbox(
+                                  value: selected[p.id],
+                                  activeColor: colorScheme.primary,
+                                  onChanged: (val) {
+                                    setDialogState(() {
+                                      selected[p.id] = val ?? false;
+                                    });
+                                  },
+                                ),
+                                // Ime i detalji - fleksibilno
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p.putnikIme,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (p.firmaNaziv != null && p.firmaNaziv!.isNotEmpty)
+                                        Text(
+                                          p.firmaNaziv!,
+                                          style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      Text(
+                                        '${cena.toStringAsFixed(0)} RSD × $dana dana = ${iznos.toStringAsFixed(0)} RSD',
+                                        style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Dana input - fiksna širina
+                                SizedBox(
+                                  width: 55,
+                                  child: Column(
+                                    children: [
+                                      Text('Dana', style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant)),
+                                      TextField(
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                          border: UnderlineInputBorder(borderSide: BorderSide(color: colorScheme.primary)),
+                                        ),
+                                        controller: TextEditingController(text: dana.toString()),
+                                        onChanged: (val) {
+                                          setDialogState(() {
+                                            brojDana[p.id] = int.tryParse(val) ?? 22;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
-                            ),
-                            trailing: SizedBox(
-                              width: 60,
-                              child: TextField(
-                                keyboardType: TextInputType.number,
-                                textAlign: TextAlign.center,
-                                decoration: const InputDecoration(
-                                  labelText: 'Dana',
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                ),
-                                controller: TextEditingController(text: dana.toString()),
-                                onChanged: (val) {
-                                  setDialogState(() {
-                                    brojDana[p.id] = int.tryParse(val) ?? 22;
-                                  });
-                                },
-                              ),
                             ),
                           ),
                         );
@@ -495,10 +527,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('UKUPNO:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('UKUPNO:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
                       Text(
                         '${ukupno.toStringAsFixed(0)} RSD',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.primary),
                       ),
                     ],
                   ),
@@ -508,12 +540,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Otkaži'),
+                child: Text('Otkaži', style: TextStyle(color: Theme.of(dialogContext).colorScheme.onSurfaceVariant)),
               ),
               ElevatedButton.icon(
                 icon: const Icon(Icons.print),
                 label: const Text('Štampaj sve'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(dialogContext).colorScheme.primary,
+                  foregroundColor: Theme.of(dialogContext).colorScheme.onPrimary,
+                ),
                 onPressed: () async {
                   Navigator.pop(dialogContext);
 
