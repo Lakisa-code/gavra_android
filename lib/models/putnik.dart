@@ -327,6 +327,12 @@ class Putnik {
     final polazakBC = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'bc');
     final polazakVS = RegistrovaniHelpers.getPolazakForDay(map, targetDan, 'vs');
 
+    // ✅ NOVO: Čitaj odvojene kolone za vreme pokupljenja po gradu
+    final vremePokupljenjaBC =
+        map['vreme_pokupljenja_bc'] != null ? DateTime.parse(map['vreme_pokupljenja_bc'] as String) : null;
+    final vremePokupljenjaVS =
+        map['vreme_pokupljenja_vs'] != null ? DateTime.parse(map['vreme_pokupljenja_vs'] as String) : null;
+
     // ✅ NOVO: Čitaj adrese iz JOIN-a sa adrese tabelom (ako postoji)
     // JOIN format: adresa_bc: {id, naziv, ulica, broj, grad, koordinate}
     final adresaBcJoin = map['adresa_bc'] as Map<String, dynamic>?;
@@ -338,11 +344,11 @@ class Putnik {
 
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
-      // ✅ POJEDNOSTAVLJENA LOGIKA: Ako je pokupljen danas, ostaje pokupljen dok admin ne resetuje
+      // ✅ KORISTI ODVOJENU KOLONU: vreme_pokupljenja_bc za Bela Crkva polazak
       bool pokupljenZaOvajPolazak = false;
-      if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
+      if (vremePokupljenjaBC != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
         final danas = DateTime.now();
-        final pokupljenDatum = vremePokupljenja.toLocal();
+        final pokupljenDatum = vremePokupljenjaBC.toLocal();
         pokupljenZaOvajPolazak =
             pokupljenDatum.year == danas.year && pokupljenDatum.month == danas.month && pokupljenDatum.day == danas.day;
       }
@@ -358,7 +364,7 @@ class Putnik {
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
           status: status,
           statusVreme: map['updated_at'] as String?,
-          vremePokupljenja: vremePokupljenja,
+          vremePokupljenja: vremePokupljenjaBC, // ✅ KORISTI BC kolonu
           vremePlacanja: vremePlacanja,
           placeno: placeno,
           cena: iznosPlacanja,
@@ -393,11 +399,11 @@ class Putnik {
 
     // Kreiraj putnik za Vršac ako ima polazak za targetDan
     if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
-      // ✅ POJEDNOSTAVLJENA LOGIKA: Ako je pokupljen danas, ostaje pokupljen dok admin ne resetuje
+      // ✅ KORISTI ODVOJENU KOLONU: vreme_pokupljenja_vs za Vršac polazak
       bool pokupljenZaOvajPolazak = false;
-      if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
+      if (vremePokupljenjaVS != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
         final danas = DateTime.now();
-        final pokupljenDatum = vremePokupljenja.toLocal();
+        final pokupljenDatum = vremePokupljenjaVS.toLocal();
         pokupljenZaOvajPolazak =
             pokupljenDatum.year == danas.year && pokupljenDatum.month == danas.month && pokupljenDatum.day == danas.day;
       }
@@ -413,7 +419,7 @@ class Putnik {
           dan: (normalizedTarget[0].toUpperCase() + normalizedTarget.substring(1)),
           status: status,
           statusVreme: map['updated_at'] as String?,
-          vremePokupljenja: vremePokupljenja,
+          vremePokupljenja: vremePokupljenjaVS, // ✅ KORISTI VS kolonu
           vremePlacanja: vremePlacanja,
           placeno: placeno,
           cena: iznosPlacanja,

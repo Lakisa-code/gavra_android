@@ -444,6 +444,8 @@ class PutnikService {
             'broj_putovanja': lastAction.oldData['broj_putovanja'],
             'pokupljen': false,
             'vreme_pokupljenja': null,
+            'vreme_pokupljenja_bc': null, // ✅ RESETUJ i BC kolonu
+            'vreme_pokupljenja_vs': null, // ✅ RESETUJ i VS kolonu
           }).eq('id', lastAction.putnikId as String);
           return 'Poni�teno pokupljanje';
 
@@ -657,7 +659,8 @@ class PutnikService {
   }
 
   /// ? OZNACI KAO POKUPLJEN
-  Future<void> oznaciPokupljen(dynamic id, String currentDriver) async {
+  /// [grad] - opcioni parametar za određivanje koje pokupljenje (BC ili VS)
+  Future<void> oznaciPokupljen(dynamic id, String currentDriver, {String? grad}) async {
     // ?? DUPLICATE PREVENTION
     final actionKey = 'pickup_$id';
     if (_isDuplicateAction(actionKey)) {
@@ -684,16 +687,21 @@ class PutnikService {
       final now = DateTime.now();
       final vozacUuid = VozacMappingService.getVozacUuidSync(currentDriver);
 
-      // ? FIXED: A�uriraj action_log umesto nepostojece kolone pokupljanje_vozac
+      // ? FIXED: Ažuriraj action_log umesto nepostojece kolone pokupljanje_vozac
       final actionLog = ActionLog.fromDynamic(response['action_log']);
       final updatedActionLog = actionLog.addAction(ActionType.picked, vozacUuid ?? currentDriver, 'Pokupljen');
 
+      // ✅ NOVO: Odredi koju kolonu ažurirati na osnovu grada
+      final bool jeBC = grad?.toLowerCase().contains('bela') ?? false;
+      final String vremeKolona = jeBC ? 'vreme_pokupljenja_bc' : 'vreme_pokupljenja_vs';
+
       await supabase.from(tabela).update({
-        'vreme_pokupljenja': now.toIso8601String(), // ? FIXED: Koristi samo vreme_pokupljenja
+        vremeKolona: now.toIso8601String(), // ✅ KORISTI odgovarajuću kolonu za grad
+        'vreme_pokupljenja': now.toIso8601String(), // Zadrži i staru kolonu za kompatibilnost
         'pokupljen': true, // ? BOOLEAN flag
         'vozac_id': vozacUuid, // ? FIXED: Samo UUID, null ako nema mapiranja
-        'action_log': updatedActionLog.toJson(), // ? FIXED: A�uriraj action_log.picked_by
-        'updated_at': now.toIso8601String(), // ? A�URIRAJ timestamp
+        'action_log': updatedActionLog.toJson(), // ? FIXED: Ažuriraj action_log.picked_by
+        'updated_at': now.toIso8601String(), // ? AŽURIRAJ timestamp
       }).eq('id', id);
 
       // ?? DODAJ ZAPIS U voznje_log za pracenje vo�nji
@@ -911,6 +919,8 @@ class PutnikService {
             'aktivan': true, // ? KRITICNO: VRATI na aktivan (jeOtkazan = false)
             'status': 'radi', // ? VRATI na radi
             'vreme_pokupljenja': null, // ? FIXED: Ukloni timestamp pokupljanja
+            'vreme_pokupljenja_bc': null, // ✅ RESETUJ i BC kolonu
+            'vreme_pokupljenja_vs': null, // ✅ RESETUJ i VS kolonu
             'vreme_placanja': null, // ? UKLONI timestamp placanja
             'pokupljen': false, // ? VRATI na false
             'cena': null, // ? UKLONI placanje

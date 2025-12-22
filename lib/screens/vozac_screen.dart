@@ -1086,24 +1086,7 @@ class _VozacScreenState extends State<VozacScreen> {
       putnici: _optimizedRoute,
       coordinates: coords,
       onPickedUp: (putnik, status) async {
-        // 🔄 REALTIME: Ažuriraj status putnika u bazi
-        if (putnik.id != null && _currentDriver != null) {
-          try {
-            await _putnikService.oznaciPokupljen(putnik.id!, _currentDriver!);
-          } catch (_) {
-            // Greška pri označavanju
-          }
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ ${putnik.ime} pokupljen'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        // Ručno pokupljanje - ova funkcija ne radi ništa
       },
       onSkipped: (putnik) {
         if (mounted) {
