@@ -338,13 +338,32 @@ class Putnik {
 
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
-      // ✅ POJEDNOSTAVLJENA LOGIKA: Ako je pokupljen danas, ostaje pokupljen dok admin ne resetuje
+      // ✅ POBOLJŠANA LOGIKA: Pokupljen samo ako je vreme pokupljenja blisko vremenu polaska
+      // Primer: Ako je pokupljen u 7h, a polazak je u 13h - taj polazak NIJE pokupljen
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
         final danas = DateTime.now();
         final pokupljenDatum = vremePokupljenja.toLocal();
-        pokupljenZaOvajPolazak =
+        final pokupljenDanas =
             pokupljenDatum.year == danas.year && pokupljenDatum.month == danas.month && pokupljenDatum.day == danas.day;
+        
+        if (pokupljenDanas) {
+          // Parsiraj vreme polaska
+          final polazakParts = polazakBC.split(':');
+          final polazakSat = int.tryParse(polazakParts[0]) ?? 0;
+          final polazakMinut = polazakParts.length > 1 ? (int.tryParse(polazakParts[1]) ?? 0) : 0;
+          final polazakMinuteOdPonoci = polazakSat * 60 + polazakMinut;
+          
+          // Vreme pokupljenja u minutama od ponoći
+          final pokupljenMinuteOdPonoci = pokupljenDatum.hour * 60 + pokupljenDatum.minute;
+          
+          // Pokupljen je za ovaj polazak ako je vreme pokupljenja POSLE polaska minus 2 sata
+          // i PRE polaska plus 2 sata (tolerancija ±2h oko vremena polaska)
+          // Primer: polazak 7:00 -> prihvata pokupljenja od 5:00 do 9:00
+          // Primer: polazak 13:00 -> prihvata pokupljenja od 11:00 do 15:00
+          final razlika = (pokupljenMinuteOdPonoci - polazakMinuteOdPonoci).abs();
+          pokupljenZaOvajPolazak = razlika <= 120; // ±2 sata tolerancije
+        }
       }
 
       putnici.add(
@@ -393,13 +412,32 @@ class Putnik {
 
     // Kreiraj putnik za Vršac ako ima polazak za targetDan
     if (polazakVS != null && polazakVS.isNotEmpty && polazakVS != '00:00:00') {
-      // ✅ POJEDNOSTAVLJENA LOGIKA: Ako je pokupljen danas, ostaje pokupljen dok admin ne resetuje
+      // ✅ POBOLJŠANA LOGIKA: Pokupljen samo ako je vreme pokupljenja blisko vremenu polaska
+      // Primer: Ako je pokupljen u 7h, a polazak je u 13h - taj polazak NIJE pokupljen
       bool pokupljenZaOvajPolazak = false;
       if (vremePokupljenja != null && status != 'bolovanje' && status != 'godisnji' && status != 'otkazan') {
         final danas = DateTime.now();
         final pokupljenDatum = vremePokupljenja.toLocal();
-        pokupljenZaOvajPolazak =
+        final pokupljenDanas =
             pokupljenDatum.year == danas.year && pokupljenDatum.month == danas.month && pokupljenDatum.day == danas.day;
+        
+        if (pokupljenDanas) {
+          // Parsiraj vreme polaska
+          final polazakParts = polazakVS.split(':');
+          final polazakSat = int.tryParse(polazakParts[0]) ?? 0;
+          final polazakMinut = polazakParts.length > 1 ? (int.tryParse(polazakParts[1]) ?? 0) : 0;
+          final polazakMinuteOdPonoci = polazakSat * 60 + polazakMinut;
+          
+          // Vreme pokupljenja u minutama od ponoći
+          final pokupljenMinuteOdPonoci = pokupljenDatum.hour * 60 + pokupljenDatum.minute;
+          
+          // Pokupljen je za ovaj polazak ako je vreme pokupljenja POSLE polaska minus 2 sata
+          // i PRE polaska plus 2 sata (tolerancija ±2h oko vremena polaska)
+          // Primer: polazak 7:00 -> prihvata pokupljenja od 5:00 do 9:00
+          // Primer: polazak 13:00 -> prihvata pokupljenja od 11:00 do 15:00
+          final razlika = (pokupljenMinuteOdPonoci - polazakMinuteOdPonoci).abs();
+          pokupljenZaOvajPolazak = razlika <= 120; // ±2 sata tolerancije
+        }
       }
 
       putnici.add(
