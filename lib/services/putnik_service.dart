@@ -550,6 +550,15 @@ class PutnikService {
       } else {
         danPolasci.remove('${gradKey}_mesta');
       }
+      
+      // 🆕 Dodaj "adresa danas" ako je prosleđena (override za ovaj dan)
+      if (putnik.adresaId != null && putnik.adresaId!.isNotEmpty) {
+        danPolasci['${gradKey}_adresa_danas_id'] = putnik.adresaId;
+      }
+      if (putnik.adresa != null && putnik.adresa!.isNotEmpty && putnik.adresa != 'Adresa nije definisana') {
+        danPolasci['${gradKey}_adresa_danas'] = putnik.adresa;
+      }
+      
       polasciPoDanu[danKratica] = danPolasci;
 
       String radniDani = registrovaniPutnik['radni_dani'] as String? ?? '';

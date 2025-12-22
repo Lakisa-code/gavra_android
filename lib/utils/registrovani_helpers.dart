@@ -113,6 +113,65 @@ class RegistrovaniHelpers {
     return null;
   }
 
+  /// 🆕 Čitaj "adresa danas" ID iz polasci_po_danu JSON za specifičan dan i grad
+  /// Vraća UUID adrese ako postoji override za danas, inače null
+  static String? getAdresaDanasIdForDay(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_adresa_danas_id' ili 'vs_adresa_danas_id'
+    final adresaKey = '${place}_adresa_danas_id';
+    return dayData[adresaKey] as String?;
+  }
+
+  /// 🆕 Čitaj "adresa danas" naziv iz polasci_po_danu JSON za specifičan dan i grad
+  static String? getAdresaDanasNazivForDay(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return null;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return null;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return null;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return null;
+
+    // Ključ je npr. 'bc_adresa_danas' ili 'vs_adresa_danas'
+    final adresaKey = '${place}_adresa_danas';
+    return dayData[adresaKey] as String?;
+  }
+
   // Is active (soft delete handling)
   static bool isActiveFromMap(Map<String, dynamic>? m) {
     if (m == null) return true;

@@ -219,7 +219,7 @@ class Putnik {
   bool get jePokupljen {
     // Ako je pokupljen flag eksplicitno postavljen (iz _createPutniciForDay)
     if (pokupljen == true) return true;
-    
+
     // Fallback: proveri vremePokupljenja ali SAMO ako je DANAS
     if (vremePokupljenja != null) {
       final danas = DateTime.now();
@@ -228,7 +228,7 @@ class Putnik {
           pokupljenDatum.month == danas.month &&
           pokupljenDatum.day == danas.day;
     }
-    
+
     // Status pokupljen za dnevne putnike
     return status == 'pokupljen';
   }
@@ -356,6 +356,18 @@ class Putnik {
     final adresaBelaCrkva = adresaBcJoin?['naziv'] as String? ?? map['adresa_bela_crkva'] as String?;
     final adresaVrsac = adresaVsJoin?['naziv'] as String? ?? map['adresa_vrsac'] as String?;
 
+    // 🆕 Čitaj "adresa danas" override iz polasci_po_danu JSON
+    final adresaDanasBcId = RegistrovaniHelpers.getAdresaDanasIdForDay(map, normalizedTarget, 'bc');
+    final adresaDanasBcNaziv = RegistrovaniHelpers.getAdresaDanasNazivForDay(map, normalizedTarget, 'bc');
+    final adresaDanasVsId = RegistrovaniHelpers.getAdresaDanasIdForDay(map, normalizedTarget, 'vs');
+    final adresaDanasVsNaziv = RegistrovaniHelpers.getAdresaDanasNazivForDay(map, normalizedTarget, 'vs');
+
+    // 🆕 Prioritet: adresa_danas > stalna adresa
+    final finalAdresaBc = adresaDanasBcNaziv ?? adresaBelaCrkva;
+    final finalAdresaBcId = adresaDanasBcId ?? map['adresa_bela_crkva_id'] as String?;
+    final finalAdresaVs = adresaDanasVsNaziv ?? adresaVrsac;
+    final finalAdresaVsId = adresaDanasVsId ?? map['adresa_vrsac_id'] as String?;
+
     // Kreiraj putnik za Bela Crkva ako ima polazak za targetDan
     if (polazakBC != null && polazakBC.isNotEmpty && polazakBC != '00:00:00') {
       // ✅ KORISTI ODVOJENU KOLONU: vreme_pokupljenja_bc za Bela Crkva polazak
@@ -397,8 +409,8 @@ class Putnik {
               _extractVozaciFromActionLog(map['action_log'])['created_by'],
           vozac: vozac,
           grad: 'Bela Crkva',
-          adresa: adresaBelaCrkva, // ✅ KORISTI adresu iz JOIN-a sa adrese tabelom
-          adresaId: map['adresa_bela_crkva_id'] as String?,
+          adresa: finalAdresaBc, // 🆕 PRIORITET: adresa_danas > stalna adresa
+          adresaId: finalAdresaBcId, // 🆕 PRIORITET: adresa_danas_id > stalni ID
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
           brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
@@ -452,8 +464,8 @@ class Putnik {
               _extractVozaciFromActionLog(map['action_log'])['created_by'],
           vozac: vozac,
           grad: 'Vršac',
-          adresa: adresaVrsac, // ✅ KORISTI adresu iz JOIN-a sa adrese tabelom
-          adresaId: map['adresa_vrsac_id'] as String?,
+          adresa: finalAdresaVs, // 🆕 PRIORITET: adresa_danas > stalna adresa
+          adresaId: finalAdresaVsId, // 🆕 PRIORITET: adresa_danas_id > stalni ID
           obrisan: obrisan,
           brojTelefona: map['broj_telefona'] as String?, // ✅ DODATO
           brojMesta: RegistrovaniHelpers.getBrojMestaForDay(
