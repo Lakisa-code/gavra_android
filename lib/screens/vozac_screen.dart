@@ -1668,14 +1668,38 @@ class _VozacScreenState extends State<VozacScreen> {
           builder: (context, snapshot) {
             final allPutnici = snapshot.data ?? <Putnik>[];
 
-            // Računaj broj putnika po gradu/vremenu za BottomNavBar
-            // 🔧 ISPRAVKA: Koristi brojMesta umesto length da bi x2 putnici bili pravilno brojani
+            // 🔧 IDENTIČNA LOGIKA SA HOME_SCREEN I DANAS_SCREEN ZA BROJANJE PUTNIKA
+            final Map<String, int> brojPutnikaBC = {
+              '5:00': 0, '6:00': 0, '7:00': 0, '8:00': 0, '9:00': 0,
+              '11:00': 0, '12:00': 0, '13:00': 0, '14:00': 0, '15:30': 0, '18:00': 0,
+            };
+            final Map<String, int> brojPutnikaVS = {
+              '6:00': 0, '7:00': 0, '8:00': 0, '10:00': 0, '11:00': 0,
+              '12:00': 0, '13:00': 0, '14:00': 0, '15:30': 0, '17:00': 0, '19:00': 0,
+            };
+
+            for (final p in allPutnici) {
+              if (!TextUtils.isStatusActive(p.status)) continue;
+
+              final normVreme = GradAdresaValidator.normalizeTime(p.polazak);
+              final putnikGrad = p.grad.toLowerCase();
+
+              final jeBelaCrkva = putnikGrad.contains('bela') || putnikGrad.contains('bc') || putnikGrad == 'bela crkva';
+              final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
+
+              if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
+                brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
+              }
+              if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
+                brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
+              }
+            }
+
             int getPutnikCount(String grad, String vreme) {
-              return allPutnici.where((p) {
-                final gradMatch = p.grad.toLowerCase().contains(grad.toLowerCase().substring(0, 4));
-                final vremeMatch = p.polazak == vreme;
-                return gradMatch && vremeMatch;
-              }).fold(0, (sum, p) => sum + p.brojMesta);
+              final normVreme = GradAdresaValidator.normalizeTime(vreme);
+              if (grad == 'Bela Crkva') return brojPutnikaBC[normVreme] ?? brojPutnikaBC[vreme] ?? 0;
+              if (grad == 'Vršac') return brojPutnikaVS[normVreme] ?? brojPutnikaVS[vreme] ?? 0;
+              return 0;
             }
 
             return isZimski(DateTime.now())
