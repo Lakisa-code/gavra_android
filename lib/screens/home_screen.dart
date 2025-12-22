@@ -2257,10 +2257,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final jeVrsac = putnikGrad.contains('vrsac') || putnikGrad.contains('vs') || putnikGrad == 'vršac';
 
             if (jeBelaCrkva && brojPutnikaBC.containsKey(normVreme)) {
-              brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + 1;
+              brojPutnikaBC[normVreme] = (brojPutnikaBC[normVreme] ?? 0) + p.brojMesta;
             }
             if (jeVrsac && brojPutnikaVS.containsKey(normVreme)) {
-              brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + 1;
+              brojPutnikaVS[normVreme] = (brojPutnikaVS[normVreme] ?? 0) + p.brojMesta;
             }
           }
 

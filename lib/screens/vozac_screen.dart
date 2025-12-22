@@ -1669,12 +1669,13 @@ class _VozacScreenState extends State<VozacScreen> {
             final allPutnici = snapshot.data ?? <Putnik>[];
 
             // Računaj broj putnika po gradu/vremenu za BottomNavBar
+            // 🔧 ISPRAVKA: Koristi brojMesta umesto length da bi x2 putnici bili pravilno brojani
             int getPutnikCount(String grad, String vreme) {
               return allPutnici.where((p) {
                 final gradMatch = p.grad.toLowerCase().contains(grad.toLowerCase().substring(0, 4));
                 final vremeMatch = p.polazak == vreme;
                 return gradMatch && vremeMatch;
-              }).length;
+              }).fold(0, (sum, p) => sum + p.brojMesta);
             }
 
             return isZimski(DateTime.now())
