@@ -215,9 +215,23 @@ class Putnik {
 
   bool get jeOdsustvo => jeBolovanje || jeGodisnji;
 
-  bool get jePokupljen =>
-      vremePokupljenja != null || // Mesečni putnici
-      status == 'pokupljen'; // Dnevni putnici
+  // ✅ FIX: jePokupljen mora proveriti da li je pokupljeno DANAS, ne samo da postoji timestamp
+  bool get jePokupljen {
+    // Ako je pokupljen flag eksplicitno postavljen (iz _createPutniciForDay)
+    if (pokupljen == true) return true;
+    
+    // Fallback: proveri vremePokupljenja ali SAMO ako je DANAS
+    if (vremePokupljenja != null) {
+      final danas = DateTime.now();
+      final pokupljenDatum = vremePokupljenja!.toLocal();
+      return pokupljenDatum.year == danas.year &&
+          pokupljenDatum.month == danas.month &&
+          pokupljenDatum.day == danas.day;
+    }
+    
+    // Status pokupljen za dnevne putnike
+    return status == 'pokupljen';
+  }
 
   bool get jePlacen => (cena ?? 0) > 0;
 
