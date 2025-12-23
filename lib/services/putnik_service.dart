@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -794,7 +795,7 @@ class PutnikService {
     }).eq('id', id);
   }
 
-  /// ? OTKAZI PUTNIKA
+  /// ? OTKAZI PUTNIKA - sada čuva otkazivanje PO POLASKU (grad) u polasci_po_danu JSON
   Future<void> otkaziPutnika(
     dynamic id,
     String otkazaoVozac, {
@@ -810,23 +811,50 @@ class PutnikService {
       final respMap = response;
       final cancelName = (respMap['putnik_ime'] ?? respMap['ime']) ?? '';
 
-      // ?? Proveri da li je putnik vec otkazan
-      final currentStatus = respMap['status']?.toString().toLowerCase() ?? '';
-      if (currentStatus == 'otkazan' || currentStatus == 'otkazano') {
-        throw Exception('Putnik je vec otkazan');
-      }
-
       // ?? DODAJ U UNDO STACK
       _addToUndoStack('cancel', idStr, respMap);
 
       if (tabela == 'registrovani_putnici') {
-        // ?? POJEDNOSTAVLJENO: A�uriraj status direktno u registrovani_putnici
         final danas = DateTime.now().toIso8601String().split('T')[0];
         final vozacUuid = await VozacMappingService.getVozacUuid(otkazaoVozac);
+        
+        // 🆕 Odredi place (bc/vs) iz selectedGrad ili iz putnikovog grada
+        String place = 'bc'; // default
+        final gradZaOtkazivanje = selectedGrad ?? respMap['grad'] as String? ?? '';
+        if (gradZaOtkazivanje.toLowerCase().contains('vr') || 
+            gradZaOtkazivanje.toLowerCase().contains('vs')) {
+          place = 'vs';
+        }
+        
+        // 🆕 Odredi dan kratica
+        final weekday = DateTime.now().weekday;
+        const daniKratice = ['pon', 'uto', 'sre', 'cet', 'pet', 'sub', 'ned'];
+        final danKratica = daniKratice[weekday - 1];
+        
+        // 🆕 Učitaj postojeći polasci_po_danu JSON
+        Map<String, dynamic> polasci = {};
+        final polasciRaw = respMap['polasci_po_danu'];
+        if (polasciRaw != null) {
+          if (polasciRaw is String) {
+            try {
+              polasci = jsonDecode(polasciRaw) as Map<String, dynamic>;
+            } catch (_) {}
+          } else if (polasciRaw is Map) {
+            polasci = Map<String, dynamic>.from(polasciRaw);
+          }
+        }
+        
+        // 🆕 Dodaj/ažuriraj otkazivanje za specifičan dan i grad
+        if (!polasci.containsKey(danKratica)) {
+          polasci[danKratica] = <String, dynamic>{};
+        }
+        final dayData = polasci[danKratica] as Map<String, dynamic>;
+        dayData['${place}_otkazano'] = DateTime.now().toIso8601String();
+        dayData['${place}_otkazao_vozac'] = otkazaoVozac;
+        polasci[danKratica] = dayData;
 
         await supabase.from('registrovani_putnici').update({
-          'status': 'otkazan',
-          'vreme_otkazivanja': DateTime.now().toIso8601String(),
+          'polasci_po_danu': jsonEncode(polasci),
           'otkazao_vozac': otkazaoVozac,
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', id.toString());

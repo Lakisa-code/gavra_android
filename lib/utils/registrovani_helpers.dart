@@ -172,6 +172,49 @@ class RegistrovaniHelpers {
     return dayData[adresaKey] as String?;
   }
 
+  /// 🆕 Proveri da li je putnik otkazan za specifičan dan i grad (polazak)
+  /// Vraća true ako postoji timestamp otkazivanja za DANAS
+  static bool isOtkazanForDayAndPlace(
+    Map<String, dynamic> rawMap,
+    String dayKratica,
+    String place,
+  ) {
+    final raw = rawMap['polasci_po_danu'];
+    if (raw == null) return false;
+
+    Map<String, dynamic>? decoded;
+    if (raw is String) {
+      try {
+        decoded = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {
+        return false;
+      }
+    } else if (raw is Map<String, dynamic>) {
+      decoded = raw;
+    }
+    if (decoded == null) return false;
+
+    final dayData = decoded[dayKratica];
+    if (dayData == null || dayData is! Map) return false;
+
+    // Ključ je npr. 'bc_otkazano' ili 'vs_otkazano'
+    final otkazanoKey = '${place}_otkazano';
+    final otkazanoTimestamp = dayData[otkazanoKey] as String?;
+    
+    if (otkazanoTimestamp == null || otkazanoTimestamp.isEmpty) return false;
+    
+    // Proveri da li je otkazano DANAS
+    try {
+      final otkazanoDate = DateTime.parse(otkazanoTimestamp).toLocal();
+      final danas = DateTime.now();
+      return otkazanoDate.year == danas.year &&
+             otkazanoDate.month == danas.month &&
+             otkazanoDate.day == danas.day;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Is active (soft delete handling)
   static bool isActiveFromMap(Map<String, dynamic>? m) {
     if (m == null) return true;

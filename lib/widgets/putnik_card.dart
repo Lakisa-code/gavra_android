@@ -342,6 +342,7 @@ class _PutnikCardState extends State<PutnikCard> {
             adresa: _putnik.adresa,
             priority: _putnik.priority,
             brojTelefona: _putnik.brojTelefona,
+            otkazanZaPolazak: false, // 🆕 Reset otkazivanja
           );
         });
       }
@@ -2683,7 +2684,7 @@ class _PutnikCardState extends State<PutnikCard> {
               vremeDodavanja: _putnik.vremeDodavanja,
               mesecnaKarta: _putnik.mesecnaKarta,
               dan: _putnik.dan,
-              status: 'otkazano',
+              status: _putnik.status, // 🆕 Ne menjaj globalni status
               statusVreme: _putnik.statusVreme,
               vremePokupljenja: _putnik.vremePokupljenja,
               vremePlacanja: _putnik.vremePlacanja,
@@ -2702,6 +2703,7 @@ class _PutnikCardState extends State<PutnikCard> {
               priority: _putnik.priority,
               brojTelefona: _putnik.brojTelefona,
               datum: _putnik.datum,
+              otkazanZaPolazak: true, // 🆕 Otkazan za ovaj polazak
             );
           });
         }

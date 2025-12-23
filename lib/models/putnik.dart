@@ -73,6 +73,7 @@ class Putnik {
     this.datum,
     this.brojMesta = 1, // 🆕 Broj rezervisanih mesta (default 1)
     this.tipPutnika, // 🆕 Tip putnika: radnik, ucenik, dnevni
+    this.otkazanZaPolazak = false, // 🆕 Da li je otkazan za ovaj specifični polazak (grad)
   });
 
   factory Putnik.fromMap(Map<String, dynamic> map) {
@@ -99,6 +100,9 @@ class Putnik {
     final polazakRaw = RegistrovaniHelpers.getPolazakForDay(map, danKratica, place);
     // 🆕 Tip putnika iz baze
     final tipPutnika = map['tip'] as String?;
+
+    // 🆕 Proveri da li je putnik otkazan ZA OVAJ POLAZAK (grad) danas
+    final otkazanZaPolazak = RegistrovaniHelpers.isOtkazanForDayAndPlace(map, danKratica, place);
 
     // ✅ FIX: Proveri da li je otkazivanje bilo DANAS - ako nije, vrati status na 'radi'
     final statusIzBaze = map['status'] as String? ?? 'radi';
@@ -158,6 +162,7 @@ class Putnik {
       // ✅ DODATO: Parsiranje vremena otkazivanja i vozača
       vremeOtkazivanja: vremeOtkazivanja,
       otkazaoVozac: map['otkazao_vozac'] as String?,
+      otkazanZaPolazak: otkazanZaPolazak, // 🆕 Da li je otkazan za ovaj polazak
     );
   }
 
@@ -191,6 +196,7 @@ class Putnik {
   final String? datum;
   final int brojMesta; // 🆕 Broj rezervisanih mesta (1, 2, 3...)
   final String? tipPutnika; // 🆕 Tip putnika: radnik, ucenik, dnevni
+  final bool otkazanZaPolazak; // 🆕 Da li je otkazan za ovaj specifični polazak (grad)
 
   // 🆕 Helper getter za proveru da li je dnevni tip
   bool get isDnevniTip => tipPutnika == 'dnevni' || mesecnaKarta == false;
@@ -205,9 +211,9 @@ class Putnik {
   String get vremePolaska => polazak;
 
   // Getter-i za centralizovanu logiku statusa
+  // 🆕 IZMENJENO: jeOtkazan sada proverava otkazanZaPolazak (po gradu) umesto globalnog statusa
   bool get jeOtkazan =>
-      obrisan || // 🆕 Dodaj prověru za obrisan (aktivan=false u bazi)
-      (status != null && (status!.toLowerCase() == 'otkazano' || status!.toLowerCase() == 'otkazan'));
+      obrisan || otkazanZaPolazak;
 
   bool get jeBolovanje => status != null && status!.toLowerCase() == 'bolovanje';
 
